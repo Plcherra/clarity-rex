@@ -63,6 +63,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Image.asset(
+                      'assets/brand/clarity_mark.png',
+                      width: 84,
+                      height: 84,
+                    ),
+                    const SizedBox(height: 22),
                     Text(
                       'Welcome to Clarity',
                       style: theme.textTheme.headlineSmall?.copyWith(

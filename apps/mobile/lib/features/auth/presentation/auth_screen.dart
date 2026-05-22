@@ -70,6 +70,15 @@ final class _AuthScreenState extends State<AuthScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Image.asset(
+                          'assets/brand/clarity_mark.png',
+                          width: 72,
+                          height: 72,
+                        ),
+                      ),
+                      const SizedBox(height: 22),
                       Text(
                         _isSignUp
                             ? 'Create your account'

@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.clarity" "\0"
-            VALUE "FileDescription", "clarity" "\0"
+            VALUE "FileDescription", "Clarity" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "clarity" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.clarity. All rights reserved." "\0"
             VALUE "OriginalFilename", "clarity.exe" "\0"
-            VALUE "ProductName", "clarity" "\0"
+            VALUE "ProductName", "Clarity" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
