@@ -1,0 +1,656 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../../../../app/ui_dependencies.dart';
+// (rules disabled) keep normalization helpers local to rule subsystem only.
+import '../../../../core/models/models.dart';
+import '../../application/category_workflow_service.dart';
+import '../../domain/spend_categories.dart';
+
+/// Minimum length for a saved description rule pattern (after normalization).
+const int kMinCategoryRulePatternLength = 3;
+
+/// Fixed viewport height for the anchored category list + “new category” row.
+const double _kCategoryPickerPanelHeight = 280;
+
+// --- Overlay layout ------------------------------------------------------------
+// [TransactionCategoryField] uses [OverlayPortal] + [OverlayPortalController]
+// rather than inserting a raw [OverlayEntry]. That keeps [CompositedTransformFollower]
+// in Flutter’s overlay layout pass (stable paint transforms when other overlays—
+// tooltips, dialogs—participate in the same frame).
+
+/// Inline category menu below the chip: no dimming modal, transparent outside tap to close.
+class TransactionCategoryField extends StatefulWidget {
+  const TransactionCategoryField({
+    super.key,
+    required this.controller,
+    required this.transaction,
+    required this.displayCategory,
+  });
+
+  final TransactionUiController controller;
+  final Transaction transaction;
+  final String displayCategory;
+
+  @override
+  State<TransactionCategoryField> createState() =>
+      _TransactionCategoryFieldState();
+}
+
+class _TransactionCategoryFieldState extends State<TransactionCategoryField> {
+  final LayerLink _categoryAnchorLink = LayerLink();
+  final OverlayPortalController _categoryMenuPortal = OverlayPortalController();
+
+  @override
+  void dispose() {
+    // Do not call [OverlayPortalController.hide] here: during tree finalization the
+    // controller can already be detached from [OverlayPortal], and [hide] then asserts
+    // ([OverlayPortalController] detached path). Unmounting the portal drops the overlay.
+    super.dispose();
+  }
+
+  void _toggleCategoryMenu() {
+    if (_categoryMenuPortal.isShowing) {
+      _categoryMenuPortal.hide();
+    } else {
+      _categoryMenuPortal.show();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final chip = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _toggleCategoryMenu,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0EDE8),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            widget.displayCategory,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+              color: cs.onSurface.withValues(alpha: 0.55),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return OverlayPortal(
+      controller: _categoryMenuPortal,
+      overlayChildBuilder: (BuildContext _) {
+        return _CategoryMenuOverlay(
+          layerLink: _categoryAnchorLink,
+          dialogContext: context,
+          controller: widget.controller,
+          transaction: widget.transaction,
+          onClose: () => _categoryMenuPortal.hide(),
+        );
+      },
+      child: CompositedTransformTarget(link: _categoryAnchorLink, child: chip),
+    );
+  }
+}
+
+/// Full-screen tap target behind the panel; closes the menu without dimming.
+class _BackdropDismissLayer extends StatelessWidget {
+  const _BackdropDismissLayer({required this.onDismiss});
+
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: onDismiss,
+        child: const ColoredBox(color: Colors.transparent),
+      ),
+    );
+  }
+}
+
+/// [CompositedTransformFollower] shell: fixed size, keyboard inset padding only.
+class _AnchoredCategoryPanel extends StatelessWidget {
+  const _AnchoredCategoryPanel({
+    required this.anchorLink,
+    required this.panelWidth,
+    required this.colorScheme,
+    required this.sheetBody,
+  });
+
+  final LayerLink anchorLink;
+  final double panelWidth;
+  final ColorScheme colorScheme;
+  final Widget sheetBody;
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformFollower(
+      link: anchorLink,
+      showWhenUnlinked: false,
+      offset: const Offset(0, 6),
+      child: Material(
+        elevation: 6,
+        shadowColor: Colors.black26,
+        borderRadius: BorderRadius.circular(16),
+        color: colorScheme.surface,
+        child: Container(
+          width: panelWidth,
+          height: _kCategoryPickerPanelHeight,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE4E0D8)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: sheetBody,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryMenuOverlay extends StatefulWidget {
+  const _CategoryMenuOverlay({
+    required this.layerLink,
+    required this.dialogContext,
+    required this.controller,
+    required this.transaction,
+    required this.onClose,
+  });
+
+  final LayerLink layerLink;
+
+  /// Context for dialogs after the overlay is removed (e.g. parent [TransactionCategoryField]).
+  final BuildContext dialogContext;
+  final TransactionUiController controller;
+  final Transaction transaction;
+  final VoidCallback onClose;
+
+  @override
+  State<_CategoryMenuOverlay> createState() => _CategoryMenuOverlayState();
+}
+
+class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
+  late final TextEditingController _newController;
+  TextEditingController? _renameController;
+  final FocusNode _renameFocusNode = FocusNode();
+  String? _editingCanonical;
+
+  @override
+  void initState() {
+    super.initState();
+    _newController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _renameController?.dispose();
+    _renameFocusNode.dispose();
+    _newController.dispose();
+    super.dispose();
+  }
+
+  void _commitPendingEditIfAny() {
+    final prev = _editingCanonical;
+    final c = _renameController;
+    if (prev == null || c == null) return;
+    final t = c.text.trim();
+    if (t.isNotEmpty) {
+      _runCategoryMutation(widget.controller.renameCategory(prev, t));
+    }
+    c.dispose();
+    _renameController = null;
+    _editingCanonical = null;
+  }
+
+  void _onNameZoneTap(String canonical, String label) {
+    if (_editingCanonical == canonical) {
+      _renameFocusNode.requestFocus();
+      return;
+    }
+    setState(() {
+      if (_editingCanonical != null) {
+        final prev = _editingCanonical!;
+        final ctrl = _renameController;
+        if (ctrl != null) {
+          final t = ctrl.text.trim();
+          if (t.isNotEmpty) {
+            _runCategoryMutation(widget.controller.renameCategory(prev, t));
+          }
+          ctrl.dispose();
+          _renameController = null;
+        }
+        _editingCanonical = null;
+      }
+      _editingCanonical = canonical;
+      _renameController = TextEditingController(text: label);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _renameFocusNode.requestFocus();
+    });
+  }
+
+  void _finishRenameField(String canonical) {
+    if (_editingCanonical != canonical || _renameController == null) return;
+    final t = _renameController!.text.trim();
+    if (t.isNotEmpty) {
+      _runCategoryMutation(widget.controller.renameCategory(canonical, t));
+    }
+    setState(() {
+      _renameController?.dispose();
+      _renameController = null;
+      _editingCanonical = null;
+    });
+  }
+
+  void _selectCategoryAndClose(String canonical) {
+    _commitPendingEditIfAny();
+    _runCategoryAssignment(rawCategoryName: canonical, createCategory: false);
+    widget.onClose();
+  }
+
+  void _submitNew() {
+    final raw = _newController.text;
+    if (raw.trim().isEmpty) return;
+    _runCategoryAssignment(rawCategoryName: raw, createCategory: true);
+    _newController.clear();
+    widget.onClose();
+  }
+
+  void _confirmDelete(BuildContext context, String canonical) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete "$canonical"?'),
+        content: const Text(
+          'Remove this category and clear it from assigned transactions?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (_editingCanonical == canonical) {
+                _renameController?.dispose();
+                _renameController = null;
+                _editingCanonical = null;
+              }
+              _runCategoryMutation(widget.controller.deleteCategory(canonical));
+              widget.onClose();
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Two zones: [name] = edit (InkWell), [rest] = select (InkWell), [trailing] = delete.
+  Widget _categoryRow({
+    required ThemeData theme,
+    required ColorScheme cs,
+    required String canonical,
+    required String label,
+  }) {
+    final editing = _editingCanonical == canonical;
+
+    return Material(
+      color: Colors.transparent,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Zone 1 — tap = rename (inline field when editing); generous padding for touch.
+          InkWell(
+            onTap: () => _onNameZoneTap(canonical, label),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 88, minHeight: 44),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: editing && _renameController != null
+                      ? SizedBox(
+                          width: 150,
+                          child: TextField(
+                            controller: _renameController,
+                            focusNode: _renameFocusNode,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              filled: true,
+                              fillColor: const Color(0xFFF0EDE8),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 10,
+                              ),
+                            ),
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _finishRenameField(canonical),
+                            onTapOutside: (_) => _finishRenameField(canonical),
+                          ),
+                        )
+                      : Text(
+                          label,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ),
+          // Zone 2 — empty strip to the right of the name: tap = select + close.
+          Expanded(
+            child: InkWell(
+              onTap: () => _selectCategoryAndClose(canonical),
+              child: const SizedBox(
+                height: 48,
+                child: ColoredBox(color: Colors.transparent),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.remove_circle_outline_rounded,
+              size: 20,
+              color: cs.onSurface.withValues(alpha: 0.4),
+            ),
+            onPressed: () => _confirmDelete(context, canonical),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 600;
+    final width = (size.width - 48).clamp(200.0, 320.0).toDouble();
+    final maxHeight = (size.height * 0.55).clamp(300.0, 460.0).toDouble();
+    final sheetBody = _buildMenuBody(theme, cs);
+
+    return Stack(
+      children: [
+        _BackdropDismissLayer(
+          onDismiss: () {
+            _commitPendingEditIfAny();
+            widget.onClose();
+          },
+        ),
+        if (compact)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+            child: SafeArea(
+              top: false,
+              child: Material(
+                elevation: 10,
+                shadowColor: Colors.black26,
+                borderRadius: BorderRadius.circular(24),
+                color: cs.surface,
+                child: Container(
+                  constraints: BoxConstraints(maxHeight: maxHeight),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFE4E0D8)),
+                  ),
+                  child: sheetBody,
+                ),
+              ),
+            ),
+          )
+        else
+          _AnchoredCategoryPanel(
+            anchorLink: widget.layerLink,
+            panelWidth: width,
+            colorScheme: cs,
+            sheetBody: sheetBody,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMenuBody(ThemeData theme, ColorScheme cs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: ListenableBuilder(
+            listenable: widget.controller,
+            builder: (context, _) {
+              final names = categoryPickerCanonicals(
+                customCategories: widget.controller.customCategories,
+                hiddenLower: widget.controller.categoriesHiddenFromPicker,
+              );
+              if (names.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No categories',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.45),
+                    ),
+                  ),
+                );
+              }
+              return ListView.separated(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: names.length,
+                separatorBuilder: (_, _) => Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: cs.outlineVariant.withValues(alpha: 0.35),
+                ),
+                itemBuilder: (context, i) {
+                  final canonical = names[i];
+                  final label = applyCategoryDisplayRenames(
+                    canonical,
+                    widget.controller.categoryDisplayRenames,
+                  );
+                  return _categoryRow(
+                    theme: theme,
+                    cs: cs,
+                    canonical: canonical,
+                    label: label,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 4, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _newController,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _submitNew(),
+                  decoration: InputDecoration(
+                    hintText: 'New category',
+                    isDense: true,
+                    filled: true,
+                    fillColor: const Color(0xFFF0EDE8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _submitNew,
+                icon: Icon(
+                  Icons.add_rounded,
+                  color: cs.onSurface.withValues(alpha: 0.65),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _runCategoryMutation(Future<void> mutation) {
+    unawaited(_handleCategoryMutation(mutation));
+  }
+
+  Future<void> _handleCategoryMutation(Future<void> mutation) async {
+    final messenger = ScaffoldMessenger.maybeOf(widget.dialogContext);
+    try {
+      await mutation;
+    } catch (error) {
+      if (!mounted) return;
+      messenger?.showSnackBar(
+        SnackBar(content: Text('Could not update category: $error')),
+      );
+    }
+  }
+
+  void _runCategoryAssignment({
+    required String rawCategoryName,
+    required bool createCategory,
+  }) {
+    final controller = widget.controller;
+    final transaction = widget.transaction;
+    final dialogContext = widget.dialogContext;
+    unawaited(
+      _handleCategoryAssignment(
+        controller: controller,
+        transaction: transaction,
+        rawCategoryName: rawCategoryName,
+        createCategory: createCategory,
+        dialogContext: dialogContext,
+      ),
+    );
+  }
+
+  Future<void> _handleCategoryAssignment({
+    required TransactionUiController controller,
+    required Transaction transaction,
+    required String rawCategoryName,
+    required bool createCategory,
+    required BuildContext dialogContext,
+  }) async {
+    final messenger = ScaffoldMessenger.maybeOf(dialogContext);
+    try {
+      final preview = await controller.previewMerchantLearningImpact(
+        transaction,
+      );
+      var applyToSimilarMerchants = true;
+      if (preview != null && preview.matchingTransactionCount > 1) {
+        if (!dialogContext.mounted) return;
+        final confirmed = await _confirmSimilarMerchantUpdate(
+          dialogContext,
+          preview,
+        );
+        if (confirmed == null) return;
+        applyToSimilarMerchants = confirmed;
+      }
+
+      final result = createCategory
+          ? await controller.createCategoryAndAssign(
+              transaction,
+              rawCategoryName,
+              applyToSimilarMerchants: applyToSimilarMerchants,
+            )
+          : await controller.setCategoryOverride(
+              transaction,
+              rawCategoryName,
+              applyToSimilarMerchants: applyToSimilarMerchants,
+            );
+      if (!dialogContext.mounted) return;
+      final message = _categoryAssignmentMessage(result);
+      if (message.isNotEmpty) {
+        messenger?.showSnackBar(SnackBar(content: Text(message)));
+      }
+    } catch (error) {
+      if (!dialogContext.mounted) return;
+      messenger?.showSnackBar(
+        SnackBar(content: Text('Could not update category: $error')),
+      );
+    }
+  }
+
+  Future<bool?> _confirmSimilarMerchantUpdate(
+    BuildContext context,
+    MerchantLearningPreview preview,
+  ) {
+    final count = preview.matchingTransactionCount;
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        scrollable: true,
+        title: const Text('Apply to similar transactions?'),
+        content: Text(
+          'Clarity found $count transactions that look like '
+          '"${preview.merchantDisplay}". Apply this category to all of them '
+          'and remember it for future CSV imports?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Only this one'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Update $count'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _categoryAssignmentMessage(CategoryAssignmentResult result) {
+    if (result.updatedTransactionCount <= 0) return '';
+    if (result.appliedToSimilarMerchants) {
+      return 'Updated ${result.updatedTransactionCount} similar transactions. '
+          'Choose another category to correct them.';
+    }
+    if (result.learnedMerchantRule) {
+      return 'Category updated. Future matching imports will use it.';
+    }
+    return 'Category updated.';
+  }
+}

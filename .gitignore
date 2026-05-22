@@ -1,0 +1,38 @@
+# OS/editor noise
+.DS_Store
+.idea/
+.cursor/
+*.iml
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+!*.env.example
+
+# Flutter/Dart
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/build/
+**/.pub-cache/
+
+# Native dependency output
+**/ios/Pods/
+**/ios/.symlinks/
+**/macos/Pods/
+**/macos/.symlinks/
+
+# Python
+**/__pycache__/
+**/.pytest_cache/
+**/.venv/
+**/venv/
+*.pyc
+
+# Supabase local state
+supabase/.temp/
+
+# Local reset/export artifacts
+backups/
+

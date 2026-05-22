@@ -1,0 +1,1238 @@
+import asyncio
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+import pytest
+from fastapi import HTTPException
+
+from app.config import Settings
+from app.services.memory_correction_service import CorrectionIntentType
+from app.services.chat_service import ChatService, PROFILE_MEMORY_QUERY
+from app.services.file_service import FileService
+from app.services.memory_service import SupabaseMemoryService, MemoryServiceError
+from app.services.prompt_service import (
+    ACCOUNTABILITY_CONTEXT_PREFIX,
+    FILE_CONTEXT_PREFIX,
+    LONG_TERM_MEMORY_PREFIX,
+    STRUCTURED_MEMORY_PREFIX,
+)
+from app.services.time_context_service import TimeContextService
+
+
+class FakeAIService:
+    def __init__(self, response="Rex response", stream_tokens=None):
+        self.messages = []
+        self.response = response
+        self.stream_tokens = stream_tokens or ["Rex ", "stream"]
+
+    async def generate_response(self, messages):
+        self.messages = messages
+        return self.response
+
+    async def stream_response(self, messages):
+        self.messages = messages
+        for token in self.stream_tokens:
+            yield token
+
+
+class FailingAIService:
+    async def generate_response(self, messages):
+        raise RuntimeError("AI failed")
+
+    async def stream_response(self, messages):
+        raise RuntimeError("AI failed")
+        yield
+
+
+class FakeMemoryService:
+    def __init__(self):
+        self.conversations = set()
+        self.messages = []
+        self.long_term_memory = []
+        self.next_conversation_id = 1
+        self.next_message_id = 1
+        self.next_memory_id = 1
+        self.relevant_memory_queries = []
+        self.structured_context_queries = []
+        self.structured_context = {}
+
+    async def create_conversation(self):
+        conversation_id = f"conversation-{self.next_conversation_id}"
+        self.next_conversation_id += 1
+        self.conversations.add(conversation_id)
+        return conversation_id
+
+    async def conversation_exists(self, conversation_id):
+        return conversation_id in self.conversations
+
+    async def save_message(self, conversation_id, role, content):
+        message = {
+            "id": f"message-{self.next_message_id}",
+            "conversation_id": conversation_id,
+            "role": role,
+            "content": content,
+            "timestamp": "2026-05-11T00:00:00Z",
+        }
+        self.next_message_id += 1
+        self.messages.append(message)
+        return message
+
+    async def get_recent_messages(self, conversation_id, limit=20):
+        messages = [
+            message
+            for message in self.messages
+            if message["conversation_id"] == conversation_id
+        ]
+        return messages[-limit:]
+
+    async def save_long_term_memory_from_message(self, conversation_id, message):
+        content = message["content"]
+        if not content.lower().startswith("remember that "):
+            return None
+
+        memory = {
+            "id": f"memory-{self.next_memory_id}",
+            "memory_type": "fact",
+            "content": content.removeprefix("Remember that "),
+            "source_conversation_id": conversation_id,
+            "source_message_id": message["id"],
+            "importance": 5,
+            "active": True,
+        }
+        self.next_memory_id += 1
+        self.long_term_memory.append(memory)
+        return memory
+
+    async def save_long_term_memory(
+        self,
+        memory_type,
+        content,
+        source_conversation_id=None,
+        source_message_id=None,
+        importance=3,
+    ):
+        memory = {
+            "id": f"memory-{self.next_memory_id}",
+            "memory_type": memory_type,
+            "content": content,
+            "source_conversation_id": source_conversation_id,
+            "source_message_id": source_message_id,
+            "importance": importance,
+            "active": True,
+        }
+        self.next_memory_id += 1
+        self.long_term_memory.append(memory)
+        return memory
+
+    async def get_relevant_memories(self, query, limit=8):
+        self.relevant_memory_queries.append({"query": query, "limit": limit})
+        return self.long_term_memory[-limit:]
+
+    async def get_structured_memory_context(self, query):
+        self.structured_context_queries.append(query)
+        return self.structured_context
+
+
+class FakeMemoryExtractionService:
+    def __init__(self, should_fail=False, result=None):
+        self.should_fail = should_fail
+        self.result = result or []
+        self.calls = []
+
+    async def extract_and_save(self, conversation_id, user_message, assistant_message):
+        self.calls.append(
+            {
+                "conversation_id": conversation_id,
+                "user_message": user_message,
+                "assistant_message": assistant_message,
+            }
+        )
+        if self.should_fail:
+            raise RuntimeError("extraction failed")
+        return self.result
+
+
+class FakeAccountabilityService:
+    def __init__(self, signals=None, should_fail=False):
+        self.signals = signals or []
+        self.should_fail = should_fail
+        self.calls = []
+
+    async def analyze_signals(self, **kwargs):
+        self.calls.append(kwargs)
+        if self.should_fail:
+            raise RuntimeError("accountability failed")
+        return self.signals
+
+
+class FakeMemoryDisciplineService:
+    pass
+
+
+class FakeCorrectionIntent:
+    confidence = 0.9
+    intent_type = CorrectionIntentType.REPLACE_VALUE
+    old_value = "Flowfirst"
+    new_value = "FlowForce"
+    target_hint = None
+
+
+class FakeCorrectionReport:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def as_dict(self):
+        return self.payload
+
+
+class FakeMemoryCorrectionService:
+    def __init__(self, payload):
+        self.payload = payload
+        self.calls = []
+
+    def detect_correction_intent(self, message):
+        self.calls.append(("detect", message))
+        return FakeCorrectionIntent()
+
+    async def apply_correction(
+        self,
+        message,
+        *,
+        source_conversation_id=None,
+        source_message_id=None,
+    ):
+        self.calls.append(
+            (
+                "apply",
+                message,
+                source_conversation_id,
+                source_message_id,
+            )
+        )
+        return FakeCorrectionReport(self.payload)
+
+
+class FakeMemoryCandidateService:
+    def __init__(self, pending=None, approved=None):
+        self.created = []
+        self.pending = pending or []
+        self.approved = approved or []
+        self.rejected = []
+
+    async def create_candidate(self, request):
+        candidate = {
+            "id": f"candidate-{len(self.created) + 1}",
+            "candidate_type": request.candidate_type,
+            "payload": request.payload,
+            "risk_level": request.risk_level,
+            "status": "pending",
+            "preview": f"{request.candidate_type}: pending memory change",
+        }
+        self.created.append(candidate)
+        return candidate
+
+    async def list_candidates(
+        self,
+        *,
+        status=None,
+        source_conversation_id=None,
+        limit=20,
+        **kwargs,
+    ):
+        return self.pending[:limit]
+
+    async def approve_candidate(self, candidate_id, request):
+        for candidate in self.pending:
+            if candidate["id"] == candidate_id:
+                approved = {
+                    **candidate,
+                    "status": "applied",
+                    "applied_record_table": "entities",
+                    "applied_record_id": "entity-1",
+                    "verification": {
+                        "passed": True,
+                        "message": "Candidate applied and verified.",
+                        "remaining_conflicts": [],
+                        "applied_record": {
+                            "table": "entities",
+                            "id": "entity-1",
+                        },
+                    },
+                }
+                self.approved.append(approved)
+                return approved
+        raise AssertionError(f"unknown candidate {candidate_id}")
+
+    async def reject_candidate(self, candidate_id, request):
+        for candidate in self.pending:
+            if candidate["id"] == candidate_id:
+                rejected = {**candidate, "status": "rejected"}
+                self.rejected.append(rejected)
+                return rejected
+        raise AssertionError(f"unknown candidate {candidate_id}")
+
+    async def bulk_approve_candidates(self, request):
+        approved = []
+        skipped = []
+        for candidate in self.pending:
+            if candidate.get("risk_level") == "high" and not request.include_high_risk:
+                skipped.append(candidate)
+                continue
+            approved.append(await self.approve_candidate(candidate["id"], request))
+        return {"approved": approved, "rejected": [], "skipped": skipped}
+
+    async def bulk_reject_candidates(self, request):
+        rejected = [
+            await self.reject_candidate(candidate["id"], request)
+            for candidate in self.pending
+        ]
+        return {"approved": [], "rejected": rejected, "skipped": []}
+
+
+class BlockingMemoryExtractionService:
+    def __init__(self):
+        self.calls = []
+        self.started = asyncio.Event()
+        self.release = asyncio.Event()
+
+    async def extract_and_save(self, conversation_id, user_message, assistant_message):
+        self.calls.append(
+            {
+                "conversation_id": conversation_id,
+                "user_message": user_message,
+                "assistant_message": assistant_message,
+            }
+        )
+        self.started.set()
+        await self.release.wait()
+        return []
+
+
+class FakeUpload:
+    def __init__(self, filename, content):
+        self.filename = filename
+        self._content = content
+
+    async def read(self):
+        return self._content
+
+
+@pytest.mark.asyncio
+async def test_file_upload_rejects_files_over_2mb():
+    file_service = FileService()
+    upload = FakeUpload("notes.txt", b"a" * (2 * 1024 * 1024 + 1))
+
+    with pytest.raises(HTTPException) as error:
+        await file_service.read_text_file(upload)
+
+    assert error.value.status_code == 413
+    assert error.value.detail == "Uploaded file is too large. Maximum size is 2MB."
+
+
+@pytest.mark.asyncio
+async def test_chat_service_handles_normal_chat():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Hello Rex")
+
+    assert result["conversation_id"] == "conversation-1"
+    assert result["response"] == "Rex response"
+    assert [message["role"] for message in result["messages"]] == [
+        "user",
+        "assistant",
+    ]
+    assert ai_service.messages[-1]["content"] == "Hello Rex"
+
+
+@pytest.mark.asyncio
+async def test_chat_service_extracts_clarity_action_proposal():
+    ai_service = FakeAIService(
+        response=(
+            "I found the Starbucks transaction. Confirm moving it to Coffee?\n\n"
+            "```clarity_action\n"
+            '{"action":"update_transaction",'
+            '"payload":{"id":"transaction-1","category_id":"category-coffee"},'
+            '"confirmation_text":"Move Starbucks to Coffee?",'
+            '"risk_level":"medium"}'
+            "\n```"
+        )
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Move Starbucks to Coffee")
+
+    assert result["response"] == (
+        "I found the Starbucks transaction. Confirm moving it to Coffee?"
+    )
+    assert result["messages"][-1]["content"] == result["response"]
+    assert result["memory_changes"]["clarity_action_proposals"] == [
+        {
+            "id": "clarity-action-1",
+            "action": "update_transaction",
+            "payload": {
+                "id": "transaction-1",
+                "category_id": "category-coffee",
+            },
+            "confirmation_text": "Move Starbucks to Coffee?",
+            "risk_level": "medium",
+            "status": "pending",
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_chat_service_accepts_memory_discipline_dependency_without_behavior_change():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    discipline_service = FakeMemoryDisciplineService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        memory_discipline_service=discipline_service,
+    )
+
+    result = await chat_service.send_message("Hello Rex")
+
+    assert result["response"] == "Rex response"
+    assert chat_service.memory_discipline_service is discipline_service
+
+
+@pytest.mark.asyncio
+async def test_chat_service_applies_memory_correction_and_prompts_summary():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    correction_service = FakeMemoryCorrectionService(
+        {
+            "applied": True,
+            "requires_confirmation": False,
+            "affected_records": [
+                {"table": "plans", "id": "plan-1", "action": "updated"}
+            ],
+        }
+    )
+    candidate_service = FakeMemoryCandidateService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        memory_correction_service=correction_service,
+        memory_candidate_service=candidate_service,
+    )
+
+    result = await chat_service.send_message("not Flowfirst, it is FlowForce")
+
+    assert result["memory_correction"]["applied"] is False
+    assert result["memory_correction"]["requires_confirmation"] is True
+    assert candidate_service.created[0]["candidate_type"] == "correction"
+    assert candidate_service.created[0]["payload"]["text"] == (
+        "not Flowfirst, it is FlowForce"
+    )
+    assert candidate_service.created[0]["payload"]["intent"]["old_value"] == "Flowfirst"
+    assert candidate_service.created[0]["payload"]["intent"]["new_value"] == "FlowForce"
+    assert correction_service.calls == [("detect", "not Flowfirst, it is FlowForce")]
+    assert "Memory correction status" in ai_service.messages[-1]["content"]
+    assert any(
+        message["content"] == "not Flowfirst, it is FlowForce"
+        for message in ai_service.messages
+    )
+    assert result["memory_changes"]["confirmation_required"] == 1
+    assert result["memory_changes"]["records"][-1]["reason"] == (
+        "correction_already_handled"
+    )
+
+
+@pytest.mark.asyncio
+async def test_chat_service_skips_extraction_after_applied_correction():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    extraction_service = FakeMemoryExtractionService(
+        result=[
+            {
+                "id": "plan-duplicate",
+                "extraction_kind": "structured_memory",
+                "structured_type": "plan",
+                "extraction_action": "create_plan",
+            }
+        ]
+    )
+    correction_service = FakeMemoryCorrectionService(
+        {
+            "applied": True,
+            "requires_confirmation": False,
+            "updated": [{"table": "entities", "id": "entity-1"}],
+        }
+    )
+    candidate_service = FakeMemoryCandidateService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        extraction_service,
+        memory_correction_service=correction_service,
+        memory_candidate_service=candidate_service,
+    )
+
+    result = await chat_service.send_message("wrong name, fix it")
+
+    assert extraction_service.calls == []
+    assert result["memory_changes"]["updated"] == 0
+    assert result["memory_changes"]["confirmation_required"] == 1
+    assert result["memory_changes"]["skipped"] == 1
+
+
+@pytest.mark.asyncio
+async def test_chat_service_blocks_vague_confirmation_for_high_risk_candidate():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.conversations.add("conversation-existing")
+    candidate_service = FakeMemoryCandidateService(
+        pending=[
+            {
+                "id": "candidate-high",
+                "candidate_type": "correction",
+                "payload": {
+                    "text": "Stephanie was not fired.",
+                    "intent": {
+                        "intent_type": "replace_value",
+                        "old_value": "Stephanie got fired",
+                        "new_value": "Stephanie quit",
+                    },
+                },
+                "risk_level": "high",
+                "status": "pending",
+                "preview": "correction: Stephanie was not fired.",
+                "source_conversation_id": "conversation-existing",
+                "source_message_id": "message-1",
+            }
+        ]
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        memory_candidate_service=candidate_service,
+    )
+
+    result = await chat_service.send_message("ok", "conversation-existing")
+
+    assert candidate_service.approved == []
+    assert "high-risk memory change" in result["response"]
+    assert result["memory_changes"]["confirmation_required"] == 1
+    card = result["memory_changes"]["pending_candidates"][0]
+    assert card["id"] == "candidate-high"
+    assert card["risk_level"] == "high"
+    assert card["requires_explicit_confirmation"] is True
+    assert card["expected_action"] == "Apply correction and verify stale facts are gone"
+
+
+@pytest.mark.asyncio
+async def test_chat_service_explicit_confirmation_applies_and_reports_candidate_card():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.conversations.add("conversation-existing")
+    candidate_service = FakeMemoryCandidateService(
+        pending=[
+            {
+                "id": "candidate-high",
+                "candidate_type": "correction",
+                "payload": {"text": "Fix Stephanie fact."},
+                "risk_level": "high",
+                "status": "pending",
+                "preview": "correction: Fix Stephanie fact.",
+                "source_conversation_id": "conversation-existing",
+                "source_message_id": "message-1",
+            }
+        ]
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        memory_candidate_service=candidate_service,
+    )
+
+    result = await chat_service.send_message("confirm", "conversation-existing")
+
+    assert candidate_service.approved[0]["id"] == "candidate-high"
+    assert result["memory_changes"]["created"] == 1
+    assert result["memory_changes"]["applied_candidates"][0]["applied_record"] == {
+        "table": "entities",
+        "id": "entity-1",
+    }
+    assert result["memory_changes"]["applied_candidates"][0]["verification"][
+        "passed"
+    ] is True
+    assert result["memory_changes"]["records"][0]["candidate"]["id"] == (
+        "candidate-high"
+    )
+
+
+@pytest.mark.asyncio
+async def test_chat_service_lists_multiple_pending_candidates_as_cards():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.conversations.add("conversation-existing")
+    candidate_service = FakeMemoryCandidateService(
+        pending=[
+            {
+                "id": "candidate-1",
+                "candidate_type": "commitment",
+                "payload": {"title": "Prepare Clarity release build"},
+                "risk_level": "low",
+                "status": "pending",
+                "preview": "commitment: Prepare Clarity release build",
+            },
+            {
+                "id": "candidate-2",
+                "candidate_type": "plan",
+                "payload": {"title": "Move out of the country"},
+                "risk_level": "high",
+                "status": "pending",
+                "preview": "plan: Move out of the country",
+            },
+        ]
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        memory_candidate_service=candidate_service,
+    )
+
+    result = await chat_service.send_message("yes", "conversation-existing")
+
+    assert candidate_service.approved == []
+    assert result["memory_changes"]["confirmation_required"] == 2
+    assert [card["id"] for card in result["memory_changes"]["pending_candidates"]] == [
+        "candidate-1",
+        "candidate-2",
+    ]
+    assert result["memory_changes"]["pending_candidates"][1][
+        "requires_explicit_confirmation"
+    ] is True
+
+
+@pytest.mark.asyncio
+async def test_chat_service_can_confirm_specific_candidate_by_id():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.conversations.add("conversation-existing")
+    candidate_service = FakeMemoryCandidateService(
+        pending=[
+            {
+                "id": "candidate-low",
+                "candidate_type": "commitment",
+                "payload": {"title": "Prepare Clarity release build"},
+                "risk_level": "low",
+                "status": "pending",
+                "preview": "commitment: Prepare Clarity release build",
+            },
+            {
+                "id": "candidate-high",
+                "candidate_type": "correction",
+                "payload": {"text": "Fix Stephanie fact."},
+                "risk_level": "high",
+                "status": "pending",
+                "preview": "correction: Fix Stephanie fact.",
+            },
+        ]
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        memory_candidate_service=candidate_service,
+    )
+
+    result = await chat_service.send_message(
+        "confirm memory candidate candidate-high",
+        "conversation-existing",
+    )
+
+    assert candidate_service.approved[0]["id"] == "candidate-high"
+    assert result["memory_changes"]["applied_candidates"][0]["id"] == (
+        "candidate-high"
+    )
+
+
+@pytest.mark.asyncio
+async def test_chat_service_can_reject_all_pending_candidates():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.conversations.add("conversation-existing")
+    candidate_service = FakeMemoryCandidateService(
+        pending=[
+            {
+                "id": "candidate-1",
+                "candidate_type": "commitment",
+                "payload": {"title": "Prepare Clarity release build"},
+                "risk_level": "low",
+                "status": "pending",
+                "preview": "commitment: Prepare Clarity release build",
+            },
+            {
+                "id": "candidate-2",
+                "candidate_type": "plan",
+                "payload": {"title": "Move out of the country"},
+                "risk_level": "high",
+                "status": "pending",
+                "preview": "plan: Move out of the country",
+            },
+        ]
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        memory_candidate_service=candidate_service,
+    )
+
+    result = await chat_service.send_message("reject all pending", "conversation-existing")
+
+    assert [candidate["id"] for candidate in candidate_service.rejected] == [
+        "candidate-1",
+        "candidate-2",
+    ]
+    assert result["memory_changes"]["rejected_candidates"][0]["id"] == "candidate-1"
+    assert result["memory_changes"]["rejected_candidates"][1]["id"] == "candidate-2"
+
+
+@pytest.mark.asyncio
+async def test_chat_service_returns_memory_change_summary_for_extraction():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    extraction_service = FakeMemoryExtractionService(
+        result=[
+            {
+                "id": "milestone-1",
+                "title": "$5k monthly revenue target",
+                "extraction_kind": "structured_memory",
+                "structured_type": "plan_milestone",
+                "extraction_action": "create_milestone",
+            },
+            {
+                "id": "plan-1",
+                "title": "Relocate to Europe next year",
+                "extraction_kind": "structured_memory",
+                "structured_type": "plan",
+                "extraction_action": "update_plan",
+            },
+        ]
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        extraction_service,
+    )
+
+    result = await chat_service.send_message("Add $5k income under Europe plan")
+
+    assert result["memory_changes"]["created"] == 1
+    assert result["memory_changes"]["updated"] == 1
+    assert result["memory_changes"]["records"][0]["type"] == "plan_milestone"
+
+
+@pytest.mark.asyncio
+async def test_chat_service_streams_tokens_and_persists_final_response():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    events = [
+        event async for event in chat_service.stream_message("Hello Rex", file=None)
+    ]
+
+    assert events[:3] == [
+        {"event": "conversation", "conversation_id": "conversation-1"},
+        {"event": "token", "token": "Rex "},
+        {"event": "token", "token": "stream"},
+    ]
+    assert events[-1]["event"] == "done"
+    assert events[-1]["response"] == "Rex stream"
+    assert [message["role"] for message in memory_service.messages] == [
+        "user",
+        "assistant",
+    ]
+    assert memory_service.messages[-1]["content"] == "Rex stream"
+
+
+@pytest.mark.asyncio
+async def test_chat_service_stream_hides_clarity_action_block():
+    ai_service = FakeAIService(
+        stream_tokens=[
+            "I found it. ",
+            "Confirm the change?\n\n```clar",
+            "ity_action\n",
+            '{"action":"update_transaction",',
+            '"payload":{"id":"transaction-1"},',
+            '"confirmation_text":"Update this transaction?",',
+            '"risk_level":"medium"}',
+            "\n```",
+        ]
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    events = [
+        event async for event in chat_service.stream_message("Update it", file=None)
+    ]
+    visible_text = "".join(
+        event["token"] for event in events if event["event"] == "token"
+    )
+
+    assert "clarity_action" not in visible_text
+    assert "transaction-1" not in visible_text
+    assert visible_text == "I found it. Confirm the change?\n\n"
+    assert events[-1]["response"] == "I found it. Confirm the change?"
+    assert events[-1]["memory_changes"]["clarity_action_proposals"][0] == {
+        "id": "clarity-action-1",
+        "action": "update_transaction",
+        "payload": {"id": "transaction-1"},
+        "confirmation_text": "Update this transaction?",
+        "risk_level": "medium",
+        "status": "pending",
+    }
+
+
+@pytest.mark.asyncio
+async def test_chat_service_stream_done_does_not_wait_for_memory_extraction():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    extraction_service = BlockingMemoryExtractionService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        extraction_service,
+    )
+
+    events = [
+        event async for event in chat_service.stream_message("Hello Rex", file=None)
+    ]
+
+    assert events[-1]["event"] == "done"
+    assert events[-1]["response"] == "Rex stream"
+
+    await asyncio.wait_for(extraction_service.started.wait(), timeout=1)
+    assert len(extraction_service.calls) == 1
+    assert extraction_service.calls[0]["conversation_id"] == "conversation-1"
+
+    extraction_service.release.set()
+    await asyncio.sleep(0)
+
+
+@pytest.mark.asyncio
+async def test_chat_service_injects_current_time_for_new_conversation():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    time_context_service = TimeContextService(
+        timezone_name="America/New_York",
+        now_provider=lambda: datetime(
+            2026,
+            5,
+            12,
+            15,
+            30,
+            tzinfo=ZoneInfo("America/New_York"),
+        ),
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=time_context_service,
+    )
+
+    await chat_service.send_message("Hello Rex")
+
+    system_content = ai_service.messages[0]["content"]
+    assert "Current time context:" in system_content
+    assert "- Clock: Tuesday afternoon (15:30 America/New_York (EDT))" in (
+        system_content
+    )
+    assert "- Date: 2026-05-12" in system_content
+    assert "- Weekday: Tuesday" in system_content
+    assert "- Time: 15:30" in system_content
+    assert "- Timezone: America/New_York (EDT)" in system_content
+    assert "Conversation context:" in system_content
+    assert "- Conversation ID: conversation-1" in system_content
+
+
+@pytest.mark.asyncio
+async def test_chat_service_injects_session_gap_for_existing_conversation():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.conversations.add("conversation-existing")
+    memory_service.messages.append(
+        {
+            "id": "message-existing",
+            "conversation_id": "conversation-existing",
+            "role": "assistant",
+            "content": "Previous response",
+            "timestamp": "2026-05-10T15:30:00-04:00",
+        }
+    )
+    time_context_service = TimeContextService(
+        timezone_name="America/New_York",
+        now_provider=lambda: datetime(
+            2026,
+            5,
+            12,
+            15,
+            30,
+            tzinfo=ZoneInfo("America/New_York"),
+        ),
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=time_context_service,
+    )
+
+    await chat_service.send_message("What changed?", "conversation-existing")
+
+    system_content = ai_service.messages[0]["content"]
+    assert "- Previous message delta: 2 days ago" in system_content
+    assert "- Conversation ID: conversation-existing" in system_content
+    assert "- Conversation timestamp: 2026-05-10T15:30:00-04:00" in system_content
+    assert "- Last message timestamp: 2026-05-10T15:30:00-04:00" in system_content
+
+
+@pytest.mark.asyncio
+async def test_chat_service_injects_time_context_for_streaming_chat():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    time_context_service = TimeContextService(
+        timezone_name="America/New_York",
+        now_provider=lambda: datetime(
+            2026,
+            5,
+            12,
+            23,
+            10,
+            tzinfo=ZoneInfo("America/New_York"),
+        ),
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=time_context_service,
+    )
+
+    events = [
+        event async for event in chat_service.stream_message("Hello Rex", file=None)
+    ]
+
+    assert events[-1]["event"] == "done"
+    system_content = ai_service.messages[0]["content"]
+    assert "Current time context:" in system_content
+    assert "- Clock: Tuesday night (23:10 America/New_York (EDT))" in system_content
+
+
+@pytest.mark.asyncio
+async def test_chat_service_handles_file_upload():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+    upload = FakeUpload("notes.md", b"Project notes")
+
+    result = await chat_service.send_message("Read this file", file=upload)
+
+    assert result["response"] == "Rex response"
+    assert ai_service.messages[-2]["content"] == (
+        f"{FILE_CONTEXT_PREFIX}Project notes"
+    )
+    assert ai_service.messages[-1]["content"] == "Read this file"
+
+
+@pytest.mark.asyncio
+async def test_chat_service_includes_long_term_memory():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-1",
+            "memory_type": "preference",
+            "content": "I prefer concise answers",
+            "importance": 4,
+        }
+    )
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    await chat_service.send_message("What should I do next?")
+
+    assert memory_service.relevant_memory_queries == [
+        {"query": "What should I do next?", "limit": 8},
+        {"query": PROFILE_MEMORY_QUERY, "limit": 4},
+    ]
+    assert ai_service.messages[0]["role"] == "system"
+    assert "Relevant long-term memory" in ai_service.messages[0]["content"]
+    assert "- preference: I prefer concise answers" in ai_service.messages[0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_chat_service_includes_profile_memory_for_new_chat_openers():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-location",
+            "memory_type": "fact",
+            "content": "I am in Massachusetts.",
+            "importance": 3,
+        }
+    )
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    await chat_service.send_message("Hey")
+
+    assert memory_service.relevant_memory_queries == [
+        {"query": "Hey", "limit": 8},
+        {"query": PROFILE_MEMORY_QUERY, "limit": 4},
+    ]
+    assert "- fact: I am in Massachusetts." in ai_service.messages[0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_chat_service_includes_structured_memory_context():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.structured_context = {
+        "entities": [
+            {
+                "id": "entity-clara",
+                "entity_type": "person",
+                "display_name": "Clara",
+                "relationship": "dating interest from work",
+                "summary": "Clara touched my arm.",
+                "relevance_reason": "Matched current message terms: clara",
+            }
+        ]
+    }
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    await chat_service.send_message("I saw Clara today.")
+
+    assert memory_service.structured_context_queries == ["I saw Clara today."]
+    assert ai_service.messages[0]["role"] == "system"
+    assert STRUCTURED_MEMORY_PREFIX in ai_service.messages[0]["content"]
+    assert "- entity/person Clara - dating interest from work" in (
+        ai_service.messages[0]["content"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_chat_service_injects_accountability_context():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.structured_context = {
+        "personal_rules": [
+            {
+                "id": "rule-doordash",
+                "rule_type": "food_delivery",
+                "title": "Avoid DoorDash",
+                "rule_text": "Do not order DoorDash while budget is slipping.",
+                "priority": 5,
+                "status": "active",
+                "active": True,
+            }
+        ]
+    }
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-doordash",
+            "memory_type": "event",
+            "content": "I committed to stop ordering DoorDash in May.",
+            "active": True,
+        }
+    )
+    accountability_service = FakeAccountabilityService(
+        signals=[
+            {
+                "signal_type": "rule_violation",
+                "severity": "high",
+                "title": "Possible rule violation: Avoid DoorDash",
+                "reason": "DoorDash matched an active rule.",
+                "suggested_prompt": "This sounds like the same pattern again.",
+            }
+        ]
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        accountability_service=accountability_service,
+    )
+
+    await chat_service.send_message("I ordered DoorDash again.")
+
+    assert len(accountability_service.calls) == 1
+    call = accountability_service.calls[0]
+    assert call["message"] == "I ordered DoorDash again."
+    assert call["personal_rules"] == memory_service.structured_context["personal_rules"]
+    assert call["relevant_memories"][0]["id"] == "memory-doordash"
+    system_content = ai_service.messages[0]["content"]
+    assert ACCOUNTABILITY_CONTEXT_PREFIX in system_content
+    assert "rule_violation/high: Possible rule violation" in system_content
+    assert "This sounds like the same pattern again." in system_content
+
+
+@pytest.mark.asyncio
+async def test_chat_service_injects_accountability_context_for_streaming_chat():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    accountability_service = FakeAccountabilityService(
+        signals=[
+            {
+                "signal_type": "repeated_pattern",
+                "severity": "medium",
+                "title": "Repeated pattern: delivery food",
+                "reason": "Found related recent records.",
+            }
+        ]
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        accountability_service=accountability_service,
+    )
+
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "I ordered DoorDash again.",
+            file=None,
+        )
+    ]
+
+    assert events[-1]["event"] == "done"
+    assert len(accountability_service.calls) == 1
+    system_content = ai_service.messages[0]["content"]
+    assert ACCOUNTABILITY_CONTEXT_PREFIX in system_content
+    assert "repeated_pattern/medium: Repeated pattern: delivery food" in system_content
+
+
+@pytest.mark.asyncio
+async def test_chat_service_ignores_accountability_failures():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        accountability_service=FakeAccountabilityService(should_fail=True),
+    )
+
+    result = await chat_service.send_message("Hello Rex")
+
+    assert result["response"] == "Rex response"
+    assert ACCOUNTABILITY_CONTEXT_PREFIX not in ai_service.messages[0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_chat_service_limits_injected_memory_context():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-1",
+            "memory_type": "fact",
+            "content": "work " * 1000,
+            "importance": 5,
+        }
+    )
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    await chat_service.send_message("I need advice about work.")
+
+    memory_section = ai_service.messages[0]["content"].split(
+        LONG_TERM_MEMORY_PREFIX,
+        1,
+    )[1]
+    assert len(memory_section) < 2200
+    assert "[truncated]" in ai_service.messages[0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_chat_service_runs_memory_extraction_after_successful_response():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    extraction_service = FakeMemoryExtractionService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        extraction_service,
+    )
+
+    await chat_service.send_message("Remember that I work best in the morning")
+
+    assert len(extraction_service.calls) == 1
+    assert extraction_service.calls[0]["conversation_id"] == "conversation-1"
+    assert extraction_service.calls[0]["user_message"]["content"] == (
+        "Remember that I work best in the morning"
+    )
+    assert extraction_service.calls[0]["assistant_message"]["content"] == (
+        "Rex response"
+    )
+
+
+@pytest.mark.asyncio
+async def test_chat_service_ignores_memory_extraction_failures():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    extraction_service = FakeMemoryExtractionService(should_fail=True)
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        extraction_service,
+    )
+
+    result = await chat_service.send_message("Remember that I work best in the morning")
+
+    assert result["response"] == "Rex response"
+    assert len(extraction_service.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_chat_service_does_not_extract_memory_when_ai_fails():
+    memory_service = FakeMemoryService()
+    extraction_service = FakeMemoryExtractionService()
+    chat_service = ChatService(
+        FailingAIService(),
+        FileService(),
+        memory_service,
+        extraction_service,
+    )
+
+    with pytest.raises(RuntimeError):
+        await chat_service.send_message("Hello Rex")
+
+    assert memory_service.conversations == {"conversation-1"}
+    assert [message["role"] for message in memory_service.messages] == ["user"]
+    assert memory_service.long_term_memory == []
+    assert extraction_service.calls == []
+
+
+@pytest.mark.asyncio
+async def test_supabase_memory_requires_configuration():
+    memory_service = SupabaseMemoryService(
+        Settings(
+            supabase_url=None,
+            supabase_service_role_key=None,
+        )
+    )
+
+    with pytest.raises(MemoryServiceError) as error:
+        await memory_service.create_conversation()
+
+    assert error.value.detail == "Supabase memory is not configured."

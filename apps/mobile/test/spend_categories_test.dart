@@ -1,0 +1,76 @@
+import 'package:clarity/features/transactions/domain/spend_categories.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  test('known merchants use deterministic fallback categories', () {
+    expect(
+      suggestCategoryFromDescription(
+        'DUNKIN #304654 12/31 MOBILE PURCHASE SOMERVILLE MA',
+        amount: -4.55,
+      ),
+      'Coffee / Quick Food',
+    );
+    expect(
+      suggestCategoryFromDescription(
+        'TST* BOM DOUGH 02/28 MOBILE PURCHASE CAMBRIDGE MA',
+        amount: -2.94,
+      ),
+      'Coffee / Quick Food',
+    );
+    expect(
+      suggestCategoryFromDescription(
+        'DOLLARTREE 01/08 MOBILE PURCHASE SOMERVILLE MA',
+        amount: -14.08,
+      ),
+      'Shopping',
+    );
+    expect(
+      suggestCategoryFromDescription(
+        'PEARL ST MARKET 02/28 MOBILE PURCHASE SOMERVILLE MA',
+        amount: -6.48,
+      ),
+      'Grocery / Supermarket',
+    );
+    expect(
+      suggestCategoryFromDescription(
+        'BKOFAMERICA ATM 03/02 #XXXXX6083 WITHDRWL EAST CAMBRIDGE MA',
+        amount: -10,
+      ),
+      'Cash Withdrawal',
+    );
+  });
+
+  test('negative purchases are not categorized as income', () {
+    expect(
+      suggestCategoryFromDescription(
+        'TST* BOM DOUGH - ONE CAN 02/27 MOBILE PURCHASE Cambridge MA',
+        amount: -4,
+      ),
+      isNot(startsWith('Income')),
+    );
+    expect(
+      suggestCategoryFromDescription(
+        'INDN:MARTINS PEDRO DES:PAYROLL',
+        amount: -100,
+      ),
+      'Uncategorized',
+    );
+  });
+
+  test('positive payroll and zelle income remain income', () {
+    expect(
+      suggestCategoryFromDescription(
+        'INDN:MARTINS PEDRO DES:PAYROLL',
+        amount: 1200,
+      ),
+      'Income / Payroll',
+    );
+    expect(
+      suggestCategoryFromDescription(
+        'Zelle payment from MARCELLA GODOY SILVA',
+        amount: 50,
+      ),
+      'Income / Zelle Received',
+    );
+  });
+}
