@@ -2,9 +2,14 @@ import AppKit
 import Foundation
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+let sourceURL = root.appendingPathComponent("apps/mobile/assets/brand/clarity_source_logo.png")
 
-func color(_ red: CGFloat, _ green: CGFloat, _ blue: CGFloat, _ alpha: CGFloat = 1) -> NSColor {
-    NSColor(calibratedRed: red / 255, green: green / 255, blue: blue / 255, alpha: alpha)
+guard let sourceImage = NSImage(contentsOf: sourceURL) else {
+    throw NSError(
+        domain: "IconGeneration",
+        code: 1,
+        userInfo: [NSLocalizedDescriptionKey: "Could not load source logo at \(sourceURL.path)"]
+    )
 }
 
 func ensureDirectory(_ url: URL) throws {
@@ -16,8 +21,19 @@ func writePNG(_ png: Data, to url: URL) throws {
     try png.write(to: url)
 }
 
-func pngData(size: Int, includeBackground: Bool = true) throws -> Data {
-    guard let bitmap = NSBitmapImageRep(
+func drawSourceImage(in bounds: NSRect) {
+    NSColor.clear.setFill()
+    bounds.fill()
+    sourceImage.draw(
+        in: bounds,
+        from: NSRect(origin: .zero, size: sourceImage.size),
+        operation: .sourceOver,
+        fraction: 1.0
+    )
+}
+
+func bitmap(size: Int) throws -> NSBitmapImageRep {
+    guard let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil,
         pixelsWide: size,
         pixelsHigh: size,
@@ -31,83 +47,58 @@ func pngData(size: Int, includeBackground: Bool = true) throws -> Data {
     ) else {
         throw NSError(domain: "IconGeneration", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not create bitmap"])
     }
+    rep.size = NSSize(width: size, height: size)
+    return rep
+}
 
-    bitmap.size = NSSize(width: size, height: size)
-    guard let context = NSGraphicsContext(bitmapImageRep: bitmap) else {
+func sourcePNGData(size: Int, transparentMark: Bool = false) throws -> Data {
+    let rep = try bitmap(size: size)
+    guard let context = NSGraphicsContext(bitmapImageRep: rep) else {
         throw NSError(domain: "IconGeneration", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not create graphics context"])
     }
 
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = context
-    drawDiamond(in: NSRect(x: 0, y: 0, width: size, height: size), includeBackground: includeBackground)
+    drawSourceImage(in: NSRect(x: 0, y: 0, width: size, height: size))
     NSGraphicsContext.restoreGraphicsState()
 
-    guard let png = bitmap.representation(using: .png, properties: [:]) else {
+    if transparentMark {
+        applyLogoMask(to: rep)
+    }
+
+    guard let png = rep.representation(using: .png, properties: [:]) else {
         throw NSError(domain: "IconGeneration", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not encode PNG"])
     }
     return png
 }
 
-func drawDiamond(in bounds: NSRect, includeBackground: Bool) {
-    if includeBackground {
-        let background = NSGradient(colorsAndLocations:
-            (color(4, 10, 23), 0.0),
-            (color(7, 18, 31), 0.48),
-            (color(5, 13, 24), 1.0)
-        )!
-        background.draw(in: bounds, angle: -42)
+func applyLogoMask(to rep: NSBitmapImageRep) {
+    guard let data = rep.bitmapData else { return }
+    let width = rep.pixelsWide
+    let height = rep.pixelsHigh
+    let bytesPerRow = rep.bytesPerRow
+    let samples = rep.samplesPerPixel
 
-        let centerGlow = NSGradient(colorsAndLocations:
-            (color(29, 72, 82, 0.16), 0.0),
-            (color(29, 72, 82, 0.00), 1.0)
-        )!
-        centerGlow.draw(
-            in: bounds.insetBy(dx: -bounds.width * 0.10, dy: -bounds.height * 0.08),
-            relativeCenterPosition: NSPoint(x: 0.20, y: -0.20)
-        )
-    } else {
-        NSColor.clear.setFill()
-        bounds.fill()
+    for y in 0..<height {
+        for x in 0..<width {
+            let offset = y * bytesPerRow + x * samples
+            let red = Double(data[offset])
+            let green = Double(data[offset + 1])
+            let blue = Double(data[offset + 2])
+
+            let logoScore = green - (blue * 0.55) - (red * 0.25) - 20
+            let alpha = max(0, min(1, logoScore / 30))
+            data[offset + 3] = alpha < 0.02 ? 0 : UInt8((alpha * 255).rounded())
+        }
     }
-
-    let side = bounds.width * 0.60
-    let cornerRadius = side * 0.105
-    let rect = NSRect(x: -side / 2, y: -side / 2, width: side, height: side)
-    let diamond = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
-    var transform = AffineTransform()
-    transform.translate(x: bounds.midX, y: bounds.midY)
-    transform.rotate(byDegrees: 45)
-    diamond.transform(using: transform)
-
-    let shadow = NSShadow()
-    shadow.shadowColor = color(0, 0, 0, includeBackground ? 0.34 : 0.16)
-    shadow.shadowBlurRadius = bounds.width * 0.040
-    shadow.shadowOffset = NSSize(width: 0, height: -bounds.height * 0.012)
-
-    NSGraphicsContext.saveGraphicsState()
-    shadow.set()
-    color(0, 0, 0, 0.20).setFill()
-    diamond.fill()
-    NSGraphicsContext.restoreGraphicsState()
-
-    let face = NSGradient(colorsAndLocations:
-        (color(49, 170, 128), 0.0),
-        (color(34, 143, 113), 0.52),
-        (color(29, 124, 106), 1.0)
-    )!
-    face.draw(in: diamond, angle: -78)
-
-    color(255, 255, 255, includeBackground ? 0.030 : 0.045).setStroke()
-    diamond.lineWidth = max(1, bounds.width * 0.0014)
-    diamond.stroke()
 }
 
-func png(_ size: Int, _ relativePath: String, includeBackground: Bool = true) throws {
-    let data = try pngData(size: size, includeBackground: includeBackground)
+func png(_ size: Int, _ relativePath: String, transparentMark: Bool = false) throws {
+    let data = try sourcePNGData(size: size, transparentMark: transparentMark)
     try writePNG(data, to: root.appendingPathComponent(relativePath))
 }
 
-try png(1024, "apps/mobile/assets/brand/clarity_mark.png", includeBackground: false)
+try png(1024, "apps/mobile/assets/brand/clarity_mark.png", transparentMark: true)
 try png(1024, "apps/mobile/assets/brand/clarity_app_icon.png")
 
 let iosIcons: [(Int, String)] = [
@@ -164,7 +155,7 @@ try png(512, "apps/mobile/web/icons/Icon-512.png")
 try png(192, "apps/mobile/web/icons/Icon-maskable-192.png")
 try png(512, "apps/mobile/web/icons/Icon-maskable-512.png")
 
-let icoPNG = try pngData(size: 256)
+let icoPNG = try sourcePNGData(size: 256)
 var ico = Data()
 func appendLE16(_ value: UInt16) {
     ico.append(UInt8(value & 0x00ff))
@@ -191,4 +182,4 @@ appendLE32(22)
 ico.append(icoPNG)
 try ico.write(to: root.appendingPathComponent("apps/mobile/windows/runner/resources/app_icon.ico"))
 
-print("Generated Clarity app icons.")
+print("Generated Clarity app icons from \(sourceURL.path).")
