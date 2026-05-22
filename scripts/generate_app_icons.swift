@@ -64,8 +64,8 @@ func drawDiamond(in bounds: NSRect, includeBackground: Bool) {
         bounds.fill()
     }
 
-    let side = bounds.width * 0.62
-    let cornerRadius = side * 0.105
+    let side = bounds.width * 0.68
+    let cornerRadius = side * 0.095
     let rect = NSRect(x: -side / 2, y: -side / 2, width: side, height: side)
     let diamond = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
     var transform = AffineTransform()
@@ -84,29 +84,17 @@ func drawDiamond(in bounds: NSRect, includeBackground: Bool) {
     diamond.fill()
     NSGraphicsContext.restoreGraphicsState()
 
-    let face = NSGradient(colors: [
-        color(21, 24, 86),
-        color(9, 68, 88),
-        color(47, 150, 113),
-    ])!
+    let face = NSGradient(colorsAndLocations:
+        (color(21, 24, 86), 0.0),
+        (color(9, 58, 82), 0.36),
+        (color(18, 124, 119), 0.68),
+        (color(56, 173, 131), 1.0)
+    )!
     face.draw(in: diamond, angle: -90)
 
-    NSGraphicsContext.saveGraphicsState()
-    diamond.addClip()
-    let highlight = NSGradient(colors: [
-        color(255, 255, 255, 0.16),
-        color(255, 255, 255, 0.00),
-    ])!
-    highlight.draw(
-        in: NSRect(
-            x: bounds.width * 0.20,
-            y: bounds.height * 0.55,
-            width: bounds.width * 0.60,
-            height: bounds.height * 0.24
-        ),
-        angle: -90
-    )
-    NSGraphicsContext.restoreGraphicsState()
+    color(255, 255, 255, 0.055).setStroke()
+    diamond.lineWidth = max(1, bounds.width * 0.002)
+    diamond.stroke()
 }
 
 func png(_ size: Int, _ relativePath: String, includeBackground: Bool = true) throws {
