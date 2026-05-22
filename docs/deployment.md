@@ -105,7 +105,7 @@ sudo systemctl start clarity-rex
 sudo systemctl status clarity-rex --no-pager
 ```
 
-The service binds to `127.0.0.1:8010` so it can sit beside the legacy `/opt/rex` process during migration.
+The service binds to `127.0.0.1:8011` so it can sit beside the legacy `/opt/rex` process during migration.
 
 ## Reverse Proxy
 
@@ -115,7 +115,7 @@ Use the nginx template as a starting point:
 deploy/templates/nginx-clarity-rex.conf
 ```
 
-It proxies HTTP and websocket traffic to `127.0.0.1:8010`.
+It proxies HTTP and websocket traffic to `127.0.0.1:8011`.
 
 After editing the `server_name` and TLS paths:
 
@@ -129,8 +129,8 @@ sudo systemctl reload nginx
 From the VPS:
 
 ```sh
-curl -i http://127.0.0.1:8010/
-curl -sS http://127.0.0.1:8010/ready | python3 -m json.tool
+curl -i http://127.0.0.1:8011/
+curl -sS http://127.0.0.1:8011/ready | python3 -m json.tool
 ```
 
 From your Mac, after nginx/domain is ready:
@@ -138,6 +138,8 @@ From your Mac, after nginx/domain is ready:
 ```sh
 ./scripts/vps_smoke_check.sh https://<api-domain-or-ip>
 ```
+
+If nginx/domain is not ready yet, run the smoke check on the VPS with `http://127.0.0.1:8011`, or create an SSH tunnel from your Mac first.
 
 Expected `/ready` status is `ready` once Grok, Supabase, Deepgram, Google TTS, and timezone config are set.
 

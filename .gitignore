@@ -9,6 +9,7 @@
 .env.*
 !.env.example
 !*.env.example
+/secrets/
 
 # Flutter/Dart
 **/.dart_tool/
@@ -35,4 +36,3 @@ supabase/.temp/
 
 # Local reset/export artifacts
 backups/
-
