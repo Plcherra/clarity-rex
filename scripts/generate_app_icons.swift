@@ -50,22 +50,28 @@ func pngData(size: Int, includeBackground: Bool = true) throws -> Data {
 
 func drawDiamond(in bounds: NSRect, includeBackground: Bool) {
     if includeBackground {
-        let background = NSGradient(colors: [
-            color(5, 10, 22),
-            color(10, 22, 32),
-            color(8, 14, 24),
-        ])!
+        let background = NSGradient(colorsAndLocations:
+            (color(4, 10, 23), 0.0),
+            (color(7, 18, 31), 0.48),
+            (color(5, 13, 24), 1.0)
+        )!
         background.draw(in: bounds, angle: -42)
 
-        color(255, 255, 255, 0.035).setFill()
-        NSBezierPath(ovalIn: bounds.insetBy(dx: bounds.width * 0.22, dy: bounds.height * 0.22)).fill()
+        let centerGlow = NSGradient(colorsAndLocations:
+            (color(29, 72, 82, 0.16), 0.0),
+            (color(29, 72, 82, 0.00), 1.0)
+        )!
+        centerGlow.draw(
+            in: bounds.insetBy(dx: -bounds.width * 0.10, dy: -bounds.height * 0.08),
+            relativeCenterPosition: NSPoint(x: 0.20, y: -0.20)
+        )
     } else {
         NSColor.clear.setFill()
         bounds.fill()
     }
 
-    let side = bounds.width * 0.68
-    let cornerRadius = side * 0.095
+    let side = bounds.width * 0.60
+    let cornerRadius = side * 0.105
     let rect = NSRect(x: -side / 2, y: -side / 2, width: side, height: side)
     let diamond = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
     var transform = AffineTransform()
@@ -74,9 +80,9 @@ func drawDiamond(in bounds: NSRect, includeBackground: Bool) {
     diamond.transform(using: transform)
 
     let shadow = NSShadow()
-    shadow.shadowColor = color(0, 0, 0, includeBackground ? 0.44 : 0.20)
-    shadow.shadowBlurRadius = bounds.width * 0.055
-    shadow.shadowOffset = NSSize(width: 0, height: -bounds.height * 0.018)
+    shadow.shadowColor = color(0, 0, 0, includeBackground ? 0.34 : 0.16)
+    shadow.shadowBlurRadius = bounds.width * 0.040
+    shadow.shadowOffset = NSSize(width: 0, height: -bounds.height * 0.012)
 
     NSGraphicsContext.saveGraphicsState()
     shadow.set()
@@ -85,15 +91,14 @@ func drawDiamond(in bounds: NSRect, includeBackground: Bool) {
     NSGraphicsContext.restoreGraphicsState()
 
     let face = NSGradient(colorsAndLocations:
-        (color(21, 24, 86), 0.0),
-        (color(9, 58, 82), 0.36),
-        (color(18, 124, 119), 0.68),
-        (color(56, 173, 131), 1.0)
+        (color(49, 170, 128), 0.0),
+        (color(34, 143, 113), 0.52),
+        (color(29, 124, 106), 1.0)
     )!
-    face.draw(in: diamond, angle: -90)
+    face.draw(in: diamond, angle: -78)
 
-    color(255, 255, 255, 0.055).setStroke()
-    diamond.lineWidth = max(1, bounds.width * 0.002)
+    color(255, 255, 255, includeBackground ? 0.030 : 0.045).setStroke()
+    diamond.lineWidth = max(1, bounds.width * 0.0014)
     diamond.stroke()
 }
 
