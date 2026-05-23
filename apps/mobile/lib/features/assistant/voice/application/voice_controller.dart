@@ -620,8 +620,8 @@ class VoiceController extends Notifier<VoiceState> with WidgetsBindingObserver {
             : 'Microphone access is restricted on this device.',
       MicrophonePermissionDecision.denied =>
         includeSpeechRecognition
-            ? 'Microphone and speech recognition permission are required to talk to Rex.'
-            : 'Microphone permission is required to talk to Rex.',
+            ? 'Microphone and speech recognition permission are required. Tap Try again to request access, or enable them in iOS Settings > Privacy & Security.'
+            : 'Microphone permission is required. Tap Try again to request access, or enable it in iOS Settings > Privacy & Security > Microphone.',
       MicrophonePermissionDecision.granted => '',
     };
   }

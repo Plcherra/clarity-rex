@@ -93,7 +93,15 @@ class ChatInputBar extends StatelessWidget {
                           enabled: !isLoading,
                           minLines: 1,
                           maxLines: 5,
-                          textInputAction: TextInputAction.newline,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) {
+                            final text = controller.text.trim();
+                            if (text.isNotEmpty &&
+                                !isLoading &&
+                                !hasBlockingAttachmentError) {
+                              onSend?.call();
+                            }
+                          },
                           decoration: InputDecoration(
                             hintText: 'Message Rex…',
                             border: InputBorder.none,

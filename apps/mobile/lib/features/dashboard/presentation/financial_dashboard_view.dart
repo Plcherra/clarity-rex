@@ -8,6 +8,7 @@ import '../../../core/models/models.dart';
 import '../../budgets/presentation/budgets_screen.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
+import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/presentation/widgets/transaction_category_dropdown.dart';
 import 'month_detail_screen.dart';
 
@@ -40,8 +41,8 @@ Color _balanceColor(double v) {
 }
 
 String _displayCategory(Transaction transaction) {
-  final category = transaction.category?.trim();
-  if (category == null || category.isEmpty) return 'Unknown';
+  final category = spendGroupLabel(transaction).trim();
+  if (category.isEmpty) return 'Unknown';
   return category;
 }
 

@@ -39,7 +39,7 @@ class _HomeShellState extends State<HomeShell> {
           controller: widget.ui.importJobStatus,
           child: IndexedStack(index: _idx, children: pages),
         ),
-        floatingActionButton: widget.signOut == null
+        floatingActionButton: widget.signOut == null || _idx == 3
             ? null
             : FloatingActionButton.small(
                 heroTag: null,
