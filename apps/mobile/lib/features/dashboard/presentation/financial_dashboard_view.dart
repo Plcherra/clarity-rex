@@ -46,6 +46,16 @@ String _displayCategory(Transaction transaction) {
   return category;
 }
 
+bool _isSpendCategoryTransaction(Transaction transaction) {
+  final category = _displayCategory(transaction);
+  if (isUnresolvedCategoryLabel(category) ||
+      isIncomeCategoryLabel(category) ||
+      isIgnoredCategoryLabel(category)) {
+    return false;
+  }
+  return transaction.amount < 0;
+}
+
 DateTime? _latestTransactionDate(List<Transaction> transactions) {
   DateTime? latest;
   for (final transaction in transactions) {
@@ -56,9 +66,42 @@ DateTime? _latestTransactionDate(List<Transaction> transactions) {
   return latest;
 }
 
+DateTimeRange? _transactionDateBounds(List<Transaction> transactions) {
+  DateTime? earliest;
+  DateTime? latest;
+  for (final transaction in transactions) {
+    final date = transaction.date;
+    if (earliest == null || date.isBefore(earliest)) earliest = date;
+    if (latest == null || date.isAfter(latest)) latest = date;
+  }
+  if (earliest == null || latest == null) return null;
+  return DateTimeRange(start: earliest, end: latest);
+}
+
+DateTimeRange _monthRange(DateTime date) {
+  return DateTimeRange(
+    start: DateTime(date.year, date.month),
+    end: DateTime(date.year, date.month + 1, 0),
+  );
+}
+
 String _yearMonthLabel(DateTime date) {
   final month = date.month.toString().padLeft(2, '0');
   return formatYearMonthLabel('${date.year}-$month');
+}
+
+String _dateLabel(DateTime date) {
+  return '${_monthAbbreviations[date.month - 1]} ${date.day}, ${date.year}';
+}
+
+String _dateRangeLabel(DateTimeRange range) {
+  if (range.start.year == range.end.year &&
+      range.start.month == range.end.month &&
+      range.start.day == 1 &&
+      range.end.day == DateTime(range.end.year, range.end.month + 1, 0).day) {
+    return _yearMonthLabel(range.start);
+  }
+  return '${_dateLabel(range.start)} - ${_dateLabel(range.end)}';
 }
 
 String _shortDate(DateTime date) {
@@ -71,9 +114,10 @@ String _normalizeSearchText(String text) {
 
 String _timeLabel(_TransactionsTimeFilter filter) {
   return switch (filter) {
-    _TransactionsTimeFilter.all => 'All time',
-    _TransactionsTimeFilter.latestMonth => 'Latest month',
-    _TransactionsTimeFilter.latestYear => 'Latest year',
+    _TransactionsTimeFilter.all => 'All history',
+    _TransactionsTimeFilter.dashboardMonth => 'Dashboard month',
+    _TransactionsTimeFilter.latestTransactionMonth => 'Latest tx month',
+    _TransactionsTimeFilter.latestTransactionYear => 'Latest tx year',
   };
 }
 
@@ -489,7 +533,12 @@ class _CompactUploadButtonState extends State<_CompactUploadButton> {
 
 enum _TransactionsViewMode { months, categories, rows }
 
-enum _TransactionsTimeFilter { all, latestMonth, latestYear }
+enum _TransactionsTimeFilter {
+  all,
+  dashboardMonth,
+  latestTransactionMonth,
+  latestTransactionYear,
+}
 
 enum _TransactionsSortMode { newest, oldest, largest, merchant }
 
@@ -606,7 +655,7 @@ class _DashboardTransactionsSectionState
 
   List<Transaction> get _filteredTransactions {
     final query = _normalizeSearchText(_searchController.text);
-    final latest = _latestTransactionDate(_transactions);
+    final range = _activeDateRange;
     final accountsById = {for (final account in _accounts) account.id: account};
     final filtered = _transactions.where((t) {
       if (_categoryFilter != null && _displayCategory(t) != _categoryFilter) {
@@ -617,7 +666,7 @@ class _DashboardTransactionsSectionState
           t.accountId != _accountFilter) {
         return false;
       }
-      if (!_matchesTimeFilter(t, latest)) return false;
+      if (!_matchesTimeFilter(t, range)) return false;
       if (query.isNotEmpty && !_matchesSearch(t, query, accountsById)) {
         return false;
       }
@@ -639,13 +688,53 @@ class _DashboardTransactionsSectionState
     return filtered;
   }
 
-  bool _matchesTimeFilter(Transaction t, DateTime? latest) {
-    if (latest == null) return true;
+  DateTimeRange? get _activeDateRange {
+    final latest = _latestTransactionDate(_transactions);
     return switch (_timeFilter) {
-      _TransactionsTimeFilter.all => true,
-      _TransactionsTimeFilter.latestMonth =>
-        t.date.year == latest.year && t.date.month == latest.month,
-      _TransactionsTimeFilter.latestYear => t.date.year == latest.year,
+      _TransactionsTimeFilter.all => null,
+      _TransactionsTimeFilter.dashboardMonth => _monthRange(
+        widget.controller.spendReference,
+      ),
+      _TransactionsTimeFilter.latestTransactionMonth =>
+        latest == null ? null : _monthRange(latest),
+      _TransactionsTimeFilter.latestTransactionYear =>
+        latest == null
+            ? null
+            : DateTimeRange(
+                start: DateTime(latest.year),
+                end: DateTime(latest.year, 12, 31),
+              ),
+    };
+  }
+
+  bool _matchesTimeFilter(Transaction t, DateTimeRange? range) {
+    if (range == null) return true;
+    final date = DateTime(t.date.year, t.date.month, t.date.day);
+    final start = DateTime(
+      range.start.year,
+      range.start.month,
+      range.start.day,
+    );
+    final end = DateTime(range.end.year, range.end.month, range.end.day);
+    return !date.isBefore(start) && !date.isAfter(end);
+  }
+
+  String get _activeDateRangeDescription {
+    if (_timeFilter == _TransactionsTimeFilter.all) {
+      final bounds = _transactionDateBounds(_transactions);
+      if (bounds == null) return 'No imported history';
+      return 'History: ${_dateRangeLabel(bounds)}';
+    }
+    final range = _activeDateRange;
+    if (range == null) return _timeLabel(_timeFilter);
+    return switch (_timeFilter) {
+      _TransactionsTimeFilter.all => 'All history',
+      _TransactionsTimeFilter.dashboardMonth =>
+        'Dashboard month: ${_dateRangeLabel(range)}',
+      _TransactionsTimeFilter.latestTransactionMonth =>
+        'Latest transaction month: ${_dateRangeLabel(range)}',
+      _TransactionsTimeFilter.latestTransactionYear =>
+        'Latest transaction year: ${_dateRangeLabel(range)}',
     };
   }
 
@@ -671,6 +760,7 @@ class _DashboardTransactionsSectionState
   List<String> get _categoryOptions {
     final names = <String>{};
     for (final transaction in _transactions) {
+      if (!_isSpendCategoryTransaction(transaction)) continue;
       names.add(_displayCategory(transaction));
     }
     final sorted = names.toList()
@@ -693,6 +783,7 @@ class _DashboardTransactionsSectionState
   List<_CategoryTransactionGroup> get _categoryGroups {
     final byCategory = <String, List<Transaction>>{};
     for (final transaction in _filteredTransactions) {
+      if (!_isSpendCategoryTransaction(transaction)) continue;
       byCategory
           .putIfAbsent(_displayCategory(transaction), () => [])
           .add(transaction);
@@ -807,10 +898,10 @@ class _DashboardTransactionsSectionState
 
   String _sectionSubtitle(int filteredCount) {
     if (_activeFilterCount == 0 && _mode == _TransactionsViewMode.months) {
-      return 'Tap a month to review transactions';
+      return 'Tap a month to review transactions | $_activeDateRangeDescription';
     }
     final count = _transactions.length;
-    return '$filteredCount of $count transactions';
+    return '$filteredCount of $count transactions | $_activeDateRangeDescription';
   }
 }
 

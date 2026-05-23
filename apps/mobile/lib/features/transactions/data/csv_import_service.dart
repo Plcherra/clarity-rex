@@ -80,6 +80,10 @@ class CsvImportResult {
     required this.aiErrorMessage,
     required this.spendReference,
     required this.diagnostics,
+    this.aiCategorizedCount = 0,
+    this.learnedRuleCategorizedCount = 0,
+    this.deterministicFallbackCategorizedCount = 0,
+    this.categoryUpdateFailureCount = 0,
   });
 
   final String accountId;
@@ -93,6 +97,10 @@ class CsvImportResult {
   final String? aiErrorMessage;
   final DateTime spendReference;
   final CsvParseDiagnostics? diagnostics;
+  final int aiCategorizedCount;
+  final int learnedRuleCategorizedCount;
+  final int deterministicFallbackCategorizedCount;
+  final int categoryUpdateFailureCount;
 }
 
 class CsvImportProgress {
@@ -108,9 +116,11 @@ class CsvImportProgress {
       CsvImportProgress(
         stage: CsvImportStage.complete,
         value: 1,
-        message: result.aiSucceeded
-            ? 'Import complete.'
-            : 'Imported transactions with fallback categories.',
+        message: result.categoryUpdateFailureCount > 0
+            ? 'Imported with category assignment errors.'
+            : result.fallbackCategoryCount > 0
+            ? 'Imported transactions; some need category review.'
+            : 'Import complete.',
         result: result,
       );
 
@@ -301,11 +311,18 @@ class CsvImportService {
       var aiSucceeded = true;
       String? aiErrorMessage;
       var fallbackCategoryCount = 0;
+      var aiCategorizedCount = 0;
+      var learnedRuleCategorizedCount = 0;
+      var deterministicFallbackCategorizedCount = 0;
+      var categoryUpdateFailureCount = 0;
       var suggestedCategoryByTransactionId = <String, String>{};
 
       if (insertedRecords.isNotEmpty) {
         final ruleCategoryByTransactionId = await _learnedCategoryNamesFor(
           insertedRecords,
+        );
+        learnedRuleCategorizedCount = _resolvedSuggestionCount(
+          ruleCategoryByTransactionId,
         );
         final recordsNeedingAi = insertedRecords
             .where(
@@ -356,6 +373,13 @@ class CsvImportService {
             suggestions.addAll(result.suggestions);
             if (result.error != null) {
               aiErrors.add(result.error!);
+              deterministicFallbackCategorizedCount += _resolvedSuggestionCount(
+                result.suggestions,
+              );
+            } else {
+              aiCategorizedCount += _resolvedSuggestionCount(
+                result.suggestions,
+              );
             }
             completed += 1;
             yield CsvImportProgress(
@@ -390,6 +414,7 @@ class CsvImportService {
           aiSucceeded = false;
           aiErrorMessage ??= '$error';
           fallbackCategoryCount = insertedRecords.length;
+          categoryUpdateFailureCount = insertedRecords.length;
         }
       }
 
@@ -405,6 +430,11 @@ class CsvImportService {
         aiErrorMessage: aiErrorMessage,
         spendReference: spendReference,
         diagnostics: parsed.diagnostics,
+        aiCategorizedCount: aiCategorizedCount,
+        learnedRuleCategorizedCount: learnedRuleCategorizedCount,
+        deterministicFallbackCategorizedCount:
+            deterministicFallbackCategorizedCount,
+        categoryUpdateFailureCount: categoryUpdateFailureCount,
       );
       if (refreshAfterImport != null) {
         yield const CsvImportProgress(
@@ -577,6 +607,14 @@ class CsvImportService {
       );
     }
     return fallbackCategoryCount;
+  }
+
+  int _resolvedSuggestionCount(Map<String, String> suggestions) {
+    var count = 0;
+    for (final categoryName in suggestions.values) {
+      if (!isUnresolvedCategoryLabel(categoryName)) count += 1;
+    }
+    return count;
   }
 
   Future<List<String>> _allowedCategoryNamesForAi() async {

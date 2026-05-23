@@ -140,6 +140,10 @@ void main() {
       expect(result.aiSucceeded, isFalse);
       expect(result.aiErrorMessage, contains('AI unavailable'));
       expect(result.fallbackCategoryCount, 1);
+      expect(result.aiCategorizedCount, 0);
+      expect(result.learnedRuleCategorizedCount, 0);
+      expect(result.deterministicFallbackCategorizedCount, 2);
+      expect(result.categoryUpdateFailureCount, 0);
       expect(
         harness.createdInputs.every(
           (transaction) => transaction.categoryId == 'cat-unknown',
@@ -242,6 +246,7 @@ void main() {
       expect(result, isNotNull);
       expect(result!.aiSucceeded, isTrue);
       expect(result.fallbackCategoryCount, 3);
+      expect(result.aiCategorizedCount, 1);
       expect(harness.categoryUpdates, hasLength(1));
 
       final idsByCategoryId = {
@@ -312,6 +317,9 @@ void main() {
     expect(result!.insertedCount, 2);
     expect(result.aiSucceeded, isTrue);
     expect(result.fallbackCategoryCount, 0);
+    expect(result.learnedRuleCategorizedCount, 2);
+    expect(result.aiCategorizedCount, 0);
+    expect(result.deterministicFallbackCategorizedCount, 0);
     expect(harness.categorizeRequestSizes, isEmpty);
     expect(harness.categoryUpdates, hasLength(1));
     expect(harness.categoryUpdates.single.categoryId, 'cat-coffee');
@@ -376,6 +384,7 @@ void main() {
     expect(result.aiSucceeded, isFalse);
     expect(result.aiErrorMessage, contains('bulk update failed'));
     expect(result.fallbackCategoryCount, 2);
+    expect(result.categoryUpdateFailureCount, 2);
     expect(
       harness.createdInputs.every(
         (transaction) => transaction.categoryId == 'cat-unknown',

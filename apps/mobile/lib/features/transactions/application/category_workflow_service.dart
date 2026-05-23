@@ -58,7 +58,7 @@ class CategoryWorkflowService {
   Future<CategoryAssignmentResult> setCategoryOverride(
     Transaction transaction,
     String category, {
-    bool applyToSimilarMerchants = true,
+    bool applyToSimilarMerchants = false,
   }) async {
     return _assignCategoryAndLearnMerchantRule(
       transaction: transaction,
@@ -132,7 +132,7 @@ class CategoryWorkflowService {
   Future<CategoryAssignmentResult> createCategoryAndAssign(
     Transaction transaction,
     String rawName, {
-    bool applyToSimilarMerchants = true,
+    bool applyToSimilarMerchants = false,
   }) async {
     final name = rawName.trim();
     if (name.isEmpty || name.toLowerCase() == 'uncategorized') {

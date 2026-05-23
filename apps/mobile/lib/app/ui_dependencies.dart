@@ -165,6 +165,8 @@ final class DashboardUiController extends _UiController {
 
   AppUiDependencies get ui => _ui;
 
+  DateTime get spendReference => bindings.dashboardService.spendReference;
+
   Future<DashboardSnapshot> buildSnapshot(DashboardScope scope) async {
     final accounts = await fetchAccounts();
     final allTransactions = await fetchTransactions();
@@ -293,7 +295,7 @@ final class TransactionUiController extends _UiController {
   Future<CategoryAssignmentResult> setCategoryOverride(
     Transaction transaction,
     String category, {
-    bool applyToSimilarMerchants = true,
+    bool applyToSimilarMerchants = false,
   }) {
     return bindings.categoryWorkflowService.setCategoryOverride(
       transaction,
@@ -319,7 +321,7 @@ final class TransactionUiController extends _UiController {
   Future<CategoryAssignmentResult> createCategoryAndAssign(
     Transaction transaction,
     String rawName, {
-    bool applyToSimilarMerchants = true,
+    bool applyToSimilarMerchants = false,
   }) {
     return bindings.categoryWorkflowService.createCategoryAndAssign(
       transaction,

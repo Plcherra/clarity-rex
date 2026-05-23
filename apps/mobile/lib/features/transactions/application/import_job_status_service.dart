@@ -25,18 +25,43 @@ class ImportJobStatusService {
       case CsvImportStage.complete:
         importRunning = false;
         final result = progress.result;
-        final usedFallback = result != null && result.fallbackCategoryCount > 0;
-        importSnackMessage = result == null || result.aiSucceeded
-            ? 'Import complete.'
-            : 'Imported ${result.insertedCount} transactions. AI failed; fallback categories were applied.';
-        persistentImportMessage = result == null
-            ? null
-            : !result.aiSucceeded || usedFallback
-            ? 'Imported ${result.insertedCount} transactions. Some rows used fallback categories.'
-            : null;
-        persistentImportMessageIsError =
-            result != null && (!result.aiSucceeded || usedFallback);
-        persistentImportMessageHasFallbackCategories = usedFallback;
+        if (result == null) {
+          importSnackMessage = 'Import complete.';
+          persistentImportMessage = null;
+          persistentImportMessageIsError = false;
+          persistentImportMessageHasFallbackCategories = false;
+        } else if (result.categoryUpdateFailureCount > 0) {
+          importSnackMessage =
+              'Imported ${result.insertedCount} transactions, but category assignment failed.';
+          persistentImportMessage =
+              'Imported ${result.insertedCount} transactions, but ${result.categoryUpdateFailureCount} need category assignment retry.';
+          persistentImportMessageIsError = true;
+          persistentImportMessageHasFallbackCategories = true;
+        } else if (result.insertedCount == 0) {
+          importSnackMessage = result.skippedDuplicateCount > 0
+              ? 'No new transactions imported. ${result.skippedDuplicateCount} duplicates skipped.'
+              : 'No new transactions imported.';
+          persistentImportMessage = null;
+          persistentImportMessageIsError = false;
+          persistentImportMessageHasFallbackCategories = false;
+        } else if (result.fallbackCategoryCount > 0) {
+          importSnackMessage =
+              'Imported ${result.insertedCount} transactions. ${result.fallbackCategoryCount} need category review.';
+          persistentImportMessage =
+              'Imported ${result.insertedCount} transactions. ${result.fallbackCategoryCount} still need category review.';
+          persistentImportMessageIsError = false;
+          persistentImportMessageHasFallbackCategories = true;
+        } else {
+          final localCategoryCount =
+              result.learnedRuleCategorizedCount +
+              result.deterministicFallbackCategorizedCount;
+          importSnackMessage = localCategoryCount > 0
+              ? 'Imported ${result.insertedCount} transactions. Categorized all; $localCategoryCount used local rules.'
+              : 'Imported ${result.insertedCount} transactions. Categorized all transactions.';
+          persistentImportMessage = null;
+          persistentImportMessageIsError = false;
+          persistentImportMessageHasFallbackCategories = false;
+        }
       case CsvImportStage.failed:
         importRunning = false;
         importSnackMessage = progress.message;
