@@ -1304,11 +1304,11 @@ class VoiceCallController extends Notifier<VoiceCallState>
   String _permissionMessage(MicrophonePermissionDecision decision) {
     return switch (decision) {
       MicrophonePermissionDecision.permanentlyDenied =>
-        'Microphone permission is blocked. Enable it in Settings to call Rex.',
+        'Microphone permission is blocked. Enable it in iOS Settings > Privacy & Security > Microphone to call Rex.',
       MicrophonePermissionDecision.restricted =>
         'Microphone access is restricted on this device.',
       MicrophonePermissionDecision.denied =>
-        'Microphone permission is required to call Rex.',
+        'Microphone permission is required to call Rex. Tap Try again to prompt access, or enable it in iOS Settings > Privacy & Security > Microphone.',
       MicrophonePermissionDecision.granted => '',
     };
   }

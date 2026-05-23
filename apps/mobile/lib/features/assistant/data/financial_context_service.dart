@@ -20,16 +20,12 @@ final class AssistantFinancialContextService {
 
   Future<Map<String, dynamic>> buildSummary() async {
     const scope = GlobalDashboardScope();
-    final snapshot = await ui.dashboard.buildSnapshot(scope);
-    final budgetPerformance = await ui.dashboard.budgetPerformanceForScope(
-      scope,
-    );
-    final accounts = await ui.accounts.fetchAccounts();
-    final categories = await ui.transactions.bindings.categoryService
-        .fetchCategories();
-    final budgets = await ui.budgets.budgetService.fetchBudgets();
-    final transactions = await ui.transactions.bindings.transactionService
-        .fetchTransactions();
+    final snapshot = await _safeDashboardSnapshot(scope);
+    final budgetPerformance = await _safeBudgetPerformance(scope);
+    final accounts = await _safeAccounts();
+    final categories = await _safeCategories();
+    final budgets = await _safeBudgets();
+    final transactions = await _safeTransactions();
     final dates = transactions.map((transaction) => transaction.date).toList()
       ..sort();
     final accountById = {for (final account in accounts) account.id: account};
@@ -109,6 +105,59 @@ final class AssistantFinancialContextService {
           ),
       ],
     };
+  }
+
+  Future<DashboardSnapshot> _safeDashboardSnapshot(DashboardScope scope) async {
+    try {
+      return await ui.dashboard.buildSnapshot(scope);
+    } on Object {
+      return DashboardSnapshot.empty;
+    }
+  }
+
+  Future<BudgetPerformanceSnapshot> _safeBudgetPerformance(
+    DashboardScope scope,
+  ) async {
+    try {
+      return await ui.dashboard.budgetPerformanceForScope(scope);
+    } on Object {
+      return BudgetPerformanceSnapshot.empty(
+        periodType: BudgetPeriod.monthly,
+        periodKey: _monthKey(ui.budgets.spendReference),
+      );
+    }
+  }
+
+  Future<List<Account>> _safeAccounts() async {
+    try {
+      return await ui.accounts.fetchAccounts();
+    } on Object {
+      return const [];
+    }
+  }
+
+  Future<List<CategoryRecord>> _safeCategories() async {
+    try {
+      return await ui.transactions.bindings.categoryService.fetchCategories();
+    } on Object {
+      return const [];
+    }
+  }
+
+  Future<List<BudgetRecord>> _safeBudgets() async {
+    try {
+      return await ui.budgets.budgetService.fetchBudgets();
+    } on Object {
+      return const [];
+    }
+  }
+
+  Future<List<TransactionRecord>> _safeTransactions() async {
+    try {
+      return await ui.transactions.bindings.transactionService.fetchTransactions();
+    } on Object {
+      return const [];
+    }
   }
 
   Map<String, dynamic> _accountContext(Account account) {
