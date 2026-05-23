@@ -111,7 +111,16 @@ final class AssistantFinancialContextService {
     try {
       return await ui.dashboard.buildSnapshot(scope);
     } on Object {
-      return DashboardSnapshot.empty;
+      return const DashboardSnapshot(
+        totalBalance: 0,
+        spentThisMonth: 0,
+        incomeThisMonth: 0,
+        availableThisMonth: 0,
+        topCategories: [],
+        biggestLeaksThisMonth: [],
+        burnRunwayDays: null,
+        monthlyGroups: [],
+      );
     }
   }
 
@@ -121,9 +130,16 @@ final class AssistantFinancialContextService {
     try {
       return await ui.dashboard.budgetPerformanceForScope(scope);
     } on Object {
-      return BudgetPerformanceSnapshot.empty(
-        periodType: BudgetPeriod.monthly,
+      return BudgetPerformanceSnapshot(
+        periodType: BudgetPeriodType.monthly,
         periodKey: _monthKey(ui.budgets.spendReference),
+        periodLabel: _monthKey(ui.budgets.spendReference),
+        totalBudgeted: 0,
+        totalSpent: 0,
+        budgetedCategoryCount: 0,
+        onTrackCategoryCount: 0,
+        totalOverspent: 0,
+        topOverspendingCategories: const [],
       );
     }
   }
