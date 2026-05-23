@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/models/account.dart';
+import '../../../core/models/transaction.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../budgets/domain/budget_models.dart';
 import '../../dashboard/domain/dashboard_snapshot.dart';
+import '../../transactions/domain/spend_categories.dart';
 
 final assistantFinancialContextServiceProvider =
     Provider<AssistantFinancialContextService?>((ref) => null);
@@ -26,11 +28,17 @@ final class AssistantFinancialContextService {
     final categories = await _safeCategories();
     final budgets = await _safeBudgets();
     final transactions = await _safeTransactions();
+    final resolvedTransactions = await _safeResolvedTransactions();
     final dates = transactions.map((transaction) => transaction.date).toList()
       ..sort();
     final accountById = {for (final account in accounts) account.id: account};
     final categoryById = {
       for (final category in categories) category.id: category,
+    };
+    final resolvedByRecordId = {
+      for (final transaction in resolvedTransactions)
+        if (transaction.fingerprint != null)
+          transaction.fingerprint!: transaction,
     };
 
     return {
@@ -102,6 +110,7 @@ final class AssistantFinancialContextService {
             transaction,
             accountById: accountById,
             categoryById: categoryById,
+            resolvedByRecordId: resolvedByRecordId,
           ),
       ],
     };
@@ -170,7 +179,16 @@ final class AssistantFinancialContextService {
 
   Future<List<TransactionRecord>> _safeTransactions() async {
     try {
-      return await ui.transactions.bindings.transactionService.fetchTransactions();
+      return await ui.transactions.bindings.transactionService
+          .fetchTransactions();
+    } on Object {
+      return const [];
+    }
+  }
+
+  Future<List<Transaction>> _safeResolvedTransactions() async {
+    try {
+      return await ui.transactions.fetchTransactions();
     } on Object {
       return const [];
     }
@@ -215,9 +233,14 @@ final class AssistantFinancialContextService {
     TransactionRecord transaction, {
     required Map<String, Account> accountById,
     required Map<String, CategoryRecord> categoryById,
+    required Map<String, Transaction> resolvedByRecordId,
   }) {
     final account = accountById[transaction.accountId];
-    final category = categoryById[transaction.categoryId];
+    final storedCategory = categoryById[transaction.categoryId];
+    final resolvedTransaction = resolvedByRecordId[transaction.id];
+    final resolvedCategory = resolvedTransaction == null
+        ? null
+        : spendGroupLabel(resolvedTransaction).trim();
     return {
       'id': transaction.id,
       'date': _dateOnly(transaction.date),
@@ -225,8 +248,14 @@ final class AssistantFinancialContextService {
       if (account != null) 'account_name': account.name,
       if (account != null) 'account_type': account.type.name,
       if (transaction.categoryId != null) 'category_id': transaction.categoryId,
-      if (category != null) 'category_name': category.name,
+      if (resolvedCategory != null && resolvedCategory.isNotEmpty)
+        'category_name': resolvedCategory
+      else if (storedCategory != null)
+        'category_name': storedCategory.name,
+      if (storedCategory != null) 'stored_category_name': storedCategory.name,
       'amount': _money(transaction.amount),
+      if (resolvedTransaction != null)
+        'signed_amount': _money(resolvedTransaction.amount),
       'type': transaction.type,
       if (transaction.description != null)
         'description': transaction.description,

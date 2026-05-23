@@ -30,7 +30,10 @@ final class CategoryReadModel extends ChangeNotifier {
         name: name,
         normalizedName: category.normalizedName,
       );
-      if (name.isEmpty || builtIns.contains(key) || seen.contains(key)) {
+      if (name.isEmpty ||
+          isUnresolvedCategoryLabel(name) ||
+          builtIns.contains(key) ||
+          seen.contains(key)) {
         continue;
       }
       seen.add(key);

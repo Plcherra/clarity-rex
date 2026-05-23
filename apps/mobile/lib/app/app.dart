@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/presentation/auth_screen.dart';
+import '../features/assistant/data/financial_context_service.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/shell/presentation/home_shell.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
@@ -105,6 +106,11 @@ final class ClarityApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
+      overrides: [
+        assistantFinancialContextServiceProvider.overrideWithValue(
+          AssistantFinancialContextService(ui),
+        ),
+      ],
       child: ListenableBuilder(
         listenable: authController,
         builder: (context, _) {

@@ -11,6 +11,7 @@ class VoiceCallControls extends StatelessWidget {
     required this.onToggleMute,
     required this.onInterrupt,
     required this.onRetry,
+    required this.onOpenSettings,
   });
 
   final VoiceCallState state;
@@ -19,6 +20,7 @@ class VoiceCallControls extends StatelessWidget {
   final VoidCallback onToggleMute;
   final VoidCallback onInterrupt;
   final VoidCallback onRetry;
+  final VoidCallback onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +46,12 @@ class VoiceCallControls extends StatelessWidget {
               icon: const Icon(Icons.call_end_rounded),
               label: const Text('End'),
             ),
+          ),
+          const SizedBox(width: 12),
+          IconButton.outlined(
+            onPressed: onOpenSettings,
+            icon: const Icon(Icons.settings_rounded),
+            tooltip: 'Open app settings',
           ),
         ],
       );

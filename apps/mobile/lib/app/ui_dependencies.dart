@@ -438,6 +438,9 @@ final class BudgetUiController extends _UiController {
   List<String> get customCategories =>
       bindings.categoryReadModel.customCategories;
 
+  List<String> get allowedCategoryPickerLabels =>
+      bindings.categoryReadModel.allowedCategoryPickerLabels;
+
   Map<String, String> get categoryDisplayRenames =>
       bindings.categoryReadModel.categoryDisplayRenames;
 

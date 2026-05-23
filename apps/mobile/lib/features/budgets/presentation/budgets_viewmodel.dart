@@ -4,6 +4,7 @@ import '../../../app/ui_dependencies.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../dashboard/domain/dashboard_snapshot.dart';
+import '../../transactions/domain/spend_categories.dart';
 import '../domain/budget_models.dart';
 
 class BudgetCategoryRow {
@@ -108,15 +109,25 @@ class BudgetsViewModel {
     final budgets = await _fetchBudgetsForPeriod(periodType, periodKey);
     final labelsByKey = <String, String>{};
 
+    for (final label in controller.allowedCategoryPickerLabels) {
+      final trimmed = label.trim();
+      if (trimmed.isEmpty || isUnresolvedCategoryLabel(trimmed)) continue;
+      labelsByKey.putIfAbsent(trimmed.toLowerCase(), () => trimmed);
+    }
+
     for (final entry in spentByDisplay.entries) {
       final label = entry.key.trim();
-      if (label.isEmpty || entry.value.abs() < 1e-9) continue;
+      if (label.isEmpty ||
+          isUnresolvedCategoryLabel(label) ||
+          entry.value.abs() < 1e-9) {
+        continue;
+      }
       labelsByKey.putIfAbsent(label.toLowerCase(), () => label);
     }
 
     for (final budget in budgets) {
       final label = budget.name.trim();
-      if (label.isEmpty) continue;
+      if (label.isEmpty || isUnresolvedCategoryLabel(label)) continue;
       labelsByKey.putIfAbsent(label.toLowerCase(), () => label);
     }
 

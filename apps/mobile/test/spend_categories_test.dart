@@ -1,4 +1,5 @@
 import 'package:clarity/features/transactions/domain/spend_categories.dart';
+import 'package:clarity/core/models/transaction.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -72,5 +73,17 @@ void main() {
       ),
       'Income / Zelle Received',
     );
+  });
+
+  test('stored Unknown category falls through to deterministic category', () {
+    final transaction = Transaction(
+      date: DateTime(2026, 3, 2),
+      description: 'TST* BOM DOUGH 02/28 MOBILE PURCHASE CAMBRIDGE MA',
+      amount: -2.94,
+      accountId: 'account-1',
+      categoryId: 'Unknown',
+    );
+
+    expect(spendGroupLabel(transaction), 'Coffee / Quick Food');
   });
 }

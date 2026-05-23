@@ -86,6 +86,7 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage> {
                   controller.interruptAndListen(reason: 'Rex was interrupted.');
                 },
                 onRetry: controller.startCall,
+                onOpenSettings: controller.openVoiceSettings,
               ),
             ],
           ),

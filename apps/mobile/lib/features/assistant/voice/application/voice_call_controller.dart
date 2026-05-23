@@ -509,6 +509,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _clearVisibleTranscript();
   }
 
+  Future<void> openVoiceSettings() async {
+    await ref.read(microphonePermissionProvider).openSettings();
+  }
+
   void reset() {
     _callGeneration++;
     _cancelThinkingTimeout();

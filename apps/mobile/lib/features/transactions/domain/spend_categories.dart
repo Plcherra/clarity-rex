@@ -1,4 +1,5 @@
 import '../../../core/models/models.dart';
+import '../../categories/domain/category_normalization.dart';
 import 'merchant_normalization.dart';
 
 /// System category for returned / reversed / NSF lines (not in normal picker or budgets).
@@ -6,6 +7,14 @@ const String kIgnoredCategoryLabel = 'Ignored';
 
 bool isIgnoredCategoryLabel(String label) =>
     label.trim().toLowerCase() == kIgnoredCategoryLabel.toLowerCase();
+
+bool isUnresolvedCategoryLabel(String label) {
+  final normalized = label.trim().toLowerCase();
+  return normalized.isEmpty ||
+      normalized == kUnknownCategoryName.toLowerCase() ||
+      normalized == 'uncategorized' ||
+      normalized == 'other';
+}
 
 bool _descWordMatch(String haystackLower, String wordLower) {
   return RegExp(
@@ -202,7 +211,8 @@ String? _trySuggestIncomeTransfersAndPayments(
 }) {
   bool has(String needle) => haystackLower.contains(needle);
   final isOutflow = amount != null && amount < 0;
-  if (!isOutflow && _haystackContainsAny(haystackLower, incomePayrollKeywords)) {
+  if (!isOutflow &&
+      _haystackContainsAny(haystackLower, incomePayrollKeywords)) {
     return 'Income / Payroll';
   }
   if (!isOutflow &&
@@ -320,6 +330,7 @@ List<String> categoryPickerCanonicals({
     final k = c.trim().toLowerCase();
     if (k.isEmpty) return false;
     if (isIgnoredCategoryLabel(c)) return false;
+    if (isUnresolvedCategoryLabel(c)) return false;
     return !hiddenLower.contains(k);
   }
 
@@ -385,7 +396,7 @@ String spendGroupLabel(
   Map<String, String>? merchantCategoryMemory,
 }) {
   final saved = t.categoryId?.trim();
-  if (saved != null && saved.isNotEmpty) {
+  if (saved != null && saved.isNotEmpty && !isUnresolvedCategoryLabel(saved)) {
     return saved;
   }
   final key = transactionCategoryKey(t);
@@ -414,8 +425,7 @@ String spendGroupLabel(
   }
   final raw = t.category?.trim();
   if (raw != null && raw.isNotEmpty) {
-    final o = raw.toLowerCase();
-    if (o == 'uncategorized' || o == 'other') {
+    if (isUnresolvedCategoryLabel(raw)) {
       return suggested;
     }
     return raw;
