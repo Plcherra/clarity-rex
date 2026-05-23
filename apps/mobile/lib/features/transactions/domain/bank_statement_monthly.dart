@@ -97,6 +97,37 @@ List<MonthlyBankGroup> monthlyGroupsFromTransactions(
   return out;
 }
 
+List<MonthlyBankGroup> monthlyGroupsFromResolvedTransactions(
+  List<ResolvedTransaction> transactions,
+) {
+  final byMonth = <String, List<BankStatementLine>>{};
+  for (final resolved in transactions) {
+    final transaction = resolved.transaction;
+    if (!isBankStatementDataRow(transaction)) continue;
+    final key = _yearMonthKey(transaction.date);
+    byMonth
+        .putIfAbsent(key, () => [])
+        .add(
+          BankStatementLine(
+            transaction: transaction,
+            suggestedCategory: resolved.displayCategory,
+          ),
+        );
+  }
+
+  final keys = byMonth.keys.toList()..sort();
+  final out = <MonthlyBankGroup>[];
+  for (final key in keys) {
+    final lines = List<BankStatementLine>.from(byMonth[key]!);
+    lines.sort((a, b) => a.transaction.date.compareTo(b.transaction.date));
+    final total = lines.fold<double>(0, (sum, e) => sum + e.transaction.amount);
+    out.add(
+      MonthlyBankGroup(yearMonth: key, totalAmount: total, transactions: lines),
+    );
+  }
+  return out;
+}
+
 /// Reads a bank CSV, then groups via [monthlyGroupsFromTransactions].
 ///
 /// Prefer parsing once with [parseBankCsv] and calling

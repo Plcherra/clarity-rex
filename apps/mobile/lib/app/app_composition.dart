@@ -139,6 +139,7 @@ final class AppComposition {
         dashboardService: dashboardService,
         importJobStatusService: importJobStatusService,
         refreshCategories: categoryReadModel.refresh,
+        categoryNameForId: categoryReadModel.categoryNameForId,
         refreshAllState: dashboardRefreshCoordinator.refreshAllState,
         recomputeDashboard: _syncDashboardAfterTransactionWorkflow,
         notifyTransactionDataChanged: () =>

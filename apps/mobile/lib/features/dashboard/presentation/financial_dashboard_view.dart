@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import '../../../app/ui_dependencies.dart';
 import '../../budgets/domain/budget_models.dart';
 import '../domain/dashboard_snapshot.dart';
+import '../domain/dashboard_transaction_groups.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
 import '../../budgets/presentation/budgets_screen.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../transactions/domain/spend_categories.dart';
+import '../../transactions/domain/transaction_resolution.dart';
 import '../../transactions/presentation/widgets/transaction_category_dropdown.dart';
 import 'month_detail_screen.dart';
 
@@ -40,20 +42,20 @@ Color _balanceColor(double v) {
   return const Color(0xFF3A3A38);
 }
 
-String _displayCategory(Transaction transaction) {
-  final category = spendGroupLabel(transaction).trim();
+String _displayCategory(ResolvedTransaction transaction) {
+  final category = transaction.displayCategory.trim();
   if (category.isEmpty) return 'Unknown';
   return category;
 }
 
-bool _isSpendCategoryTransaction(Transaction transaction) {
+bool _isSpendCategoryTransaction(ResolvedTransaction transaction) {
   final category = _displayCategory(transaction);
   if (isUnresolvedCategoryLabel(category) ||
       isIncomeCategoryLabel(category) ||
       isIgnoredCategoryLabel(category)) {
     return false;
   }
-  return transaction.amount < 0;
+  return transaction.countsAsSpend;
 }
 
 DateTime? _latestTransactionDate(List<Transaction> transactions) {
@@ -567,6 +569,7 @@ class _DashboardTransactionsSectionState
   String? _categoryFilter;
   String? _accountFilter;
   List<Transaction> _transactions = const [];
+  List<Transaction> _allTransactions = const [];
   List<Account> _accounts = const [];
   Object? _error;
   var _loading = true;
@@ -615,12 +618,14 @@ class _DashboardTransactionsSectionState
     try {
       final transactions = await widget.controller
           .transactionsForDashboardScope(widget.scope);
-      final accounts = _isAccountScope
-          ? const <Account>[]
-          : await widget.controller.fetchAccounts();
+      final allTransactions = _isAccountScope
+          ? await widget.controller.fetchTransactions()
+          : transactions;
+      final accounts = await widget.controller.fetchAccounts();
       if (!mounted) return;
       setState(() {
         _transactions = transactions;
+        _allTransactions = allTransactions;
         _accounts = accounts;
         _loading = false;
       });
@@ -653,12 +658,24 @@ class _DashboardTransactionsSectionState
     });
   }
 
-  List<Transaction> get _filteredTransactions {
+  List<ResolvedTransaction> get _resolvedTransactions {
+    return resolveTransactions(
+      _transactions,
+      categoryOverrides: const {},
+      categoryDisplayRenamesLower: widget.controller.categoryDisplayRenames,
+      accountsById: {for (final account in _accounts) account.id: account},
+      allTransactions: _allTransactions,
+    );
+  }
+
+  List<ResolvedTransaction> get _filteredTransactions {
     final query = _normalizeSearchText(_searchController.text);
     final range = _activeDateRange;
     final accountsById = {for (final account in _accounts) account.id: account};
-    final filtered = _transactions.where((t) {
-      if (_categoryFilter != null && _displayCategory(t) != _categoryFilter) {
+    final filtered = _resolvedTransactions.where((resolved) {
+      final t = resolved.transaction;
+      if (_categoryFilter != null &&
+          _displayCategory(resolved) != _categoryFilter) {
         return false;
       }
       if (!_isAccountScope &&
@@ -667,7 +684,7 @@ class _DashboardTransactionsSectionState
         return false;
       }
       if (!_matchesTimeFilter(t, range)) return false;
-      if (query.isNotEmpty && !_matchesSearch(t, query, accountsById)) {
+      if (query.isNotEmpty && !_matchesSearch(resolved, query, accountsById)) {
         return false;
       }
       return true;
@@ -675,14 +692,19 @@ class _DashboardTransactionsSectionState
 
     filtered.sort((a, b) {
       return switch (_sortMode) {
-        _TransactionsSortMode.newest => b.date.compareTo(a.date),
-        _TransactionsSortMode.oldest => a.date.compareTo(b.date),
-        _TransactionsSortMode.largest => b.amount.abs().compareTo(
-          a.amount.abs(),
+        _TransactionsSortMode.newest => b.transaction.date.compareTo(
+          a.transaction.date,
         ),
-        _TransactionsSortMode.merchant => a.description.toLowerCase().compareTo(
-          b.description.toLowerCase(),
+        _TransactionsSortMode.oldest => a.transaction.date.compareTo(
+          b.transaction.date,
         ),
+        _TransactionsSortMode.largest => b.transaction.amount.abs().compareTo(
+          a.transaction.amount.abs(),
+        ),
+        _TransactionsSortMode.merchant =>
+          a.transaction.description.toLowerCase().compareTo(
+            b.transaction.description.toLowerCase(),
+          ),
       };
     });
     return filtered;
@@ -739,14 +761,15 @@ class _DashboardTransactionsSectionState
   }
 
   bool _matchesSearch(
-    Transaction transaction,
+    ResolvedTransaction resolved,
     String query,
     Map<String, Account> accountsById,
   ) {
+    final transaction = resolved.transaction;
     final account = accountsById[transaction.accountId];
     final haystack = [
       transaction.description,
-      _displayCategory(transaction),
+      _displayCategory(resolved),
       _yearMonthLabel(transaction.date),
       _shortDate(transaction.date),
       formatMoney(transaction.amount),
@@ -759,7 +782,7 @@ class _DashboardTransactionsSectionState
 
   List<String> get _categoryOptions {
     final names = <String>{};
-    for (final transaction in _transactions) {
+    for (final transaction in _resolvedTransactions) {
       if (!_isSpendCategoryTransaction(transaction)) continue;
       names.add(_displayCategory(transaction));
     }
@@ -773,30 +796,13 @@ class _DashboardTransactionsSectionState
   }
 
   List<MonthlyBankGroup> get _monthGroups {
-    return monthlyBankGroupsNewestFirstForScopedTransactions(
+    return monthlyBankGroupsNewestFirstForResolvedTransactions(
       _filteredTransactions,
-      categoryOverrides: const {},
-      categoryDisplayRenamesLower: const {},
     );
   }
 
-  List<_CategoryTransactionGroup> get _categoryGroups {
-    final byCategory = <String, List<Transaction>>{};
-    for (final transaction in _filteredTransactions) {
-      if (!_isSpendCategoryTransaction(transaction)) continue;
-      byCategory
-          .putIfAbsent(_displayCategory(transaction), () => [])
-          .add(transaction);
-    }
-    final groups = byCategory.entries
-        .map((entry) => _CategoryTransactionGroup(entry.key, entry.value))
-        .toList();
-    groups.sort((a, b) {
-      if (a.category == 'Unknown') return -1;
-      if (b.category == 'Unknown') return 1;
-      return b.spending.compareTo(a.spending);
-    });
-    return groups;
+  List<DashboardCategoryTransactionGroup> get _categoryGroups {
+    return spendingCategoryGroupsForResolvedTransactions(_filteredTransactions);
   }
 
   @override
@@ -1157,24 +1163,13 @@ class _PopupFilterChip<T> extends StatelessWidget {
   }
 }
 
-class _CategoryTransactionGroup {
-  const _CategoryTransactionGroup(this.category, this.transactions);
-
-  final String category;
-  final List<Transaction> transactions;
-
-  double get spending => transactions
-      .where((t) => t.amount < 0)
-      .fold<double>(0, (sum, t) => sum + t.amount.abs());
-}
-
 class _CategoryGroupsList extends StatelessWidget {
   const _CategoryGroupsList({
     required this.groups,
     required this.onCategorySelected,
   });
 
-  final List<_CategoryTransactionGroup> groups;
+  final List<DashboardCategoryTransactionGroup> groups;
   final ValueChanged<String> onCategorySelected;
 
   @override
@@ -1199,7 +1194,7 @@ class _CategoryGroupsList extends StatelessWidget {
 class _CategoryGroupCard extends StatelessWidget {
   const _CategoryGroupCard({required this.group, required this.onTap});
 
-  final _CategoryTransactionGroup group;
+  final DashboardCategoryTransactionGroup group;
   final VoidCallback onTap;
 
   @override
@@ -1242,7 +1237,7 @@ class _CategoryGroupCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${group.transactions.length} transactions',
+                        '${group.transactionCount} transactions',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: cs.onSurface.withValues(alpha: 0.45),
                         ),
@@ -1250,14 +1245,27 @@ class _CategoryGroupCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Text(
-                  formatMoney(group.spending),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: group.spending > 0
-                        ? const Color(0xFF9B2C2C)
-                        : cs.onSurface,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      group.amountLabel,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.45),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      formatMoney(group.spending),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: group.spending > 0
+                            ? const Color(0xFF9B2C2C)
+                            : cs.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 6),
                 Icon(
@@ -1273,7 +1281,7 @@ class _CategoryGroupCard extends StatelessWidget {
   }
 }
 
-class _InlineTransactionsList extends StatelessWidget {
+class _InlineTransactionsList extends StatefulWidget {
   const _InlineTransactionsList({
     required this.transactions,
     required this.controller,
@@ -1281,39 +1289,85 @@ class _InlineTransactionsList extends StatelessWidget {
     required this.showAccount,
   });
 
-  static const _maxRows = 80;
-
-  final List<Transaction> transactions;
+  final List<ResolvedTransaction> transactions;
   final TransactionUiController controller;
   final Map<String, Account> accountsById;
   final bool showAccount;
 
   @override
+  State<_InlineTransactionsList> createState() =>
+      _InlineTransactionsListState();
+}
+
+class _InlineTransactionsListState extends State<_InlineTransactionsList> {
+  static const _pageSize = 80;
+
+  var _visibleCount = _pageSize;
+
+  @override
+  void didUpdateWidget(covariant _InlineTransactionsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_listSignature(oldWidget.transactions) !=
+        _listSignature(widget.transactions)) {
+      _visibleCount = _pageSize;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (transactions.isEmpty) {
+    if (widget.transactions.isEmpty) {
       return const _InlineEmptyState(message: 'No transactions match.');
     }
-    final visible = transactions.take(_maxRows).toList();
+    final visible = widget.transactions.take(_visibleCount).toList();
+    final remaining = widget.transactions.length - visible.length;
+    final nextCount = remaining < _pageSize ? remaining : _pageSize;
     return Column(
       children: [
         for (var i = 0; i < visible.length; i++) ...[
           if (i > 0) const SizedBox(height: 10),
           _InlineTransactionCard(
             transaction: visible[i],
-            controller: controller,
-            account: accountsById[visible[i].accountId],
-            showAccount: showAccount,
+            controller: widget.controller,
+            account: widget.accountsById[visible[i].transaction.accountId],
+            showAccount: widget.showAccount,
           ),
         ],
-        if (transactions.length > visible.length) ...[
+        if (remaining > 0) ...[
           const SizedBox(height: 12),
-          _InlineEmptyState(
-            message:
-                'Showing ${visible.length} of ${transactions.length}. Use search or filters to narrow the list.',
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _visibleCount += _pageSize;
+                });
+              },
+              icon: const Icon(Icons.unfold_more_rounded),
+              label: Text(
+                'Show $nextCount more (${visible.length} of ${widget.transactions.length})',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                side: const BorderSide(color: Color(0xFFD8D1C5)),
+              ),
+            ),
           ),
         ],
       ],
     );
+  }
+
+  String _listSignature(List<ResolvedTransaction> transactions) {
+    if (transactions.isEmpty) return 'empty';
+    final first = transactions.first.transaction;
+    final last = transactions.last.transaction;
+    return [
+      transactions.length,
+      first.fingerprint ?? transactionCategoryKey(first),
+      last.fingerprint ?? transactionCategoryKey(last),
+    ].join('|');
   }
 }
 
@@ -1325,7 +1379,7 @@ class _InlineTransactionCard extends StatelessWidget {
     required this.showAccount,
   });
 
-  final Transaction transaction;
+  final ResolvedTransaction transaction;
   final TransactionUiController controller;
   final Account? account;
   final bool showAccount;
@@ -1334,9 +1388,10 @@ class _InlineTransactionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final amountColor = transaction.amount < 0
+    final rawTransaction = transaction.transaction;
+    final amountColor = rawTransaction.amount < 0
         ? const Color(0xFFC41E3A)
-        : transaction.amount > 0
+        : rawTransaction.amount > 0
         ? const Color(0xFF1B7A4C)
         : cs.onSurface;
 
@@ -1354,7 +1409,7 @@ class _InlineTransactionCard extends StatelessWidget {
           SizedBox(
             width: 52,
             child: Text(
-              _shortDate(transaction.date),
+              _shortDate(rawTransaction.date),
               style: theme.textTheme.labelLarge?.copyWith(
                 color: cs.onSurface.withValues(alpha: 0.42),
                 fontWeight: FontWeight.w700,
@@ -1367,7 +1422,7 @@ class _InlineTransactionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  transaction.description,
+                  rawTransaction.description,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyLarge?.copyWith(
@@ -1387,7 +1442,7 @@ class _InlineTransactionCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 TransactionCategoryField(
                   controller: controller,
-                  transaction: transaction,
+                  transaction: rawTransaction,
                   displayCategory: _displayCategory(transaction),
                 ),
               ],
@@ -1395,7 +1450,7 @@ class _InlineTransactionCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            formatMoney(transaction.amount),
+            formatMoney(rawTransaction.amount),
             style: theme.textTheme.titleSmall?.copyWith(
               color: amountColor,
               fontWeight: FontWeight.w700,

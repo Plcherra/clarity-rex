@@ -167,6 +167,9 @@ final class DashboardUiController extends _UiController {
 
   DateTime get spendReference => bindings.dashboardService.spendReference;
 
+  Map<String, String> get categoryDisplayRenames =>
+      bindings.categoryReadModel.categoryDisplayRenames;
+
   Future<DashboardSnapshot> buildSnapshot(DashboardScope scope) async {
     final accounts = await fetchAccounts();
     final allTransactions = await fetchTransactions();
@@ -252,7 +255,10 @@ final class DashboardUiController extends _UiController {
     );
     final key = transactionCategoryKey(transaction);
     for (final record in records) {
-      final current = _transactionFromRecord(record);
+      final current = _transactionFromRecord(
+        record,
+        categoryNameForId: bindings.categoryReadModel.categoryNameForId,
+      );
       if (transactionCategoryKey(current) == key) {
         await bindings.transactionService.deleteTransaction(record.id);
         notifyChanged();

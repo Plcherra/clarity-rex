@@ -84,7 +84,10 @@ class CategoryWorkflowService {
       final records = await transactionService.fetchTransactions();
       for (final record in records) {
         transactionIdsByKey[transactionCategoryKey(
-              _transactionFromRecord(record),
+              _transactionFromRecord(
+                record,
+                categoryNameForId: categoryReadModel.categoryNameForId,
+              ),
             )] =
             record.id;
       }
@@ -270,7 +273,13 @@ class CategoryWorkflowService {
     );
     final targetKey = transactionCategoryKey(transaction);
     for (final record in records) {
-      if (transactionCategoryKey(_transactionFromRecord(record)) == targetKey) {
+      if (transactionCategoryKey(
+            _transactionFromRecord(
+              record,
+              categoryNameForId: categoryReadModel.categoryNameForId,
+            ),
+          ) ==
+          targetKey) {
         return record;
       }
     }
@@ -295,7 +304,10 @@ List<String> matchingMerchantTransactionIds({
   return ids;
 }
 
-Transaction _transactionFromRecord(TransactionRecord record) {
+Transaction _transactionFromRecord(
+  TransactionRecord record, {
+  String? Function(String? id)? categoryNameForId,
+}) {
   final amount = switch (record.type.trim().toLowerCase()) {
     'expense' => -record.amount.abs(),
     'income' => record.amount.abs(),
@@ -306,7 +318,7 @@ Transaction _transactionFromRecord(TransactionRecord record) {
     description: record.description ?? record.merchant ?? '',
     amount: amount,
     accountId: record.accountId,
-    categoryId: record.categoryId,
+    categoryId: categoryNameForId?.call(record.categoryId),
     importId: record.importId ?? (record.importedFromCsv ? 'csv' : null),
     fingerprint: record.id,
     financialRole: record.type.trim().toLowerCase() == 'income'

@@ -33,6 +33,13 @@ List<MonthlyBankGroup> monthlyBankGroupsNewestFirstForScopedTransactions(
   return grouped.reversed.toList();
 }
 
+List<MonthlyBankGroup> monthlyBankGroupsNewestFirstForResolvedTransactions(
+  List<ResolvedTransaction> scopedTransactions,
+) {
+  final grouped = monthlyGroupsFromResolvedTransactions(scopedTransactions);
+  return grouped.reversed.toList();
+}
+
 class DashboardSnapshot {
   const DashboardSnapshot({
     required this.totalBalance,

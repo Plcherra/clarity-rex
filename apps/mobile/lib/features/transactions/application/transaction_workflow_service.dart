@@ -25,6 +25,7 @@ class TransactionWorkflowService {
     required this.dashboardService,
     required this.importJobStatusService,
     required this.refreshCategories,
+    required this.categoryNameForId,
     required this.refreshAllState,
     required this.recomputeDashboard,
     required this.notifyTransactionDataChanged,
@@ -36,6 +37,7 @@ class TransactionWorkflowService {
   final DashboardService dashboardService;
   final ImportJobStatusService importJobStatusService;
   final Future<void> Function() refreshCategories;
+  final String? Function(String? id) categoryNameForId;
   final Future<void> Function() refreshAllState;
   final TransactionDashboardRecompute recomputeDashboard;
   final void Function() notifyTransactionDataChanged;
@@ -150,7 +152,10 @@ class TransactionWorkflowService {
         ? transaction.fingerprint!
         : transactionCategoryKey(transaction);
     for (final record in records) {
-      final current = _transactionFromRecord(record);
+      final current = _transactionFromRecord(
+        record,
+        categoryNameForId: categoryNameForId,
+      );
       final key = current.fingerprint?.trim().isNotEmpty == true
           ? current.fingerprint!
           : transactionCategoryKey(current);
@@ -163,11 +168,21 @@ class TransactionWorkflowService {
     final records = await transactionService.fetchTransactions(
       accountId: accountId,
     );
-    return records.map(_transactionFromRecord).toList();
+    return records
+        .map(
+          (record) => _transactionFromRecord(
+            record,
+            categoryNameForId: categoryNameForId,
+          ),
+        )
+        .toList();
   }
 }
 
-Transaction _transactionFromRecord(TransactionRecord record) {
+Transaction _transactionFromRecord(
+  TransactionRecord record, {
+  String? Function(String? id)? categoryNameForId,
+}) {
   final amount = switch (record.type.trim().toLowerCase()) {
     'expense' => -record.amount.abs(),
     'income' => record.amount.abs(),
@@ -178,7 +193,7 @@ Transaction _transactionFromRecord(TransactionRecord record) {
     description: record.description ?? record.merchant ?? '',
     amount: amount,
     accountId: record.accountId,
-    categoryId: record.categoryId,
+    categoryId: categoryNameForId?.call(record.categoryId),
     importId: record.importId ?? (record.importedFromCsv ? 'csv' : null),
     fingerprint: record.id,
     financialRole: record.type.trim().toLowerCase() == 'income'
