@@ -73,6 +73,14 @@ final voiceCallThinkingTimeoutProvider = Provider<Duration>(
   (ref) => const Duration(seconds: 45),
 );
 
+final voiceCallTranscriptIdleTimeoutProvider = Provider<Duration>(
+  (ref) => const Duration(milliseconds: 2200),
+);
+
+final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(
+  (ref) => const Duration(seconds: 8),
+);
+
 class VoiceCallController extends Notifier<VoiceCallState>
     with WidgetsBindingObserver {
   int _callGeneration = 0;
@@ -95,6 +103,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _isAppInForeground = true;
   var _isUsingNativeVoice = false;
   Timer? _thinkingTimeoutTimer;
+  Timer? _listeningEndpointTimer;
 
   @override
   VoiceCallState build() {
@@ -104,6 +113,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       WidgetsBinding.instance.removeObserver(this);
       _callGeneration++;
       _cancelThinkingTimeout();
+      _cancelListeningEndpointTimeout();
       final captureService = _activeCaptureService;
       final playbackService = _activePlaybackService;
       final streamingPlaybackQueue = _activeStreamingPlaybackQueue;
@@ -263,6 +273,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       currentTranscript: transcript,
       clearError: true,
     );
+    _armSpeechStartedEndpointTimeout(_callGeneration);
   }
 
   void updateTranscript(String transcript, {bool isFinal = false}) {
@@ -281,6 +292,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       currentTranscript: _visibleTranscript(),
       clearError: true,
     );
+    _armTranscriptIdleEndpointTimeout(_callGeneration);
   }
 
   void endpointUtterance() {
@@ -289,6 +301,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     state = state.copyWith(phase: VoiceCallPhase.thinking, clearError: true);
+    _cancelListeningEndpointTimeout();
     _armThinkingTimeout(_callGeneration);
   }
 
@@ -298,6 +311,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     state = state.copyWith(phase: VoiceCallPhase.thinking, clearError: true);
+    _cancelListeningEndpointTimeout();
     _armThinkingTimeout(_callGeneration);
   }
 
@@ -315,6 +329,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       currentTranscript: _visibleTranscript(),
       clearError: true,
     );
+    _cancelListeningEndpointTimeout();
     _armThinkingTimeout(_callGeneration);
   }
 
@@ -351,6 +366,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
     _callGeneration++;
     _cancelThinkingTimeout();
+    _cancelListeningEndpointTimeout();
     if (_isUsingNativeVoice) {
       unawaited(_nativeVoiceSessionService.interrupt());
       state = state.copyWith(
@@ -382,6 +398,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     final generation = ++_callGeneration;
     _cancelThinkingTimeout();
+    _cancelListeningEndpointTimeout();
     if (_isUsingNativeVoice) {
       unawaited(_nativeVoiceSessionService.interrupt());
       state = state.copyWith(
@@ -424,6 +441,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     if (isMuted) {
       _callGeneration++;
       _cancelThinkingTimeout();
+      _cancelListeningEndpointTimeout();
       unawaited(_captureService.cancel());
       unawaited(_streamingCaptureService.cancel());
       _stopBargeInMonitoring();
@@ -452,6 +470,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       clearError: true,
     );
     _cancelThinkingTimeout();
+    _cancelListeningEndpointTimeout();
     _clearVisibleTranscript();
     if (_isUsingNativeVoice) {
       unawaited(_nativeVoiceSessionService.interrupt());
@@ -463,6 +482,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   void fail(String message) {
     _callGeneration++;
     _cancelThinkingTimeout();
+    _cancelListeningEndpointTimeout();
     _stopNativeVoiceSession();
     unawaited(_captureService.cancel());
     unawaited(_streamingCaptureService.cancel());
@@ -489,6 +509,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     _callGeneration++;
     _cancelThinkingTimeout();
+    _cancelListeningEndpointTimeout();
     _stopNativeVoiceSession();
     unawaited(_captureService.cancel());
     unawaited(_streamingCaptureService.cancel());
@@ -516,6 +537,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   void reset() {
     _callGeneration++;
     _cancelThinkingTimeout();
+    _cancelListeningEndpointTimeout();
     _stopNativeVoiceSession();
     unawaited(_captureService.cancel());
     unawaited(_streamingCaptureService.cancel());
@@ -713,6 +735,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     if (state.phase == VoiceCallPhase.listening) {
       _cancelThinkingTimeout();
     }
+    _cancelListeningEndpointTimeout();
     if (!_isCurrentCall(generation) ||
         state.phase != VoiceCallPhase.listening ||
         state.isMuted) {
@@ -1170,6 +1193,59 @@ class VoiceCallController extends Notifier<VoiceCallState>
   void _cancelThinkingTimeout() {
     _thinkingTimeoutTimer?.cancel();
     _thinkingTimeoutTimer = null;
+  }
+
+  void _armTranscriptIdleEndpointTimeout(int generation) {
+    if (_activeStreamingSession == null || _visibleTranscript().isEmpty) {
+      return;
+    }
+    _armListeningEndpointTimeout(
+      generation,
+      ref.read(voiceCallTranscriptIdleTimeoutProvider),
+    );
+  }
+
+  void _armSpeechStartedEndpointTimeout(int generation) {
+    if (_activeStreamingSession == null) {
+      return;
+    }
+    _armListeningEndpointTimeout(
+      generation,
+      ref.read(voiceCallSpeechStartTimeoutProvider),
+    );
+  }
+
+  void _armListeningEndpointTimeout(int generation, Duration timeout) {
+    _listeningEndpointTimer?.cancel();
+    if (timeout <= Duration.zero) {
+      return;
+    }
+    _listeningEndpointTimer = Timer(timeout, () {
+      _forceEndStreamingUtterance(generation);
+    });
+  }
+
+  void _cancelListeningEndpointTimeout() {
+    _listeningEndpointTimer?.cancel();
+    _listeningEndpointTimer = null;
+  }
+
+  void _forceEndStreamingUtterance(int generation) {
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.listening ||
+        state.isMuted) {
+      return;
+    }
+
+    final streamingSession = _activeStreamingSession;
+    if (streamingSession == null) {
+      return;
+    }
+
+    unawaited(_streamingCaptureService.cancel());
+    endpointUtterance();
+    streamingSession.endUtterance();
   }
 
   void _recoverFromStuckThinking(int generation) {
