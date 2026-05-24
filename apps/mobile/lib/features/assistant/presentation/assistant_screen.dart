@@ -17,70 +17,93 @@ class AssistantScreen extends StatelessWidget {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Assistant'),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: IconButton.filledTonal(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (context) => const ConversationListPage(),
+        body: SafeArea(
+          top: true,
+          bottom: false,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Assistant',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: scheme.onSurface,
+                        ),
+                      ),
                     ),
-                  );
-                },
-                icon: const Icon(Icons.forum_outlined),
-                tooltip: 'Conversations',
-              ),
-            ),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(52),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TabBar(
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                dividerColor: Colors.transparent,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
-                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(999),
+                    IconButton.filledTonal(
+                      style: IconButton.styleFrom(
+                        fixedSize: const Size.square(44),
+                        minimumSize: const Size.square(44),
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (context) => const ConversationListPage(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.forum_outlined, size: 24),
+                      tooltip: 'Conversations',
+                    ),
+                  ],
                 ),
-                labelColor: scheme.onSurface,
-                unselectedLabelColor: scheme.onSurfaceVariant,
-                labelStyle: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-                tabs: const [
-                  Tab(
-                    icon: Icon(Icons.chat_bubble_outline_rounded),
-                    text: 'Chat',
-                  ),
-                  Tab(icon: Icon(Icons.graphic_eq_rounded), text: 'Voice'),
-                  Tab(
-                    icon: Icon(Icons.psychology_alt_outlined),
-                    text: 'Memory',
-                  ),
-                  Tab(icon: Icon(Icons.flag_outlined), text: 'Goals'),
-                ],
               ),
-            ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TabBar(
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  dividerColor: Colors.transparent,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                    color: scheme.surfaceContainerHighest.withValues(
+                      alpha: 0.9,
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  labelColor: scheme.onSurface,
+                  unselectedLabelColor: scheme.onSurfaceVariant,
+                  labelStyle: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                  tabs: const [
+                    Tab(
+                      icon: Icon(Icons.chat_bubble_outline_rounded),
+                      text: 'Chat',
+                    ),
+                    Tab(icon: Icon(Icons.graphic_eq_rounded), text: 'Voice'),
+                    Tab(
+                      icon: Icon(Icons.psychology_alt_outlined),
+                      text: 'Memory',
+                    ),
+                    Tab(icon: Icon(Icons.flag_outlined), text: 'Goals'),
+                  ],
+                ),
+              ),
+              const Expanded(
+                child: TabBarView(
+                  children: [
+                    ChatPage(showAppBar: false),
+                    VoiceCallPage(
+                      autoStart: false,
+                      showAppBar: false,
+                      closeOnEnd: false,
+                    ),
+                    MemoryPage(showAppBar: false),
+                    AccountabilityPage(showAppBar: false),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ),
-        body: const TabBarView(
-          children: [
-            ChatPage(showAppBar: false),
-            VoiceCallPage(
-              autoStart: false,
-              showAppBar: false,
-              closeOnEnd: false,
-            ),
-            MemoryPage(showAppBar: false),
-            AccountabilityPage(showAppBar: false),
-          ],
         ),
       ),
     );
