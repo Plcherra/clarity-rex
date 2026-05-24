@@ -767,10 +767,21 @@ class CsvImportService {
       amount: record.amount,
     );
     if (suggested.trim().toLowerCase() == 'uncategorized') {
-      return kUnknownCategoryName;
+      return kAutomaticFallbackCategoryName;
     }
     return normalizeCategoryName(suggested)?.displayName ??
-        kUnknownCategoryName;
+        kAutomaticFallbackCategoryName;
+  }
+
+  String _automaticCategoryName(String? rawName) {
+    final name = rawName?.trim();
+    if (name == null || name.isEmpty) return kAutomaticFallbackCategoryName;
+    final normalized = normalizeCategoryName(name);
+    final displayName = normalized?.displayName;
+    if (displayName == null || isUnresolvedCategoryLabel(displayName)) {
+      return kAutomaticFallbackCategoryName;
+    }
+    return displayName;
   }
 
   Future<_CategoryApplicationResult> _applyCategories(
@@ -783,11 +794,13 @@ class CsvImportService {
         updatedTransactionCount: 0,
       );
     }
-    final categoryNames = <String>{kUnknownCategoryName};
+    final categoryNames = <String>{
+      kUnknownCategoryName,
+      kAutomaticFallbackCategoryName,
+    };
     for (final record in insertedRecords) {
-      final name = suggestedCategoryByTransactionId[record.id]?.trim();
       categoryNames.add(
-        name == null || name.isEmpty ? kUnknownCategoryName : name,
+        _automaticCategoryName(suggestedCategoryByTransactionId[record.id]),
       );
     }
     final categoryIdByName = await _ensureCategories(categoryNames);
@@ -804,10 +817,9 @@ class CsvImportService {
           'Inserted transaction is missing the Unknown fallback category.',
         );
       }
-      final name =
-          suggestedCategoryByTransactionId[record.id]?.trim() ??
-          kUnknownCategoryName;
-      final normalizedName = name.isEmpty ? kUnknownCategoryName : name;
+      final normalizedName = _automaticCategoryName(
+        suggestedCategoryByTransactionId[record.id],
+      );
       final normalizedCategory = normalizeCategoryName(normalizedName);
       final categoryId =
           categoryIdByName[normalizedCategory?.normalizedName] ??

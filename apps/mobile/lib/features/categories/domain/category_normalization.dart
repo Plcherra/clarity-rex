@@ -1,4 +1,5 @@
 const String kUnknownCategoryName = 'Unknown';
+const String kAutomaticFallbackCategoryName = 'Miscellaneous';
 
 const int _maxCategoryNameLength = 40;
 const int _minMeaningfulCategoryCharacters = 3;

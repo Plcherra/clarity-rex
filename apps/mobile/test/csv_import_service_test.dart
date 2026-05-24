@@ -46,7 +46,7 @@ void main() {
   );
 
   test(
-    'large Unknown fallback applies every inserted row in one grouped request',
+    'large automatic fallback applies every inserted row in one grouped request',
     () async {
       final harness = _CsvImportHarness(aiConfigured: false);
       final file = await _writeCsv(_csvRows(1549));
@@ -59,14 +59,16 @@ void main() {
       expect(result, isNotNull);
       expect(result!.insertedCount, 1549);
       expect(result.aiSucceeded, isFalse);
-      expect(result.fallbackCategoryCount, 1549);
+      expect(result.fallbackCategoryCount, 0);
       expect(
         harness.createdInputs.every(
           (transaction) => transaction.categoryId == 'cat-unknown',
         ),
         isTrue,
       );
-      expect(harness.categoryUpdates, isEmpty);
+      expect(harness.categoryUpdates, hasLength(1));
+      expect(harness.categoryUpdates.single.categoryId, 'cat-miscellaneous');
+      expect(harness.categoryUpdates.single.ids, hasLength(1549));
     },
   );
 
@@ -107,7 +109,7 @@ void main() {
       expect(result.insertedCount, 1500);
       expect(result.skippedDuplicateCount, 1);
       expect(result.aiSucceeded, isFalse);
-      expect(result.fallbackCategoryCount, 1500);
+      expect(result.fallbackCategoryCount, 0);
       expect(harness.createdInputs, hasLength(1500));
       expect(
         harness.createdInputs.every(
@@ -115,7 +117,8 @@ void main() {
         ),
         isTrue,
       );
-      expect(harness.categoryUpdates, isEmpty);
+      expect(harness.categoryUpdates.single.categoryId, 'cat-miscellaneous');
+      expect(harness.categoryUpdates.single.ids, hasLength(1500));
     },
   );
 
@@ -264,10 +267,10 @@ void main() {
       expect(result!.insertedCount, 3);
       expect(result.aiSucceeded, isFalse);
       expect(result.aiErrorMessage, contains('AI unavailable'));
-      expect(result.fallbackCategoryCount, 1);
+      expect(result.fallbackCategoryCount, 0);
       expect(result.aiCategorizedCount, 0);
       expect(result.learnedRuleCategorizedCount, 0);
-      expect(result.deterministicFallbackCategorizedCount, 2);
+      expect(result.deterministicFallbackCategorizedCount, 3);
       expect(result.categoryUpdateFailureCount, 0);
       expect(
         harness.createdInputs.every(
@@ -281,6 +284,7 @@ void main() {
       };
       expect(updatesByCategory['cat-pharmacy-health'], ['txn-0']);
       expect(updatesByCategory['cat-shoes-clothing'], ['txn-1']);
+      expect(updatesByCategory['cat-miscellaneous'], ['txn-2']);
     },
   );
 
@@ -348,7 +352,7 @@ void main() {
   });
 
   test(
-    'missing invalid duplicate AI suggestions fall back to Unknown',
+    'missing invalid duplicate AI suggestions fall back to Miscellaneous',
     () async {
       final harness = _CsvImportHarness(
         categorizeTransactions: (_) async => {
@@ -370,15 +374,16 @@ void main() {
       final result = events.last.result;
       expect(result, isNotNull);
       expect(result!.aiSucceeded, isTrue);
-      expect(result.fallbackCategoryCount, 3);
+      expect(result.fallbackCategoryCount, 0);
       expect(result.aiCategorizedCount, 1);
-      expect(harness.categoryUpdates, hasLength(1));
+      expect(harness.categoryUpdates, hasLength(2));
 
       final idsByCategoryId = {
         for (final update in harness.categoryUpdates)
           update.categoryId: update.ids,
       };
       expect(idsByCategoryId['cat-food'], ['txn-0']);
+      expect(idsByCategoryId['cat-miscellaneous'], ['txn-1', 'txn-2', 'txn-3']);
       expect(
         harness.createdInputs.every(
           (transaction) => transaction.categoryId == 'cat-unknown',
@@ -639,6 +644,10 @@ class _CsvImportHarness {
       name: 'Coffee / Quick Food',
     ),
     'food & drink': _categoryRecord(id: 'cat-food', name: 'Food & Drink'),
+    'miscellaneous': _categoryRecord(
+      id: 'cat-miscellaneous',
+      name: kAutomaticFallbackCategoryName,
+    ),
     'unknown': _categoryRecord(id: 'cat-unknown', name: kUnknownCategoryName),
   };
 

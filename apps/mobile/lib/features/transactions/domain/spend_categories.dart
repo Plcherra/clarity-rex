@@ -66,6 +66,7 @@ const List<String> kSelectableSpendCategories = [
   'Housing',
   'Income / Payroll',
   'Income / Zelle Received',
+  kAutomaticFallbackCategoryName,
   'Pharmacy / Health',
   'Shoes / Clothing',
   'Shopping',

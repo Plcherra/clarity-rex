@@ -12,6 +12,7 @@ const maxOpenAiAttempts = 1;
 const openAiRequestTimeoutMs = 20_000;
 const openAiMaxTokens = 12_000;
 const unknownCategoryName = "Unknown";
+const automaticFallbackCategoryName = "Miscellaneous";
 const maxCategoryNameLength = 40;
 const minMeaningfulCategoryCharacters = 3;
 const maxDescriptionLength = 80;
@@ -236,8 +237,12 @@ function normalizeSuggestionForTransaction(
     categoryName,
     rejectedCategoryCounts,
   );
+  if (normalized === unknownCategoryName) {
+    return automaticFallbackCategoryName;
+  }
   if (transaction.amount < 0 && isIncomeCategoryName(normalized)) {
-    return deterministicCategoryName(transaction) ?? unknownCategoryName;
+    return deterministicCategoryName(transaction) ??
+      automaticFallbackCategoryName;
   }
   return normalized;
 }
@@ -247,7 +252,7 @@ function fallbackCategoryNameForTransaction(
   rejectedCategoryCounts?: Map<CategoryRejectionReason, number>,
 ): string {
   const deterministic = deterministicCategoryName(transaction);
-  if (!deterministic) return unknownCategoryName;
+  if (!deterministic) return automaticFallbackCategoryName;
   return normalizeSuggestionForTransaction(
     deterministic,
     transaction,
@@ -284,7 +289,7 @@ function compactTransaction(transaction: TransactionInput) {
 function unknownSuggestions(transactions: TransactionInput[]): Suggestion[] {
   return transactions.map((transaction) => ({
     key: transaction.key,
-    categoryName: unknownCategoryName,
+    categoryName: automaticFallbackCategoryName,
   }));
 }
 
@@ -488,7 +493,7 @@ async function categorizeChunk({
 
   const system = `JSON only. Return {"s":{"KEY":"Category"}}. ` +
     `Categorize each tx. Use an allowed category if it fits; else short new category. ` +
-    `No income for negative amounts. No merchant/private data. Unsafe/unsure="${unknownCategoryName}".`;
+    `No income for negative amounts. No merchant/private data. Unsafe/unsure="${automaticFallbackCategoryName}".`;
   const user = `C:${JSON.stringify(allowedCategories)}\n` +
     `T:${JSON.stringify(aiTransactions.map(compactTransaction))}`;
 
@@ -701,7 +706,11 @@ export async function handleCategorizeTransactionsRequest(req: Request) {
   const apiKey = openAiApiKey;
 
   const allowedCategories = Array.from(
-    new Set([...requestedCategories, unknownCategoryName]),
+    new Set([
+      ...requestedCategories,
+      unknownCategoryName,
+      automaticFallbackCategoryName,
+    ]),
   );
   const categoryByNormalizedName = new Map(
     allowedCategories.map((

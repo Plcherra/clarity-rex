@@ -74,7 +74,7 @@ Deno.test("chunks large imports into smaller OpenAI calls", async () => {
   }
 });
 
-Deno.test("invalid model output is returned as Unknown for every transaction", async () => {
+Deno.test("invalid model output falls back to Miscellaneous per transaction", async () => {
   const restore = setOpenAiTestEnv();
   globalThis.fetch = async () =>
     openAiCompactJsonResponse({
@@ -89,16 +89,16 @@ Deno.test("invalid model output is returned as Unknown for every transaction", a
     assertEquals(response.status, 200);
     assertEquals(body.errors, []);
     assertEquals(body.suggestions, [
-      { key: "txn-0", categoryName: "Unknown" },
+      { key: "txn-0", categoryName: "Miscellaneous" },
       { key: "txn-1", categoryName: "Gas" },
-      { key: "txn-2", categoryName: "Unknown" },
+      { key: "txn-2", categoryName: "Miscellaneous" },
     ]);
   } finally {
     restore();
   }
 });
 
-Deno.test("failed chunks return Unknown instead of failing the whole import", async () => {
+Deno.test("failed chunks return Miscellaneous instead of failing the whole import", async () => {
   const restore = setOpenAiTestEnv();
   globalThis.fetch = async () =>
     new Response(JSON.stringify({ error: "rate limited" }), {
@@ -117,7 +117,7 @@ Deno.test("failed chunks return Unknown instead of failing the whole import", as
     assertEquals(body.suggestions.length, 120);
     assertEquals(
       body.suggestions.every((suggestion: { categoryName: string }) =>
-        suggestion.categoryName === "Unknown"
+        suggestion.categoryName === "Miscellaneous"
       ),
       true,
     );
@@ -257,7 +257,7 @@ Deno.test("missing AI suggestions use deterministic fallback when available", as
     assertEquals(body.errors, []);
     assertEquals(body.suggestions, [
       { key: "amazon", categoryName: "Subscriptions" },
-      { key: "generic", categoryName: "Unknown" },
+      { key: "generic", categoryName: "Miscellaneous" },
     ]);
   } finally {
     restore();
@@ -292,7 +292,7 @@ Deno.test("truncated AI response falls back per row", async () => {
     assertEquals(body.errors.length, 1);
     assertEquals(body.suggestions, [
       { key: "cvs", categoryName: "Pharmacy / Health" },
-      { key: "generic", categoryName: "Unknown" },
+      { key: "generic", categoryName: "Miscellaneous" },
     ]);
   } finally {
     restore();
@@ -313,7 +313,7 @@ Deno.test("negative AI income suggestions fall back safely", async () => {
     assertEquals(response.status, 200);
     assertEquals(body.errors, []);
     assertEquals(body.suggestions, [
-      { key: "txn-0", categoryName: "Unknown" },
+      { key: "txn-0", categoryName: "Miscellaneous" },
     ]);
   } finally {
     restore();
