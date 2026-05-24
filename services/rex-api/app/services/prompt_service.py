@@ -184,6 +184,10 @@ class PromptService:
         if integration:
             lines.append("- Integration: " + self._compact_json(integration))
 
+        retrieval = self._dict_value(financial_context, "retrieval")
+        if retrieval:
+            lines.append("- Retrieval: " + self._compact_json(retrieval))
+
         controls = self._dict_value(financial_context, "available_controls")
         if controls:
             lines.append("- Available controls: " + self._compact_json(controls))
@@ -283,6 +287,10 @@ class PromptService:
                 )
             )
 
+        slices = self._dict_value(financial_context, "transaction_slices")
+        if slices:
+            lines.extend(self._financial_slice_lines(slices))
+
         transactions = self._list_value(financial_context, "transactions")
         if transactions:
             lines.append(f"- Transactions ({len(transactions)}, newest first):")
@@ -293,6 +301,34 @@ class PromptService:
             )
 
         return lines
+
+    def _financial_slice_lines(self, slices: dict) -> list[str]:
+        lines: list[str] = []
+        for key, label in (
+            ("months", "Month slices"),
+            ("accounts", "Account slices"),
+            ("categories", "Category slices"),
+            ("review_queues", "Review queues"),
+        ):
+            items = self._list_value(slices, key)
+            if not items:
+                continue
+            lines.append(
+                f"- {label}: "
+                + "; ".join(
+                    self._financial_slice_summary(item)
+                    for item in items[:8]
+                    if isinstance(item, dict)
+                )
+            )
+        return lines
+
+    def _financial_slice_summary(self, item: dict) -> str:
+        return (
+            f"{item.get('label')} count={item.get('transaction_count')} "
+            f"spend={item.get('spend')} income={item.get('income')} "
+            f"net={item.get('net')} latest={item.get('latest_date')}"
+        )
 
     def _financial_increase_summary(self, item: dict) -> str:
         summary = (

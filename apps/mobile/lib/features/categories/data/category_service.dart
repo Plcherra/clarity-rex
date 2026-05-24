@@ -96,6 +96,7 @@ final class CategoryService {
     String? type,
     String? color,
     String? icon,
+    bool? hidden,
   }) async {
     final user = _currentUser;
     final payload = <String, dynamic>{};
@@ -114,6 +115,7 @@ final class CategoryService {
     if (type != null) payload['type'] = type;
     if (color != null) payload['color'] = color;
     if (icon != null) payload['icon'] = icon;
+    if (hidden != null) payload['hidden'] = hidden;
     if (payload.isEmpty) {
       throw const SupabaseDataException(
         table: 'categories',

@@ -194,7 +194,7 @@ ParseResult parseBankCsv(String input) {
         accountId: '',
         category: categoryOrNull,
         balanceAfter: balanceAfter,
-        categoryId: null,
+        categoryLabel: null,
       ),
     );
   }
@@ -459,10 +459,7 @@ List<List<dynamic>> _parseRows(String input) {
   if (semi > comma && semi >= tab) delim = ';';
   if (tab > comma && tab > semi) delim = '\t';
 
-  final converter = CsvDecoder(
-    fieldDelimiter: delim,
-    dynamicTyping: false,
-  );
+  final converter = CsvDecoder(fieldDelimiter: delim, dynamicTyping: false);
   return converter.convert(
     input.replaceAll('\r\n', '\n').replaceAll('\r', '\n'),
   );

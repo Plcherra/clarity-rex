@@ -5,9 +5,20 @@ import '../../../core/models/models.dart';
 import 'account_detail_screen.dart';
 
 class AccountsScreen extends StatefulWidget {
-  const AccountsScreen({super.key, required this.controller});
+  const AccountsScreen({
+    super.key,
+    required this.controller,
+    required this.dashboardController,
+    required this.transactionController,
+    required this.budgetController,
+    required this.importJobStatusController,
+  });
 
   final AccountUiController controller;
+  final DashboardUiController dashboardController;
+  final TransactionUiController transactionController;
+  final BudgetUiController budgetController;
+  final ImportJobStatusController importJobStatusController;
 
   @override
   State<AccountsScreen> createState() => _AccountsScreenState();
@@ -172,6 +183,11 @@ class _AccountsScreenState extends State<AccountsScreen> {
                       MaterialPageRoute<void>(
                         builder: (context) => AccountDetailScreen(
                           controller: widget.controller,
+                          dashboardController: widget.dashboardController,
+                          transactionController: widget.transactionController,
+                          budgetController: widget.budgetController,
+                          importJobStatusController:
+                              widget.importJobStatusController,
                           accountId: a.id,
                         ),
                       ),

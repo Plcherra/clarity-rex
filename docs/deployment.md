@@ -58,7 +58,8 @@ GROK_API_KEY=<server-secret>
 GROK_MODEL=grok-4.3
 DEEPGRAM_API_KEY=<server-secret>
 GOOGLE_TTS_PROJECT_ID=<project-id>
-GOOGLE_TTS_CREDENTIALS_JSON=<json-string>
+GOOGLE_APPLICATION_CREDENTIALS=/opt/clarity/secrets/service_account.json
+# Or use GOOGLE_TTS_CREDENTIALS_JSON=<raw-json-string>
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is optional. Normal user-scoped requests use the user's Supabase JWT with the anon key so RLS remains active.

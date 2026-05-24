@@ -5,7 +5,6 @@ import '../../transactions/data/csv_parser.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart' as tx_res;
 import '../domain/dashboard_metrics.dart';
-import '../domain/dashboard_snapshot.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 
 /// Derived dashboard aggregates recomputed when transactions/category state changes.
@@ -40,19 +39,6 @@ class DashboardService {
   int? burnRunwayDays;
   List<MonthlyBankGroup> monthlyGroups = const [];
 
-  List<Transaction> transactionsForDashboardScope({
-    required DashboardScope scope,
-    required List<Transaction> allTransactions,
-    required Map<String, List<Transaction>> transactionsByAccount,
-  }) {
-    return switch (scope) {
-      GlobalDashboardScope() => allTransactions,
-      AccountDashboardScope(:final accountId) => List<Transaction>.from(
-        transactionsByAccount[accountId] ?? const [],
-      ),
-    };
-  }
-
   void resetDerivedState() {
     totalBalance = 0;
     spentThisMonth = 0;
@@ -62,128 +48,6 @@ class DashboardService {
     biggestLeaksThisMonth = const [];
     burnRunwayDays = null;
     monthlyGroups = const [];
-  }
-
-  List<Transaction> refreshAllState({
-    required String? activeAccountId,
-    required List<Transaction> Function(String? accountId)
-    activeTransactionsForAccount,
-    required List<Transaction> allTransactionsForMetrics,
-    required List<Account> accounts,
-    required Map<String, String> categoryOverrides,
-    required Map<String, String> categoryDisplayRenames,
-    required List<tx_res.ResolvedTransaction> Function(
-      List<Transaction> txs, {
-      required List<Transaction> allTransactionsContext,
-    })
-    resolveTransactions,
-  }) {
-    final activeTx = activeTransactionsForAccount(activeAccountId);
-    recomputeDerivedState(
-      activeAccountTransactions: activeTx,
-      allTransactionsForMetrics: allTransactionsForMetrics,
-      transactionsForCsvDiagnostics: activeTx,
-      diag: null,
-      accounts: accounts,
-      categoryOverrides: categoryOverrides,
-      categoryDisplayRenames: categoryDisplayRenames,
-      resolveTransactions: resolveTransactions,
-    );
-    return activeTx;
-  }
-
-  bool _inRangeInclusive(DateTime d, DateTime start, DateTime end) {
-    final x = DateTime(d.year, d.month, d.day);
-    final a = DateTime(start.year, start.month, start.day);
-    final b = DateTime(end.year, end.month, end.day);
-    return (x.isAtSameMomentAs(a) || x.isAfter(a)) &&
-        (x.isAtSameMomentAs(b) || x.isBefore(b));
-  }
-
-  Map<String, double> spentByDisplayCategoryForScopeInRange({
-    required DashboardScope scope,
-    required DateTime start,
-    required DateTime end,
-    required List<Transaction> allTransactions,
-    required Map<String, List<Transaction>> transactionsByAccount,
-    required Map<String, String> categoryOverrides,
-    required Map<String, String> categoryDisplayRenames,
-    required Map<String, String> merchantCategoryMemory,
-    required List<Account> accounts,
-  }) {
-    final scoped = transactionsForDashboardScope(
-      scope: scope,
-      allTransactions: allTransactions,
-      transactionsByAccount: transactionsByAccount,
-    );
-    final accountsById = {for (final a in accounts) a.id: a};
-    final resolved = tx_res.resolveTransactions(
-      scoped,
-      categoryOverrides: categoryOverrides,
-      categoryDisplayRenamesLower: categoryDisplayRenames,
-      merchantCategoryMemory: merchantCategoryMemory,
-      accountsById: accountsById,
-      allTransactions: allTransactions,
-    );
-    final out = <String, double>{};
-    for (final r in resolved) {
-      final t = r.transaction;
-      if (!_inRangeInclusive(t.date, start, end)) continue;
-      if (!r.countsAsSpend) continue;
-      final display = r.displayCategory;
-      if (isIgnoredCategoryLabel(display) || isIncomeCategoryLabel(display)) {
-        continue;
-      }
-      out[display] = (out[display] ?? 0) + (-t.amount);
-    }
-    return out;
-  }
-
-  Map<String, double> spentByDisplayCategoryForScope({
-    required DashboardScope scope,
-    required DateTime? reference,
-    required List<Transaction> allTransactions,
-    required Map<String, List<Transaction>> transactionsByAccount,
-    required Map<String, String> categoryOverrides,
-    required Map<String, String> categoryDisplayRenames,
-    required Map<String, String> merchantCategoryMemory,
-    required List<Account> accounts,
-  }) {
-    final ref = reference ?? DateTime.now();
-    final start = DateTime(ref.year, ref.month, 1);
-    final end = DateTime(ref.year, ref.month + 1, 0);
-    return spentByDisplayCategoryForScopeInRange(
-      scope: scope,
-      start: start,
-      end: end,
-      allTransactions: allTransactions,
-      transactionsByAccount: transactionsByAccount,
-      categoryOverrides: categoryOverrides,
-      categoryDisplayRenames: categoryDisplayRenames,
-      merchantCategoryMemory: merchantCategoryMemory,
-      accounts: accounts,
-    );
-  }
-
-  Map<String, double> spentThisMonthByDisplayCategory({
-    required DateTime? reference,
-    required List<Transaction> allTransactions,
-    required Map<String, List<Transaction>> transactionsByAccount,
-    required Map<String, String> categoryOverrides,
-    required Map<String, String> categoryDisplayRenames,
-    required Map<String, String> merchantCategoryMemory,
-    required List<Account> accounts,
-  }) {
-    return spentByDisplayCategoryForScope(
-      scope: const GlobalDashboardScope(),
-      reference: reference,
-      allTransactions: allTransactions,
-      transactionsByAccount: transactionsByAccount,
-      categoryOverrides: categoryOverrides,
-      categoryDisplayRenames: categoryDisplayRenames,
-      merchantCategoryMemory: merchantCategoryMemory,
-      accounts: accounts,
-    );
   }
 
   void recomputeDerivedState({

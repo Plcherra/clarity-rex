@@ -87,7 +87,7 @@ ResolvedTransaction _resolved({
     description: description,
     amount: amount,
     accountId: 'account-1',
-    categoryId: category,
+    categoryLabel: category,
   );
   return ResolvedTransaction(
     transaction: transaction,

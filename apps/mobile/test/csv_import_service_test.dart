@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
+import 'package:clarity/features/accounts/data/account_statement_import_service.dart';
 import 'package:clarity/features/categories/domain/category_normalization.dart';
 import 'package:clarity/features/transactions/data/csv_import_service.dart';
 import 'package:clarity/features/transactions/data/merchant_category_rule_service.dart';
@@ -38,6 +39,9 @@ void main() {
       expect(harness.categoryUpdates, hasLength(1));
       expect(harness.categoryUpdates.single.categoryId, 'cat-food');
       expect(harness.categoryUpdates.single.ids, hasLength(1505));
+      expect(harness.statementImports, hasLength(1));
+      expect(harness.statementImports.single.statementBalance, 3496);
+      expect(harness.statementImports.single.transactionCount, 1505);
     },
   );
 
@@ -114,6 +118,127 @@ void main() {
       expect(harness.categoryUpdates, isEmpty);
     },
   );
+
+  test('preview reports date range duplicates and ending balance', () async {
+    final harness = _CsvImportHarness(
+      existingTransactions: [
+        _transactionRecord(
+          id: 'existing-duplicate',
+          amount: 1.25,
+          date: DateTime(2025),
+          description: 'Merchant 0',
+          type: 'expense',
+        ),
+      ],
+    );
+
+    final preview = await harness.service.previewImport(
+      _csvRows(3),
+      accountId: _accountId,
+    );
+
+    expect(preview.parsedCount, 3);
+    expect(preview.duplicateCount, 1);
+    expect(preview.newTransactionCount, 2);
+    expect(preview.spendingCount, 3);
+    expect(preview.incomeCount, 0);
+    expect(_dateOnly(preview.startDate), '2025-01-01');
+    expect(_dateOnly(preview.endDate), '2025-01-03');
+    expect(preview.endingBalance, 4998);
+    expect(preview.hasNewTransactions, isTrue);
+  });
+
+  test(
+    'repair import categories retries Unknown rows for one import',
+    () async {
+      final harness = _CsvImportHarness(
+        existingTransactions: [
+          _transactionRecord(
+            id: 'retry-1',
+            amount: 12,
+            date: DateTime(2026, 3, 1),
+            description: 'TST* BOM DOUGH',
+            type: 'expense',
+            importId: 'import-retry',
+            categoryId: 'cat-unknown',
+          ),
+          _transactionRecord(
+            id: 'retry-2',
+            amount: 30,
+            date: DateTime(2026, 3, 2),
+            description: 'PAYROLL DEPOSIT',
+            type: 'income',
+            importId: 'import-retry',
+            categoryId: 'cat-unknown',
+          ),
+          _transactionRecord(
+            id: 'other-import',
+            amount: 7,
+            date: DateTime(2026, 3, 3),
+            description: 'OTHER IMPORT',
+            type: 'expense',
+            importId: 'other-import',
+            categoryId: 'cat-unknown',
+          ),
+        ],
+        categorizeTransactions: (body) async {
+          final transactions = body['transactions'] as List;
+          return {
+            'suggestions': [
+              for (final transaction in transactions.cast<Map>())
+                {
+                  'key': transaction['key'],
+                  'categoryName': transaction['key'] == 'retry-2'
+                      ? 'Income / Payroll'
+                      : 'Coffee / Quick Food',
+                },
+            ],
+          };
+        },
+      );
+
+      final result = await harness.service.repairImportCategories(
+        accountId: _accountId,
+        importId: 'import-retry',
+      );
+
+      expect(result.scannedCount, 2);
+      expect(result.repairableCount, 2);
+      expect(result.updatedCount, 2);
+      expect(result.remainingReviewCount, 0);
+      expect(harness.createdCategoryTypes['Income / Payroll'], 'income');
+      expect(
+        harness.categoryUpdates.map((update) => update.categoryId).toSet(),
+        {'cat-coffee', 'cat-income-payroll'},
+      );
+      expect(harness.categoryUpdates.expand((update) => update.ids).toSet(), {
+        'retry-1',
+        'retry-2',
+      });
+    },
+  );
+
+  test('duplicate-only import does not persist statement metadata', () async {
+    final existing = _transactionRecord(
+      id: 'existing-duplicate',
+      amount: 1.25,
+      date: DateTime(2025),
+      description: 'Merchant 0',
+      type: 'expense',
+    );
+    final harness = _CsvImportHarness(existingTransactions: [existing]);
+    final file = await _writeCsv(_csvRows(1));
+
+    final events = await harness.service
+        .importAndCategorize(file, accountId: _accountId)
+        .toList();
+
+    final result = events.last.result;
+    expect(result, isNotNull);
+    expect(result!.insertedCount, 0);
+    expect(result.skippedDuplicateCount, 1);
+    expect(harness.statementImports, isEmpty);
+  });
 
   test(
     'AI failure completes import and applies local fallback categories',
@@ -326,6 +451,38 @@ void main() {
     expect(harness.categoryUpdates.single.ids, ['txn-0', 'txn-1']);
   });
 
+  test('disabled merchant rules do not apply during import', () async {
+    final harness = _CsvImportHarness(
+      merchantRules: const [
+        MerchantCategoryRule(
+          id: 'rule-dunkin',
+          userId: _userId,
+          merchantKey: 'dunkin',
+          aliases: [],
+          categoryId: 'cat-coffee',
+          matchType: 'normalized_exact',
+          confidence: 1,
+          disabled: true,
+        ),
+      ],
+    );
+    final file = await _writeCsv(
+      'Date,Description,Amount,Balance\n'
+      '2026-03-01,DUNKIN #304654 12/31 MOBILE PURCHASE SOMERVILLE MA,-5.25,1000.00\n',
+    );
+
+    final events = await harness.service
+        .importAndCategorize(file, accountId: _accountId)
+        .toList();
+
+    final result = events.last.result;
+    expect(result, isNotNull);
+    expect(result!.learnedRuleCategorizedCount, 0);
+    expect(result.aiCategorizedCount, 1);
+    expect(harness.categorizeRequestSizes, [1]);
+    expect(harness.categoryUpdates.single.categoryId, 'cat-food');
+  });
+
   test(
     'learned merchant rules reduce AI request size for mixed imports',
     () async {
@@ -422,6 +579,7 @@ class _CsvImportHarness {
       createTransactions: _createTransactions,
       fetchCategories: () async => _categories.values.toList(),
       fetchMerchantCategoryRules: () async => _merchantRules,
+      upsertStatementImport: (input) async => statementImports.add(input),
       createCategory: _createCategory,
       updateTransactionsCategory: _updateTransactionsCategory,
       isAiConfigured: () => _aiConfigured,
@@ -440,8 +598,10 @@ class _CsvImportHarness {
   _updateTransactionsCategoryOverride;
   final List<MerchantCategoryRule> _merchantRules;
   final createdInputs = <TransactionCreateInput>[];
+  final statementImports = <AccountStatementImportInput>[];
   final categoryUpdates = <_CategoryUpdate>[];
   final createdCategoryNames = <String>[];
+  final createdCategoryTypes = <String, String>{};
   final categorizeRequestSizes = <int>[];
   final _categories = <String, CategoryRecord>{
     'coffee / quick food': _categoryRecord(
@@ -479,6 +639,7 @@ class _CsvImportHarness {
     String? icon,
   }) async {
     createdCategoryNames.add(name);
+    createdCategoryTypes[name] = type;
     final record = _categoryRecord(
       id: 'cat-${normalizedCategoryKey(name).replaceAll(' ', '-')}',
       name: name,
@@ -546,6 +707,13 @@ Future<File> _writeCsv(String csv) async {
     if (await file.exists()) await file.delete();
   });
   return file.writeAsString(csv);
+}
+
+String _dateOnly(DateTime date) {
+  final year = date.year.toString().padLeft(4, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '$year-$month-$day';
 }
 
 TransactionRecord _transactionRecord({

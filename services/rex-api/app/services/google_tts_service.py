@@ -2,6 +2,7 @@ import asyncio
 import base64
 import binascii
 import json
+from pathlib import Path
 import time
 from typing import Any, Optional
 
@@ -85,15 +86,21 @@ class GoogleTTSService:
         try:
             scopes = ["https://www.googleapis.com/auth/cloud-platform"]
             if self.settings.google_tts_credentials_json:
-                credentials_info = json.loads(self.settings.google_tts_credentials_json)
-
                 from google.auth.transport.requests import Request
                 from google.oauth2 import service_account
 
-                credentials = service_account.Credentials.from_service_account_info(
-                    credentials_info,
-                    scopes=scopes,
-                )
+                credentials_value = self.settings.google_tts_credentials_json.strip()
+                if credentials_value.startswith("{"):
+                    credentials_info = json.loads(credentials_value)
+                    credentials = service_account.Credentials.from_service_account_info(
+                        credentials_info,
+                        scopes=scopes,
+                    )
+                else:
+                    credentials = service_account.Credentials.from_service_account_file(
+                        str(Path(credentials_value).expanduser()),
+                        scopes=scopes,
+                    )
             elif self.settings.google_application_credentials:
                 from google.auth.transport.requests import Request
                 from google.oauth2 import service_account

@@ -31,6 +31,7 @@ final class CategoryReadModel extends ChangeNotifier {
         normalizedName: category.normalizedName,
       );
       if (name.isEmpty ||
+          category.hidden ||
           isUnresolvedCategoryLabel(name) ||
           builtIns.contains(key) ||
           seen.contains(key)) {
@@ -45,7 +46,18 @@ final class CategoryReadModel extends ChangeNotifier {
 
   Map<String, String> get categoryDisplayRenames => const {};
 
-  Set<String> get categoriesHiddenFromPicker => const {};
+  Set<String> get categoriesHiddenFromPicker {
+    final hidden = <String>{};
+    for (final category in _categories) {
+      if (!category.hidden) continue;
+      final key = categoryRecordKey(
+        name: category.name,
+        normalizedName: category.normalizedName,
+      );
+      if (key.isNotEmpty) hidden.add(key);
+    }
+    return Set.unmodifiable(hidden);
+  }
 
   List<String> get allowedCategoryPickerLabels => categoryPickerCanonicals(
     customCategories: customCategories,
@@ -105,7 +117,9 @@ final class CategoryReadModel extends ChangeNotifier {
     if (existing != null) return existing;
     final created = await _categoryService.createCategory(
       name: normalized.displayName,
-      type: 'expense',
+      type: isIncomeCategoryLabel(normalized.displayName)
+          ? 'income'
+          : 'expense',
     );
     _setCategories([..._categories, created]);
     return created;

@@ -7,8 +7,10 @@ import 'package:flutter/foundation.dart';
 import '../../../core/models/models.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../accounts/data/account_service.dart';
+import '../../accounts/data/account_statement_import_service.dart';
 import '../../categories/data/category_service.dart';
 import '../../categories/domain/category_normalization.dart';
+import '../application/transaction_record_mapper.dart';
 import '../domain/merchant_normalization.dart';
 import '../domain/spend_categories.dart';
 import '../domain/transaction_fingerprint.dart';
@@ -44,6 +46,8 @@ typedef _UpdateTransactionsCategory =
     });
 typedef _CategorizeTransactions =
     Future<Map<String, dynamic>> Function(Map<String, dynamic> body);
+typedef _UpsertStatementImport =
+    Future<void> Function(AccountStatementImportInput input);
 
 enum CsvImportStage {
   parsing,
@@ -80,6 +84,9 @@ class CsvImportResult {
     required this.aiErrorMessage,
     required this.spendReference,
     required this.diagnostics,
+    this.statementBalance,
+    this.statementStartDate,
+    this.statementEndDate,
     this.aiCategorizedCount = 0,
     this.learnedRuleCategorizedCount = 0,
     this.deterministicFallbackCategorizedCount = 0,
@@ -97,10 +104,59 @@ class CsvImportResult {
   final String? aiErrorMessage;
   final DateTime spendReference;
   final CsvParseDiagnostics? diagnostics;
+  final double? statementBalance;
+  final DateTime? statementStartDate;
+  final DateTime? statementEndDate;
   final int aiCategorizedCount;
   final int learnedRuleCategorizedCount;
   final int deterministicFallbackCategorizedCount;
   final int categoryUpdateFailureCount;
+}
+
+class CsvImportRepairResult {
+  const CsvImportRepairResult({
+    required this.accountId,
+    required this.importId,
+    required this.scannedCount,
+    required this.repairableCount,
+    required this.updatedCount,
+    required this.remainingReviewCount,
+  });
+
+  final String accountId;
+  final String importId;
+  final int scannedCount;
+  final int repairableCount;
+  final int updatedCount;
+  final int remainingReviewCount;
+}
+
+class CsvImportPreview {
+  const CsvImportPreview({
+    required this.accountId,
+    required this.parsedCount,
+    required this.newTransactionCount,
+    required this.duplicateCount,
+    required this.incomeCount,
+    required this.spendingCount,
+    required this.startDate,
+    required this.endDate,
+    required this.endingBalance,
+    required this.diagnostics,
+  });
+
+  final String accountId;
+  final int parsedCount;
+  final int newTransactionCount;
+  final int duplicateCount;
+  final int incomeCount;
+  final int spendingCount;
+  final DateTime startDate;
+  final DateTime endDate;
+  final double? endingBalance;
+  final CsvParseDiagnostics? diagnostics;
+
+  bool get hasNewTransactions => newTransactionCount > 0;
 }
 
 class CsvImportProgress {
@@ -144,6 +200,7 @@ class CsvImportService {
     required TransactionService transactionService,
     required CategoryService categoryService,
     required MerchantCategoryRuleService merchantCategoryRuleService,
+    required AccountStatementImportService accountStatementImportService,
     required OpenAiProxyClient openAiClient,
   }) : this._(
          fetchAccounts: accountService.fetchAccounts,
@@ -151,6 +208,9 @@ class CsvImportService {
          createTransactions: transactionService.createTransactions,
          fetchCategories: categoryService.fetchCategories,
          fetchMerchantCategoryRules: merchantCategoryRuleService.fetchRules,
+         upsertStatementImport: (input) async {
+           await accountStatementImportService.upsertImport(input);
+         },
          createCategory: categoryService.createCategory,
          updateTransactionsCategory:
              transactionService.updateTransactionsCategory,
@@ -170,6 +230,8 @@ class CsvImportService {
     required Future<List<CategoryRecord>> Function() fetchCategories,
     required Future<List<MerchantCategoryRule>> Function()
     fetchMerchantCategoryRules,
+    Future<void> Function(AccountStatementImportInput input)?
+    upsertStatementImport,
     required Future<CategoryRecord> Function({
       required String name,
       required String type,
@@ -191,6 +253,7 @@ class CsvImportService {
          createTransactions: createTransactions,
          fetchCategories: fetchCategories,
          fetchMerchantCategoryRules: fetchMerchantCategoryRules,
+         upsertStatementImport: upsertStatementImport ?? (_) async {},
          createCategory: createCategory,
          updateTransactionsCategory: updateTransactionsCategory,
          isAiConfigured: isAiConfigured,
@@ -203,6 +266,7 @@ class CsvImportService {
     required _CreateTransactions createTransactions,
     required _FetchCategories fetchCategories,
     required _FetchMerchantCategoryRules fetchMerchantCategoryRules,
+    required _UpsertStatementImport upsertStatementImport,
     required _CreateCategory createCategory,
     required _UpdateTransactionsCategory updateTransactionsCategory,
     required bool Function() isAiConfigured,
@@ -212,6 +276,7 @@ class CsvImportService {
        _createTransactions = createTransactions,
        _fetchCategories = fetchCategories,
        _fetchMerchantCategoryRules = fetchMerchantCategoryRules,
+       _upsertStatementImport = upsertStatementImport,
        _createCategory = createCategory,
        _updateTransactionsCategory = updateTransactionsCategory,
        _isAiConfigured = isAiConfigured,
@@ -222,10 +287,68 @@ class CsvImportService {
   final _CreateTransactions _createTransactions;
   final _FetchCategories _fetchCategories;
   final _FetchMerchantCategoryRules _fetchMerchantCategoryRules;
+  final _UpsertStatementImport _upsertStatementImport;
   final _CreateCategory _createCategory;
   final _UpdateTransactionsCategory _updateTransactionsCategory;
   final bool Function() _isAiConfigured;
   final _CategorizeTransactions _categorizeTransactions;
+
+  Future<CsvImportPreview> previewImport(
+    String utf8Text, {
+    required String accountId,
+  }) async {
+    final id = accountId.trim();
+    if (id.isEmpty) {
+      throw const FormatException('An account must be selected.');
+    }
+
+    final parsed = parseBankCsv(utf8Text);
+    final accounts = await _fetchAccounts();
+    if (!accounts.any((account) => account.id == id)) {
+      throw const FormatException('Unknown account.');
+    }
+
+    final existingRecords = await _fetchTransactions(accountId: id);
+    final existingFingerprints = {
+      for (final record in existingRecords)
+        transactionFingerprint(transactionFromRecord(record)),
+    };
+
+    var duplicateCount = 0;
+    var incomeCount = 0;
+    var spendingCount = 0;
+    var startDate = parsed.transactions.first.date;
+    var endDate = parsed.transactions.first.date;
+    for (final transaction in parsed.transactions) {
+      if (transaction.date.isBefore(startDate)) startDate = transaction.date;
+      if (transaction.date.isAfter(endDate)) endDate = transaction.date;
+      if (transaction.amount >= 0) {
+        incomeCount += 1;
+      } else {
+        spendingCount += 1;
+      }
+      final stamped = _stampTransactionForAccount(transaction, id);
+      final fingerprint = transactionFingerprint(stamped);
+      if (existingFingerprints.contains(fingerprint)) {
+        duplicateCount += 1;
+        continue;
+      }
+      existingFingerprints.add(fingerprint);
+    }
+
+    return CsvImportPreview(
+      accountId: id,
+      parsedCount: parsed.transactions.length,
+      newTransactionCount: parsed.transactions.length - duplicateCount,
+      duplicateCount: duplicateCount,
+      incomeCount: incomeCount,
+      spendingCount: spendingCount,
+      startDate: startDate,
+      endDate: endDate,
+      endingBalance: parsed.totalBalance,
+      diagnostics: parsed.diagnostics,
+    );
+  }
 
   Stream<CsvImportProgress> importAndCategorize(
     File csvFile, {
@@ -265,21 +388,14 @@ class CsvImportService {
       final existingRecords = await _fetchTransactions(accountId: id);
       final existingFingerprints = {
         for (final record in existingRecords)
-          transactionFingerprint(_transactionFromRecord(record)),
+          transactionFingerprint(transactionFromRecord(record)),
       };
       final unknownCategoryId = await _ensureUnknownCategoryId();
 
       final rowsToInsert = <TransactionCreateInput>[];
       var skippedDuplicateCount = 0;
       for (final transaction in parsed.transactions) {
-        final stamped = Transaction(
-          date: transaction.date,
-          description: transaction.description,
-          amount: transaction.amount,
-          accountId: id,
-          category: transaction.category,
-          balanceAfter: transaction.balanceAfter,
-        );
+        final stamped = _stampTransactionForAccount(transaction, id);
         final fingerprint = transactionFingerprint(stamped);
         if (existingFingerprints.contains(fingerprint)) {
           skippedDuplicateCount += 1;
@@ -307,6 +423,19 @@ class CsvImportService {
         message: 'Saving transactions...',
       );
       final insertedRecords = await _createTransactions(rowsToInsert);
+      final dateRange = _transactionDateRange(parsed.transactions);
+      if (insertedRecords.isNotEmpty) {
+        await _upsertStatementImport(
+          AccountStatementImportInput(
+            accountId: id,
+            importId: importId,
+            statementBalance: parsed.totalBalance,
+            startDate: dateRange?.start,
+            endDate: dateRange?.end,
+            transactionCount: insertedRecords.length,
+          ),
+        );
+      }
 
       var aiSucceeded = true;
       String? aiErrorMessage;
@@ -406,10 +535,11 @@ class CsvImportService {
               : 'AI failed. Applying fallback categories...',
         );
         try {
-          fallbackCategoryCount = await _applyCategories(
+          final applied = await _applyCategories(
             insertedRecords,
             suggestedCategoryByTransactionId,
           );
+          fallbackCategoryCount = applied.fallbackCategoryCount;
         } on Object catch (error) {
           aiSucceeded = false;
           aiErrorMessage ??= '$error';
@@ -430,6 +560,9 @@ class CsvImportService {
         aiErrorMessage: aiErrorMessage,
         spendReference: spendReference,
         diagnostics: parsed.diagnostics,
+        statementBalance: parsed.totalBalance,
+        statementStartDate: dateRange?.start,
+        statementEndDate: dateRange?.end,
         aiCategorizedCount: aiCategorizedCount,
         learnedRuleCategorizedCount: learnedRuleCategorizedCount,
         deterministicFallbackCategorizedCount:
@@ -451,6 +584,87 @@ class CsvImportService {
     }
   }
 
+  Future<CsvImportRepairResult> repairImportCategories({
+    required String accountId,
+    required String importId,
+  }) async {
+    final id = accountId.trim();
+    final batchId = importId.trim();
+    if (id.isEmpty || batchId.isEmpty) {
+      throw const FormatException('An import batch must be selected.');
+    }
+
+    final records = await _fetchTransactions(accountId: id);
+    final batch = records
+        .where((record) => record.importId?.trim() == batchId)
+        .toList(growable: false);
+    if (batch.isEmpty) {
+      return CsvImportRepairResult(
+        accountId: id,
+        importId: batchId,
+        scannedCount: 0,
+        repairableCount: 0,
+        updatedCount: 0,
+        remainingReviewCount: 0,
+      );
+    }
+
+    final unknownCategoryId = await _ensureUnknownCategoryId();
+    final repairable = batch
+        .where((record) {
+          final categoryId = record.categoryId?.trim();
+          return categoryId == null ||
+              categoryId.isEmpty ||
+              categoryId == unknownCategoryId;
+        })
+        .toList(growable: false);
+    if (repairable.isEmpty) {
+      return CsvImportRepairResult(
+        accountId: id,
+        importId: batchId,
+        scannedCount: batch.length,
+        repairableCount: 0,
+        updatedCount: 0,
+        remainingReviewCount: 0,
+      );
+    }
+
+    final suggestions = await _suggestCategoriesForRecords(repairable);
+    final applied = await _applyCategories(repairable, suggestions);
+    return CsvImportRepairResult(
+      accountId: id,
+      importId: batchId,
+      scannedCount: batch.length,
+      repairableCount: repairable.length,
+      updatedCount: applied.updatedTransactionCount,
+      remainingReviewCount: applied.fallbackCategoryCount,
+    );
+  }
+
+  Future<Map<String, String>> _suggestCategoriesForRecords(
+    List<TransactionRecord> records,
+  ) async {
+    if (records.isEmpty) return const {};
+    final suggestions = <String, String>{};
+    final learned = await _learnedCategoryNamesFor(records);
+    suggestions.addAll(learned);
+    final recordsNeedingAi = records
+        .where((record) => !learned.containsKey(record.id))
+        .toList(growable: false);
+    if (recordsNeedingAi.isEmpty) return suggestions;
+    final allowedCategoryNames = await _allowedCategoryNamesForAi();
+    final batches = _chunks(recordsNeedingAi, _categorizationRequestBatchSize);
+    for (var i = 0; i < batches.length; i += 1) {
+      final result = await _categorizeBatchWithFallback(
+        i,
+        batches[i],
+        allowedCategoryNames,
+      );
+      suggestions.addAll(result.suggestions);
+    }
+    return suggestions;
+  }
+
   Future<Map<String, String>> _categorizeInsertedRows(
     List<TransactionRecord> records,
     List<String> allowedCategories,
@@ -465,7 +679,7 @@ class CsvImportService {
           {
             'key': record.id,
             'date': record.date.toIso8601String().split('T').first,
-            'amount': _signedAmount(record),
+            'amount': signedTransactionAmountFromRecord(record),
             'description': record.description ?? record.merchant ?? '',
           },
       ],
@@ -560,11 +774,16 @@ class CsvImportService {
         kUnknownCategoryName;
   }
 
-  Future<int> _applyCategories(
+  Future<_CategoryApplicationResult> _applyCategories(
     List<TransactionRecord> insertedRecords,
     Map<String, String> suggestedCategoryByTransactionId,
   ) async {
-    if (insertedRecords.isEmpty) return 0;
+    if (insertedRecords.isEmpty) {
+      return const _CategoryApplicationResult(
+        fallbackCategoryCount: 0,
+        updatedTransactionCount: 0,
+      );
+    }
     final categoryNames = <String>{kUnknownCategoryName};
     for (final record in insertedRecords) {
       final name = suggestedCategoryByTransactionId[record.id]?.trim();
@@ -606,7 +825,13 @@ class CsvImportService {
         categoryId: entry.key,
       );
     }
-    return fallbackCategoryCount;
+    return _CategoryApplicationResult(
+      fallbackCategoryCount: fallbackCategoryCount,
+      updatedTransactionCount: idsByCategoryId.values.fold<int>(
+        0,
+        (sum, ids) => sum + ids.length,
+      ),
+    );
   }
 
   int _resolvedSuggestionCount(Map<String, String> suggestions) {
@@ -663,7 +888,9 @@ class CsvImportService {
       if (out.containsKey(key)) continue;
       final created = await _createCategory(
         name: normalized.displayName,
-        type: 'expense',
+        type: isIncomeCategoryLabel(normalized.displayName)
+            ? 'income'
+            : 'expense',
       );
       out[key] = created.id;
     }
@@ -692,6 +919,7 @@ class CsvImportService {
     };
     final ruleNameByMerchantKey = <String, String>{};
     for (final rule in rules) {
+      if (rule.disabled) continue;
       final categoryName = categoryNameById[rule.categoryId];
       if (categoryName == null) continue;
       final normalizedCategory = normalizeCategoryName(categoryName);
@@ -720,6 +948,16 @@ class CsvImportService {
   }
 }
 
+final class _CategoryApplicationResult {
+  const _CategoryApplicationResult({
+    required this.fallbackCategoryCount,
+    required this.updatedTransactionCount,
+  });
+
+  final int fallbackCategoryCount;
+  final int updatedTransactionCount;
+}
+
 final class _CategorizationBatchResult {
   const _CategorizationBatchResult({
     required this.index,
@@ -741,27 +979,18 @@ List<List<T>> _chunks<T>(List<T> items, int size) {
   return out;
 }
 
-Transaction _transactionFromRecord(TransactionRecord record) {
+Transaction _stampTransactionForAccount(
+  Transaction transaction,
+  String accountId,
+) {
   return Transaction(
-    date: record.date,
-    description: record.description ?? record.merchant ?? '',
-    amount: _signedAmount(record),
-    accountId: record.accountId,
-    categoryId: record.categoryId,
-    importId: record.importId ?? (record.importedFromCsv ? 'csv' : null),
-    fingerprint: record.id,
-    financialRole: record.type.trim().toLowerCase() == 'income'
-        ? FinancialRole.income
-        : FinancialRole.expense,
+    date: transaction.date,
+    description: transaction.description,
+    amount: transaction.amount,
+    accountId: accountId,
+    category: transaction.category,
+    balanceAfter: transaction.balanceAfter,
   );
-}
-
-double _signedAmount(TransactionRecord record) {
-  return switch (record.type.trim().toLowerCase()) {
-    'expense' => -record.amount.abs(),
-    'income' => record.amount.abs(),
-    _ => record.amount,
-  };
 }
 
 DateTime _importSpendReference(List<Transaction> transactions) {
@@ -779,4 +1008,17 @@ DateTime _importSpendReference(List<Transaction> transactions) {
     }
   }
   return latest;
+}
+
+({DateTime start, DateTime end})? _transactionDateRange(
+  List<Transaction> transactions,
+) {
+  if (transactions.isEmpty) return null;
+  var start = transactions.first.date;
+  var end = transactions.first.date;
+  for (final transaction in transactions.skip(1)) {
+    if (transaction.date.isBefore(start)) start = transaction.date;
+    if (transaction.date.isAfter(end)) end = transaction.date;
+  }
+  return (start: start, end: end);
 }

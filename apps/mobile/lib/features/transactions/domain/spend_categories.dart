@@ -384,7 +384,7 @@ bool isIncomeCategoryLabel(String label) =>
 
 /// Resolves the label used for grouping spending (CSV category or keyword bucket).
 ///
-/// Order: [Transaction.categoryId] (persisted manual choice), then [categoryOverrides]
+/// Order: [Transaction.categoryLabel] (resolved persisted choice), then [categoryOverrides]
 /// for the same row key, then returned/reversed description checks, then
 /// heuristics / CSV category.
 ///
@@ -395,7 +395,7 @@ String spendGroupLabel(
   Map<String, String>? categoryOverrides,
   Map<String, String>? merchantCategoryMemory,
 }) {
-  final saved = t.categoryId?.trim();
+  final saved = t.categoryLabel?.trim();
   if (saved != null && saved.isNotEmpty && !isUnresolvedCategoryLabel(saved)) {
     return saved;
   }

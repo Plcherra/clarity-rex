@@ -19,6 +19,22 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _idx = 0;
+  int _dashboardReviewRequest = 0;
+  int _manageCategoriesRequest = 0;
+
+  void _openDashboardReview() {
+    setState(() {
+      _idx = 0;
+      _dashboardReviewRequest++;
+    });
+  }
+
+  void _openCategoryManagement() {
+    setState(() {
+      _idx = 2;
+      _manageCategoriesRequest++;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +42,26 @@ class _HomeShellState extends State<HomeShell> {
     final cs = theme.colorScheme;
 
     final pages = <Widget>[
-      DashboardScreen(controller: widget.ui.dashboard, isRoot: true),
-      AccountsScreen(controller: widget.ui.accounts),
-      BudgetsScreen(controller: widget.ui.budgets),
-      AssistantScreen(ui: widget.ui),
+      DashboardScreen(
+        controller: widget.ui.dashboard,
+        transactionController: widget.ui.transactions,
+        budgetController: widget.ui.budgets,
+        importJobStatusController: widget.ui.importJobStatus,
+        isRoot: true,
+        reviewRequest: _dashboardReviewRequest,
+      ),
+      AccountsScreen(
+        controller: widget.ui.accounts,
+        dashboardController: widget.ui.dashboard,
+        transactionController: widget.ui.transactions,
+        budgetController: widget.ui.budgets,
+        importJobStatusController: widget.ui.importJobStatus,
+      ),
+      BudgetsScreen(
+        controller: widget.ui.budgets,
+        manageCategoriesRequest: _manageCategoriesRequest,
+      ),
+      const AssistantScreen(),
     ];
 
     return HeroMode(
@@ -37,6 +69,8 @@ class _HomeShellState extends State<HomeShell> {
       child: Scaffold(
         body: ImportJobStatusHost(
           controller: widget.ui.importJobStatus,
+          onReviewIssues: _openDashboardReview,
+          onManageCategories: _openCategoryManagement,
           child: IndexedStack(index: _idx, children: pages),
         ),
         floatingActionButton: widget.signOut == null || _idx == 3

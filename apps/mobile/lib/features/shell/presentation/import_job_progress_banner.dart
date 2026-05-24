@@ -87,10 +87,14 @@ class ImportJobStatusHost extends StatefulWidget {
     super.key,
     required this.controller,
     required this.child,
+    this.onReviewIssues,
+    this.onManageCategories,
   });
 
   final ImportJobStatusController controller;
   final Widget child;
+  final VoidCallback? onReviewIssues;
+  final VoidCallback? onManageCategories;
 
   @override
   State<ImportJobStatusHost> createState() => _ImportJobStatusHostState();
@@ -125,6 +129,8 @@ class _ImportJobStatusHostState extends State<ImportJobStatusHost> {
               _BottomSafeImportOverlay(
                 child: _PersistentImportMessageBanner(
                   controller: widget.controller,
+                  onReviewIssues: widget.onReviewIssues,
+                  onManageCategories: widget.onManageCategories,
                 ),
               ),
           ],
@@ -161,9 +167,15 @@ class _BottomSafeImportOverlay extends StatelessWidget {
 }
 
 class _PersistentImportMessageBanner extends StatelessWidget {
-  const _PersistentImportMessageBanner({required this.controller});
+  const _PersistentImportMessageBanner({
+    required this.controller,
+    this.onReviewIssues,
+    this.onManageCategories,
+  });
 
   final ImportJobStatusController controller;
+  final VoidCallback? onReviewIssues;
+  final VoidCallback? onManageCategories;
 
   @override
   Widget build(BuildContext context) {
@@ -174,6 +186,7 @@ class _PersistentImportMessageBanner extends StatelessWidget {
         ? cs.errorContainer
         : cs.tertiaryContainer.withValues(alpha: 0.9);
     final foreground = isError ? cs.onErrorContainer : cs.onTertiaryContainer;
+    final summary = controller.persistentImportSummary;
     return Material(
       color: background,
       elevation: 8,
@@ -181,30 +194,106 @@ class _PersistentImportMessageBanner extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-        child: Row(
+        padding: const EdgeInsets.fromLTRB(16, 12, 10, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(
-              isError
-                  ? Icons.error_outline_rounded
-                  : Icons.info_outline_rounded,
-              color: foreground,
-              size: 20,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  isError
+                      ? Icons.error_outline_rounded
+                      : Icons.info_outline_rounded,
+                  color: foreground,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    summary?.title ?? controller.persistentImportMessage ?? '',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: foreground,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Dismiss',
+                  onPressed: controller.dismissPersistentImportMessage,
+                  icon: Icon(Icons.close_rounded, color: foreground),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
+            if (summary == null) ...[
+              const SizedBox(height: 2),
+              Text(
                 controller.persistentImportMessage ?? '',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: foreground,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-            IconButton(
-              tooltip: 'Dismiss',
-              onPressed: controller.dismissPersistentImportMessage,
-              icon: Icon(Icons.close_rounded, color: foreground),
+            ] else ...[
+              const SizedBox(height: 6),
+              for (final line in summary.lines) ...[
+                Text(
+                  line,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: foreground.withValues(alpha: 0.84),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+              ],
+            ],
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              alignment: WrapAlignment.end,
+              children: [
+                if ((summary?.canReview ??
+                        controller
+                            .persistentImportMessageHasFallbackCategories) &&
+                    onReviewIssues != null)
+                  TextButton.icon(
+                    onPressed: onReviewIssues,
+                    icon: Icon(
+                      Icons.fact_check_outlined,
+                      color: foreground,
+                      size: 18,
+                    ),
+                    label: Text('Review', style: TextStyle(color: foreground)),
+                  ),
+                if ((summary?.canRetry ?? false) ||
+                    controller.persistentImportMessageCanRetry)
+                  TextButton.icon(
+                    onPressed: controller.retryCategoryAssignment,
+                    icon: Icon(
+                      Icons.refresh_rounded,
+                      color: foreground,
+                      size: 18,
+                    ),
+                    label: Text('Retry', style: TextStyle(color: foreground)),
+                  ),
+                if (summary?.canOpenCategoryManagement == true &&
+                    onManageCategories != null)
+                  TextButton.icon(
+                    onPressed: onManageCategories,
+                    icon: Icon(
+                      Icons.category_outlined,
+                      color: foreground,
+                      size: 18,
+                    ),
+                    label: Text(
+                      'Categories',
+                      style: TextStyle(color: foreground),
+                    ),
+                  ),
+              ],
             ),
           ],
         ),

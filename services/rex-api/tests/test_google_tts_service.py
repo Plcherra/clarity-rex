@@ -110,6 +110,44 @@ async def test_synthesize_speech_maps_invalid_credentials(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_synthesize_speech_accepts_credentials_json_file_path(monkeypatch):
+    service = GoogleTTSService(
+        configured_settings(
+            google_tts_credentials_json="/opt/clarity/secrets/service_account.json",
+            google_application_credentials=None,
+        )
+    )
+
+    class FakeCredentials:
+        token = "access-token"
+        expiry = None
+
+        def refresh(self, request):
+            return None
+
+    file_calls = []
+
+    def fake_from_service_account_file(path, scopes):
+        file_calls.append({"path": path, "scopes": scopes})
+        return FakeCredentials()
+
+    monkeypatch.setattr(
+        "google.oauth2.service_account.Credentials.from_service_account_file",
+        fake_from_service_account_file,
+    )
+
+    token = await service._access_token()
+
+    assert token == "access-token"
+    assert file_calls == [
+        {
+            "path": "/opt/clarity/secrets/service_account.json",
+            "scopes": ["https://www.googleapis.com/auth/cloud-platform"],
+        }
+    ]
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("status_code", "expected_status", "expected_detail"),
     [

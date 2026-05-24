@@ -14,6 +14,7 @@ final class TransactionCreateInput {
     this.categoryId,
     required this.amount,
     required this.type,
+    this.financialRole,
     this.description,
     required this.date,
     this.merchant,
@@ -25,6 +26,7 @@ final class TransactionCreateInput {
   final String? categoryId;
   final double amount;
   final String type;
+  final String? financialRole;
   final String? description;
   final DateTime date;
   final String? merchant;
@@ -102,6 +104,7 @@ final class TransactionService {
     String? categoryId,
     required double amount,
     required String type,
+    String? financialRole,
     String? description,
     required DateTime date,
     String? merchant,
@@ -118,6 +121,7 @@ final class TransactionService {
             'category_id': categoryId,
             'amount': amount,
             'type': type,
+            'financial_role': ?financialRole,
             'description': description,
             'date': _dateOnly(date),
             'merchant': merchant,
@@ -163,6 +167,7 @@ final class TransactionService {
               'category_id': transaction.categoryId,
               'amount': transaction.amount,
               'type': transaction.type,
+              'financial_role': ?transaction.financialRole,
               'description': transaction.description,
               'date': _dateOnly(transaction.date),
               'merchant': transaction.merchant,
@@ -191,6 +196,8 @@ final class TransactionService {
     String? categoryId,
     double? amount,
     String? type,
+    String? financialRole,
+    bool clearFinancialRole = false,
     String? description,
     DateTime? date,
     String? merchant,
@@ -203,6 +210,11 @@ final class TransactionService {
     if (categoryId != null) payload['category_id'] = categoryId;
     if (amount != null) payload['amount'] = amount;
     if (type != null) payload['type'] = type;
+    if (clearFinancialRole) {
+      payload['financial_role'] = null;
+    } else if (financialRole != null) {
+      payload['financial_role'] = financialRole;
+    }
     if (description != null) payload['description'] = description;
     if (date != null) payload['date'] = _dateOnly(date);
     if (merchant != null) payload['merchant'] = merchant;
@@ -336,6 +348,48 @@ final class TransactionService {
         table: 'transactions',
         action: 'deleteTransactionsForImportBatch',
         message: 'Could not delete CSV import transactions.',
+        cause: e,
+      );
+    }
+  }
+
+  Future<int> deleteTransactionsForAccountInDateRange({
+    required String accountId,
+    required DateTime start,
+    required DateTime endInclusive,
+  }) async {
+    final user = _currentUser;
+    final id = accountId.trim();
+    if (id.isEmpty) return 0;
+    final startDate = _dateOnly(start);
+    final endDate = _dateOnly(endInclusive);
+
+    try {
+      final rows = await _supabaseService.client
+          .from('transactions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('account_id', id)
+          .gte('date', startDate)
+          .lte('date', endDate);
+      final count = rows.length;
+      if (count == 0) return 0;
+
+      await _supabaseService.client
+          .from('transactions')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('account_id', id)
+          .gte('date', startDate)
+          .lte('date', endDate);
+      return count;
+    } on SupabaseDataException {
+      rethrow;
+    } on Object catch (e) {
+      throw SupabaseDataException(
+        table: 'transactions',
+        action: 'deleteTransactionsForAccountInDateRange',
+        message: 'Could not delete account transactions for date range.',
         cause: e,
       );
     }

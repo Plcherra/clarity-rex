@@ -1,40 +1,32 @@
 import '../core/models/models.dart';
-import '../core/supabase/supabase_records.dart';
-import '../features/accounts/data/account_service.dart';
-import '../features/categories/application/category_read_model.dart';
 import '../features/dashboard/application/dashboard_service.dart';
+import '../features/finance/application/financial_read_model_service.dart';
 import '../features/transactions/data/csv_parser.dart';
-import '../features/transactions/data/transaction_service.dart';
 import '../features/transactions/domain/transaction_resolution.dart' as tx_res;
 
 /// Coordinates dashboard recomputation from the app service graph.
 class DashboardRefreshCoordinator {
   DashboardRefreshCoordinator({
     required this.dashboardService,
-    required this.transactionService,
-    required this.accountService,
-    required this.categoryReadModel,
+    required this.financialReadModelService,
     required this.notifyTransactionDataChanged,
   });
 
   final DashboardService dashboardService;
-  final TransactionService transactionService;
-  final AccountService accountService;
-  final CategoryReadModel categoryReadModel;
+  final FinancialReadModelService financialReadModelService;
   final void Function() notifyTransactionDataChanged;
 
   Future<List<Transaction>> refreshAllState() async {
-    final accounts = await _fetchAccounts();
-    final transactions = await _fetchTransactions();
+    final model = await financialReadModelService.load();
     _recomputeDashboard(
-      activeAccountTransactions: transactions,
-      allTransactionsForMetrics: transactions,
-      transactionsForCsvDiagnostics: transactions,
+      activeAccountTransactions: model.transactions,
+      allTransactionsForMetrics: model.transactions,
+      transactionsForCsvDiagnostics: model.transactions,
       diagnostics: null,
-      accounts: accounts,
+      model: model,
     );
     notifyTransactionDataChanged();
-    return transactions;
+    return model.transactions;
   }
 
   Future<void> syncAfterTransactionWorkflow({
@@ -43,13 +35,13 @@ class DashboardRefreshCoordinator {
     required List<Transaction> transactionsForCsvDiagnostics,
     required CsvParseDiagnostics? diagnostics,
   }) async {
-    final accounts = await _fetchAccounts();
+    final model = await financialReadModelService.load();
     _recomputeDashboard(
       activeAccountTransactions: activeAccountTransactions,
       allTransactionsForMetrics: allTransactionsForMetrics,
       transactionsForCsvDiagnostics: transactionsForCsvDiagnostics,
       diagnostics: diagnostics,
-      accounts: accounts,
+      model: model,
     );
   }
 
@@ -58,20 +50,20 @@ class DashboardRefreshCoordinator {
     required List<Transaction> allTransactionsForMetrics,
     required List<Transaction> transactionsForCsvDiagnostics,
     required CsvParseDiagnostics? diagnostics,
-    required List<Account> accounts,
+    required FinancialReadModel model,
   }) {
     dashboardService.recomputeDerivedState(
       activeAccountTransactions: activeAccountTransactions,
       allTransactionsForMetrics: allTransactionsForMetrics,
       transactionsForCsvDiagnostics: transactionsForCsvDiagnostics,
       diag: diagnostics,
-      accounts: accounts,
+      accounts: model.accounts,
       categoryOverrides: const {},
-      categoryDisplayRenames: categoryReadModel.categoryDisplayRenames,
+      categoryDisplayRenames: model.categoryDisplayRenamesLower,
       resolveTransactions: (txs, {required allTransactionsContext}) {
         return _resolveTransactions(
           txs,
-          accounts: accounts,
+          model: model,
           allTransactionsContext: allTransactionsContext,
         );
       },
@@ -80,55 +72,16 @@ class DashboardRefreshCoordinator {
 
   List<tx_res.ResolvedTransaction> _resolveTransactions(
     List<Transaction> txs, {
-    required List<Account> accounts,
+    required FinancialReadModel model,
     required List<Transaction> allTransactionsContext,
   }) {
     return tx_res.resolveTransactions(
       txs,
       categoryOverrides: const {},
-      categoryDisplayRenamesLower: categoryReadModel.categoryDisplayRenames,
+      categoryDisplayRenamesLower: model.categoryDisplayRenamesLower,
       merchantCategoryMemory: const {},
-      accountsById: {for (final account in accounts) account.id: account},
+      accountsById: model.accountsById,
       allTransactions: allTransactionsContext,
     );
   }
-
-  Future<List<Account>> _fetchAccounts() async {
-    return accountService.fetchAccounts();
-  }
-
-  Future<List<Transaction>> _fetchTransactions() async {
-    final records = await transactionService.fetchTransactions();
-    return records
-        .map(
-          (record) => _transactionFromRecord(
-            record,
-            categoryNameForId: categoryReadModel.categoryNameForId,
-          ),
-        )
-        .toList();
-  }
-}
-
-Transaction _transactionFromRecord(
-  TransactionRecord record, {
-  String? Function(String? id)? categoryNameForId,
-}) {
-  final amount = switch (record.type.trim().toLowerCase()) {
-    'expense' => -record.amount.abs(),
-    'income' => record.amount.abs(),
-    _ => record.amount,
-  };
-  return Transaction(
-    date: record.date,
-    description: record.description ?? record.merchant ?? '',
-    amount: amount,
-    accountId: record.accountId,
-    categoryId: categoryNameForId?.call(record.categoryId),
-    importId: record.importId ?? (record.importedFromCsv ? 'csv' : null),
-    fingerprint: record.id,
-    financialRole: record.type.trim().toLowerCase() == 'income'
-        ? FinancialRole.income
-        : FinancialRole.expense,
-  );
 }

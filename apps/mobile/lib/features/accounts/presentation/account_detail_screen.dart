@@ -14,10 +14,18 @@ class AccountDetailScreen extends StatefulWidget {
   const AccountDetailScreen({
     super.key,
     required this.controller,
+    required this.dashboardController,
+    required this.transactionController,
+    required this.budgetController,
+    required this.importJobStatusController,
     required this.accountId,
   });
 
   final AccountUiController controller;
+  final DashboardUiController dashboardController;
+  final TransactionUiController transactionController;
+  final BudgetUiController budgetController;
+  final ImportJobStatusController importJobStatusController;
   final String accountId;
 
   @override
@@ -283,12 +291,16 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
             .firstWhere((a) => a != null, orElse: () => null);
         final title = account?.name ?? 'Account';
         return FinancialDashboardView(
-          controller: widget.controller.ui.dashboard,
+          controller: widget.dashboardController,
+          transactionController: widget.transactionController,
+          budgetController: widget.budgetController,
+          importJobStatusController: widget.importJobStatusController,
           scope: AccountDashboardScope(widget.accountId),
           showBackButton: true,
           title: title,
-          buildSnapshot: (_, _) =>
-              widget.controller.buildSnapshotForAccount(widget.accountId),
+          buildSnapshot: (_, _) => widget.dashboardController.buildSnapshot(
+            AccountDashboardScope(widget.accountId),
+          ),
           onUploadTransactions: () => _importCsvForThisAccount(context),
           onDeleteCsvImportBatch: _deletingCsvUpload
               ? null

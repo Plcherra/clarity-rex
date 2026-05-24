@@ -13,6 +13,7 @@ final class MerchantCategoryRule {
     required this.categoryId,
     required this.matchType,
     required this.confidence,
+    this.disabled = false,
   });
 
   final String id;
@@ -23,6 +24,7 @@ final class MerchantCategoryRule {
   final String categoryId;
   final String matchType;
   final double confidence;
+  final bool disabled;
 
   factory MerchantCategoryRule.fromJson(Map<String, dynamic> json) {
     final aliases = json['aliases'];
@@ -37,6 +39,7 @@ final class MerchantCategoryRule {
       categoryId: _string(json, 'category_id'),
       matchType: _string(json, 'match_type'),
       confidence: _number(json, 'confidence'),
+      disabled: _optionalBool(json, 'disabled'),
     );
   }
 }
@@ -81,6 +84,7 @@ final class MerchantCategoryRuleService {
     List<String> aliases = const [],
     String matchType = 'normalized_exact',
     double confidence = 1,
+    bool disabled = false,
   }) async {
     final user = _currentUser;
     final key = merchantKey.trim().toLowerCase();
@@ -104,6 +108,7 @@ final class MerchantCategoryRuleService {
             'category_id': category,
             'match_type': matchType,
             'confidence': confidence,
+            'disabled': disabled,
           }, onConflict: 'user_id,merchant_key')
           .select()
           .single();
@@ -115,6 +120,96 @@ final class MerchantCategoryRuleService {
         table: 'merchant_category_rules',
         action: 'upsertRule',
         message: 'Could not save merchant category rule.',
+        cause: e,
+      );
+    }
+  }
+
+  Future<void> updateRulesCategory({
+    required String fromCategoryId,
+    required String toCategoryId,
+  }) async {
+    final user = _currentUser;
+    final from = fromCategoryId.trim();
+    final to = toCategoryId.trim();
+    if (from.isEmpty || to.isEmpty || from == to) return;
+
+    try {
+      await _supabaseService.client
+          .from('merchant_category_rules')
+          .update({'category_id': to})
+          .eq('user_id', user.id)
+          .eq('category_id', from);
+    } on SupabaseDataException {
+      rethrow;
+    } on Object catch (e) {
+      throw SupabaseDataException(
+        table: 'merchant_category_rules',
+        action: 'updateRulesCategory',
+        message: 'Could not update merchant category rules.',
+        cause: e,
+      );
+    }
+  }
+
+  Future<MerchantCategoryRule> updateRule(
+    String id, {
+    String? categoryId,
+    bool? disabled,
+  }) async {
+    final user = _currentUser;
+    final payload = <String, dynamic>{};
+    final category = categoryId?.trim();
+    if (category != null && category.isNotEmpty) {
+      payload['category_id'] = category;
+    }
+    if (disabled != null) payload['disabled'] = disabled;
+    if (payload.isEmpty) {
+      throw const SupabaseDataException(
+        table: 'merchant_category_rules',
+        action: 'updateRule',
+        message: 'At least one merchant rule field is required.',
+      );
+    }
+
+    try {
+      final row = await _supabaseService.client
+          .from('merchant_category_rules')
+          .update(payload)
+          .eq('user_id', user.id)
+          .eq('id', id)
+          .select()
+          .single();
+      return MerchantCategoryRule.fromJson(row);
+    } on SupabaseDataException {
+      rethrow;
+    } on Object catch (e) {
+      throw SupabaseDataException(
+        table: 'merchant_category_rules',
+        action: 'updateRule',
+        message: 'Could not update merchant category rule.',
+        cause: e,
+      );
+    }
+  }
+
+  Future<void> deleteRule(String id) async {
+    final user = _currentUser;
+    final key = id.trim();
+    if (key.isEmpty) return;
+    try {
+      await _supabaseService.client
+          .from('merchant_category_rules')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('id', key);
+    } on SupabaseDataException {
+      rethrow;
+    } on Object catch (e) {
+      throw SupabaseDataException(
+        table: 'merchant_category_rules',
+        action: 'deleteRule',
+        message: 'Could not delete merchant category rule.',
         cause: e,
       );
     }
@@ -157,4 +252,11 @@ double _number(Map<String, dynamic> json, String key) {
     if (parsed != null) return parsed;
   }
   throw FormatException('Missing or invalid "$key".');
+}
+
+bool _optionalBool(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return false;
+  if (value is bool) return value;
+  throw FormatException('Invalid "$key".');
 }

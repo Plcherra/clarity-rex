@@ -38,6 +38,20 @@ class BudgetPerformanceSnapshot {
   final List<BudgetCategoryPerformance> topOverspendingCategories;
 }
 
+class BudgetDraftEntry {
+  const BudgetDraftEntry({
+    required this.displayLabel,
+    required this.categoryKey,
+    required this.amount,
+    this.categoryId,
+  });
+
+  final String displayLabel;
+  final String categoryKey;
+  final String? categoryId;
+  final double? amount;
+}
+
 enum BudgetPeriodType { monthly, weekly, custom }
 
 class BudgetPeriodRange {

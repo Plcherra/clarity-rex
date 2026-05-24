@@ -3,6 +3,7 @@ import '../core/supabase/supabase_repository.dart';
 import '../core/supabase/supabase_service.dart';
 import '../features/accounts/application/account_workflow_service.dart';
 import '../features/accounts/data/account_service.dart';
+import '../features/accounts/data/account_statement_import_service.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/application/auth_service.dart';
 import '../features/budgets/application/budget_workflow_service.dart';
@@ -10,6 +11,8 @@ import '../features/budgets/data/budget_service.dart';
 import '../features/categories/application/category_read_model.dart';
 import '../features/categories/data/category_service.dart';
 import '../features/dashboard/application/dashboard_service.dart';
+import '../features/finance/application/financial_read_model_service.dart';
+import '../features/finance/data/financial_audit_service.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/profile/application/profile_service.dart';
 import '../features/transactions/application/category_workflow_service.dart';
@@ -46,6 +49,8 @@ final class AppComposition {
   late final MerchantCategoryRuleService merchantCategoryRuleService =
       supabaseRepository.merchantCategoryRules;
   late final CategoryService categoryService = supabaseRepository.categories;
+  late final FinancialAuditService financialAuditService =
+      supabaseRepository.financialAudit;
 
   // Synchronous UI category state derived from the Supabase categories table.
   // This preserves existing picker/controller APIs without local persistence.
@@ -55,7 +60,19 @@ final class AppComposition {
   late final ProfileService profileService = supabaseRepository.profiles;
   late final BudgetService budgetService = supabaseRepository.budgets;
   late final AccountService accountService = supabaseRepository.accounts;
+  late final AccountStatementImportService accountStatementImportService =
+      supabaseRepository.accountStatementImports;
   final DashboardService dashboardService = DashboardService();
+  late final FinancialReadModelService financialReadModelService =
+      FinancialReadModelService(
+        accountService: accountService,
+        transactionService: transactionService,
+        budgetService: budgetService,
+        categoryService: categoryService,
+        merchantCategoryRuleService: merchantCategoryRuleService,
+        accountStatementImportService: accountStatementImportService,
+        categoryReadModel: categoryReadModel,
+      );
   final ImportJobStatusService importJobStatusService =
       ImportJobStatusService();
 
@@ -91,6 +108,7 @@ final class AppComposition {
   late final BudgetWorkflowService budgetWorkflowService =
       BudgetWorkflowService(
         budgetService: budgetService,
+        categoryReadModel: categoryReadModel,
         notifyDashboardAndBudgetsChanged: () =>
             notifications.dashboardAndBudgetsChanged(),
         refreshAllState: dashboardRefreshCoordinator.refreshAllState,
@@ -112,9 +130,7 @@ final class AppComposition {
   late final DashboardRefreshCoordinator dashboardRefreshCoordinator =
       DashboardRefreshCoordinator(
         dashboardService: dashboardService,
-        transactionService: transactionService,
-        accountService: accountService,
-        categoryReadModel: categoryReadModel,
+        financialReadModelService: financialReadModelService,
         notifyTransactionDataChanged: () =>
             notifications.transactionDataChanged(),
       );
@@ -124,7 +140,9 @@ final class AppComposition {
         categoryService: categoryService,
         categoryReadModel: categoryReadModel,
         transactionService: transactionService,
+        budgetService: budgetService,
         merchantCategoryRuleService: merchantCategoryRuleService,
+        financialAuditService: financialAuditService,
         accountService: accountService,
         profileService: profileService,
         refreshAllState: dashboardRefreshCoordinator.refreshAllState,
@@ -138,6 +156,8 @@ final class AppComposition {
         csvImportService: csvImportService,
         dashboardService: dashboardService,
         importJobStatusService: importJobStatusService,
+        financialAuditService: financialAuditService,
+        deleteStatementImport: accountStatementImportService.deleteImport,
         refreshCategories: categoryReadModel.refresh,
         categoryNameForId: categoryReadModel.categoryNameForId,
         refreshAllState: dashboardRefreshCoordinator.refreshAllState,
@@ -156,11 +176,15 @@ final class AppComposition {
       categoryWorkflowService: categoryWorkflowService,
       transactionWorkflowService: transactionWorkflowService,
       categoryReadModel: categoryReadModel,
+      financialReadModelService: financialReadModelService,
+      financialAuditService: financialAuditService,
       accountService: accountService,
       budgetService: budgetService,
       budgetWorkflowService: budgetWorkflowService,
       importJobStatusService: importJobStatusService,
       accountWorkflowService: accountWorkflowService,
+      notifyImportJobStatusChanged: () =>
+          notifications.importJobStatusChanged(),
     ),
   );
 
@@ -173,6 +197,7 @@ final class AppComposition {
     transactionService: transactionService,
     categoryService: categoryService,
     merchantCategoryRuleService: merchantCategoryRuleService,
+    accountStatementImportService: accountStatementImportService,
     openAiClient: openAiProxyClient,
   );
 

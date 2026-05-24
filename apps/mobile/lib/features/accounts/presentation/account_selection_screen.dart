@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
-import '../../shell/presentation/home_shell.dart';
+import '../../transactions/data/csv_import_service.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 
 /// Shown after the user picks a CSV; they must pick or create an account before import runs.
@@ -11,10 +12,14 @@ class AccountSelectionScreen extends StatefulWidget {
   const AccountSelectionScreen({
     super.key,
     required this.controller,
+    required this.importJobStatusController,
+    required this.homeBuilder,
     required this.pendingCsvText,
   });
 
   final AccountUiController controller;
+  final ImportJobStatusController importJobStatusController;
+  final WidgetBuilder homeBuilder;
   final String pendingCsvText;
 
   @override
@@ -23,6 +28,7 @@ class AccountSelectionScreen extends StatefulWidget {
 
 class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
   late final _AccountSelectionDataNotifier _dataNotifier;
+  String? _importingAccountId;
 
   @override
   void initState() {
@@ -91,16 +97,31 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
   }
 
   Future<void> _importForAccount(BuildContext context, Account account) async {
+    if (_importingAccountId != null) return;
+    setState(() => _importingAccountId = account.id);
     try {
+      widget.controller.showImportPreparationProgress('Previewing CSV...');
+      final preview = await widget.controller.previewCsvImport(
+        widget.pendingCsvText,
+        accountId: account.id,
+      );
+      if (!context.mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) =>
+            _CsvImportPreviewDialog(account: account, preview: preview),
+      );
+      if (confirmed != true) {
+        widget.controller.clearImportJobStatus();
+        return;
+      }
       await widget.controller.loadFromCsv(
         widget.pendingCsvText,
         accountId: account.id,
       );
       if (!context.mounted) return;
       await Navigator.of(context).pushReplacement<void, void>(
-        MaterialPageRoute<void>(
-          builder: (context) => HomeShell(ui: widget.controller.ui),
-        ),
+        MaterialPageRoute<void>(builder: widget.homeBuilder),
       );
     } on FormatException catch (e) {
       if (!context.mounted) return;
@@ -112,6 +133,10 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not import this file.')),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _importingAccountId = null);
+      }
     }
   }
 
@@ -125,7 +150,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
         surfaceTintColor: Colors.transparent,
       ),
       body: ImportJobStatusHost(
-        controller: widget.controller.ui.importJobStatus,
+        controller: widget.importJobStatusController,
         child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -197,6 +222,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (context, i) {
                         final a = accounts[i];
+                        final importingThisAccount =
+                            _importingAccountId == a.id;
                         return Material(
                           color: theme.colorScheme.surfaceContainerLowest,
                           elevation: 0,
@@ -240,16 +267,25 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                               ),
                             ),
                             subtitle: Text(a.type.displayLabel),
-                            trailing: Icon(
-                              Icons.chevron_right_rounded,
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.35,
-                              ),
-                            ),
+                            trailing: importingThisAccount
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.35),
+                                  ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            onTap: () => _importForAccount(context, a),
+                            onTap: _importingAccountId == null
+                                ? () => _importForAccount(context, a)
+                                : null,
                           ),
                         );
                       },
@@ -271,6 +307,124 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
       ),
     );
   }
+}
+
+class _CsvImportPreviewDialog extends StatelessWidget {
+  const _CsvImportPreviewDialog({required this.account, required this.preview});
+
+  final Account account;
+  final CsvImportPreview preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dateRange = _dateRangeLabel(preview.startDate, preview.endDate);
+    return AlertDialog(
+      title: const Text('Import preview'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            account.name,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _PreviewLine(label: 'Date range', value: dateRange),
+          _PreviewLine(label: 'Rows found', value: '${preview.parsedCount}'),
+          _PreviewLine(
+            label: 'New rows',
+            value: '${preview.newTransactionCount}',
+          ),
+          _PreviewLine(label: 'Duplicates', value: '${preview.duplicateCount}'),
+          _PreviewLine(
+            label: 'Spending rows',
+            value: '${preview.spendingCount}',
+          ),
+          _PreviewLine(label: 'Income rows', value: '${preview.incomeCount}'),
+          if (preview.endingBalance != null)
+            _PreviewLine(
+              label: 'Ending balance',
+              value: formatMoney(preview.endingBalance),
+            ),
+          if (preview.diagnostics?.layoutInferred == true) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Column layout was inferred. Review the date range before importing.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.58),
+              ),
+            ),
+          ],
+          if (!preview.hasNewTransactions) ...[
+            const SizedBox(height: 10),
+            Text(
+              'This looks like a duplicate import for this account. Choose another account, or delete the previous CSV upload from the account page before retrying.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.58),
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: preview.hasNewTransactions
+              ? () => Navigator.of(context).pop(true)
+              : null,
+          child: Text(preview.hasNewTransactions ? 'Import' : 'No new rows'),
+        ),
+      ],
+    );
+  }
+}
+
+class _PreviewLine extends StatelessWidget {
+  const _PreviewLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.58),
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _dateRangeLabel(DateTime start, DateTime end) {
+  if (start.year == end.year &&
+      start.month == end.month &&
+      start.day == end.day) {
+    return formatShortDate(start);
+  }
+  return '${formatShortDate(start)} - ${formatShortDate(end)}';
 }
 
 class _AccountSelectionDataNotifier extends ChangeNotifier {

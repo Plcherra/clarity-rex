@@ -65,8 +65,7 @@ ResolvedTransaction resolveTransaction({
       t.amount > 0 && role == FinancialRole.income && !ignoredByCanonical;
 
   final isStatementRow = isBankStatementDataRow(t);
-  final needsCat =
-      isStatementRow && display.trim().toLowerCase() == 'uncategorized';
+  final needsCat = isStatementRow && isUnresolvedCategoryLabel(display);
 
   return ResolvedTransaction(
     transaction: t,

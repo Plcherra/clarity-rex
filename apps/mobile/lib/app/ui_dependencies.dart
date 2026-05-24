@@ -9,17 +9,20 @@ import '../features/budgets/data/budget_service.dart';
 import '../features/budgets/domain/budget_models.dart';
 import '../features/categories/application/category_read_model.dart';
 import '../features/categories/data/category_service.dart';
+import '../features/categories/domain/category_normalization.dart';
 import '../features/dashboard/application/dashboard_service.dart';
 import '../features/dashboard/domain/dashboard_snapshot.dart';
+import '../features/finance/application/financial_read_model_service.dart';
+import '../features/finance/data/financial_audit_service.dart';
 import '../features/transactions/application/category_workflow_service.dart';
 import '../features/transactions/application/import_job_status_service.dart';
+import '../features/transactions/application/transaction_record_mapper.dart';
 import '../features/transactions/application/transaction_workflow_service.dart';
 import '../features/transactions/data/csv_import_service.dart';
+import '../features/transactions/data/merchant_category_rule_service.dart';
 import '../features/transactions/data/transaction_service.dart';
 import '../features/transactions/domain/bank_statement_monthly.dart';
 import '../features/transactions/domain/spend_categories.dart';
-import '../features/transactions/domain/transaction_resolution.dart'
-    as transaction_resolution;
 
 final class AppUiControllerBindings {
   const AppUiControllerBindings({
@@ -29,11 +32,14 @@ final class AppUiControllerBindings {
     required this.categoryWorkflowService,
     required this.transactionWorkflowService,
     required this.categoryReadModel,
+    required this.financialReadModelService,
+    required this.financialAuditService,
     required this.accountService,
     required this.budgetService,
     required this.budgetWorkflowService,
     required this.importJobStatusService,
     required this.accountWorkflowService,
+    required this.notifyImportJobStatusChanged,
   });
 
   final DashboardService dashboardService;
@@ -42,11 +48,14 @@ final class AppUiControllerBindings {
   final CategoryWorkflowService categoryWorkflowService;
   final TransactionWorkflowService transactionWorkflowService;
   final CategoryReadModel categoryReadModel;
+  final FinancialReadModelService financialReadModelService;
+  final FinancialAuditService financialAuditService;
   final AccountService accountService;
   final BudgetService budgetService;
   final BudgetWorkflowService budgetWorkflowService;
   final ImportJobStatusService importJobStatusService;
   final AccountWorkflowService accountWorkflowService;
+  final VoidCallback notifyImportJobStatusChanged;
 }
 
 final class AppUiDependencies {
@@ -55,11 +64,7 @@ final class AppUiDependencies {
       transactions = TransactionUiController._(bindings),
       accounts = AccountUiController._(bindings),
       budgets = BudgetUiController._(bindings),
-      importJobStatus = ImportJobStatusController._(bindings) {
-    dashboard._ui = this;
-    transactions._ui = this;
-    accounts._ui = this;
-  }
+      importJobStatus = ImportJobStatusController._(bindings);
 
   final DashboardUiController dashboard;
   final TransactionUiController transactions;
@@ -101,6 +106,10 @@ base class _UiController extends ChangeNotifier {
 
   void notifyChanged() => notifyListeners();
 
+  Future<FinancialReadModel> loadFinancialReadModel() {
+    return bindings.financialReadModelService.load();
+  }
+
   Future<List<Account>> fetchAccounts() async {
     return bindings.accountService.fetchAccounts();
   }
@@ -110,17 +119,9 @@ base class _UiController extends ChangeNotifier {
   }
 
   Future<List<Transaction>> fetchTransactions({String? accountId}) async {
-    final records = await bindings.transactionService.fetchTransactions(
-      accountId: accountId,
-    );
-    return records
-        .map(
-          (record) => _transactionFromRecord(
-            record,
-            categoryNameForId: bindings.categoryReadModel.categoryNameForId,
-          ),
-        )
-        .toList();
+    final model = await loadFinancialReadModel();
+    if (accountId == null) return model.transactions;
+    return model.transactionsByAccount[accountId] ?? const <Transaction>[];
   }
 
   Stream<List<Transaction>> watchTransactions({String? accountId}) {
@@ -129,7 +130,7 @@ base class _UiController extends ChangeNotifier {
         .map(
           (records) => records
               .map(
-                (record) => _transactionFromRecord(
+                (record) => transactionFromRecord(
                   record,
                   categoryNameForId:
                       bindings.categoryReadModel.categoryNameForId,
@@ -140,30 +141,24 @@ base class _UiController extends ChangeNotifier {
   }
 
   Future<Map<String, List<Transaction>>> fetchTransactionsByAccount() async {
-    final records = await bindings.transactionService.fetchTransactions();
-    final grouped = <String, List<Transaction>>{};
-    for (final record in records) {
-      grouped.putIfAbsent(record.accountId, () => <Transaction>[]);
-      grouped[record.accountId]!.add(
-        _transactionFromRecord(
-          record,
-          categoryNameForId: bindings.categoryReadModel.categoryNameForId,
-        ),
-      );
-    }
-    return {
-      for (final entry in grouped.entries)
-        entry.key: List<Transaction>.unmodifiable(entry.value),
-    };
+    return (await loadFinancialReadModel()).transactionsByAccount;
   }
+}
+
+final class DashboardTransactionReadData {
+  const DashboardTransactionReadData({
+    required this.transactions,
+    required this.allTransactions,
+    required this.accounts,
+  });
+
+  final List<Transaction> transactions;
+  final List<Transaction> allTransactions;
+  final List<Account> accounts;
 }
 
 final class DashboardUiController extends _UiController {
   DashboardUiController._(super.bindings);
-
-  late final AppUiDependencies _ui;
-
-  AppUiDependencies get ui => _ui;
 
   DateTime get spendReference => bindings.dashboardService.spendReference;
 
@@ -171,108 +166,72 @@ final class DashboardUiController extends _UiController {
       bindings.categoryReadModel.categoryDisplayRenames;
 
   Future<DashboardSnapshot> buildSnapshot(DashboardScope scope) async {
-    final accounts = await fetchAccounts();
-    final allTransactions = await fetchTransactions();
-    final scopedTransactions = await transactionsForDashboardScope(scope);
-    return buildDashboardSnapshot(
+    final model = await loadFinancialReadModel();
+    return model.dashboardSnapshot(
       scope: scope,
       reference: bindings.dashboardService.spendReference,
-      accounts: accounts,
-      allTransactions: allTransactions,
-      scopedTransactions: scopedTransactions,
-      categoryOverrides: const {},
-      categoryDisplayRenamesLower:
-          bindings.categoryReadModel.categoryDisplayRenames,
-      scopedBalanceFromStatement: null,
     );
   }
 
   Future<BudgetPerformanceSnapshot> budgetPerformanceForScope(
     DashboardScope scope,
-  ) {
-    return _ui.budgets.budgetPerformanceForScope(scope);
+  ) async {
+    final model = await loadFinancialReadModel();
+    return model.budgetPerformanceForScope(
+      scope,
+      periodType: BudgetPeriodType.monthly,
+      periodKey: _monthKey(spendReference),
+    );
   }
 
-  Future<List<Transaction>> transactionsForDashboardScope(
+  Future<DashboardTransactionReadData> transactionReadDataForScope(
     DashboardScope scope,
   ) async {
-    return switch (scope) {
-      GlobalDashboardScope() => fetchTransactions(),
-      AccountDashboardScope(:final accountId) => fetchTransactions(
-        accountId: accountId,
-      ),
-    };
+    final model = await loadFinancialReadModel();
+    return DashboardTransactionReadData(
+      transactions: model.transactionsForScope(scope),
+      allTransactions: model.transactions,
+      accounts: model.accounts,
+    );
   }
 
   Future<List<BankStatementLine>> refreshedLinesForMonth(
     MonthlyBankGroup group,
   ) async {
-    final allTransactions = await fetchTransactions();
-    final accounts = await fetchAccounts();
-    final accountsById = {for (final account in accounts) account.id: account};
-    final byKey = <String, Transaction>{
-      for (final transaction in allTransactions)
-        transactionCategoryKey(transaction): transaction,
-    };
-
-    final lines = <BankStatementLine>[];
-    for (final line in group.transactions) {
-      final current = byKey[transactionCategoryKey(line.transaction)];
-      if (current == null) continue;
-      final resolved = transaction_resolution.resolveTransaction(
-        t: current,
-        categoryOverrides: const {},
-        categoryDisplayRenamesLower:
-            bindings.categoryReadModel.categoryDisplayRenames,
-        merchantCategoryMemory: const {},
-        accountsById: accountsById,
-        allTransactions: allTransactions,
-      );
-      lines.add(
-        BankStatementLine(
-          transaction: current,
-          suggestedCategory: resolved.displayCategory,
-        ),
-      );
-    }
-    return lines;
+    return (await loadFinancialReadModel()).refreshedLinesForMonth(group);
   }
 
-  Future<int> clearTransactionsForAccount(String accountId) async {
-    final records = await bindings.transactionService.fetchTransactions(
-      accountId: accountId,
-    );
-    for (final record in records) {
-      await bindings.transactionService.deleteTransaction(record.id);
-    }
-    notifyChanged();
-    return records.length;
+  Future<int> deleteTransactionsForAccountMonth({
+    required String accountId,
+    required String yearMonth,
+  }) async {
+    final range = _monthRangeFromKey(yearMonth);
+    if (range == null) return 0;
+    return bindings.transactionWorkflowService
+        .deleteTransactionsForAccountInDateRange(
+          accountId: accountId,
+          start: range.start,
+          endInclusive: range.endInclusive,
+        );
   }
+}
 
-  Future<bool> deleteTransaction(Transaction transaction) async {
-    final records = await bindings.transactionService.fetchTransactions(
-      accountId: transaction.accountId,
-    );
-    final key = transactionCategoryKey(transaction);
-    for (final record in records) {
-      final current = _transactionFromRecord(
-        record,
-        categoryNameForId: bindings.categoryReadModel.categoryNameForId,
-      );
-      if (transactionCategoryKey(current) == key) {
-        await bindings.transactionService.deleteTransaction(record.id);
-        notifyChanged();
-        return true;
-      }
-    }
-    return false;
-  }
+({DateTime start, DateTime endInclusive})? _monthRangeFromKey(
+  String yearMonth,
+) {
+  final parts = yearMonth.split('-');
+  if (parts.length != 2) return null;
+  final year = int.tryParse(parts[0]);
+  final month = int.tryParse(parts[1]);
+  if (year == null || month == null || month < 1 || month > 12) return null;
+  return (
+    start: DateTime(year, month),
+    endInclusive: DateTime(year, month + 1, 0),
+  );
 }
 
 final class TransactionUiController extends _UiController {
   TransactionUiController._(super.bindings);
-
-  late final AppUiDependencies _ui;
 
   List<String> get allowedCategoryPickerLabels =>
       bindings.categoryReadModel.allowedCategoryPickerLabels;
@@ -345,16 +304,22 @@ final class TransactionUiController extends _UiController {
   }
 
   Future<bool> deleteTransaction(Transaction transaction) {
-    return _ui.dashboard.deleteTransaction(transaction);
+    return bindings.transactionWorkflowService.deleteTransaction(transaction);
+  }
+
+  Future<bool> setFinancialRoleOverride(
+    Transaction transaction,
+    FinancialRole? role,
+  ) {
+    return bindings.transactionWorkflowService.setFinancialRoleOverride(
+      transaction,
+      role,
+    );
   }
 }
 
 final class AccountUiController extends _UiController {
   AccountUiController._(super.bindings);
-
-  late final AppUiDependencies _ui;
-
-  AppUiDependencies get ui => _ui;
 
   Future<List<Account>> get accounts => fetchAccounts();
 
@@ -364,6 +329,16 @@ final class AccountUiController extends _UiController {
 
   Future<bool> deleteAccount(String accountId) async {
     return bindings.accountWorkflowService.deleteAccount(accountId);
+  }
+
+  Future<CsvImportPreview> previewCsvImport(
+    String utf8Text, {
+    required String accountId,
+  }) {
+    return bindings.transactionWorkflowService.previewCsvImport(
+      utf8Text,
+      accountId: accountId,
+    );
   }
 
   Future<void> loadFromCsv(String utf8Text, {required String accountId}) async {
@@ -380,13 +355,13 @@ final class AccountUiController extends _UiController {
         value: 0.01,
         message: message,
       ),
-      notifyStatusChanged: _ui.notifyImportJobStatus,
+      notifyStatusChanged: bindings.notifyImportJobStatusChanged,
     );
   }
 
   void clearImportJobStatus() {
     bindings.importJobStatusService.clear(
-      notifyStatusChanged: _ui.notifyImportJobStatus,
+      notifyStatusChanged: bindings.notifyImportJobStatusChanged,
     );
   }
 
@@ -430,16 +405,10 @@ final class AccountUiController extends _UiController {
       importId: importId,
     );
   }
-
-  Future<DashboardSnapshot> buildSnapshotForAccount(String accountId) {
-    return _ui.dashboard.buildSnapshot(AccountDashboardScope(accountId));
-  }
 }
 
 final class BudgetUiController extends _UiController {
   BudgetUiController._(super.bindings);
-
-  BudgetService get budgetService => bindings.budgetService;
 
   DateTime get spendReference => bindings.dashboardService.spendReference;
 
@@ -474,15 +443,19 @@ final class BudgetUiController extends _UiController {
     );
   }
 
+  Future<List<BudgetRecord>> fetchBudgets() async {
+    return (await loadFinancialReadModel()).budgets;
+  }
+
   Future<bool> commitBudgetDraft(
     BudgetPeriodType periodType,
     String periodKey,
-    Map<String, double?> draftByNormalizedDisplayKey,
+    List<BudgetDraftEntry> drafts,
   ) async {
     return bindings.budgetWorkflowService.commitBudgetDraft(
       periodType,
       periodKey,
-      draftByNormalizedDisplayKey,
+      drafts,
     );
   }
 
@@ -493,39 +466,103 @@ final class BudgetUiController extends _UiController {
   }) async {
     final effectiveType = periodType ?? BudgetPeriodType.monthly;
     final effectiveKey = periodKey ?? _monthKey(spendReference);
-    final start = _periodStartFor(effectiveType, effectiveKey);
-    final end = _periodEndFor(effectiveType, effectiveKey);
-    final period = _budgetPeriodToDatabaseValue(effectiveType);
-    final allBudgets = await bindings.budgetService.fetchBudgets();
-    final budgets = allBudgets.where((budget) {
-      return budget.period == period && _sameDay(budget.startDate, start);
-    }).toList();
-    final spentByCategory = await spentByDisplayCategoryForScopeInRange(
+    final model = await loadFinancialReadModel();
+    return model.budgetPerformanceForScope(
       scope,
-      start: start,
-      end: end,
-    );
-    final totalBudgeted = budgets.fold<double>(
-      0,
-      (sum, budget) => sum + budget.amount,
-    );
-    final totalSpent = spentByCategory.values.fold<double>(
-      0,
-      (sum, amount) => sum + amount,
-    );
-    return BudgetPerformanceSnapshot(
       periodType: effectiveType,
       periodKey: effectiveKey,
-      periodLabel: effectiveKey,
-      totalBudgeted: totalBudgeted,
-      totalSpent: totalSpent,
-      budgetedCategoryCount: budgets.length,
-      onTrackCategoryCount: 0,
-      totalOverspent: totalSpent > totalBudgeted
-          ? totalSpent - totalBudgeted
-          : 0,
-      topOverspendingCategories: const [],
     );
+  }
+
+  Future<List<CategoryRecord>> fetchBudgetCategories() async {
+    return (await loadFinancialReadModel()).categories;
+  }
+
+  Future<List<FinancialAuditEvent>> fetchRecentFinancialAuditEvents() {
+    return bindings.financialAuditService.fetchRecent(limit: 30);
+  }
+
+  Future<CategoryRecord> createBudgetCategory(String rawName) async {
+    final created = await bindings.categoryReadModel.ensureExpenseCategory(
+      rawName,
+    );
+    notifyChanged();
+    return created;
+  }
+
+  Future<void> renameBudgetCategory(String oldLabel, String newLabel) async {
+    await bindings.categoryWorkflowService.renameCategory(oldLabel, newLabel);
+    notifyChanged();
+  }
+
+  Future<void> deleteBudgetCategory(String label) async {
+    await bindings.categoryWorkflowService.deleteCategory(label);
+    notifyChanged();
+  }
+
+  Future<void> mergeBudgetCategory({
+    required CategoryRecord source,
+    required CategoryRecord target,
+    required FinancialReadModel model,
+  }) async {
+    await bindings.categoryWorkflowService.mergeCategory(
+      source: source,
+      target: target,
+      transactionRecords: model.transactionRecords,
+      budgets: model.budgets,
+    );
+    notifyChanged();
+  }
+
+  Future<void> setBudgetCategoryHidden(
+    CategoryRecord category,
+    bool hidden,
+  ) async {
+    await bindings.categoryWorkflowService.setCategoryHidden(category, hidden);
+    notifyChanged();
+  }
+
+  Future<void> setMerchantRuleCategory({
+    required MerchantCategoryRule rule,
+    required CategoryRecord category,
+  }) async {
+    await bindings.categoryWorkflowService.setMerchantRuleCategory(
+      rule: rule,
+      category: category,
+    );
+    notifyChanged();
+  }
+
+  Future<void> setMerchantRuleDisabled({
+    required MerchantCategoryRule rule,
+    required bool disabled,
+  }) async {
+    await bindings.categoryWorkflowService.setMerchantRuleDisabled(
+      rule: rule,
+      disabled: disabled,
+    );
+    notifyChanged();
+  }
+
+  Future<void> deleteMerchantRule(MerchantCategoryRule rule) async {
+    await bindings.categoryWorkflowService.deleteMerchantRule(rule);
+    notifyChanged();
+  }
+
+  bool isCustomBudgetCategory(CategoryRecord category) {
+    final key = categoryRecordKey(
+      name: category.name,
+      normalizedName: category.normalizedName,
+    );
+    final builtIns = {
+      for (final label in kSelectableSpendCategories)
+        normalizedCategoryKey(label),
+    };
+    return category.type == 'expense' &&
+        !builtIns.contains(key) &&
+        !isUnresolvedCategoryLabel(category.name) &&
+        !isIgnoredCategoryLabel(category.name) &&
+        !isIncomeCategoryLabel(category.name);
   }
 
   Future<Map<String, double>> spentByDisplayCategoryForScopeInRange(
@@ -533,20 +570,17 @@ final class BudgetUiController extends _UiController {
     required DateTime start,
     required DateTime end,
   }) async {
-    final allTransactions = await fetchTransactions();
-    final transactionsByAccount = await fetchTransactionsByAccount();
-    final accounts = await fetchAccounts();
-    return bindings.dashboardService.spentByDisplayCategoryForScopeInRange(
-      scope: scope,
-      start: start,
-      end: end,
-      allTransactions: allTransactions,
-      transactionsByAccount: transactionsByAccount,
-      categoryOverrides: const {},
-      categoryDisplayRenames: bindings.categoryReadModel.categoryDisplayRenames,
-      merchantCategoryMemory: const {},
-      accounts: accounts,
-    );
+    return (await loadFinancialReadModel())
+        .spentByDisplayCategoryForScopeInRange(scope, start: start, end: end);
+  }
+
+  Future<Map<String, double>> spentByBudgetIdentityForScopeInRange(
+    DashboardScope scope, {
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    return (await loadFinancialReadModel())
+        .spentByBudgetIdentityForScopeInRange(scope, start: start, end: end);
   }
 }
 
@@ -574,8 +608,24 @@ final class ImportJobStatusController extends _UiController {
       .importJobStatusService
       .persistentImportMessageHasFallbackCategories;
 
+  bool get persistentImportMessageCanRetry =>
+      bindings.importJobStatusService.persistentImportMessageCanRetry;
+
+  ImportRepairSummary? get persistentImportSummary =>
+      bindings.importJobStatusService.persistentImportSummary;
+
   String? consumeImportSnackMessage() {
     return bindings.importJobStatusService.consumeImportSnackMessage();
+  }
+
+  Future<void> retryCategoryAssignment() async {
+    final accountId = bindings.importJobStatusService.repairImportAccountId;
+    final importId = bindings.importJobStatusService.repairImportId;
+    if (accountId == null || importId == null) return;
+    await bindings.transactionWorkflowService.retryImportCategoryAssignment(
+      accountId: accountId,
+      importId: importId,
+    );
   }
 
   void dismissPersistentImportMessage() {
@@ -583,95 +633,6 @@ final class ImportJobStatusController extends _UiController {
       notifyStatusChanged: notifyChanged,
     );
   }
-}
-
-Transaction _transactionFromRecord(
-  TransactionRecord record, {
-  String? Function(String? id)? categoryNameForId,
-}) {
-  final amount = switch (record.type.trim().toLowerCase()) {
-    'expense' => -record.amount.abs(),
-    'income' => record.amount.abs(),
-    _ => record.amount,
-  };
-  return Transaction(
-    date: record.date,
-    description: record.description ?? record.merchant ?? '',
-    amount: amount,
-    accountId: record.accountId,
-    categoryId: categoryNameForId?.call(record.categoryId),
-    importId: record.importId ?? (record.importedFromCsv ? 'csv' : null),
-    fingerprint: record.id,
-    financialRole: record.type.trim().toLowerCase() == 'income'
-        ? FinancialRole.income
-        : FinancialRole.expense,
-  );
-}
-
-DateTime _periodStartFor(BudgetPeriodType? periodType, String? periodKey) {
-  final reference = DateTime.now();
-  return switch (periodType) {
-    BudgetPeriodType.monthly =>
-      _parseYearMonthKey(periodKey) ??
-          DateTime(reference.year, reference.month),
-    BudgetPeriodType.weekly =>
-      _parseDateKey(periodKey) ??
-          reference.subtract(Duration(days: reference.weekday - 1)),
-    BudgetPeriodType.custom =>
-      _parseCustomRange(periodKey)?.start ??
-          DateTime(reference.year, reference.month),
-    _ => DateTime(reference.year, reference.month),
-  };
-}
-
-DateTime _periodEndFor(BudgetPeriodType? periodType, String? periodKey) {
-  final start = _periodStartFor(periodType, periodKey);
-  return switch (periodType) {
-    BudgetPeriodType.weekly => start.add(const Duration(days: 6)),
-    BudgetPeriodType.custom => _parseCustomRange(periodKey)?.end ?? start,
-    _ => DateTime(start.year, start.month + 1, 0),
-  };
-}
-
-String _budgetPeriodToDatabaseValue(BudgetPeriodType type) {
-  return switch (type) {
-    BudgetPeriodType.monthly => 'monthly',
-    BudgetPeriodType.weekly => 'weekly',
-    BudgetPeriodType.custom => 'custom',
-  };
-}
-
-bool _sameDay(DateTime? a, DateTime b) {
-  if (a == null) return false;
-  return a.year == b.year && a.month == b.month && a.day == b.day;
-}
-
-DateTime? _parseYearMonthKey(String? key) {
-  final parts = key?.split('-') ?? const <String>[];
-  if (parts.length != 2) return null;
-  final year = int.tryParse(parts[0]);
-  final month = int.tryParse(parts[1]);
-  if (year == null || month == null) return null;
-  return DateTime(year, month);
-}
-
-DateTime? _parseDateKey(String? key) {
-  final parts = key?.split('-') ?? const <String>[];
-  if (parts.length != 3) return null;
-  final year = int.tryParse(parts[0]);
-  final month = int.tryParse(parts[1]);
-  final day = int.tryParse(parts[2]);
-  if (year == null || month == null || day == null) return null;
-  return DateTime(year, month, day);
-}
-
-({DateTime start, DateTime end})? _parseCustomRange(String? key) {
-  final parts = key?.split('_') ?? const <String>[];
-  if (parts.length != 2) return null;
-  final start = _parseDateKey(parts[0]);
-  final end = _parseDateKey(parts[1]);
-  if (start == null || end == null) return null;
-  return (start: start, end: end);
 }
 
 String _monthKey(DateTime date) {

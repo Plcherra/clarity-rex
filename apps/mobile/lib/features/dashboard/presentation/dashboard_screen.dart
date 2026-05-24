@@ -8,19 +8,31 @@ class DashboardScreen extends StatelessWidget {
   const DashboardScreen({
     super.key,
     required this.controller,
+    required this.transactionController,
+    required this.budgetController,
+    required this.importJobStatusController,
     this.isRoot = false,
+    this.reviewRequest = 0,
   });
 
   final DashboardUiController controller;
+  final TransactionUiController transactionController;
+  final BudgetUiController budgetController;
+  final ImportJobStatusController importJobStatusController;
   final bool isRoot;
+  final int reviewRequest;
 
   @override
   Widget build(BuildContext context) {
     return FinancialDashboardView(
       controller: controller,
+      transactionController: transactionController,
+      budgetController: budgetController,
+      importJobStatusController: importJobStatusController,
       scope: const GlobalDashboardScope(),
       showBackButton: !isRoot,
       title: 'Overview',
+      reviewRequest: reviewRequest,
       buildSnapshot: (controller, scope) => controller.buildSnapshot(scope),
     );
   }

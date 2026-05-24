@@ -4,11 +4,13 @@ import 'dart:io';
 import '../../../core/models/models.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../dashboard/application/dashboard_service.dart';
+import '../../finance/data/financial_audit_service.dart';
 import '../data/csv_import_service.dart';
 import '../data/csv_parser.dart';
 import '../data/transaction_service.dart';
 import '../domain/spend_categories.dart';
 import 'import_job_status_service.dart';
+import 'transaction_record_mapper.dart';
 
 typedef TransactionDashboardRecompute =
     FutureOr<void> Function({
@@ -24,6 +26,8 @@ class TransactionWorkflowService {
     required this.csvImportService,
     required this.dashboardService,
     required this.importJobStatusService,
+    required this.financialAuditService,
+    required this.deleteStatementImport,
     required this.refreshCategories,
     required this.categoryNameForId,
     required this.refreshAllState,
@@ -36,12 +40,25 @@ class TransactionWorkflowService {
   final CsvImportService csvImportService;
   final DashboardService dashboardService;
   final ImportJobStatusService importJobStatusService;
+  final FinancialAuditService financialAuditService;
+  final Future<void> Function({
+    required String accountId,
+    required String importId,
+  })
+  deleteStatementImport;
   final Future<void> Function() refreshCategories;
   final String? Function(String? id) categoryNameForId;
   final Future<void> Function() refreshAllState;
   final TransactionDashboardRecompute recomputeDashboard;
   final void Function() notifyTransactionDataChanged;
   final void Function() notifyImportJobStatusChanged;
+
+  Future<CsvImportPreview> previewCsvImport(
+    String utf8Text, {
+    required String accountId,
+  }) {
+    return csvImportService.previewImport(utf8Text, accountId: accountId);
+  }
 
   Future<void> loadFromCsv(
     String utf8Text, {
@@ -84,6 +101,33 @@ class TransactionWorkflowService {
     }
   }
 
+  Future<void> retryImportCategoryAssignment({
+    required String accountId,
+    required String importId,
+  }) async {
+    importJobStatusService.startImportRepair(
+      notifyStatusChanged: notifyImportJobStatusChanged,
+    );
+    try {
+      final result = await csvImportService.repairImportCategories(
+        accountId: accountId,
+        importId: importId,
+      );
+      await refreshCategories();
+      await refreshAllState();
+      notifyTransactionDataChanged();
+      importJobStatusService.applyImportRepairResult(
+        result,
+        notifyStatusChanged: notifyImportJobStatusChanged,
+      );
+    } on Object catch (error) {
+      importJobStatusService.applyImportRepairFailure(
+        error,
+        notifyStatusChanged: notifyImportJobStatusChanged,
+      );
+    }
+  }
+
   Future<TransactionRecord> addTransaction(Transaction transaction) {
     return _createTransactionFromModel(transaction);
   }
@@ -93,6 +137,42 @@ class TransactionWorkflowService {
     if (record == null) return false;
     await transactionService.deleteTransaction(record.id);
     await refreshAllState();
+    return true;
+  }
+
+  Future<bool> setFinancialRoleOverride(
+    Transaction transaction,
+    FinancialRole? role,
+  ) async {
+    final record = await _findRecordForTransaction(transaction);
+    if (record == null) return false;
+    await transactionService.updateTransaction(
+      record.id,
+      financialRole: role == null ? null : financialRoleToStorageValue(role),
+      clearFinancialRole: role == null,
+    );
+    await _recordAuditEvent(
+      FinancialAuditEventInput(
+        eventType: 'transaction_role_override_updated',
+        entityType: 'transaction',
+        entityId: record.id,
+        source: 'manual',
+        previousValue: {'financial_role': record.financialRole},
+        newValue: {
+          'financial_role': role == null
+              ? null
+              : financialRoleToStorageValue(role),
+        },
+        metadata: {
+          'account_id': record.accountId,
+          'transaction_date': record.date.toIso8601String().split('T').first,
+          'description': record.description,
+          'amount': record.amount,
+        },
+      ),
+    );
+    await refreshAllState();
+    notifyTransactionDataChanged();
     return true;
   }
 
@@ -107,6 +187,31 @@ class TransactionWorkflowService {
     return records.length;
   }
 
+  Future<void> _recordAuditEvent(FinancialAuditEventInput input) async {
+    try {
+      await financialAuditService.recordEvent(input);
+    } on Object {
+      // Audit writes should not make an already-applied transaction edit fail.
+    }
+  }
+
+  Future<int> deleteTransactionsForAccountInDateRange({
+    required String accountId,
+    required DateTime start,
+    required DateTime endInclusive,
+  }) async {
+    final deleted = await transactionService
+        .deleteTransactionsForAccountInDateRange(
+          accountId: accountId,
+          start: start,
+          endInclusive: endInclusive,
+        );
+    if (deleted > 0) {
+      await refreshAllState();
+    }
+    return deleted;
+  }
+
   Future<int> deleteTransactionsForImportBatch({
     required String accountId,
     required String importId,
@@ -118,6 +223,7 @@ class TransactionWorkflowService {
       accountId: id,
       importId: batchId,
     );
+    await deleteStatementImport(accountId: id, importId: batchId);
     if (deleted > 0) {
       await refreshAllState();
     }
@@ -134,6 +240,9 @@ class TransactionWorkflowService {
       categoryId: null,
       amount: transaction.amount.abs(),
       type: transaction.amount < 0 ? 'expense' : 'income',
+      financialRole: transaction.financialRole == null
+          ? null
+          : financialRoleToStorageValue(transaction.financialRole!),
       description: transaction.description,
       date: transaction.date,
       merchant: transaction.description,
@@ -152,7 +261,7 @@ class TransactionWorkflowService {
         ? transaction.fingerprint!
         : transactionCategoryKey(transaction);
     for (final record in records) {
-      final current = _transactionFromRecord(
+      final current = transactionFromRecord(
         record,
         categoryNameForId: categoryNameForId,
       );
@@ -170,34 +279,11 @@ class TransactionWorkflowService {
     );
     return records
         .map(
-          (record) => _transactionFromRecord(
+          (record) => transactionFromRecord(
             record,
             categoryNameForId: categoryNameForId,
           ),
         )
         .toList();
   }
-}
-
-Transaction _transactionFromRecord(
-  TransactionRecord record, {
-  String? Function(String? id)? categoryNameForId,
-}) {
-  final amount = switch (record.type.trim().toLowerCase()) {
-    'expense' => -record.amount.abs(),
-    'income' => record.amount.abs(),
-    _ => record.amount,
-  };
-  return Transaction(
-    date: record.date,
-    description: record.description ?? record.merchant ?? '',
-    amount: amount,
-    accountId: record.accountId,
-    categoryId: categoryNameForId?.call(record.categoryId),
-    importId: record.importId ?? (record.importedFromCsv ? 'csv' : null),
-    fingerprint: record.id,
-    financialRole: record.type.trim().toLowerCase() == 'income'
-        ? FinancialRole.income
-        : FinancialRole.expense,
-  );
 }

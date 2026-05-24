@@ -20,12 +20,14 @@ double totalIncomeInMonth(
   DateTime reference, {
   Map<String, String> categoryOverrides = const {},
   Map<String, String> categoryDisplayRenamesLower = const {},
+  Map<String, String> merchantCategoryMemory = const {},
 }) {
   final accountsById = {for (final a in accounts) a.id: a};
   final resolved = resolveTransactions(
     txs,
     categoryOverrides: categoryOverrides,
     categoryDisplayRenamesLower: categoryDisplayRenamesLower,
+    merchantCategoryMemory: merchantCategoryMemory,
     accountsById: accountsById,
     allTransactions: txs,
   );
@@ -46,12 +48,14 @@ Map<String, double> _spendByCategoryInMonth(
   DateTime month,
   Map<String, String> categoryOverrides,
   Map<String, String> categoryDisplayRenamesLower,
+  Map<String, String> merchantCategoryMemory,
 ) {
   final accountsById = {for (final a in accounts) a.id: a};
   final resolved = resolveTransactions(
     txs,
     categoryOverrides: categoryOverrides,
     categoryDisplayRenamesLower: categoryDisplayRenamesLower,
+    merchantCategoryMemory: merchantCategoryMemory,
     accountsById: accountsById,
     allTransactions: txs,
   );
@@ -80,6 +84,7 @@ List<CategoryLeakStat> biggestCategoryLeaks(
   int limit = 3,
   required Map<String, String> categoryOverrides,
   required Map<String, String> categoryDisplayRenamesLower,
+  Map<String, String> merchantCategoryMemory = const {},
 }) {
   final thisMonth = _spendByCategoryInMonth(
     txs,
@@ -87,6 +92,7 @@ List<CategoryLeakStat> biggestCategoryLeaks(
     reference,
     categoryOverrides,
     categoryDisplayRenamesLower,
+    merchantCategoryMemory,
   );
   final prevRef = _firstDayOfPreviousMonth(reference);
   final lastMonth = _spendByCategoryInMonth(
@@ -95,6 +101,7 @@ List<CategoryLeakStat> biggestCategoryLeaks(
     prevRef,
     categoryOverrides,
     categoryDisplayRenamesLower,
+    merchantCategoryMemory,
   );
 
   final sorted = thisMonth.entries.toList()

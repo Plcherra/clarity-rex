@@ -7,9 +7,16 @@ import '../../accounts/presentation/account_selection_screen.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 
 class UploadScreen extends StatefulWidget {
-  const UploadScreen({super.key, required this.controller});
+  const UploadScreen({
+    super.key,
+    required this.controller,
+    required this.importJobStatusController,
+    required this.homeBuilder,
+  });
 
   final AccountUiController controller;
+  final ImportJobStatusController importJobStatusController;
+  final WidgetBuilder homeBuilder;
 
   @override
   State<UploadScreen> createState() => _UploadScreenState();
@@ -44,6 +51,8 @@ class _UploadScreenState extends State<UploadScreen> {
         MaterialPageRoute<void>(
           builder: (context) => AccountSelectionScreen(
             controller: widget.controller,
+            importJobStatusController: widget.importJobStatusController,
+            homeBuilder: widget.homeBuilder,
             pendingCsvText: text,
           ),
         ),
@@ -59,7 +68,7 @@ class _UploadScreenState extends State<UploadScreen> {
         const SnackBar(content: Text('Could not import this file.')),
       );
     } finally {
-      if (mounted && widget.controller.ui.importJobStatus.importRunning) {
+      if (mounted && widget.importJobStatusController.importRunning) {
         widget.controller.clearImportJobStatus();
       }
       if (mounted) setState(() => _busy = false);
@@ -71,7 +80,7 @@ class _UploadScreenState extends State<UploadScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       body: ImportJobStatusHost(
-        controller: widget.controller.ui.importJobStatus,
+        controller: widget.importJobStatusController,
         child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(

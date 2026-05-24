@@ -81,7 +81,7 @@ void main() {
       description: 'TST* BOM DOUGH 02/28 MOBILE PURCHASE CAMBRIDGE MA',
       amount: -2.94,
       accountId: 'account-1',
-      categoryId: 'Unknown',
+      categoryLabel: 'Unknown',
     );
 
     expect(spendGroupLabel(transaction), 'Coffee / Quick Food');

@@ -98,6 +98,12 @@ void main() {
     );
     expect(service.persistentImportMessageIsError, isFalse);
     expect(service.persistentImportMessageHasFallbackCategories, isTrue);
+    expect(service.persistentImportMessageCanRetry, isTrue);
+    expect(service.persistentImportSummary?.title, 'Import needs review');
+    expect(
+      service.persistentImportSummary?.lines.join(' '),
+      contains('Needs review 4'),
+    );
   });
 
   test('duplicate-only import does not report a failed categorization', () {
@@ -165,5 +171,65 @@ void main() {
       'Imported 10 transactions, but 10 need category assignment retry.',
     );
     expect(service.persistentImportMessageIsError, isTrue);
+    expect(service.persistentImportMessageCanRetry, isTrue);
+    expect(
+      service.persistentImportSummary?.title,
+      'Import needs category retry',
+    );
+    expect(service.repairImportAccountId, 'account-1');
+    expect(service.repairImportId, 'import-1');
+  });
+
+  test('category repair result reports resolved and remaining rows', () {
+    final service = ImportJobStatusService();
+
+    service.startImportRepair(notifyStatusChanged: () {});
+    service.applyImportRepairResult(
+      const CsvImportRepairResult(
+        accountId: 'account-1',
+        importId: 'import-1',
+        scannedCount: 10,
+        repairableCount: 10,
+        updatedCount: 6,
+        remainingReviewCount: 4,
+      ),
+      notifyStatusChanged: () {},
+    );
+
+    expect(service.importRunning, isFalse);
+    expect(
+      service.importSnackMessage,
+      'Retried categories. 4 still need review.',
+    );
+    expect(service.persistentImportMessage, contains('4 transactions'));
+    expect(service.persistentImportMessageCanRetry, isTrue);
+    expect(service.persistentImportSummary?.title, 'Category retry complete');
+    expect(
+      service.persistentImportSummary?.lines.join(' '),
+      contains('Updated 6; still unknown 4'),
+    );
+  });
+
+  test('category repair success remains visible as a repair summary', () {
+    final service = ImportJobStatusService();
+
+    service.startImportRepair(notifyStatusChanged: () {});
+    service.applyImportRepairResult(
+      const CsvImportRepairResult(
+        accountId: 'account-1',
+        importId: 'import-1',
+        scannedCount: 10,
+        repairableCount: 10,
+        updatedCount: 10,
+        remainingReviewCount: 0,
+      ),
+      notifyStatusChanged: () {},
+    );
+
+    expect(service.importRunning, isFalse);
+    expect(service.persistentImportMessage, contains('Updated 10'));
+    expect(service.persistentImportMessageCanRetry, isFalse);
+    expect(service.persistentImportSummary?.canReview, isFalse);
+    expect(service.persistentImportSummary?.canOpenCategoryManagement, isFalse);
   });
 }

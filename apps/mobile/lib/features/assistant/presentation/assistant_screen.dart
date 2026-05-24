@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../app/ui_dependencies.dart';
 import '../accountability/presentation/pages/accountability_page.dart';
 import '../chat/presentation/pages/chat_page.dart';
 import '../chat/presentation/pages/conversation_list_page.dart';
@@ -8,9 +7,7 @@ import '../memory/presentation/pages/memory_page.dart';
 import '../voice/presentation/pages/voice_call_page.dart';
 
 class AssistantScreen extends StatelessWidget {
-  const AssistantScreen({super.key, required this.ui});
-
-  final AppUiDependencies ui;
+  const AssistantScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -23,16 +20,19 @@ class AssistantScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Assistant'),
           actions: [
-            IconButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (context) => const ConversationListPage(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.history_rounded),
-              tooltip: 'Conversations',
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: IconButton.filledTonal(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => const ConversationListPage(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.forum_outlined),
+                tooltip: 'Conversations',
+              ),
             ),
           ],
           bottom: PreferredSize(

@@ -6,13 +6,19 @@ import '../../../core/formatting/formatting.dart';
 import 'budget_category_list.dart';
 import 'budgets_header.dart';
 import 'budgets_viewmodel.dart';
+import 'category_management_sheet.dart';
 
 /// Monthly budgets per category (picker list). Hidden categories are omitted here;
 /// their persisted amounts remain until edited elsewhere (Rule A).
 class BudgetsScreen extends StatefulWidget {
-  const BudgetsScreen({super.key, required this.controller});
+  const BudgetsScreen({
+    super.key,
+    required this.controller,
+    this.manageCategoriesRequest = 0,
+  });
 
   final BudgetUiController controller;
+  final int manageCategoriesRequest;
 
   @override
   State<BudgetsScreen> createState() => _BudgetsScreenState();
@@ -32,6 +38,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   String _lastControllerMonthlyPeriodKey = '';
   DateTime? _customStart;
   DateTime? _customEnd;
+  var _loadGeneration = 0;
 
   @override
   void initState() {
@@ -74,6 +81,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     }
     _lastControllerMonthlyPeriodKey = controllerPeriodKey;
     _loadData();
+  }
+
+  @override
+  void didUpdateWidget(covariant BudgetsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_handleControllerChanged);
+      widget.controller.addListener(_handleControllerChanged);
+    }
+    if (oldWidget.manageCategoriesRequest != widget.manageCategoriesRequest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openCategoryManagement();
+      });
+    }
   }
 
   void _schedulePruneOrphans(Set<String> keep) {
@@ -137,7 +158,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       hasSelectedPeriod: hasSelectedPeriod,
       periodType: periodType,
       periodKey: periodKey,
-      spentByDisplay: metrics.spentByDisplay,
+      spentByIdentity: metrics.spentByIdentity,
     );
 
     return _BudgetScreenData(
@@ -148,6 +169,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   Future<void> _loadData() async {
+    final generation = ++_loadGeneration;
     final keys = _viewModel.periodKeys(_selectedType);
     _selectedPeriodKey = _viewModel.normalizeSelectedPeriodKey(
       periodType: _selectedType,
@@ -163,10 +185,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         periodType: _selectedType,
         periodKey: _selectedPeriodKey,
       );
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       _dataNotifier.setData(data);
     } on Object catch (error) {
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       _dataNotifier.setError(error);
     }
   }
@@ -329,6 +351,18 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     return true;
   }
 
+  Future<void> _openCategoryManagement() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) =>
+          CategoryManagementSheet(controller: widget.controller),
+    );
+    if (!mounted) return;
+    await _loadData();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -365,6 +399,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             title: const Text('Budgets'),
             leading: const SizedBox(width: 48),
             actions: [
+              IconButton(
+                tooltip: 'Manage categories',
+                visualDensity: VisualDensity.compact,
+                onPressed: _openCategoryManagement,
+                icon: const Icon(Icons.category_outlined, size: 22),
+              ),
               ValueListenableBuilder<bool>(
                 valueListenable: _viewModel.hasUnsavedChanges,
                 builder: (context, hasChanges, _) {

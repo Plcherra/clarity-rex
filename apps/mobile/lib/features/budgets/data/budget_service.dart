@@ -39,6 +39,8 @@ final class BudgetService {
 
   Future<BudgetRecord> createBudget({
     required String name,
+    String? categoryId,
+    String? categoryKey,
     required double amount,
     required String period,
     DateTime? startDate,
@@ -50,6 +52,8 @@ final class BudgetService {
           .insert({
             'user_id': user.id,
             'name': name,
+            'category_id': ?categoryId,
+            'category_key': ?categoryKey,
             'amount': amount,
             'period': period,
             'start_date': startDate?.toIso8601String().split('T').first,
@@ -72,6 +76,8 @@ final class BudgetService {
   Future<BudgetRecord> updateBudget(
     String id, {
     String? name,
+    String? categoryId,
+    String? categoryKey,
     double? amount,
     String? period,
     DateTime? startDate,
@@ -79,6 +85,8 @@ final class BudgetService {
     final user = _currentUser;
     final payload = <String, dynamic>{};
     if (name != null) payload['name'] = name;
+    if (categoryId != null) payload['category_id'] = categoryId;
+    if (categoryKey != null) payload['category_key'] = categoryKey;
     if (amount != null) payload['amount'] = amount;
     if (period != null) payload['period'] = period;
     if (startDate != null) {
@@ -108,6 +116,39 @@ final class BudgetService {
         table: 'budgets',
         action: 'updateBudget',
         message: 'Could not update budget.',
+        cause: e,
+      );
+    }
+  }
+
+  Future<void> updateBudgetsCategoryIdentity({
+    required List<String> ids,
+    required String categoryId,
+    required String categoryKey,
+    required String name,
+  }) async {
+    final user = _currentUser;
+    final cleanedIds = ids.map((id) => id.trim()).where((id) => id.isNotEmpty);
+    final uniqueIds = cleanedIds.toSet().toList();
+    if (uniqueIds.isEmpty) return;
+
+    try {
+      await _supabaseService.client
+          .from('budgets')
+          .update({
+            'category_id': categoryId,
+            'category_key': categoryKey,
+            'name': name,
+          })
+          .eq('user_id', user.id)
+          .inFilter('id', uniqueIds);
+    } on SupabaseDataException {
+      rethrow;
+    } on Object catch (e) {
+      throw SupabaseDataException(
+        table: 'budgets',
+        action: 'updateBudgetsCategoryIdentity',
+        message: 'Could not update budget categories.',
         cause: e,
       );
     }

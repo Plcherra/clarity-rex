@@ -24,12 +24,17 @@ List<MonthlyBankGroup> monthlyBankGroupsNewestFirstForScopedTransactions(
   List<Transaction> scopedTransactions, {
   required Map<String, String> categoryOverrides,
   required Map<String, String> categoryDisplayRenamesLower,
+  Map<String, String> merchantCategoryMemory = const {},
 }) {
-  final grouped = monthlyGroupsFromTransactions(
+  final resolved = resolveTransactions(
     scopedTransactions,
     categoryOverrides: categoryOverrides,
     categoryDisplayRenamesLower: categoryDisplayRenamesLower,
+    merchantCategoryMemory: merchantCategoryMemory,
+    accountsById: const {},
+    allTransactions: scopedTransactions,
   );
+  final grouped = monthlyGroupsFromResolvedTransactions(resolved);
   return grouped.reversed.toList();
 }
 
@@ -70,6 +75,7 @@ DashboardSnapshot buildDashboardSnapshot({
   required List<Transaction> scopedTransactions,
   required Map<String, String> categoryOverrides,
   required Map<String, String> categoryDisplayRenamesLower,
+  Map<String, String> merchantCategoryMemory = const {},
   required double? scopedBalanceFromStatement,
 }) {
   final accountsById = {for (final a in accounts) a.id: a};
@@ -77,6 +83,7 @@ DashboardSnapshot buildDashboardSnapshot({
     scopedTransactions,
     categoryOverrides: categoryOverrides,
     categoryDisplayRenamesLower: categoryDisplayRenamesLower,
+    merchantCategoryMemory: merchantCategoryMemory,
     accountsById: accountsById,
     allTransactions: allTransactions,
   );
@@ -126,21 +133,19 @@ DashboardSnapshot buildDashboardSnapshot({
     limit: 3,
     categoryOverrides: categoryOverrides,
     categoryDisplayRenamesLower: categoryDisplayRenamesLower,
+    merchantCategoryMemory: merchantCategoryMemory,
   );
 
-  final monthsNewestFirst = monthlyBankGroupsNewestFirstForScopedTransactions(
-    scopedTransactions,
-    categoryOverrides: categoryOverrides,
-    categoryDisplayRenamesLower: categoryDisplayRenamesLower,
+  final monthsNewestFirst = monthlyBankGroupsNewestFirstForResolvedTransactions(
+    resolved,
   );
 
   final balance = switch (scope) {
-    GlobalDashboardScope() =>
-      // v1: keep global balance as whatever caller provides (often last active import).
-      resolveTotalBalance(scopedTransactions, scopedBalanceFromStatement),
+    GlobalDashboardScope() => resolveTotalBalance(scopedBalanceFromStatement),
     AccountDashboardScope(:final accountId) =>
-      accountsById[accountId]?.currentBalance ??
-          resolveTotalBalance(scopedTransactions, scopedBalanceFromStatement),
+      scopedBalanceFromStatement ??
+          accountsById[accountId]?.currentBalance ??
+          resolveTotalBalance(scopedBalanceFromStatement),
   };
 
   final runway = runwayDaysFromBurnRate(

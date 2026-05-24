@@ -1,14 +1,17 @@
 import '../../../core/models/models.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../accounts/data/account_service.dart';
+import '../../budgets/data/budget_service.dart';
 import '../../categories/application/category_read_model.dart';
 import '../../categories/data/category_service.dart';
 import '../../categories/domain/category_normalization.dart';
+import '../../finance/data/financial_audit_service.dart';
 import '../../profile/application/profile_service.dart';
 import '../data/merchant_category_rule_service.dart';
 import '../data/transaction_service.dart';
 import '../domain/merchant_normalization.dart';
 import '../domain/spend_categories.dart';
+import 'transaction_record_mapper.dart';
 
 class MerchantLearningPreview {
   const MerchantLearningPreview({
@@ -39,7 +42,9 @@ class CategoryWorkflowService {
     required this.categoryService,
     required this.categoryReadModel,
     required this.transactionService,
+    required this.budgetService,
     required this.merchantCategoryRuleService,
+    required this.financialAuditService,
     required this.accountService,
     required this.profileService,
     required this.refreshAllState,
@@ -49,7 +54,9 @@ class CategoryWorkflowService {
   final CategoryService categoryService;
   final CategoryReadModel categoryReadModel;
   final TransactionService transactionService;
+  final BudgetService budgetService;
   final MerchantCategoryRuleService merchantCategoryRuleService;
+  final FinancialAuditService financialAuditService;
   final AccountService accountService;
   final ProfileService profileService;
   final Future<void> Function() refreshAllState;
@@ -84,7 +91,7 @@ class CategoryWorkflowService {
       final records = await transactionService.fetchTransactions();
       for (final record in records) {
         transactionIdsByKey[transactionCategoryKey(
-              _transactionFromRecord(
+              transactionFromRecord(
                 record,
                 categoryNameForId: categoryReadModel.categoryNameForId,
               ),
@@ -124,6 +131,19 @@ class CategoryWorkflowService {
       await transactionService.updateTransactionsCategory(
         ids: entry.value,
         categoryId: entry.key,
+      );
+      await _recordAuditEvent(
+        FinancialAuditEventInput(
+          eventType: 'transaction_category_bulk_updated',
+          entityType: 'transaction_batch',
+          entityId: entry.key,
+          source: 'manual_bulk',
+          newValue: {'category_id': entry.key},
+          metadata: {
+            'transaction_count': entry.value.length,
+            'transaction_ids': entry.value,
+          },
+        ),
       );
     }
     if (refreshAfter) {
@@ -222,6 +242,35 @@ class CategoryWorkflowService {
       ids: matchingIds,
       categoryId: categoryRecord.id,
     );
+    await _recordAuditEvent(
+      FinancialAuditEventInput(
+        eventType: matchingIds.length > 1
+            ? 'transaction_category_bulk_updated'
+            : 'transaction_category_updated',
+        entityType: matchingIds.length > 1
+            ? 'transaction_batch'
+            : 'transaction',
+        entityId: matchingIds.length > 1 ? merchantKey : transactionRecord.id,
+        source: learnedMerchantRule ? 'manual_merchant_rule' : 'manual',
+        previousValue: {
+          'category_id': transactionRecord.categoryId,
+          'category_name': categoryReadModel.categoryNameForId(
+            transactionRecord.categoryId,
+          ),
+        },
+        newValue: {
+          'category_id': categoryRecord.id,
+          'category_name': categoryRecord.name,
+        },
+        metadata: {
+          'transaction_count': matchingIds.length,
+          'transaction_ids': matchingIds,
+          if (merchantKey.isNotEmpty) 'merchant_key': merchantKey,
+          'applied_to_similar_merchants': applyToSimilarMerchants,
+          'learned_merchant_rule': learnedMerchantRule,
+        },
+      ),
+    );
     await refreshAllState();
     notifyTransactionDataChanged();
     return CategoryAssignmentResult(
@@ -238,7 +287,164 @@ class CategoryWorkflowService {
     final categoryRecord = categoryReadModel.categoryByName(canonicalLabel);
     if (categoryRecord == null) return;
     await categoryService.deleteCategory(categoryRecord.id);
+    await _recordAuditEvent(
+      FinancialAuditEventInput(
+        eventType: 'category_deleted',
+        entityType: 'category',
+        entityId: categoryRecord.id,
+        source: 'manual',
+        previousValue: _categoryAuditValue(categoryRecord),
+      ),
+    );
     await categoryReadModel.refresh();
+    await refreshAllState();
+    notifyTransactionDataChanged();
+  }
+
+  Future<void> mergeCategory({
+    required CategoryRecord source,
+    required CategoryRecord target,
+    required Iterable<TransactionRecord> transactionRecords,
+    required Iterable<BudgetRecord> budgets,
+  }) async {
+    if (source.id == target.id) return;
+    final targetKey = categoryRecordKey(
+      name: target.name,
+      normalizedName: target.normalizedName,
+    );
+    if (targetKey.isEmpty) return;
+
+    final transactionIds = <String>[];
+    for (final transaction in transactionRecords) {
+      if (transaction.categoryId == source.id) {
+        transactionIds.add(transaction.id);
+      }
+    }
+
+    final sourceKey = categoryRecordKey(
+      name: source.name,
+      normalizedName: source.normalizedName,
+    );
+    final budgetIds = <String>[];
+    for (final budget in budgets) {
+      if (budget.categoryId == source.id ||
+          (budget.categoryId == null && budget.categoryKey == sourceKey)) {
+        budgetIds.add(budget.id);
+      }
+    }
+
+    await transactionService.updateTransactionsCategory(
+      ids: transactionIds,
+      categoryId: target.id,
+    );
+    await budgetService.updateBudgetsCategoryIdentity(
+      ids: budgetIds,
+      categoryId: target.id,
+      categoryKey: targetKey,
+      name: target.name,
+    );
+    await merchantCategoryRuleService.updateRulesCategory(
+      fromCategoryId: source.id,
+      toCategoryId: target.id,
+    );
+    await categoryService.deleteCategory(source.id);
+    await _recordAuditEvent(
+      FinancialAuditEventInput(
+        eventType: 'category_merged',
+        entityType: 'category',
+        entityId: source.id,
+        source: 'manual',
+        previousValue: _categoryAuditValue(source),
+        newValue: _categoryAuditValue(target),
+        metadata: {
+          'target_category_id': target.id,
+          'transaction_count': transactionIds.length,
+          'transaction_ids': transactionIds,
+          'budget_count': budgetIds.length,
+          'budget_ids': budgetIds,
+        },
+      ),
+    );
+    await categoryReadModel.refresh();
+    await refreshAllState();
+    notifyTransactionDataChanged();
+  }
+
+  Future<void> setCategoryHidden(CategoryRecord category, bool hidden) async {
+    final updated = await categoryService.updateCategory(
+      category.id,
+      hidden: hidden,
+    );
+    await _recordAuditEvent(
+      FinancialAuditEventInput(
+        eventType: 'category_visibility_updated',
+        entityType: 'category',
+        entityId: category.id,
+        source: 'manual',
+        previousValue: _categoryAuditValue(category),
+        newValue: _categoryAuditValue(updated),
+      ),
+    );
+    await categoryReadModel.refresh();
+    await refreshAllState();
+    notifyTransactionDataChanged();
+  }
+
+  Future<void> setMerchantRuleCategory({
+    required MerchantCategoryRule rule,
+    required CategoryRecord category,
+  }) async {
+    final updated = await merchantCategoryRuleService.updateRule(
+      rule.id,
+      categoryId: category.id,
+    );
+    await _recordAuditEvent(
+      FinancialAuditEventInput(
+        eventType: 'merchant_rule_category_updated',
+        entityType: 'merchant_category_rule',
+        entityId: rule.id,
+        source: 'manual',
+        previousValue: _merchantRuleAuditValue(rule),
+        newValue: _merchantRuleAuditValue(updated),
+      ),
+    );
+    await refreshAllState();
+    notifyTransactionDataChanged();
+  }
+
+  Future<void> setMerchantRuleDisabled({
+    required MerchantCategoryRule rule,
+    required bool disabled,
+  }) async {
+    final updated = await merchantCategoryRuleService.updateRule(
+      rule.id,
+      disabled: disabled,
+    );
+    await _recordAuditEvent(
+      FinancialAuditEventInput(
+        eventType: 'merchant_rule_disabled_updated',
+        entityType: 'merchant_category_rule',
+        entityId: rule.id,
+        source: 'manual',
+        previousValue: _merchantRuleAuditValue(rule),
+        newValue: _merchantRuleAuditValue(updated),
+      ),
+    );
+    await refreshAllState();
+    notifyTransactionDataChanged();
+  }
+
+  Future<void> deleteMerchantRule(MerchantCategoryRule rule) async {
+    await merchantCategoryRuleService.deleteRule(rule.id);
+    await _recordAuditEvent(
+      FinancialAuditEventInput(
+        eventType: 'merchant_rule_deleted',
+        entityType: 'merchant_category_rule',
+        entityId: rule.id,
+        source: 'manual',
+        previousValue: _merchantRuleAuditValue(rule),
+      ),
+    );
     await refreshAllState();
     notifyTransactionDataChanged();
   }
@@ -249,10 +455,33 @@ class CategoryWorkflowService {
     if (oldKey.isEmpty || next.isEmpty) return;
     final categoryRecord = categoryReadModel.categoryByName(oldLabel);
     if (categoryRecord == null) return;
-    await categoryService.updateCategory(categoryRecord.id, name: next);
+    final updated = await categoryService.updateCategory(
+      categoryRecord.id,
+      name: next,
+    );
+    await _recordAuditEvent(
+      FinancialAuditEventInput(
+        eventType: 'category_renamed',
+        entityType: 'category',
+        entityId: categoryRecord.id,
+        source: 'manual',
+        previousValue: _categoryAuditValue(categoryRecord),
+        newValue: _categoryAuditValue(updated),
+      ),
+    );
     await categoryReadModel.refresh();
     await refreshAllState();
     notifyTransactionDataChanged();
+  }
+
+  Future<void> _recordAuditEvent(FinancialAuditEventInput input) async {
+    try {
+      await financialAuditService.recordEvent(input);
+    } on Object {
+      // Audit is accountability metadata; the user-facing edit has already
+      // succeeded, so a missing migration or transient write failure should not
+      // make the financial mutation appear failed.
+    }
   }
 
   Future<TransactionRecord?> _findRecordForTransaction(
@@ -274,7 +503,7 @@ class CategoryWorkflowService {
     final targetKey = transactionCategoryKey(transaction);
     for (final record in records) {
       if (transactionCategoryKey(
-            _transactionFromRecord(
+            transactionFromRecord(
               record,
               categoryNameForId: categoryReadModel.categoryNameForId,
             ),
@@ -286,6 +515,25 @@ class CategoryWorkflowService {
     return null;
   }
 }
+
+Map<String, dynamic> _categoryAuditValue(CategoryRecord category) => {
+  'id': category.id,
+  'name': category.name,
+  'normalized_name': category.normalizedName,
+  'type': category.type,
+  'hidden': category.hidden,
+};
+
+Map<String, dynamic> _merchantRuleAuditValue(MerchantCategoryRule rule) => {
+  'id': rule.id,
+  'merchant_key': rule.merchantKey,
+  'merchant_display': rule.merchantDisplay,
+  'aliases': rule.aliases,
+  'category_id': rule.categoryId,
+  'match_type': rule.matchType,
+  'confidence': rule.confidence,
+  'disabled': rule.disabled,
+};
 
 List<String> matchingMerchantTransactionIds({
   required String merchantKey,
@@ -302,27 +550,4 @@ List<String> matchingMerchantTransactionIds({
     if (recordKey == key) ids.add(record.id);
   }
   return ids;
-}
-
-Transaction _transactionFromRecord(
-  TransactionRecord record, {
-  String? Function(String? id)? categoryNameForId,
-}) {
-  final amount = switch (record.type.trim().toLowerCase()) {
-    'expense' => -record.amount.abs(),
-    'income' => record.amount.abs(),
-    _ => record.amount,
-  };
-  return Transaction(
-    date: record.date,
-    description: record.description ?? record.merchant ?? '',
-    amount: amount,
-    accountId: record.accountId,
-    categoryId: categoryNameForId?.call(record.categoryId),
-    importId: record.importId ?? (record.importedFromCsv ? 'csv' : null),
-    fingerprint: record.id,
-    financialRole: record.type.trim().toLowerCase() == 'income'
-        ? FinancialRole.income
-        : FinancialRole.expense,
-  );
 }

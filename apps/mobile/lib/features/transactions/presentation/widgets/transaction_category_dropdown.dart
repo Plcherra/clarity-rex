@@ -102,6 +102,123 @@ class _TransactionCategoryFieldState extends State<TransactionCategoryField> {
   }
 }
 
+class TransactionRoleField extends StatefulWidget {
+  const TransactionRoleField({
+    super.key,
+    required this.controller,
+    required this.transaction,
+  });
+
+  final TransactionUiController controller;
+  final Transaction transaction;
+
+  @override
+  State<TransactionRoleField> createState() => _TransactionRoleFieldState();
+}
+
+class _TransactionRoleFieldState extends State<TransactionRoleField> {
+  var _saving = false;
+
+  Future<void> _setRole(FinancialRole? role) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final ok = await widget.controller.setFinancialRoleOverride(
+        widget.transaction,
+        role,
+      );
+      if (!mounted) return;
+      if (!ok) {
+        messenger?.showSnackBar(
+          const SnackBar(content: Text('Could not find this transaction.')),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      messenger?.showSnackBar(
+        SnackBar(content: Text('Could not update role: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final role = widget.transaction.financialRole;
+    final label = role == null ? 'Auto role' : _roleLabel(role);
+
+    return PopupMenuButton<FinancialRole?>(
+      tooltip: 'Financial role',
+      enabled: !_saving,
+      onSelected: _setRole,
+      itemBuilder: (context) => [
+        const PopupMenuItem<FinancialRole?>(
+          value: null,
+          child: Text('Auto role'),
+        ),
+        for (final option in FinancialRole.values)
+          PopupMenuItem<FinancialRole?>(
+            value: option,
+            child: Text(_roleLabel(option)),
+          ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: role == null ? const Color(0xFFF0EDE8) : cs.secondaryContainer,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_saving) ...[
+              SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.8,
+                  color: cs.onSurface.withValues(alpha: 0.55),
+                ),
+              ),
+              const SizedBox(width: 6),
+            ] else ...[
+              Icon(
+                Icons.tune_rounded,
+                size: 13,
+                color: cs.onSurface.withValues(alpha: 0.55),
+              ),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+                color: cs.onSurface.withValues(alpha: 0.58),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _roleLabel(FinancialRole role) {
+  return switch (role) {
+    FinancialRole.expense => 'Expense',
+    FinancialRole.income => 'Income',
+    FinancialRole.transfer => 'Transfer',
+    FinancialRole.creditCardPayment => 'Credit card payment',
+    FinancialRole.refund => 'Refund',
+    FinancialRole.adjustment => 'Adjustment',
+  };
+}
+
 /// Full-screen tap target behind the panel; closes the menu without dimming.
 class _BackdropDismissLayer extends StatelessWidget {
   const _BackdropDismissLayer({required this.onDismiss});

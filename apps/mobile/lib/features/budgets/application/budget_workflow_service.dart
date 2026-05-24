@@ -1,14 +1,19 @@
+import '../../../core/supabase/supabase_records.dart';
+import '../../categories/application/category_read_model.dart';
 import '../domain/budget_models.dart';
 import '../data/budget_service.dart';
+import '../../categories/domain/category_normalization.dart';
 
 class BudgetWorkflowService {
   BudgetWorkflowService({
     required this.budgetService,
+    required this.categoryReadModel,
     required this.notifyDashboardAndBudgetsChanged,
     required this.refreshAllState,
   });
 
   final BudgetService budgetService;
+  final CategoryReadModel categoryReadModel;
   final void Function() notifyDashboardAndBudgetsChanged;
   final Future<void> Function() refreshAllState;
 
@@ -22,21 +27,36 @@ class BudgetWorkflowService {
   Future<bool> commitBudgetDraft(
     BudgetPeriodType periodType,
     String periodKey,
-    Map<String, double?> draftByNormalizedDisplayKey,
+    List<BudgetDraftEntry> drafts,
   ) async {
     var changed = false;
     final existing = await budgetService.fetchBudgets();
-    for (final entry in draftByNormalizedDisplayKey.entries) {
-      final name = entry.key.trim();
+    for (final draft in drafts) {
+      final name = draft.displayLabel.trim();
       if (name.isEmpty) continue;
+      final categoryRecord = draft.categoryId == null
+          ? categoryReadModel.categoryByName(name)
+          : categoryReadModel.categoryById(draft.categoryId);
+      final categoryId = draft.categoryId ?? categoryRecord?.id;
+      final categoryKey = draft.categoryKey.trim().isNotEmpty
+          ? draft.categoryKey.trim()
+          : categoryRecordKey(
+              name: name,
+              normalizedName: categoryRecord?.normalizedName,
+            );
+      if (categoryKey.isEmpty) continue;
 
       final existingBudget = existing.where((budget) {
-        return budget.name.trim().toLowerCase() == name.toLowerCase() &&
+        return _budgetMatchesCategory(
+              budget,
+              categoryId: categoryId,
+              categoryKey: categoryKey,
+            ) &&
             budget.period == _periodToDatabaseValue(periodType) &&
             _sameDate(budget.startDate, _startDateFor(periodType, periodKey));
       }).firstOrNull;
 
-      final amount = entry.value;
+      final amount = draft.amount;
       if (amount == null) {
         if (existingBudget != null) {
           await budgetService.deleteBudget(existingBudget.id);
@@ -48,12 +68,20 @@ class BudgetWorkflowService {
       if (existingBudget == null) {
         await budgetService.createBudget(
           name: name,
+          categoryId: categoryId,
+          categoryKey: categoryKey,
           amount: amount,
           period: _periodToDatabaseValue(periodType),
           startDate: _startDateFor(periodType, periodKey),
         );
       } else {
-        await budgetService.updateBudget(existingBudget.id, amount: amount);
+        await budgetService.updateBudget(
+          existingBudget.id,
+          name: name,
+          categoryId: categoryId,
+          categoryKey: categoryKey,
+          amount: amount,
+        );
       }
       changed = true;
     }
@@ -64,6 +92,27 @@ class BudgetWorkflowService {
     }
     return changed;
   }
+}
+
+bool _budgetMatchesCategory(
+  BudgetRecord budget, {
+  required String? categoryId,
+  required String categoryKey,
+}) {
+  final storedId = budget.categoryId?.trim();
+  if (categoryId != null &&
+      categoryId.trim().isNotEmpty &&
+      storedId != null &&
+      storedId.isNotEmpty) {
+    return storedId == categoryId.trim();
+  }
+  return _budgetCategoryKey(budget) == categoryKey;
+}
+
+String _budgetCategoryKey(BudgetRecord budget) {
+  final stored = budget.categoryKey?.trim();
+  if (stored != null && stored.isNotEmpty) return stored;
+  return normalizedCategoryKey(budget.name);
 }
 
 String _periodToDatabaseValue(BudgetPeriodType periodType) {

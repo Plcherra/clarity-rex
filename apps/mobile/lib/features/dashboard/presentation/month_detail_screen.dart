@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
-import '../../../core/models/models.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../transactions/presentation/widgets/transaction_category_dropdown.dart';
@@ -10,10 +9,12 @@ class MonthDetailScreen extends StatefulWidget {
   const MonthDetailScreen({
     super.key,
     required this.controller,
+    required this.transactionController,
     required this.group,
   });
 
   final DashboardUiController controller;
+  final TransactionUiController transactionController;
 
   /// Month block from the same [DashboardSnapshot.monthlyGroups] list the user tapped.
   final MonthlyBankGroup group;
@@ -24,6 +25,7 @@ class MonthDetailScreen extends StatefulWidget {
 
 class _MonthDetailScreenState extends State<MonthDetailScreen> {
   late final _MonthDetailDataNotifier _dataNotifier;
+  var _loadGeneration = 0;
 
   @override
   void initState() {
@@ -58,15 +60,16 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
   }
 
   Future<void> _loadData() async {
+    final generation = ++_loadGeneration;
     _dataNotifier.setLoading();
     try {
       final lines = await widget.controller.refreshedLinesForMonth(
         widget.group,
       );
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       _dataNotifier.setData(lines);
     } on Object catch (error) {
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       _dataNotifier.setError(error);
     }
   }
@@ -84,7 +87,9 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
         final accountIds =
             lines?.map((e) => e.transaction.accountId).toSet() ??
             const <String>{};
-        final clearAccountId = accountIds.length == 1 ? accountIds.first : null;
+        final monthDeleteAccountId = accountIds.length == 1
+            ? accountIds.first
+            : null;
 
         return Scaffold(
           backgroundColor: const Color(0xFFF7F5F2),
@@ -101,18 +106,23 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
               onPressed: () => Navigator.of(context).pop(),
             ),
             actions: [
-              if (clearAccountId != null && lines != null && lines.isNotEmpty)
+              if (monthDeleteAccountId != null &&
+                  lines != null &&
+                  lines.isNotEmpty)
                 IconButton(
-                  tooltip: 'Clear all transactions',
-                  icon: const Icon(Icons.delete_forever_rounded),
+                  tooltip: 'Delete this month',
+                  icon: const Icon(Icons.delete_sweep_rounded),
                   color: Colors.red.shade700,
                   onPressed: () async {
+                    final monthLabel = formatYearMonthLabel(
+                      widget.group.yearMonth,
+                    );
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        title: const Text('Clear all transactions?'),
-                        content: const Text(
-                          'This will permanently delete every transaction for this account. This action cannot be undone.',
+                        title: Text('Delete $monthLabel transactions?'),
+                        content: Text(
+                          'This will permanently delete the ${lines.length} visible transaction${lines.length == 1 ? '' : 's'} for this account in $monthLabel. Other months will stay untouched.',
                         ),
                         actions: [
                           TextButton(
@@ -124,20 +134,23 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                               backgroundColor: Colors.red.shade700,
                             ),
                             onPressed: () => Navigator.of(ctx).pop(true),
-                            child: const Text('Delete all'),
+                            child: const Text('Delete month'),
                           ),
                         ],
                       ),
                     );
                     if (confirm != true) return;
                     final deleted = await widget.controller
-                        .clearTransactionsForAccount(clearAccountId);
+                        .deleteTransactionsForAccountMonth(
+                          accountId: monthDeleteAccountId,
+                          yearMonth: widget.group.yearMonth,
+                        );
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
                           deleted > 0
-                              ? 'Deleted $deleted transaction${deleted == 1 ? '' : 's'}.'
+                              ? 'Deleted $deleted $monthLabel transaction${deleted == 1 ? '' : 's'}.'
                               : 'No transactions were deleted.',
                         ),
                       ),
@@ -153,6 +166,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
               : _MonthDetailBody(
                   lines: lines,
                   controller: widget.controller,
+                  transactionController: widget.transactionController,
                   theme: theme,
                   colorScheme: cs,
                 ),
@@ -195,12 +209,14 @@ class _MonthDetailBody extends StatelessWidget {
   const _MonthDetailBody({
     required this.lines,
     required this.controller,
+    required this.transactionController,
     required this.theme,
     required this.colorScheme,
   });
 
   final List<BankStatementLine> lines;
   final DashboardUiController controller;
+  final TransactionUiController transactionController;
   final ThemeData theme;
   final ColorScheme colorScheme;
 
@@ -300,8 +316,7 @@ class _MonthDetailBody extends StatelessWidget {
                         ),
                       _LineTile(
                         line: lines[i],
-                        transactionController: controller.ui.transactions,
-                        onDeleteTransaction: controller.deleteTransaction,
+                        transactionController: transactionController,
                       ),
                     ],
                   ],
@@ -313,15 +328,10 @@ class _MonthDetailBody extends StatelessWidget {
 }
 
 class _LineTile extends StatelessWidget {
-  const _LineTile({
-    required this.line,
-    required this.transactionController,
-    required this.onDeleteTransaction,
-  });
+  const _LineTile({required this.line, required this.transactionController});
 
   final BankStatementLine line;
   final TransactionUiController transactionController;
-  final Future<bool> Function(Transaction transaction) onDeleteTransaction;
 
   @override
   Widget build(BuildContext context) {
@@ -368,6 +378,11 @@ class _LineTile extends StatelessWidget {
                       transaction: tx,
                       displayCategory: line.suggestedCategory,
                     ),
+                    const SizedBox(height: 6),
+                    TransactionRoleField(
+                      controller: transactionController,
+                      transaction: tx,
+                    ),
                   ],
                 ),
               ),
@@ -410,7 +425,8 @@ class _LineTile extends StatelessWidget {
                         ),
                       );
                       if (confirm != true) return;
-                      final deleted = await onDeleteTransaction(tx);
+                      final deleted = await transactionController
+                          .deleteTransaction(tx);
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

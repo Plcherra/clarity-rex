@@ -49,6 +49,7 @@ final class CategoryRecord {
     required this.type,
     this.color,
     this.icon,
+    this.hidden = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -60,6 +61,7 @@ final class CategoryRecord {
   final String type;
   final String? color;
   final String? icon;
+  final bool hidden;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -72,6 +74,7 @@ final class CategoryRecord {
       type: _string(json, 'type'),
       color: _nullableString(json, 'color'),
       icon: _nullableString(json, 'icon'),
+      hidden: _optionalBool(json, 'hidden'),
       createdAt: _dateTime(json, 'created_at'),
       updatedAt: _dateTime(json, 'updated_at'),
     );
@@ -84,6 +87,7 @@ final class CategoryRecord {
     'type': type,
     'color': color,
     'icon': icon,
+    'hidden': hidden,
   };
 
   Map<String, dynamic> toUpdateJson() => {
@@ -92,6 +96,7 @@ final class CategoryRecord {
     'type': type,
     'color': color,
     'icon': icon,
+    'hidden': hidden,
   };
 }
 
@@ -100,6 +105,8 @@ final class BudgetRecord {
     required this.id,
     required this.userId,
     required this.name,
+    this.categoryId,
+    this.categoryKey,
     required this.amount,
     required this.period,
     this.startDate,
@@ -110,6 +117,8 @@ final class BudgetRecord {
   final String id;
   final String userId;
   final String name;
+  final String? categoryId;
+  final String? categoryKey;
   final double amount;
   final String period;
   final DateTime? startDate;
@@ -121,6 +130,8 @@ final class BudgetRecord {
       id: _string(json, 'id'),
       userId: _string(json, 'user_id'),
       name: _string(json, 'name'),
+      categoryId: _nullableString(json, 'category_id'),
+      categoryKey: _nullableString(json, 'category_key'),
       amount: _money(json, 'amount'),
       period: _string(json, 'period'),
       startDate: _nullableDate(json, 'start_date'),
@@ -132,6 +143,8 @@ final class BudgetRecord {
   Map<String, dynamic> toInsertJson(String userId) => {
     'user_id': userId,
     'name': name,
+    if (categoryId != null) 'category_id': categoryId,
+    if (categoryKey != null) 'category_key': categoryKey,
     'amount': amount,
     'period': period,
     'start_date': startDate?.toIso8601String().split('T').first,
@@ -139,6 +152,8 @@ final class BudgetRecord {
 
   Map<String, dynamic> toUpdateJson() => {
     'name': name,
+    if (categoryId != null) 'category_id': categoryId,
+    if (categoryKey != null) 'category_key': categoryKey,
     'amount': amount,
     'period': period,
     'start_date': startDate?.toIso8601String().split('T').first,
@@ -153,6 +168,7 @@ final class TransactionRecord {
     this.categoryId,
     required this.amount,
     required this.type,
+    this.financialRole,
     this.description,
     required this.date,
     this.merchant,
@@ -168,6 +184,7 @@ final class TransactionRecord {
   final String? categoryId;
   final double amount;
   final String type;
+  final String? financialRole;
   final String? description;
   final DateTime date;
   final String? merchant;
@@ -184,6 +201,7 @@ final class TransactionRecord {
       categoryId: _nullableString(json, 'category_id'),
       amount: _money(json, 'amount'),
       type: _string(json, 'type'),
+      financialRole: _nullableString(json, 'financial_role'),
       description: _nullableString(json, 'description'),
       date: _date(json, 'date'),
       merchant: _nullableString(json, 'merchant'),
@@ -200,6 +218,7 @@ final class TransactionRecord {
     'category_id': categoryId,
     'amount': amount,
     'type': type,
+    'financial_role': ?financialRole,
     'description': description,
     'date': date.toIso8601String().split('T').first,
     'merchant': merchant,
@@ -212,6 +231,7 @@ final class TransactionRecord {
     'category_id': categoryId,
     'amount': amount,
     'type': type,
+    'financial_role': ?financialRole,
     'description': description,
     'date': date.toIso8601String().split('T').first,
     'merchant': merchant,
@@ -237,6 +257,13 @@ bool _bool(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value is bool) return value;
   throw FormatException('Missing or invalid "$key".');
+}
+
+bool _optionalBool(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return false;
+  if (value is bool) return value;
+  throw FormatException('Invalid "$key".');
 }
 
 double _money(Map<String, dynamic> json, String key) {

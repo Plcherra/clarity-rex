@@ -1,34 +1,62 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/ui_dependencies.dart';
 import '../../../core/models/account.dart';
 import '../../../core/models/transaction.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../budgets/domain/budget_models.dart';
 import '../../dashboard/domain/dashboard_snapshot.dart';
+import '../../finance/application/financial_read_model_service.dart';
 import '../../transactions/domain/spend_categories.dart';
+import '../../transactions/domain/transaction_review.dart';
+import '../../transactions/domain/transaction_resolution.dart';
+
+const int _maxRexTransactionContextRows = 120;
+const int _maxRexDrilldownGroups = 18;
+const int _maxRexDrilldownSampleIds = 8;
 
 final assistantFinancialContextServiceProvider =
     Provider<AssistantFinancialContextService?>((ref) => null);
 
 final class AssistantFinancialContextService {
-  const AssistantFinancialContextService(this.ui);
+  const AssistantFinancialContextService({
+    required Future<FinancialReadModel> Function() loadFinancialReadModel,
+    required DateTime Function() spendReference,
+    required void Function() notifyDataChanged,
+  }) : _loadFinancialReadModel = loadFinancialReadModel,
+       _spendReference = spendReference,
+       _notifyDataChanged = notifyDataChanged;
 
-  final AppUiDependencies ui;
+  final Future<FinancialReadModel> Function() _loadFinancialReadModel;
+  final DateTime Function() _spendReference;
+  final void Function() _notifyDataChanged;
 
   void notifyDataChanged() {
-    ui.notifyDataChanged();
+    _notifyDataChanged();
   }
 
   Future<Map<String, dynamic>> buildSummary() async {
     const scope = GlobalDashboardScope();
-    final snapshot = await _safeDashboardSnapshot(scope);
-    final budgetPerformance = await _safeBudgetPerformance(scope);
-    final accounts = await _safeAccounts();
-    final categories = await _safeCategories();
-    final budgets = await _safeBudgets();
-    final transactions = await _safeTransactions();
-    final resolvedTransactions = await _safeResolvedTransactions();
+    final model = await _safeFinancialReadModel();
+    final reference = _spendReference();
+    final snapshot = model.dashboardSnapshot(
+      scope: scope,
+      reference: reference,
+    );
+    final budgetPerformance = model.budgetPerformanceForScope(
+      scope,
+      periodType: BudgetPeriodType.monthly,
+      periodKey: _monthKey(reference),
+    );
+    final accounts = model.accounts;
+    final categories = model.categories;
+    final budgets = model.budgets;
+    final transactions = model.transactionRecords;
+    final resolvedTransactions = model.transactions;
+    final resolvedViews = model.resolvedTransactionsForScope(scope);
+    final selectedTransactions = _selectTransactionContextRows(
+      transactions,
+      resolvedViews,
+    );
     final dates = transactions.map((transaction) => transaction.date).toList()
       ..sort();
     final accountById = {for (final account in accounts) account.id: account};
@@ -47,10 +75,32 @@ final class AssistantFinancialContextService {
       'integration': {
         'mode': 'unified_clarity_rex',
         'full_financial_context_included': true,
-        'raw_transactions_included': true,
+        'raw_transactions_included':
+            selectedTransactions.length == transactions.length,
+        'transaction_detail_mode':
+            selectedTransactions.length == transactions.length
+            ? 'full'
+            : 'recent_and_review_rows',
         'account_names_included': true,
         'merchant_names_included': true,
         'assistant_can_reference_specific_records': true,
+        'default_context_is_summary_first': true,
+        'drilldown_indexes_included': true,
+      },
+      'retrieval': {
+        'default_transaction_limit': _maxRexTransactionContextRows,
+        'default_selection': selectedTransactions.length == transactions.length
+            ? 'all_transactions'
+            : 'review_rows_plus_recent_transactions',
+        'drilldown_policy':
+            'Use transaction_slices to identify the account, month, category, or review queue to inspect. Ask the user to confirm the slice when details are not included in the default transaction rows.',
+        'supported_drilldown_filters': [
+          'account_id',
+          'account_name',
+          'month',
+          'category',
+          'review_reason',
+        ],
       },
       'available_controls': {
         'transactions': [
@@ -72,8 +122,9 @@ final class AssistantFinancialContextService {
         'execution_policy': 'confirm_destructive_or_money_moving_changes',
       },
       'period': {
-        'reference_month': _monthKey(ui.budgets.spendReference),
+        'reference_month': _monthKey(reference),
         'transaction_count': transactions.length,
+        'included_transaction_count': selectedTransactions.length,
         if (dates.isNotEmpty) 'first_transaction_date': _dateOnly(dates.first),
         if (dates.isNotEmpty) 'last_transaction_date': _dateOnly(dates.last),
       },
@@ -89,6 +140,27 @@ final class AssistantFinancialContextService {
         for (final category in categories) _categoryContext(category),
       ],
       'budgets': [for (final budget in budgets) _budgetRecordContext(budget)],
+      'statement_imports': [
+        for (final statementImport in model.statementImports)
+          {
+            'account_id': statementImport.accountId,
+            'import_id': statementImport.importId,
+            if (statementImport.statementBalance != null)
+              'statement_balance': _money(statementImport.statementBalance!),
+            if (statementImport.startDate != null)
+              'start_date': _dateOnly(statementImport.startDate!),
+            if (statementImport.endDate != null)
+              'end_date': _dateOnly(statementImport.endDate!),
+            'transaction_count': statementImport.transactionCount,
+          },
+      ],
+      'internal_payment_review_count': model
+          .internalPaymentReviewQueue(scope)
+          .length,
+      'transaction_slices': buildRexDrilldownIndex(
+        resolvedTransactions: resolvedViews,
+        accountsById: accountById,
+      ),
       'top_spending_categories': [
         for (final category in snapshot.topCategories.take(5))
           {'category': category.name, 'spent': _money(category.amount)},
@@ -105,7 +177,7 @@ final class AssistantFinancialContextService {
       ],
       'budget': _budgetSummary(budgetPerformance),
       'transactions': [
-        for (final transaction in transactions)
+        for (final transaction in selectedTransactions)
           _transactionContext(
             transaction,
             accountById: accountById,
@@ -116,82 +188,23 @@ final class AssistantFinancialContextService {
     };
   }
 
-  Future<DashboardSnapshot> _safeDashboardSnapshot(DashboardScope scope) async {
+  Future<FinancialReadModel> _safeFinancialReadModel() async {
     try {
-      return await ui.dashboard.buildSnapshot(scope);
+      return await _loadFinancialReadModel();
     } on Object {
-      return const DashboardSnapshot(
-        totalBalance: 0,
-        spentThisMonth: 0,
-        incomeThisMonth: 0,
-        availableThisMonth: 0,
-        topCategories: [],
-        biggestLeaksThisMonth: [],
-        burnRunwayDays: null,
-        monthlyGroups: [],
-      );
+      return FinancialReadModel.empty();
     }
   }
 
-  Future<BudgetPerformanceSnapshot> _safeBudgetPerformance(
-    DashboardScope scope,
-  ) async {
-    try {
-      return await ui.dashboard.budgetPerformanceForScope(scope);
-    } on Object {
-      return BudgetPerformanceSnapshot(
-        periodType: BudgetPeriodType.monthly,
-        periodKey: _monthKey(ui.budgets.spendReference),
-        periodLabel: _monthKey(ui.budgets.spendReference),
-        totalBudgeted: 0,
-        totalSpent: 0,
-        budgetedCategoryCount: 0,
-        onTrackCategoryCount: 0,
-        totalOverspent: 0,
-        topOverspendingCategories: const [],
-      );
-    }
-  }
-
-  Future<List<Account>> _safeAccounts() async {
-    try {
-      return await ui.accounts.fetchAccounts();
-    } on Object {
-      return const [];
-    }
-  }
-
-  Future<List<CategoryRecord>> _safeCategories() async {
-    try {
-      return await ui.transactions.bindings.categoryService.fetchCategories();
-    } on Object {
-      return const [];
-    }
-  }
-
-  Future<List<BudgetRecord>> _safeBudgets() async {
-    try {
-      return await ui.budgets.budgetService.fetchBudgets();
-    } on Object {
-      return const [];
-    }
-  }
-
-  Future<List<TransactionRecord>> _safeTransactions() async {
-    try {
-      return await ui.transactions.bindings.transactionService
-          .fetchTransactions();
-    } on Object {
-      return const [];
-    }
-  }
-
-  Future<List<Transaction>> _safeResolvedTransactions() async {
-    try {
-      return await ui.transactions.fetchTransactions();
-    } on Object {
-      return const [];
-    }
+  List<TransactionRecord> _selectTransactionContextRows(
+    List<TransactionRecord> transactions,
+    List<ResolvedTransaction> resolvedTransactions,
+  ) {
+    return selectRexTransactionContextRows(
+      transactions: transactions,
+      resolvedTransactions: resolvedTransactions,
+      maxRows: _maxRexTransactionContextRows,
+    );
   }
 
   Map<String, dynamic> _accountContext(Account account) {
@@ -221,6 +234,8 @@ final class AssistantFinancialContextService {
     return {
       'id': budget.id,
       'name': budget.name,
+      if (budget.categoryId != null) 'category_id': budget.categoryId,
+      if (budget.categoryKey != null) 'category_key': budget.categoryKey,
       'amount': _money(budget.amount),
       'period': budget.period,
       if (budget.startDate != null) 'start_date': _dateOnly(budget.startDate!),
@@ -303,4 +318,200 @@ final class AssistantFinancialContextService {
         '${value.month.toString().padLeft(2, '0')}-'
         '${value.day.toString().padLeft(2, '0')}';
   }
+}
+
+List<TransactionRecord> selectRexTransactionContextRows({
+  required List<TransactionRecord> transactions,
+  required List<ResolvedTransaction> resolvedTransactions,
+  int maxRows = _maxRexTransactionContextRows,
+}) {
+  if (transactions.length <= maxRows) {
+    return transactions;
+  }
+  final reviewIds = <String>{};
+  for (final resolved in resolvedTransactions) {
+    final id = resolved.transaction.fingerprint;
+    if (id == null || id.isEmpty) continue;
+    if (transactionReviewReasons(resolved).isNotEmpty) {
+      reviewIds.add(id);
+    }
+  }
+  final newest = [...transactions]
+    ..sort((a, b) {
+      final byDate = b.date.compareTo(a.date);
+      if (byDate != 0) return byDate;
+      return b.id.compareTo(a.id);
+    });
+  final selectedIds = <String>{};
+  for (final record in newest) {
+    if (selectedIds.length >= maxRows) break;
+    if (reviewIds.contains(record.id)) selectedIds.add(record.id);
+  }
+  for (final record in newest) {
+    if (selectedIds.length >= maxRows) break;
+    selectedIds.add(record.id);
+  }
+  return [
+    for (final record in newest)
+      if (selectedIds.contains(record.id)) record,
+  ];
+}
+
+Map<String, dynamic> buildRexDrilldownIndex({
+  required List<ResolvedTransaction> resolvedTransactions,
+  required Map<String, Account> accountsById,
+}) {
+  final byMonth = <String, _RexSliceAccumulator>{};
+  final byAccount = <String, _RexSliceAccumulator>{};
+  final byCategory = <String, _RexSliceAccumulator>{};
+  final byReview = <String, _RexSliceAccumulator>{};
+
+  for (final resolved in resolvedTransactions) {
+    final transaction = resolved.transaction;
+    final month = _monthKeyForDate(transaction.date);
+    byMonth
+        .putIfAbsent(
+          month,
+          () => _RexSliceAccumulator(key: month, label: month),
+        )
+        .add(resolved);
+
+    final account = accountsById[transaction.accountId];
+    byAccount
+        .putIfAbsent(
+          transaction.accountId,
+          () => _RexSliceAccumulator(
+            key: transaction.accountId,
+            label: account?.name ?? transaction.accountId,
+          ),
+        )
+        .add(resolved);
+
+    final category = resolved.displayCategory.trim().isEmpty
+        ? 'Unknown'
+        : resolved.displayCategory.trim();
+    byCategory
+        .putIfAbsent(
+          category,
+          () => _RexSliceAccumulator(key: category, label: category),
+        )
+        .add(resolved);
+
+    for (final reason in transactionReviewReasons(resolved)) {
+      final key = reason.name;
+      byReview
+          .putIfAbsent(
+            key,
+            () => _RexSliceAccumulator(
+              key: key,
+              label: _reviewReasonLabel(reason),
+            ),
+          )
+          .add(resolved);
+    }
+  }
+
+  return {
+    'months': _sliceContexts(byMonth.values, sortByLatest: true),
+    'accounts': _sliceContexts(byAccount.values),
+    'categories': _sliceContexts(byCategory.values, sortBySpend: true),
+    'review_queues': _sliceContexts(byReview.values),
+  };
+}
+
+List<Map<String, dynamic>> _sliceContexts(
+  Iterable<_RexSliceAccumulator> groups, {
+  bool sortByLatest = false,
+  bool sortBySpend = false,
+}) {
+  final sorted = groups.toList();
+  sorted.sort((a, b) {
+    if (sortByLatest) {
+      final byDate = (b.latestDate ?? DateTime(0)).compareTo(
+        a.latestDate ?? DateTime(0),
+      );
+      if (byDate != 0) return byDate;
+    }
+    if (sortBySpend) {
+      final bySpend = b.spend.compareTo(a.spend);
+      if (bySpend != 0) return bySpend;
+    }
+    return b.transactionCount.compareTo(a.transactionCount);
+  });
+  return [
+    for (final group in sorted.take(_maxRexDrilldownGroups)) group.toContext(),
+  ];
+}
+
+class _RexSliceAccumulator {
+  _RexSliceAccumulator({required this.key, required this.label});
+
+  final String key;
+  final String label;
+  int transactionCount = 0;
+  double spend = 0;
+  double income = 0;
+  double net = 0;
+  DateTime? latestDate;
+  final _samples = <ResolvedTransaction>[];
+
+  void add(ResolvedTransaction resolved) {
+    final transaction = resolved.transaction;
+    transactionCount += 1;
+    net += transaction.amount;
+    if (resolved.countsAsSpend) spend += transaction.amount.abs();
+    if (resolved.countsAsIncome) income += transaction.amount;
+    if (latestDate == null || transaction.date.isAfter(latestDate!)) {
+      latestDate = transaction.date;
+    }
+    _samples.add(resolved);
+  }
+
+  Map<String, dynamic> toContext() {
+    _samples.sort((a, b) {
+      final byDate = b.transaction.date.compareTo(a.transaction.date);
+      if (byDate != 0) return byDate;
+      return _transactionId(b).compareTo(_transactionId(a));
+    });
+    return {
+      'key': key,
+      'label': label,
+      'transaction_count': transactionCount,
+      'spend': _moneyValue(spend),
+      'income': _moneyValue(income),
+      'net': _moneyValue(net),
+      if (latestDate != null) 'latest_date': _dateOnlyValue(latestDate!),
+      'sample_transaction_ids': [
+        for (final sample in _samples.take(_maxRexDrilldownSampleIds))
+          _transactionId(sample),
+      ],
+    };
+  }
+}
+
+String _transactionId(ResolvedTransaction resolved) {
+  return resolved.transaction.fingerprint ??
+      transactionCategoryKey(resolved.transaction);
+}
+
+String _reviewReasonLabel(TransactionReviewReason reason) {
+  return switch (reason) {
+    TransactionReviewReason.needsCategory => 'Needs category',
+    TransactionReviewReason.internalPayment => 'Possible internal payment',
+    TransactionReviewReason.manualRole => 'Manual role',
+    TransactionReviewReason.ignored => 'Ignored',
+  };
+}
+
+double _moneyValue(double value) => (value * 100).roundToDouble() / 100;
+
+String _monthKeyForDate(DateTime value) {
+  return '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}';
+}
+
+String _dateOnlyValue(DateTime value) {
+  return '${value.year.toString().padLeft(4, '0')}-'
+      '${value.month.toString().padLeft(2, '0')}-'
+      '${value.day.toString().padLeft(2, '0')}';
 }

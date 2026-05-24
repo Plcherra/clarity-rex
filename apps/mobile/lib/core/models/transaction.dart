@@ -7,6 +7,31 @@ enum FinancialRole {
   adjustment,
 }
 
+FinancialRole? financialRoleFromStorageValue(String? value) {
+  return switch (value?.trim().toLowerCase()) {
+    'expense' => FinancialRole.expense,
+    'income' => FinancialRole.income,
+    'transfer' => FinancialRole.transfer,
+    'credit_card_payment' ||
+    'creditcardpayment' ||
+    'credit card payment' => FinancialRole.creditCardPayment,
+    'refund' => FinancialRole.refund,
+    'adjustment' => FinancialRole.adjustment,
+    _ => null,
+  };
+}
+
+String financialRoleToStorageValue(FinancialRole role) {
+  return switch (role) {
+    FinancialRole.expense => 'expense',
+    FinancialRole.income => 'income',
+    FinancialRole.transfer => 'transfer',
+    FinancialRole.creditCardPayment => 'credit_card_payment',
+    FinancialRole.refund => 'refund',
+    FinancialRole.adjustment => 'adjustment',
+  };
+}
+
 class Transaction {
   const Transaction({
     required this.date,
@@ -15,7 +40,7 @@ class Transaction {
     required this.accountId,
     this.category,
     this.balanceAfter,
-    this.categoryId,
+    this.categoryLabel,
     this.importId,
     this.fingerprint,
     this.financialRole,
@@ -33,8 +58,8 @@ class Transaction {
   /// Set after CSV parsing; parser rows use an empty id before account assignment.
   final String accountId;
 
-  /// User-chosen spend category (canonical label), persisted across imports and restarts.
-  final String? categoryId;
+  /// App-facing user category label resolved from the raw Supabase category id.
+  final String? categoryLabel;
 
   /// Import batch identifier (helps debug and undo imports; v1 may be timestamp-based).
   final String? importId;

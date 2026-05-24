@@ -108,7 +108,11 @@ final class ClarityApp extends StatelessWidget {
     return ProviderScope(
       overrides: [
         assistantFinancialContextServiceProvider.overrideWithValue(
-          AssistantFinancialContextService(ui),
+          AssistantFinancialContextService(
+            loadFinancialReadModel: ui.dashboard.loadFinancialReadModel,
+            spendReference: () => ui.budgets.spendReference,
+            notifyDataChanged: ui.notifyDataChanged,
+          ),
         ),
       ],
       child: ListenableBuilder(
