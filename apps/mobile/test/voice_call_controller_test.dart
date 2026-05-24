@@ -125,10 +125,12 @@ class _HangingStreamingAudioCaptureService
   @override
   Future<bool> streamUtterance({
     required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
     required SpeechEndCallback onSpeechEnded,
     required AudioChunkCallback onAudioChunk,
   }) {
+    onReady();
     onSpeechStart();
     if (!started.isCompleted) {
       started.complete();

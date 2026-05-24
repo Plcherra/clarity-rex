@@ -13,6 +13,7 @@ typedef BargeInCallback = void Function();
 abstract class StreamingAudioCaptureService {
   Future<bool> streamUtterance({
     required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
     required SpeechEndCallback onSpeechEnded,
     required AudioChunkCallback onAudioChunk,
@@ -161,6 +162,7 @@ class PackageStreamingAudioCaptureService
   @override
   Future<bool> streamUtterance({
     required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
     required SpeechEndCallback onSpeechEnded,
     required AudioChunkCallback onAudioChunk,
@@ -181,6 +183,7 @@ class PackageStreamingAudioCaptureService
         numChannels: 1,
       ),
     );
+    onReady();
 
     _streamSubscription = stream.listen(
       (chunk) {

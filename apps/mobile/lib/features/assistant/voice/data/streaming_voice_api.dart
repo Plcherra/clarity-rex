@@ -178,7 +178,11 @@ class StreamingVoiceApi {
 
   static Future<VoiceWebSocket> _connectIoWebSocket(Uri uri) async {
     try {
-      return IoVoiceWebSocket(await WebSocket.connect(uri.toString()));
+      return IoVoiceWebSocket(
+        await WebSocket.connect(
+          uri.toString(),
+        ).timeout(const Duration(seconds: 8)),
+      );
     } on Object {
       throw const StreamingVoiceApiException(
         'Could not open Rex voice stream. Check your connection and try again.',

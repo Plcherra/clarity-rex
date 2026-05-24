@@ -7,6 +7,7 @@ import 'package:record/record.dart';
 import 'package:clarity/features/assistant/voice/data/audio_recording_service.dart';
 
 typedef SpeechStartCallback = void Function();
+typedef CaptureReadyCallback = void Function();
 
 class VoiceCaptureConfig {
   const VoiceCaptureConfig({
@@ -98,6 +99,7 @@ class VoiceEndpointDetector {
 abstract class AudioCaptureService {
   Future<RecordedVoiceAudio?> captureUtterance({
     required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
   });
 
@@ -122,6 +124,7 @@ class PackageAudioCaptureService implements AudioCaptureService {
   @override
   Future<RecordedVoiceAudio?> captureUtterance({
     required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
     required SpeechStartCallback onSpeechStart,
   }) async {
     await cancel();
@@ -143,6 +146,7 @@ class PackageAudioCaptureService implements AudioCaptureService {
       ),
       path: path,
     );
+    onReady();
 
     _amplitudeSubscription = _recorder
         .onAmplitudeChanged(config.amplitudeInterval)

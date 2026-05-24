@@ -743,7 +743,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
-    _markListeningReady();
     if (ref.read(streamingVoiceEnabledProvider)) {
       unawaited(_streamNextUtterance(generation));
     } else {
@@ -853,6 +852,12 @@ class VoiceCallController extends Notifier<VoiceCallState>
     try {
       capturedAudio = await _streamingCaptureService.streamUtterance(
         config: ref.read(voiceCaptureConfigProvider),
+        onReady: () {
+          if (_isCurrentCall(generation) &&
+              state.phase == VoiceCallPhase.listening) {
+            _markListeningReady();
+          }
+        },
         onSpeechStart: () {
           if (_isCurrentCall(generation) &&
               state.phase == VoiceCallPhase.listening) {
@@ -925,6 +930,12 @@ class VoiceCallController extends Notifier<VoiceCallState>
     try {
       recording = await _captureService.captureUtterance(
         config: ref.read(voiceCaptureConfigProvider),
+        onReady: () {
+          if (_isCurrentCall(generation) &&
+              state.phase == VoiceCallPhase.listening) {
+            _markListeningReady();
+          }
+        },
         onSpeechStart: () {
           if (_isCurrentCall(generation) &&
               state.phase == VoiceCallPhase.listening) {
