@@ -81,10 +81,15 @@ final class CategoryService {
         normalizedName: normalized.normalizedName,
       );
       if (afterConflict != null) return afterConflict;
+      final byDisplayName = await _fetchCategoryByDisplayName(
+        userId: user.id,
+        displayName: normalized.displayName,
+      );
+      if (byDisplayName != null) return byDisplayName;
       throw SupabaseDataException(
         table: 'categories',
         action: 'createCategory',
-        message: 'Could not create category.',
+        message: 'Could not create category: $e',
         cause: e,
       );
     }
@@ -183,6 +188,20 @@ final class CategoryService {
         .select()
         .eq('user_id', userId)
         .eq('normalized_name', normalizedName)
+        .limit(1);
+    if (rows.isEmpty) return null;
+    return CategoryRecord.fromJson(rows.first);
+  }
+
+  Future<CategoryRecord?> _fetchCategoryByDisplayName({
+    required String userId,
+    required String displayName,
+  }) async {
+    final rows = await _supabaseService.client
+        .from('categories')
+        .select()
+        .eq('user_id', userId)
+        .eq('name', displayName)
         .limit(1);
     if (rows.isEmpty) return null;
     return CategoryRecord.fromJson(rows.first);

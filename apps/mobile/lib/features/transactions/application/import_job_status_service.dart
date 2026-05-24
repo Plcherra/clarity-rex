@@ -65,7 +65,7 @@ class ImportJobStatusService {
           persistentImportSummary = _summaryForImportResult(
             result,
             title: 'Import needs category retry',
-            canReview: true,
+            canReview: false,
             canRetry: true,
           );
           repairImportAccountId = result.accountId;
@@ -82,15 +82,15 @@ class ImportJobStatusService {
           repairImportId = null;
         } else if (result.fallbackCategoryCount > 0) {
           importSnackMessage =
-              'Imported ${result.insertedCount} transactions. ${result.fallbackCategoryCount} need category review.';
+              'Imported ${result.insertedCount} transactions. Retrying ${result.fallbackCategoryCount} uncategorized rows is available.';
           persistentImportMessage =
-              'Imported ${result.insertedCount} transactions. ${result.fallbackCategoryCount} still need category review.';
+              'Imported ${result.insertedCount} transactions. ${result.fallbackCategoryCount} still need automatic categories.';
           persistentImportMessageIsError = false;
           persistentImportMessageHasFallbackCategories = true;
           persistentImportSummary = _summaryForImportResult(
             result,
-            title: 'Import needs review',
-            canReview: true,
+            title: 'Import needs category retry',
+            canReview: false,
             canRetry: true,
           );
           repairImportAccountId = result.accountId;
@@ -178,15 +178,15 @@ class ImportJobStatusService {
       repairImportId = null;
     } else if (result.remainingReviewCount > 0) {
       importSnackMessage =
-          'Retried categories. ${result.remainingReviewCount} still need review.';
+          'Retried categories. ${result.remainingReviewCount} remain uncategorized.';
       persistentImportMessage =
-          'Retried categories. ${result.remainingReviewCount} transactions still need category review.';
+          'Retried categories. ${result.remainingReviewCount} transactions still need automatic categories.';
       persistentImportMessageIsError = false;
       persistentImportMessageHasFallbackCategories = true;
       persistentImportSummary = _summaryForRepairResult(
         result,
         title: 'Category retry complete',
-        canReview: true,
+        canReview: false,
         canRetry: true,
       );
       repairImportAccountId = result.accountId;
@@ -225,7 +225,7 @@ class ImportJobStatusService {
     persistentImportSummary = ImportRepairSummary(
       title: 'Category retry failed',
       lines: ['Retry failed: $error'],
-      canReview: true,
+      canReview: false,
       canRetry: persistentImportMessageCanRetry,
       canOpenCategoryManagement: true,
     );
@@ -279,7 +279,7 @@ class ImportJobStatusService {
       lines: [
         'Parsed ${result.parsedCount}; imported ${result.insertedCount}; skipped ${result.skippedDuplicateCount} duplicates.',
         'AI ${result.aiSucceeded ? 'completed' : 'unavailable'}; AI rows ${result.aiCategorizedCount}; local-rule rows $localCount.',
-        'Needs review ${result.fallbackCategoryCount}; category update failures ${result.categoryUpdateFailureCount}.',
+        'Uncategorized ${result.fallbackCategoryCount}; category update failures ${result.categoryUpdateFailureCount}.',
       ],
       canReview: canReview,
       canRetry: canRetry,
@@ -299,7 +299,7 @@ class ImportJobStatusService {
       title: title,
       lines: [
         'Scanned ${result.scannedCount}; retryable ${result.repairableCount}.',
-        'Updated ${result.updatedCount}; still unknown ${result.remainingReviewCount}.',
+        'Updated ${result.updatedCount}; still uncategorized ${result.remainingReviewCount}.',
       ],
       canReview: canReview,
       canRetry: canRetry,

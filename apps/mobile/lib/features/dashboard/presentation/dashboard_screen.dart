@@ -12,7 +12,6 @@ class DashboardScreen extends StatelessWidget {
     required this.budgetController,
     required this.importJobStatusController,
     this.isRoot = false,
-    this.reviewRequest = 0,
   });
 
   final DashboardUiController controller;
@@ -20,7 +19,6 @@ class DashboardScreen extends StatelessWidget {
   final BudgetUiController budgetController;
   final ImportJobStatusController importJobStatusController;
   final bool isRoot;
-  final int reviewRequest;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +30,6 @@ class DashboardScreen extends StatelessWidget {
       scope: const GlobalDashboardScope(),
       showBackButton: !isRoot,
       title: 'Overview',
-      reviewRequest: reviewRequest,
       buildSnapshot: (controller, scope) => controller.buildSnapshot(scope),
     );
   }

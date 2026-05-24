@@ -19,15 +19,7 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _idx = 0;
-  int _dashboardReviewRequest = 0;
   int _manageCategoriesRequest = 0;
-
-  void _openDashboardReview() {
-    setState(() {
-      _idx = 0;
-      _dashboardReviewRequest++;
-    });
-  }
 
   void _openCategoryManagement() {
     setState(() {
@@ -48,7 +40,6 @@ class _HomeShellState extends State<HomeShell> {
         budgetController: widget.ui.budgets,
         importJobStatusController: widget.ui.importJobStatus,
         isRoot: true,
-        reviewRequest: _dashboardReviewRequest,
       ),
       AccountsScreen(
         controller: widget.ui.accounts,
@@ -69,7 +60,6 @@ class _HomeShellState extends State<HomeShell> {
       child: Scaffold(
         body: ImportJobStatusHost(
           controller: widget.ui.importJobStatus,
-          onReviewIssues: _openDashboardReview,
           onManageCategories: _openCategoryManagement,
           child: IndexedStack(index: _idx, children: pages),
         ),

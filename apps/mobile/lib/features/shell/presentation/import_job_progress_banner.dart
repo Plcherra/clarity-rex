@@ -87,13 +87,11 @@ class ImportJobStatusHost extends StatefulWidget {
     super.key,
     required this.controller,
     required this.child,
-    this.onReviewIssues,
     this.onManageCategories,
   });
 
   final ImportJobStatusController controller;
   final Widget child;
-  final VoidCallback? onReviewIssues;
   final VoidCallback? onManageCategories;
 
   @override
@@ -129,7 +127,6 @@ class _ImportJobStatusHostState extends State<ImportJobStatusHost> {
               _BottomSafeImportOverlay(
                 child: _PersistentImportMessageBanner(
                   controller: widget.controller,
-                  onReviewIssues: widget.onReviewIssues,
                   onManageCategories: widget.onManageCategories,
                 ),
               ),
@@ -169,12 +166,10 @@ class _BottomSafeImportOverlay extends StatelessWidget {
 class _PersistentImportMessageBanner extends StatelessWidget {
   const _PersistentImportMessageBanner({
     required this.controller,
-    this.onReviewIssues,
     this.onManageCategories,
   });
 
   final ImportJobStatusController controller;
-  final VoidCallback? onReviewIssues;
   final VoidCallback? onManageCategories;
 
   @override
@@ -255,19 +250,6 @@ class _PersistentImportMessageBanner extends StatelessWidget {
               runSpacing: 6,
               alignment: WrapAlignment.end,
               children: [
-                if ((summary?.canReview ??
-                        controller
-                            .persistentImportMessageHasFallbackCategories) &&
-                    onReviewIssues != null)
-                  TextButton.icon(
-                    onPressed: onReviewIssues,
-                    icon: Icon(
-                      Icons.fact_check_outlined,
-                      color: foreground,
-                      size: 18,
-                    ),
-                    label: Text('Review', style: TextStyle(color: foreground)),
-                  ),
                 if ((summary?.canRetry ?? false) ||
                     controller.persistentImportMessageCanRetry)
                   TextButton.icon(

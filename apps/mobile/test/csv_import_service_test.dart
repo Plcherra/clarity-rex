@@ -413,6 +413,36 @@ void main() {
     expect(harness.categoryUpdates.single.ids, ['txn-0', 'txn-1']);
   });
 
+  test(
+    'legacy ampersand category normalization reuses existing category',
+    () async {
+      final harness = _CsvImportHarness(
+        categorizeTransactions: (_) async => {
+          'suggestions': [
+            {'key': 'txn-0', 'categoryName': 'Food & Drink'},
+          ],
+        },
+      );
+      harness._categories['food & drink'] = _categoryRecord(
+        id: 'cat-food',
+        name: 'Food & Drink',
+        normalizedName: 'food and drink',
+      );
+      final file = await _writeCsv(_csvRows(1));
+
+      final events = await harness.service
+          .importAndCategorize(file, accountId: _accountId)
+          .toList();
+
+      final result = events.last.result;
+      expect(result, isNotNull);
+      expect(result!.categoryUpdateFailureCount, 0);
+      expect(result.fallbackCategoryCount, 0);
+      expect(harness.createdCategoryNames, isEmpty);
+      expect(harness.categoryUpdates.single.categoryId, 'cat-food');
+    },
+  );
+
   test('learned merchant rules apply during import before AI', () async {
     final harness = _CsvImportHarness(
       merchantRules: const [
@@ -538,7 +568,7 @@ void main() {
     final result = events.last.result;
     expect(result, isNotNull);
     expect(result!.insertedCount, 2);
-    expect(result.aiSucceeded, isFalse);
+    expect(result.aiSucceeded, isTrue);
     expect(result.aiErrorMessage, contains('bulk update failed'));
     expect(result.fallbackCategoryCount, 2);
     expect(result.categoryUpdateFailureCount, 2);
@@ -747,13 +777,14 @@ CategoryRecord _categoryRecord({
   required String id,
   required String name,
   String type = 'expense',
+  String? normalizedName,
 }) {
   final now = DateTime.utc(2026);
   return CategoryRecord(
     id: id,
     userId: _userId,
     name: name,
-    normalizedName: normalizedCategoryKey(name),
+    normalizedName: normalizedName ?? normalizedCategoryKey(name),
     type: type,
     createdAt: now,
     updatedAt: now,

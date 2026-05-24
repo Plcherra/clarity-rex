@@ -228,7 +228,7 @@ class CategoryWorkflowService {
     }
 
     var learnedMerchantRule = false;
-    if (applyToSimilarMerchants && merchantKey.isNotEmpty) {
+    if (merchantKey.isNotEmpty) {
       await merchantCategoryRuleService.upsertRule(
         merchantKey: merchantKey,
         merchantDisplay:

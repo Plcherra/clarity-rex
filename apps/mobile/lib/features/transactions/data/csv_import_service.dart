@@ -175,7 +175,7 @@ class CsvImportProgress {
         message: result.categoryUpdateFailureCount > 0
             ? 'Imported with category assignment errors.'
             : result.fallbackCategoryCount > 0
-            ? 'Imported transactions; some need category review.'
+            ? 'Imported transactions; some still need automatic categories.'
             : 'Import complete.',
         result: result,
       );
@@ -541,7 +541,6 @@ class CsvImportService {
           );
           fallbackCategoryCount = applied.fallbackCategoryCount;
         } on Object catch (error) {
-          aiSucceeded = false;
           aiErrorMessage ??= '$error';
           fallbackCategoryCount = insertedRecords.length;
           categoryUpdateFailureCount = insertedRecords.length;
@@ -870,13 +869,15 @@ class CsvImportService {
     Set<String> categoryNames,
   ) async {
     final existing = await _fetchCategories();
-    final out = <String, String>{
-      for (final category in existing)
-        categoryRecordKey(
-          name: category.name,
-          normalizedName: category.normalizedName,
-        ): category.id,
-    };
+    final out = <String, String>{};
+    for (final category in existing) {
+      out[categoryRecordKey(
+            name: category.name,
+            normalizedName: category.normalizedName,
+          )] =
+          category.id;
+      out[normalizedCategoryKey(category.name)] = category.id;
+    }
     for (final rawName in categoryNames) {
       final normalized =
           normalizeCategoryName(rawName) ??

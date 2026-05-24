@@ -74,7 +74,7 @@ void main() {
     expect(service.persistentImportMessageHasFallbackCategories, isFalse);
   });
 
-  test('unknown category rows are review state, not import failure', () {
+  test('unknown category rows are retry state, not import failure', () {
     final service = ImportJobStatusService();
 
     service.applyCsvImportProgress(
@@ -90,19 +90,22 @@ void main() {
 
     expect(
       service.importSnackMessage,
-      'Imported 269 transactions. 4 need category review.',
+      'Imported 269 transactions. Retrying 4 uncategorized rows is available.',
     );
     expect(
       service.persistentImportMessage,
-      'Imported 269 transactions. 4 still need category review.',
+      'Imported 269 transactions. 4 still need automatic categories.',
     );
     expect(service.persistentImportMessageIsError, isFalse);
     expect(service.persistentImportMessageHasFallbackCategories, isTrue);
     expect(service.persistentImportMessageCanRetry, isTrue);
-    expect(service.persistentImportSummary?.title, 'Import needs review');
+    expect(
+      service.persistentImportSummary?.title,
+      'Import needs category retry',
+    );
     expect(
       service.persistentImportSummary?.lines.join(' '),
-      contains('Needs review 4'),
+      contains('Uncategorized 4'),
     );
   });
 
@@ -199,14 +202,14 @@ void main() {
     expect(service.importRunning, isFalse);
     expect(
       service.importSnackMessage,
-      'Retried categories. 4 still need review.',
+      'Retried categories. 4 remain uncategorized.',
     );
     expect(service.persistentImportMessage, contains('4 transactions'));
     expect(service.persistentImportMessageCanRetry, isTrue);
     expect(service.persistentImportSummary?.title, 'Category retry complete');
     expect(
       service.persistentImportSummary?.lines.join(' '),
-      contains('Updated 6; still unknown 4'),
+      contains('Updated 6; still uncategorized 4'),
     );
   });
 

@@ -10,11 +10,9 @@ import '../../budgets/presentation/budgets_screen.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../transactions/domain/spend_categories.dart';
-import '../../transactions/domain/transaction_review.dart';
 import '../../transactions/domain/transaction_resolution.dart';
 import '../../transactions/presentation/widgets/transaction_category_dropdown.dart';
 import 'month_detail_screen.dart';
-import 'transaction_review_screen.dart';
 
 typedef SnapshotBuilder =
     Future<DashboardSnapshot> Function(
@@ -145,15 +143,6 @@ String _financialRoleLabel(FinancialRole role) {
   };
 }
 
-String _reviewFilterLabel(_TransactionsReviewFilter filter) {
-  return switch (filter) {
-    _TransactionsReviewFilter.all => 'Needs review',
-    _TransactionsReviewFilter.uncategorized => 'Uncategorized',
-    _TransactionsReviewFilter.internalPayments => 'Internal payments',
-    _TransactionsReviewFilter.manualRoles => 'Manual roles',
-  };
-}
-
 class FinancialDashboardView extends StatefulWidget {
   const FinancialDashboardView({
     super.key,
@@ -168,7 +157,6 @@ class FinancialDashboardView extends StatefulWidget {
     this.onUploadTransactions,
     this.onDeleteCsvImportBatch,
     this.onDeleteAccount,
-    this.reviewRequest = 0,
   });
 
   final DashboardUiController controller;
@@ -188,9 +176,6 @@ class FinancialDashboardView extends StatefulWidget {
 
   /// Optional account-level delete action (shown as a red trash icon in app bar).
   final Future<void> Function()? onDeleteAccount;
-
-  /// Incremented by the shell to open the dashboard transaction review queue.
-  final int reviewRequest;
 
   @override
   State<FinancialDashboardView> createState() => _FinancialDashboardViewState();
@@ -224,18 +209,6 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
 
   void _handleControllerChanged() {
     _loadData();
-  }
-
-  void _openLocalReviewQueue() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => TransactionReviewScreen(
-          controller: widget.controller,
-          transactionController: widget.transactionController,
-          scope: widget.scope,
-        ),
-      ),
-    );
   }
 
   Future<void> _loadData() async {
@@ -321,12 +294,10 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             snapshot: data.snapshot,
             budgetPerformance: data.budgetPerformance,
             onUploadTransactions: widget.onUploadTransactions,
-            reviewRequest: widget.reviewRequest,
           );
           return widget.showBackButton
               ? ImportJobStatusHost(
                   controller: widget.importJobStatusController,
-                  onReviewIssues: _openLocalReviewQueue,
                   child: scrollBody,
                 )
               : scrollBody;
@@ -385,7 +356,6 @@ class _DashboardScrollBody extends StatelessWidget {
     required this.snapshot,
     required this.budgetPerformance,
     required this.onUploadTransactions,
-    required this.reviewRequest,
   });
 
   final String title;
@@ -396,7 +366,6 @@ class _DashboardScrollBody extends StatelessWidget {
   final DashboardSnapshot snapshot;
   final BudgetPerformanceSnapshot budgetPerformance;
   final Future<void> Function()? onUploadTransactions;
-  final int reviewRequest;
 
   @override
   Widget build(BuildContext context) {
@@ -484,7 +453,6 @@ class _DashboardScrollBody extends StatelessWidget {
                     controller: controller,
                     transactionController: transactionController,
                     scope: scope,
-                    reviewRequest: reviewRequest,
                   ),
                 ]),
               ),
@@ -597,7 +565,7 @@ class _CompactUploadButtonState extends State<_CompactUploadButton> {
   }
 }
 
-enum _TransactionsViewMode { months, categories, rows, review }
+enum _TransactionsViewMode { months, categories, rows }
 
 enum _TransactionsTimeFilter {
   all,
@@ -608,27 +576,18 @@ enum _TransactionsTimeFilter {
 
 enum _TransactionsSortMode { newest, oldest, largest, merchant }
 
-enum _TransactionsReviewFilter {
-  all,
-  uncategorized,
-  internalPayments,
-  manualRoles,
-}
-
 class _DashboardTransactionsSection extends StatefulWidget {
   const _DashboardTransactionsSection({
     required this.snapshot,
     required this.controller,
     required this.transactionController,
     required this.scope,
-    required this.reviewRequest,
   });
 
   final DashboardSnapshot snapshot;
   final DashboardUiController controller;
   final TransactionUiController transactionController;
   final DashboardScope scope;
-  final int reviewRequest;
 
   @override
   State<_DashboardTransactionsSection> createState() =>
@@ -641,7 +600,6 @@ class _DashboardTransactionsSectionState
   var _mode = _TransactionsViewMode.months;
   var _timeFilter = _TransactionsTimeFilter.all;
   var _sortMode = _TransactionsSortMode.newest;
-  var _reviewFilter = _TransactionsReviewFilter.all;
   String? _categoryFilter;
   String? _accountFilter;
   FinancialRole? _roleFilter;
@@ -673,12 +631,6 @@ class _DashboardTransactionsSectionState
         oldWidget.controller != widget.controller) {
       _accountFilter = null;
       _load();
-    }
-    if (oldWidget.reviewRequest != widget.reviewRequest) {
-      setState(() {
-        _mode = _TransactionsViewMode.review;
-        _reviewFilter = _TransactionsReviewFilter.all;
-      });
     }
   }
 
@@ -726,10 +678,6 @@ class _DashboardTransactionsSectionState
     if (_timeFilter != _TransactionsTimeFilter.all) count++;
     if (_sortMode != _TransactionsSortMode.newest) count++;
     if (_roleFilter != null) count++;
-    if (_mode == _TransactionsViewMode.review &&
-        _reviewFilter != _TransactionsReviewFilter.all) {
-      count++;
-    }
     if (!_isAccountScope && _accountFilter != null) count++;
     if (_searchController.text.trim().isNotEmpty) count++;
     return count;
@@ -742,7 +690,6 @@ class _DashboardTransactionsSectionState
       _roleFilter = null;
       _timeFilter = _TransactionsTimeFilter.all;
       _sortMode = _TransactionsSortMode.newest;
-      _reviewFilter = _TransactionsReviewFilter.all;
       _searchController.clear();
     });
   }
@@ -898,34 +845,11 @@ class _DashboardTransactionsSectionState
     return spendingCategoryGroupsForResolvedTransactions(_filteredTransactions);
   }
 
-  List<ResolvedTransaction> get _reviewTransactions {
-    return _filteredTransactions
-        .where(_matchesReviewFilter)
-        .toList(growable: false);
-  }
-
-  bool _matchesReviewFilter(ResolvedTransaction transaction) {
-    final reasons = transactionReviewReasons(transaction);
-    return switch (_reviewFilter) {
-      _TransactionsReviewFilter.all => reasons.isNotEmpty,
-      _TransactionsReviewFilter.uncategorized => reasons.contains(
-        TransactionReviewReason.needsCategory,
-      ),
-      _TransactionsReviewFilter.internalPayments => reasons.contains(
-        TransactionReviewReason.internalPayment,
-      ),
-      _TransactionsReviewFilter.manualRoles => reasons.contains(
-        TransactionReviewReason.manualRole,
-      ),
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final filtered = _filteredTransactions;
-    final reviewTransactions = _reviewTransactions;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -955,21 +879,6 @@ class _DashboardTransactionsSectionState
                 icon: const Icon(Icons.close_rounded, size: 18),
                 label: const Text('Clear'),
               ),
-            TextButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => TransactionReviewScreen(
-                      controller: widget.controller,
-                      transactionController: widget.transactionController,
-                      scope: widget.scope,
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.fact_check_outlined, size: 18),
-              label: const Text('Review'),
-            ),
           ],
         ),
         const SizedBox(height: 14),
@@ -989,14 +898,11 @@ class _DashboardTransactionsSectionState
           timeFilter: _timeFilter,
           sortMode: _sortMode,
           roleFilter: _roleFilter,
-          reviewFilter: _reviewFilter,
-          showReviewFilter: _mode == _TransactionsViewMode.review,
           onCategoryChanged: (value) => setState(() => _categoryFilter = value),
           onAccountChanged: (value) => setState(() => _accountFilter = value),
           onTimeChanged: (value) => setState(() => _timeFilter = value),
           onSortChanged: (value) => setState(() => _sortMode = value),
           onRoleChanged: (value) => setState(() => _roleFilter = value),
-          onReviewChanged: (value) => setState(() => _reviewFilter = value),
         ),
         const SizedBox(height: 16),
         if (_loading)
@@ -1034,15 +940,6 @@ class _DashboardTransactionsSectionState
               },
               showAccount: !_isAccountScope,
             ),
-            _TransactionsViewMode.review => _InlineTransactionsList(
-              transactions: reviewTransactions,
-              controller: widget.transactionController,
-              accountsById: {
-                for (final account in _accounts) account.id: account,
-              },
-              showAccount: !_isAccountScope,
-              emptyMessage: 'No transactions need review.',
-            ),
           },
       ],
     );
@@ -1050,11 +947,7 @@ class _DashboardTransactionsSectionState
 
   String _sectionSubtitle(int filteredCount) {
     if (_activeFilterCount == 0 && _mode == _TransactionsViewMode.months) {
-      return 'Tap a month to review transactions | $_activeDateRangeDescription';
-    }
-    if (_mode == _TransactionsViewMode.review) {
-      final reviewCount = _reviewTransactions.length;
-      return '$reviewCount review items | $_activeDateRangeDescription';
+      return 'Tap a month to inspect transactions | $_activeDateRangeDescription';
     }
     final count = _transactions.length;
     return '$filteredCount of $count transactions | $_activeDateRangeDescription';
@@ -1093,12 +986,6 @@ class _TransactionsModePicker extends StatelessWidget {
           icon: Icons.receipt_long_outlined,
           selected: selected == _TransactionsViewMode.rows,
           onTap: () => onSelected(_TransactionsViewMode.rows),
-        ),
-        _ModeChip(
-          label: 'Review',
-          icon: Icons.fact_check_outlined,
-          selected: selected == _TransactionsViewMode.review,
-          onTap: () => onSelected(_TransactionsViewMode.review),
         ),
       ],
     );
@@ -1187,14 +1074,11 @@ class _InlineFilterBar extends StatelessWidget {
     required this.timeFilter,
     required this.sortMode,
     required this.roleFilter,
-    required this.reviewFilter,
-    required this.showReviewFilter,
     required this.onCategoryChanged,
     required this.onAccountChanged,
     required this.onTimeChanged,
     required this.onSortChanged,
     required this.onRoleChanged,
-    required this.onReviewChanged,
   });
 
   final List<String> categories;
@@ -1205,14 +1089,11 @@ class _InlineFilterBar extends StatelessWidget {
   final _TransactionsTimeFilter timeFilter;
   final _TransactionsSortMode sortMode;
   final FinancialRole? roleFilter;
-  final _TransactionsReviewFilter reviewFilter;
-  final bool showReviewFilter;
   final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<String?> onAccountChanged;
   final ValueChanged<_TransactionsTimeFilter> onTimeChanged;
   final ValueChanged<_TransactionsSortMode> onSortChanged;
   final ValueChanged<FinancialRole?> onRoleChanged;
-  final ValueChanged<_TransactionsReviewFilter> onReviewChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1262,15 +1143,6 @@ class _InlineFilterBar extends StatelessWidget {
               value == null ? 'All roles' : _financialRoleLabel(value),
           onSelected: onRoleChanged,
         ),
-        if (showReviewFilter)
-          _PopupFilterChip<_TransactionsReviewFilter>(
-            label: _reviewFilterLabel(reviewFilter),
-            active: reviewFilter != _TransactionsReviewFilter.all,
-            icon: Icons.fact_check_outlined,
-            values: _TransactionsReviewFilter.values,
-            labelFor: _reviewFilterLabel,
-            onSelected: onReviewChanged,
-          ),
       ],
     );
   }
@@ -1471,14 +1343,12 @@ class _InlineTransactionsList extends StatefulWidget {
     required this.controller,
     required this.accountsById,
     required this.showAccount,
-    this.emptyMessage = 'No transactions match.',
   });
 
   final List<ResolvedTransaction> transactions;
   final TransactionUiController controller;
   final Map<String, Account> accountsById;
   final bool showAccount;
-  final String emptyMessage;
 
   @override
   State<_InlineTransactionsList> createState() =>
@@ -1502,7 +1372,7 @@ class _InlineTransactionsListState extends State<_InlineTransactionsList> {
   @override
   Widget build(BuildContext context) {
     if (widget.transactions.isEmpty) {
-      return _InlineEmptyState(message: widget.emptyMessage);
+      return const _InlineEmptyState(message: 'No transactions match.');
     }
     final visible = widget.transactions.take(_visibleCount).toList();
     final remaining = widget.transactions.length - visible.length;
