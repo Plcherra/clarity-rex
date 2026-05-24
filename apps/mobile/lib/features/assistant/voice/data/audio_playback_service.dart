@@ -46,6 +46,7 @@ class PackageAudioPlaybackService implements AudioPlaybackService {
 
     try {
       await _audioPlayer.stop();
+      await _audioPlayer.setVolume(1.0);
       _audioPlayer.onPlayerComplete.first.then((_) => onComplete());
       await _audioPlayer.play(BytesSource(audioBytes, mimeType: contentType));
     } catch (_) {

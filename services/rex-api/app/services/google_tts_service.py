@@ -143,6 +143,7 @@ class GoogleTTSService:
                 "audioEncoding": self.settings.google_tts_audio_encoding,
                 "speakingRate": self.settings.google_tts_speaking_rate,
                 "pitch": self.settings.google_tts_pitch,
+                "volumeGainDb": self.settings.google_tts_volume_gain_db,
             },
         }
 

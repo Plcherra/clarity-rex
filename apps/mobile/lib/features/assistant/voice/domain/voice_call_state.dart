@@ -11,6 +11,7 @@ class VoiceCallState {
     this.callEndedAt,
     this.isMuted = false,
     this.listeningReadySignal = 0,
+    this.isCapturingSpeech = false,
   });
 
   final VoiceCallPhase phase;
@@ -22,6 +23,7 @@ class VoiceCallState {
   final DateTime? callEndedAt;
   final bool isMuted;
   final int listeningReadySignal;
+  final bool isCapturingSpeech;
 
   bool get isIdle => phase == VoiceCallPhase.idle;
 
@@ -73,6 +75,7 @@ class VoiceCallState {
     DateTime? callEndedAt,
     bool? isMuted,
     int? listeningReadySignal,
+    bool? isCapturingSpeech,
     bool clearCurrentTranscript = false,
     bool clearLastAssistantResponse = false,
     bool clearConversationId = false,
@@ -98,6 +101,7 @@ class VoiceCallState {
       callEndedAt: clearCallEndedAt ? null : callEndedAt ?? this.callEndedAt,
       isMuted: isMuted ?? this.isMuted,
       listeningReadySignal: listeningReadySignal ?? this.listeningReadySignal,
+      isCapturingSpeech: isCapturingSpeech ?? this.isCapturingSpeech,
     );
   }
 }

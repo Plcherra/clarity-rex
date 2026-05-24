@@ -255,6 +255,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
       clearError: true,
       clearCallEndedAt: true,
     );
@@ -271,6 +272,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       currentTranscript: transcript,
+      isCapturingSpeech: true,
       clearError: true,
     );
     _armSpeechStartedEndpointTimeout(_callGeneration);
@@ -290,6 +292,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       currentTranscript: _visibleTranscript(),
+      isCapturingSpeech: true,
       clearError: true,
     );
     _armTranscriptIdleEndpointTimeout(_callGeneration);
@@ -300,7 +303,11 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
-    state = state.copyWith(phase: VoiceCallPhase.thinking, clearError: true);
+    state = state.copyWith(
+      phase: VoiceCallPhase.thinking,
+      isCapturingSpeech: false,
+      clearError: true,
+    );
     _cancelListeningEndpointTimeout();
     _armThinkingTimeout(_callGeneration);
   }
@@ -310,7 +317,11 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
-    state = state.copyWith(phase: VoiceCallPhase.thinking, clearError: true);
+    state = state.copyWith(
+      phase: VoiceCallPhase.thinking,
+      isCapturingSpeech: false,
+      clearError: true,
+    );
     _cancelListeningEndpointTimeout();
     _armThinkingTimeout(_callGeneration);
   }
@@ -327,6 +338,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
       currentTranscript: _visibleTranscript(),
+      isCapturingSpeech: false,
       clearError: true,
     );
     _cancelListeningEndpointTimeout();
@@ -341,6 +353,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _cancelThinkingTimeout();
     state = state.copyWith(
       phase: VoiceCallPhase.speaking,
+      isCapturingSpeech: false,
       lastAssistantResponse: responseText,
       clearError: true,
     );
@@ -353,6 +366,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
       clearCurrentTranscript: true,
       clearError: true,
     );
@@ -371,6 +385,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       unawaited(_nativeVoiceSessionService.interrupt());
       state = state.copyWith(
         phase: VoiceCallPhase.listening,
+        isCapturingSpeech: false,
         errorMessage: reason,
       );
       return;
@@ -387,6 +402,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
       errorMessage: reason,
     );
   }
@@ -403,6 +419,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       unawaited(_nativeVoiceSessionService.interrupt());
       state = state.copyWith(
         phase: VoiceCallPhase.listening,
+        isCapturingSpeech: false,
         clearCurrentTranscript: true,
         clearError: true,
       );
@@ -421,6 +438,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
       clearCurrentTranscript: true,
       clearError: true,
     );
@@ -466,6 +484,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
       clearCurrentTranscript: true,
       clearError: true,
     );
@@ -497,6 +516,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     unawaited(_audioSessionService.setActive(false));
     state = state.copyWith(
       phase: VoiceCallPhase.failed,
+      isCapturingSpeech: false,
       errorMessage: message,
       callEndedAt: ref.read(voiceCallNowProvider)(),
     );
@@ -524,6 +544,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     unawaited(_audioSessionService.setActive(false));
     state = state.copyWith(
       phase: VoiceCallPhase.idle,
+      isCapturingSpeech: false,
       callEndedAt: ref.read(voiceCallNowProvider)(),
       clearError: true,
     );
@@ -629,6 +650,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
         _clearVisibleTranscript();
         state = state.copyWith(
           phase: VoiceCallPhase.listening,
+          isCapturingSpeech: false,
           clearCurrentTranscript: true,
           clearError: true,
         );
@@ -682,7 +704,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
       case 'messages.updated':
         _applyNativeMessages(event);
       case 'session.interrupted':
-        state = state.copyWith(phase: VoiceCallPhase.listening);
+        state = state.copyWith(
+          phase: VoiceCallPhase.listening,
+          isCapturingSpeech: false,
+        );
       case 'session.ended':
         break;
       case 'error':
@@ -784,6 +809,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
       state = state.copyWith(
         phase: VoiceCallPhase.listening,
+        isCapturingSpeech: false,
         clearCurrentTranscript: true,
         clearError: true,
       );
@@ -954,7 +980,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
     if (recording == null) {
       if (state.phase == VoiceCallPhase.listening) {
-        resumeListening();
+        _recoverFromEmptyVoiceTurn(
+          'I did not catch that. I am listening again.',
+        );
       }
       return;
     }
@@ -1019,6 +1047,12 @@ class VoiceCallController extends Notifier<VoiceCallState>
       );
     } on CloudVoiceApiException catch (error) {
       if (_isCurrentCall(generation)) {
+        if (_isNoAudioError(error.message)) {
+          _recoverFromEmptyVoiceTurn(
+            'I did not catch that. I am listening again.',
+          );
+          return;
+        }
         fail(error.message);
       }
     } on Object {
@@ -1208,6 +1242,38 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _thinkingTimeoutTimer = null;
   }
 
+  bool _isNoAudioError(String message) {
+    final normalized = message.toLowerCase();
+    return normalized.contains('did not catch') ||
+        normalized.contains('no audio') ||
+        normalized.contains('empty audio');
+  }
+
+  void _recoverFromEmptyVoiceTurn(String message) {
+    if (!state.isCallActive) {
+      return;
+    }
+    final generation = ++_callGeneration;
+    _cancelThinkingTimeout();
+    _cancelListeningEndpointTimeout();
+    unawaited(_captureService.cancel());
+    unawaited(_streamingCaptureService.cancel());
+    _stopBargeInMonitoring();
+    final streamingSession = _activeStreamingSession;
+    _activeStreamingSession = null;
+    streamingSession?.interrupt();
+    unawaited(streamingSession?.endSession());
+
+    state = state.copyWith(
+      phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
+      clearCurrentTranscript: true,
+      errorMessage: message,
+    );
+    _clearVisibleTranscript();
+    _startListeningCycle(generation);
+  }
+
   void _markListeningReady() {
     if (!state.isCallActive || state.phase != VoiceCallPhase.listening) {
       return;
@@ -1284,6 +1350,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       unawaited(_nativeVoiceSessionService.interrupt());
       state = state.copyWith(
         phase: VoiceCallPhase.listening,
+        isCapturingSpeech: false,
         errorMessage:
             'Rex got stuck thinking, so I reset the native voice stream. Try again.',
       );
@@ -1303,6 +1370,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
       errorMessage:
           'Rex got stuck thinking, so I reset the voice stream. Try again.',
     );
