@@ -632,6 +632,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
           clearCurrentTranscript: true,
           clearError: true,
         );
+        _markListeningReady();
       case 'speech.started':
         startCapturingSpeech();
       case 'speech.ended':
@@ -742,6 +743,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
+    _markListeningReady();
     if (ref.read(streamingVoiceEnabledProvider)) {
       unawaited(_streamNextUtterance(generation));
     } else {
@@ -1193,6 +1195,16 @@ class VoiceCallController extends Notifier<VoiceCallState>
   void _cancelThinkingTimeout() {
     _thinkingTimeoutTimer?.cancel();
     _thinkingTimeoutTimer = null;
+  }
+
+  void _markListeningReady() {
+    if (!state.isCallActive || state.phase != VoiceCallPhase.listening) {
+      return;
+    }
+
+    state = state.copyWith(
+      listeningReadySignal: state.listeningReadySignal + 1,
+    );
   }
 
   void _armTranscriptIdleEndpointTimeout(int generation) {

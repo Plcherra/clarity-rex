@@ -43,10 +43,11 @@ class _VoiceCallPageState extends ConsumerState<VoiceCallPage> {
     final controller = ref.read(voiceCallProvider.notifier);
 
     ref.listen<VoiceCallState>(voiceCallProvider, (previous, next) {
-      if (previous?.phase != VoiceCallPhase.listening &&
+      if ((previous?.listeningReadySignal ?? 0) != next.listeningReadySignal &&
           next.phase == VoiceCallPhase.listening &&
           !next.isMuted) {
-        SystemSound.play(SystemSoundType.click);
+        HapticFeedback.lightImpact();
+        SystemSound.play(SystemSoundType.alert);
       }
     });
 
