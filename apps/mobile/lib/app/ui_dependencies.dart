@@ -157,6 +157,22 @@ final class DashboardTransactionReadData {
   final List<Account> accounts;
 }
 
+final class AccountOverviewItem {
+  const AccountOverviewItem({
+    required this.account,
+    required this.cashFlowThisMonth,
+    required this.incomeThisMonth,
+    required this.spentThisMonth,
+    required this.statementBalance,
+  });
+
+  final Account account;
+  final double cashFlowThisMonth;
+  final double incomeThisMonth;
+  final double spentThisMonth;
+  final double? statementBalance;
+}
+
 final class DashboardViewData {
   const DashboardViewData({
     required this.snapshot,
@@ -387,6 +403,32 @@ final class AccountUiController extends _UiController {
   AccountUiController._(super.bindings);
 
   Future<List<Account>> get accounts => fetchAccounts();
+
+  Future<List<AccountOverviewItem>> get accountOverviewItems async {
+    final model = await loadFinancialReadModel();
+    final requested = bindings.dashboardService.spendReference;
+    return [
+      for (final account in model.accounts)
+        () {
+          final scope = AccountDashboardScope(account.id);
+          final reference = model.dashboardReferenceForScope(
+            scope,
+            requested: requested,
+          );
+          final snapshot = model.dashboardSnapshot(
+            scope: scope,
+            reference: reference,
+          );
+          return AccountOverviewItem(
+            account: account,
+            cashFlowThisMonth: snapshot.availableThisMonth,
+            incomeThisMonth: snapshot.incomeThisMonth,
+            spentThisMonth: snapshot.spentThisMonth,
+            statementBalance: model.dashboardBalanceForAccount(account),
+          );
+        }(),
+    ];
+  }
 
   Future<bool> addAccount(Account account) async {
     return bindings.accountWorkflowService.addAccount(account);

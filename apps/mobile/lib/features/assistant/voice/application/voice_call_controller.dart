@@ -36,6 +36,8 @@ final bargeInDetectionServiceProvider = Provider<BargeInDetectionService>(
   (ref) => PackageBargeInDetectionService(),
 );
 
+final voiceCallBargeInEnabledProvider = Provider<bool>((ref) => false);
+
 final streamingVoiceApiProvider = Provider<StreamingVoiceApi>(
   (ref) => StreamingVoiceApi(),
 );
@@ -1592,6 +1594,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
   void _startBargeInMonitoring(int generation) {
     if (_isBargeInMonitoring ||
+        !ref.read(voiceCallBargeInEnabledProvider) ||
         !_isCurrentCall(generation) ||
         state.phase != VoiceCallPhase.speaking ||
         state.isMuted) {

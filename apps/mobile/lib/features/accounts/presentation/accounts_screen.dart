@@ -55,7 +55,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
   Future<void> _loadData() async {
     _dataNotifier.setLoading();
     try {
-      final accounts = await widget.controller.accounts;
+      final accounts = await widget.controller.accountOverviewItems;
       if (!mounted) return;
       _dataNotifier.setData(accounts);
     } on Object catch (error) {
@@ -211,10 +211,11 @@ class _AccountsScreenState extends State<AccountsScreen> {
             children: [
               _AccountsSummaryCard(accounts: accounts),
               const SizedBox(height: 16),
-              for (final account in accounts) ...[
+              for (final item in accounts) ...[
                 _AccountListTile(
-                  account: account,
+                  item: item,
                   onTap: () {
+                    final account = item.account;
                     Navigator.of(context).push<void>(
                       MaterialPageRoute<void>(
                         builder: (context) => AccountDetailScreen(
@@ -245,19 +246,24 @@ enum _AccountMenuAction { signOut }
 class _AccountsSummaryCard extends StatelessWidget {
   const _AccountsSummaryCard({required this.accounts});
 
-  final List<Account> accounts;
+  final List<AccountOverviewItem> accounts;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final balanceTotal = accounts.fold<double>(
+    final cashFlowTotal = accounts.fold<double>(
       0,
-      (sum, account) => sum + (account.currentBalance ?? 0),
+      (sum, item) => sum + item.cashFlowThisMonth,
     );
-    final knownBalances = accounts
-        .where((account) => account.currentBalance != null)
-        .length;
+    final incomeTotal = accounts.fold<double>(
+      0,
+      (sum, item) => sum + item.incomeThisMonth,
+    );
+    final spendingTotal = accounts.fold<double>(
+      0,
+      (sum, item) => sum + item.spentThisMonth,
+    );
     return DecoratedBox(
       decoration: BoxDecoration(
         color: cs.surface,
@@ -280,9 +286,7 @@ class _AccountsSummaryCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    knownBalances == accounts.length
-                        ? 'Balances are available for every account.'
-                        : '$knownBalances of ${accounts.length} accounts have balances.',
+                    'Income ${formatMoney(incomeTotal)} · Spending ${formatMoney(spendingTotal)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.56),
                     ),
@@ -292,11 +296,11 @@ class _AccountsSummaryCard extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             Text(
-              formatMoney(balanceTotal),
+              formatMoney(cashFlowTotal),
               textAlign: TextAlign.right,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: balanceTotal >= 0
+                color: cashFlowTotal >= 0
                     ? const Color(0xFF1B7A4C)
                     : const Color(0xFFC41E3A),
               ),
@@ -309,21 +313,22 @@ class _AccountsSummaryCard extends StatelessWidget {
 }
 
 class _AccountListTile extends StatelessWidget {
-  const _AccountListTile({required this.account, required this.onTap});
+  const _AccountListTile({required this.item, required this.onTap});
 
-  final Account account;
+  final AccountOverviewItem item;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final account = item.account;
     final inst = account.institution?.trim();
     final subtitle = [
       account.type.displayLabel,
       if (inst != null && inst.isNotEmpty) inst,
     ].join(' · ');
-    final balance = account.currentBalance;
+    final cashFlow = item.cashFlowThisMonth;
     return Material(
       color: cs.surface,
       borderRadius: BorderRadius.circular(16),
@@ -370,20 +375,30 @@ class _AccountListTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    balance == null ? 'No balance' : formatMoney(balance),
+                    formatMoney(cashFlow),
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: balance == null
-                          ? cs.onSurface.withValues(alpha: 0.48)
-                          : balance >= 0
+                      color: cashFlow >= 0
                           ? const Color(0xFF1B7A4C)
                           : const Color(0xFFC41E3A),
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: cs.onSurface.withValues(alpha: 0.34),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'cash flow',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.onSurface.withValues(alpha: 0.46),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: cs.onSurface.withValues(alpha: 0.34),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -404,11 +419,11 @@ class _AccountListTile extends StatelessWidget {
 }
 
 class _AccountsDataNotifier extends ChangeNotifier {
-  List<Account>? _data;
+  List<AccountOverviewItem>? _data;
   Object? _error;
   var _loading = false;
 
-  List<Account>? get data => _data;
+  List<AccountOverviewItem>? get data => _data;
   Object? get error => _error;
   bool get loading => _loading;
 
@@ -418,7 +433,7 @@ class _AccountsDataNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setData(List<Account> data) {
+  void setData(List<AccountOverviewItem> data) {
     _data = data;
     _error = null;
     _loading = false;
