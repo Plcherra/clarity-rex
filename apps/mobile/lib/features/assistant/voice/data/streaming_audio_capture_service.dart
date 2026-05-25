@@ -140,11 +140,11 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
 class PackageStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
   static const _minimumStreamingSilenceAfterSpeech = Duration(
-    milliseconds: 3000,
+    milliseconds: 900,
   );
-  static const _minimumStreamingSpeechDuration = Duration(milliseconds: 500);
-  static const _streamingSpeechStartThresholdDb = -46.0;
-  static const _streamingSilenceThresholdDb = -52.0;
+  static const _minimumStreamingSpeechDuration = Duration(milliseconds: 260);
+  static const _streamingSpeechStartThresholdDb = -50.0;
+  static const _streamingSilenceThresholdDb = -58.0;
 
   PackageStreamingAudioCaptureService({
     AudioRecorder? recorder,
@@ -262,8 +262,8 @@ class PackageStreamingAudioCaptureService
   }
 
   VoiceCaptureConfig _streamingEndpointConfig(VoiceCaptureConfig config) {
-    // Live PCM chunks are bursty on mobile. Keep streaming endpointing more
-    // tolerant so a short pause or soft word does not prematurely end a turn.
+    // Live PCM chunks are bursty on mobile, but calls should feel responsive.
+    // Keep a short silence floor and let the server handle final STT quality.
     return VoiceCaptureConfig(
       amplitudeInterval: config.amplitudeInterval,
       speechStartThresholdDb: min(

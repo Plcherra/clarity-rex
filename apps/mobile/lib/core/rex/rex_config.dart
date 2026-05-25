@@ -39,7 +39,7 @@ abstract final class RexConfig {
     return _boolConfig(
       dartDefineValue: _streamingVoiceEnabledOverride,
       envKey: 'REX_STREAMING_VOICE_ENABLED',
-      fallback: false,
+      fallback: true,
     );
   }
 

@@ -924,12 +924,15 @@ class VoiceCallController extends Notifier<VoiceCallState>
       unawaited(_handleStreamingEvents(session, generation));
     } on StreamingVoiceApiException catch (error) {
       if (_isCurrentCall(generation)) {
-        fail(error.message);
+        await _fallbackToCloudVoiceCapture(generation, error.message);
       }
       return;
     } on Object {
       if (_isCurrentCall(generation)) {
-        fail('Could not open Rex voice stream.');
+        await _fallbackToCloudVoiceCapture(
+          generation,
+          'Could not open Rex voice stream.',
+        );
       }
       return;
     }
@@ -1002,6 +1005,23 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     endpointUtterance();
     sendUtteranceEndIfNeeded();
+  }
+
+  Future<void> _fallbackToCloudVoiceCapture(
+    int generation,
+    String streamError,
+  ) async {
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.listening ||
+        state.isMuted) {
+      return;
+    }
+    if (!ref.read(cloudVoiceEnabledProvider)) {
+      fail(streamError);
+      return;
+    }
+    await _captureNextUtterance(generation);
   }
 
   void _deferBackgroundStreamingRestart(StreamingVoiceSession session) {
