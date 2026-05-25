@@ -116,6 +116,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _isUsingNativeVoice = false;
   var _warnedLegacyNativeVoiceFlag = false;
   var _emptyVoiceTurnCount = 0;
+  var _isAwaitingFollowUpSpeech = false;
   Timer? _thinkingTimeoutTimer;
   Timer? _listeningEndpointTimer;
   Timer? _noSpeechTimeoutTimer;
@@ -226,6 +227,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     _isStartingCall = true;
     _emptyVoiceTurnCount = 0;
+    _isAwaitingFollowUpSpeech = false;
     _warnIfLegacyNativeVoiceFlagRequested();
     final generation = ++_callGeneration;
     _clearVisibleTranscript();
@@ -292,6 +294,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _emptyVoiceTurnCount = 0;
+    _isAwaitingFollowUpSpeech = false;
     _cancelNoSpeechTimeout();
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
@@ -308,6 +311,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _emptyVoiceTurnCount = 0;
+    _isAwaitingFollowUpSpeech = false;
     _cancelNoSpeechTimeout();
     if (isFinal) {
       _appendFinalTranscript(transcript);
@@ -330,6 +334,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _cancelNoSpeechTimeout();
+    _isAwaitingFollowUpSpeech = false;
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
       isCapturingSpeech: false,
@@ -345,6 +350,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _cancelNoSpeechTimeout();
+    _isAwaitingFollowUpSpeech = false;
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
       isCapturingSpeech: false,
@@ -360,6 +366,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _cancelNoSpeechTimeout();
+    _isAwaitingFollowUpSpeech = false;
     if (finalTranscript != null) {
       _appendFinalTranscript(finalTranscript);
     }
@@ -380,6 +387,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _emptyVoiceTurnCount = 0;
+    _isAwaitingFollowUpSpeech = false;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();
     state = state.copyWith(
@@ -402,6 +410,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       clearError: true,
     );
     _clearVisibleTranscript();
+    _isAwaitingFollowUpSpeech = true;
     _startListeningCycle(_callGeneration);
   }
 
@@ -540,6 +549,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   void fail(String message) {
     _callGeneration++;
     _emptyVoiceTurnCount = 0;
+    _isAwaitingFollowUpSpeech = false;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
@@ -573,6 +583,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     _callGeneration++;
     _emptyVoiceTurnCount = 0;
+    _isAwaitingFollowUpSpeech = false;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
@@ -606,6 +617,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   void reset() {
     _callGeneration++;
     _emptyVoiceTurnCount = 0;
+    _isAwaitingFollowUpSpeech = false;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
@@ -1394,6 +1406,29 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
   void _recoverFromEmptyVoiceTurn(String message) {
     if (!state.isCallActive) {
+      return;
+    }
+    if (_isAwaitingFollowUpSpeech) {
+      final generation = ++_callGeneration;
+      _cancelThinkingTimeout();
+      _cancelListeningEndpointTimeout();
+      _cancelNoSpeechTimeout();
+      unawaited(_stopInterimTranscription());
+      unawaited(_captureService.cancel());
+      unawaited(_streamingCaptureService.cancel());
+      _stopBargeInMonitoring();
+      final streamingSession = _activeStreamingSession;
+      _activeStreamingSession = null;
+      streamingSession?.interrupt();
+      unawaited(streamingSession?.endSession());
+      state = state.copyWith(
+        phase: VoiceCallPhase.listening,
+        isCapturingSpeech: false,
+        clearCurrentTranscript: true,
+        clearError: true,
+      );
+      _clearVisibleTranscript();
+      _startListeningCycle(generation);
       return;
     }
     _emptyVoiceTurnCount++;

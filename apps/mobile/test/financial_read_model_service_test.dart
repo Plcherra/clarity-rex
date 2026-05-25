@@ -218,6 +218,37 @@ void main() {
     expect(reference, DateTime(2026, 5, 25));
   });
 
+  test('dashboard reference skips months without counted cash flow', () {
+    final model = FinancialReadModel(
+      accounts: const [
+        Account(id: 'checking', name: 'Checking', type: AccountType.checking),
+      ],
+      transactionRecords: const [],
+      transactions: [
+        _transaction(
+          description: 'MAY REVERSAL',
+          amount: 4.95,
+          category: 'Ignored',
+          date: DateTime(2026, 5, 4),
+        ),
+        _transaction(
+          description: 'APRIL SUPABASE',
+          amount: -25,
+          category: 'Subscriptions',
+          date: DateTime(2026, 4, 22),
+        ),
+      ],
+      budgets: const [],
+    );
+
+    final reference = model.dashboardReferenceForScope(
+      const GlobalDashboardScope(),
+      requested: DateTime(2026, 5, 25),
+    );
+
+    expect(reference, DateTime(2026, 4, 22));
+  });
+
   test(
     'dashboard snapshot and spent map share one resolved transaction view',
     () {

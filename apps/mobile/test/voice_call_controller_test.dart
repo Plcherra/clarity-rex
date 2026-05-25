@@ -6,6 +6,8 @@ import 'package:audio_session/audio_session.dart';
 import 'package:clarity/features/assistant/voice/application/voice_call_controller.dart';
 import 'package:clarity/features/assistant/voice/application/voice_controller.dart';
 import 'package:clarity/features/assistant/voice/data/audio_capture_service.dart';
+import 'package:clarity/features/assistant/voice/data/audio_playback_service.dart';
+import 'package:clarity/features/assistant/voice/data/audio_recording_service.dart';
 import 'package:clarity/features/assistant/voice/data/audio_session_service.dart';
 import 'package:clarity/features/assistant/voice/data/background_voice_service.dart';
 import 'package:clarity/features/assistant/voice/data/streaming_audio_capture_service.dart';
@@ -32,6 +34,12 @@ void main() {
           ),
           backgroundVoiceServiceProvider.overrideWithValue(
             const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
           ),
           streamingVoiceEnabledProvider.overrideWithValue(true),
           nativeIosVoiceEnabledProvider.overrideWithValue(false),
@@ -73,6 +81,12 @@ void main() {
           backgroundVoiceServiceProvider.overrideWithValue(
             const _NoopBackgroundVoiceService(),
           ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
           streamingVoiceEnabledProvider.overrideWithValue(true),
           nativeIosVoiceEnabledProvider.overrideWithValue(false),
           streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
@@ -98,6 +112,58 @@ void main() {
       expect(state.errorMessage, contains('did not catch any audio'));
       expect(state.currentTranscript, isEmpty);
       expect(captureService.cancelled, isTrue);
+    },
+  );
+
+  test(
+    'silence after assistant response keeps call listening without error',
+    () async {
+      final captureService = _ReusableSilentStreamingAudioCaptureService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          voiceCallNoSpeechTimeoutProvider.overrideWithValue(
+            const Duration(milliseconds: 10),
+          ),
+          voiceCallEmptyTurnLimitProvider.overrideWithValue(1),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      controller.startSpeaking('Rex response.');
+      controller.completeSpeaking();
+      await captureService.readyAt(1);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(state.errorMessage, isNull);
+      expect(state.currentTranscript, isEmpty);
     },
   );
 }
@@ -146,6 +212,43 @@ class _NoopBackgroundVoiceService implements BackgroundVoiceService {
 
   @override
   Future<void> start() async {}
+
+  @override
+  Future<void> stop() async {}
+}
+
+class _NoopAudioCaptureService implements AudioCaptureService {
+  const _NoopAudioCaptureService();
+
+  @override
+  Future<void> cancel() async {}
+
+  @override
+  Future<RecordedVoiceAudio?> captureUtterance({
+    required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
+    required SpeechStartCallback onSpeechStart,
+  }) async {
+    onReady();
+    return null;
+  }
+}
+
+class _NoopAudioPlaybackService implements AudioPlaybackService {
+  const _NoopAudioPlaybackService();
+
+  @override
+  Future<void> pause() async {}
+
+  @override
+  Future<void> playBase64Audio(
+    String audioBase64, {
+    required String contentType,
+    required AudioPlaybackCompleteCallback onComplete,
+    required AudioPlaybackErrorCallback onError,
+  }) async {
+    onComplete();
+  }
 
   @override
   Future<void> stop() async {}
@@ -209,6 +312,49 @@ class _SilentStreamingAudioCaptureService
       ready.complete();
     }
     return _capture.future;
+  }
+}
+
+class _ReusableSilentStreamingAudioCaptureService
+    implements StreamingAudioCaptureService {
+  final _ready = <Completer<void>>[];
+  final _captures = <Completer<bool>>[];
+
+  Future<void> readyAt(int index) {
+    while (_ready.length <= index) {
+      _ready.add(Completer<void>());
+    }
+    return _ready[index].future;
+  }
+
+  @override
+  Future<void> cancel() async {
+    for (final capture in _captures) {
+      if (!capture.isCompleted) {
+        capture.complete(false);
+      }
+    }
+  }
+
+  @override
+  Future<bool> streamUtterance({
+    required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
+    required SpeechStartCallback onSpeechStart,
+    required SpeechEndCallback onSpeechEnded,
+    required AudioChunkCallback onAudioChunk,
+  }) {
+    final index = _captures.length;
+    while (_ready.length <= index) {
+      _ready.add(Completer<void>());
+    }
+    final capture = Completer<bool>();
+    _captures.add(capture);
+    onReady();
+    if (!_ready[index].isCompleted) {
+      _ready[index].complete();
+    }
+    return capture.future;
   }
 }
 

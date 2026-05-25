@@ -246,16 +246,19 @@ final class FinancialReadModel {
       return requested;
     }
 
-    final hasRequestedMonth = scoped.any(
-      (transaction) =>
-          transaction.date.year == requested.year &&
-          transaction.date.month == requested.month,
-    );
-    if (hasRequestedMonth) {
+    final resolved = resolvedTransactionsForScope(scope);
+    final hasRequestedMonthCashFlow = resolved.any((resolvedTransaction) {
+      final transaction = resolvedTransaction.transaction;
+      return transaction.date.year == requested.year &&
+          transaction.date.month == requested.month &&
+          (resolvedTransaction.countsAsSpend ||
+              resolvedTransaction.countsAsIncome);
+    });
+    if (hasRequestedMonthCashFlow) {
       return requested;
     }
 
-    final resolved = resolvedTransactionsForScope(scope);
+    DateTime? latestCashFlowDate;
     DateTime? latestSpendDate;
     DateTime? latestActivityDate;
     for (final resolvedTransaction in resolved) {
@@ -263,13 +266,21 @@ final class FinancialReadModel {
       if (latestActivityDate == null || date.isAfter(latestActivityDate)) {
         latestActivityDate = date;
       }
+      if ((resolvedTransaction.countsAsSpend ||
+              resolvedTransaction.countsAsIncome) &&
+          (latestCashFlowDate == null || date.isAfter(latestCashFlowDate))) {
+        latestCashFlowDate = date;
+      }
       if (resolvedTransaction.countsAsSpend &&
           (latestSpendDate == null || date.isAfter(latestSpendDate))) {
         latestSpendDate = date;
       }
     }
 
-    return latestSpendDate ?? latestActivityDate ?? requested;
+    return latestSpendDate ??
+        latestCashFlowDate ??
+        latestActivityDate ??
+        requested;
   }
 
   List<AccountStatementImport> statementImportsForScope(DashboardScope scope) {

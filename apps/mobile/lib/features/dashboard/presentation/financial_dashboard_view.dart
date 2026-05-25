@@ -650,9 +650,7 @@ class _CashFlowSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final availableValue = hasStatementBalance
-        ? formatMoney(snapshot.totalBalance)
-        : 'Missing';
+    final availableValue = formatMoney(snapshot.availableThisMonth);
     final net = snapshot.availableThisMonth;
     return Container(
       width: double.infinity,
@@ -688,17 +686,13 @@ class _CashFlowSummaryCard extends StatelessWidget {
               style: theme.textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 height: 1.02,
-                color: hasStatementBalance
-                    ? _balanceColor(snapshot.totalBalance)
-                    : cs.onSurface.withValues(alpha: 0.52),
+                color: _balanceColor(snapshot.availableThisMonth),
               ),
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            hasStatementBalance
-                ? 'Latest statement balance'
-                : 'Statement balance needed',
+            'Income minus spending',
             style: theme.textTheme.bodySmall?.copyWith(
               color: cs.onSurface.withValues(alpha: 0.46),
               fontWeight: FontWeight.w600,
@@ -720,9 +714,13 @@ class _CashFlowSummaryCard extends StatelessWidget {
                   color: const Color(0xFF9B2C2C),
                 ),
                 _CashFlowSummaryMetric(
-                  label: 'Net',
-                  value: formatMoney(net),
-                  color: _balanceColor(net),
+                  label: hasStatementBalance ? 'Balance' : 'Net',
+                  value: hasStatementBalance
+                      ? formatMoney(snapshot.totalBalance)
+                      : formatMoney(net),
+                  color: hasStatementBalance
+                      ? _balanceColor(snapshot.totalBalance)
+                      : _balanceColor(net),
                 ),
               ];
               if (compact) {
