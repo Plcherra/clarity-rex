@@ -160,6 +160,65 @@ void main() {
   });
 
   test(
+    'dashboard reference falls back to latest scoped spend after restart',
+    () {
+      final model = FinancialReadModel(
+        accounts: const [
+          Account(id: 'checking', name: 'Checking', type: AccountType.checking),
+        ],
+        transactionRecords: const [],
+        transactions: [
+          _transaction(
+            description: 'OLD COFFEE',
+            amount: -8,
+            category: 'Coffee / Quick Food',
+            date: DateTime(2026, 3, 2),
+          ),
+          _transaction(
+            description: 'LATEST SUPABASE',
+            amount: -25,
+            category: 'Subscriptions',
+            date: DateTime(2026, 4, 22),
+          ),
+        ],
+        budgets: const [],
+      );
+
+      final reference = model.dashboardReferenceForScope(
+        const GlobalDashboardScope(),
+        requested: DateTime(2026, 5, 25),
+      );
+
+      expect(reference, DateTime(2026, 4, 22));
+    },
+  );
+
+  test('dashboard reference preserves requested month when it has rows', () {
+    final model = FinancialReadModel(
+      accounts: const [
+        Account(id: 'checking', name: 'Checking', type: AccountType.checking),
+      ],
+      transactionRecords: const [],
+      transactions: [
+        _transaction(
+          description: 'MAY RESTAURANT',
+          amount: -42,
+          category: 'Restaurants',
+          date: DateTime(2026, 5, 4),
+        ),
+      ],
+      budgets: const [],
+    );
+
+    final reference = model.dashboardReferenceForScope(
+      const GlobalDashboardScope(),
+      requested: DateTime(2026, 5, 25),
+    );
+
+    expect(reference, DateTime(2026, 5, 25));
+  });
+
+  test(
     'dashboard snapshot and spent map share one resolved transaction view',
     () {
       final model = FinancialReadModel(
@@ -627,9 +686,10 @@ Transaction _transaction({
   required String description,
   required double amount,
   required String category,
+  DateTime? date,
 }) {
   return Transaction(
-    date: DateTime(2026, 3, 2),
+    date: date ?? DateTime(2026, 3, 2),
     description: description,
     amount: amount,
     accountId: accountId,

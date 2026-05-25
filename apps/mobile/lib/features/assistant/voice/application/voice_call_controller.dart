@@ -86,6 +86,12 @@ final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(
   (ref) => const Duration(seconds: 8),
 );
 
+final voiceCallNoSpeechTimeoutProvider = Provider<Duration>(
+  (ref) => const Duration(seconds: 12),
+);
+
+final voiceCallEmptyTurnLimitProvider = Provider<int>((ref) => 2);
+
 class VoiceCallController extends Notifier<VoiceCallState>
     with WidgetsBindingObserver {
   int _callGeneration = 0;
@@ -109,8 +115,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _isAppInForeground = true;
   var _isUsingNativeVoice = false;
   var _warnedLegacyNativeVoiceFlag = false;
+  var _emptyVoiceTurnCount = 0;
   Timer? _thinkingTimeoutTimer;
   Timer? _listeningEndpointTimer;
+  Timer? _noSpeechTimeoutTimer;
 
   @override
   VoiceCallState build() {
@@ -121,6 +129,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       _callGeneration++;
       _cancelThinkingTimeout();
       _cancelListeningEndpointTimeout();
+      _cancelNoSpeechTimeout();
       final captureService = _activeCaptureService;
       final playbackService = _activePlaybackService;
       final interimSpeechToTextService = _activeInterimSpeechToTextService;
@@ -216,6 +225,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _isStartingCall = true;
+    _emptyVoiceTurnCount = 0;
     _warnIfLegacyNativeVoiceFlagRequested();
     final generation = ++_callGeneration;
     _clearVisibleTranscript();
@@ -281,6 +291,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
+    _emptyVoiceTurnCount = 0;
+    _cancelNoSpeechTimeout();
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       currentTranscript: transcript,
@@ -295,6 +307,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
+    _emptyVoiceTurnCount = 0;
+    _cancelNoSpeechTimeout();
     if (isFinal) {
       _appendFinalTranscript(transcript);
     } else {
@@ -315,6 +329,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
+    _cancelNoSpeechTimeout();
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
       isCapturingSpeech: false,
@@ -329,6 +344,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
+    _cancelNoSpeechTimeout();
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
       isCapturingSpeech: false,
@@ -343,6 +359,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
+    _cancelNoSpeechTimeout();
     if (finalTranscript != null) {
       _appendFinalTranscript(finalTranscript);
     }
@@ -362,7 +379,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
+    _emptyVoiceTurnCount = 0;
     _cancelThinkingTimeout();
+    _cancelNoSpeechTimeout();
     state = state.copyWith(
       phase: VoiceCallPhase.speaking,
       isCapturingSpeech: false,
@@ -393,6 +412,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _callGeneration++;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     if (_isUsingNativeVoice) {
       unawaited(_nativeVoiceSessionService.interrupt());
@@ -428,6 +448,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     final generation = ++_callGeneration;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     if (_isUsingNativeVoice) {
       unawaited(_nativeVoiceSessionService.interrupt());
@@ -474,6 +495,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       _callGeneration++;
       _cancelThinkingTimeout();
       _cancelListeningEndpointTimeout();
+      _cancelNoSpeechTimeout();
       unawaited(_stopInterimTranscription());
       unawaited(_captureService.cancel());
       unawaited(_streamingCaptureService.cancel());
@@ -505,6 +527,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     );
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     _clearVisibleTranscript();
     if (_isUsingNativeVoice) {
@@ -516,8 +539,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
   void fail(String message) {
     _callGeneration++;
+    _emptyVoiceTurnCount = 0;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     _stopNativeVoiceSession();
     unawaited(_captureService.cancel());
@@ -536,7 +561,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
       isCapturingSpeech: false,
       errorMessage: message,
       callEndedAt: ref.read(voiceCallNowProvider)(),
+      clearCurrentTranscript: true,
     );
+    _clearVisibleTranscript();
   }
 
   void endCall() {
@@ -545,8 +572,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _callGeneration++;
+    _emptyVoiceTurnCount = 0;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     _stopNativeVoiceSession();
     unawaited(_captureService.cancel());
@@ -564,6 +593,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       phase: VoiceCallPhase.idle,
       isCapturingSpeech: false,
       callEndedAt: ref.read(voiceCallNowProvider)(),
+      clearCurrentTranscript: true,
       clearError: true,
     );
     _clearVisibleTranscript();
@@ -575,8 +605,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
   void reset() {
     _callGeneration++;
+    _emptyVoiceTurnCount = 0;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     _stopNativeVoiceSession();
     unawaited(_captureService.cancel());
@@ -691,6 +723,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
           clearError: true,
         );
         _markListeningReady();
+        _armNoSpeechTimeout(generation);
       case 'speech.started':
         startCapturingSpeech();
       case 'speech.ended':
@@ -918,6 +951,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
           if (_isCurrentCall(generation) &&
               state.phase == VoiceCallPhase.listening) {
             _markListeningReady();
+            _armNoSpeechTimeout(generation);
             unawaited(_startInterimTranscription(generation));
           }
         },
@@ -962,7 +996,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
         return;
       }
       unawaited(session.endSession());
-      resumeListening();
+      _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
       return;
     }
 
@@ -997,6 +1031,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
           if (_isCurrentCall(generation) &&
               state.phase == VoiceCallPhase.listening) {
             _markListeningReady();
+            _armNoSpeechTimeout(generation);
             unawaited(_startInterimTranscription(generation));
           }
         },
@@ -1341,9 +1376,17 @@ class VoiceCallController extends Notifier<VoiceCallState>
     if (!state.isCallActive) {
       return;
     }
+    _emptyVoiceTurnCount++;
+    if (_emptyVoiceTurnCount >= ref.read(voiceCallEmptyTurnLimitProvider)) {
+      fail(
+        'I did not catch any audio. Tap Try again and speak after the tone.',
+      );
+      return;
+    }
     final generation = ++_callGeneration;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     unawaited(_captureService.cancel());
     unawaited(_streamingCaptureService.cancel());
@@ -1406,6 +1449,32 @@ class VoiceCallController extends Notifier<VoiceCallState>
   void _cancelListeningEndpointTimeout() {
     _listeningEndpointTimer?.cancel();
     _listeningEndpointTimer = null;
+  }
+
+  void _armNoSpeechTimeout(int generation) {
+    _noSpeechTimeoutTimer?.cancel();
+    final timeout = ref.read(voiceCallNoSpeechTimeoutProvider);
+    if (timeout <= Duration.zero) {
+      return;
+    }
+    _noSpeechTimeoutTimer = Timer(timeout, () {
+      if (!_isCurrentCall(generation) ||
+          !state.isCallActive ||
+          state.phase != VoiceCallPhase.listening ||
+          state.isMuted ||
+          state.isCapturingSpeech ||
+          state.currentTranscript.trim().isNotEmpty) {
+        return;
+      }
+      _recoverFromEmptyVoiceTurn(
+        'I did not hear anything. I am listening again.',
+      );
+    });
+  }
+
+  void _cancelNoSpeechTimeout() {
+    _noSpeechTimeoutTimer?.cancel();
+    _noSpeechTimeoutTimer = null;
   }
 
   void _forceEndStreamingUtterance(int generation) {

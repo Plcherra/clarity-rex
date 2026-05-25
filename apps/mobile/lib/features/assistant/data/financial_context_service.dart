@@ -37,7 +37,10 @@ final class AssistantFinancialContextService {
   Future<Map<String, dynamic>> buildSummary() async {
     const scope = GlobalDashboardScope();
     final model = await _safeFinancialReadModel();
-    final reference = _spendReference();
+    final reference = model.dashboardReferenceForScope(
+      scope,
+      requested: _spendReference(),
+    );
     final snapshot = model.dashboardSnapshot(
       scope: scope,
       reference: reference,

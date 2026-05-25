@@ -237,6 +237,41 @@ final class FinancialReadModel {
     };
   }
 
+  DateTime dashboardReferenceForScope(
+    DashboardScope scope, {
+    required DateTime requested,
+  }) {
+    final scoped = transactionsForScope(scope);
+    if (scoped.isEmpty) {
+      return requested;
+    }
+
+    final hasRequestedMonth = scoped.any(
+      (transaction) =>
+          transaction.date.year == requested.year &&
+          transaction.date.month == requested.month,
+    );
+    if (hasRequestedMonth) {
+      return requested;
+    }
+
+    final resolved = resolvedTransactionsForScope(scope);
+    DateTime? latestSpendDate;
+    DateTime? latestActivityDate;
+    for (final resolvedTransaction in resolved) {
+      final date = resolvedTransaction.transaction.date;
+      if (latestActivityDate == null || date.isAfter(latestActivityDate)) {
+        latestActivityDate = date;
+      }
+      if (resolvedTransaction.countsAsSpend &&
+          (latestSpendDate == null || date.isAfter(latestSpendDate))) {
+        latestSpendDate = date;
+      }
+    }
+
+    return latestSpendDate ?? latestActivityDate ?? requested;
+  }
+
   List<AccountStatementImport> statementImportsForScope(DashboardScope scope) {
     return switch (scope) {
       GlobalDashboardScope() => statementImports,

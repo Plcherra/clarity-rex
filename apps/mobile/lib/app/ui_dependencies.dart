@@ -196,24 +196,23 @@ final class DashboardUiController extends _UiController {
 
   Future<DashboardSnapshot> buildSnapshot(DashboardScope scope) async {
     final model = await loadFinancialReadModel();
-    return model.dashboardSnapshot(
-      scope: scope,
-      reference: bindings.dashboardService.spendReference,
-    );
+    final reference = _dashboardReferenceFor(model, scope);
+    return model.dashboardSnapshot(scope: scope, reference: reference);
   }
 
   Future<DashboardViewData> dashboardViewDataForScope(
     DashboardScope scope,
   ) async {
     final model = await loadFinancialReadModel();
+    final reference = _dashboardReferenceFor(model, scope);
     final snapshot = model.dashboardSnapshot(
       scope: scope,
-      reference: bindings.dashboardService.spendReference,
+      reference: reference,
     );
     final budgetPerformance = model.budgetPerformanceForScope(
       scope,
       periodType: BudgetPeriodType.monthly,
-      periodKey: _monthKey(spendReference),
+      periodKey: _monthKey(reference),
     );
     return DashboardViewData(
       snapshot: snapshot,
@@ -230,10 +229,11 @@ final class DashboardUiController extends _UiController {
     DashboardScope scope,
   ) async {
     final model = await loadFinancialReadModel();
+    final reference = _dashboardReferenceFor(model, scope);
     return model.budgetPerformanceForScope(
       scope,
       periodType: BudgetPeriodType.monthly,
-      periodKey: _monthKey(spendReference),
+      periodKey: _monthKey(reference),
     );
   }
 
@@ -266,6 +266,18 @@ final class DashboardUiController extends _UiController {
           start: range.start,
           endInclusive: range.endInclusive,
         );
+  }
+
+  DateTime _dashboardReferenceFor(
+    FinancialReadModel model,
+    DashboardScope scope,
+  ) {
+    final reference = model.dashboardReferenceForScope(
+      scope,
+      requested: bindings.dashboardService.spendReference,
+    );
+    bindings.dashboardService.spendReference = reference;
+    return reference;
   }
 }
 

@@ -57,6 +57,49 @@ void main() {
       expect(captureService.cancelled, isTrue);
     },
   );
+
+  test(
+    'streaming voice fails instead of hanging when no speech arrives',
+    () async {
+      final captureService = _SilentStreamingAudioCaptureService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          voiceCallNoSpeechTimeoutProvider.overrideWithValue(
+            const Duration(milliseconds: 10),
+          ),
+          voiceCallEmptyTurnLimitProvider.overrideWithValue(1),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.ready.future;
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.failed);
+      expect(state.errorMessage, contains('did not catch any audio'));
+      expect(state.currentTranscript, isEmpty);
+      expect(captureService.cancelled, isTrue);
+    },
+  );
 }
 
 class _GrantedMicrophonePermissionService
@@ -134,6 +177,36 @@ class _HangingStreamingAudioCaptureService
     onSpeechStart();
     if (!started.isCompleted) {
       started.complete();
+    }
+    return _capture.future;
+  }
+}
+
+class _SilentStreamingAudioCaptureService
+    implements StreamingAudioCaptureService {
+  final ready = Completer<void>();
+  final _capture = Completer<bool>();
+  var cancelled = false;
+
+  @override
+  Future<void> cancel() async {
+    cancelled = true;
+    if (!_capture.isCompleted) {
+      _capture.complete(false);
+    }
+  }
+
+  @override
+  Future<bool> streamUtterance({
+    required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
+    required SpeechStartCallback onSpeechStart,
+    required SpeechEndCallback onSpeechEnded,
+    required AudioChunkCallback onAudioChunk,
+  }) {
+    onReady();
+    if (!ready.isCompleted) {
+      ready.complete();
     }
     return _capture.future;
   }
