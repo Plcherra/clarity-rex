@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     google_tts_audio_encoding: str = "MP3"
     google_tts_speaking_rate: float = 1.14
     google_tts_pitch: float = 0.0
-    google_tts_volume_gain_db: float = 4.0
+    google_tts_volume_gain_db: float = 10.0
     google_tts_timeout_seconds: int = 60
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

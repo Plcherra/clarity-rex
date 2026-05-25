@@ -46,6 +46,14 @@ class PackageAudioPlaybackService implements AudioPlaybackService {
 
     try {
       await _audioPlayer.stop();
+      await _audioPlayer.setAudioContext(
+        AudioContextConfig(
+          route: AudioContextConfigRoute.speaker,
+          focus: AudioContextConfigFocus.gain,
+        ).build(),
+      );
+      await _audioPlayer.setPlayerMode(PlayerMode.mediaPlayer);
+      await _audioPlayer.setReleaseMode(ReleaseMode.stop);
       await _audioPlayer.setVolume(1.0);
       _audioPlayer.onPlayerComplete.first.then((_) => onComplete());
       await _audioPlayer.play(BytesSource(audioBytes, mimeType: contentType));

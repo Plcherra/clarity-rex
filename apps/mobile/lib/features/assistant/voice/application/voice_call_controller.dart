@@ -17,6 +17,7 @@ import 'package:clarity/features/assistant/voice/data/audio_session_service.dart
 import 'package:clarity/features/assistant/voice/data/background_voice_service.dart';
 import 'package:clarity/features/assistant/voice/data/cloud_voice_api.dart';
 import 'package:clarity/features/assistant/voice/data/native_voice_session_service.dart';
+import 'package:clarity/features/assistant/voice/data/speech_to_text_service.dart';
 import 'package:clarity/features/assistant/voice/data/streaming_audio_capture_service.dart';
 import 'package:clarity/features/assistant/voice/data/streaming_audio_playback_queue.dart';
 import 'package:clarity/features/assistant/voice/data/streaming_voice_api.dart';
@@ -88,6 +89,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   StreamingAudioCaptureService? _activeStreamingCaptureService;
   StreamingVoiceSession? _activeStreamingSession;
   AudioPlaybackService? _activePlaybackService;
+  SpeechToTextService? _activeInterimSpeechToTextService;
   StreamingAudioPlaybackQueue? _activeStreamingPlaybackQueue;
   BargeInDetectionService? _activeBargeInDetectionService;
   VoiceAudioSessionService? _activeAudioSessionService;
@@ -116,6 +118,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       _cancelListeningEndpointTimeout();
       final captureService = _activeCaptureService;
       final playbackService = _activePlaybackService;
+      final interimSpeechToTextService = _activeInterimSpeechToTextService;
       final streamingPlaybackQueue = _activeStreamingPlaybackQueue;
       final bargeInDetectionService = _activeBargeInDetectionService;
       final streamingCaptureService = _activeStreamingCaptureService;
@@ -147,6 +150,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
       }
       if (playbackService != null) {
         unawaited(playbackService.stop());
+      }
+      if (interimSpeechToTextService != null) {
+        unawaited(interimSpeechToTextService.cancel());
       }
       if (backgroundVoiceService != null) {
         unawaited(backgroundVoiceService.stop());
@@ -381,6 +387,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _callGeneration++;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    unawaited(_stopInterimTranscription());
     if (_isUsingNativeVoice) {
       unawaited(_nativeVoiceSessionService.interrupt());
       state = state.copyWith(
@@ -415,6 +422,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     final generation = ++_callGeneration;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    unawaited(_stopInterimTranscription());
     if (_isUsingNativeVoice) {
       unawaited(_nativeVoiceSessionService.interrupt());
       state = state.copyWith(
@@ -460,6 +468,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       _callGeneration++;
       _cancelThinkingTimeout();
       _cancelListeningEndpointTimeout();
+      unawaited(_stopInterimTranscription());
       unawaited(_captureService.cancel());
       unawaited(_streamingCaptureService.cancel());
       _stopBargeInMonitoring();
@@ -490,6 +499,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     );
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    unawaited(_stopInterimTranscription());
     _clearVisibleTranscript();
     if (_isUsingNativeVoice) {
       unawaited(_nativeVoiceSessionService.interrupt());
@@ -502,6 +512,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _callGeneration++;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    unawaited(_stopInterimTranscription());
     _stopNativeVoiceSession();
     unawaited(_captureService.cancel());
     unawaited(_streamingCaptureService.cancel());
@@ -530,6 +541,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _callGeneration++;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    unawaited(_stopInterimTranscription());
     _stopNativeVoiceSession();
     unawaited(_captureService.cancel());
     unawaited(_streamingCaptureService.cancel());
@@ -559,6 +571,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _callGeneration++;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    unawaited(_stopInterimTranscription());
     _stopNativeVoiceSession();
     unawaited(_captureService.cancel());
     unawaited(_streamingCaptureService.cancel());
@@ -882,6 +895,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
           if (_isCurrentCall(generation) &&
               state.phase == VoiceCallPhase.listening) {
             _markListeningReady();
+            unawaited(_startInterimTranscription(generation));
           }
         },
         onSpeechStart: () {
@@ -960,6 +974,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
           if (_isCurrentCall(generation) &&
               state.phase == VoiceCallPhase.listening) {
             _markListeningReady();
+            unawaited(_startInterimTranscription(generation));
           }
         },
         onSpeechStart: () {
@@ -970,6 +985,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
         },
       );
     } on Object {
+      unawaited(_stopInterimTranscription());
       if (_isCurrentCall(generation)) {
         fail('Could not capture voice audio.');
       }
@@ -988,6 +1004,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     endpointUtterance();
+    unawaited(_stopInterimTranscription());
     await _sendCapturedUtterance(recording, generation);
   }
 
@@ -1015,7 +1032,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
       state = state.copyWith(
         conversationId: response.conversationId,
-        currentTranscript: response.transcript,
         clearError: true,
       );
       ref
@@ -1026,6 +1042,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
             fallbackAssistantResponse: response.responseText,
           );
 
+      _clearVisibleTranscript();
       startThinking(finalTranscript: response.transcript);
       startSpeaking(response.responseText);
       _startBargeInMonitoring(generation);
@@ -1249,6 +1266,54 @@ class VoiceCallController extends Notifier<VoiceCallState>
         normalized.contains('empty audio');
   }
 
+  Future<void> _startInterimTranscription(int generation) async {
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.listening) {
+      return;
+    }
+
+    final service = _interimSpeechToTextService;
+    try {
+      final available = await service.initialize(onError: (_) {});
+      if (!available ||
+          !_isCurrentCall(generation) ||
+          state.phase != VoiceCallPhase.listening) {
+        return;
+      }
+      await service.startListening(
+        onPartialTranscript: (transcript) {
+          if (_isCurrentCall(generation) &&
+              state.phase == VoiceCallPhase.listening) {
+            updateTranscript(transcript);
+          }
+        },
+        onFinalTranscript: (transcript) {
+          if (_isCurrentCall(generation) &&
+              state.phase == VoiceCallPhase.listening) {
+            updateTranscript(transcript);
+          }
+        },
+        onError: (_) {},
+      );
+    } on Object {
+      // Interim local transcription is only a UI aid. Deepgram remains the
+      // source of truth after the recorded turn is uploaded.
+    }
+  }
+
+  Future<void> _stopInterimTranscription() async {
+    final service = _activeInterimSpeechToTextService;
+    if (service == null) {
+      return;
+    }
+    try {
+      await service.cancel();
+    } on Object {
+      // Best effort cleanup only.
+    }
+  }
+
   void _recoverFromEmptyVoiceTurn(String message) {
     if (!state.isCallActive) {
       return;
@@ -1256,6 +1321,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     final generation = ++_callGeneration;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
+    unawaited(_stopInterimTranscription());
     unawaited(_captureService.cancel());
     unawaited(_streamingCaptureService.cancel());
     _stopBargeInMonitoring();
@@ -1511,6 +1577,16 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
     final service = ref.read(audioPlaybackServiceProvider);
     _activePlaybackService = service;
+    return service;
+  }
+
+  SpeechToTextService get _interimSpeechToTextService {
+    final existingService = _activeInterimSpeechToTextService;
+    if (existingService != null) {
+      return existingService;
+    }
+    final service = ref.read(speechToTextServiceProvider);
+    _activeInterimSpeechToTextService = service;
     return service;
   }
 
