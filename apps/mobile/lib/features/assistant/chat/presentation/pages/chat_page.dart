@@ -2,6 +2,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import 'package:clarity/features/assistant/assistant_providers.dart';
 import 'package:clarity/features/assistant/chat/application/chat_controller.dart'
@@ -13,7 +14,7 @@ import 'package:clarity/features/assistant/chat/presentation/widgets/chat_input_
 import 'package:clarity/features/assistant/chat/presentation/widgets/chat_message_bubble.dart';
 import 'package:clarity/features/assistant/accountability/presentation/pages/accountability_page.dart';
 import 'package:clarity/features/assistant/memory/presentation/pages/memory_page.dart';
-import 'package:clarity/features/assistant/voice/presentation/pages/voice_call_page.dart';
+import 'package:clarity/features/assistant/voice/domain/voice_call_state.dart';
 
 /// Main chat surface: empty thread UI + composer.
 class ChatPage extends ConsumerStatefulWidget {
@@ -54,6 +55,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           next.errorMessage != previous?.errorMessage;
       if (shouldScroll) {
         _scrollToBottom();
+      }
+    });
+    ref.listenManual<VoiceCallState>(voiceCallProvider, (previous, next) {
+      if ((previous?.listeningReadySignal ?? 0) != next.listeningReadySignal &&
+          next.phase == VoiceCallPhase.listening &&
+          !next.isMuted) {
+        HapticFeedback.lightImpact();
+        SystemSound.play(SystemSoundType.alert);
       }
     });
   }
@@ -176,11 +185,27 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
-  void _openVoiceCall() {
+  Future<void> _startVoiceCall() async {
     FocusScope.of(context).unfocus();
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (context) => const VoiceCallPage()),
-    );
+    final voice = ref.read(voiceCallProvider);
+    if (voice.isCallActive) {
+      _scrollToBottom();
+      return;
+    }
+
+    final started = await ref
+        .read(voiceCallProvider.notifier)
+        .startCall(conversationId: ref.read(chatProvider).conversationId);
+    if (!mounted) {
+      return;
+    }
+    if (!started) {
+      final error =
+          ref.read(voiceCallProvider).errorMessage ?? 'Could not start Rex.';
+      _showSnackBar(error);
+      return;
+    }
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -200,6 +225,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   @override
   Widget build(BuildContext context) {
     final chat = ref.watch(chatProvider);
+    final voiceCall = ref.watch(voiceCallProvider);
+    final voiceController = ref.read(voiceCallProvider.notifier);
     final currentConversation = ref.watch(currentConversationProvider);
     final hasMessages = chat.messages.isNotEmpty;
     final hasStreamingAssistant =
@@ -213,13 +240,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               title: Text(currentConversation?.title ?? 'Rex'),
               actions: [
                 IconButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const VoiceCallPage(),
-                      ),
-                    );
-                  },
+                  onPressed: voiceCall.isCallActive ? null : _startVoiceCall,
                   icon: const Icon(Icons.call_rounded),
                   tooltip: 'Call Rex',
                 ),
@@ -347,6 +368,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 ),
               ),
             ),
+            if (!voiceCall.isIdle)
+              _InlineVoiceCallPanel(
+                state: voiceCall,
+                onRetry: _startVoiceCall,
+                onEnd: voiceController.endCall,
+                onToggleMute: voiceController.toggleMuted,
+                onInterrupt: () => voiceController.interruptAndListen(
+                  reason: 'Rex was interrupted.',
+                ),
+                onOpenSettings: voiceController.openVoiceSettings,
+              ),
             ChatInputBar(
               controller: _messageController,
               onSend: chat.isLoading || _attachmentError != null
@@ -354,7 +386,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   : _onSendTapped,
               onPickAttachment: _pickAttachment,
               onRemoveAttachment: _removeAttachment,
-              onStartVoice: _openVoiceCall,
+              onStartVoice: voiceCall.isCallActive ? null : _startVoiceCall,
+              isVoiceCallActive: voiceCall.isCallActive,
               attachmentName: _attachmentName,
               attachmentSize: _attachmentSize,
               attachmentError: _attachmentError,
@@ -364,6 +397,168 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         ),
       ),
     );
+  }
+}
+
+class _InlineVoiceCallPanel extends StatelessWidget {
+  const _InlineVoiceCallPanel({
+    required this.state,
+    required this.onRetry,
+    required this.onEnd,
+    required this.onToggleMute,
+    required this.onInterrupt,
+    required this.onOpenSettings,
+  });
+
+  final VoiceCallState state;
+  final VoidCallback onRetry;
+  final VoidCallback onEnd;
+  final VoidCallback onToggleMute;
+  final VoidCallback onInterrupt;
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isFailed = state.phase == VoiceCallPhase.failed;
+    final canInterrupt =
+        state.phase == VoiceCallPhase.speaking ||
+        state.phase == VoiceCallPhase.thinking;
+    final transcript = state.currentTranscript.trim();
+    final error = state.errorMessage?.trim();
+
+    return Material(
+      color: theme.scaffoldBackgroundColor,
+      elevation: 4,
+      shadowColor: scheme.shadow.withValues(alpha: 0.08),
+      child: SafeArea(
+        top: false,
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: isFailed ? scheme.errorContainer : scheme.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isFailed
+                    ? scheme.error.withValues(alpha: 0.22)
+                    : scheme.outlineVariant.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _voiceStatusIcon(state),
+                        color: isFailed ? scheme.error : scheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _voiceStatusLabel(state),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: isFailed
+                                ? scheme.onErrorContainer
+                                : scheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      if (isFailed) ...[
+                        IconButton(
+                          onPressed: onOpenSettings,
+                          icon: const Icon(Icons.settings_rounded),
+                          tooltip: 'Open app settings',
+                        ),
+                        IconButton.filledTonal(
+                          onPressed: onRetry,
+                          icon: const Icon(Icons.refresh_rounded),
+                          tooltip: 'Try again',
+                        ),
+                      ] else ...[
+                        IconButton(
+                          onPressed: onToggleMute,
+                          icon: Icon(
+                            state.isMuted
+                                ? Icons.mic_off_rounded
+                                : Icons.mic_rounded,
+                          ),
+                          tooltip: state.isMuted ? 'Unmute mic' : 'Mute mic',
+                        ),
+                        IconButton(
+                          onPressed: canInterrupt ? onInterrupt : null,
+                          icon: const Icon(Icons.front_hand_rounded),
+                          tooltip: 'Interrupt Rex',
+                        ),
+                      ],
+                      IconButton.filled(
+                        onPressed: onEnd,
+                        style: IconButton.styleFrom(
+                          backgroundColor: scheme.error,
+                          foregroundColor: scheme.onError,
+                        ),
+                        icon: const Icon(Icons.call_end_rounded),
+                        tooltip: 'End call',
+                      ),
+                    ],
+                  ),
+                  if (transcript.isNotEmpty || (isFailed && error != null)) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      isFailed && error != null ? error : transcript,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isFailed
+                            ? scheme.onErrorContainer
+                            : scheme.onSurfaceVariant,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _voiceStatusIcon(VoiceCallState state) {
+    if (state.isMuted && state.phase == VoiceCallPhase.listening) {
+      return Icons.mic_off_rounded;
+    }
+    return switch (state.phase) {
+      VoiceCallPhase.idle => Icons.call_rounded,
+      VoiceCallPhase.listening => Icons.mic_rounded,
+      VoiceCallPhase.thinking => Icons.more_horiz_rounded,
+      VoiceCallPhase.speaking => Icons.volume_up_rounded,
+      VoiceCallPhase.failed => Icons.error_outline_rounded,
+    };
+  }
+
+  String _voiceStatusLabel(VoiceCallState state) {
+    if (state.isMuted && state.phase == VoiceCallPhase.listening) {
+      return 'Voice muted';
+    }
+    return switch (state.phase) {
+      VoiceCallPhase.idle => 'Voice ready',
+      VoiceCallPhase.listening => 'Rex is listening',
+      VoiceCallPhase.thinking => 'Rex is thinking',
+      VoiceCallPhase.speaking => 'Rex is speaking',
+      VoiceCallPhase.failed => 'Voice needs attention',
+    };
   }
 }
 

@@ -29,12 +29,14 @@ final class ClarityApp extends StatelessWidget {
       surface: const Color(0xFFFAFAF8),
     );
     const onPaper = Color(0xFFF7F5F2);
+    const paper = Color(0xFFF8F7F4);
+    const panel = Color(0xFFFFFEFC);
     final outlineSoft = base.outline.withValues(alpha: 0.35);
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: base,
-      scaffoldBackgroundColor: const Color(0xFFF7F5F2),
+      scaffoldBackgroundColor: paper,
       textTheme: const TextTheme().apply(
         bodyColor: const Color(0xFF1C1B19),
         displayColor: const Color(0xFF1C1B19),
@@ -52,10 +54,53 @@ final class ClarityApp extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         titleTextStyle: TextStyle(
           fontSize: 18,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.2,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
           color: base.onSurface,
         ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: const Color(0xFF4D4A43),
+          minimumSize: const Size.square(44),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: const Color(0xFF5B574E),
+        textColor: const Color(0xFF1C1B19),
+        subtitleTextStyle: TextStyle(
+          color: base.onSurface.withValues(alpha: 0.56),
+          fontSize: 14,
+          height: 1.25,
+        ),
+        titleTextStyle: const TextStyle(
+          color: Color(0xFF1C1B19),
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          height: 1.22,
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: panel,
+        indicatorColor: const Color(0xFFEDE8DC),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          return TextStyle(
+            color: states.contains(WidgetState.selected)
+                ? const Color(0xFF1C1B19)
+                : base.onSurface.withValues(alpha: 0.62),
+            fontSize: 12,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w600,
+          );
+        }),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: panel,
+        surfaceTintColor: Colors.transparent,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

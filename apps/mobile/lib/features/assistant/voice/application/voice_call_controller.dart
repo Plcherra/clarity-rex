@@ -54,6 +54,10 @@ final nativeIosVoiceEnabledProvider = Provider<bool>(
   (ref) => RexConfig.nativeIosVoiceEnabled,
 );
 
+final legacyNativeIosVoiceFlagRequestedProvider = Provider<bool>(
+  (ref) => RexConfig.legacyNativeIosVoiceFlagRequested,
+);
+
 final voiceCallPlatformProvider = Provider<TargetPlatform>(
   (ref) => defaultTargetPlatform,
 );
@@ -104,6 +108,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _isHandlingLifecycleResume = false;
   var _isAppInForeground = true;
   var _isUsingNativeVoice = false;
+  var _warnedLegacyNativeVoiceFlag = false;
   Timer? _thinkingTimeoutTimer;
   Timer? _listeningEndpointTimer;
 
@@ -211,6 +216,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _isStartingCall = true;
+    _warnIfLegacyNativeVoiceFlagRequested();
     final generation = ++_callGeneration;
     _clearVisibleTranscript();
     final startedAt = ref.read(voiceCallNowProvider)();
@@ -620,6 +626,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
       await _nativeVoiceSubscription?.cancel();
       _nativeVoiceSubscription = null;
       _activeNativeVoiceSessionService = null;
+      debugPrint(
+        'Experimental native iOS voice bridge is unavailable. '
+        'Falling back to stable cloud voice.',
+      );
       return false;
     }
 
@@ -635,6 +645,19 @@ class VoiceCallController extends Notifier<VoiceCallState>
       clearCallEndedAt: true,
     );
     return true;
+  }
+
+  void _warnIfLegacyNativeVoiceFlagRequested() {
+    if (_warnedLegacyNativeVoiceFlag ||
+        !ref.read(legacyNativeIosVoiceFlagRequestedProvider)) {
+      return;
+    }
+    _warnedLegacyNativeVoiceFlag = true;
+    debugPrint(
+      'REX_NATIVE_IOS_VOICE_ENABLED is ignored. '
+      'Use REX_EXPERIMENTAL_NATIVE_IOS_VOICE_ENABLED only for native bridge '
+      'experiments; release builds use stable cloud voice.',
+    );
   }
 
   void _handleNativeVoiceEvent(NativeVoiceEvent event, int generation) {

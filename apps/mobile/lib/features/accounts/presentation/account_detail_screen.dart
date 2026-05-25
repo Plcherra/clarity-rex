@@ -298,9 +298,6 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
           scope: AccountDashboardScope(widget.accountId),
           showBackButton: true,
           title: title,
-          buildSnapshot: (_, _) => widget.dashboardController.buildSnapshot(
-            AccountDashboardScope(widget.accountId),
-          ),
           onUploadTransactions: () => _importCsvForThisAccount(context),
           onDeleteCsvImportBatch: _deletingCsvUpload
               ? null

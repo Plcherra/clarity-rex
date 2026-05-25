@@ -14,13 +14,11 @@ import '../../transactions/domain/transaction_resolution.dart';
 import '../../transactions/presentation/widgets/transaction_category_dropdown.dart';
 import 'month_detail_screen.dart';
 
-typedef SnapshotBuilder =
-    Future<DashboardSnapshot> Function(
-      DashboardUiController controller,
-      DashboardScope scope,
-    );
-
-const double _sectionGap = 32.0;
+const double _sectionGap = 28.0;
+const double _cardRadius = 18.0;
+const Color _dashboardPanel = Color(0xFFFFFEFC);
+const Color _dashboardPanelMuted = Color(0xFFF7F5F0);
+const Color _dashboardOutline = Color(0xFFE9E3D8);
 const List<String> _monthAbbreviations = [
   'Jan',
   'Feb',
@@ -151,7 +149,6 @@ class FinancialDashboardView extends StatefulWidget {
     required this.budgetController,
     required this.importJobStatusController,
     required this.scope,
-    required this.buildSnapshot,
     this.showBackButton = false,
     this.title = 'Overview',
     this.onUploadTransactions,
@@ -164,7 +161,6 @@ class FinancialDashboardView extends StatefulWidget {
   final BudgetUiController budgetController;
   final ImportJobStatusController importJobStatusController;
   final DashboardScope scope;
-  final SnapshotBuilder buildSnapshot;
   final bool showBackButton;
   final String title;
 
@@ -201,8 +197,7 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
       widget.controller.addListener(_handleControllerChanged);
     }
     if (oldWidget.controller != widget.controller ||
-        oldWidget.scope != widget.scope ||
-        oldWidget.buildSnapshot != widget.buildSnapshot) {
+        oldWidget.scope != widget.scope) {
       _loadData();
     }
   }
@@ -215,16 +210,11 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
     final generation = ++_loadGeneration;
     _dataNotifier.setLoading();
     try {
-      final snap = await widget.buildSnapshot(widget.controller, widget.scope);
-      final budgetPerformance = await widget.controller
-          .budgetPerformanceForScope(widget.scope);
-      if (!mounted || generation != _loadGeneration) return;
-      _dataNotifier.setData(
-        _FinancialDashboardData(
-          snapshot: snap,
-          budgetPerformance: budgetPerformance,
-        ),
+      final data = await widget.controller.dashboardViewDataForScope(
+        widget.scope,
       );
+      if (!mounted || generation != _loadGeneration) return;
+      _dataNotifier.setData(data);
     } on Object catch (error) {
       if (!mounted || generation != _loadGeneration) return;
       _dataNotifier.setError(error);
@@ -285,6 +275,9 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             }
             return const _DashboardLoadingBody();
           }
+          if (data.isResolvingImportedTransactions && !data.isTrulyEmpty) {
+            return const _DashboardResolvingDataBody();
+          }
           final scrollBody = _DashboardScrollBody(
             title: widget.title,
             controller: widget.controller,
@@ -293,6 +286,8 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             scope: widget.scope,
             snapshot: data.snapshot,
             budgetPerformance: data.budgetPerformance,
+            hasStatementBalance: data.scopedStatementImportCount > 0,
+            transactionCount: data.scopedTransactionCount,
             onUploadTransactions: widget.onUploadTransactions,
           );
           return widget.showBackButton
@@ -308,21 +303,22 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
 }
 
 class _DashboardDataNotifier extends ChangeNotifier {
-  _FinancialDashboardData? _data;
+  DashboardViewData? _data;
   Object? _error;
   var _loading = false;
 
-  _FinancialDashboardData? get data => _data;
+  DashboardViewData? get data => _data;
   Object? get error => _error;
   bool get loading => _loading;
 
   void setLoading() {
+    _data = null;
     _loading = true;
     _error = null;
     notifyListeners();
   }
 
-  void setData(_FinancialDashboardData data) {
+  void setData(DashboardViewData data) {
     _data = data;
     _error = null;
     _loading = false;
@@ -336,16 +332,6 @@ class _DashboardDataNotifier extends ChangeNotifier {
   }
 }
 
-class _FinancialDashboardData {
-  const _FinancialDashboardData({
-    required this.snapshot,
-    required this.budgetPerformance,
-  });
-
-  final DashboardSnapshot snapshot;
-  final BudgetPerformanceSnapshot budgetPerformance;
-}
-
 class _DashboardScrollBody extends StatelessWidget {
   const _DashboardScrollBody({
     required this.title,
@@ -355,6 +341,8 @@ class _DashboardScrollBody extends StatelessWidget {
     required this.scope,
     required this.snapshot,
     required this.budgetPerformance,
+    required this.hasStatementBalance,
+    required this.transactionCount,
     required this.onUploadTransactions,
   });
 
@@ -365,6 +353,8 @@ class _DashboardScrollBody extends StatelessWidget {
   final DashboardScope scope;
   final DashboardSnapshot snapshot;
   final BudgetPerformanceSnapshot budgetPerformance;
+  final bool hasStatementBalance;
+  final int transactionCount;
   final Future<void> Function()? onUploadTransactions;
 
   @override
@@ -372,13 +362,7 @@ class _DashboardScrollBody extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [const Color(0xFFF3F1ED), cs.surface],
-        ),
-      ),
+      decoration: BoxDecoration(color: const Color(0xFFF8F7F4)),
       child: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
@@ -407,45 +391,27 @@ class _DashboardScrollBody extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 20),
-                  _SectionTitle(theme: theme, title: 'Cash flow'),
-                  const SizedBox(height: 16),
-                  _ResponsiveMetricCard(
-                    label: 'Available this month',
-                    value: formatMoney(snapshot.availableThisMonth),
-                    large: true,
-                    valueColor: _balanceColor(snapshot.availableThisMonth),
-                    footnote:
-                        'Income ${formatMoney(snapshot.incomeThisMonth)} · '
-                        'Spending ${formatMoney(snapshot.spentThisMonth)}',
+                  const SizedBox(height: 18),
+                  _CashFlowSummaryCard(
+                    snapshot: snapshot,
+                    hasStatementBalance: hasStatementBalance,
                   ),
                   const SizedBox(height: _sectionGap),
-                  _SectionTitle(theme: theme, title: 'Spending'),
+                  _SectionTitle(theme: theme, title: 'Spending pressure'),
                   const SizedBox(height: 16),
-                  _ResponsiveMetricCard(
-                    label: 'Spent this month',
-                    value: formatMoney(snapshot.spentThisMonth),
-                    large: false,
-                    valueColor: const Color(0xFF9B2C2C),
-                  ),
+                  _BiggestLeaksCard(leaks: snapshot.biggestLeaksThisMonth),
                   const SizedBox(height: _sectionGap),
                   _SectionTitle(theme: theme, title: 'Budget performance'),
                   const SizedBox(height: 16),
                   _BudgetPerformanceCard(performance: budgetPerformance),
                   const SizedBox(height: _sectionGap),
-                  _SectionTitle(
-                    theme: theme,
-                    title: 'Biggest leaks this month',
-                  ),
-                  const SizedBox(height: 16),
-                  _BiggestLeaksCard(leaks: snapshot.biggestLeaksThisMonth),
-                  const SizedBox(height: _sectionGap),
                   _SectionTitle(theme: theme, title: 'Account health'),
                   const SizedBox(height: 16),
-                  _BurnRateCard(
-                    runwayDays: snapshot.burnRunwayDays,
-                    totalBalance: snapshot.totalBalance,
-                    spentThisMonth: snapshot.spentThisMonth,
+                  _AccountHealthCard(
+                    snapshot: snapshot,
+                    budgetPerformance: budgetPerformance,
+                    hasStatementBalance: hasStatementBalance,
+                    transactionCount: transactionCount,
                   ),
                   const SizedBox(height: _sectionGap),
                   _DashboardTransactionsSection(
@@ -469,7 +435,113 @@ class _DashboardLoadingBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: CircularProgressIndicator());
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [const Color(0xFFF3F1ED), cs.surface],
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 120,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 28),
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 18),
+                      Text(
+                        'Loading your financial data...',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardResolvingDataBody extends StatelessWidget {
+  const _DashboardResolvingDataBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [const Color(0xFFF3F1ED), cs.surface],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE0DCD4)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Resolving imported transactions',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your statement is connected, but the transaction rows are still loading. Values will appear when the read model is complete.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -560,6 +632,173 @@ class _CompactUploadButtonState extends State<_CompactUploadButton> {
       style: FilledButton.styleFrom(
         minimumSize: const Size(0, 44),
         padding: const EdgeInsets.symmetric(horizontal: 16),
+      ),
+    );
+  }
+}
+
+class _CashFlowSummaryCard extends StatelessWidget {
+  const _CashFlowSummaryCard({
+    required this.snapshot,
+    required this.hasStatementBalance,
+  });
+
+  final DashboardSnapshot snapshot;
+  final bool hasStatementBalance;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final availableValue = hasStatementBalance
+        ? formatMoney(snapshot.totalBalance)
+        : 'Missing';
+    final net = snapshot.availableThisMonth;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      decoration: BoxDecoration(
+        color: _dashboardPanel,
+        borderRadius: BorderRadius.circular(_cardRadius),
+        border: Border.all(color: _dashboardOutline),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Cash flow',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: cs.onSurface.withValues(alpha: 0.58),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              availableValue,
+              style: theme.textTheme.displaySmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                height: 1.02,
+                color: hasStatementBalance
+                    ? _balanceColor(snapshot.totalBalance)
+                    : cs.onSurface.withValues(alpha: 0.52),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            hasStatementBalance
+                ? 'Latest statement balance'
+                : 'Statement balance needed',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurface.withValues(alpha: 0.46),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 18),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 340;
+              final children = [
+                _CashFlowSummaryMetric(
+                  label: 'Income',
+                  value: formatMoney(snapshot.incomeThisMonth),
+                  color: const Color(0xFF1B7A4C),
+                ),
+                _CashFlowSummaryMetric(
+                  label: 'Spending',
+                  value: formatMoney(snapshot.spentThisMonth),
+                  color: const Color(0xFF9B2C2C),
+                ),
+                _CashFlowSummaryMetric(
+                  label: 'Net',
+                  value: formatMoney(net),
+                  color: _balanceColor(net),
+                ),
+              ];
+              if (compact) {
+                return Column(
+                  children: [
+                    for (var i = 0; i < children.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 10),
+                      children[i],
+                    ],
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  for (var i = 0; i < children.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 10),
+                    Expanded(child: children[i]),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CashFlowSummaryMetric extends StatelessWidget {
+  const _CashFlowSummaryMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: _dashboardPanelMuted,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: cs.onSurface.withValues(alpha: 0.5),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 5),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1048,11 +1287,11 @@ class _TransactionSearchField extends StatelessWidget {
         fillColor: cs.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0xFFE4E0D8)),
+          borderSide: const BorderSide(color: _dashboardOutline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0xFFE4E0D8)),
+          borderSide: const BorderSide(color: _dashboardOutline),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -1259,14 +1498,14 @@ class _CategoryGroupCard extends StatelessWidget {
     final cs = theme.colorScheme;
     return Material(
       color: cs.surface,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(_cardRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE4E0D8)),
+            borderRadius: BorderRadius.circular(_cardRadius),
+            border: Border.all(color: _dashboardOutline),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -1455,9 +1694,9 @@ class _InlineTransactionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE4E0D8)),
+        color: _dashboardPanel,
+        borderRadius: BorderRadius.circular(_cardRadius),
+        border: Border.all(color: _dashboardOutline),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1542,9 +1781,9 @@ class _InlineEmptyState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE4E0D8)),
+        color: _dashboardPanel,
+        borderRadius: BorderRadius.circular(_cardRadius),
+        border: Border.all(color: _dashboardOutline),
       ),
       child: Column(
         children: [
@@ -1579,9 +1818,9 @@ class _BiggestLeaksCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: const Color(0xFFE4E0D8)),
+          color: _dashboardPanel,
+          borderRadius: BorderRadius.circular(_cardRadius),
+          border: Border.all(color: _dashboardOutline),
         ),
         child: Text(
           'No spending this month.',
@@ -1596,9 +1835,9 @@ class _BiggestLeaksCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: const Color(0xFFE4E0D8)),
+        color: _dashboardPanel,
+        borderRadius: BorderRadius.circular(_cardRadius),
+        border: Border.all(color: _dashboardOutline),
       ),
       child: Column(
         children: [
@@ -1626,9 +1865,9 @@ class _BudgetPerformanceCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
         decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: const Color(0xFFE4E0D8)),
+          color: _dashboardPanel,
+          borderRadius: BorderRadius.circular(_cardRadius),
+          border: Border.all(color: _dashboardOutline),
         ),
         child: Text(
           'No budgets set for ${performance.periodLabel} yet.',
@@ -1643,9 +1882,9 @@ class _BudgetPerformanceCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 18, 22, 20),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: const Color(0xFFE4E0D8)),
+        color: _dashboardPanel,
+        borderRadius: BorderRadius.circular(_cardRadius),
+        border: Border.all(color: _dashboardOutline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1775,7 +2014,7 @@ class _LeakRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w600,
-              letterSpacing: -0.1,
+              letterSpacing: 0,
             ),
           ),
         ),
@@ -1799,71 +2038,225 @@ class _LeakRow extends StatelessWidget {
   }
 }
 
-class _BurnRateCard extends StatelessWidget {
-  const _BurnRateCard({
-    required this.runwayDays,
-    required this.totalBalance,
-    required this.spentThisMonth,
+class _AccountHealthCard extends StatelessWidget {
+  const _AccountHealthCard({
+    required this.snapshot,
+    required this.budgetPerformance,
+    required this.hasStatementBalance,
+    required this.transactionCount,
   });
 
-  final int? runwayDays;
-  final double totalBalance;
-  final double spentThisMonth;
+  final DashboardSnapshot snapshot;
+  final BudgetPerformanceSnapshot budgetPerformance;
+  final bool hasStatementBalance;
+  final int transactionCount;
 
-  String _message() {
-    if (runwayDays != null) {
-      final x = runwayDays!;
-      return "You're burning through money at a rate that will last you $x more day${x == 1 ? '' : 's'}.";
+  String get _headline {
+    if (!hasStatementBalance && transactionCount > 0) {
+      return 'Transaction history is active, but the statement balance is missing.';
     }
-    if (totalBalance <= 0) {
-      return 'With no positive balance, runway cannot be estimated from this pace.';
+    if (snapshot.availableThisMonth < 0) {
+      return 'Spending is ahead of income by ${formatMoney(-snapshot.availableThisMonth)} this month.';
     }
-    if (spentThisMonth <= 0) {
-      return 'No spending recorded yet this month to estimate burn rate.';
+    if (snapshot.incomeThisMonth > 0 && snapshot.spentThisMonth > 0) {
+      return 'Income is ahead of spending by ${formatMoney(snapshot.availableThisMonth)} this month.';
     }
-    return 'Not enough data to estimate how long your balance will last.';
+    if (snapshot.spentThisMonth > 0) {
+      return 'Spending is active this month; no income is recorded in this scope.';
+    }
+    if (snapshot.incomeThisMonth > 0) {
+      return 'Income is recorded and no spending has posted for this month yet.';
+    }
+    if (transactionCount > 0) {
+      return 'No current-month activity in this scope yet.';
+    }
+    return 'Connect transactions to build account health.';
+  }
+
+  String get _budgetValue {
+    if (budgetPerformance.budgetedCategoryCount == 0) return 'No budgets';
+    if (budgetPerformance.totalOverspent > 0) {
+      return formatMoney(budgetPerformance.totalOverspent);
+    }
+    return '${budgetPerformance.onTrackCategoryCount}/${budgetPerformance.budgetedCategoryCount} on track';
+  }
+
+  String get _budgetDetail {
+    if (budgetPerformance.budgetedCategoryCount == 0) {
+      return 'Set budgets to compare this month against a target.';
+    }
+    final topOverspend =
+        budgetPerformance.topOverspendingCategories.firstOrNull;
+    if (topOverspend != null) {
+      return '${topOverspend.displayLabel} is over by ${formatMoney(topOverspend.overspent)}.';
+    }
+    return 'Budget coverage looks controlled for ${budgetPerformance.periodLabel}.';
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final topPressure = snapshot.topCategories.firstOrNull;
+    final pressureValue = topPressure == null
+        ? 'None'
+        : formatMoney(topPressure.amount);
+    final pressureDetail = topPressure == null
+        ? 'No spending pressure recorded this month.'
+        : '${topPressure.name} is the largest spend pressure this month.';
+    final balanceValue = hasStatementBalance
+        ? formatMoney(snapshot.totalBalance)
+        : 'Missing';
+    final balanceDetail = hasStatementBalance
+        ? 'Latest connected statement balance.'
+        : 'Import or refresh a statement balance for stronger health checks.';
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE0DCD4)),
+        color: _dashboardPanel,
+        borderRadius: BorderRadius.circular(_cardRadius),
+        border: Border.all(color: _dashboardOutline),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.local_fire_department_outlined,
-            color: cs.onSurface.withValues(alpha: 0.45),
-            size: 26,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              _message(),
-              style: theme.textTheme.bodyLarge?.copyWith(
-                height: 1.35,
-                fontWeight: FontWeight.w500,
-                color: cs.onSurface.withValues(alpha: 0.88),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                hasStatementBalance
+                    ? Icons.health_and_safety_outlined
+                    : Icons.info_outline_rounded,
+                color: hasStatementBalance
+                    ? const Color(0xFF1B7A4C)
+                    : cs.onSurface.withValues(alpha: 0.5),
+                size: 26,
               ),
-            ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  _headline,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.9),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          _HealthMetricRow(
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'Statement balance',
+            value: balanceValue,
+            detail: balanceDetail,
+            valueColor: hasStatementBalance
+                ? _balanceColor(snapshot.totalBalance)
+                : cs.onSurface.withValues(alpha: 0.55),
+          ),
+          const SizedBox(height: 14),
+          _HealthMetricRow(
+            icon: Icons.sync_alt_rounded,
+            label: 'Cash flow',
+            value: formatMoney(snapshot.availableThisMonth),
+            detail:
+                'Income ${formatMoney(snapshot.incomeThisMonth)} · Spending ${formatMoney(snapshot.spentThisMonth)}',
+            valueColor: _balanceColor(snapshot.availableThisMonth),
+          ),
+          const SizedBox(height: 14),
+          _HealthMetricRow(
+            icon: Icons.trending_up_rounded,
+            label: 'Spend pressure',
+            value: pressureValue,
+            detail: pressureDetail,
+            valueColor: topPressure == null
+                ? cs.onSurface.withValues(alpha: 0.55)
+                : const Color(0xFF9B2C2C),
+          ),
+          const SizedBox(height: 14),
+          _HealthMetricRow(
+            icon: Icons.savings_outlined,
+            label: 'Budget coverage',
+            value: _budgetValue,
+            detail: _budgetDetail,
+            valueColor: budgetPerformance.totalOverspent > 0
+                ? const Color(0xFFC41E3A)
+                : cs.onSurface.withValues(alpha: 0.82),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HealthMetricRow extends StatelessWidget {
+  const _HealthMetricRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.valueColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String detail;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 19, color: cs.onSurface.withValues(alpha: 0.44)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.52),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                detail,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.58),
+                  height: 1.25,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: valueColor,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1887,9 +2280,9 @@ class _MonthlyGroupsList extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: const Color(0xFFE4E0D8)),
+          color: _dashboardPanel,
+          borderRadius: BorderRadius.circular(_cardRadius),
+          border: Border.all(color: _dashboardOutline),
         ),
         child: Text(
           'No months to show after filtering this file.',
@@ -1956,8 +2349,8 @@ class _MonthCard extends StatelessWidget {
         },
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE4E0D8)),
+            borderRadius: BorderRadius.circular(_cardRadius),
+            border: Border.all(color: _dashboardOutline),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
@@ -1971,7 +2364,7 @@ class _MonthCard extends StatelessWidget {
                         label,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
+                          letterSpacing: 0,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1991,7 +2384,7 @@ class _MonthCard extends StatelessWidget {
                       formatMoney(group.totalAmount),
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        letterSpacing: -0.4,
+                        letterSpacing: 0,
                         color: totalColor,
                       ),
                     ),
@@ -2031,99 +2424,9 @@ class _SectionTitle extends StatelessWidget {
       title,
       style: theme.textTheme.titleMedium?.copyWith(
         fontWeight: FontWeight.w600,
-        letterSpacing: -0.2,
+        letterSpacing: 0,
         color: theme.colorScheme.onSurface.withValues(alpha: 0.82),
       ),
-    );
-  }
-}
-
-class _ResponsiveMetricCard extends StatelessWidget {
-  const _ResponsiveMetricCard({
-    required this.label,
-    required this.value,
-    required this.large,
-    this.valueColor,
-    this.footnote,
-  });
-
-  final String label;
-  final String value;
-  final bool large;
-  final Color? valueColor;
-  final String? footnote;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final color = valueColor ?? cs.onSurface;
-    return LayoutBuilder(
-      builder: (context, c) {
-        final w = c.maxWidth;
-        final valueSize = large
-            ? (w * 0.15).clamp(34.0, 72.0)
-            : (w * 0.12).clamp(30.0, 58.0);
-        return Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(
-            horizontal: w >= 380 ? 28 : 20,
-            vertical: large ? 32 : 28,
-          ),
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: const Color(0xFFE0DCD4)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.045),
-                blurRadius: 32,
-                offset: const Offset(0, 18),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label.toUpperCase(),
-                style: theme.textTheme.labelMedium?.copyWith(
-                  letterSpacing: 2.6,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11,
-                  color: cs.onSurface.withValues(alpha: 0.36),
-                ),
-              ),
-              const SizedBox(height: 16),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  value,
-                  style: theme.textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -2,
-                    height: 1.02,
-                    color: color,
-                    fontSize: valueSize,
-                  ),
-                ),
-              ),
-              if (footnote != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  footnote!,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.42),
-                    letterSpacing: 0.2,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
     );
   }
 }

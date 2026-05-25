@@ -4,7 +4,8 @@ import '../accountability/presentation/pages/accountability_page.dart';
 import '../chat/presentation/pages/chat_page.dart';
 import '../chat/presentation/pages/conversation_list_page.dart';
 import '../memory/presentation/pages/memory_page.dart';
-import '../voice/presentation/pages/voice_call_page.dart';
+
+const _assistantChatTabIndex = 0;
 
 class AssistantScreen extends StatelessWidget {
   const AssistantScreen({super.key});
@@ -15,7 +16,7 @@ class AssistantScreen extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         body: SafeArea(
           top: true,
@@ -23,82 +24,73 @@ class AssistantScreen extends StatelessWidget {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Assistant',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: scheme.onSurface,
-                        ),
-                      ),
+                padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Assistant',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: scheme.onSurface,
                     ),
-                    IconButton.filledTonal(
-                      style: IconButton.styleFrom(
-                        fixedSize: const Size.square(44),
-                        minimumSize: const Size.square(44),
-                        padding: EdgeInsets.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (context) => const ConversationListPage(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.forum_outlined, size: 24),
-                      tooltip: 'Conversations',
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TabBar(
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  dividerColor: Colors.transparent,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicator: BoxDecoration(
-                    color: scheme.surfaceContainerHighest.withValues(
-                      alpha: 0.9,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TabBar(
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    dividerColor: Colors.transparent,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicator: BoxDecoration(
+                      color: scheme.surfaceContainerHighest.withValues(
+                        alpha: 0.9,
+                      ),
+                      borderRadius: BorderRadius.circular(999),
                     ),
-                    borderRadius: BorderRadius.circular(999),
+                    labelColor: scheme.onSurface,
+                    unselectedLabelColor: scheme.onSurfaceVariant,
+                    labelStyle: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+                    padding: EdgeInsets.zero,
+                    tabs: const [
+                      Tab(
+                        icon: Icon(Icons.chat_bubble_outline_rounded),
+                        text: 'Chat',
+                      ),
+                      Tab(icon: Icon(Icons.graphic_eq_rounded), text: 'Voice'),
+                      Tab(
+                        icon: Icon(Icons.psychology_alt_outlined),
+                        text: 'Memory',
+                      ),
+                      Tab(icon: Icon(Icons.flag_outlined), text: 'Goals'),
+                      Tab(icon: Icon(Icons.forum_outlined), text: 'Chats'),
+                    ],
                   ),
-                  labelColor: scheme.onSurface,
-                  unselectedLabelColor: scheme.onSurfaceVariant,
-                  labelStyle: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-                  tabs: const [
-                    Tab(
-                      icon: Icon(Icons.chat_bubble_outline_rounded),
-                      text: 'Chat',
-                    ),
-                    Tab(icon: Icon(Icons.graphic_eq_rounded), text: 'Voice'),
-                    Tab(
-                      icon: Icon(Icons.psychology_alt_outlined),
-                      text: 'Memory',
-                    ),
-                    Tab(icon: Icon(Icons.flag_outlined), text: 'Goals'),
-                  ],
                 ),
               ),
-              const Expanded(
+              Expanded(
                 child: TabBarView(
                   children: [
-                    ChatPage(showAppBar: false),
-                    VoiceCallPage(
-                      autoStart: false,
-                      showAppBar: false,
-                      closeOnEnd: false,
+                    const ChatPage(showAppBar: false),
+                    const ChatPage(showAppBar: false),
+                    const MemoryPage(showAppBar: false),
+                    const AccountabilityPage(showAppBar: false),
+                    Builder(
+                      builder: (context) => ConversationListPage(
+                        showAppBar: false,
+                        onConversationSelected: () {
+                          DefaultTabController.of(
+                            context,
+                          ).animateTo(_assistantChatTabIndex);
+                        },
+                      ),
                     ),
-                    MemoryPage(showAppBar: false),
-                    AccountabilityPage(showAppBar: false),
                   ],
                 ),
               ),

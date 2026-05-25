@@ -226,10 +226,6 @@ class _CallConversation extends StatelessWidget {
     final response = call.lastAssistantResponse.trim();
     final hasTranscript = transcript.isNotEmpty;
     final hasResponse = response.isNotEmpty;
-    final showListeningBubble =
-        call.isCapturingSpeech &&
-        !hasTranscript &&
-        call.phase == VoiceCallPhase.listening;
     final isThinking = call.phase == VoiceCallPhase.thinking;
     final isFailed = call.phase == VoiceCallPhase.failed;
     final hasRecoverableError =
@@ -246,9 +242,6 @@ class _CallConversation extends StatelessWidget {
               _EmptyCallHint(call: call),
             if (hasTranscript) ...[
               _UserBubble(text: transcript),
-              const SizedBox(height: 14),
-            ] else if (showListeningBubble) ...[
-              const _UserListeningBubble(),
               const SizedBox(height: 14),
             ],
             if (hasResponse)
@@ -329,54 +322,6 @@ class _UserBubble extends StatelessWidget {
                 height: 1.3,
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _UserListeningBubble extends StatelessWidget {
-  const _UserListeningBubble();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Align(
-      alignment: Alignment.centerRight,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: scheme.primaryContainer.withValues(alpha: 0.72),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(18),
-            topRight: Radius.circular(18),
-            bottomLeft: Radius.circular(18),
-            bottomRight: Radius.circular(4),
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox.square(
-                dimension: 12,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: scheme.onPrimaryContainer,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Listening to you...',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: scheme.onPrimaryContainer,
-                  height: 1.3,
-                ),
-              ),
-            ],
           ),
         ),
       ),

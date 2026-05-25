@@ -13,9 +13,11 @@ abstract final class RexConfig {
     'REX_STREAMING_VOICE_ENABLED',
   );
 
-  static const String _nativeIosVoiceEnabledOverride = String.fromEnvironment(
-    'REX_NATIVE_IOS_VOICE_ENABLED',
-  );
+  static const String _experimentalNativeIosVoiceEnabledOverride =
+      String.fromEnvironment('REX_EXPERIMENTAL_NATIVE_IOS_VOICE_ENABLED');
+
+  static const String _legacyNativeIosVoiceEnabledOverride =
+      String.fromEnvironment('REX_NATIVE_IOS_VOICE_ENABLED');
 
   static String get backendBaseUrl {
     return _stringConfig(
@@ -43,7 +45,15 @@ abstract final class RexConfig {
 
   static bool get nativeIosVoiceEnabled {
     return _boolConfig(
-      dartDefineValue: _nativeIosVoiceEnabledOverride,
+      dartDefineValue: _experimentalNativeIosVoiceEnabledOverride,
+      envKey: 'REX_EXPERIMENTAL_NATIVE_IOS_VOICE_ENABLED',
+      fallback: false,
+    );
+  }
+
+  static bool get legacyNativeIosVoiceFlagRequested {
+    return _boolConfig(
+      dartDefineValue: _legacyNativeIosVoiceEnabledOverride,
       envKey: 'REX_NATIVE_IOS_VOICE_ENABLED',
       fallback: false,
     );
@@ -58,7 +68,12 @@ abstract final class RexConfig {
     if (override.isNotEmpty) {
       return override;
     }
-    final envValue = dotenv.env[envKey]?.trim();
+    String? envValue;
+    try {
+      envValue = dotenv.env[envKey]?.trim();
+    } on Object {
+      envValue = null;
+    }
     return envValue == null || envValue.isEmpty ? fallback : envValue;
   }
 

@@ -47,6 +47,7 @@ class _HomeShellState extends State<HomeShell> {
         transactionController: widget.ui.transactions,
         budgetController: widget.ui.budgets,
         importJobStatusController: widget.ui.importJobStatus,
+        signOut: widget.signOut,
       ),
       BudgetsScreen(
         controller: widget.ui.budgets,
@@ -63,14 +64,6 @@ class _HomeShellState extends State<HomeShell> {
           onManageCategories: _openCategoryManagement,
           child: IndexedStack(index: _idx, children: pages),
         ),
-        floatingActionButton: widget.signOut == null || _idx == 3
-            ? null
-            : FloatingActionButton.small(
-                heroTag: null,
-                tooltip: 'Sign out',
-                onPressed: widget.signOut,
-                child: const Icon(Icons.logout_rounded),
-              ),
         bottomNavigationBar: NavigationBar(
           backgroundColor: cs.surface,
           surfaceTintColor: Colors.transparent,

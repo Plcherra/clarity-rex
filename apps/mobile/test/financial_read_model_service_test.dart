@@ -313,6 +313,49 @@ void main() {
     );
   });
 
+  test('statement imports are scoped for dashboard resolving state', () {
+    final model = FinancialReadModel(
+      accounts: const [
+        Account(id: 'checking', name: 'Checking', type: AccountType.checking),
+        Account(id: 'savings', name: 'Savings', type: AccountType.savings),
+      ],
+      transactionRecords: const [],
+      transactions: const [],
+      budgets: const [],
+      statementImports: [
+        _statementImport(
+          accountId: 'checking',
+          importId: 'checking-import',
+          balance: 1500,
+          endDate: DateTime(2026, 3),
+        ),
+        _statementImport(
+          accountId: 'savings',
+          importId: 'savings-import',
+          balance: 700,
+          endDate: DateTime(2026, 3),
+        ),
+      ],
+    );
+
+    expect(
+      model
+          .statementImportsForScope(const GlobalDashboardScope())
+          .map((statementImport) => statementImport.importId),
+      ['checking-import', 'savings-import'],
+    );
+    expect(
+      model
+          .statementImportsForScope(const AccountDashboardScope('checking'))
+          .map((statementImport) => statementImport.importId),
+      ['checking-import'],
+    );
+    expect(
+      model.statementImportsForScope(const AccountDashboardScope('missing')),
+      isEmpty,
+    );
+  });
+
   test('dashboard balance does not fall back to transaction sum', () {
     final model = FinancialReadModel(
       accounts: const [],

@@ -5,6 +5,7 @@ import 'package:clarity/features/auth/presentation/auth_screen.dart';
 import 'package:clarity/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:clarity/features/assistant/presentation/assistant_screen.dart';
 import 'package:clarity/features/shell/presentation/home_shell.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -69,7 +70,7 @@ void main() {
     expect(find.byType(HomeShell), findsOneWidget);
   });
 
-  testWidgets('assistant tab exposes Chat Voice Memory and Goals sections', (
+  testWidgets('sign out lives in the accounts menu, not a floating action', (
     tester,
   ) async {
     final app = AppComposition(initialAuthenticated: true);
@@ -91,13 +92,50 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Assistant'));
-    await tester.pump();
+    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byTooltip('Sign out'), findsNothing);
 
-    expect(find.byType(AssistantScreen), findsOneWidget);
-    expect(find.text('Chat'), findsOneWidget);
-    expect(find.text('Voice'), findsOneWidget);
-    expect(find.text('Memory'), findsOneWidget);
-    expect(find.text('Goals'), findsOneWidget);
+    await tester.tap(find.text('Accounts'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Account menu'), findsOneWidget);
+    await tester.tap(find.byTooltip('Account menu'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sign out'), findsOneWidget);
   });
+
+  testWidgets(
+    'assistant tab exposes Chat Voice Memory Goals and Chats sections',
+    (tester) async {
+      final app = AppComposition(initialAuthenticated: true);
+      addTearDown(app.dispose);
+      app.profileController.profile = ProfileRecord(
+        id: 'user-1',
+        email: 'test@example.com',
+        fullName: 'Test User',
+        avatarUrl: null,
+        createdAt: DateTime.utc(2026),
+        updatedAt: DateTime.utc(2026),
+      );
+
+      await tester.pumpWidget(
+        ClarityApp(
+          ui: app.ui,
+          authController: app.authController,
+          profileController: app.profileController,
+        ),
+      );
+
+      await tester.tap(find.text('Assistant'));
+      await tester.pump();
+
+      expect(find.byType(AssistantScreen), findsOneWidget);
+      expect(find.text('Chat'), findsOneWidget);
+      expect(find.text('Voice'), findsOneWidget);
+      expect(find.text('Memory'), findsOneWidget);
+      expect(find.text('Goals'), findsOneWidget);
+      expect(find.text('Chats'), findsOneWidget);
+    },
+  );
 }

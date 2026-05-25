@@ -237,6 +237,16 @@ final class FinancialReadModel {
     };
   }
 
+  List<AccountStatementImport> statementImportsForScope(DashboardScope scope) {
+    return switch (scope) {
+      GlobalDashboardScope() => statementImports,
+      AccountDashboardScope(:final accountId) =>
+        statementImports
+            .where((statementImport) => statementImport.accountId == accountId)
+            .toList(growable: false),
+    };
+  }
+
   List<ResolvedTransaction> resolvedTransactionsForScope(DashboardScope scope) {
     return resolveTransactions(
       transactionsForScope(scope),

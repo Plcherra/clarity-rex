@@ -157,6 +157,35 @@ final class DashboardTransactionReadData {
   final List<Account> accounts;
 }
 
+final class DashboardViewData {
+  const DashboardViewData({
+    required this.snapshot,
+    required this.budgetPerformance,
+    required this.scopedTransactionCount,
+    required this.totalTransactionCount,
+    required this.accountCount,
+    required this.scopedStatementImportCount,
+    required this.totalStatementImportCount,
+  });
+
+  final DashboardSnapshot snapshot;
+  final BudgetPerformanceSnapshot budgetPerformance;
+  final int scopedTransactionCount;
+  final int totalTransactionCount;
+  final int accountCount;
+  final int scopedStatementImportCount;
+  final int totalStatementImportCount;
+
+  bool get isResolvingImportedTransactions {
+    return scopedTransactionCount == 0 && scopedStatementImportCount > 0;
+  }
+
+  bool get isTrulyEmpty {
+    return accountCount == 0 ||
+        (totalTransactionCount == 0 && totalStatementImportCount == 0);
+  }
+}
+
 final class DashboardUiController extends _UiController {
   DashboardUiController._(super.bindings);
 
@@ -170,6 +199,30 @@ final class DashboardUiController extends _UiController {
     return model.dashboardSnapshot(
       scope: scope,
       reference: bindings.dashboardService.spendReference,
+    );
+  }
+
+  Future<DashboardViewData> dashboardViewDataForScope(
+    DashboardScope scope,
+  ) async {
+    final model = await loadFinancialReadModel();
+    final snapshot = model.dashboardSnapshot(
+      scope: scope,
+      reference: bindings.dashboardService.spendReference,
+    );
+    final budgetPerformance = model.budgetPerformanceForScope(
+      scope,
+      periodType: BudgetPeriodType.monthly,
+      periodKey: _monthKey(spendReference),
+    );
+    return DashboardViewData(
+      snapshot: snapshot,
+      budgetPerformance: budgetPerformance,
+      scopedTransactionCount: model.transactionsForScope(scope).length,
+      totalTransactionCount: model.transactions.length,
+      accountCount: model.accounts.length,
+      scopedStatementImportCount: model.statementImportsForScope(scope).length,
+      totalStatementImportCount: model.statementImports.length,
     );
   }
 

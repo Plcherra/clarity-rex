@@ -5,7 +5,14 @@ import 'package:clarity/features/assistant/assistant_providers.dart';
 import 'package:clarity/features/assistant/chat/data/chat_models.dart';
 
 class ConversationListPage extends ConsumerStatefulWidget {
-  const ConversationListPage({super.key});
+  const ConversationListPage({
+    super.key,
+    this.showAppBar = true,
+    this.onConversationSelected,
+  });
+
+  final bool showAppBar;
+  final VoidCallback? onConversationSelected;
 
   @override
   ConsumerState<ConversationListPage> createState() =>
@@ -27,7 +34,11 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage> {
       return;
     }
 
-    Navigator.of(context).pop();
+    if (widget.onConversationSelected != null) {
+      widget.onConversationSelected!();
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _newConversation() async {
@@ -43,7 +54,11 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage> {
       return;
     }
 
-    Navigator.of(context).pop();
+    if (widget.onConversationSelected != null) {
+      widget.onConversationSelected!();
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _deleteConversation(Conversation conversation) async {
@@ -107,100 +122,128 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Conversations'),
-        actions: [
-          IconButton(
-            onPressed: state.isLoading ? null : _newConversation,
-            icon: const Icon(Icons.add_rounded),
-            tooltip: 'New conversation',
-          ),
+    final body = RefreshIndicator(
+      onRefresh: () =>
+          ref.read(conversationListProvider.notifier).loadConversations(),
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          if (!widget.showAppBar)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 14, 24, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Conversations',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: scheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    IconButton.filledTonal(
+                      onPressed: state.isLoading ? null : _newConversation,
+                      icon: const Icon(Icons.add_rounded),
+                      tooltip: 'New conversation',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (state.errorMessage != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Text(
+                  state.errorMessage!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.error,
+                  ),
+                ),
+              ),
+            ),
+          if (state.isLoading && state.conversations.isEmpty)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (state.conversations.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.forum_outlined,
+                        color: scheme.onSurfaceVariant,
+                        size: 40,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No conversations yet',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Start a new one when you are ready.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      FilledButton.icon(
+                        onPressed: state.isLoading ? null : _newConversation,
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text('New Conversation'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildListDelegate(
+                _conversationGroups(state.conversations)
+                    .expand<Widget>(
+                      (group) => [
+                        _ConversationDateHeader(label: group.label),
+                        for (final conversation in group.conversations)
+                          _ConversationTile(
+                            conversation: conversation,
+                            isSelected:
+                                conversation.id == currentConversation?.id,
+                            onTap: () => _openConversation(conversation),
+                            onDelete: () => _deleteConversation(conversation),
+                          ),
+                      ],
+                    )
+                    .toList(growable: false),
+              ),
+            ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () =>
-            ref.read(conversationListProvider.notifier).loadConversations(),
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            if (state.errorMessage != null)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: Text(
-                    state.errorMessage!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: scheme.error,
-                    ),
-                  ),
+    );
+
+    return Scaffold(
+      appBar: widget.showAppBar
+          ? AppBar(
+              title: const Text('Conversations'),
+              actions: [
+                IconButton(
+                  onPressed: state.isLoading ? null : _newConversation,
+                  icon: const Icon(Icons.add_rounded),
+                  tooltip: 'New conversation',
                 ),
-              ),
-            if (state.isLoading && state.conversations.isEmpty)
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (state.conversations.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.forum_outlined,
-                          color: scheme.onSurfaceVariant,
-                          size: 40,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No conversations yet',
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Start a new one when you are ready.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        FilledButton.icon(
-                          onPressed: state.isLoading ? null : _newConversation,
-                          icon: const Icon(Icons.add_rounded),
-                          label: const Text('New Conversation'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              )
-            else
-              SliverList(
-                delegate: SliverChildListDelegate(
-                  _conversationGroups(state.conversations)
-                      .expand<Widget>(
-                        (group) => [
-                          _ConversationDateHeader(label: group.label),
-                          for (final conversation in group.conversations)
-                            _ConversationTile(
-                              conversation: conversation,
-                              isSelected:
-                                  conversation.id == currentConversation?.id,
-                              onTap: () => _openConversation(conversation),
-                              onDelete: () => _deleteConversation(conversation),
-                            ),
-                        ],
-                      )
-                      .toList(growable: false),
-                ),
-              ),
-          ],
-        ),
-      ),
+              ],
+            )
+          : null,
+      body: body,
       floatingActionButton: state.conversations.isEmpty
           ? null
           : FloatingActionButton.extended(

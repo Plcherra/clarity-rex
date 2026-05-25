@@ -30,7 +30,6 @@ class DashboardScreen extends StatelessWidget {
       scope: const GlobalDashboardScope(),
       showBackButton: !isRoot,
       title: 'Overview',
-      buildSnapshot: (controller, scope) => controller.buildSnapshot(scope),
     );
   }
 }

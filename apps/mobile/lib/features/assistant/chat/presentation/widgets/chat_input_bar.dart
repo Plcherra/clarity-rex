@@ -15,6 +15,7 @@ class ChatInputBar extends StatelessWidget {
     this.attachmentSize,
     this.attachmentError,
     this.isLoading = false,
+    this.isVoiceCallActive = false,
   });
 
   final TextEditingController controller;
@@ -26,6 +27,7 @@ class ChatInputBar extends StatelessWidget {
   final int? attachmentSize;
   final String? attachmentError;
   final bool isLoading;
+  final bool isVoiceCallActive;
 
   @override
   Widget build(BuildContext context) {
@@ -83,8 +85,14 @@ class ChatInputBar extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 4),
                         child: IconButton(
                           onPressed: isLoading ? null : onStartVoice,
-                          icon: const Icon(Icons.call_rounded),
-                          tooltip: 'Start voice call',
+                          icon: Icon(
+                            isVoiceCallActive
+                                ? Icons.graphic_eq_rounded
+                                : Icons.call_rounded,
+                          ),
+                          tooltip: isVoiceCallActive
+                              ? 'Voice call active'
+                              : 'Start voice call',
                         ),
                       ),
                       Expanded(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
 import 'account_detail_screen.dart';
 
@@ -12,6 +13,7 @@ class AccountsScreen extends StatefulWidget {
     required this.transactionController,
     required this.budgetController,
     required this.importJobStatusController,
+    this.signOut,
   });
 
   final AccountUiController controller;
@@ -19,6 +21,7 @@ class AccountsScreen extends StatefulWidget {
   final TransactionUiController transactionController;
   final BudgetUiController budgetController;
   final ImportJobStatusController importJobStatusController;
+  final Future<void> Function()? signOut;
 
   @override
   State<AccountsScreen> createState() => _AccountsScreenState();
@@ -87,6 +90,31 @@ class _AccountsScreenState extends State<AccountsScreen> {
     );
   }
 
+  Future<void> _confirmSignOut() async {
+    final signOut = widget.signOut;
+    if (signOut == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text('You can sign back in when you are ready.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await signOut();
+    }
+  }
+
   @override
   void dispose() {
     widget.controller.removeListener(_handleControllerChanged);
@@ -110,6 +138,27 @@ class _AccountsScreenState extends State<AccountsScreen> {
             onPressed: () => _showAddAccountDialog(context),
             icon: const Icon(Icons.add_rounded),
           ),
+          if (widget.signOut != null)
+            PopupMenuButton<_AccountMenuAction>(
+              tooltip: 'Account menu',
+              icon: const Icon(Icons.account_circle_outlined),
+              onSelected: (action) {
+                switch (action) {
+                  case _AccountMenuAction.signOut:
+                    _confirmSignOut();
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: _AccountMenuAction.signOut,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.logout_rounded),
+                    title: Text('Sign out'),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
       body: ListenableBuilder(
@@ -157,27 +206,14 @@ class _AccountsScreenState extends State<AccountsScreen> {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            itemCount: accounts.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, i) {
-              final a = accounts[i];
-              final inst = a.institution?.trim();
-              final subtitle = [
-                a.type.displayLabel,
-                if (inst != null && inst.isNotEmpty) inst,
-              ].join(' · ');
-              return Material(
-                color: cs.surface,
-                borderRadius: BorderRadius.circular(18),
-                child: ListTile(
-                  title: Text(a.name),
-                  subtitle: Text(subtitle),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            children: [
+              _AccountsSummaryCard(accounts: accounts),
+              const SizedBox(height: 16),
+              for (final account in accounts) ...[
+                _AccountListTile(
+                  account: account,
                   onTap: () {
                     Navigator.of(context).push<void>(
                       MaterialPageRoute<void>(
@@ -188,32 +224,182 @@ class _AccountsScreenState extends State<AccountsScreen> {
                           budgetController: widget.budgetController,
                           importJobStatusController:
                               widget.importJobStatusController,
-                          accountId: a.id,
+                          accountId: account.id,
                         ),
                       ),
                     );
                   },
                 ),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: ListenableBuilder(
-        listenable: _dataNotifier,
-        builder: (context, _) {
-          final accounts = _dataNotifier.data;
-          if (accounts == null || accounts.isEmpty) return const SizedBox();
-          return FloatingActionButton(
-            heroTag: null,
-            onPressed: () => _showAddAccountDialog(context),
-            backgroundColor: cs.onSurface,
-            foregroundColor: cs.surface,
-            child: const Icon(Icons.add_rounded),
+                const SizedBox(height: 10),
+              ],
+            ],
           );
         },
       ),
     );
+  }
+}
+
+enum _AccountMenuAction { signOut }
+
+class _AccountsSummaryCard extends StatelessWidget {
+  const _AccountsSummaryCard({required this.accounts});
+
+  final List<Account> accounts;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final balanceTotal = accounts.fold<double>(
+      0,
+      (sum, account) => sum + (account.currentBalance ?? 0),
+    );
+    final knownBalances = accounts
+        .where((account) => account.currentBalance != null)
+        .length;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE9E3D8)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${accounts.length} connected account${accounts.length == 1 ? '' : 's'}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    knownBalances == accounts.length
+                        ? 'Balances are available for every account.'
+                        : '$knownBalances of ${accounts.length} accounts have balances.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.56),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              formatMoney(balanceTotal),
+              textAlign: TextAlign.right,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: balanceTotal >= 0
+                    ? const Color(0xFF1B7A4C)
+                    : const Color(0xFFC41E3A),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountListTile extends StatelessWidget {
+  const _AccountListTile({required this.account, required this.onTap});
+
+  final Account account;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final inst = account.institution?.trim();
+    final subtitle = [
+      account.type.displayLabel,
+      if (inst != null && inst.isNotEmpty) inst,
+    ].join(' · ');
+    final balance = account.currentBalance;
+    return Material(
+      color: cs.surface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 21,
+                backgroundColor: const Color(0xFFEDE8DC),
+                foregroundColor: const Color(0xFF5A533E),
+                child: Icon(_accountIcon(account.type), size: 21),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      account.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.56),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    balance == null ? 'No balance' : formatMoney(balance),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: balance == null
+                          ? cs.onSurface.withValues(alpha: 0.48)
+                          : balance >= 0
+                          ? const Color(0xFF1B7A4C)
+                          : const Color(0xFFC41E3A),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: cs.onSurface.withValues(alpha: 0.34),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _accountIcon(AccountType type) {
+    return switch (type) {
+      AccountType.checking => Icons.account_balance_outlined,
+      AccountType.savings => Icons.savings_outlined,
+      AccountType.creditCard => Icons.credit_card_rounded,
+    };
   }
 }
 
