@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     deepgram_base_url: str = "https://api.deepgram.com/v1"
     deepgram_timeout_seconds: int = 60
     deepgram_endpointing_ms: int = 3000
+    deepgram_live_transcript_idle_ms: int = 3200
 
     google_tts_project_id: Optional[str] = None
     google_tts_credentials_json: Optional[str] = None

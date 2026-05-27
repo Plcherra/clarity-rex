@@ -54,6 +54,8 @@ def test_readiness_reports_ready_when_all_required_services_are_configured(monke
     assert response.status_code == 200
     payload = response.json()
     assert payload["status"] == "ready"
+    assert payload["service"] == "clarity-rex"
+    assert payload["systemd_unit"] == "clarity-rex.service"
     assert payload["checks"]["deepgram"]["configured"] is True
     assert payload["checks"]["deepgram"]["model"] == "nova-3"
     assert payload["checks"]["google_tts"]["configured"] is True

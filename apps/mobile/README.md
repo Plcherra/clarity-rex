@@ -29,19 +29,47 @@ Install dependencies:
 flutter pub get
 ```
 
-Create a local `.env` file:
+For local development, either pass public config with `--dart-define`:
+
+```sh
+flutter run \
+  --dart-define=SUPABASE_URL=https://your-project-ref.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-public-anon-key \
+  --dart-define=REX_BACKEND_URL=https://your-rex-api.example.com \
+  --dart-define=REX_CLOUD_VOICE_ENABLED=true \
+  --dart-define=REX_STREAMING_VOICE_ENABLED=true
+```
+
+or create a local `.env` file:
 
 ```dotenv
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_ANON_KEY=your-public-anon-key
 REX_BACKEND_URL=https://your-rex-api.example.com
+REX_CLOUD_VOICE_ENABLED=true
+REX_STREAMING_VOICE_ENABLED=true
 ```
 
 Only public Supabase config belongs in Flutter `.env`. Do not put
 `OPENAI_API_KEY` or other server secrets in Flutter config.
 
-`REX_BACKEND_URL` may also be passed with `--dart-define`; the dart-define
-value wins over `.env` when both are present.
+`SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `REX_BACKEND_URL` may be passed with
+`--dart-define`; dart-define values win over `.env` when both are present. The
+`.env` file is ignored and is not bundled as a required release asset.
+
+Recommended iPhone release command:
+
+```sh
+flutter run -d 00008150-000C03C83A2B401C --release \
+  --dart-define=SUPABASE_URL=https://your-project-ref.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-public-anon-key \
+  --dart-define=REX_BACKEND_URL=https://api.rexpilot.com \
+  --dart-define=REX_CLOUD_VOICE_ENABLED=true \
+  --dart-define=REX_STREAMING_VOICE_ENABLED=true
+```
+
+Do not pass `REX_NATIVE_IOS_VOICE_ENABLED` for normal testing. That legacy flag
+is intentionally reported in startup logs but is not the supported voice path.
 
 ## Supabase
 

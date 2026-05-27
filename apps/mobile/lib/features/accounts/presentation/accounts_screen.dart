@@ -252,9 +252,9 @@ class _AccountsSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final cashFlowTotal = accounts.fold<double>(
+    final netCashFlowTotal = accounts.fold<double>(
       0,
-      (sum, item) => sum + item.cashFlowThisMonth,
+      (sum, item) => sum + item.netCashFlow,
     );
     final incomeTotal = accounts.fold<double>(
       0,
@@ -286,7 +286,7 @@ class _AccountsSummaryCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Income ${formatMoney(incomeTotal)} · Spending ${formatMoney(spendingTotal)}',
+                    'Monthly income ${formatMoney(incomeTotal)} · spending ${formatMoney(spendingTotal)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.56),
                     ),
@@ -296,11 +296,11 @@ class _AccountsSummaryCard extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             Text(
-              formatMoney(cashFlowTotal),
+              formatMoney(netCashFlowTotal),
               textAlign: TextAlign.right,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: cashFlowTotal >= 0
+                color: netCashFlowTotal >= 0
                     ? const Color(0xFF1B7A4C)
                     : const Color(0xFFC41E3A),
               ),
@@ -328,7 +328,8 @@ class _AccountListTile extends StatelessWidget {
       account.type.displayLabel,
       if (inst != null && inst.isNotEmpty) inst,
     ].join(' · ');
-    final cashFlow = item.cashFlowThisMonth;
+    final netCashFlow = item.netCashFlow;
+    final statementBalance = item.statementBalance;
     return Material(
       color: cs.surface,
       borderRadius: BorderRadius.circular(16),
@@ -375,12 +376,14 @@ class _AccountListTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    formatMoney(cashFlow),
+                    formatMoney(netCashFlow),
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: cashFlow >= 0
+                      color: netCashFlow > 0
                           ? const Color(0xFF1B7A4C)
-                          : const Color(0xFFC41E3A),
+                          : netCashFlow < 0
+                          ? const Color(0xFFC41E3A)
+                          : cs.onSurface,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -388,7 +391,7 @@ class _AccountListTile extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'cash flow',
+                        'monthly net',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: cs.onSurface.withValues(alpha: 0.46),
                           fontWeight: FontWeight.w700,
@@ -400,6 +403,16 @@ class _AccountListTile extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (statementBalance != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      'balance ${formatMoney(statementBalance)}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.46),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],

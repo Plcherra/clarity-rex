@@ -160,17 +160,21 @@ final class DashboardTransactionReadData {
 final class AccountOverviewItem {
   const AccountOverviewItem({
     required this.account,
-    required this.cashFlowThisMonth,
+    required this.availableThisMonth,
     required this.incomeThisMonth,
     required this.spentThisMonth,
     required this.statementBalance,
+    required this.netCashFlow,
   });
 
   final Account account;
-  final double cashFlowThisMonth;
+  final double availableThisMonth;
   final double incomeThisMonth;
   final double spentThisMonth;
   final double? statementBalance;
+  final double netCashFlow;
+
+  double get cashFlowThisMonth => availableThisMonth;
 }
 
 final class DashboardViewData {
@@ -410,21 +414,17 @@ final class AccountUiController extends _UiController {
     return [
       for (final account in model.accounts)
         () {
-          final scope = AccountDashboardScope(account.id);
-          final reference = model.dashboardReferenceForScope(
-            scope,
+          final display = model.accountFinancialDisplay(
+            account: account,
             requested: requested,
-          );
-          final snapshot = model.dashboardSnapshot(
-            scope: scope,
-            reference: reference,
           );
           return AccountOverviewItem(
             account: account,
-            cashFlowThisMonth: snapshot.availableThisMonth,
-            incomeThisMonth: snapshot.incomeThisMonth,
-            spentThisMonth: snapshot.spentThisMonth,
-            statementBalance: model.dashboardBalanceForAccount(account),
+            availableThisMonth: display.availableThisMonth,
+            incomeThisMonth: display.incomeThisMonth,
+            spentThisMonth: display.spentThisMonth,
+            statementBalance: display.statementBalance,
+            netCashFlow: display.netCashFlow,
           );
         }(),
     ];

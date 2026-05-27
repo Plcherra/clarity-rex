@@ -16,15 +16,26 @@ final class SupabaseService {
 
   final SupabaseClient? _client;
 
-  static String get url => dotenv.env['SUPABASE_URL']?.trim() ?? '';
-  static String get anonKey => dotenv.env['SUPABASE_ANON_KEY']?.trim() ?? '';
+  static const _urlDefine = String.fromEnvironment('SUPABASE_URL');
+  static const _anonKeyDefine = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  static String get url => _configValue('SUPABASE_URL', _urlDefine);
+  static String get anonKey =>
+      _configValue('SUPABASE_ANON_KEY', _anonKeyDefine);
 
   static bool get hasEnvConfig => url.isNotEmpty && anonKey.isNotEmpty;
+  static String get configSource {
+    final hasDartDefine =
+        _urlDefine.trim().isNotEmpty && _anonKeyDefine.trim().isNotEmpty;
+    if (hasDartDefine) return 'dart-define';
+    if (hasEnvConfig) return 'env';
+    return 'missing';
+  }
 
   static Future<void> initializeFromEnv() async {
     if (!hasEnvConfig) {
       throw const SupabaseConfigException(
-        'Supabase is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to .env.',
+        'Supabase is not configured. Pass SUPABASE_URL and SUPABASE_ANON_KEY with --dart-define or add them to local .env.',
       );
     }
 
@@ -54,4 +65,10 @@ final class SupabaseService {
 
   GoTrueClient get auth => client.auth;
   FunctionsClient get functions => client.functions;
+}
+
+String _configValue(String key, String dartDefineValue) {
+  final define = dartDefineValue.trim();
+  if (define.isNotEmpty) return define;
+  return dotenv.env[key]?.trim() ?? '';
 }

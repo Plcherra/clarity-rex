@@ -75,9 +75,14 @@ final class AssistantFinancialContextService {
     return {
       'schema': 'clarity_unified_financial_context_v1',
       'generated_at': DateTime.now().toUtc().toIso8601String(),
+      'data_status': {
+        'state': model.dataStatus,
+        'financial_context_complete': !model.hasLoadIssues,
+        'load_errors': [for (final issue in model.loadIssues) issue.toJson()],
+      },
       'integration': {
         'mode': 'unified_clarity_rex',
-        'full_financial_context_included': true,
+        'full_financial_context_included': !model.hasLoadIssues,
         'raw_transactions_included':
             selectedTransactions.length == transactions.length,
         'transaction_detail_mode':
@@ -194,8 +199,15 @@ final class AssistantFinancialContextService {
   Future<FinancialReadModel> _safeFinancialReadModel() async {
     try {
       return await _loadFinancialReadModel();
-    } on Object {
-      return FinancialReadModel.empty();
+    } on Object catch (error) {
+      return FinancialReadModel.empty(
+        loadIssues: [
+          FinancialReadModelLoadIssue(
+            source: 'financial_read_model',
+            message: error.toString(),
+          ),
+        ],
+      );
     }
   }
 

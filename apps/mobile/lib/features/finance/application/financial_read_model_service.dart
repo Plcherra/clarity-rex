@@ -17,7 +17,7 @@ import '../../transactions/domain/transaction_review.dart';
 import '../../transactions/domain/transaction_resolution.dart';
 
 final class FinancialReadModelService {
-  const FinancialReadModelService({
+  FinancialReadModelService({
     required AccountService accountService,
     required TransactionService transactionService,
     required BudgetService budgetService,
@@ -40,32 +40,139 @@ final class FinancialReadModelService {
   final MerchantCategoryRuleService _merchantCategoryRuleService;
   final AccountStatementImportService _accountStatementImportService;
   final CategoryReadModel _categoryReadModel;
+  Future<FinancialReadModel>? _inFlightLoad;
 
   Future<FinancialReadModel> load() async {
-    final results = await Future.wait<Object>([
-      _accountService.fetchAccounts(),
-      _transactionService.fetchTransactions(),
-      _budgetService.fetchBudgets(),
-      _categoryService.fetchCategories(),
-      _merchantCategoryRuleService.fetchRules(),
-      _accountStatementImportService.fetchImports(),
-    ]);
-    final accounts = results[0] as List<Account>;
-    final records = results[1] as List<TransactionRecord>;
-    final budgets = results[2] as List<BudgetRecord>;
-    final categories = results[3] as List<CategoryRecord>;
-    final merchantCategoryRules = results[4] as List<MerchantCategoryRule>;
-    final statementImports = results[5] as List<AccountStatementImport>;
+    final existingLoad = _inFlightLoad;
+    if (existingLoad != null) {
+      return existingLoad;
+    }
+    final load = _loadFresh();
+    _inFlightLoad = load;
+    try {
+      return await load;
+    } finally {
+      if (identical(_inFlightLoad, load)) {
+        _inFlightLoad = null;
+      }
+    }
+  }
+
+  Future<FinancialReadModel> _loadFresh() async {
+    final accountsFuture = _loadPart<List<Account>>(
+      source: 'accounts',
+      action: _accountService.fetchAccounts,
+      fallback: const [],
+    );
+    final transactionsFuture = _loadPart<List<TransactionRecord>>(
+      source: 'transactions',
+      action: _transactionService.fetchTransactions,
+      fallback: const [],
+    );
+    final budgetsFuture = _loadPart<List<BudgetRecord>>(
+      source: 'budgets',
+      action: _budgetService.fetchBudgets,
+      fallback: const [],
+    );
+    final categoriesFuture = _loadPart<List<CategoryRecord>>(
+      source: 'categories',
+      action: _categoryService.fetchCategories,
+      fallback: const [],
+    );
+    final merchantRulesFuture = _loadPart<List<MerchantCategoryRule>>(
+      source: 'merchant_category_rules',
+      action: _merchantCategoryRuleService.fetchRules,
+      fallback: const [],
+    );
+    final statementImportsFuture = _loadPart<List<AccountStatementImport>>(
+      source: 'account_statement_imports',
+      action: _accountStatementImportService.fetchImports,
+      fallback: const [],
+    );
+
+    final accounts = await accountsFuture;
+    final records = await transactionsFuture;
+    final budgets = await budgetsFuture;
+    final categories = await categoriesFuture;
+    final merchantCategoryRules = await merchantRulesFuture;
+    final statementImports = await statementImportsFuture;
+    final loadIssues = [
+      ...accounts.issues,
+      ...records.issues,
+      ...budgets.issues,
+      ...categories.issues,
+      ...merchantCategoryRules.issues,
+      ...statementImports.issues,
+    ];
+
     return FinancialReadModel.fromRecords(
-      accounts: accounts,
-      transactionRecords: records,
-      budgets: budgets,
-      categories: categories,
-      merchantCategoryRules: merchantCategoryRules,
-      statementImports: statementImports,
+      accounts: accounts.value,
+      transactionRecords: records.value,
+      budgets: budgets.value,
+      categories: categories.value,
+      merchantCategoryRules: merchantCategoryRules.value,
+      statementImports: statementImports.value,
       categoryDisplayRenamesLower: _categoryReadModel.categoryDisplayRenames,
+      loadIssues: loadIssues,
     );
   }
+
+  Future<_FinancialReadPart<T>> _loadPart<T>({
+    required String source,
+    required Future<T> Function() action,
+    required T fallback,
+  }) async {
+    try {
+      return _FinancialReadPart(value: await action());
+    } on Object catch (error) {
+      return _FinancialReadPart(
+        value: fallback,
+        issues: [
+          FinancialReadModelLoadIssue(
+            source: source,
+            message: error.toString(),
+          ),
+        ],
+      );
+    }
+  }
+}
+
+final class _FinancialReadPart<T> {
+  const _FinancialReadPart({required this.value, this.issues = const []});
+
+  final T value;
+  final List<FinancialReadModelLoadIssue> issues;
+}
+
+final class FinancialReadModelLoadIssue {
+  const FinancialReadModelLoadIssue({
+    required this.source,
+    required this.message,
+  });
+
+  final String source;
+  final String message;
+
+  Map<String, String> toJson() => {'source': source, 'message': message};
+}
+
+final class AccountFinancialDisplay {
+  const AccountFinancialDisplay({
+    required this.account,
+    required this.statementBalance,
+    required this.availableThisMonth,
+    required this.incomeThisMonth,
+    required this.spentThisMonth,
+    required this.netCashFlow,
+  });
+
+  final Account account;
+  final double? statementBalance;
+  final double availableThisMonth;
+  final double incomeThisMonth;
+  final double spentThisMonth;
+  final double netCashFlow;
 }
 
 final class FinancialReadModel {
@@ -78,10 +185,13 @@ final class FinancialReadModel {
     this.merchantCategoryRules = const [],
     this.statementImports = const [],
     this.categoryDisplayRenamesLower = const {},
+    this.loadIssues = const [],
   });
 
-  factory FinancialReadModel.empty() {
-    return const FinancialReadModel(
+  factory FinancialReadModel.empty({
+    List<FinancialReadModelLoadIssue> loadIssues = const [],
+  }) {
+    return FinancialReadModel(
       accounts: [],
       transactionRecords: [],
       transactions: [],
@@ -89,6 +199,7 @@ final class FinancialReadModel {
       categories: [],
       merchantCategoryRules: [],
       statementImports: [],
+      loadIssues: loadIssues,
     );
   }
 
@@ -101,6 +212,7 @@ final class FinancialReadModel {
     List<AccountStatementImport> statementImports = const [],
     Map<String, String> categoryNameById = const {},
     Map<String, String> categoryDisplayRenamesLower = const {},
+    List<FinancialReadModelLoadIssue> loadIssues = const [],
   }) {
     final effectiveCategoryNameById = {
       for (final category in categories) category.id: category.name,
@@ -127,6 +239,7 @@ final class FinancialReadModel {
       categoryDisplayRenamesLower: Map.unmodifiable(
         categoryDisplayRenamesLower,
       ),
+      loadIssues: List.unmodifiable(loadIssues),
     );
   }
 
@@ -138,6 +251,11 @@ final class FinancialReadModel {
   final List<MerchantCategoryRule> merchantCategoryRules;
   final List<AccountStatementImport> statementImports;
   final Map<String, String> categoryDisplayRenamesLower;
+  final List<FinancialReadModelLoadIssue> loadIssues;
+
+  bool get hasLoadIssues => loadIssues.isNotEmpty;
+
+  String get dataStatus => hasLoadIssues ? 'degraded' : 'ready';
 
   Map<String, Account> get accountsById => {
     for (final account in accounts) account.id: account,
@@ -203,6 +321,23 @@ final class FinancialReadModel {
             : dashboardBalanceForAccount(accountsById[accountId]!),
       GlobalDashboardScope() => _sumAccountBalances(),
     };
+  }
+
+  AccountFinancialDisplay accountFinancialDisplay({
+    required Account account,
+    required DateTime requested,
+  }) {
+    final scope = AccountDashboardScope(account.id);
+    final reference = dashboardReferenceForScope(scope, requested: requested);
+    final snapshot = dashboardSnapshot(scope: scope, reference: reference);
+    return AccountFinancialDisplay(
+      account: account,
+      statementBalance: dashboardBalanceForAccount(account),
+      availableThisMonth: snapshot.availableThisMonth,
+      incomeThisMonth: snapshot.incomeThisMonth,
+      spentThisMonth: snapshot.spentThisMonth,
+      netCashFlow: snapshot.incomeThisMonth - snapshot.spentThisMonth,
+    );
   }
 
   double? _sumAccountBalances() {

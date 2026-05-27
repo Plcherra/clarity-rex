@@ -189,7 +189,10 @@ class FakeLiveTranscription:
 
 
 class FakeLiveDeepgramStreamingService:
-    settings = SimpleNamespace(deepgram_endpointing_ms=3000)
+    settings = SimpleNamespace(
+        deepgram_endpointing_ms=3000,
+        deepgram_live_transcript_idle_ms=3200,
+    )
 
 
 def override_services(
@@ -328,6 +331,28 @@ async def test_voice_stream_live_transcript_idle_starts_turn(monkeypatch):
 
     assert chat.stream_calls[0]["message"] == "Hey Rex"
     assert any(event["event"] == "assistant.done" for event in websocket.events)
+
+
+@pytest.mark.asyncio
+async def test_voice_stream_live_transcript_idle_uses_timing_contract(monkeypatch):
+    delays = []
+
+    async def capture_sleep(delay):
+        delays.append(delay)
+
+    monkeypatch.setattr(voice_stream_session_module.asyncio, "sleep", capture_sleep)
+    session = VoiceStreamSession(
+        websocket=FakeWebSocket(),
+        deepgram_streaming_service=FakeLiveDeepgramStreamingService(),
+        chat_service=FakeChatService(),
+        google_tts_service=FakeGoogleTTSService(),
+    )
+    session._live_transcription = FakeLiveTranscription()
+    session._last_live_transcript_at = 10.0
+
+    await session._process_live_utterance_after_transcript_idle(10.0)
+
+    assert delays == [3.2]
 
 
 @pytest.mark.asyncio

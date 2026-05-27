@@ -76,7 +76,7 @@ cd /opt/clarity
 git clone https://github.com/Plcherra/clarity-rex.git current
 cd current/services/rex-api
 
-python3 -m venv .venv
+python3.12 -m venv .venv || python3.11 -m venv .venv
 . .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
@@ -96,6 +96,10 @@ ln -sfn /opt/clarity/shared/rex-api.env /opt/clarity/current/services/rex-api/.e
 
 ## Systemd
 
+The canonical VPS service name is `clarity-rex.service`. Do not restart the
+legacy `rex-backend.service` for this app unless you are intentionally checking
+an old deployment.
+
 Copy the template:
 
 ```sh
@@ -107,6 +111,14 @@ sudo systemctl status clarity-rex --no-pager
 ```
 
 The service binds to `127.0.0.1:8011` so it can sit beside the legacy `/opt/rex` process during migration.
+
+For normal deploy restarts, use the checked-in helper from `/opt/clarity/current`:
+
+```sh
+./scripts/vps_restart_rex_api.sh
+```
+
+It restarts `clarity-rex.service` and immediately checks `/ready`.
 
 ## Reverse Proxy
 
@@ -156,7 +168,12 @@ or pass it at build/run time:
 
 ```sh
 cd apps/mobile
-flutter run --dart-define=REX_BACKEND_URL=https://<api-domain-or-ip>
+flutter run -d <device-id> --release \
+  --dart-define=SUPABASE_URL=https://<project-ref>.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=<anon-key> \
+  --dart-define=REX_BACKEND_URL=https://<api-domain-or-ip> \
+  --dart-define=REX_CLOUD_VOICE_ENABLED=true \
+  --dart-define=REX_STREAMING_VOICE_ENABLED=true
 ```
 
 The dart define wins over `.env` when both are present.

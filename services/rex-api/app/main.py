@@ -44,7 +44,7 @@ if settings.cors_origins:
 
 @app.get("/")
 def health_check() -> dict[str, str]:
-    return {"status": "ok", "service": "rex-backend"}
+    return {"status": "ok", "service": "clarity-rex"}
 
 
 @app.get("/ready")
@@ -88,7 +88,8 @@ def readiness_check() -> dict:
     }
     return {
         "status": "ready" if all(check["configured"] for check in checks.values()) else "degraded",
-        "service": "rex-backend",
+        "service": "clarity-rex",
+        "systemd_unit": "clarity-rex.service",
         "checks": checks,
     }
 

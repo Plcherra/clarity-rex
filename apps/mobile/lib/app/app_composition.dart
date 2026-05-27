@@ -216,10 +216,18 @@ final class AppComposition {
   }
 
   void dispose() {
-    startupService.dispose();
-    categoryReadModel.dispose();
-    ui.dispose();
-    authController.dispose();
-    profileController.dispose();
+    _tryDispose(() => startupService.dispose());
+    _tryDispose(() => categoryReadModel.dispose());
+    _tryDispose(() => ui.dispose());
+    _tryDispose(() => authController.dispose());
+    _tryDispose(() => profileController.dispose());
+  }
+}
+
+void _tryDispose(void Function() dispose) {
+  try {
+    dispose();
+  } on Object {
+    return;
   }
 }

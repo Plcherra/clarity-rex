@@ -2,6 +2,7 @@ import 'package:clarity/core/models/models.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/assistant/data/financial_context_service.dart';
 import 'package:clarity/features/categories/domain/category_normalization.dart';
+import 'package:clarity/features/finance/application/financial_read_model_service.dart';
 import 'package:clarity/features/transactions/domain/transaction_resolution.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -119,6 +120,38 @@ void main() {
       );
       expect(needsCategory['transaction_count'], 1);
       expect(needsCategory['sample_transaction_ids'], contains('unknown'));
+    },
+  );
+
+  test(
+    'Rex financial context reports degraded reads instead of empty truth',
+    () async {
+      final service = AssistantFinancialContextService(
+        loadFinancialReadModel: () async => FinancialReadModel.empty(
+          loadIssues: const [
+            FinancialReadModelLoadIssue(
+              source: 'transactions',
+              message: 'Could not fetch transactions.',
+            ),
+          ],
+        ),
+        spendReference: () => DateTime(2026, 5, 26),
+        notifyDataChanged: () {},
+      );
+
+      final summary = await service.buildSummary();
+      final dataStatus = summary['data_status'] as Map<String, dynamic>;
+
+      expect(dataStatus['state'], 'degraded');
+      expect(dataStatus['financial_context_complete'], isFalse);
+      expect(dataStatus['load_errors'], [
+        {'source': 'transactions', 'message': 'Could not fetch transactions.'},
+      ]);
+      expect(
+        (summary['integration']
+            as Map<String, dynamic>)['full_financial_context_included'],
+        isFalse,
+      );
     },
   );
 }

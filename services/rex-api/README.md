@@ -63,6 +63,7 @@ DEEPGRAM_LANGUAGE=en-US
 DEEPGRAM_BASE_URL=https://api.deepgram.com/v1
 DEEPGRAM_TIMEOUT_SECONDS=60
 DEEPGRAM_ENDPOINTING_MS=3000
+DEEPGRAM_LIVE_TRANSCRIPT_IDLE_MS=3200
 
 GOOGLE_TTS_PROJECT_ID=
 GOOGLE_APPLICATION_CREDENTIALS=/opt/clarity/secrets/service_account.json
@@ -120,6 +121,19 @@ Readiness check:
 
 ```sh
 curl http://localhost:8000/ready
+```
+
+Production VPS restarts should use the canonical systemd unit:
+
+```sh
+sudo systemctl restart clarity-rex
+curl -fsS http://127.0.0.1:8011/ready | python3 -m json.tool
+```
+
+From `/opt/clarity/current`, the helper wraps those steps:
+
+```sh
+./scripts/vps_restart_rex_api.sh
 ```
 
 Chat request:

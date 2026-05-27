@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:clarity/features/assistant/voice/application/voice_call_controller.dart';
-import 'package:clarity/features/assistant/voice/application/voice_controller.dart';
 import 'package:clarity/features/assistant/voice/data/audio_capture_service.dart';
 import 'package:clarity/features/assistant/voice/data/audio_playback_service.dart';
 import 'package:clarity/features/assistant/voice/data/audio_recording_service.dart';

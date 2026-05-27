@@ -358,6 +358,51 @@ void main() {
     },
   );
 
+  test('account financial display separates balance from monthly net', () {
+    const account = Account(
+      id: 'checking',
+      name: 'Checking',
+      type: AccountType.checking,
+      currentBalance: 0,
+    );
+    final model = FinancialReadModel(
+      accounts: const [account],
+      transactionRecords: const [],
+      transactions: [
+        _transaction(
+          description: 'PAYROLL',
+          amount: 2000,
+          category: 'Income / Payroll',
+        ),
+        _transaction(
+          description: 'GROCERY',
+          amount: -750,
+          category: 'Grocery / Supermarket',
+        ),
+      ],
+      budgets: const [],
+      statementImports: [
+        _statementImport(
+          accountId: account.id,
+          importId: 'statement',
+          balance: 1250,
+          endDate: DateTime(2026, 3),
+        ),
+      ],
+    );
+
+    final display = model.accountFinancialDisplay(
+      account: account,
+      requested: DateTime(2026, 3, 15),
+    );
+
+    expect(display.statementBalance, 1250);
+    expect(display.incomeThisMonth, 2000);
+    expect(display.spentThisMonth, 750);
+    expect(display.availableThisMonth, 1250);
+    expect(display.netCashFlow, 1250);
+  });
+
   test('latest statement import tie breaks by created time and import id', () {
     final model = FinancialReadModel(
       accounts: const [
@@ -709,6 +754,21 @@ void main() {
     );
 
     expect(model.merchantCategoryMemory.containsKey(merchantKey), isFalse);
+  });
+
+  test('load diagnostics mark a financial read model as degraded', () {
+    const issue = FinancialReadModelLoadIssue(
+      source: 'budgets',
+      message: 'Could not fetch budgets.',
+    );
+    final model = FinancialReadModel.empty(loadIssues: const [issue]);
+
+    expect(model.dataStatus, 'degraded');
+    expect(model.hasLoadIssues, isTrue);
+    expect(model.loadIssues.single.toJson(), {
+      'source': 'budgets',
+      'message': 'Could not fetch budgets.',
+    });
   });
 }
 

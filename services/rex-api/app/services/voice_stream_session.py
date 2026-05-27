@@ -494,8 +494,12 @@ class VoiceStreamSession:
             return
         settings = getattr(self.deepgram_streaming_service, "settings", None)
         endpointing_ms = getattr(settings, "deepgram_endpointing_ms", 3000)
-        endpointing_seconds = endpointing_ms / 1000
-        await asyncio.sleep(max(3.4, endpointing_seconds + 0.5))
+        idle_ms = getattr(
+            settings,
+            "deepgram_live_transcript_idle_ms",
+            endpointing_ms + 200,
+        )
+        await asyncio.sleep(max(endpointing_ms + 200, idle_ms) / 1000)
         if self._last_live_transcript_at != transcript_timestamp:
             return
         if self._live_transcription is None:

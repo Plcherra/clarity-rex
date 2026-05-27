@@ -1,15 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:clarity/core/rex/rex_auth_headers.dart';
 import 'package:clarity/core/rex/rex_config.dart';
 import 'package:clarity/features/assistant/chat/application/chat_controller.dart';
 import 'package:clarity/features/assistant/chat/data/chat_models.dart';
 import 'package:clarity/features/assistant/data/financial_context_service.dart';
-import 'package:clarity/features/assistant/voice/application/voice_controller.dart';
 import 'package:clarity/features/assistant/voice/data/audio_capture_service.dart';
 import 'package:clarity/features/assistant/voice/data/audio_playback_service.dart';
 import 'package:clarity/features/assistant/voice/data/audio_recording_service.dart';
@@ -22,6 +23,36 @@ import 'package:clarity/features/assistant/voice/data/streaming_audio_capture_se
 import 'package:clarity/features/assistant/voice/data/streaming_audio_playback_queue.dart';
 import 'package:clarity/features/assistant/voice/data/streaming_voice_api.dart';
 import 'package:clarity/features/assistant/voice/domain/voice_call_state.dart';
+
+final microphonePermissionProvider = Provider<MicrophonePermissionService>(
+  (ref) => PermissionHandlerMicrophonePermissionService(),
+);
+
+final speechToTextServiceProvider = Provider<SpeechToTextService>(
+  (ref) => PackageSpeechToTextService(),
+);
+
+final audioPlaybackServiceProvider = Provider<AudioPlaybackService>(
+  (ref) => PackageAudioPlaybackService(),
+);
+
+final voiceAudioSessionServiceProvider = Provider<VoiceAudioSessionService>(
+  (ref) => PackageVoiceAudioSessionService(),
+);
+
+final backgroundVoiceServiceProvider = Provider<BackgroundVoiceService>(
+  (ref) => MethodChannelBackgroundVoiceService(),
+);
+
+final nativeVoiceSessionServiceProvider = Provider<NativeVoiceSessionService>(
+  (ref) => MethodChannelNativeVoiceSessionService(),
+);
+
+final cloudVoiceApiProvider = Provider<CloudVoiceApi>((ref) => CloudVoiceApi());
+
+final cloudVoiceEnabledProvider = Provider<bool>(
+  (ref) => RexConfig.cloudVoiceEnabled,
+);
 
 final audioCaptureServiceProvider = Provider<AudioCaptureService>(
   (ref) => PackageAudioCaptureService(),
@@ -93,6 +124,81 @@ final voiceCallNoSpeechTimeoutProvider = Provider<Duration>(
 );
 
 final voiceCallEmptyTurnLimitProvider = Provider<int>((ref) => 2);
+
+enum MicrophonePermissionDecision {
+  granted,
+  denied,
+  permanentlyDenied,
+  restricted,
+}
+
+abstract class MicrophonePermissionService {
+  Future<MicrophonePermissionDecision> requestMicrophonePermission({
+    bool includeSpeechRecognition = true,
+  });
+
+  Future<void> openSettings();
+}
+
+class PermissionHandlerMicrophonePermissionService
+    implements MicrophonePermissionService {
+  @override
+  Future<MicrophonePermissionDecision> requestMicrophonePermission({
+    bool includeSpeechRecognition = true,
+  }) async {
+    final microphoneStatus = await _requestPermission(Permission.microphone);
+    if (microphoneStatus.isPermanentlyDenied) {
+      return MicrophonePermissionDecision.permanentlyDenied;
+    }
+    if (microphoneStatus.isRestricted) {
+      return MicrophonePermissionDecision.restricted;
+    }
+    if (!microphoneStatus.isGranted) {
+      return MicrophonePermissionDecision.denied;
+    }
+
+    if (includeSpeechRecognition) {
+      final speechStatus = await _requestPermission(Permission.speech);
+      if (speechStatus.isPermanentlyDenied) {
+        return MicrophonePermissionDecision.permanentlyDenied;
+      }
+      if (speechStatus.isRestricted) {
+        return MicrophonePermissionDecision.restricted;
+      }
+      if (!speechStatus.isGranted) {
+        return MicrophonePermissionDecision.denied;
+      }
+    }
+
+    return MicrophonePermissionDecision.granted;
+  }
+
+  @override
+  Future<void> openSettings() async {
+    try {
+      await openAppSettings();
+    } on MissingPluginException {
+      // Desktop test/runtime targets may not provide permission_handler.
+    }
+  }
+
+  Future<PermissionStatus> _requestPermission(Permission permission) async {
+    try {
+      final currentStatus = await permission.status;
+      if (currentStatus.isGranted) {
+        return currentStatus;
+      }
+      return permission.request();
+    } on MissingPluginException {
+      return PermissionStatus.granted;
+    } on PlatformException catch (error) {
+      if (error.code == 'ERROR_ALREADY_REQUESTING_PERMISSIONS') {
+        return PermissionStatus.denied;
+      }
+      rethrow;
+    }
+  }
+}
 
 class VoiceCallController extends Notifier<VoiceCallState>
     with WidgetsBindingObserver {

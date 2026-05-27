@@ -21,7 +21,7 @@ final class ClarityApp extends StatelessWidget {
   final AuthController authController;
   final ProfileController profileController;
 
-  static ThemeData _buildTheme() {
+  static ThemeData buildTheme() {
     const seed = Color(0xFF1C1B19);
     final base = ColorScheme.fromSeed(
       seedColor: seed,
@@ -169,7 +169,7 @@ final class ClarityApp extends StatelessWidget {
               return MaterialApp(
                 title: 'Clarity',
                 debugShowCheckedModeBanner: false,
-                theme: _buildTheme(),
+                theme: buildTheme(),
                 home: _homeForCurrentState(),
               );
             },

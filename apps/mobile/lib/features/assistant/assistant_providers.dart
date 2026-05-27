@@ -17,21 +17,17 @@ export 'package:clarity/features/assistant/memory/data/memory_api.dart'
 export 'package:clarity/features/assistant/voice/application/voice_call_controller.dart'
     show
         audioCaptureServiceProvider,
-        streamingAudioCaptureServiceProvider,
-        streamingVoiceApiProvider,
-        streamingVoiceEnabledProvider,
-        voiceCallNowProvider,
-        voiceCallProvider,
-        voiceCaptureConfigProvider;
-export 'package:clarity/features/assistant/voice/application/voice_controller.dart'
-    show
         audioPlaybackServiceProvider,
-        audioRecordingServiceProvider,
         backgroundVoiceServiceProvider,
         cloudVoiceApiProvider,
         cloudVoiceEnabledProvider,
         microphonePermissionProvider,
+        nativeVoiceSessionServiceProvider,
         speechToTextServiceProvider,
-        textToSpeechServiceProvider,
+        streamingAudioCaptureServiceProvider,
+        streamingVoiceApiProvider,
+        streamingVoiceEnabledProvider,
         voiceAudioSessionServiceProvider,
-        voiceProvider;
+        voiceCallNowProvider,
+        voiceCallProvider,
+        voiceCaptureConfigProvider;
