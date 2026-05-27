@@ -10,6 +10,13 @@ REX_CLOUD_VOICE_ENABLED="${REX_CLOUD_VOICE_ENABLED:-true}"
 REX_STREAMING_VOICE_ENABLED="${REX_STREAMING_VOICE_ENABLED:-true}"
 ENV_FILE="${MOBILE_DIR}/.env"
 
+if ! command -v flutter >/dev/null 2>&1; then
+  echo "Flutter is not installed on this machine." >&2
+  echo "Run this helper on the Mac that builds to the iPhone, not on the VPS." >&2
+  echo "For the VPS backend, use: ./scripts/vps_restart_rex_api.sh" >&2
+  exit 1
+fi
+
 dotenv_value() {
   local key="$1"
   if [ ! -f "${ENV_FILE}" ]; then
@@ -41,7 +48,9 @@ fi
 
 if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
   echo "Missing SUPABASE_URL or SUPABASE_ANON_KEY." >&2
+  echo "Run this helper on the Mac that builds to the iPhone." >&2
   echo "Set them in apps/mobile/.env or export them before running this script." >&2
+  echo "For the VPS backend, use: ./scripts/vps_restart_rex_api.sh" >&2
   exit 1
 fi
 

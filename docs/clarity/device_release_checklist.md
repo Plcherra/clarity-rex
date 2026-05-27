@@ -6,8 +6,8 @@ release configuration problems.
 
 ## Build Command
 
-Use the helper so the phone is not depending on a copied command with stale
-flags:
+On the Mac, use the helper so the phone is not depending on a copied command
+with stale flags:
 
 ```sh
 ./scripts/mobile_release_run.sh
