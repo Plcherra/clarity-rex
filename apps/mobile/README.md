@@ -57,15 +57,10 @@ Only public Supabase config belongs in Flutter `.env`. Do not put
 `--dart-define`; dart-define values win over `.env` when both are present. The
 `.env` file is ignored and is not bundled as a required release asset.
 
-Recommended iPhone release command:
+Recommended iPhone release command from the repository root:
 
 ```sh
-flutter run -d 00008150-000C03C83A2B401C --release \
-  --dart-define=SUPABASE_URL=https://your-project-ref.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your-public-anon-key \
-  --dart-define=REX_BACKEND_URL=https://api.rexpilot.com \
-  --dart-define=REX_CLOUD_VOICE_ENABLED=true \
-  --dart-define=REX_STREAMING_VOICE_ENABLED=true
+./scripts/mobile_release_run.sh
 ```
 
 Do not pass `REX_NATIVE_IOS_VOICE_ENABLED` for normal testing. That legacy flag

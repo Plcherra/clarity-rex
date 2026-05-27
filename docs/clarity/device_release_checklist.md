@@ -6,20 +6,24 @@ release configuration problems.
 
 ## Build Command
 
-Use one explicit release command so the phone is not depending on local `.env`
-state:
+Use the helper so the phone is not depending on a copied command with stale
+flags:
 
 ```sh
-cd apps/mobile
-flutter run -d 00008150-000C03C83A2B401C --release \
-  --dart-define=SUPABASE_URL=https://<project-ref>.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=<anon-key> \
-  --dart-define=REX_BACKEND_URL=https://api.rexpilot.com \
-  --dart-define=REX_CLOUD_VOICE_ENABLED=true \
-  --dart-define=REX_STREAMING_VOICE_ENABLED=true
+./scripts/mobile_release_run.sh
 ```
 
+The helper reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` from your shell
+environment or from `apps/mobile/.env`, points Rex at
+`https://api.rexpilot.com`, and enables the supported streaming voice path.
+
 Do not use `REX_NATIVE_IOS_VOICE_ENABLED` for normal testing.
+
+To inspect the exact command before running it:
+
+```sh
+./scripts/mobile_release_run.sh --print
+```
 
 ## Backend Check
 
