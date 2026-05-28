@@ -190,8 +190,8 @@ class FakeLiveTranscription:
 
 class FakeLiveDeepgramStreamingService:
     settings = SimpleNamespace(
-        deepgram_endpointing_ms=3000,
-        deepgram_live_transcript_idle_ms=3200,
+        deepgram_endpointing_ms=900,
+        deepgram_live_transcript_idle_ms=1100,
     )
 
 
@@ -352,7 +352,7 @@ async def test_voice_stream_live_transcript_idle_uses_timing_contract(monkeypatc
 
     await session._process_live_utterance_after_transcript_idle(10.0)
 
-    assert delays == [3.2]
+    assert delays == [1.1]
 
 
 @pytest.mark.asyncio

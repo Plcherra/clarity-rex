@@ -493,7 +493,7 @@ class VoiceStreamSession:
         if self._requires_explicit_utterance_end():
             return
         settings = getattr(self.deepgram_streaming_service, "settings", None)
-        endpointing_ms = getattr(settings, "deepgram_endpointing_ms", 3000)
+        endpointing_ms = getattr(settings, "deepgram_endpointing_ms", 900)
         idle_ms = getattr(
             settings,
             "deepgram_live_transcript_idle_ms",

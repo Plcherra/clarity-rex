@@ -289,7 +289,6 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             scope: widget.scope,
             snapshot: data.snapshot,
             budgetPerformance: data.budgetPerformance,
-            hasStatementBalance: data.scopedStatementImportCount > 0,
             transactionCount: data.scopedTransactionCount,
             onUploadTransactions: widget.onUploadTransactions,
           );
@@ -344,7 +343,6 @@ class _DashboardScrollBody extends StatelessWidget {
     required this.scope,
     required this.snapshot,
     required this.budgetPerformance,
-    required this.hasStatementBalance,
     required this.transactionCount,
     required this.onUploadTransactions,
   });
@@ -356,7 +354,6 @@ class _DashboardScrollBody extends StatelessWidget {
   final DashboardScope scope;
   final DashboardSnapshot snapshot;
   final BudgetPerformanceSnapshot budgetPerformance;
-  final bool hasStatementBalance;
   final int transactionCount;
   final Future<void> Function()? onUploadTransactions;
 
@@ -395,10 +392,7 @@ class _DashboardScrollBody extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 18),
-                  _CashFlowSummaryCard(
-                    snapshot: snapshot,
-                    hasStatementBalance: hasStatementBalance,
-                  ),
+                  _CashFlowSummaryCard(snapshot: snapshot),
                   const SizedBox(height: _sectionGap),
                   _SectionTitle(theme: theme, title: 'Spending pressure'),
                   const SizedBox(height: 16),
@@ -413,7 +407,6 @@ class _DashboardScrollBody extends StatelessWidget {
                   _AccountHealthCard(
                     snapshot: snapshot,
                     budgetPerformance: budgetPerformance,
-                    hasStatementBalance: hasStatementBalance,
                     transactionCount: transactionCount,
                   ),
                   const SizedBox(height: _sectionGap),
@@ -641,20 +634,15 @@ class _CompactUploadButtonState extends State<_CompactUploadButton> {
 }
 
 class _CashFlowSummaryCard extends StatelessWidget {
-  const _CashFlowSummaryCard({
-    required this.snapshot,
-    required this.hasStatementBalance,
-  });
+  const _CashFlowSummaryCard({required this.snapshot});
 
   final DashboardSnapshot snapshot;
-  final bool hasStatementBalance;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final availableValue = formatMoney(snapshot.availableThisMonth);
-    final net = snapshot.availableThisMonth;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
@@ -701,50 +689,25 @@ class _CashFlowSummaryCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 18),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 340;
-              final children = [
-                _CashFlowSummaryMetric(
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _CashFlowSummaryMetric(
                   label: 'Income',
                   value: formatMoney(snapshot.incomeThisMonth),
                   color: const Color(0xFF1B7A4C),
                 ),
-                _CashFlowSummaryMetric(
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _CashFlowSummaryMetric(
                   label: 'Spending',
                   value: formatMoney(snapshot.spentThisMonth),
                   color: const Color(0xFF9B2C2C),
                 ),
-                _CashFlowSummaryMetric(
-                  label: hasStatementBalance ? 'Balance' : 'Net',
-                  value: hasStatementBalance
-                      ? formatMoney(snapshot.totalBalance)
-                      : formatMoney(net),
-                  color: hasStatementBalance
-                      ? _balanceColor(snapshot.totalBalance)
-                      : _balanceColor(net),
-                ),
-              ];
-              if (compact) {
-                return Column(
-                  children: [
-                    for (var i = 0; i < children.length; i++) ...[
-                      if (i > 0) const SizedBox(height: 10),
-                      children[i],
-                    ],
-                  ],
-                );
-              }
-              return Row(
-                children: [
-                  for (var i = 0; i < children.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 10),
-                    Expanded(child: children[i]),
-                  ],
-                ],
-              );
-            },
+              ),
+            ],
           ),
         ],
       ),

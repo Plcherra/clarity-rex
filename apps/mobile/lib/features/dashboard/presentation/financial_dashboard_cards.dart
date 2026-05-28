@@ -238,19 +238,14 @@ class _AccountHealthCard extends StatelessWidget {
   const _AccountHealthCard({
     required this.snapshot,
     required this.budgetPerformance,
-    required this.hasStatementBalance,
     required this.transactionCount,
   });
 
   final DashboardSnapshot snapshot;
   final BudgetPerformanceSnapshot budgetPerformance;
-  final bool hasStatementBalance;
   final int transactionCount;
 
   String get _headline {
-    if (!hasStatementBalance && transactionCount > 0) {
-      return 'Transaction history is active, but the statement balance is missing.';
-    }
     if (snapshot.availableThisMonth < 0) {
       return 'Spending is ahead of income by ${formatMoney(-snapshot.availableThisMonth)} this month.';
     }
@@ -300,12 +295,6 @@ class _AccountHealthCard extends StatelessWidget {
     final pressureDetail = topPressure == null
         ? 'No spending pressure recorded this month.'
         : '${topPressure.name} is the largest spend pressure this month.';
-    final balanceValue = hasStatementBalance
-        ? formatMoney(snapshot.totalBalance)
-        : 'Missing';
-    final balanceDetail = hasStatementBalance
-        ? 'Latest connected statement balance.'
-        : 'Import or refresh a statement balance for stronger health checks.';
 
     return Container(
       width: double.infinity,
@@ -329,12 +318,10 @@ class _AccountHealthCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
-                hasStatementBalance
-                    ? Icons.health_and_safety_outlined
-                    : Icons.info_outline_rounded,
-                color: hasStatementBalance
+                Icons.health_and_safety_outlined,
+                color: snapshot.availableThisMonth >= 0
                     ? const Color(0xFF1B7A4C)
-                    : cs.onSurface.withValues(alpha: 0.5),
+                    : const Color(0xFFC41E3A),
                 size: 26,
               ),
               const SizedBox(width: 14),
@@ -351,16 +338,6 @@ class _AccountHealthCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          _HealthMetricRow(
-            icon: Icons.account_balance_wallet_outlined,
-            label: 'Statement balance',
-            value: balanceValue,
-            detail: balanceDetail,
-            valueColor: hasStatementBalance
-                ? _balanceColor(snapshot.totalBalance)
-                : cs.onSurface.withValues(alpha: 0.55),
-          ),
-          const SizedBox(height: 14),
           _HealthMetricRow(
             icon: Icons.sync_alt_rounded,
             label: 'Cash flow',
