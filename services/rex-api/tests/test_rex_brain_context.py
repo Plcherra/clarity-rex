@@ -1,7 +1,10 @@
 from app.services.rex_brain import RexBrainInput, RexThinkingRouter
 from app.services.rex_brain_context import (
     BUDGET_LIMITS,
+    RexBrainContext,
+    RexContextBudgetLimits,
     RexFinancialContextScope,
+    _enforce_total_budget,
     build_rex_brain_context,
 )
 from app.services.rex_brain_contracts import RexContextBudget, RexThinkingLayer
@@ -256,6 +259,49 @@ def test_recent_messages_are_sanitized_and_capped():
     assert [message["role"] for message in context.recent_messages] == ["user"]
     assert context.recent_messages[0]["content"].endswith("[truncated]")
     assert "recent_chat_context_truncated" in context.diagnostics
+
+
+def test_total_context_budget_is_enforced_after_bucket_selection():
+    long_text = "x" * 1000
+    context = RexBrainContext(
+        context_budget=RexContextBudget.SMALL,
+        financial_context={"transactions": [{"description": long_text} for _ in range(5)]},
+        recent_messages=[
+            {"role": "user", "content": f"older message {index} {long_text}"}
+            for index in range(5)
+        ],
+        relevant_memories=tuple(
+            _memory(f"memory-{index}", "fact", f"Important detail {index} {long_text}")
+            for index in range(5)
+        ),
+        structured_context={
+            "plans": tuple(
+                _plan(f"plan-{index}", f"Plan {index} {long_text}")
+                for index in range(5)
+            ),
+            "commitments": tuple(
+                _commitment(f"commitment-{index}", f"Commitment {index} {long_text}")
+                for index in range(5)
+            ),
+        },
+        accountability_signals=tuple(
+            {"id": f"signal-{index}", "severity": "high", "reason": long_text}
+            for index in range(5)
+        ),
+    )
+    limits = RexContextBudgetLimits(
+        total_characters=2000,
+        financial_characters=1000,
+        memory_characters=1000,
+        structured_characters=1000,
+        accountability_characters=1000,
+        recent_chat_characters=1000,
+    )
+
+    fitted = _enforce_total_budget(context, limits, [])
+
+    assert fitted.character_count <= limits.total_characters
+    assert "context_total_budget_exceeded" in fitted.diagnostics
 
 
 def _financial_context(transaction_count: int = 3) -> dict:

@@ -26,6 +26,32 @@ def test_prompt_contracts_include_shared_safety_and_data_boundaries():
         assert "financial context is a clarity app snapshot" in prompt
         assert "do not reveal hidden chain-of-thought" in prompt
         assert "never claim a memory, financial record, goal, budget, or transaction was changed" in prompt
+        assert "research opt-in is required" in prompt
+        assert "do not invent live facts" in prompt
+        assert "scenario simulations" in prompt
+        assert "state assumptions first" in prompt
+        assert "proactive insights" in prompt
+        assert "do not imply background monitoring" in prompt
+        assert "daily focus / personal operating system" in prompt
+        assert "do not invent obligations" in prompt
+        assert "planning workspace requests" in prompt
+        assert "do not claim a plan was saved" in prompt
+        assert "internal self-evaluation" in prompt
+        assert "correctness, usefulness, missing context, and tone fit" in prompt
+        assert "hidden unless debug exposure is enabled" in prompt
+        assert "response style profiles" in prompt
+        assert "coach, analyst, concise, direct, or supportive" in prompt
+        assert "permanent preference" in prompt
+        assert "long-term intelligence reviews" in prompt
+        assert (
+            "stale goals, outdated memories, duplicate commitments, or financial blind spots"
+            in prompt
+        )
+        assert "without explicit user confirmation" in prompt
+        assert "confirmed action previews" in prompt
+        assert "exact candidate changes" in prompt
+        assert "pending-action contract" in prompt
+        assert "successful write/execution result" in prompt
         assert "qualified professional" in prompt
 
 
@@ -67,8 +93,15 @@ def test_analytical_and_strategic_prompts_separate_facts_and_tradeoffs():
     strategic = get_rex_prompt_contract(RexThinkingLayer.STRATEGIC).system_prompt.lower()
 
     assert "separate facts, calculations, assumptions, and recommendations" in analytical
+    assert "show the assumption set" in analytical
+    assert "prioritize unusual spending, budget drift, upcoming commitments, and goal risks" in analytical
     assert "never say you checked the user's bank directly" in analytical
     assert "compare tradeoffs" in strategic
+    assert "what changes if assumptions move" in strategic
+    assert "connect the surfaced risk to a goal" in strategic
+    assert "give 1-3 priorities" in strategic
+    assert "why each matters today" in strategic
+    assert "objective, constraints, milestones, open decisions, and next revision point" in strategic
     assert "preserve user autonomy" in strategic
     assert "next actions" in strategic
 
@@ -78,6 +111,12 @@ def test_reflective_and_coaching_prompts_are_safe_for_user_facing_answers():
     coaching = get_rex_prompt_contract(RexThinkingLayer.COACHING).system_prompt.lower()
 
     assert "corrected user-facing answer" in reflective
+    assert "score internal answer quality" in reflective
+    assert "long-term intelligence reviews" in reflective
+    assert "review candidates" in reflective
+    assert "confirmed action previews" in reflective
+    assert "pending-action contract gaps" in reflective
+    assert "confirmation needed before any mutation" in reflective
     assert "prefer correction over defensiveness" in reflective
     assert "do not fake certainty" in coaching
     assert "avoid generic pep talks" in coaching

@@ -214,18 +214,6 @@ class ChatService:
             structured_context=structured_context,
         )
 
-        ai_messages = self._build_prompt_messages(
-            message=message,
-            conversation_id=conversation_id,
-            conversation_history=conversation_history,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-            accountability_signals=accountability_signals,
-            file_text=file_text,
-            time_context=time_context,
-            financial_context=financial_context,
-        )
-
         user_message = await self.memory_service.save_message(
             conversation_id,
             "user",
@@ -273,6 +261,18 @@ class ChatService:
             status="planned",
         )
         brain_metadata = self._rex_brain_memory_metadata(rex_brain_plan)
+        ai_messages = self._build_prompt_messages_for_rex_brain(
+            message=message,
+            conversation_id=conversation_id,
+            conversation_history=conversation_history,
+            long_term_memory=long_term_memory,
+            structured_context=structured_context,
+            accountability_signals=accountability_signals,
+            file_text=file_text,
+            time_context=time_context,
+            financial_context=financial_context,
+            rex_brain_plan=rex_brain_plan,
+        )
 
         memory_correction = await self._apply_memory_correction(
             message,
@@ -409,18 +409,6 @@ class ChatService:
             structured_context=structured_context,
         )
 
-        ai_messages = self._build_prompt_messages(
-            message=message,
-            conversation_id=conversation_id,
-            conversation_history=conversation_history,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-            accountability_signals=accountability_signals,
-            file_text=file_text,
-            time_context=time_context,
-            financial_context=financial_context,
-        )
-
         user_message = await self.memory_service.save_message(
             conversation_id,
             "user",
@@ -473,6 +461,18 @@ class ChatService:
             status="planned",
         )
         brain_metadata = self._rex_brain_memory_metadata(rex_brain_plan)
+        ai_messages = self._build_prompt_messages_for_rex_brain(
+            message=message,
+            conversation_id=conversation_id,
+            conversation_history=conversation_history,
+            long_term_memory=long_term_memory,
+            structured_context=structured_context,
+            accountability_signals=accountability_signals,
+            file_text=file_text,
+            time_context=time_context,
+            financial_context=financial_context,
+            rex_brain_plan=rex_brain_plan,
+        )
 
         memory_correction = await self._apply_memory_correction(
             message,
@@ -664,6 +664,9 @@ class ChatService:
             conversation_message_count=len(conversation_history),
             user_requested_deep_thinking=user_requested_deep_thinking
             or self._user_requested_deep_thinking(message),
+            rex_brain_debug_enabled=(
+                self.rex_model_router.settings.rex_brain_debug_enabled
+            ),
         )
         decision = self.rex_brain.plan_turn(brain_input)
         brain_context = build_rex_brain_context(
@@ -760,6 +763,97 @@ class ChatService:
             "model_route": model_route.metadata(),
             "prompt": prompt_contract.metadata(),
         }
+        research_guard = ""
+        if decision.requires_research_opt_in:
+            research_guard = (
+                "\n\nResearch opt-in required:\n"
+                "- Do not answer with live, current, web, or externally verified facts yet.\n"
+                "- Ask the user to confirm that Rex should research or check current information first.\n"
+                "- Until confirmation, answer only from provided Clarity context and stable general knowledge.\n"
+            )
+        simulation_guard = ""
+        if decision.needs_scenario_simulation:
+            simulation_guard = (
+                "\n\nScenario simulation contract:\n"
+                "- State the assumptions before the simulated outcome.\n"
+                "- Separate known Clarity facts from projections, estimates, and tradeoffs.\n"
+                "- Keep the math simple and avoid presenting projections as guaranteed results.\n"
+            )
+        proactive_guard = ""
+        if decision.needs_proactive_insight:
+            proactive_guard = (
+                "\n\nProactive insight contract:\n"
+                "- Surface only insights requested in this turn or enabled by user settings.\n"
+                "- Use provided Clarity context only; do not imply background monitoring.\n"
+                "- Focus on unusual spending, budget drift, upcoming commitments, and goal risks.\n"
+            )
+        if decision.requires_proactive_opt_in:
+            proactive_guard += (
+                "- Ask for explicit proactive insight opt-in before promising alerts, monitoring, or future notifications.\n"
+            )
+        daily_focus_guard = ""
+        if decision.needs_daily_focus:
+            daily_focus_guard = (
+                "\n\nDaily focus contract:\n"
+                "- Connect goals, commitments, finances, memory, and accountability context when provided.\n"
+                "- Give 1-3 priorities with why they matter today and the next concrete action.\n"
+                "- Say what context is missing instead of inventing obligations or deadlines.\n"
+            )
+        planning_workspace_guard = ""
+        if decision.needs_planning_workspace:
+            planning_workspace_guard = (
+                "\n\nPlanning workspace contract:\n"
+                f"- Intent: {decision.planning_workspace_intent}.\n"
+                "- Structure the plan with objective, constraints, milestones, open decisions, and next revision point.\n"
+                "- Make the plan resumable and editable in later turns.\n"
+                "- Do not claim the plan was saved unless an execution result confirms a write succeeded.\n"
+            )
+        long_term_review_guard = ""
+        if decision.needs_long_term_review:
+            targets = ", ".join(decision.long_term_review_targets) or "all"
+            long_term_review_guard = (
+                "\n\nLong-term intelligence review contract:\n"
+                f"- Targets: {targets}.\n"
+                "- Review only provided Clarity context: goals, memories, commitments, and finances.\n"
+                "- Propose cleanup candidates for stale goals, outdated memories, duplicate commitments, or financial blind spots.\n"
+                "- Treat uncertain or stale items as candidates, not proven errors.\n"
+                "- Ask the user to confirm specific changes before editing, deleting, deactivating, or merging anything.\n"
+            )
+        confirmed_action_guard = ""
+        if decision.needs_confirmed_action_preview:
+            targets = ", ".join(decision.confirmed_action_targets) or "unspecified"
+            confirmed_action_guard = (
+                "\n\nConfirmed action preview contract:\n"
+                f"- Intent: {decision.confirmed_action_intent}.\n"
+                f"- Targets: {targets}.\n"
+                "- Summarize the exact candidate changes before any write behavior.\n"
+                "- A real mutation requires a pending-action contract with pending_action_id, target ids, exact proposed diff, confirmation status, and execution result.\n"
+                "- This turn is preview-only unless that pending-action contract already exists and an execution result confirms success.\n"
+                "- If the request is ambiguous, ask one clarification question instead of acting.\n"
+                "- Do not claim anything was changed unless an execution result confirms a write succeeded.\n"
+                "- Keep destructive actions such as delete, remove, merge, archive, or deactivate behind explicit confirmation.\n"
+            )
+        self_evaluation_guard = ""
+        if decision.needs_self_evaluation:
+            self_evaluation_guard = (
+                "\n\nInternal self-evaluation contract:\n"
+                "- Before finalizing, internally check correctness, usefulness, missing context, and tone fit.\n"
+                "- Correct the user-facing answer when the check finds unsupported claims, missing assumptions, or tone mismatch.\n"
+                "- Keep the self-evaluation internal unless debug exposure is explicitly enabled.\n"
+            )
+            if decision.expose_self_evaluation:
+                self_evaluation_guard += (
+                    "- Debug exposure is enabled: include a concise self-evaluation summary only if it helps diagnose routing quality.\n"
+                )
+        response_style_guard = ""
+        if decision.response_style_profile != "default":
+            response_style_guard = (
+                "\n\nResponse style contract:\n"
+                f"- Profile: {decision.response_style_profile}.\n"
+                f"- Source: {decision.response_style_source}.\n"
+                "- Honor this user-controlled style for this turn while preserving accuracy and safety.\n"
+                "- Do not store or treat this as a permanent preference unless a write result confirms it.\n"
+            )
         return (
             "Rex Brain routing contract for this chat turn.\n"
             "Follow this contract while preserving the app's base Rex persona.\n"
@@ -767,6 +861,15 @@ class ChatService:
             "or private context details.\n\n"
             f"Layer prompt ({prompt_contract.version}):\n"
             f"{prompt_contract.system_prompt}\n\n"
+            f"{research_guard}"
+            f"{simulation_guard}"
+            f"{proactive_guard}"
+            f"{daily_focus_guard}"
+            f"{planning_workspace_guard}"
+            f"{long_term_review_guard}"
+            f"{confirmed_action_guard}"
+            f"{self_evaluation_guard}"
+            f"{response_style_guard}"
             "Safe routing metadata for behavior control only:\n"
             f"{json.dumps(safe_metadata, sort_keys=True)}"
         )
@@ -778,7 +881,10 @@ class ChatService:
             or not model_route.routing_enabled
         ):
             return {}
-        kwargs: dict[str, object] = {"max_tokens": model_route.limits.max_output_tokens}
+        kwargs: dict[str, object] = {
+            "max_tokens": model_route.limits.max_output_tokens,
+            "max_prompt_characters": model_route.limits.max_prompt_characters,
+        }
         if model_route.selected_model:
             kwargs["model_override"] = model_route.selected_model
         return kwargs
@@ -910,6 +1016,7 @@ class ChatService:
         file_text: Optional[str],
         time_context: dict,
         financial_context: Optional[dict],
+        max_context_characters: Optional[int] = None,
     ) -> list[dict]:
         last_message_timestamp = self._last_message_timestamp(conversation_history)
         return self.prompt_service.build_messages(
@@ -926,6 +1033,122 @@ class ChatService:
             },
             time_context=time_context,
             financial_context=financial_context,
+            max_context_characters=max_context_characters,
+        )
+
+    def _build_prompt_messages_for_rex_brain(
+        self,
+        *,
+        message: str,
+        conversation_id: str,
+        conversation_history: list[dict],
+        long_term_memory: list[dict],
+        structured_context: dict,
+        accountability_signals: list,
+        file_text: Optional[str],
+        time_context: dict,
+        financial_context: Optional[dict],
+        rex_brain_plan: dict,
+    ) -> list[dict]:
+        prompt_context = self._rex_brain_prompt_context(
+            conversation_history=conversation_history,
+            long_term_memory=long_term_memory,
+            structured_context=structured_context,
+            accountability_signals=accountability_signals,
+            financial_context=financial_context,
+            rex_brain_plan=rex_brain_plan,
+        )
+        return self._build_prompt_messages(
+            message=message,
+            conversation_id=conversation_id,
+            conversation_history=prompt_context["conversation_history"],
+            long_term_memory=prompt_context["long_term_memory"],
+            structured_context=prompt_context["structured_context"],
+            accountability_signals=prompt_context["accountability_signals"],
+            file_text=file_text,
+            time_context=time_context,
+            financial_context=prompt_context["financial_context"],
+            max_context_characters=self._rex_brain_prompt_context_limit(
+                rex_brain_plan,
+            ),
+        )
+
+    def _rex_brain_prompt_context(
+        self,
+        *,
+        conversation_history: list[dict],
+        long_term_memory: list[dict],
+        structured_context: dict,
+        accountability_signals: list,
+        financial_context: Optional[dict],
+        rex_brain_plan: dict,
+    ) -> dict:
+        model_route = rex_brain_plan.get("model_route")
+        brain_context = rex_brain_plan.get("brain_context")
+        if (
+            not isinstance(model_route, RexModelRoute)
+            or not model_route.routing_enabled
+            or not isinstance(brain_context, RexBrainContext)
+        ):
+            return {
+                "conversation_history": conversation_history,
+                "long_term_memory": long_term_memory,
+                "structured_context": structured_context,
+                "accountability_signals": accountability_signals,
+                "financial_context": financial_context,
+            }
+
+        return {
+            "conversation_history": [
+                dict(message) for message in brain_context.recent_messages
+            ],
+            "long_term_memory": [
+                dict(memory) for memory in brain_context.relevant_memories
+            ],
+            "structured_context": {
+                key: [dict(record) for record in records]
+                for key, records in brain_context.structured_context.items()
+            },
+            "accountability_signals": [
+                dict(signal) for signal in brain_context.accountability_signals
+            ],
+            "financial_context": (
+                dict(brain_context.financial_context)
+                if brain_context.financial_context is not None
+                else None
+            ),
+        }
+
+    def _rex_brain_prompt_context_limit(
+        self,
+        rex_brain_plan: dict,
+    ) -> Optional[int]:
+        model_route = rex_brain_plan.get("model_route")
+        if (
+            not isinstance(model_route, RexModelRoute)
+            or not model_route.routing_enabled
+        ):
+            return None
+
+        decision = rex_brain_plan.get("decision")
+        brain_context = rex_brain_plan.get("brain_context")
+        prompt_contract = rex_brain_plan.get("prompt_contract")
+        if (
+            not isinstance(decision, RexBrainDecision)
+            or not isinstance(brain_context, RexBrainContext)
+            or not isinstance(prompt_contract, RexPromptContract)
+        ):
+            return model_route.limits.max_prompt_characters
+
+        contract_section = self._rex_brain_chat_contract_section(
+            decision=decision,
+            brain_context=brain_context,
+            model_route=model_route,
+            prompt_contract=prompt_contract,
+        )
+        return max(
+            model_route.limits.max_prompt_characters - len(contract_section) - 200,
+            1200,
         )
 
     def _current_time_context(self, conversation_history: list[dict]) -> dict:

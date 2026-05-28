@@ -106,12 +106,27 @@ def test_golden_rex_brain_eval_routes(fixture):
             has_financial_context=fixture.get("has_financial_context", False),
             has_structured_memory=fixture.get("has_structured_memory", False),
             has_goals=fixture.get("has_goals", False),
+            has_pending_commitments=fixture.get("has_pending_commitments", False),
             user_requested_deep_thinking=fixture.get(
                 "user_requested_deep_thinking",
                 False,
+            ),
+            user_enabled_proactive_insights=fixture.get(
+                "user_enabled_proactive_insights",
+                False,
+            ),
+            user_preference_profile=fixture.get(
+                "user_preference_profile",
+                "default",
             ),
         )
     )
 
     assert decision.layer.value == fixture["expected_layer"]
     assert decision.model_profile.value == fixture["expected_profile"]
+    metadata = decision.metadata()
+    for key, expected in fixture.get("expected_metadata", {}).items():
+        if isinstance(expected, dict):
+            assert metadata[key] | expected == metadata[key]
+        else:
+            assert metadata[key] == expected

@@ -26,10 +26,12 @@ class AIService:
         messages: list[dict],
         model_override: Optional[str] = None,
         max_tokens: Optional[int] = None,
+        max_prompt_characters: Optional[int] = None,
     ) -> str:
         prompt_messages = self._validated_prompt_messages(
             messages,
             model_override=model_override,
+            max_prompt_characters=max_prompt_characters,
         )
 
         payload = self._payload(
@@ -68,10 +70,12 @@ class AIService:
         messages: list[dict],
         max_tokens: Optional[int] = None,
         model_override: Optional[str] = None,
+        max_prompt_characters: Optional[int] = None,
     ) -> AsyncIterator[str]:
         prompt_messages = self._validated_prompt_messages(
             messages,
             model_override=model_override,
+            max_prompt_characters=max_prompt_characters,
         )
         payload = self._payload(
             messages=prompt_messages,
@@ -111,6 +115,7 @@ class AIService:
         self,
         messages: list[dict],
         model_override: Optional[str] = None,
+        max_prompt_characters: Optional[int] = None,
     ) -> list[dict]:
         if not self.settings.grok_api_key:
             raise AIServiceError("Grok API key is not configured.", status_code=503)
@@ -118,7 +123,8 @@ class AIService:
             raise AIServiceError("Grok model is not configured.", status_code=503)
 
         prompt_messages = self._prompt_messages(messages)
-        if self._prompt_length(prompt_messages) > self.max_prompt_characters:
+        prompt_limit = max_prompt_characters or self.max_prompt_characters
+        if self._prompt_length(prompt_messages) > prompt_limit:
             raise AIServiceError(
                 "Message context is too large. Shorten the file or start a new chat.",
                 status_code=400,

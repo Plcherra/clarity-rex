@@ -69,6 +69,7 @@ class PromptService:
         conversation_metadata: Optional[dict] = None,
         time_context: Optional[dict] = None,
         financial_context: Optional[dict] = None,
+        max_context_characters: Optional[int] = None,
     ) -> list[dict]:
         messages = [
             *self._message_history(recent_messages or []),
@@ -90,7 +91,10 @@ class PromptService:
                 *messages,
             ]
 
-        return self._trim_context(messages)
+        return self._trim_context(
+            messages,
+            max_context_characters=max_context_characters,
+        )
 
     def _message_history(self, recent_messages: list[dict]) -> list[dict]:
         messages = []
@@ -774,11 +778,17 @@ class PromptService:
             messages[-1],
         ]
 
-    def _trim_context(self, messages: list[dict]) -> list[dict]:
+    def _trim_context(
+        self,
+        messages: list[dict],
+        *,
+        max_context_characters: Optional[int] = None,
+    ) -> list[dict]:
+        context_limit = max_context_characters or MAX_CONTEXT_CHARACTERS
         trimmed_messages = list(messages)
         while (
             len(trimmed_messages) > 1
-            and self._context_length(trimmed_messages) > MAX_CONTEXT_CHARACTERS
+            and self._context_length(trimmed_messages) > context_limit
         ):
             remove_index = 1 if trimmed_messages[0].get("role") == "system" else 0
             if self._has_file_context(trimmed_messages[remove_index]):
@@ -786,13 +796,16 @@ class PromptService:
 
             trimmed_messages.pop(remove_index)
 
-        trimmed_messages = self._trim_file_context(trimmed_messages)
-        if self._context_length(trimmed_messages) > MAX_CONTEXT_CHARACTERS:
+        trimmed_messages = self._trim_file_context(
+            trimmed_messages,
+            max_context_characters=context_limit,
+        )
+        if self._context_length(trimmed_messages) > context_limit:
             last_message = trimmed_messages[-1]
             return [
                 {
                     **last_message,
-                    "content": last_message["content"][-MAX_CONTEXT_CHARACTERS:],
+                    "content": last_message["content"][-context_limit:],
                 }
             ]
 
@@ -801,7 +814,12 @@ class PromptService:
     def _context_length(self, messages: list[dict]) -> int:
         return sum(len(message["content"]) for message in messages)
 
-    def _trim_file_context(self, messages: list[dict]) -> list[dict]:
+    def _trim_file_context(
+        self,
+        messages: list[dict],
+        *,
+        max_context_characters: int,
+    ) -> list[dict]:
         file_index = self._file_context_index(messages)
         if file_index is None or len(messages) < 2:
             return messages
@@ -809,7 +827,7 @@ class PromptService:
         latest_message = messages[-1]
         truncation_note = "\n\n[File truncated]"
         available_file_characters = (
-            MAX_CONTEXT_CHARACTERS
+            max_context_characters
             - len(latest_message["content"])
             - len(FILE_CONTEXT_PREFIX)
             - len(truncation_note)

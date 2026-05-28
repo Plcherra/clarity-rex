@@ -101,6 +101,21 @@ def test_ai_service_payload_uses_model_override_and_max_tokens():
     }
 
 
+def test_ai_service_enforces_per_route_prompt_limit():
+    service = AIService(Settings(grok_api_key="test-key", grok_model="grok-default"))
+
+    with pytest.raises(AIServiceError) as error:
+        service._validated_prompt_messages(
+            [{"role": "user", "content": "x" * 20}],
+            max_prompt_characters=10,
+        )
+
+    assert error.value.status_code == 400
+    assert error.value.detail == (
+        "Message context is too large. Shorten the file or start a new chat."
+    )
+
+
 def test_ai_service_allows_override_when_default_model_is_missing():
     service = AIService(Settings(grok_api_key="test-key", grok_model=None))
 

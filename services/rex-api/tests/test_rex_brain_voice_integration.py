@@ -112,6 +112,7 @@ async def test_voice_channel_uses_standard_model_for_normal_financial_question()
 
     assert ai_service.kwargs == {
         "max_tokens": VOICE_RESPONSE_MAX_TOKENS,
+        "max_prompt_characters": 14000,
         "model_override": "grok-standard",
     }
     assert "Layer 2 Analytical" in ai_service.messages[0]["content"]
@@ -143,6 +144,7 @@ async def test_voice_channel_can_escalate_explicit_deep_thinking_to_reasoning():
 
     assert ai_service.kwargs == {
         "max_tokens": VOICE_DEEP_RESPONSE_MAX_TOKENS,
+        "max_prompt_characters": 28000,
         "model_override": "grok-reasoning",
     }
     assert "Layer 2 Analytical" in ai_service.messages[0]["content"]

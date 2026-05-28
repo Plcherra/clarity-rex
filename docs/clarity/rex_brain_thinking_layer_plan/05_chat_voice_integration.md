@@ -103,7 +103,7 @@ Status: complete.
 - Chat routing exists behind `REX_BRAIN_ROUTING_ENABLED`.
 - Disabled routing preserves the current production chat path.
 - Non-streaming and streaming chat use the same decision path when enabled.
-- Voice behavior is untouched and remains deferred to `00.06`.
+- At the `00.05` boundary, voice behavior was intentionally untouched and deferred to `00.06`; the voice scope below is now complete.
 - Backend tests for chat, router, prompts, context, model routing, AIService, and readiness pass.
 
 Status: complete after verification.
