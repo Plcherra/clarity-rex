@@ -12,6 +12,7 @@ from app.services.deepgram_service import DeepgramServiceError
 from app.services.deepgram_streaming_service import DeepgramStreamingService
 from app.services.google_tts_service import GoogleTTSService, GoogleTTSServiceError
 from app.services.memory_service import MemoryServiceError
+from app.services.rex_brain_contracts import RexBrainChannel
 
 
 VOICE_RESPONSE_INSTRUCTIONS = (
@@ -23,6 +24,23 @@ VOICE_RESPONSE_INSTRUCTIONS = (
     "needs confirmation, ask the user to open Chat to confirm it."
 )
 VOICE_RESPONSE_MAX_TOKENS = 180
+VOICE_DEEP_RESPONSE_MAX_TOKENS = 420
+VOICE_DEEP_THINKING_PHRASES = (
+    "deep think",
+    "think deeply",
+    "analyze thoroughly",
+    "full analysis",
+    "reason through",
+    "go deeper",
+    "deeper thinking",
+)
+
+
+def voice_response_max_tokens(transcript: str) -> int:
+    normalized = transcript.lower()
+    if any(phrase in normalized for phrase in VOICE_DEEP_THINKING_PHRASES):
+        return VOICE_DEEP_RESPONSE_MAX_TOKENS
+    return VOICE_RESPONSE_MAX_TOKENS
 
 
 class VoiceStreamSession:
@@ -300,8 +318,9 @@ class VoiceStreamSession:
             transcript,
             conversation_id=self.conversation_id,
             response_instructions=VOICE_RESPONSE_INSTRUCTIONS,
-            max_response_tokens=VOICE_RESPONSE_MAX_TOKENS,
+            max_response_tokens=voice_response_max_tokens(transcript),
             financial_context=self.financial_context,
+            channel=RexBrainChannel.VOICE,
         ):
             event_name = event.get("event")
             if event_name == "conversation":

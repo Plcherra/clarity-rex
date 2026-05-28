@@ -45,6 +45,13 @@ APP_ENVIRONMENT=development
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 GROK_API_KEY=
 GROK_MODEL=
+GROK_FAST_MODEL=
+GROK_STANDARD_MODEL=
+GROK_REASONING_MODEL=
+REX_BRAIN_ROUTING_ENABLED=false
+REX_BRAIN_DEBUG_ENABLED=false
+REX_BRAIN_FAST_FIRST_ENABLED=false
+REX_BRAIN_ROLLOUT_STAGE=disabled
 GROK_BASE_URL=https://api.x.ai/v1
 GROK_TIMEOUT_SECONDS=120
 
@@ -122,6 +129,17 @@ Readiness check:
 ```sh
 curl http://localhost:8000/ready
 ```
+
+## Rex Brain Rollout
+
+Rex Brain is disabled by default. `GROK_MODEL` remains the fallback model, so existing deployments keep working. Enable gradually with:
+
+```env
+REX_BRAIN_ROUTING_ENABLED=true
+REX_BRAIN_ROLLOUT_STAGE=logging_only
+```
+
+Available rollout stages are `disabled`, `logging_only`, `fast_contextual`, `analytical`, `strategic_reflective`, and `deep_think_ui`. Roll back by setting `REX_BRAIN_ROUTING_ENABLED=false` and restarting `clarity-rex.service` through `./scripts/vps_restart_rex_api.sh`.
 
 Production VPS restarts should use the canonical systemd unit:
 

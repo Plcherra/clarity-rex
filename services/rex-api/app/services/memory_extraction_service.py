@@ -309,6 +309,7 @@ class MemoryExtractionService:
         conversation_id: str,
         user_message: dict,
         assistant_message: dict,
+        brain_metadata: Optional[dict[str, Any]] = None,
     ) -> list[dict]:
         try:
             raw_response = await self.ai_service.generate_response(
@@ -353,6 +354,7 @@ class MemoryExtractionService:
                     candidate_type="long_term_memory",
                     payload=normalized,
                 ),
+                brain_metadata=brain_metadata,
             )
             if pending:
                 pending_candidates.append(pending)
@@ -363,6 +365,7 @@ class MemoryExtractionService:
             user_message_id=str(user_message.get("id"))
             if user_message.get("id")
             else None,
+            brain_metadata=brain_metadata,
         )
         pending_candidates.extend(structured_memories)
 
@@ -472,6 +475,7 @@ class MemoryExtractionService:
         *,
         conversation_id: str,
         user_message_id: Optional[str],
+        brain_metadata: Optional[dict[str, Any]] = None,
     ) -> list[dict]:
         saved: list[dict] = []
         entity_ids_by_key: dict[str, str] = {}
@@ -496,6 +500,7 @@ class MemoryExtractionService:
                     self.entity_service.create_entity,
                     EntityCreateRequest(**normalized["payload"]),
                 ),
+                brain_metadata=brain_metadata,
             )
             if saved_entity:
                 saved.append(saved_entity)
@@ -519,6 +524,7 @@ class MemoryExtractionService:
                     candidate_type="entity_event",
                     payload=normalized["payload"],
                 ),
+                brain_metadata=brain_metadata,
             )
             if saved_event:
                 saved.append(saved_event)
@@ -540,6 +546,7 @@ class MemoryExtractionService:
                     self.rule_service.create_rule,
                     PersonalRuleCreateRequest(**normalized["payload"]),
                 ),
+                brain_metadata=brain_metadata,
             )
             if saved_rule:
                 saved.append(saved_rule)
@@ -562,6 +569,7 @@ class MemoryExtractionService:
                     self.plan_service.create_plan,
                     PlanCreateRequest(**normalized["payload"]),
                 ),
+                brain_metadata=brain_metadata,
             )
             if saved_plan:
                 saved.append(saved_plan)
@@ -584,6 +592,7 @@ class MemoryExtractionService:
                     self.plan_service.create_milestone,
                     PlanMilestoneCreateRequest(**normalized["payload"]),
                 ),
+                brain_metadata=brain_metadata,
             )
             if saved_milestone:
                 saved.append(saved_milestone)
@@ -607,6 +616,7 @@ class MemoryExtractionService:
                     self.commitment_service.create_commitment,
                     CommitmentCreateRequest(**normalized["payload"]),
                 ),
+                brain_metadata=brain_metadata,
             )
             if saved_commitment:
                 saved.append(saved_commitment)
@@ -1472,6 +1482,7 @@ class MemoryExtractionService:
         structured_type: str,
         rationale: str,
         fallback: Any,
+        brain_metadata: Optional[dict[str, Any]] = None,
     ) -> Optional[dict]:
         candidate = MemoryDisciplineCandidate(
             kind=kind,
@@ -1510,6 +1521,7 @@ class MemoryExtractionService:
                 payload=candidate_payload,
                 decision=decision,
             ),
+            brain_metadata=brain_metadata,
         )
 
     def _create_action_for_kind(
@@ -1533,6 +1545,20 @@ class MemoryExtractionService:
             MemoryCandidateKind.COMMITMENT: "commitment",
         }.get(kind)
 
+    def _payload_with_brain_metadata(
+        self,
+        payload: dict[str, Any],
+        *,
+        brain_metadata: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        if not brain_metadata:
+            return payload
+        updated = dict(payload)
+        metadata = updated.get("metadata")
+        updated["metadata"] = dict(metadata) if isinstance(metadata, dict) else {}
+        updated["metadata"]["rex_brain"] = brain_metadata
+        return updated
+
     async def _create_pending_memory_candidate(
         self,
         *,
@@ -1542,10 +1568,15 @@ class MemoryExtractionService:
         conversation_id: str,
         user_message_id: Optional[str],
         risk_level: str,
+        brain_metadata: Optional[dict[str, Any]] = None,
     ) -> Optional[dict]:
         create_candidate = getattr(self.memory_service, "create_memory_candidate", None)
         if create_candidate is None:
             return None
+        payload = self._payload_with_brain_metadata(
+            payload,
+            brain_metadata=brain_metadata,
+        )
         try:
             row = await create_candidate(
                 MemoryCandidateCreateRequest(

@@ -33,6 +33,7 @@ async def chat(
                 conversation_id=chat_request.conversation_id,
                 file=file,
                 financial_context=chat_request.financial_context,
+                user_requested_deep_thinking=chat_request.deep_think,
             ),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
@@ -44,6 +45,7 @@ async def chat(
             conversation_id=chat_request.conversation_id,
             file=file,
             financial_context=chat_request.financial_context,
+            user_requested_deep_thinking=chat_request.deep_think,
         )
     except ConversationNotFoundError as error:
         raise HTTPException(status_code=404, detail="Conversation not found.") from error
@@ -73,6 +75,7 @@ async def _stream_chat_events(
     conversation_id: Optional[str],
     file: Optional[UploadFile],
     financial_context: Optional[dict],
+    user_requested_deep_thinking: bool = False,
 ):
     try:
         async for event in chat_service.stream_message(
@@ -80,6 +83,7 @@ async def _stream_chat_events(
             conversation_id=conversation_id,
             file=file,
             financial_context=financial_context,
+            user_requested_deep_thinking=user_requested_deep_thinking,
         ):
             yield _sse_event(event.pop("event"), event)
     except ConversationNotFoundError:
@@ -118,6 +122,7 @@ async def _parse_chat_request(request: Request) -> tuple[ChatRequest, Optional[U
                     file=file.filename if file else None,
                     stream=stream,
                     financial_context=_json_dict(form.get("financial_context")),
+                    deep_think=_as_bool(form.get("deep_think")),
                 ),
                 file,
             )

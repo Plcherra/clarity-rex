@@ -5,6 +5,8 @@ from app.dependencies import get_chat_service, get_deepgram_service, get_google_
 from app.main import app
 from app.services.ai_service import AIServiceError
 from app.services.chat_service import ConversationNotFoundError
+from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.voice_stream_session import VOICE_RESPONSE_MAX_TOKENS
 from app.services.deepgram_service import DeepgramServiceError
 from app.services.google_tts_service import GoogleTTSServiceError
 from app.services.memory_service import MemoryServiceError
@@ -83,6 +85,8 @@ class FakeChatService:
         file=None,
         financial_context=None,
         response_instructions=None,
+        max_response_tokens=None,
+        channel=None,
     ):
         self.calls.append(
             {
@@ -91,6 +95,8 @@ class FakeChatService:
                 "file": file,
                 "financial_context": financial_context,
                 "response_instructions": response_instructions,
+                "max_response_tokens": max_response_tokens,
+                "channel": channel,
             }
         )
         if self.error is not None:
@@ -365,6 +371,8 @@ def test_voice_turn_completes_full_non_streaming_pipeline(client):
                     "Do not emit clarity_action blocks in voice mode. If a Clarity financial "
                     "change needs confirmation, ask the user to open Chat to confirm it."
                 ),
+                "max_response_tokens": VOICE_RESPONSE_MAX_TOKENS,
+                "channel": RexBrainChannel.VOICE,
             }
         ]
     assert fake_google_tts_service.calls == [{"text": "Rex voice response"}]

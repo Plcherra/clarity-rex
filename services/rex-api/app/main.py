@@ -53,12 +53,31 @@ def readiness_check() -> dict:
         "grok": {
             "configured": bool(settings.grok_api_key and settings.grok_model),
             "required": ["GROK_API_KEY", "GROK_MODEL"],
+            "model": settings.grok_model,
+        },
+        "rex_brain": {
+            "configured": True,
+            "routing_enabled": settings.rex_brain_routing_enabled,
+            "debug_enabled": settings.rex_brain_debug_enabled,
+            "fast_first_enabled": settings.rex_brain_fast_first_enabled,
+            "rollout_stage": settings.rex_brain_rollout_stage,
+            "rollout_stages": [
+                "disabled",
+                "logging_only",
+                "fast_contextual",
+                "analytical",
+                "strategic_reflective",
+                "deep_think_ui",
+            ],
+            "models": {
+                "fallback": settings.grok_model,
+                "fast": settings.grok_fast_model or settings.grok_model,
+                "standard": settings.grok_standard_model or settings.grok_model,
+                "reasoning": settings.grok_reasoning_model or settings.grok_model,
+            },
         },
         "supabase": {
-            "configured": bool(
-                settings.supabase_url
-                and settings.supabase_anon_key
-            ),
+            "configured": bool(settings.supabase_url and settings.supabase_anon_key),
             "required": [
                 "SUPABASE_URL",
                 "SUPABASE_ANON_KEY",
@@ -87,7 +106,11 @@ def readiness_check() -> dict:
         },
     }
     return {
-        "status": "ready" if all(check["configured"] for check in checks.values()) else "degraded",
+        "status": (
+            "ready"
+            if all(check["configured"] for check in checks.values())
+            else "degraded"
+        ),
         "service": "clarity-rex",
         "systemd_unit": "clarity-rex.service",
         "checks": checks,

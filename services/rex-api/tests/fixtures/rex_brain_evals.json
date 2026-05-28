@@ -1,0 +1,57 @@
+[
+  {
+    "id": "casual_greeting",
+    "channel": "chat",
+    "message": "hey",
+    "expected_layer": "layer_0_fast",
+    "expected_profile": "fast"
+  },
+  {
+    "id": "financial_analysis",
+    "channel": "chat",
+    "message": "Analyze my spending and compare it to my budget",
+    "has_financial_context": true,
+    "expected_layer": "layer_2_analytical",
+    "expected_profile": "reasoning"
+  },
+  {
+    "id": "strategic_goal_plan",
+    "channel": "chat",
+    "message": "Make a plan to reach my savings goal next month",
+    "has_financial_context": true,
+    "has_goals": true,
+    "expected_layer": "layer_3_strategic",
+    "expected_profile": "reasoning"
+  },
+  {
+    "id": "reflective_check",
+    "channel": "chat",
+    "message": "Double check your answer and tell me what you might be missing",
+    "expected_layer": "layer_4_reflective",
+    "expected_profile": "reasoning"
+  },
+  {
+    "id": "coaching",
+    "channel": "chat",
+    "message": "Coach me through building my budget habit",
+    "has_structured_memory": true,
+    "expected_layer": "layer_5_coaching",
+    "expected_profile": "standard"
+  },
+  {
+    "id": "voice_fast",
+    "channel": "voice",
+    "message": "what is my next step",
+    "expected_layer": "layer_0_fast",
+    "expected_profile": "fast"
+  },
+  {
+    "id": "voice_explicit_deep",
+    "channel": "voice",
+    "message": "think deeply about my debt payoff plan",
+    "has_financial_context": true,
+    "user_requested_deep_thinking": true,
+    "expected_layer": "layer_3_strategic",
+    "expected_profile": "reasoning"
+  }
+]

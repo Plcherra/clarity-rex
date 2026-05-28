@@ -56,6 +56,13 @@ SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_ANON_KEY=<anon-key>
 GROK_API_KEY=<server-secret>
 GROK_MODEL=grok-4.3
+GROK_FAST_MODEL=<optional-fast-model-or-empty>
+GROK_STANDARD_MODEL=<optional-standard-model-or-empty>
+GROK_REASONING_MODEL=<optional-reasoning-model-or-empty>
+REX_BRAIN_ROUTING_ENABLED=false
+REX_BRAIN_DEBUG_ENABLED=false
+REX_BRAIN_FAST_FIRST_ENABLED=false
+REX_BRAIN_ROLLOUT_STAGE=disabled
 DEEPGRAM_API_KEY=<server-secret>
 GOOGLE_TTS_PROJECT_ID=<project-id>
 GOOGLE_APPLICATION_CREDENTIALS=/opt/clarity/secrets/service_account.json
@@ -154,7 +161,40 @@ From your Mac, after nginx/domain is ready:
 
 If nginx/domain is not ready yet, run the smoke check on the VPS with `http://127.0.0.1:8011`, or create an SSH tunnel from your Mac first.
 
-Expected `/ready` status is `ready` once Grok, Supabase, Deepgram, Google TTS, and timezone config are set.
+Expected `/ready` status is `ready` once Grok, Supabase, Deepgram, Google TTS, and timezone config are set. The `checks.rex_brain` section should also show the current routing/debug flags, rollout stage, and configured model names.
+
+## Rex Brain Staged Rollout
+
+Rex Brain ships disabled by default. Use these stages in production:
+
+1. `disabled` - default; no routed prompt/model behavior.
+2. `logging_only` - keep `REX_BRAIN_ROUTING_ENABLED=true` only if you want planning/log verification without changing model calls.
+3. `fast_contextual` - allow only fast/contextual routed turns.
+4. `analytical` - allow fast/contextual/coaching/analytical routes, but block strategic/reflective.
+5. `strategic_reflective` - allow all backend routing layers.
+6. `deep_think_ui` - full backend routing plus the mobile Deep Think UX.
+
+Recommended first VPS enablement:
+
+```env
+REX_BRAIN_ROUTING_ENABLED=true
+REX_BRAIN_ROLLOUT_STAGE=logging_only
+REX_BRAIN_DEBUG_ENABLED=false
+```
+
+Rollback is intentionally simple:
+
+```env
+REX_BRAIN_ROUTING_ENABLED=false
+REX_BRAIN_ROLLOUT_STAGE=disabled
+```
+
+Then restart only the canonical service:
+
+```sh
+cd /opt/clarity/current
+./scripts/vps_restart_rex_api.sh
+```
 
 ## Mobile Build Pointing At VPS
 

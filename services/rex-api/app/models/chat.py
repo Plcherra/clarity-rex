@@ -9,6 +9,7 @@ class ChatRequest(BaseModel):
     file: Optional[str] = None
     stream: bool = False
     financial_context: Optional[dict[str, Any]] = None
+    deep_think: bool = False
 
 
 class ChatResponse(BaseModel):

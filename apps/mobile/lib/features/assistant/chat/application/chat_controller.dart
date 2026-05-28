@@ -208,11 +208,13 @@ class ChatController extends Notifier<ChatState> {
     String content, {
     XFile? attachment,
     bool stream = true,
+    bool deepThink = false,
   }) async {
     final response = await sendMessageForAssistantResponse(
       content,
       attachment: attachment,
       stream: stream,
+      deepThink: deepThink,
     );
     return response != null;
   }
@@ -221,6 +223,7 @@ class ChatController extends Notifier<ChatState> {
     String content, {
     XFile? attachment,
     bool stream = true,
+    bool deepThink = false,
   }) async {
     final message = content.trim();
     if (message.isEmpty || state.isLoading) {
@@ -248,15 +251,24 @@ class ChatController extends Notifier<ChatState> {
     );
 
     if (stream) {
-      return _sendStreamingMessage(message, attachment: attachment);
+      return _sendStreamingMessage(
+        message,
+        attachment: attachment,
+        deepThink: deepThink,
+      );
     }
 
-    return _sendNonStreamingMessageForResponse(message, attachment: attachment);
+    return _sendNonStreamingMessageForResponse(
+      message,
+      attachment: attachment,
+      deepThink: deepThink,
+    );
   }
 
   Future<String?> _sendNonStreamingMessageForResponse(
     String message, {
     XFile? attachment,
+    bool deepThink = false,
   }) async {
     try {
       final api = ref.read(chatApiProvider);
@@ -266,6 +278,7 @@ class ChatController extends Notifier<ChatState> {
         conversationId: state.conversationId,
         attachment: attachment,
         financialContext: financialContext,
+        deepThink: deepThink,
       );
 
       state = state.copyWith(
@@ -303,6 +316,7 @@ class ChatController extends Notifier<ChatState> {
   Future<String?> _sendStreamingMessage(
     String message, {
     XFile? attachment,
+    bool deepThink = false,
   }) async {
     final generation = ++_streamGeneration;
     final streamedAssistantId =
@@ -316,6 +330,7 @@ class ChatController extends Notifier<ChatState> {
         conversationId: state.conversationId,
         attachment: attachment,
         financialContext: financialContext,
+        deepThink: deepThink,
       )) {
         if (generation != _streamGeneration) {
           return null;

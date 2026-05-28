@@ -21,14 +21,23 @@ class AIService:
     def __init__(self, settings: Optional[Settings] = None) -> None:
         self.settings = settings or get_settings()
 
-    async def generate_response(self, messages: list[dict]) -> str:
-        prompt_messages = self._validated_prompt_messages(messages)
+    async def generate_response(
+        self,
+        messages: list[dict],
+        model_override: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        prompt_messages = self._validated_prompt_messages(
+            messages,
+            model_override=model_override,
+        )
 
-        payload = {
-            "model": self.settings.grok_model,
-            "messages": prompt_messages,
-            "stream": False,
-        }
+        payload = self._payload(
+            messages=prompt_messages,
+            stream=False,
+            model_override=model_override,
+            max_tokens=max_tokens,
+        )
 
         try:
             response = await request_with_retries(
@@ -58,15 +67,18 @@ class AIService:
         self,
         messages: list[dict],
         max_tokens: Optional[int] = None,
+        model_override: Optional[str] = None,
     ) -> AsyncIterator[str]:
-        prompt_messages = self._validated_prompt_messages(messages)
-        payload = {
-            "model": self.settings.grok_model,
-            "messages": prompt_messages,
-            "stream": True,
-        }
-        if max_tokens is not None:
-            payload["max_tokens"] = max_tokens
+        prompt_messages = self._validated_prompt_messages(
+            messages,
+            model_override=model_override,
+        )
+        payload = self._payload(
+            messages=prompt_messages,
+            stream=True,
+            model_override=model_override,
+            max_tokens=max_tokens,
+        )
 
         try:
             from app.services.http_client import get_http_client
@@ -95,10 +107,14 @@ class AIService:
                 status_code=500,
             ) from error
 
-    def _validated_prompt_messages(self, messages: list[dict]) -> list[dict]:
+    def _validated_prompt_messages(
+        self,
+        messages: list[dict],
+        model_override: Optional[str] = None,
+    ) -> list[dict]:
         if not self.settings.grok_api_key:
             raise AIServiceError("Grok API key is not configured.", status_code=503)
-        if not self.settings.grok_model:
+        if not self._model_for_request(model_override):
             raise AIServiceError("Grok model is not configured.", status_code=503)
 
         prompt_messages = self._prompt_messages(messages)
@@ -109,6 +125,28 @@ class AIService:
             )
 
         return prompt_messages
+
+    def _payload(
+        self,
+        *,
+        messages: list[dict],
+        stream: bool,
+        model_override: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+    ) -> dict:
+        payload = {
+            "model": self._model_for_request(model_override),
+            "messages": messages,
+            "stream": stream,
+        }
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+        return payload
+
+    def _model_for_request(self, model_override: Optional[str] = None) -> Optional[str]:
+        if model_override and model_override.strip():
+            return model_override.strip()
+        return self.settings.grok_model
 
     def _prompt_messages(self, messages: list[dict]) -> list[dict]:
         return [

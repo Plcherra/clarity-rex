@@ -11,11 +11,13 @@ class ChatInputBar extends StatelessWidget {
     this.onPickAttachment,
     this.onRemoveAttachment,
     this.onStartVoice,
+    this.onDeepThinkChanged,
     this.attachmentName,
     this.attachmentSize,
     this.attachmentError,
     this.isLoading = false,
     this.isVoiceCallActive = false,
+    this.isDeepThinkEnabled = false,
   });
 
   final TextEditingController controller;
@@ -23,11 +25,13 @@ class ChatInputBar extends StatelessWidget {
   final VoidCallback? onPickAttachment;
   final VoidCallback? onRemoveAttachment;
   final VoidCallback? onStartVoice;
+  final ValueChanged<bool>? onDeepThinkChanged;
   final String? attachmentName;
   final int? attachmentSize;
   final String? attachmentError;
   final bool isLoading;
   final bool isVoiceCallActive;
+  final bool isDeepThinkEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +74,11 @@ class ChatInputBar extends StatelessWidget {
                       errorMessage: attachmentError,
                       onRemove: isLoading ? null : onRemoveAttachment,
                     ),
+                  _DeepThinkToggle(
+                    selected: isDeepThinkEnabled,
+                    enabled: !isLoading,
+                    onChanged: onDeepThinkChanged,
+                  ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -258,6 +267,49 @@ class _AttachmentPreview extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeepThinkToggle extends StatelessWidget {
+  const _DeepThinkToggle({
+    required this.selected,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final bool selected;
+  final bool enabled;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+        child: FilterChip(
+          selected: selected,
+          onSelected: enabled ? onChanged : null,
+          avatar: Icon(
+            selected
+                ? Icons.psychology_alt_rounded
+                : Icons.psychology_alt_outlined,
+            size: 18,
+            color: selected ? scheme.onSecondaryContainer : scheme.primary,
+          ),
+          label: Text(selected ? 'Deep Think on' : 'Deep Think'),
+          labelStyle: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          tooltip: 'Ask Rex to reason more deeply for this message',
         ),
       ),
     );

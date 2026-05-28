@@ -61,3 +61,61 @@ def test_ai_service_surfaces_invalid_model_errors():
 
     assert error.status_code == 502
     assert error.detail == "Model not found: grok-test"
+
+
+def test_ai_service_payload_uses_default_model_without_override():
+    service = AIService(Settings(grok_api_key="test-key", grok_model="grok-default"))
+    messages = [{"role": "user", "content": "Hello"}]
+
+    payload = service._payload(
+        messages=service._validated_prompt_messages(messages),
+        stream=False,
+    )
+
+    assert payload == {
+        "model": "grok-default",
+        "messages": messages,
+        "stream": False,
+    }
+
+
+def test_ai_service_payload_uses_model_override_and_max_tokens():
+    service = AIService(Settings(grok_api_key="test-key", grok_model="grok-default"))
+    messages = [{"role": "user", "content": "Hello"}]
+
+    payload = service._payload(
+        messages=service._validated_prompt_messages(
+            messages,
+            model_override="grok-reasoning",
+        ),
+        stream=True,
+        model_override="grok-reasoning",
+        max_tokens=3000,
+    )
+
+    assert payload == {
+        "model": "grok-reasoning",
+        "messages": messages,
+        "stream": True,
+        "max_tokens": 3000,
+    }
+
+
+def test_ai_service_allows_override_when_default_model_is_missing():
+    service = AIService(Settings(grok_api_key="test-key", grok_model=None))
+
+    messages = service._validated_prompt_messages(
+        [{"role": "user", "content": "Hello"}],
+        model_override="grok-fast",
+    )
+
+    assert messages == [{"role": "user", "content": "Hello"}]
+
+
+def test_ai_service_still_requires_some_model_when_no_override_exists():
+    service = AIService(Settings(grok_api_key="test-key", grok_model=None))
+
+    with pytest.raises(AIServiceError) as error:
+        service._validated_prompt_messages([{"role": "user", "content": "Hello"}])
+
+    assert error.value.detail == "Grok model is not configured."

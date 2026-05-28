@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 
 import 'package:clarity/features/assistant/assistant_providers.dart';
+import 'package:clarity/features/assistant/brain/rex_deep_think_state.dart';
 import 'package:clarity/features/assistant/chat/application/chat_controller.dart'
     show ChatState;
 import 'package:clarity/features/assistant/chat/domain/chat_attachment.dart';
@@ -75,9 +76,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
     final message = _messageController.text;
     final attachment = _attachment;
+    final deepThink = ref.read(rexDeepThinkEnabledProvider);
     final sent = await ref
         .read(chatProvider.notifier)
-        .sendMessage(message, attachment: attachment);
+        .sendMessage(message, attachment: attachment, deepThink: deepThink);
     if (!mounted) {
       return;
     }
@@ -90,6 +92,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         _attachmentSize = null;
         _attachmentError = null;
       });
+      ref.read(rexDeepThinkEnabledProvider.notifier).reset();
       return;
     }
 
@@ -168,6 +171,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     });
   }
 
+  void _setDeepThink(bool selected) {
+    ref.read(rexDeepThinkEnabledProvider.notifier).setEnabled(selected);
+  }
+
   void _showSnackBar(String message) {
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
@@ -227,6 +234,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final chat = ref.watch(chatProvider);
     final voiceCall = ref.watch(voiceCallProvider);
     final voiceController = ref.read(voiceCallProvider.notifier);
+    final deepThinkEnabled = ref.watch(rexDeepThinkEnabledProvider);
     final currentConversation = ref.watch(currentConversationProvider);
     final hasMessages = chat.messages.isNotEmpty;
     final hasStreamingAssistant =
@@ -388,6 +396,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               onRemoveAttachment: _removeAttachment,
               onStartVoice: voiceCall.isCallActive ? null : _startVoiceCall,
               isVoiceCallActive: voiceCall.isCallActive,
+              isDeepThinkEnabled: deepThinkEnabled,
+              onDeepThinkChanged: chat.isLoading ? null : _setDeepThink,
               attachmentName: _attachmentName,
               attachmentSize: _attachmentSize,
               attachmentError: _attachmentError,

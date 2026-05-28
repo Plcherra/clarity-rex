@@ -12,7 +12,14 @@ class Settings(BaseSettings):
     grok_api_key: Optional[str] = None
     grok_base_url: str = "https://api.x.ai/v1"
     grok_model: Optional[str] = None
+    grok_fast_model: Optional[str] = None
+    grok_standard_model: Optional[str] = None
+    grok_reasoning_model: Optional[str] = None
     grok_timeout_seconds: int = 120
+    rex_brain_routing_enabled: bool = False
+    rex_brain_debug_enabled: bool = False
+    rex_brain_fast_first_enabled: bool = False
+    rex_brain_rollout_stage: str = "disabled"
 
     supabase_url: Optional[str] = None
     supabase_anon_key: Optional[str] = None
@@ -66,8 +73,7 @@ class Settings(BaseSettings):
         return bool(
             self.google_tts_project_id
             and (
-                self.google_tts_credentials_json
-                or self.google_application_credentials
+                self.google_tts_credentials_json or self.google_application_credentials
             )
         )
 

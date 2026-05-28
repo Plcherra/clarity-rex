@@ -84,10 +84,12 @@ void main() {
           {'id': 'transaction-1', 'merchant': 'Coffee Shop', 'amount': 6.25},
         ],
       },
+      deepThink: true,
     );
 
     expect(requests.single.headers['Authorization'], 'Bearer test-token');
     expect(requests.single.body, contains('"financial_context"'));
+    expect(requests.single.body, contains('"deep_think":true'));
     expect(requests.single.body, contains('"spent_this_month":1200.5'));
     expect(requests.single.body, contains('"transactions"'));
     expect(requests.single.body, contains('"Coffee Shop"'));

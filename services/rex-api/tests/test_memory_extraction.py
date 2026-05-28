@@ -341,6 +341,10 @@ async def test_memory_extraction_saves_valid_candidates():
             "content": "Remember that I prefer direct advice about career decisions.",
         },
         {"id": "message-2", "content": "Got it."},
+        brain_metadata={
+            "source": "rex_brain",
+            "decision": {"layer": "layer_1_contextual", "model_profile": "standard"},
+        },
     )
 
     assert MEMORY_EXTRACTION_PROMPT in ai_service.messages[0]["content"]
@@ -358,6 +362,13 @@ async def test_memory_extraction_saves_valid_candidates():
     assert saved[0]["extraction_rationale"] == (
         "The user stated a recurring advice preference."
     )
+    assert saved[0]["payload"]["metadata"]["rex_brain"] == {
+        "source": "rex_brain",
+        "decision": {"layer": "layer_1_contextual", "model_profile": "standard"},
+    }
+    assert memory_store.created_memory_candidates[0]["payload"]["metadata"][
+        "rex_brain"
+    ]["decision"]["layer"] == "layer_1_contextual"
 
 
 @pytest.mark.asyncio

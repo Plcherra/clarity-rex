@@ -3,7 +3,11 @@ import json
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from app.dependencies import get_chat_service, get_deepgram_service, get_google_tts_service
+from app.dependencies import (
+    get_chat_service,
+    get_deepgram_service,
+    get_google_tts_service,
+)
 from app.models.voice import (
     VoiceSynthesisRequest,
     VoiceSynthesisResponse,
@@ -15,6 +19,8 @@ from app.services.chat_service import ChatService, ConversationNotFoundError
 from app.services.deepgram_service import DeepgramService, DeepgramServiceError
 from app.services.google_tts_service import GoogleTTSService, GoogleTTSServiceError
 from app.services.memory_service import MemoryServiceError
+from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.voice_stream_session import voice_response_max_tokens
 
 
 router = APIRouter(prefix="/voice", tags=["voice"])
@@ -82,6 +88,8 @@ async def voice_turn(
             conversation_id=conversation_id,
             financial_context=_json_dict(financial_context),
             response_instructions=VOICE_TURN_RESPONSE_INSTRUCTIONS,
+            max_response_tokens=voice_response_max_tokens(transcription["transcript"]),
+            channel=RexBrainChannel.VOICE,
         )
         synthesis = await google_tts_service.synthesize_speech(chat_result["response"])
     except DeepgramServiceError as error:

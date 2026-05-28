@@ -40,6 +40,7 @@ Expected `/ready` result:
 - `service` is `clarity-rex`.
 - `systemd_unit` is `clarity-rex.service`.
 - Grok, Supabase, Deepgram, Google TTS, and timezone are configured.
+- Rex Brain readiness shows the expected routing/debug flags and configured model names.
 
 ## Phone Smoke Test
 
@@ -61,7 +62,21 @@ Expected `/ready` result:
 12. Confirm Rex audio is audible at normal phone volume.
 13. Confirm Rex does not cut itself off after speaking.
 14. End the voice call and send a normal chat message in the same conversation.
-15. Log out and sign back in; dashboard and account values should recover.
+15. Toggle `Deep Think` in Rex chat, send one planning/analysis message, and confirm the toggle clears after send.
+16. Log out and sign back in; dashboard and account values should recover.
+
+## Rex Brain Log Check
+
+If `REX_BRAIN_ROUTING_ENABLED=true` on the VPS, confirm logs show metadata-only events:
+
+```sh
+sudo journalctl -u clarity-rex.service -n 200 --no-pager | grep rex_brain_turn
+```
+
+Expected log shape:
+
+- Contains request id, channel, status, layer, model profile, latency class, and cost tier.
+- Does **not** contain raw user message text, raw transaction rows, secrets, or prompt text.
 
 ## Failure Notes To Capture
 

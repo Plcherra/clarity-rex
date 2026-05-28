@@ -28,6 +28,7 @@ class FakeChatService:
         conversation_id=None,
         file=None,
         financial_context=None,
+        user_requested_deep_thinking=False,
     ):
         self.calls.append(
             {
@@ -35,6 +36,7 @@ class FakeChatService:
                 "conversation_id": conversation_id,
                 "file": file,
                 "financial_context": financial_context,
+                "user_requested_deep_thinking": user_requested_deep_thinking,
                 "stream": False,
             }
         )
@@ -61,6 +63,7 @@ class FakeChatService:
         conversation_id=None,
         file=None,
         financial_context=None,
+        user_requested_deep_thinking=False,
     ):
         self.calls.append(
             {
@@ -68,6 +71,7 @@ class FakeChatService:
                 "conversation_id": conversation_id,
                 "file": file,
                 "financial_context": financial_context,
+                "user_requested_deep_thinking": user_requested_deep_thinking,
                 "stream": True,
             }
         )
@@ -110,6 +114,7 @@ def test_chat_accepts_json(client):
             "conversation_id": "conversation-existing",
             "file": None,
             "financial_context": None,
+            "user_requested_deep_thinking": False,
             "stream": False,
         }
     ]
@@ -135,6 +140,37 @@ def test_chat_accepts_financial_context(client):
         "schema": "clarity_financial_summary_v1",
         "cash_flow": {"spent_this_month": 1200.50},
     }
+
+
+
+
+def test_chat_accepts_deep_think_json(client):
+    fake_chat_service = FakeChatService()
+    override_chat_service(fake_chat_service)
+
+    response = client.post(
+        "/chat",
+        json={"message": "Think harder about this", "deep_think": True},
+    )
+
+    assert response.status_code == 200
+    assert fake_chat_service.calls[0]["user_requested_deep_thinking"] is True
+
+
+def test_chat_accepts_deep_think_multipart_stream(client):
+    fake_chat_service = FakeChatService()
+    override_chat_service(fake_chat_service)
+
+    with client.stream(
+        "POST",
+        "/chat",
+        data={"message": "Read this", "stream": "true", "deep_think": "true"},
+        files={"file": ("notes.txt", b"notes", "text/plain")},
+    ) as response:
+        response.read()
+
+    assert response.status_code == 200
+    assert fake_chat_service.calls[0]["user_requested_deep_thinking"] is True
 
 
 def test_chat_accepts_multipart_file_upload(client):

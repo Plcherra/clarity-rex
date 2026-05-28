@@ -10,6 +10,7 @@ from app.services.memory_correction_service import CorrectionIntentType
 from app.services.chat_service import ChatService, PROFILE_MEMORY_QUERY
 from app.services.file_service import FileService
 from app.services.memory_service import SupabaseMemoryService, MemoryServiceError
+from app.services.rex_model_router import RexModelRouter
 from app.services.prompt_service import (
     ACCOUNTABILITY_CONTEXT_PREFIX,
     FILE_CONTEXT_PREFIX,
@@ -25,21 +26,38 @@ class FakeAIService:
         self.response = response
         self.stream_tokens = stream_tokens or ["Rex ", "stream"]
 
-    async def generate_response(self, messages):
+    async def generate_response(self, messages, **kwargs):
         self.messages = messages
+        self.kwargs = kwargs
         return self.response
 
-    async def stream_response(self, messages):
+    async def stream_response(self, messages, **kwargs):
         self.messages = messages
+        self.kwargs = kwargs
         for token in self.stream_tokens:
             yield token
 
 
+class FakeRexBrainObserver:
+    def __init__(self):
+        self.calls = []
+
+    def log_turn(self, **kwargs):
+        self.calls.append(kwargs)
+        return {
+            "request_id": kwargs["request_id"],
+            "status": kwargs["status"],
+            "channel": kwargs["channel"].value,
+            "layer": kwargs["decision"].layer.value,
+            "effective_model_profile": kwargs["model_route"].effective_profile.value,
+        }
+
+
 class FailingAIService:
-    async def generate_response(self, messages):
+    async def generate_response(self, messages, **kwargs):
         raise RuntimeError("AI failed")
 
-    async def stream_response(self, messages):
+    async def stream_response(self, messages, **kwargs):
         raise RuntimeError("AI failed")
         yield
 
@@ -139,12 +157,19 @@ class FakeMemoryExtractionService:
         self.result = result or []
         self.calls = []
 
-    async def extract_and_save(self, conversation_id, user_message, assistant_message):
+    async def extract_and_save(
+        self,
+        conversation_id,
+        user_message,
+        assistant_message,
+        brain_metadata=None,
+    ):
         self.calls.append(
             {
                 "conversation_id": conversation_id,
                 "user_message": user_message,
                 "assistant_message": assistant_message,
+                "brain_metadata": brain_metadata,
             }
         )
         if self.should_fail:
@@ -295,12 +320,19 @@ class BlockingMemoryExtractionService:
         self.started = asyncio.Event()
         self.release = asyncio.Event()
 
-    async def extract_and_save(self, conversation_id, user_message, assistant_message):
+    async def extract_and_save(
+        self,
+        conversation_id,
+        user_message,
+        assistant_message,
+        brain_metadata=None,
+    ):
         self.calls.append(
             {
                 "conversation_id": conversation_id,
                 "user_message": user_message,
                 "assistant_message": assistant_message,
+                "brain_metadata": brain_metadata,
             }
         )
         self.started.set()
@@ -433,6 +465,12 @@ async def test_chat_service_applies_memory_correction_and_prompts_summary():
     )
     assert candidate_service.created[0]["payload"]["intent"]["old_value"] == "Flowfirst"
     assert candidate_service.created[0]["payload"]["intent"]["new_value"] == "FlowForce"
+    rex_brain_metadata = candidate_service.created[0]["payload"]["metadata"][
+        "rex_brain"
+    ]
+    assert rex_brain_metadata["decision"]["layer"] == "layer_0_fast"
+    assert rex_brain_metadata["decision"]["model_profile"] == "fast"
+    assert "not Flowfirst" not in str(rex_brain_metadata)
     assert correction_service.calls == [("detect", "not Flowfirst, it is FlowForce")]
     assert "Memory correction status" in ai_service.messages[-1]["content"]
     assert any(
@@ -563,9 +601,10 @@ async def test_chat_service_explicit_confirmation_applies_and_reports_candidate_
         "table": "entities",
         "id": "entity-1",
     }
-    assert result["memory_changes"]["applied_candidates"][0]["verification"][
-        "passed"
-    ] is True
+    assert (
+        result["memory_changes"]["applied_candidates"][0]["verification"]["passed"]
+        is True
+    )
     assert result["memory_changes"]["records"][0]["candidate"]["id"] == (
         "candidate-high"
     )
@@ -611,9 +650,12 @@ async def test_chat_service_lists_multiple_pending_candidates_as_cards():
         "candidate-1",
         "candidate-2",
     ]
-    assert result["memory_changes"]["pending_candidates"][1][
-        "requires_explicit_confirmation"
-    ] is True
+    assert (
+        result["memory_changes"]["pending_candidates"][1][
+            "requires_explicit_confirmation"
+        ]
+        is True
+    )
 
 
 @pytest.mark.asyncio
@@ -654,9 +696,7 @@ async def test_chat_service_can_confirm_specific_candidate_by_id():
     )
 
     assert candidate_service.approved[0]["id"] == "candidate-high"
-    assert result["memory_changes"]["applied_candidates"][0]["id"] == (
-        "candidate-high"
-    )
+    assert result["memory_changes"]["applied_candidates"][0]["id"] == ("candidate-high")
 
 
 @pytest.mark.asyncio
@@ -691,7 +731,9 @@ async def test_chat_service_can_reject_all_pending_candidates():
         memory_candidate_service=candidate_service,
     )
 
-    result = await chat_service.send_message("reject all pending", "conversation-existing")
+    result = await chat_service.send_message(
+        "reject all pending", "conversation-existing"
+    )
 
     assert [candidate["id"] for candidate in candidate_service.rejected] == [
         "candidate-1",
@@ -946,9 +988,7 @@ async def test_chat_service_handles_file_upload():
     result = await chat_service.send_message("Read this file", file=upload)
 
     assert result["response"] == "Rex response"
-    assert ai_service.messages[-2]["content"] == (
-        f"{FILE_CONTEXT_PREFIX}Project notes"
-    )
+    assert ai_service.messages[-2]["content"] == (f"{FILE_CONTEXT_PREFIX}Project notes")
     assert ai_service.messages[-1]["content"] == "Read this file"
 
 
@@ -1183,6 +1223,8 @@ async def test_chat_service_runs_memory_extraction_after_successful_response():
     assert extraction_service.calls[0]["assistant_message"]["content"] == (
         "Rex response"
     )
+    assert extraction_service.calls[0]["brain_metadata"]["source"] == "rex_brain"
+    assert "morning" not in str(extraction_service.calls[0]["brain_metadata"])
 
 
 @pytest.mark.asyncio
@@ -1236,3 +1278,134 @@ async def test_supabase_memory_requires_configuration():
         await memory_service.create_conversation()
 
     assert error.value.detail == "Supabase memory is not configured."
+
+
+@pytest.mark.asyncio
+async def test_rex_brain_routing_disabled_keeps_chat_ai_call_unchanged():
+    ai_service = FakeAIService(response="Rex response")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+    )
+
+    await chat_service.send_message("hey Rex")
+
+    assert ai_service.kwargs == {}
+    assert "Rex Brain routing contract" not in ai_service.messages[0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_rex_brain_chat_routing_adds_layer_prompt_and_model_limits_when_enabled():
+    ai_service = FakeAIService(response="Rex response")
+    memory_service = FakeMemoryService()
+    settings = Settings(
+        grok_api_key="key",
+        grok_model="grok-default",
+        grok_reasoning_model="grok-reasoning",
+        rex_brain_routing_enabled=True,
+        rex_brain_rollout_stage="deep_think_ui",
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        rex_model_router=RexModelRouter(settings),
+    )
+
+    await chat_service.send_message(
+        "Analyze my spending and compare it to my budget",
+        financial_context={
+            "cash_flow": {"income": 4000, "spending": 3100},
+            "transactions": [
+                {"merchant": "Private merchant", "amount": 42, "secret": "remove"}
+            ],
+        },
+    )
+
+    assert ai_service.kwargs["model_override"] == "grok-reasoning"
+    assert ai_service.kwargs["max_tokens"] == 3000
+    system_prompt = ai_service.messages[0]["content"]
+    assert "Rex Brain routing contract" in system_prompt
+    assert "Layer 2 Analytical" in system_prompt
+    rex_brain_section = system_prompt.split("Rex Brain routing contract", 1)[1]
+    assert "Private merchant" not in rex_brain_section
+    assert "secret" not in rex_brain_section
+
+
+@pytest.mark.asyncio
+async def test_rex_brain_streaming_chat_uses_same_route_for_model_limits():
+    ai_service = FakeAIService(stream_tokens=["A", "B"])
+    memory_service = FakeMemoryService()
+    settings = Settings(
+        grok_api_key="key",
+        grok_model="grok-default",
+        grok_fast_model="grok-fast",
+        rex_brain_routing_enabled=True,
+        rex_brain_rollout_stage="deep_think_ui",
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        rex_model_router=RexModelRouter(settings),
+    )
+
+    events = [event async for event in chat_service.stream_message("hey")]
+
+    assert ai_service.kwargs["model_override"] == "grok-fast"
+    assert ai_service.kwargs["max_tokens"] == 700
+    assert any(
+        event.get("event") == "done" and event.get("response") == "AB"
+        for event in events
+    )
+
+
+@pytest.mark.asyncio
+async def test_rex_brain_chat_deep_think_flag_escalates_casual_message_when_enabled():
+    ai_service = FakeAIService(response="Rex response")
+    memory_service = FakeMemoryService()
+    settings = Settings(
+        grok_api_key="key",
+        grok_model="grok-default",
+        grok_reasoning_model="grok-reasoning",
+        rex_brain_routing_enabled=True,
+        rex_brain_rollout_stage="deep_think_ui",
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        rex_model_router=RexModelRouter(settings),
+    )
+
+    await chat_service.send_message(
+        "hey Rex",
+        user_requested_deep_thinking=True,
+    )
+
+    assert ai_service.kwargs["model_override"] == "grok-reasoning"
+    system_prompt = ai_service.messages[0]["content"]
+    assert "Rex Brain routing contract" in system_prompt
+    assert "user_requested_deep_thinking" in system_prompt
+
+
+@pytest.mark.asyncio
+async def test_rex_brain_observer_receives_planned_and_completed_events():
+    ai_service = FakeAIService(response="Rex response")
+    memory_service = FakeMemoryService()
+    observer = FakeRexBrainObserver()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        rex_brain_observer=observer,
+    )
+
+    await chat_service.send_message("Analyze my spending")
+
+    assert [call["status"] for call in observer.calls] == ["planned", "completed"]
+    assert all(call["channel"].value == "chat" for call in observer.calls)
+    assert all("Analyze my spending" not in str(call) for call in observer.calls)
+    assert observer.calls[0]["request_id"].startswith("rexbrain-conversation-1-")

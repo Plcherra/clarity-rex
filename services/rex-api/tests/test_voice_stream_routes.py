@@ -14,7 +14,13 @@ from app.dependencies import (
 from app.main import app
 from app.services.deepgram_service import DeepgramServiceError
 from app.services.google_tts_service import GoogleTTSServiceError
-from app.services.voice_stream_session import VoiceStreamSession
+from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.voice_stream_session import (
+    VOICE_DEEP_RESPONSE_MAX_TOKENS,
+    VOICE_RESPONSE_MAX_TOKENS,
+    VoiceStreamSession,
+    voice_response_max_tokens,
+)
 
 
 @pytest.fixture
@@ -102,6 +108,7 @@ class FakeChatService:
         response_instructions=None,
         max_response_tokens=None,
         financial_context=None,
+        channel=None,
     ):
         self.stream_calls.append(
             {
@@ -111,6 +118,7 @@ class FakeChatService:
                 "response_instructions": response_instructions,
                 "max_response_tokens": max_response_tokens,
                 "financial_context": financial_context,
+                "channel": channel,
             }
         )
         resolved_conversation_id = conversation_id or "conversation-stream"
@@ -294,8 +302,9 @@ def test_voice_stream_completes_streaming_turn(client):
                 "Do not emit clarity_action blocks in voice mode. If a Clarity financial change "
                 "needs confirmation, ask the user to open Chat to confirm it."
             ),
-            "max_response_tokens": 180,
+            "max_response_tokens": VOICE_RESPONSE_MAX_TOKENS,
             "financial_context": None,
+            "channel": RexBrainChannel.VOICE,
         }
     ]
     assert tts.calls == ["Rex streaming response."]
@@ -486,3 +495,14 @@ def test_voice_stream_interrupts_active_turn(client):
         assert interrupted["event"] == "session.interrupted"
 
     assert chat.stream_calls == []
+
+
+def test_voice_response_max_tokens_keeps_normal_turns_short_and_deep_turns_larger():
+    assert (
+        voice_response_max_tokens("How much did I spend today?")
+        == VOICE_RESPONSE_MAX_TOKENS
+    )
+    assert (
+        voice_response_max_tokens("Deep think and analyze thoroughly my budget")
+        == VOICE_DEEP_RESPONSE_MAX_TOKENS
+    )
