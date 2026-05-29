@@ -10,11 +10,8 @@ import 'package:clarity/features/assistant/chat/application/chat_controller.dart
     show ChatState;
 import 'package:clarity/features/assistant/chat/domain/chat_attachment.dart';
 import 'package:clarity/features/assistant/chat/domain/chat_message.dart';
-import 'package:clarity/features/assistant/chat/presentation/pages/conversation_list_page.dart';
 import 'package:clarity/features/assistant/chat/presentation/widgets/chat_input_bar.dart';
 import 'package:clarity/features/assistant/chat/presentation/widgets/chat_message_bubble.dart';
-import 'package:clarity/features/assistant/accountability/presentation/pages/accountability_page.dart';
-import 'package:clarity/features/assistant/memory/presentation/pages/memory_page.dart';
 import 'package:clarity/features/assistant/voice/domain/voice_call_state.dart';
 
 /// Main chat surface: empty thread UI + composer.
@@ -27,7 +24,8 @@ class ChatPage extends ConsumerStatefulWidget {
   ConsumerState<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends ConsumerState<ChatPage> {
+class _ChatPageState extends ConsumerState<ChatPage>
+    with AutomaticKeepAliveClientMixin<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   XFile? _attachment;
@@ -67,6 +65,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
     });
   }
+
+  @override
+  bool get wantKeepAlive => true;
 
   Future<void> _onSendTapped() async {
     if (_attachmentError != null) {
@@ -231,6 +232,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     final chat = ref.watch(chatProvider);
     final voiceCall = ref.watch(voiceCallProvider);
     final voiceController = ref.read(voiceCallProvider.notifier);
@@ -251,39 +254,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   onPressed: voiceCall.isCallActive ? null : _startVoiceCall,
                   icon: const Icon(Icons.call_rounded),
                   tooltip: 'Call Rex',
-                ),
-                IconButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const MemoryPage(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.psychology_alt_rounded),
-                  tooltip: 'Memory',
-                ),
-                IconButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const AccountabilityPage(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.fact_check_rounded),
-                  tooltip: 'Accountability',
-                ),
-                IconButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const ConversationListPage(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.history_rounded),
-                  tooltip: 'Conversations',
                 ),
               ],
             )

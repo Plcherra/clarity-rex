@@ -75,12 +75,6 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                           )
                           .toList(growable: false),
                     ),
-                    if (overview.pendingMemoryCandidates.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      _PendingCandidateSection(
-                        candidates: overview.pendingMemoryCandidates,
-                      ),
-                    ],
                     const SizedBox(height: 20),
                     _PlanSection(
                       planHierarchy: overview.planHierarchy,
@@ -141,12 +135,6 @@ class _OverviewSummary extends StatelessWidget {
             icon: Icons.emoji_events_outlined,
             label: 'Won',
             value: overview.completedMilestoneCount,
-          ),
-        if (overview.pendingMemoryCandidateCount > 0)
-          _SummaryPill(
-            icon: Icons.pending_actions_rounded,
-            label: 'Pending',
-            value: overview.pendingMemoryCandidateCount,
           ),
         _SummaryPill(
           icon: Icons.flag_rounded,
@@ -243,23 +231,6 @@ class _CommitmentSection extends StatelessWidget {
       children: commitments
           .map((commitment) => _CommitmentTile(commitment: commitment))
           .toList(),
-    );
-  }
-}
-
-class _PendingCandidateSection extends StatelessWidget {
-  const _PendingCandidateSection({required this.candidates});
-
-  final List<PendingMemoryCandidate> candidates;
-
-  @override
-  Widget build(BuildContext context) {
-    return _Section(
-      title: 'Pending Memory',
-      emptyText: 'No pending memory changes.',
-      children: candidates
-          .map((candidate) => _PendingCandidateTile(candidate: candidate))
-          .toList(growable: false),
     );
   }
 }
@@ -782,29 +753,6 @@ class _ChecklistRow extends StatelessWidget {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PendingCandidateTile extends StatelessWidget {
-  const _PendingCandidateTile({required this.candidate});
-
-  final PendingMemoryCandidate candidate;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
-      leading: const _TileIcon(icon: Icons.pending_actions_rounded),
-      title: Text(candidate.preview),
-      subtitle: _RecordSubtitle(
-        text: candidate.reason,
-        chips: [
-          candidate.candidateType.accountabilityLabel,
-          candidate.riskLevel.accountabilityLabel,
-          candidate.status.accountabilityLabel,
         ],
       ),
     );

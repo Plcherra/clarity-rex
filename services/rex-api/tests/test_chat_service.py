@@ -53,6 +53,11 @@ class FakeRexBrainObserver:
         }
 
 
+class FailingRexBrain:
+    def plan_turn(self, brain_input):
+        raise RuntimeError("brain planning failed")
+
+
 class FailingAIService:
     async def generate_response(self, messages, **kwargs):
         raise RuntimeError("AI failed")
@@ -1292,6 +1297,31 @@ async def test_rex_brain_routing_disabled_keeps_chat_ai_call_unchanged():
 
     await chat_service.send_message("hey Rex")
 
+    assert ai_service.kwargs == {}
+    assert "Rex Brain routing contract" not in ai_service.messages[0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_rex_brain_planning_failure_falls_back_to_base_chat_path():
+    ai_service = FakeAIService(response="Rex response")
+    memory_service = FakeMemoryService()
+    settings = Settings(
+        grok_api_key="key",
+        grok_model="grok-default",
+        rex_brain_routing_enabled=True,
+        rex_brain_rollout_stage="deep_think_ui",
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        rex_brain=FailingRexBrain(),
+        rex_model_router=RexModelRouter(settings),
+    )
+
+    result = await chat_service.send_message("hey Rex")
+
+    assert result["response"] == "Rex response"
     assert ai_service.kwargs == {}
     assert "Rex Brain routing contract" not in ai_service.messages[0]["content"]
 

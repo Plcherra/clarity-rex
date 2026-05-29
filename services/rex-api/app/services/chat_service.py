@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import re
 from collections.abc import AsyncIterator
 from typing import Optional, Protocol
@@ -24,8 +25,14 @@ from app.services.rex_brain import RexBrain
 from app.services.rex_brain_context import RexBrainContext, build_rex_brain_context
 from app.services.rex_brain_contracts import (
     RexBrainChannel,
+    RexContextBudget,
+    RexCostTier,
     RexBrainDecision,
     RexBrainInput,
+    RexLatencyClass,
+    RexModelProfile,
+    RexOutputMode,
+    RexThinkingLayer,
 )
 from app.services.rex_brain_prompts import RexPromptContract, get_rex_prompt_contract
 from app.services.rex_model_router import RexModelRoute, RexModelRouter
@@ -93,6 +100,7 @@ REJECT_PHRASES = {
     "cancel",
 }
 LOW_RISK_AUTO_APPLY_ENABLED = False
+LOGGER = logging.getLogger("rex.chat")
 
 
 class ConversationNotFoundError(Exception):
@@ -241,7 +249,7 @@ class ChatService:
                     limit=20,
                 ),
             }
-        rex_brain_plan = self._plan_rex_brain_chat_turn(
+        rex_brain_plan = self._safe_plan_rex_brain_chat_turn(
             message=message,
             conversation_id=conversation_id,
             file_text=file_text,
@@ -441,7 +449,7 @@ class ChatService:
                 "assistant_message": assistant_message,
             }
             return
-        rex_brain_plan = self._plan_rex_brain_chat_turn(
+        rex_brain_plan = self._safe_plan_rex_brain_chat_turn(
             message=message,
             conversation_id=conversation_id,
             file_text=file_text,
@@ -684,6 +692,41 @@ class ChatService:
             "model_route": model_route,
             "prompt_contract": get_rex_prompt_contract(decision.layer),
         }
+
+    def _safe_plan_rex_brain_chat_turn(
+        self,
+        **kwargs,
+    ) -> dict:
+        try:
+            return self._plan_rex_brain_chat_turn(**kwargs)
+        except Exception as error:
+            LOGGER.exception(
+                "rex_brain_planning_failed conversation_id=%s channel=%s "
+                "error_class=%s",
+                kwargs.get("conversation_id"),
+                getattr(kwargs.get("channel"), "value", kwargs.get("channel")),
+                error.__class__.__name__,
+            )
+            decision = RexBrainDecision(
+                layer=RexThinkingLayer.FAST,
+                model_profile=RexModelProfile.STANDARD,
+                complexity_score=0,
+                context_budget=RexContextBudget.SMALL,
+                output_mode=RexOutputMode.CONCISE_TEXT,
+                latency_class=RexLatencyClass.FAST,
+                cost_tier=RexCostTier.LOW,
+                reasons=("rex_brain_planning_failed_fallback",),
+                escalation_source="fallback",
+            )
+            return {
+                "decision": decision,
+                "brain_context": None,
+                "model_route": self.rex_model_router._disabled_route(
+                    decision,
+                    reason="rex_brain_planning_failed_fallback",
+                ),
+                "prompt_contract": get_rex_prompt_contract(decision.layer),
+            }
 
     def _rex_brain_request_id(self, conversation_id: str, user_message: dict) -> str:
         message_id = str(user_message.get("id") or "message")

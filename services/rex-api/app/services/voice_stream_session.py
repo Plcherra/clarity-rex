@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import logging
 import time
 from collections.abc import AsyncIterator
 from typing import Any, Optional
@@ -14,6 +15,8 @@ from app.services.google_tts_service import GoogleTTSService, GoogleTTSServiceEr
 from app.services.memory_service import MemoryServiceError
 from app.services.rex_brain_contracts import RexBrainChannel
 
+
+LOGGER = logging.getLogger("rex.voice_stream")
 
 VOICE_RESPONSE_INSTRUCTIONS = (
     "Voice call response style: answer in 2-4 short spoken sentences. "
@@ -239,7 +242,8 @@ class VoiceStreamSession:
             await self._send_error(error.detail, status_code=error.status_code)
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as error:
+            self._log_unexpected_error(error)
             await self._send_error("Voice stream failed.", status_code=500)
         finally:
             current_task = asyncio.current_task()
@@ -292,7 +296,8 @@ class VoiceStreamSession:
             await self._send_error(error.detail, status_code=error.status_code)
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as error:
+            self._log_unexpected_error(error)
             await self._send_error("Voice stream failed.", status_code=500)
         finally:
             current_task = asyncio.current_task()
@@ -577,6 +582,22 @@ class VoiceStreamSession:
             code=code,
             detail=message,
             status_code=status_code,
+        )
+
+    def _log_unexpected_error(self, error: Exception) -> None:
+        LOGGER.exception(
+            "voice_stream_failed session_id=%s conversation_id=%s client=%s "
+            "input_mime_type=%s sample_rate=%s audio_bytes=%s "
+            "audio_chunks=%s live_transcription=%s error_class=%s",
+            self._session_id,
+            self.conversation_id,
+            self.client,
+            self.input_mime_type,
+            self.sample_rate,
+            self._audio_bytes,
+            self._audio_chunks_received,
+            self._live_transcription is not None,
+            error.__class__.__name__,
         )
 
     def _elapsed_ms(self, start_time: float) -> int:

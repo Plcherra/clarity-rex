@@ -19,7 +19,8 @@ class ConversationListPage extends ConsumerStatefulWidget {
       _ConversationListPageState();
 }
 
-class _ConversationListPageState extends ConsumerState<ConversationListPage> {
+class _ConversationListPageState extends ConsumerState<ConversationListPage>
+    with AutomaticKeepAliveClientMixin<ConversationListPage> {
   @override
   void initState() {
     super.initState();
@@ -27,6 +28,9 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage> {
       () => ref.read(conversationListProvider.notifier).loadConversations(),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 
   Future<void> _openConversation(Conversation conversation) async {
     await ref.read(chatProvider.notifier).loadConversation(conversation.id);
@@ -117,6 +121,8 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     final state = ref.watch(conversationListProvider);
     final currentConversation = ref.watch(currentConversationProvider);
     final theme = Theme.of(context);
