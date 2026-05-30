@@ -1,15 +1,15 @@
 export const product = {
   name: 'Clarity',
   assistantName: 'Rex',
-  tagline: 'A personal AI financial co-pilot with Rex inside.',
+  tagline: 'Understand your money. Plan with Rex.',
   description:
-    'Clarity helps people understand spending, budgets, goals, and financial context using user-authorized account connections.',
+    'Clarity is a personal AI financial co-pilot that turns user-authorized account context into spending clarity, budget guidance, goals, and conversations with Rex.',
   supportEmail: 'clarity.rex@gmail.com',
   operatorName: 'Clarity',
   siteUrl: 'https://goclarity.app',
   locale: 'en_US',
   socialImagePath: '/og-image.jpg',
-  socialImageAlt: 'Clarity personal AI financial co-pilot landing page preview.',
+  socialImageAlt: 'Clarity personal AI financial co-pilot product preview.',
 } as const;
 
 export type PublicRoute = {
@@ -88,7 +88,7 @@ export const publicRoutes = [
 ] satisfies PublicRoute[];
 
 export const headerLinks = publicRoutes.filter((route) =>
-  ['/', '/privacy', '/security', '/contact'].includes(route.path),
+  ['/', '/privacy', '/security', '/terms', '/contact'].includes(route.path),
 );
 
 export const footerLinks = publicRoutes.filter((route) => route.footerRequired);
@@ -99,9 +99,10 @@ export const primaryCta = {
 } as const;
 
 export const trustNotes = [
-  'User-authorized account connections only.',
-  'Clear privacy, security, and deletion paths.',
-  'Rex is an assistant inside Clarity, not a bank or financial advisor.',
+  'User-authorized account connections only',
+  'Privacy, security, and deletion paths are public',
+  'Rex is an assistant, not a bank or advisor',
+  'No bank credentials are collected by Clarity',
 ] as const;
 
 export const faqs = [
@@ -116,9 +117,29 @@ export const faqs = [
       'Clarity is designed to use user-authorized account connections through providers such as Plaid. Users choose what to connect and can disconnect access.',
   },
   {
+    question: 'Does Clarity store my bank password?',
+    answer:
+      'No. Clarity is designed around provider-based account authorization. Users should never send bank credentials, one-time codes, account numbers, or sensitive documents through public forms.',
+  },
+  {
     question: 'Does Rex replace professional financial advice?',
     answer:
       'No. Rex can help organize context and think through options, but users remain responsible for decisions and should consult qualified professionals when needed.',
+  },
+  {
+    question: 'What can Rex see?',
+    answer:
+      'Rex can use the context you choose to provide or connect inside Clarity, such as transactions, budgets, goals, approved memory, and conversation history. Access depends on product settings and user authorization.',
+  },
+  {
+    question: 'Can I delete my data?',
+    answer:
+      'Yes. Clarity publishes a data deletion path and contact route. Some records may be retained for limited legal, security, backup, or operational reasons as described in the Privacy Policy.',
+  },
+  {
+    question: 'Is the public waitlist form safe for financial details?',
+    answer:
+      'The waitlist form is only for high-level requests. Do not submit account numbers, card numbers, SSNs, bank credentials, one-time codes, screenshots, CSVs, or financial documents.',
   },
 ] as const;
 

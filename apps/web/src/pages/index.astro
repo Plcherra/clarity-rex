@@ -4,55 +4,232 @@ import PublicForm from '../components/PublicForm.astro';
 import { faqs, primaryCta, product, publicRoutes, trustNotes } from '@content/site';
 
 const page = publicRoutes.find((route) => route.path === '/')!;
+
+const featureCards = [
+  {
+    label: 'Spending analysis',
+    title: 'See what changed, not just what happened.',
+    body: 'Clarity groups transactions into useful patterns so you can spot pressure points, recurring costs, income timing, and budget drift.',
+  },
+  {
+    label: 'Rex assistant',
+    title: 'Ask by chat or voice when you need context.',
+    body: 'Rex can explain your money picture, remember approved preferences, and help you think through next decisions without making them for you.',
+  },
+  {
+    label: 'Budgets and goals',
+    title: 'Plan forward from real account context.',
+    body: 'Set monthly or weekly targets, track what is left, and connect financial goals to the habits that move them.',
+  },
+  {
+    label: 'Memory controls',
+    title: 'Personalization stays visible.',
+    body: 'Rex memory is designed to be reviewable, correctable, and separate from raw financial data so personalization does not become a black box.',
+  },
+] as const;
+
+const problemCards = [
+  'Transactions pile up faster than people can interpret them.',
+  'Budgets are often disconnected from real spending behavior.',
+  'Traditional finance apps show numbers, but rarely explain what matters next.',
+] as const;
+
+const demoRows = [
+  ['Income', '$2,383.22', 'On track'],
+  ['Spending', '$1,301.58', 'Needs watch'],
+  ['Left this month', '$1,081.64', 'Healthy'],
+] as const;
+
+const screenshotCards = [
+  {
+    title: 'Cash flow dashboard',
+    caption: 'Monthly income, spending, and pressure points in one scan.',
+    amount: '$1,081.64',
+    meta: 'Income minus spending',
+  },
+  {
+    title: 'Budget performance',
+    caption: 'Targets by category with clear left-to-spend feedback.',
+    amount: '$598.42',
+    meta: 'Left in April',
+  },
+  {
+    title: 'Rex conversation',
+    caption: 'Ask what changed, what matters, or what to watch next.',
+    amount: 'Rex',
+    meta: 'Context-aware assistant',
+  },
+] as const;
 ---
 
 <BaseLayout title={page.title} description={page.description}>
-  <section class="hero">
-    <p class="eyebrow">Clarity</p>
-    <h1>{product.tagline}</h1>
-    <p>{product.description}</p>
-    <div class="hero__actions">
-      <a class="button" href={primaryCta.href}>{primaryCta.label}</a>
-      <a class="button button--secondary" href="/security">How data is handled</a>
+  <section class="hero hero--premium">
+    <div class="hero__copy">
+      <p class="eyebrow">Clarity</p>
+      <h1>Personal finance that finally explains itself.</h1>
+      <p class="hero__lede">
+        Clarity turns user-authorized account context into spending clarity, budgets, goals, and
+        practical conversations with Rex, the AI co-pilot inside the app.
+      </p>
+      <div class="hero__actions">
+        <a class="button button--large" href={primaryCta.href}>Join the beta</a>
+        <a class="button button--secondary button--large" href="#how-it-works">See how it works</a>
+      </div>
+      <div class="hero__proof" aria-label="Trust highlights">
+        <span>User-authorized connections</span>
+        <span>Privacy-first design</span>
+        <span>Rex keeps context visible</span>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-label="Synthetic Clarity product preview">
+      <div class="phone-frame">
+        <div class="phone-status">
+          <span>9:41</span>
+          <span>Clarity</span>
+        </div>
+        <div class="phone-card phone-card--hero">
+          <span class="card-kicker">Cash flow</span>
+          <strong>$1,081.64</strong>
+          <span>Income minus spending</span>
+        </div>
+        <div class="mini-grid">
+          {demoRows.map(([label, value, status]) => (
+            <div class="mini-stat">
+              <span>{label}</span>
+              <strong>{value}</strong>
+              <small>{status}</small>
+            </div>
+          ))}
+        </div>
+        <div class="assistant-bubble">
+          <span>Rex</span>
+          <p>Your spending is below income this month. Biggest pressure: credit card payments.</p>
+        </div>
+      </div>
+      <div class="floating-card floating-card--top">
+        <span>Budget signal</span>
+        <strong>6 categories on track</strong>
+      </div>
+      <div class="floating-card floating-card--bottom">
+        <span>Account access</span>
+        <strong>Connected with consent</strong>
+      </div>
     </div>
   </section>
 
-  <section class="section" aria-labelledby="trust-heading">
+  <section class="trust-bar" aria-label="Trust basics">
+    {trustNotes.map((note) => (
+      <div class="trust-item">
+        <span aria-hidden="true"></span>
+        <strong>{note}</strong>
+      </div>
+    ))}
+  </section>
+
+  <section class="section section--split" id="how-it-works" aria-labelledby="problem-heading">
     <div class="section__header">
-      <p class="eyebrow">Trust basics</p>
-      <h2 id="trust-heading">Clear account access, privacy, and AI boundaries.</h2>
+      <p class="eyebrow">Why Clarity</p>
+      <h2 id="problem-heading">Most finance apps show the ledger. Clarity explains the situation.</h2>
     </div>
-    <div class="card-grid">
-      {trustNotes.map((note) => (
-        <article class="panel">
-          <h3>{note}</h3>
-          <p>Designed as a public, reviewable commitment for users and Plaid reviewers.</p>
+    <div class="problem-list">
+      {problemCards.map((problem, index) => (
+        <article class="problem-card">
+          <span>{String(index + 1).padStart(2, '0')}</span>
+          <p>{problem}</p>
         </article>
       ))}
     </div>
   </section>
 
-  <section class="section" id="request-access" aria-labelledby="request-access-heading">
-    <div class="section__header">
-      <p class="eyebrow">Early access</p>
-      <h2 id="request-access-heading">Request early access</h2>
+  <section class="section" aria-labelledby="features-heading">
+    <div class="section__header section__header--center">
+      <p class="eyebrow">Product</p>
+      <h2 id="features-heading">A calmer way to manage money, decisions, and follow-through.</h2>
+      <p>
+        Built for people who want an assistant that understands context without hiding the controls.
+      </p>
     </div>
-    <p>Join the Clarity waitlist. Do not send bank credentials or account numbers through this form.</p>
-    <PublicForm variant="waitlist" />
+    <div class="feature-grid">
+      {featureCards.map((feature) => (
+        <article class="feature-card">
+          <span>{feature.label}</span>
+          <h3>{feature.title}</h3>
+          <p>{feature.body}</p>
+        </article>
+      ))}
+    </div>
   </section>
 
-  <section class="section" aria-labelledby="faq-heading">
+  <section class="section plaid-section" aria-labelledby="plaid-heading">
+    <div class="plaid-copy">
+      <p class="eyebrow">Connection and consent</p>
+      <h2 id="plaid-heading">Bank connections should be explicit, reversible, and easy to understand.</h2>
+      <p>
+        Clarity is designed around user-authorized financial account connections through providers
+        such as Plaid. You choose what to connect. Clarity does not ask for bank passwords through
+        this public site, and Rex does not move money or take financial actions for you.
+      </p>
+      <div class="hero__actions">
+        <a class="button button--secondary" href="/privacy">Read Privacy</a>
+        <a class="button button--secondary" href="/security">Read Security</a>
+      </div>
+    </div>
+    <div class="consent-card">
+      <span class="card-kicker">Consent flow</span>
+      <ol>
+        <li>User chooses to connect an account.</li>
+        <li>Provider handles secure authorization.</li>
+        <li>Clarity uses permitted data for product context.</li>
+        <li>User can request deletion or disconnection support.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="screens-heading">
+    <div class="section__header section__header--center">
+      <p class="eyebrow">Preview</p>
+      <h2 id="screens-heading">Synthetic product previews, shaped like the app.</h2>
+      <p>These previews use sample data and show the kind of experience Clarity is building.</p>
+    </div>
+    <div class="screenshot-grid">
+      {screenshotCards.map((card) => (
+        <article class="screenshot-card">
+          <div>
+            <span class="card-kicker">{card.title}</span>
+            <strong>{card.amount}</strong>
+            <small>{card.meta}</small>
+          </div>
+          <p>{card.caption}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="section section--split" aria-labelledby="faq-heading">
     <div class="section__header">
       <p class="eyebrow">FAQ</p>
-      <h2 id="faq-heading">Questions</h2>
+      <h2 id="faq-heading">Clear answers for users and reviewers.</h2>
     </div>
-    <div class="card-grid">
+    <div class="faq-list">
       {faqs.map((item) => (
-        <article class="panel">
-          <h3>{item.question}</h3>
+        <details class="faq-item">
+          <summary>{item.question}</summary>
           <p>{item.answer}</p>
-        </article>
+        </details>
       ))}
     </div>
+  </section>
+
+  <section class="section final-cta" id="request-access" aria-labelledby="request-access-heading">
+    <div class="section__header">
+      <p class="eyebrow">Early access</p>
+      <h2 id="request-access-heading">Join the Clarity beta list.</h2>
+      <p>
+        Tell us what you want Clarity to help with. Keep it high level and do not submit sensitive
+        financial details through this public form.
+      </p>
+    </div>
+    <PublicForm variant="waitlist" />
   </section>
 </BaseLayout>
