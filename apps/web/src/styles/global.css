@@ -1039,28 +1039,6 @@ body {
   border-radius: 25px;
 }
 
-.device-chrome {
-  position: absolute;
-  top: 22px;
-  left: 50%;
-  z-index: 2;
-  display: flex;
-  width: 126px;
-  height: 30px;
-  transform: translateX(-50%);
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: #050505;
-}
-
-.device-chrome span {
-  width: 42px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-}
-
 .hero-proof-card {
   position: absolute;
   z-index: 3;
