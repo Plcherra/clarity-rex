@@ -1,9 +1,9 @@
 export const product = {
   name: 'Clarity',
   assistantName: 'Rex',
-  tagline: 'Understand your money. Plan with Rex.',
+  tagline: 'Understand your money before it becomes noise.',
   description:
-    'Clarity is a personal AI financial co-pilot that turns user-authorized account context into spending clarity, budget guidance, goals, and conversations with Rex.',
+    'Clarity is a personal AI financial co-pilot that turns user-authorized account context into spending clarity, budgets, goals, and conversations with Rex, the assistant inside the app.',
   supportEmail: 'clarity.rex@gmail.com',
   operatorName: 'Clarity',
   siteUrl: 'https://goclarity.app',
@@ -26,7 +26,7 @@ export const publicRoutes = [
     label: 'Home',
     title: 'Clarity - Personal AI Financial Co-Pilot',
     description:
-      'Meet Clarity, a personal AI financial co-pilot that helps organize spending, budgets, goals, and financial decisions with Rex inside.',
+      'Meet Clarity, a personal AI financial co-pilot that helps organize spending, budgets, goals, and financial context with Rex inside.',
     footerRequired: true,
   },
   {
@@ -99,10 +99,10 @@ export const primaryCta = {
 } as const;
 
 export const trustNotes = [
-  'User-authorized account connections only',
-  'Privacy, security, and deletion paths are public',
-  'Rex is an assistant, not a bank or advisor',
-  'No bank credentials are collected by Clarity',
+  'User-controlled connections through Plaid',
+  'Privacy-first design and public data controls',
+  'Your data stays yours',
+  'No bank credentials collected by Clarity',
 ] as const;
 
 export const faqs = [
