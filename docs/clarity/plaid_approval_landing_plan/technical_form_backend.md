@@ -120,7 +120,7 @@ Before using the form for Plaid review:
 - Confirm provider verification is complete.
 - Confirm spam/honeypot behavior if provider supports it.
 - Confirm Privacy Policy mentions form/contact data and service providers if needed.
-- Confirm `PUBLIC_SITE_URL=https://rexpilot.com` or the final production domain before deployment.
+- Confirm `PUBLIC_SITE_URL=https://goclarity.app` or the final production domain before deployment.
 
 ## Acceptance Checklist
 

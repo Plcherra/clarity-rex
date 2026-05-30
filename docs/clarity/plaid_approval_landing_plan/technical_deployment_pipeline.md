@@ -2,7 +2,7 @@
 
 Status: File 08 Phase 7 deployment pipeline approved for initial landing launch draft.
 
-Purpose: define the repeatable deployment path for the public Clarity landing site on `rexpilot.com`.
+Purpose: define the repeatable deployment path for the public Clarity landing site on `goclarity.app`.
 
 ## Decision
 
@@ -10,11 +10,11 @@ Use Cloudflare Pages as the primary deployment target for the static Astro landi
 
 Why:
 
-- `rexpilot.com` is already managed in Cloudflare.
+- `goclarity.app` is the new Clarity-first public domain and should be attached to Cloudflare Pages before Plaid review.
 - The site is static-first and does not need a long-running server.
 - Cloudflare Pages supports GitHub-connected preview/production deploys.
 - Rollback is available through prior Pages deployments.
-- Domain/DNS setup stays close to the existing Cloudflare domain.
+- Domain/DNS setup should be kept in Cloudflare once the new domain is added or delegated there.
 
 Fallback:
 
@@ -24,19 +24,19 @@ Fallback:
 
 Primary domain:
 
-- `https://rexpilot.com`
+- `https://goclarity.app`
 
 Required environment:
 
 ```bash
-PUBLIC_SITE_URL=https://rexpilot.com
+PUBLIC_SITE_URL=https://goclarity.app
 ```
 
 ## Cloudflare Pages Settings
 
 Recommended project settings:
 
-- Project name: `clarity-landing` or `rexpilot`
+- Project name: `clarity-landing` or `goclarity`
 - Source: GitHub repository `Plcherra/clarity-rex`
 - Production branch: `main`
 - Root directory: `apps/web`
@@ -44,7 +44,7 @@ Recommended project settings:
 - Build command: `npm run build`
 - Build output directory: `dist`
 - Node version: `22`
-- Production environment variable: `PUBLIC_SITE_URL=https://rexpilot.com`
+- Production environment variable: `PUBLIC_SITE_URL=https://goclarity.app`
 
 Do not add Plaid, Supabase, Grok, Google, Deepgram, or service-role secrets to the Cloudflare Pages project for this static launch.
 
@@ -59,7 +59,7 @@ Run from the repository root:
 The script:
 
 - Installs dependencies with `npm ci` when `package-lock.json` exists.
-- Builds with `PUBLIC_SITE_URL=https://rexpilot.com` by default.
+- Builds with `PUBLIC_SITE_URL=https://goclarity.app` by default.
 - Runs `npm audit`.
 - Leaves output in `apps/web/dist`.
 
@@ -77,22 +77,22 @@ PUBLIC_SITE_URL=https://preview.example.com ./scripts/web_release_build.sh
 4. Set root directory to `apps/web`.
 5. Set build command to `npm run build`.
 6. Set output directory to `dist`.
-7. Set `PUBLIC_SITE_URL=https://rexpilot.com`.
+7. Set `PUBLIC_SITE_URL=https://goclarity.app`.
 8. Deploy a preview.
 9. Verify preview routes and forms.
-10. Attach custom domain `rexpilot.com`.
+10. Attach custom domain `goclarity.app`.
 11. Run live smoke checks from File 10 before submitting to Plaid.
 
 ## DNS Requirements
 
 In Cloudflare:
 
-- `rexpilot.com` should point to the Cloudflare Pages project through the Pages custom domain flow.
+- `goclarity.app` should point to the Cloudflare Pages project through the Pages custom domain flow.
 - Do not manually create conflicting A/CNAME records if Pages creates the required records.
 - Keep HTTPS enabled.
 - Keep redirects simple until final SEO review.
 
-If using `www.rexpilot.com`, choose one canonical domain in File 09/10 and redirect the other.
+If using `www.goclarity.app`, choose one canonical domain in File 09/10 and redirect the other.
 
 ## Rollback
 
@@ -101,7 +101,7 @@ Preferred rollback:
 1. Open Cloudflare Pages deployments.
 2. Select the last known good deployment.
 3. Use Cloudflare's rollback/redeploy action.
-4. Smoke test `https://rexpilot.com`.
+4. Smoke test `https://goclarity.app`.
 
 Git rollback option:
 
@@ -119,19 +119,26 @@ Only use this if Cloudflare Pages is blocked.
 Build locally or on the VPS:
 
 ```bash
-PUBLIC_SITE_URL=https://rexpilot.com npm --prefix apps/web run build
+PUBLIC_SITE_URL=https://goclarity.app npm --prefix apps/web run build
 ```
 
-Serve `apps/web/dist` through Nginx as a static root for `rexpilot.com`.
+Serve `apps/web/dist` through Nginx as a static root for `goclarity.app`.
 
-Do not mix the landing site static root with the Rex API reverse proxy. The API should remain on `api.rexpilot.com` or another explicit API hostname.
+Do not mix the landing site static root with the Rex API reverse proxy. The public landing site should live at `goclarity.app`; the Rex API should live on the separate hostname `api.goclarity.app`.
+
+For the API hostname:
+
+- Create DNS record `api.goclarity.app` pointing to the VPS that runs `clarity-rex.service`.
+- Configure the VPS reverse proxy with `server_name api.goclarity.app`.
+- Issue/refresh TLS for `api.goclarity.app`.
+- Verify `/ready` before shipping a mobile build that points to the new API hostname.
 
 ## Pre-Deploy Checklist
 
 - `./scripts/web_release_build.sh` passes.
 - `apps/web/dist` contains all public routes.
-- `PUBLIC_SITE_URL` is `https://rexpilot.com`.
-- Form `_next` redirects point to `https://rexpilot.com/form-success`.
+- `PUBLIC_SITE_URL` is `https://goclarity.app`.
+- Form `_next` redirects point to `https://goclarity.app/form-success`.
 - `clarity.rex@gmail.com` has verified the hosted form destination if needed.
 - Privacy, Terms, Security, Data Deletion, and Contact links are present.
 - No `.env` files are tracked.

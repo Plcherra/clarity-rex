@@ -42,7 +42,7 @@ npm run dev
 Default launch value:
 
 ```bash
-PUBLIC_SITE_URL=https://rexpilot.com
+PUBLIC_SITE_URL=https://goclarity.app
 ```
 
 This landing app does not need private secrets for the static launch. Do not place Plaid,
@@ -60,7 +60,7 @@ npm run preview
 
 ```bash
 cd apps/web
-PUBLIC_SITE_URL=https://rexpilot.com npm run build
+PUBLIC_SITE_URL=https://goclarity.app npm run build
 ```
 
 Or from the repository root:
@@ -73,16 +73,16 @@ Or from the repository root:
 
 Recommended production target for the public landing site:
 
-- Project name: `clarity-landing` or `rexpilot`
+- Project name: `clarity-landing` or `goclarity`
 - Production branch: `main`
 - Root directory: `apps/web`
 - Framework preset: Astro
 - Build command: `npm run build`
 - Build output directory: `dist`
 - Node version: `22`
-- Environment variable: `PUBLIC_SITE_URL=https://rexpilot.com`
+- Environment variable: `PUBLIC_SITE_URL=https://goclarity.app`
 
-Connect the custom domain `rexpilot.com` in Cloudflare Pages after the preview build passes.
+Connect the custom domain `goclarity.app` in Cloudflare Pages after the preview build passes.
 
 ## Content
 

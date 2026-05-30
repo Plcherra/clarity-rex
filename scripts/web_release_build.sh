@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WEB_DIR="${ROOT_DIR}/apps/web"
-PUBLIC_SITE_URL="${PUBLIC_SITE_URL:-https://rexpilot.com}"
+PUBLIC_SITE_URL="${PUBLIC_SITE_URL:-https://goclarity.app}"
 
 if ! command -v npm >/dev/null 2>&1; then
   echo "npm is not installed on this machine." >&2

@@ -24,7 +24,7 @@ Goal: keep the working voice path working and remove confusing UI artifacts.
 
 Done criteria:
 
-- `flutter run -d 00008150-000C03C83A2B401C --release --dart-define=REX_BACKEND_URL=https://api.rexpilot.com` works for voice.
+- `flutter run -d 00008150-000C03C83A2B401C --release --dart-define=REX_BACKEND_URL=https://api.goclarity.app` works for voice.
 - The release command does not include native iOS voice flags.
 - Assistant header and account add/sign-out controls no longer feel detached or overlapping.
 
@@ -235,7 +235,7 @@ Goal: test only the stable intended paths.
 
 ```bash
 flutter run -d 00008150-000C03C83A2B401C --release \
-  --dart-define=REX_BACKEND_URL=https://api.rexpilot.com
+  --dart-define=REX_BACKEND_URL=https://api.goclarity.app
 ```
 
 - Do not include `REX_NATIVE_IOS_VOICE_ENABLED=true` or `REX_EXPERIMENTAL_NATIVE_IOS_VOICE_ENABLED=true`.

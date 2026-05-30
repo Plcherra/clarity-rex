@@ -27,7 +27,7 @@ The current static site passes these polish checks:
 - Public copy does not claim guaranteed outcomes, perfect categorization, or real-time bank updates.
 - Public source pages do not expose backend/VPS/internal-secret language.
 - Sitemap and robots.txt are generated.
-- Canonical and social metadata use `https://rexpilot.com`.
+- Canonical and social metadata use `https://goclarity.app`.
 - The social image is synthetic and contains no personal financial data.
 - Link scan found no unknown local public links.
 - Waitlist and contact forms are wired to `https://formsubmit.co/clarity.rex@gmail.com`.

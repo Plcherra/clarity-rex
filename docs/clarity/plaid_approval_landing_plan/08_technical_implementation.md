@@ -109,7 +109,7 @@ Effort: Medium.
 
 Goal: define safe environment config.
 
-Status: Complete. `apps/web/.env.example` defines the public `PUBLIC_SITE_URL`, Astro defaults to `https://rexpilot.com`, local setup is documented in `apps/web/README.md`, and the environment contract is captured in `technical_environment_config.md`.
+Status: Complete. `apps/web/.env.example` defines the public `PUBLIC_SITE_URL`, Astro defaults to `https://goclarity.app`, local setup is documented in `apps/web/README.md`, and the environment contract is captured in `technical_environment_config.md`.
 
 Files to modify/create:
 - `.env.example`
@@ -130,7 +130,7 @@ Effort: Small.
 
 Goal: make deployment repeatable.
 
-Status: Complete. Cloudflare Pages is selected for `rexpilot.com`, the build/domain/rollback workflow is documented in `technical_deployment_pipeline.md`, and `scripts/web_release_build.sh` provides a repeatable local release build.
+Status: Complete. Cloudflare Pages is selected for `goclarity.app`, the build/domain/rollback workflow is documented in `technical_deployment_pipeline.md`, and `scripts/web_release_build.sh` provides a repeatable local release build.
 
 Files to modify/create:
 - Deploy docs/scripts

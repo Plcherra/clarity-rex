@@ -60,7 +60,7 @@ The image is:
 The release build should generate all pages with:
 
 - Page-specific title and description.
-- Canonical URLs under `https://rexpilot.com`.
+- Canonical URLs under `https://goclarity.app`.
 - Open Graph and Twitter metadata.
 
 ## Acceptance Decision

@@ -6,11 +6,11 @@ Purpose: define the safe environment configuration for the public Clarity landin
 
 ## Decision
 
-Use `rexpilot.com` as the launch domain unless a newer Clarity-specific domain is chosen before deployment.
+Use `goclarity.app` as the launch domain unless a newer Clarity-specific domain is chosen before deployment.
 
 Default site URL:
 
-- `https://rexpilot.com`
+- `https://goclarity.app`
 
 Environment example:
 
@@ -31,12 +31,12 @@ Purpose:
 Launch value:
 
 ```bash
-PUBLIC_SITE_URL=https://rexpilot.com
+PUBLIC_SITE_URL=https://goclarity.app
 ```
 
 Local default:
 
-- If the variable is not set, the Astro config falls back to `https://rexpilot.com`.
+- If the variable is not set, the Astro config falls back to `https://goclarity.app`.
 
 ## Secret Environment Variables
 
@@ -94,7 +94,7 @@ The local `.env` file may keep the launch value or use another public preview UR
 Deployment environment should set:
 
 ```bash
-PUBLIC_SITE_URL=https://rexpilot.com
+PUBLIC_SITE_URL=https://goclarity.app
 ```
 
 If a preview deploy URL is used, the production deploy should still use the final public domain before Plaid review.
@@ -105,7 +105,7 @@ The hosted-form-compatible implementation uses `Astro.site` for success redirect
 
 That means:
 
-- `PUBLIC_SITE_URL=https://rexpilot.com` redirects successful form submissions to `https://rexpilot.com/form-success`.
+- `PUBLIC_SITE_URL=https://goclarity.app` redirects successful form submissions to `https://goclarity.app/form-success`.
 - If the deployment provider uses preview URLs, test form redirects carefully before Plaid review.
 
 ## Acceptance Checklist
@@ -113,6 +113,6 @@ That means:
 - `.env.example` exists for `apps/web`.
 - Public and secret env values are clearly separated.
 - No secrets are required or committed.
-- `rexpilot.com` replaces the old placeholder domain.
+- `goclarity.app` replaces the old placeholder domain.
 - README documents local setup and env usage.
 - Deployment env value is documented.

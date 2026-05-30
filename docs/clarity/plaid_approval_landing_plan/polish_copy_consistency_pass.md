@@ -12,9 +12,9 @@ Approved naming:
 
 - Product: `Clarity`
 - Assistant: `Rex`
-- Public domain: `rexpilot.com`
+- Public domain: `goclarity.app`
 
-The domain is allowed to remain `rexpilot.com` for launch, but public copy should still make clear that the product name is Clarity and Rex is the assistant inside Clarity.
+The launch domain is `goclarity.app`, and public copy should continue to make clear that the product name is Clarity and Rex is the assistant inside Clarity.
 
 ## Copy Checks Passed
 
@@ -52,7 +52,7 @@ Before launch, complete a real FormSubmit activation/test:
 - Submit a safe test message with no sensitive data.
 - Check `clarity.rex@gmail.com` inbox and spam.
 - Confirm the FormSubmit activation email if prompted.
-- Verify the user is redirected to `https://rexpilot.com/form-success`.
+- Verify the user is redirected to `https://goclarity.app/form-success`.
 
 ## Verification Commands
 

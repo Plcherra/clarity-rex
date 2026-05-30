@@ -30,7 +30,7 @@ Checked link categories:
 - Contact links.
 - Support email `mailto:` links.
 - Generated CSS asset link.
-- Canonical public `https://rexpilot.com` links.
+- Canonical public `https://goclarity.app` links.
 
 Result: no unknown local links were found.
 
@@ -40,7 +40,7 @@ Checked form behavior contract:
 
 - Waitlist form posts to `https://formsubmit.co/clarity.rex@gmail.com`.
 - Contact form posts to `https://formsubmit.co/clarity.rex@gmail.com`.
-- Forms redirect to `https://rexpilot.com/form-success` after accepted submission.
+- Forms redirect to `https://goclarity.app/form-success` after accepted submission.
 - Required name and email fields exist.
 - Contact reason selector exists.
 - Consent checkbox exists.

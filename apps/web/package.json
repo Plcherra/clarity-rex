@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "release:build": "PUBLIC_SITE_URL=${PUBLIC_SITE_URL:-https://rexpilot.com} astro build",
+    "release:build": "PUBLIC_SITE_URL=${PUBLIC_SITE_URL:-https://goclarity.app} astro build",
     "preview": "astro preview",
     "check": "astro build"
   },

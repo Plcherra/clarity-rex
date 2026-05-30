@@ -67,7 +67,7 @@ Effort: Small.
 
 Goal: make public routes indexable.
 
-Status: Complete. Astro-generated `robots.txt` and `sitemap.xml` expose only the public landing/compliance routes under `https://rexpilot.com`; the QA result is captured in `polish_sitemap_robots.md`.
+Status: Complete. Astro-generated `robots.txt` and `sitemap.xml` expose only the public landing/compliance routes under `https://goclarity.app`; the QA result is captured in `polish_sitemap_robots.md`.
 
 Files to modify/create:
 - `sitemap.xml`

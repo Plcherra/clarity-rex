@@ -12,12 +12,12 @@ Use this document to answer Plaid questions consistently without inventing unsup
 
 Use these URLs after the site is deployed and verified:
 
-- Public site: `https://rexpilot.com/`
-- Privacy Policy: `https://rexpilot.com/privacy`
-- Terms of Service: `https://rexpilot.com/terms`
-- Security and Data Handling: `https://rexpilot.com/security`
-- Data Deletion: `https://rexpilot.com/data-deletion`
-- Contact: `https://rexpilot.com/contact`
+- Public site: `https://goclarity.app/`
+- Privacy Policy: `https://goclarity.app/privacy`
+- Terms of Service: `https://goclarity.app/terms`
+- Security and Data Handling: `https://goclarity.app/security`
+- Data Deletion: `https://goclarity.app/data-deletion`
+- Contact: `https://goclarity.app/contact`
 
 Do not submit these URLs until File 10 Phase 5 production deployment and Phase 6 live smoke testing are complete.
 
@@ -161,12 +161,12 @@ Do not claim:
 
 Complete these before final Plaid submission:
 
-- Deploy production site to `https://rexpilot.com`.
+- Deploy production site to `https://goclarity.app`.
 - Verify all public URLs return 200 over HTTPS.
 - Submit live waitlist/contact tests.
 - Confirm FormSubmit delivery to `clarity.rex@gmail.com`.
 - Confirm any FormSubmit activation email if prompted.
-- Verify redirect to `https://rexpilot.com/form-success`.
+- Verify redirect to `https://goclarity.app/form-success`.
 - Confirm the exact Plaid products/data scopes requested in the Plaid dashboard.
 - Confirm current production vendor list and provider behavior.
 - Confirm legal-review status remains visible internally.

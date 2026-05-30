@@ -6,7 +6,7 @@ export const product = {
     'Clarity helps people understand spending, budgets, goals, and financial context using user-authorized account connections.',
   supportEmail: 'clarity.rex@gmail.com',
   operatorName: 'Clarity',
-  siteUrl: 'https://rexpilot.com',
+  siteUrl: 'https://goclarity.app',
   locale: 'en_US',
   socialImagePath: '/og-image.jpg',
   socialImageAlt: 'Clarity personal AI financial co-pilot landing page preview.',

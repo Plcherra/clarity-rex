@@ -11,7 +11,7 @@ Reasons:
 - The landing page changes are currently uncommitted locally.
 - Cloudflare Pages Git deployments require the latest changes to be committed and pushed to `main`.
 - No Cloudflare API token or Wrangler authenticated session is available in this shell.
-- `rexpilot.com` does not yet resolve to a public Pages deployment.
+- `goclarity.app` currently resolves to GoDaddy parking, not to a public Pages deployment.
 
 ## Build Status
 
@@ -35,7 +35,7 @@ Use Cloudflare Pages connected to GitHub.
 
 Cloudflare Pages settings:
 
-- Project name: `clarity-landing` or `rexpilot`
+- Project name: `clarity-landing` or `goclarity`
 - Repository: `Plcherra/clarity-rex`
 - Production branch: `main`
 - Root directory: `apps/web`
@@ -43,7 +43,7 @@ Cloudflare Pages settings:
 - Build command: `npm run build`
 - Build output directory: `dist`
 - Node version: `22`
-- Production environment variable: `PUBLIC_SITE_URL=https://rexpilot.com`
+- Production environment variable: `PUBLIC_SITE_URL=https://goclarity.app`
 
 Required Git steps before Cloudflare Pages can deploy the current work:
 
@@ -53,7 +53,7 @@ git commit -m "Prepare Clarity landing site for production deploy"
 git push
 ```
 
-Then use Cloudflare Pages to deploy from `main` and attach the custom domain `rexpilot.com`.
+Then use Cloudflare Pages to deploy from `main` and attach the custom domain `goclarity.app`.
 
 ## Direct Wrangler Deployment Option
 
@@ -75,24 +75,33 @@ If the Cloudflare Pages project has a different name, replace `clarity-landing` 
 
 After the Cloudflare Pages deploy succeeds:
 
-1. Attach custom domain `rexpilot.com`.
-2. Let Cloudflare create the required DNS records through the Pages custom-domain flow.
-3. Keep HTTPS enabled.
-4. Decide whether `www.rexpilot.com` should redirect to `rexpilot.com` or remain unused for v1.
+1. Add or delegate `goclarity.app` to Cloudflare, or configure the current DNS provider with the records Cloudflare Pages requires.
+2. Attach custom domain `goclarity.app`.
+3. Let Cloudflare create the required DNS records through the Pages custom-domain flow when the domain is managed there.
+4. Keep HTTPS enabled.
+5. Decide whether `www.goclarity.app` should redirect to `goclarity.app` or remain unused for v1.
+
+The backend API is separate from the landing site:
+
+1. Create `api.goclarity.app` in DNS, pointing to the Clarity VPS.
+2. Configure Nginx on the VPS with `server_name api.goclarity.app`.
+3. Issue TLS for `api.goclarity.app`.
+4. Smoke test `https://api.goclarity.app/ready`.
+5. Build the mobile release with `REX_BACKEND_URL=https://api.goclarity.app`.
 
 ## Verification Commands After Deploy
 
 Run these after Cloudflare Pages reports the custom domain is active:
 
 ```bash
-curl -I -L https://rexpilot.com
-curl -I -L https://rexpilot.com/privacy
-curl -I -L https://rexpilot.com/terms
-curl -I -L https://rexpilot.com/security
-curl -I -L https://rexpilot.com/data-deletion
-curl -I -L https://rexpilot.com/contact
-curl -I -L https://rexpilot.com/sitemap.xml
-curl -I -L https://rexpilot.com/robots.txt
+curl -I -L https://goclarity.app
+curl -I -L https://goclarity.app/privacy
+curl -I -L https://goclarity.app/terms
+curl -I -L https://goclarity.app/security
+curl -I -L https://goclarity.app/data-deletion
+curl -I -L https://goclarity.app/contact
+curl -I -L https://goclarity.app/sitemap.xml
+curl -I -L https://goclarity.app/robots.txt
 ```
 
 Expected:
@@ -100,7 +109,7 @@ Expected:
 - HTTPS works.
 - All public routes return 200.
 - No redirect loop.
-- Canonical URLs use `https://rexpilot.com`.
+- Canonical URLs use `https://goclarity.app`.
 
 ## FormSubmit Production Requirement
 
@@ -113,7 +122,7 @@ After deployment:
 - Check `clarity.rex@gmail.com` inbox and spam.
 - Confirm any FormSubmit activation email if prompted.
 - Submit again after activation if needed.
-- Confirm redirect to `https://rexpilot.com/form-success`.
+- Confirm redirect to `https://goclarity.app/form-success`.
 
 ## Acceptance Decision
 

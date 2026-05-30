@@ -6,12 +6,12 @@ Goal: prepare the public site and Plaid review package for launch and submission
 
 After File 10 is complete, do not treat the landing site as Plaid-ready until these manual steps are finished:
 
-- Deploy the static site to the production domain, currently `https://rexpilot.com`.
+- Deploy the static site to the production domain, currently `https://goclarity.app`.
 - Open the live site on mobile and desktop.
 - Submit one safe waitlist test and one safe contact test through the live forms.
 - Check `clarity.rex@gmail.com` inbox and spam.
 - Confirm any FormSubmit activation email if prompted, then submit again.
-- Verify the success redirect lands on `https://rexpilot.com/form-success`.
+- Verify the success redirect lands on `https://goclarity.app/form-success`.
 - Confirm live Privacy, Terms, Security, Data Deletion, and Contact URLs are reachable.
 - Use the live URLs in the Plaid questionnaire/submission package.
 
@@ -79,7 +79,7 @@ Effort: Medium.
 
 Goal: ensure domain readiness.
 
-Status: Complete with deployment blocker. The canonical app configuration is correct for `https://rexpilot.com`, but public DNS does not yet resolve for `rexpilot.com` or `www.rexpilot.com`; required Cloudflare Pages domain actions are documented in `deployment_domain_checklist.md`.
+Status: Complete with deployment blocker. The canonical app configuration is correct for `https://goclarity.app`, and public DNS currently resolves to GoDaddy parking rather than the Clarity Cloudflare Pages deployment; required Cloudflare Pages domain actions are documented in `deployment_domain_checklist.md`.
 
 Files to modify/create:
 - Deployment/domain checklist

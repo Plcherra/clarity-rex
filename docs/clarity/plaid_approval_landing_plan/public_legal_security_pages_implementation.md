@@ -77,7 +77,7 @@ Results:
 
 ## Remaining Manual Check
 
-FormSubmit delivery cannot be fully verified until the site is deployed to `https://rexpilot.com`.
+FormSubmit delivery cannot be fully verified until the site is deployed to `https://goclarity.app`.
 
 After deployment:
 
@@ -85,4 +85,4 @@ After deployment:
 - Submit one safe contact test.
 - Check `clarity.rex@gmail.com` inbox and spam.
 - Confirm any FormSubmit activation email if prompted.
-- Verify redirect to `https://rexpilot.com/form-success`.
+- Verify redirect to `https://goclarity.app/form-success`.

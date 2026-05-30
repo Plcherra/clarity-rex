@@ -18,9 +18,9 @@ This gate verifies that the static web foundation is ready to move into polish, 
   - `/contact`
   - `/form-success`
   - `/form-error`
-- `PUBLIC_SITE_URL` defaults to `https://rexpilot.com`.
+- `PUBLIC_SITE_URL` defaults to `https://goclarity.app`.
 - Waitlist and contact forms route to `clarity.rex@gmail.com`.
-- Form success redirects resolve to `https://rexpilot.com/form-success` in production builds.
+- Form success redirects resolve to `https://goclarity.app/form-success` in production builds.
 - Generated artifacts and local environment files are ignored by Git.
 - Cloudflare Pages is the preferred deployment target.
 
@@ -58,7 +58,7 @@ Result:
 The generated home and contact pages include:
 
 - `action="https://formsubmit.co/clarity.rex@gmail.com"`
-- `_next="https://rexpilot.com/form-success"`
+- `_next="https://goclarity.app/form-success"`
 - Honeypot field `_honey`
 - Required name, email, consent fields
 - Sensitive-data warning copy

@@ -15,7 +15,7 @@ with stale flags:
 
 The helper reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` from your shell
 environment or from `apps/mobile/.env`, points Rex at
-`https://api.rexpilot.com`, and enables the supported streaming voice path.
+`https://api.goclarity.app`, and enables the supported streaming voice path.
 
 Do not use `REX_NATIVE_IOS_VOICE_ENABLED` for normal testing.
 
