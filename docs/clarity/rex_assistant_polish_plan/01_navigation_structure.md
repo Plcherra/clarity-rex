@@ -195,6 +195,8 @@ Effort: Small.
 
 Goal: make the Assistant shell robust across iPhone safe areas, keyboard states, dynamic island, and bottom navigation.
 
+Status: Complete. Assistant shell spacing now adapts on compact widths, tab labels use a stable fitted tab item, and navigation tests cover iPhone SE, iPhone 13/14 class, and iPhone 16/Pro class viewport sizes.
+
 Files to modify / create:
 
 - `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
@@ -218,6 +220,8 @@ Effort: Medium.
 ## Phase 9 - Navigation Phase Release Gate
 
 Goal: verify the Assistant shell is ready before moving to Memory and Goals polish.
+
+Status: Complete for automated verification. `flutter analyze`, Assistant navigation tests, app routing tests, and whitespace checks pass. Real-device smoke coverage has been added to the device release checklist and remains the manual gate before treating the phone build as fully released.
 
 Files to modify / create:
 

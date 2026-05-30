@@ -234,3 +234,19 @@ Phase 7 result:
 - The suite asserts tapping each tab updates the owned `TabController` selection.
 - The suite asserts Chats is present as a tab and not as a detached `Conversations` header action.
 - The suite asserts unrelated global actions such as sign out, account menu, and floating action buttons are absent from Assistant navigation.
+
+Phase 8 result:
+
+- `AssistantScreen` now explicitly keeps `resizeToAvoidBottomInset` enabled so the chat composer can move with the keyboard.
+- Assistant title and nav padding tighten on compact widths below 360 logical pixels.
+- Assistant tab content now uses a fixed-height custom tab item with icon, label, semantic label, and `FittedBox(scaleDown)` for narrow labels.
+- Focused widget coverage checks the Assistant shell at 320x568, 390x844, and 430x932 viewport sizes.
+- The responsive test verifies the header, tabs, composer, Voice, Goals, and Chats can render without test-caught layout exceptions.
+
+Phase 9 result:
+
+- Automated navigation release gate passed with `flutter analyze`.
+- Automated navigation release gate passed with `flutter test test/app_routing_test.dart test/assistant_navigation_test.dart`.
+- Whitespace release gate passed with `git diff --check`.
+- The device release checklist now includes Assistant-specific manual smoke items for tab alignment, conversation resume, Voice-tab entry, keyboard/composer behavior, and no detached Chats icon.
+- Manual phone confirmation is still required before calling File 01 fully released on-device; this is intentionally deferred to the normal release checklist run.

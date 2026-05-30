@@ -11,6 +11,9 @@ import '../memory/presentation/pages/memory_page.dart';
 import '../voice/application/voice_call_controller.dart';
 import 'assistant_tab.dart';
 
+const _assistantCompactWidth = 360.0;
+const _assistantTabHeight = 74.0;
+
 class AssistantScreen extends ConsumerStatefulWidget {
   const AssistantScreen({super.key});
 
@@ -92,15 +95,23 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final isCompactWidth =
+        MediaQuery.sizeOf(context).width < _assistantCompactWidth;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         top: true,
         bottom: false,
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+              padding: EdgeInsets.fromLTRB(
+                isCompactWidth ? 20 : 24,
+                10,
+                isCompactWidth ? 20 : 24,
+                0,
+              ),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -115,6 +126,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
             _AssistantTabNavigation(
               controller: _tabController,
               onTabSelected: _handleAssistantTabSelected,
+              isCompactWidth: isCompactWidth,
             ),
             Expanded(
               child: TabBarView(
@@ -139,10 +151,12 @@ class _AssistantTabNavigation extends StatelessWidget {
   const _AssistantTabNavigation({
     required this.controller,
     required this.onTabSelected,
+    required this.isCompactWidth,
   });
 
   final TabController controller;
   final ValueChanged<AssistantTab> onTabSelected;
+  final bool isCompactWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +164,12 @@ class _AssistantTabNavigation extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+      padding: EdgeInsets.fromLTRB(
+        isCompactWidth ? 8 : 12,
+        4,
+        isCompactWidth ? 8 : 12,
+        10,
+      ),
       child: TabBar(
         controller: controller,
         onTap: (index) => onTabSelected(AssistantTab.values[index]),
@@ -177,16 +196,49 @@ class _AssistantTabNavigation extends StatelessWidget {
           for (final tab in AssistantTab.values)
             Tab(
               key: tab.key,
-              height: 74,
-              iconMargin: const EdgeInsets.only(bottom: 4),
-              icon: Semantics(
-                label: tab.semanticLabel,
-                button: true,
-                child: Icon(tab.icon, size: 27),
-              ),
-              text: tab.label,
+              height: _assistantTabHeight,
+              child: _AssistantTabItem(tab: tab),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _AssistantTabItem extends StatelessWidget {
+  const _AssistantTabItem({required this.tab});
+
+  final AssistantTab tab;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Semantics(
+      label: tab.semanticLabel,
+      button: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(tab.icon, size: 27),
+            const SizedBox(height: 4),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  tab.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

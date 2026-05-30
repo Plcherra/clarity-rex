@@ -57,13 +57,24 @@ Expected `/ready` result:
 8. Test category, account, history, sort, and role filters.
 9. Open Rex chat and ask a finance question; Rex should not claim empty data
    when the dashboard has transactions.
-10. Start voice from the chat bar and complete at least five turns.
-11. Confirm the user's live transcript appears while speaking.
-12. Confirm Rex audio is audible at normal phone volume.
-13. Confirm Rex does not cut itself off after speaking.
-14. End the voice call and send a normal chat message in the same conversation.
-15. Toggle `Deep Think` in Rex chat, send one planning/analysis message, and confirm the toggle clears after send.
-16. Log out and sign back in; dashboard and account values should recover.
+10. Confirm the Assistant tabs render as one aligned row: Chat, Voice, Memory,
+    Goals, and Chats. Chats should not appear as a detached header icon.
+11. Switch through Chat, Voice, Goals, and Chats on the phone and confirm no
+    tab overlaps the dynamic island, page title, content, composer, or bottom
+    navigation.
+12. Open Chats, select an existing conversation, and confirm the app returns to
+    Chat with that conversation loaded.
+13. Start voice from the Voice tab and confirm it uses the active conversation.
+14. Focus the chat composer, show the keyboard, and confirm the composer stays
+    visible and usable.
+15. Start voice from the chat bar and complete at least five turns.
+16. Confirm the user's live transcript appears while speaking.
+17. Confirm Rex audio is audible at normal phone volume.
+18. Confirm Rex does not cut itself off after speaking.
+19. End the voice call and send a normal chat message in the same conversation.
+20. Toggle `Deep Think` in Rex chat, send one planning/analysis message, and
+    confirm the toggle clears after send.
+21. Log out and sign back in; dashboard and account values should recover.
 
 ## Rex Brain Log Check
 

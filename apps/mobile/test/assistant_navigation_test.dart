@@ -21,16 +21,19 @@ void main() {
       tabs.map((tab) => tab.key),
       AssistantTab.values.map((tab) => tab.key),
     );
-    expect(
-      tabs.map((tab) => tab.text),
-      AssistantTab.values.map((tab) => tab.label),
-    );
-    for (final (index, tab) in tabs.indexed) {
-      final icon = tab.icon;
-      expect(icon, isA<Semantics>());
+    for (final tab in AssistantTab.values) {
+      expect(find.text(tab.label), findsOneWidget);
+      final tabSemantics = tester.widgetList<Semantics>(
+        find.descendant(
+          of: find.byKey(tab.key),
+          matching: find.byType(Semantics),
+        ),
+      );
       expect(
-        (icon! as Semantics).properties.label,
-        AssistantTab.values[index].semanticLabel,
+        tabSemantics.any(
+          (semantics) => semantics.properties.label == tab.semanticLabel,
+        ),
+        isTrue,
       );
     }
   });
@@ -82,11 +85,48 @@ void main() {
     expect(find.byTooltip('Account menu'), findsNothing);
     expect(find.byType(FloatingActionButton), findsNothing);
   });
+
+  testWidgets('Assistant shell fits common iPhone safe-area widths', (
+    tester,
+  ) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    const sizes = [Size(320, 568), Size(390, 844), Size(430, 932)];
+
+    for (final (index, size) in sizes.indexed) {
+      await tester.binding.setSurfaceSize(size);
+      final voiceController = _FakeVoiceCallController();
+      await _pumpAssistantNavigation(
+        tester,
+        voiceController: voiceController,
+        rootKey: ValueKey('assistant-size-$index'),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Assistant'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+      for (final tab in AssistantTab.values) {
+        expect(find.byKey(tab.key), findsOneWidget);
+      }
+
+      for (final tab in [
+        AssistantTab.chat,
+        AssistantTab.voice,
+        AssistantTab.goals,
+        AssistantTab.chats,
+      ]) {
+        await tester.tap(find.byKey(tab.key));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      }
+    }
+  });
 }
 
 Future<void> _pumpAssistantNavigation(
   WidgetTester tester, {
   _FakeVoiceCallController? voiceController,
+  Key? rootKey,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -95,7 +135,7 @@ Future<void> _pumpAssistantNavigation(
         if (voiceController != null)
           voiceCallProvider.overrideWith(() => voiceController),
       ],
-      child: const MaterialApp(home: AssistantScreen()),
+      child: MaterialApp(home: AssistantScreen(key: rootKey)),
     ),
   );
   await tester.pump();
