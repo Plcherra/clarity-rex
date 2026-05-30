@@ -1,0 +1,13 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { publicRoutes } from '@content/site';
+
+const page = publicRoutes.find((route) => route.path === '/privacy')!;
+---
+
+<BaseLayout title={page.title} description={page.description}>
+  <section class="page-shell">
+  <h1>Privacy Policy</h1>
+  <p>Draft privacy content will be implemented from the approved privacy plan.</p>
+  </section>
+</BaseLayout>

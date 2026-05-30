@@ -1,0 +1,19 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { formCopy, publicRoutes } from '@content/site';
+
+const page = publicRoutes.find((route) => route.path === '/form-success')!;
+---
+
+<BaseLayout title={page.title} description={page.description}>
+  <section class="page-shell">
+    <p class="eyebrow">Request received</p>
+    <h1>Thanks for contacting Clarity.</h1>
+    <p>{formCopy.success}</p>
+    <p>Response timing may depend on the request type, verification needs, and operational availability.</p>
+    <div class="hero__actions">
+      <a class="button" href="/">Back to Clarity</a>
+      <a class="button button--secondary" href="/contact">Contact page</a>
+    </div>
+  </section>
+</BaseLayout>

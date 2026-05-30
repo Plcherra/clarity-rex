@@ -106,11 +106,13 @@ Effort: Small.
 
 Goal: make data handling a visible feature, not hidden legal text.
 
+Status: Complete. Privacy/trust card positioning, approved copy, required cross-links, Plaid-friendly language, verification-sensitive claims, and visual guidance are captured in `privacy_feature_section.md`.
+
 Files to modify/create:
 - Privacy/trust feature cards
 
 Acceptance Criteria:
-- Cards cover consent, encryption/security practices, deletion, and support.
+- Cards cover consent, clear data use, security posture, deletion, and support.
 - Links to full policies.
 - Uses plain language.
 
@@ -123,6 +125,8 @@ Effort: Small.
 ## Phase 7 - Visual Consistency
 
 Goal: make screenshots and sections feel premium.
+
+Status: Complete. Feature section patterns, screenshot treatments, aspect ratio rules, mobile readability, asset loading, accessibility, color guidance, and screenshot readiness checks are captured in `feature_visual_consistency_contract.md`.
 
 Files to modify/create:
 - Feature card components
@@ -142,6 +146,8 @@ Effort: Medium.
 ## Phase 8 - Feature Review Gate
 
 Goal: approve feature set before legal pages are finalized.
+
+Status: Complete. Feature claim mapping, screenshot/asset review, policy consistency checks, Plaid readiness questions, review notes template, and release gate decision rules are captured in `feature_review_gate.md`.
 
 Files to modify/create:
 - Feature review notes

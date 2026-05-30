@@ -1,0 +1,13 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { publicRoutes } from '@content/site';
+
+const page = publicRoutes.find((route) => route.path === '/security')!;
+---
+
+<BaseLayout title={page.title} description={page.description}>
+  <section class="page-shell">
+  <h1>Security and Data Handling</h1>
+  <p>Draft security content will be implemented from the approved security plan.</p>
+  </section>
+</BaseLayout>

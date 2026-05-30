@@ -50,7 +50,7 @@ Public use:
 
 Screenshot status:
 
-- Approved only with synthetic merchants and balances.
+- Approved only with synthetic merchants and transaction amounts.
 
 Copy boundaries:
 

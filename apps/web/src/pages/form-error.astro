@@ -1,0 +1,22 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { formCopy, product, publicRoutes } from '@content/site';
+
+const page = publicRoutes.find((route) => route.path === '/form-error')!;
+---
+
+<BaseLayout title={page.title} description={page.description}>
+  <section class="page-shell">
+    <p class="eyebrow">Form error</p>
+    <h1>The form could not be submitted.</h1>
+    <p>{formCopy.error}</p>
+    <p>
+      Email <a href={`mailto:${product.supportEmail}`}>{product.supportEmail}</a> without sending
+      bank credentials, account numbers, one-time codes, or other sensitive financial details.
+    </p>
+    <div class="hero__actions">
+      <a class="button" href="/contact">Try contact again</a>
+      <a class="button button--secondary" href="/">Back to Clarity</a>
+    </div>
+  </section>
+</BaseLayout>

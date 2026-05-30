@@ -6,6 +6,8 @@ Goal: create a product-specific privacy policy draft that is clear enough for us
 
 Goal: define who operates Clarity and what the policy covers.
 
+Status: Complete. Privacy page identity, operator/contact placeholders, covered services, opening scope copy, required boundaries, cross-links, and legal review flags are captured in `privacy_policy_scope.md`.
+
 Files to modify/create:
 - `/privacy` page content
 
@@ -23,6 +25,8 @@ Effort: Small.
 ## Phase 2 - Data Categories
 
 Goal: list data Clarity may collect.
+
+Status: Complete. Account/profile data, financial account data, transactions, budgets, goals, Rex chat, voice/audio-derived content, memory/context, device/log data, support/contact data, derived data, sensitive-data boundaries, and Plaid-friendly wording are captured in `privacy_data_categories.md`.
 
 Files to modify/create:
 - Privacy data categories section
@@ -42,6 +46,8 @@ Effort: Medium.
 
 Goal: explain Plaid-connected data plainly.
 
+Status: Complete. Plaid account-connection summary, authorization boundaries, possible connected data fields, Clarity use cases, Rex context language, disconnection/deletion wording, third-party policy link notes, and forbidden Plaid claims are captured in `privacy_plaid_data_use.md`.
+
 Files to modify/create:
 - Plaid data section
 
@@ -59,6 +65,8 @@ Effort: Medium.
 ## Phase 4 - Purpose Of Processing
 
 Goal: explain why data is used.
+
+Status: Complete. Product operation, financial organization, Rex personalization, voice processing, support/contact, security, analytics/product improvement, compliance, no-sale boundaries, and advertising boundaries are captured in `privacy_purpose_of_processing.md`.
 
 Files to modify/create:
 - Use of information section
@@ -78,6 +86,8 @@ Effort: Small.
 
 Goal: disclose service providers and data processors.
 
+Status: Complete. Vendor categories, known/likely provider examples, legal/safety sharing, user-directed sharing, business-transfer placeholder, no-sale boundary, and vendor review checklist are captured in `privacy_sharing_and_vendors.md`.
+
 Files to modify/create:
 - Sharing section
 
@@ -96,6 +106,8 @@ Effort: Medium.
 
 Goal: explain how long data is kept and how users can delete it.
 
+Status: Complete. Account/profile, financial account, transaction, budget, goal, Rex chat, memory, voice, support/contact, log, backup retention, deletion workflow, data-deletion cross-link, and implementation questions are captured in `privacy_retention_and_deletion.md`.
+
 Files to modify/create:
 - Retention section
 - `/data-deletion` page cross-link
@@ -112,6 +124,8 @@ Risks & Mitigations:
 Effort: Medium.
 
 ## Phase 7 - User Rights And Choices
+
+Status: Complete - see `privacy_user_rights_and_choices.md`.
 
 Goal: explain user controls.
 
@@ -131,13 +145,15 @@ Effort: Small.
 
 ## Phase 8 - Privacy Review Gate
 
+Status: Complete - see `privacy_review_gate.md`.
+
 Goal: make the policy ready for product/legal review.
 
 Files to modify/create:
 - Privacy review checklist
 
 Acceptance Criteria:
-- No placeholders remain.
+- No placeholders remain in the public policy draft, or the page remains clearly draft-only.
 - All public data claims match implementation.
 - Attorney review flag is visible before production.
 

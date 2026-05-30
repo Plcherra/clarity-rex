@@ -10,9 +10,9 @@ Public screenshots must come from one of these approved sources:
 
 - Synthetic demo account.
 - Staged local/test account.
-- Redacted screenshot where all private details have been removed.
+- Redacted screenshot where all private details have been removed and the asset still looks professional.
 
-Do not use screenshots from a real personal account unless every sensitive value is replaced and the source is documented as redacted.
+Avoid real personal account screenshots. If one is unavoidable, every sensitive value must be replaced, the source must be documented as redacted, and the asset must pass a second review before public use.
 
 ## Forbidden Visible Data
 

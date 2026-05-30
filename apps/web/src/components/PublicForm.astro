@@ -1,0 +1,103 @@
+---
+import { formCopy, product } from '@content/site';
+
+type FormVariant = 'waitlist' | 'contact';
+
+type Props = {
+  variant: FormVariant;
+};
+
+const { variant } = Astro.props;
+const isWaitlist = variant === 'waitlist';
+const siteUrl = Astro.site?.toString().replace(/\/$/, '') ?? '';
+const formAction = `https://formsubmit.co/${product.supportEmail}`;
+const successUrl = siteUrl ? `${siteUrl}/form-success` : '/form-success';
+const subject = isWaitlist ? 'Clarity waitlist request' : 'Clarity contact request';
+const consentCopy = isWaitlist ? formCopy.waitlistConsent : formCopy.contactConsent;
+const messageHelpId = `${variant}-message-help`;
+const consentId = `${variant}-consent`;
+---
+
+<form class="form-card" action={formAction} method="POST">
+  <input type="hidden" name="_subject" value={subject} />
+  <input type="hidden" name="_template" value="table" />
+  <input type="hidden" name="_captcha" value="false" />
+  <input type="hidden" name="_next" value={successUrl} />
+  <input type="hidden" name="source_page" value={isWaitlist ? 'home_waitlist' : 'contact_page'} />
+  {isWaitlist && <input type="hidden" name="type" value="waitlist" />}
+
+  <div class="honeypot" aria-hidden="true">
+    <label for={`${variant}-honey`}>Website</label>
+    <input id={`${variant}-honey`} type="text" name="_honey" tabindex="-1" autocomplete="off" />
+  </div>
+
+  <div class="field-shell">
+    <label for={`${variant}-name`}>Name</label>
+    <input
+      id={`${variant}-name`}
+      name="name"
+      type="text"
+      maxlength="120"
+      autocomplete="name"
+      required
+    />
+  </div>
+
+  <div class="field-shell">
+    <label for={`${variant}-email`}>Email</label>
+    <input
+      id={`${variant}-email`}
+      name="email"
+      type="email"
+      maxlength="254"
+      autocomplete="email"
+      placeholder="you@example.com"
+      required
+    />
+  </div>
+
+  {
+    !isWaitlist && (
+      <div class="field-shell">
+        <label for={`${variant}-type`}>Reason</label>
+        <select id={`${variant}-type`} name="type" required>
+          <option value="">Choose a reason</option>
+          <option value="beta_access">Beta access</option>
+          <option value="product_support">Product support</option>
+          <option value="privacy_request">Privacy request</option>
+          <option value="data_deletion">Data deletion</option>
+          <option value="security_concern">Security concern</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    )
+  }
+
+  <div class="field-shell">
+    <label for={`${variant}-message`}>
+      {isWaitlist ? 'What are you hoping Clarity helps with?' : 'Message'}
+    </label>
+    <textarea
+      id={`${variant}-message`}
+      name="message"
+      maxlength="1000"
+      placeholder="Keep it high level. Do not include sensitive financial details."
+      aria-describedby={messageHelpId}
+    />
+    <p id={messageHelpId} class="form-note">{formCopy.sensitiveDataWarning}</p>
+  </div>
+
+  <label class="checkbox-row" for={consentId}>
+    <input id={consentId} name="consent" type="checkbox" value="yes" required />
+    <span>{consentCopy}</span>
+  </label>
+
+  <button class="button" type="submit">
+    {isWaitlist ? 'Join the waitlist' : 'Send message'}
+  </button>
+
+  <p class="form-note">
+    Form submissions are routed to Clarity's monitored support email. Do not submit credentials,
+    account numbers, or one-time codes.
+  </p>
+</form>

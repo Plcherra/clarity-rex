@@ -6,6 +6,8 @@ Goal: create a trust-building Security and Data Handling page that explains Clar
 
 Goal: define what the public Security page should cover.
 
+Status: Complete. Security page identity, audience, approved scope, draft opening copy, required sections, forbidden claims, and launch review questions are captured in `security_page_scope.md`.
+
 Files to modify/create:
 - `/security` page content
 
@@ -23,6 +25,8 @@ Effort: Small.
 ## Phase 2 - Data Flow Explanation
 
 Goal: explain how data moves through Clarity.
+
+Status: Complete. Public data-flow copy, high-level diagram, flow steps, Rex context boundary, forbidden internals, and review checklist are captured in `security_data_flow.md`.
 
 Files to modify/create:
 - Data flow section
@@ -42,6 +46,8 @@ Effort: Medium.
 
 Goal: explain who can access user data.
 
+Status: Complete. User authentication, user-scoped access, internal access principles, support access boundaries, account-security responsibilities, forbidden claims, and verification questions are captured in `security_access_controls.md`.
+
 Files to modify/create:
 - Access controls section
 
@@ -59,6 +65,8 @@ Effort: Medium.
 ## Phase 4 - Encryption And Storage
 
 Goal: explain protection of data in transit and at rest.
+
+Status: Complete. HTTPS/TLS, hosted database/storage protections, provider verification, unsupported encryption claims, public copy blocks, and launch review questions are captured in `security_encryption_storage.md`.
 
 Files to modify/create:
 - Encryption/storage section
@@ -78,6 +86,8 @@ Effort: Small.
 
 Goal: explain how Rex, speech, and TTS providers fit into data handling.
 
+Status: Complete. Rex context boundaries, AI model provider processing, speech-to-text, text-to-speech, audio/transcript/generated-response distinctions, retention verification, and public copy blocks are captured in `security_ai_voice_vendor_handling.md`.
+
 Files to modify/create:
 - AI/voice data section
 
@@ -95,6 +105,8 @@ Effort: Medium.
 ## Phase 6 - Deletion And Disconnection
 
 Goal: explain account disconnection and deletion paths.
+
+Status: Complete. Disconnection vs deletion boundaries, account/deletion request flow, support/contact requirements, backup/legal constraints, public copy blocks, and verification questions are captured in `security_deletion_disconnection.md`.
 
 Files to modify/create:
 - Security page deletion section
@@ -115,6 +127,8 @@ Effort: Small.
 
 Goal: establish trust if something goes wrong.
 
+Status: Complete. Security contact copy, report categories, sensitive-data warnings, support expectations, internal escalation requirements, public copy blocks, and launch verification questions are captured in `security_incident_support_language.md`.
+
 Files to modify/create:
 - Security contact section
 
@@ -132,6 +146,8 @@ Effort: Small.
 ## Phase 8 - Security Review Gate
 
 Goal: approve security copy before publishing.
+
+Status: Complete. Security launch blockers, source inputs, implementation verification, Privacy/Terms alignment, Plaid questionnaire reuse, placeholder checks, and final acceptance checklist are captured in `security_review_gate.md`.
 
 Files to modify/create:
 - Security review checklist

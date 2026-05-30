@@ -1,0 +1,86 @@
+---
+import { footerLinks, headerLinks, primaryCta, product } from '@content/site';
+import '../styles/global.css';
+
+type Props = {
+  title: string;
+  description: string;
+};
+
+const { title, description } = Astro.props;
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? product.siteUrl);
+const socialImageUrl = new URL(product.socialImagePath, Astro.site ?? product.siteUrl);
+const isHome = Astro.url.pathname === '/';
+const socialTitle = isHome ? `${product.name} - Personal AI Financial Co-Pilot` : title;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl.toString()} />
+
+    <meta property="og:site_name" content={product.name} />
+    <meta property="og:locale" content={product.locale} />
+    <meta property="og:type" content={isHome ? 'website' : 'article'} />
+    <meta property="og:title" content={socialTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl.toString()} />
+    <meta property="og:image" content={socialImageUrl.toString()} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={product.socialImageAlt} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={socialTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageUrl.toString()} />
+    <meta name="twitter:image:alt" content={product.socialImageAlt} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <a class="brand-link" href="/" aria-label="Clarity home">
+          <span class="brand-mark">C</span>
+          <span>{product.name}</span>
+        </a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          {
+            headerLinks.map((link) => (
+              <a href={link.path}>{link.label}</a>
+            ))
+          }
+          <a class="button" href={primaryCta.href}>{primaryCta.label}</a>
+        </nav>
+      </div>
+    </header>
+    <main id="main-content" class="site-main" tabindex="-1">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <section>
+        <h2>{product.name}</h2>
+        <p>{product.tagline}</p>
+        <p>Built around user-authorized account connections and clear data controls.</p>
+      </section>
+      <nav class="footer-nav" aria-label="Footer navigation">
+        {
+          footerLinks.map((link) => (
+            <a href={link.path}>{link.label}</a>
+          ))
+        }
+      </nav>
+      <section class="footer-meta">
+        <p>
+          Contact: <a href={`mailto:${product.supportEmail}`}>{product.supportEmail}</a>
+        </p>
+        <p>{product.operatorName}</p>
+        <p>Copyright {new Date().getFullYear()} Clarity. All rights reserved.</p>
+      </section>
+    </footer>
+  </body>
+</html>

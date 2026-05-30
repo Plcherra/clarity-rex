@@ -6,6 +6,8 @@ Goal: create Terms that define acceptable use, product boundaries, disclaimers, 
 
 Goal: define what the Terms cover.
 
+Status: Complete. Terms page identity, operator/contact placeholders, covered services, opening scope copy, product boundaries, cross-links, and legal review flags are captured in `terms_scope.md`.
+
 Files to modify/create:
 - `/terms` page content
 
@@ -23,6 +25,8 @@ Effort: Small.
 ## Phase 2 - Eligibility And Accounts
 
 Goal: explain who can use Clarity and account responsibilities.
+
+Status: Complete. Eligibility, accurate account information, account security, support path, connected-data authorization, account issue handling, and launch review questions are captured in `terms_eligibility_accounts.md`.
 
 Files to modify/create:
 - Eligibility/account section
@@ -42,6 +46,8 @@ Effort: Small.
 
 Goal: avoid implying regulated advice.
 
+Status: Complete. Organization/analysis/coaching positioning, regulated-advice boundaries, Rex-specific decision limits, important-decision guidance, Plaid-friendly notes, and cross-page alignment are captured in `terms_financial_advice_boundary.md`.
+
 Files to modify/create:
 - Disclaimers section
 
@@ -59,6 +65,8 @@ Effort: Medium.
 ## Phase 4 - AI Assistant Disclaimer
 
 Goal: set expectations for Rex.
+
+Status: Complete. Rex positioning, accuracy/review boundaries, user responsibility, no autonomous financial actions, context limitations, voice/transcription limitations, provider processing, and cross-page alignment are captured in `terms_ai_assistant_disclaimer.md`.
 
 Files to modify/create:
 - Rex/AI section
@@ -78,6 +86,8 @@ Effort: Small.
 
 Goal: explain user responsibility for connecting accounts.
 
+Status: Complete. User authorization, provider/institution availability, possible connected data, Clarity use cases, user responsibility, disconnection/deletion, third-party terms, forbidden Plaid claims, and launch review questions are captured in `terms_plaid_connection.md`.
+
 Files to modify/create:
 - Connected accounts section
 
@@ -95,6 +105,8 @@ Effort: Small.
 ## Phase 6 - Acceptable Use
 
 Goal: define prohibited behavior.
+
+Status: Complete. Responsible-use intro, account/access misuse, technical misuse, harmful/illegal use, financial/sensitive-data misuse, Rex/AI misuse, enforcement response, wording rules, and cross-page alignment are captured in `terms_acceptable_use.md`.
 
 Files to modify/create:
 - Acceptable use section
@@ -114,6 +126,8 @@ Effort: Small.
 
 Goal: cover service changes, availability, and liability boundaries.
 
+Status: Complete. Service availability, product changes, no-warranty draft, limitation-of-liability draft, third-party dependency boundaries, Terms update process, beta note, wording rules, and legal review flags are captured in `terms_availability_limitation_changes.md`.
+
 Files to modify/create:
 - Availability/liability section
 
@@ -132,11 +146,13 @@ Effort: Medium.
 
 Goal: prepare Terms for launch review.
 
+Status: Complete - see `terms_review_gate.md`.
+
 Files to modify/create:
 - Terms review notes
 
 Acceptance Criteria:
-- No placeholders remain.
+- No placeholders remain in the public Terms draft, or the page remains clearly draft-only.
 - Terms align with landing page claims.
 - Legal review TODO is explicit before production launch.
 

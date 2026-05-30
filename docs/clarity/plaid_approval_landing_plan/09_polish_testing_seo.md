@@ -6,6 +6,8 @@ Goal: make the public site feel complete, fast, discoverable, and trustworthy on
 
 Goal: verify layout across common sizes.
 
+Status: Complete. Mobile and desktop route checks passed, no horizontal overflow was found, footer links remained visible, and the QA result is captured in `polish_responsive_qa.md`.
+
 Files to modify/create:
 - Responsive test checklist
 
@@ -24,6 +26,8 @@ Effort: Medium.
 
 Goal: make the site usable with assistive technology.
 
+Status: Complete. Skip link, main landmark, form label/description wiring, visible content links, and focus-state improvements are implemented; the accessibility pass is captured in `polish_accessibility_pass.md`.
+
 Files to modify/create:
 - Accessibility fixes
 
@@ -41,6 +45,8 @@ Effort: Medium.
 ## Phase 3 - SEO Metadata
 
 Goal: configure baseline discovery and link previews.
+
+Status: Complete. Canonical URLs, Open Graph tags, Twitter summary tags, and centralized metadata source rules are implemented; the SEO metadata pass is captured in `polish_seo_metadata.md`.
 
 Files to modify/create:
 - Metadata config
@@ -61,6 +67,8 @@ Effort: Small.
 
 Goal: make public routes indexable.
 
+Status: Complete. Astro-generated `robots.txt` and `sitemap.xml` expose only the public landing/compliance routes under `https://rexpilot.com`; the QA result is captured in `polish_sitemap_robots.md`.
+
 Files to modify/create:
 - `sitemap.xml`
 - `robots.txt`
@@ -79,6 +87,8 @@ Effort: Small.
 ## Phase 5 - Performance Pass
 
 Goal: keep the landing site fast.
+
+Status: Complete. The current site ships no client JavaScript, the social preview image is compressed, no below-fold screenshots are present yet, and future screenshot loading rules are captured in `polish_performance_pass.md`.
 
 Files to modify/create:
 - Image optimization

@@ -1,0 +1,58 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import PublicForm from '../components/PublicForm.astro';
+import { faqs, primaryCta, product, publicRoutes, trustNotes } from '@content/site';
+
+const page = publicRoutes.find((route) => route.path === '/')!;
+---
+
+<BaseLayout title={page.title} description={page.description}>
+  <section class="hero">
+    <p class="eyebrow">Clarity</p>
+    <h1>{product.tagline}</h1>
+    <p>{product.description}</p>
+    <div class="hero__actions">
+      <a class="button" href={primaryCta.href}>{primaryCta.label}</a>
+      <a class="button button--secondary" href="/security">How data is handled</a>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="trust-heading">
+    <div class="section__header">
+      <p class="eyebrow">Trust basics</p>
+      <h2 id="trust-heading">Clear account access, privacy, and AI boundaries.</h2>
+    </div>
+    <div class="card-grid">
+      {trustNotes.map((note) => (
+        <article class="panel">
+          <h3>{note}</h3>
+          <p>Designed as a public, reviewable commitment for users and Plaid reviewers.</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="section" id="request-access" aria-labelledby="request-access-heading">
+    <div class="section__header">
+      <p class="eyebrow">Early access</p>
+      <h2 id="request-access-heading">Request early access</h2>
+    </div>
+    <p>Join the Clarity waitlist. Do not send bank credentials or account numbers through this form.</p>
+    <PublicForm variant="waitlist" />
+  </section>
+
+  <section class="section" aria-labelledby="faq-heading">
+    <div class="section__header">
+      <p class="eyebrow">FAQ</p>
+      <h2 id="faq-heading">Questions</h2>
+    </div>
+    <div class="card-grid">
+      {faqs.map((item) => (
+        <article class="panel">
+          <h3>{item.question}</h3>
+          <p>{item.answer}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
