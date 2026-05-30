@@ -1,9 +1,38 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 import PublicForm from '../components/PublicForm.astro';
-import { faqs, primaryCta, product, publicRoutes, trustNotes } from '@content/site';
+import { faqs, primaryCta, product, publicRoutes } from '@content/site';
 
 const page = publicRoutes.find((route) => route.path === '/')!;
+
+const heroTrustSignals = [
+  'User-authorized connections',
+  'No bank credentials collected',
+  'Private financial context for Rex',
+] as const;
+
+const trustSignalCards = [
+  {
+    icon: '✓',
+    title: 'User-controlled connections',
+    body: 'Clarity is designed around explicit account authorization through Plaid.',
+  },
+  {
+    icon: '⌁',
+    title: 'Privacy-first by default',
+    body: 'Public forms never ask for bank credentials, account numbers, or documents.',
+  },
+  {
+    icon: '↗',
+    title: 'Your data stays yours',
+    body: 'Disconnect and deletion paths are documented before production access.',
+  },
+  {
+    icon: '◆',
+    title: 'Built for review',
+    body: 'Security, consent, and AI assistant boundaries are stated in plain language.',
+  },
+] as const;
 
 const heroMetrics = [
   ['Income', '$2,383.22'],
@@ -13,16 +42,16 @@ const heroMetrics = [
 
 const problemCards = [
   {
-    title: 'The numbers are scattered.',
-    body: 'Spending, budgets, accounts, and goals usually live in separate views, so the real story is hard to see.',
+    title: 'Money apps show numbers, not meaning.',
+    body: 'Transactions, budgets, goals, and context usually live apart, so the real story gets buried.',
   },
   {
-    title: 'Categories need interpretation.',
-    body: 'Transactions only become useful when they are organized into patterns you can act on.',
+    title: 'Categories need judgment.',
+    body: 'A clean label is only useful when it becomes a pattern you can understand and act on.',
   },
   {
-    title: 'Advice without context is thin.',
-    body: 'Clarity gives Rex approved financial context, memory, and goals so conversations can stay grounded.',
+    title: 'AI needs approved context.',
+    body: 'Rex can be more useful when it sees the financial context, memory, and goals you choose to provide.',
   },
 ] as const;
 
@@ -67,19 +96,19 @@ const consentSteps = [
 const showcaseScreens = [
   {
     title: 'Cash flow overview',
-    body: 'Income, spending, and net monthly movement in one calm view.',
+    body: 'Income, spending, and net monthly movement with enough context to understand the month.',
     image: '/images/app/dashboard-cash-flow.webp',
     alt: 'Clarity dashboard showing cash flow and spending pressure.',
   },
   {
     title: 'Account summary',
-    body: 'Connected account summaries with monthly income, spending, and net flow.',
+    body: 'Connected account summaries keep the headline number focused on monthly net flow.',
     image: '/images/app/accounts.webp',
     alt: 'Clarity accounts screen showing one connected Bank of America checking account.',
   },
   {
     title: 'Budget and account health',
-    body: 'Budget status, cash flow, and pressure points stay visible without turning into clutter.',
+    body: 'Budget coverage and account health stay visible without turning the dashboard into clutter.',
     image: '/images/app/dashboard-health.webp',
     alt: 'Clarity dashboard showing budget performance and account health insights.',
   },
@@ -94,10 +123,12 @@ const faqItems = faqs.slice(0, 7);
       <p class="eyebrow">Clarity beta</p>
       <h1>Understand your money before it becomes noise.</h1>
       <p class="landing-hero__lede">
-        Clarity is a personal AI financial co-pilot that turns user-authorized account
-        connections into clear spending patterns, budgets, goals, and conversations with Rex, the
-        AI assistant inside Clarity.
+        Clarity turns user-authorized account context into clear spending patterns, budgets, goals,
+        and conversations with Rex, the AI assistant inside Clarity.
       </p>
+      <div class="hero-trust-row" aria-label="Clarity trust highlights">
+        {heroTrustSignals.map((signal) => <span>{signal}</span>)}
+      </div>
       <div class="landing-hero__actions">
         <a class="button button--large" href={primaryCta.href}>Request early access</a>
         <a class="button button--secondary button--large" href="#data-consent">
@@ -114,7 +145,17 @@ const faqItems = faqs.slice(0, 7);
       </div>
     </div>
 
-    <div class="hero-device-stack" aria-label="Clarity mobile app screenshots">
+    <div class="hero-device-stack hero-device-stack--premium" aria-label="Clarity mobile app screenshots">
+      <div class="device-card device-card--secondary device-card--left">
+        <img
+          src="/images/app/accounts.webp"
+          alt="Clarity account summary screen showing connected account net flow."
+          width="720"
+          height="1415"
+          loading="eager"
+          decoding="async"
+        />
+      </div>
       <div class="device-card device-card--primary">
         <img
           src="/images/app/dashboard-cash-flow.webp"
@@ -125,8 +166,18 @@ const faqItems = faqs.slice(0, 7);
           decoding="async"
         />
       </div>
+      <div class="device-card device-card--secondary device-card--right">
+        <img
+          src="/images/app/budgets.webp"
+          alt="Clarity budgets screen showing monthly category targets."
+          width="720"
+          height="1415"
+          loading="eager"
+          decoding="async"
+        />
+      </div>
       <div class="hero-proof-card hero-proof-card--top">
-        <span>Budget health</span>
+        <span>Budget signal</span>
         <strong>6/6 categories on track</strong>
       </div>
       <div class="hero-proof-card hero-proof-card--bottom">
@@ -137,10 +188,13 @@ const faqItems = faqs.slice(0, 7);
   </section>
 
   <section class="trust-strip" aria-label="Trust signals">
-    {trustNotes.map((note) => (
+    {trustSignalCards.map((signal) => (
       <div class="trust-strip__item">
-        <span aria-hidden="true">✓</span>
-        <strong>{note}</strong>
+        <span aria-hidden="true">{signal.icon}</span>
+        <div>
+          <strong>{signal.title}</strong>
+          <p>{signal.body}</p>
+        </div>
       </div>
     ))}
   </section>
@@ -148,10 +202,10 @@ const faqItems = faqs.slice(0, 7);
   <section class="section section--split problem-section" aria-labelledby="problem-heading">
     <div class="section__header">
       <p class="eyebrow">The problem</p>
-      <h2 id="problem-heading">Personal finance feels chaotic when the app only shows rows.</h2>
+      <h2 id="problem-heading">Financial confidence breaks when the story is scattered.</h2>
       <p>
         Clarity is built for the space between raw transactions and real decisions: what changed,
-        what matters, and what deserves attention next.
+        why it matters, and what deserves attention next.
       </p>
     </div>
     <div class="problem-list problem-list--premium">
@@ -172,7 +226,7 @@ const faqItems = faqs.slice(0, 7);
       <p class="eyebrow">What Clarity does</p>
       <h2 id="features-heading">A calmer financial workspace with Rex inside.</h2>
       <p>
-        The product combines transaction organization, budgets, memory, goals, and assistant
+        Clarity combines transaction organization, budgets, memory, goals, and assistant
         conversations without claiming to replace professional financial advice.
       </p>
     </div>
@@ -209,6 +263,20 @@ const faqItems = faqs.slice(0, 7);
         available inside Clarity and does not move money, initiate payments, or make financial
         decisions for you.
       </p>
+      <div class="consent-safety-grid" aria-label="Data handling principles">
+        <div>
+          <span>Consent</span>
+          <strong>You choose what to connect.</strong>
+        </div>
+        <div>
+          <span>Control</span>
+          <strong>Disconnect and deletion paths are public.</strong>
+        </div>
+        <div>
+          <span>Boundaries</span>
+          <strong>Rex explains context, not guarantees.</strong>
+        </div>
+      </div>
       <div class="landing-hero__actions">
         <a class="button button--secondary" href="/privacy">Read Privacy</a>
         <a class="button button--secondary" href="/security">Read Security</a>
@@ -228,9 +296,10 @@ const faqItems = faqs.slice(0, 7);
   <section class="section product-showcase" aria-labelledby="showcase-heading">
     <div class="section__header section__header--center">
       <p class="eyebrow">Product preview</p>
-      <h2 id="showcase-heading">Screens from the Clarity mobile experience.</h2>
+      <h2 id="showcase-heading">A product surface built for review, not noise.</h2>
       <p>
-        These images show the current product direction using sample or redacted financial data.
+        Current mobile screens shown with sample or redacted financial data, selected to show the
+        practical Clarity experience reviewers and early users can expect.
       </p>
     </div>
     <div class="screen-gallery">
@@ -277,7 +346,7 @@ const faqItems = faqs.slice(0, 7);
   <section class="section final-cta final-cta--premium" id="request-access" aria-labelledby="request-access-heading">
     <div class="section__header">
       <p class="eyebrow">Early access</p>
-      <h2 id="request-access-heading">Help shape a calmer financial co-pilot.</h2>
+      <h2 id="request-access-heading">Request early access to Clarity.</h2>
       <p>
         Join the beta list and tell us what you want Clarity to help with. Keep it high level and
         do not submit bank credentials, account numbers, or sensitive financial details.

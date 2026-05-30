@@ -23,6 +23,7 @@ const socialTitle = isHome ? `${product.name} - Personal AI Financial Co-Pilot` 
     <meta name="theme-color" content="#f7fbff" />
     <meta name="color-scheme" content="light" />
     <link rel="canonical" href={canonicalUrl.toString()} />
+    <link rel="icon" type="image/png" sizes="96x96" href="/clarity-mark-96.png" />
 
     <meta property="og:site_name" content={product.name} />
     <meta property="og:locale" content={product.locale} />
@@ -47,7 +48,9 @@ const socialTitle = isHome ? `${product.name} - Personal AI Financial Co-Pilot` 
     <header class="site-header">
       <div class="site-header__inner">
         <a class="brand-link" href="/" aria-label="Clarity home">
-          <span class="brand-mark">C</span>
+          <span class="brand-mark brand-mark--image" aria-hidden="true">
+            <img src="/clarity-mark-96.png" alt="" width="34" height="34" decoding="async" />
+          </span>
           <span>{product.name}</span>
         </a>
         <nav class="site-nav" aria-label="Primary navigation">
