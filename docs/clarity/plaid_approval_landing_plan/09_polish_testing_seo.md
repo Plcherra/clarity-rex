@@ -109,6 +109,8 @@ Effort: Medium.
 
 Goal: catch broken links before launch.
 
+Status: Complete. Generated HTML link checks, compliance cross-link checks, support email links, and public form wiring checks passed; the QA result is captured in `polish_link_form_qa.md`.
+
 Files to modify/create:
 - Link test checklist
 
@@ -127,6 +129,8 @@ Effort: Small.
 
 Goal: remove inconsistent product or data language.
 
+Status: Complete with launch blockers noted. Public copy uses Clarity as the product, Rex as the assistant, conservative Plaid language, and no unsupported guarantee/real-time/endorsement claims; remaining draft Privacy, Terms, and Security page copy is documented in `polish_copy_consistency_pass.md` for the Phase 8 gate.
+
 Files to modify/create:
 - Copy review notes
 
@@ -144,6 +148,8 @@ Effort: Small.
 ## Phase 8 - Polish Review Gate
 
 Goal: approve site polish before final deployment review.
+
+Status: Complete. Responsive, accessibility, SEO, sitemap/robots, performance, link/form wiring, and copy consistency checks are consolidated in `polish_review_gate.md`; former Privacy, Terms, and Security placeholder blockers are resolved, and live FormSubmit delivery remains a post-deploy manual check.
 
 Files to modify/create:
 - Polish QA checklist

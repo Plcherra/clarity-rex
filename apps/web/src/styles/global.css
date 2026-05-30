@@ -280,12 +280,6 @@ li {
   font-size: 1.12rem;
 }
 
-.placeholder-form {
-  display: grid;
-  gap: 14px;
-  max-width: 620px;
-}
-
 .field-shell {
   display: grid;
   gap: 6px;

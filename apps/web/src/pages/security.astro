@@ -1,13 +1,161 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-import { publicRoutes } from '@content/site';
+import { product, publicRoutes } from '@content/site';
 
 const page = publicRoutes.find((route) => route.path === '/security')!;
 ---
 
 <BaseLayout title={page.title} description={page.description}>
   <section class="page-shell">
-  <h1>Security and Data Handling</h1>
-  <p>Draft security content will be implemented from the approved security plan.</p>
+    <p class="eyebrow">Last updated May 30, 2026</p>
+    <h1>Security and Data Handling</h1>
+    <p>
+      This page explains how Clarity thinks about security, account connections, Rex assistant
+      data, vendor handling, disconnection, deletion, and support. It is written for users and
+      reviewers, so it avoids exposing private implementation details.
+    </p>
+    <p>
+      Clarity is an early-stage personal AI financial co-pilot. No online service can remove every
+      security risk, but Clarity is designed around user authorization, limited access, and clear
+      support paths.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="flow-heading">
+    <div class="section__header">
+      <p class="eyebrow">Data flow</p>
+      <h2 id="flow-heading">Financial data starts with user authorization.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity is designed to access financial data only after a user chooses to connect or import
+        account information. Account-connection providers such as Plaid may help users authorize
+        access. Clarity does not ask for or store bank login credentials through the public site.
+      </p>
+      <p>
+        Connected or imported data may be used to power spending views, budgets, categories,
+        account context, goals, and Rex responses. Rex does not independently connect to banks,
+        move money, pay bills, open accounts, apply for credit, file taxes, or execute
+        transactions.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="controls-heading">
+    <div class="section__header">
+      <p class="eyebrow">Access controls</p>
+      <h2 id="controls-heading">Clarity separates user data and limits operational access.</h2>
+    </div>
+    <div class="card-grid">
+      <article class="panel">
+        <h3>User-scoped product data</h3>
+        <p>
+          Account, transaction, budget, goal, memory, and conversation data is designed to be tied
+          to the relevant user account and product permissions.
+        </p>
+      </article>
+      <article class="panel">
+        <h3>Operational access</h3>
+        <p>
+          Administrative access should be limited to people and systems that need it for support,
+          security, reliability, maintenance, or legal obligations.
+        </p>
+      </article>
+      <article class="panel">
+        <h3>Public form safety</h3>
+        <p>
+          Public waitlist and contact forms are for high-level requests only. Do not send account
+          numbers, credentials, one-time codes, screenshots, CSV files, or sensitive documents.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="transport-heading">
+    <div class="section__header">
+      <p class="eyebrow">Transport and storage</p>
+      <h2 id="transport-heading">Clarity uses managed services and secure transport patterns.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity is designed to use HTTPS/TLS for public web and app communication, managed hosting
+        and database infrastructure, authentication controls, and provider-level safeguards. Exact
+        controls may vary by environment, feature, vendor, and rollout stage.
+      </p>
+      <p>
+        We avoid absolute or certification-style security claims unless they are verified and
+        intentionally published.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="vendors-heading">
+    <div class="section__header">
+      <p class="eyebrow">Vendors</p>
+      <h2 id="vendors-heading">Service providers help operate Clarity.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity may use vendors for account connections, hosting, databases, AI model responses,
+        speech-to-text, text-to-speech, support/contact forms, email delivery, security,
+        monitoring, and analytics if enabled. Providers may process information according to their
+        own terms, privacy policies, security practices, and legal obligations.
+      </p>
+      <p>
+        Voice features are user-initiated. Clarity does not describe Rex as always listening. Voice
+        flows may involve audio capture, transcription, assistant context, generated responses,
+        spoken responses, and related metadata.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="retention-heading">
+    <div class="section__header">
+      <p class="eyebrow">Deletion and disconnection</p>
+      <h2 id="retention-heading">Stopping access is different from deleting stored data.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Disconnecting a financial account may stop future access where supported. Data already
+        stored in Clarity may remain until you delete it through supported product controls or
+        submit a deletion request.
+      </p>
+      <p>
+        Some records may remain for a limited period in backups, logs, security records, support
+        records, or systems where retention is needed for legal, fraud-prevention, security,
+        dispute-resolution, or operational reasons. Visit <a href="/data-deletion">Data Deletion</a>
+        to learn how to request deletion.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="incident-heading">
+    <div class="section__header">
+      <p class="eyebrow">Security contact</p>
+      <h2 id="incident-heading">Report security concerns through the contact path.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        To report a security concern, use the <a href="/contact">Contact</a> page and choose
+        <strong>Security concern</strong>, or email
+        <a href={`mailto:${product.supportEmail}`}>{product.supportEmail}</a>. Include a clear,
+        high-level description. Do not include secrets, credentials, bank passwords, full account
+        numbers, full card numbers, Social Security numbers, one-time codes, private keys, or
+        sensitive files.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="related-heading">
+    <div class="section__header">
+      <p class="eyebrow">Related links</p>
+      <h2 id="related-heading">More public data and support information.</h2>
+    </div>
+    <div class="hero__actions">
+      <a class="button button--secondary" href="/privacy">Privacy</a>
+      <a class="button button--secondary" href="/terms">Terms</a>
+      <a class="button button--secondary" href="/data-deletion">Data Deletion</a>
+      <a class="button" href="/contact">Contact</a>
+    </div>
   </section>
 </BaseLayout>

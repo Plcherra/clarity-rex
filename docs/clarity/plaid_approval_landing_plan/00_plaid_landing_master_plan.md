@@ -71,6 +71,6 @@ This order is faster and lower-risk than building a full web app. Plaid approval
 9. `09_polish_testing_seo.md`
 10. `10_final_review_deployment.md`
 
-Current Cursor: `09_polish_testing_seo.md` Phase 5 complete. Next implementation step: `09_polish_testing_seo.md` Phase 6.
+Current Cursor: `10_final_review_deployment.md` Phase 5 pre-deployment package complete; production deploy is blocked until commit/push and Cloudflare Pages setup/authentication are complete.
 
 Full Plan Complete: Yes.

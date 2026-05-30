@@ -1,13 +1,177 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-import { publicRoutes } from '@content/site';
+import { product, publicRoutes } from '@content/site';
 
 const page = publicRoutes.find((route) => route.path === '/privacy')!;
 ---
 
 <BaseLayout title={page.title} description={page.description}>
   <section class="page-shell">
-  <h1>Privacy Policy</h1>
-  <p>Draft privacy content will be implemented from the approved privacy plan.</p>
+    <p class="eyebrow">Last updated May 30, 2026</p>
+    <h1>Privacy Policy</h1>
+    <p>
+      This Privacy Policy explains how Clarity collects, uses, shares, retains, and protects
+      information when people use Clarity, Rex, the public website, support paths, waitlist forms,
+      and account-connection features.
+    </p>
+    <p>
+      Clarity is a personal AI financial co-pilot. Rex is the assistant inside Clarity. Clarity is
+      not a bank, broker, lender, investment advisor, tax advisor, accountant, law firm, or credit
+      counselor.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="data-heading">
+    <div class="section__header">
+      <p class="eyebrow">Information we collect</p>
+      <h2 id="data-heading">Clarity uses only the context needed to provide the product.</h2>
+    </div>
+    <div class="card-grid">
+      <article class="panel">
+        <h3>Account and profile data</h3>
+        <p>
+          This may include your name, email address, sign-in information, app preferences, support
+          requests, waitlist submissions, and account metadata.
+        </p>
+      </article>
+      <article class="panel">
+        <h3>Financial context</h3>
+        <p>
+          When you choose to connect or import financial information, Clarity may process accounts,
+          balances, transactions, categories, budgets, goals, plans, and related financial context.
+        </p>
+      </article>
+      <article class="panel">
+        <h3>Rex assistant data</h3>
+        <p>
+          Rex may process chat messages, generated responses, approved memory, goals, voice
+          transcripts, conversation metadata, and related context needed to personalize assistance.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="plaid-heading">
+    <div class="section__header">
+      <p class="eyebrow">Connected accounts</p>
+      <h2 id="plaid-heading">Financial account access is user-authorized.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity is designed to use account-connection providers such as Plaid to help users connect
+        financial accounts with permission. Clarity does not ask for or store bank login
+        credentials. The information available through a connection depends on the financial
+        institution, provider, user permissions, and product configuration.
+      </p>
+      <p>
+        Connected information may be used to show spending, budgets, cash flow, categories, account
+        context, and Rex responses. Clarity does not use Plaid-connected data to act as a bank,
+        make decisions for you, move money, open accounts, apply for credit, file taxes, or provide
+        regulated financial advice.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="use-heading">
+    <div class="section__header">
+      <p class="eyebrow">How we use information</p>
+      <h2 id="use-heading">We use data to run Clarity and respond to user requests.</h2>
+    </div>
+    <div class="card-grid">
+      <article class="panel">
+        <h3>Product features</h3>
+        <p>
+          To display accounts, transactions, budgets, categories, goals, insights, assistant
+          responses, memory, conversation history, and product settings.
+        </p>
+      </article>
+      <article class="panel">
+        <h3>Support and safety</h3>
+        <p>
+          To respond to requests, verify deletion or privacy requests, troubleshoot issues,
+          prevent abuse, maintain reliability, and protect the service.
+        </p>
+      </article>
+      <article class="panel">
+        <h3>Product improvement</h3>
+        <p>
+          To understand product performance, improve flows, and make Clarity easier to use without
+          selling personal financial data.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="sharing-heading">
+    <div class="section__header">
+      <p class="eyebrow">Sharing and providers</p>
+      <h2 id="sharing-heading">Clarity uses service providers to operate the product.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity may share information with service providers that help operate the product, such as
+        account-connection providers, database and hosting providers, AI model providers,
+        speech-to-text and text-to-speech providers, email/contact tooling, analytics if enabled,
+        security tools, and support infrastructure.
+      </p>
+      <p>
+        Clarity may also disclose information when needed to comply with law, protect users,
+        investigate abuse, enforce terms, respond to requests, complete a business transfer, or
+        follow your direction. Clarity does not sell personal financial data.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="choices-heading">
+    <div class="section__header">
+      <p class="eyebrow">Choices and deletion</p>
+      <h2 id="choices-heading">You can request access, correction, disconnection, or deletion.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        You can contact Clarity to request help with privacy questions, data access, correction,
+        deletion, or account disconnection. Visit <a href="/data-deletion">Data Deletion</a> or
+        contact <a href={`mailto:${product.supportEmail}`}>{product.supportEmail}</a>.
+      </p>
+      <p>
+        Disconnecting a financial account may stop future access where supported. Historical data
+        already stored in Clarity may remain until deleted through product controls or a deletion
+        request. Some records may remain for a limited period where needed for legal, security,
+        fraud-prevention, dispute, backup, or operational reasons.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="security-heading">
+    <div class="section__header">
+      <p class="eyebrow">Security</p>
+      <h2 id="security-heading">We use reasonable safeguards and clear contact paths.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity is designed to use secure transport, managed infrastructure, access controls, and
+        operational safeguards appropriate for an early-stage personal finance product. No online
+        service can remove every security risk. Learn more on the <a href="/security">Security</a>
+        page.
+      </p>
+      <p>
+        Do not send bank passwords, full account numbers, full card numbers, Social Security
+        numbers, one-time codes, API keys, private keys, screenshots, CSV files, or sensitive
+        financial documents through public forms or email.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="related-heading">
+    <div class="section__header">
+      <p class="eyebrow">Related links</p>
+      <h2 id="related-heading">Review the full public trust surface.</h2>
+    </div>
+    <div class="hero__actions">
+      <a class="button button--secondary" href="/terms">Terms</a>
+      <a class="button button--secondary" href="/security">Security</a>
+      <a class="button button--secondary" href="/data-deletion">Data Deletion</a>
+      <a class="button button--secondary" href="/contact">Contact</a>
+    </div>
   </section>
 </BaseLayout>

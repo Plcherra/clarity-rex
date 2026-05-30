@@ -1,13 +1,169 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-import { publicRoutes } from '@content/site';
+import { product, publicRoutes } from '@content/site';
 
 const page = publicRoutes.find((route) => route.path === '/terms')!;
 ---
 
 <BaseLayout title={page.title} description={page.description}>
   <section class="page-shell">
-  <h1>Terms of Service</h1>
-  <p>Draft terms content will be implemented from the approved terms plan.</p>
+    <p class="eyebrow">Effective May 30, 2026</p>
+    <h1>Terms of Service</h1>
+    <p>
+      These Terms govern access to Clarity, including the public website, mobile app, account
+      connection features, Rex assistant, waitlist, contact forms, and support paths.
+    </p>
+    <p>
+      By using Clarity, you agree to use the product responsibly and understand that Clarity is not
+      a regulated financial, legal, tax, accounting, banking, lending, brokerage, or investment
+      advisory service.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="service-heading">
+    <div class="section__header">
+      <p class="eyebrow">The service</p>
+      <h2 id="service-heading">Clarity helps organize personal financial context.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity provides tools for reviewing spending, budgets, goals, financial context,
+        assistant conversations, memory, and related planning workflows. Rex is the AI assistant
+        inside Clarity. Rex may help summarize information, explain options, and organize context,
+        but you remain responsible for your own decisions.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="eligibility-heading">
+    <div class="section__header">
+      <p class="eyebrow">Eligibility and accounts</p>
+      <h2 id="eligibility-heading">Use your own information and keep account access secure.</h2>
+    </div>
+    <div class="card-grid">
+      <article class="panel">
+        <h3>Personal use</h3>
+        <p>
+          Clarity is intended for personal use by people who can form a binding agreement and use
+          the product in compliance with applicable laws.
+        </p>
+      </article>
+      <article class="panel">
+        <h3>Accurate information</h3>
+        <p>
+          You are responsible for the information you provide, upload, connect, or ask Clarity to
+          process.
+        </p>
+      </article>
+      <article class="panel">
+        <h3>Account security</h3>
+        <p>
+          Keep your sign-in credentials secure. Do not share access, submit bank passwords through
+          public forms, or use Clarity to access accounts you are not authorized to use.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="financial-heading">
+    <div class="section__header">
+      <p class="eyebrow">Financial boundaries</p>
+      <h2 id="financial-heading">Clarity and Rex do not replace professional advice.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity may provide summaries, categories, forecasts, suggestions, or assistant responses
+        based on available context. These outputs may be incomplete, delayed, inaccurate, or not
+        appropriate for your situation. You should review information carefully and consult
+        qualified professionals for investment, tax, legal, accounting, credit, insurance, or other
+        regulated advice.
+      </p>
+      <p>
+        Clarity and Rex do not move money, pay bills, open accounts, apply for credit, file taxes,
+        make purchases, or take external financial actions for you.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="plaid-heading">
+    <div class="section__header">
+      <p class="eyebrow">Connected accounts</p>
+      <h2 id="plaid-heading">Account connections depend on user permission and providers.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity is designed to use user-authorized account-connection providers such as Plaid.
+        Available data may depend on your financial institution, connection provider, permissions,
+        account type, and product configuration. Clarity does not guarantee continuous access,
+        immediate balance updates, exhaustive transaction coverage, or error-free categorization.
+      </p>
+      <p>
+        You may be able to disconnect accounts where supported, and you can request help through
+        the published <a href="/data-deletion">Data Deletion</a> or <a href="/contact">Contact</a>
+        paths.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="acceptable-heading">
+    <div class="section__header">
+      <p class="eyebrow">Acceptable use</p>
+      <h2 id="acceptable-heading">Use Clarity lawfully and safely.</h2>
+    </div>
+    <div class="panel">
+      <ul>
+        <li>Do not use Clarity to access accounts or data you are not authorized to access.</li>
+        <li>Do not submit malware, abusive content, secrets, credentials, or sensitive documents through public forms.</li>
+        <li>Do not attempt to disrupt, scrape, reverse engineer, overload, or bypass product controls.</li>
+        <li>Do not use Clarity to commit fraud, evade law, impersonate others, or make prohibited financial decisions.</li>
+        <li>Do not rely on Rex outputs as the only basis for important financial, legal, tax, credit, health, or safety decisions.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="availability-heading">
+    <div class="section__header">
+      <p class="eyebrow">Availability and changes</p>
+      <h2 id="availability-heading">Clarity may change as the product develops.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity may be modified, paused, limited, or discontinued. Features may depend on third
+        parties, financial institutions, internet access, AI providers, speech providers, hosting
+        providers, account-connection providers, and user permissions.
+      </p>
+      <p>
+        We may update these Terms from time to time. Continued use of Clarity after changes means
+        you accept the updated Terms.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="warranty-heading">
+    <div class="section__header">
+      <p class="eyebrow">Important limitations</p>
+      <h2 id="warranty-heading">Use Clarity with judgment.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity is provided on an as-available basis. We do not promise that the product will be
+        uninterrupted, error-free, perfectly secure, or suitable for every purpose. To the maximum
+        extent permitted by law, Clarity is not responsible for decisions you make based on
+        summaries, categories, predictions, assistant responses, or third-party data availability.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="contact-heading">
+    <div class="section__header">
+      <p class="eyebrow">Questions</p>
+      <h2 id="contact-heading">Contact Clarity through the published support path.</h2>
+    </div>
+    <div class="hero__actions">
+      <a class="button button--secondary" href="/privacy">Privacy</a>
+      <a class="button button--secondary" href="/security">Security</a>
+      <a class="button button--secondary" href="/data-deletion">Data Deletion</a>
+      <a class="button" href={`mailto:${product.supportEmail}`}>Email support</a>
+    </div>
   </section>
 </BaseLayout>

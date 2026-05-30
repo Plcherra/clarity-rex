@@ -2,9 +2,24 @@
 
 Goal: prepare the public site and Plaid review package for launch and submission.
 
+## Post-Phase-10 Manual Reminder
+
+After File 10 is complete, do not treat the landing site as Plaid-ready until these manual steps are finished:
+
+- Deploy the static site to the production domain, currently `https://rexpilot.com`.
+- Open the live site on mobile and desktop.
+- Submit one safe waitlist test and one safe contact test through the live forms.
+- Check `clarity.rex@gmail.com` inbox and spam.
+- Confirm any FormSubmit activation email if prompted, then submit again.
+- Verify the success redirect lands on `https://rexpilot.com/form-success`.
+- Confirm live Privacy, Terms, Security, Data Deletion, and Contact URLs are reachable.
+- Use the live URLs in the Plaid questionnaire/submission package.
+
 ## Phase 1 - Content Freeze
 
 Goal: freeze landing and policy content for final review.
+
+Status: Complete. Final content freeze is recorded in `final_content_freeze_checklist.md`; public page copy is complete for deployment QA, with legal review status intentionally handled in Phase 2.
 
 Files to modify/create:
 - Final content checklist
@@ -24,6 +39,8 @@ Effort: Small.
 
 Goal: explicitly identify legal review status.
 
+Status: Complete. Legal-review status, attorney-review follow-ups, and the intentional launch decision are recorded in `legal_review_status.md`.
+
 Files to modify/create:
 - Legal review notes
 
@@ -41,6 +58,8 @@ Effort: Small.
 ## Phase 3 - Plaid Questionnaire Prep
 
 Goal: prepare answers for Plaid risk/security diligence.
+
+Status: Complete. Plaid questionnaire draft answers, source URLs, product/data summary, security posture, retention/deletion language, vendor notes, and open verification items are captured in `plaid_questionnaire_prep.md`.
 
 Files to modify/create:
 - Plaid questionnaire notes
@@ -60,6 +79,8 @@ Effort: Medium.
 
 Goal: ensure domain readiness.
 
+Status: Complete with deployment blocker. The canonical app configuration is correct for `https://rexpilot.com`, but public DNS does not yet resolve for `rexpilot.com` or `www.rexpilot.com`; required Cloudflare Pages domain actions are documented in `deployment_domain_checklist.md`.
+
 Files to modify/create:
 - Deployment/domain checklist
 
@@ -77,6 +98,8 @@ Effort: Small.
 ## Phase 5 - Production Deploy
 
 Goal: deploy the public site.
+
+Status: Pre-deployment package complete, production deploy blocked. Local build and deployment instructions are captured in `production_deployment_notes.md`; Cloudflare Pages deployment still requires committing/pushing the latest changes and configuring/authenticating Cloudflare.
 
 Files to modify/create:
 - Deployment logs/notes
