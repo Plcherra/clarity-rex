@@ -137,12 +137,35 @@ deploy/templates/nginx-clarity-rex.conf
 
 It proxies HTTP and websocket traffic to `127.0.0.1:8011`.
 
-After editing the `server_name` and TLS paths:
+For the Clarity API domain migration, keep both hostnames during the transition:
+
+```nginx
+server_name api.goclarity.app api.rexpilot.com;
+```
+
+This allows current mobile builds that still know the old API hostname to keep working while new builds move to `https://api.goclarity.app`.
+
+On the VPS, the active Nginx config is usually `/etc/nginx/sites-available/rex` with `/etc/nginx/sites-enabled/rex` symlinked to it. Update both HTTP and HTTPS server blocks if both exist:
+
+```sh
+sudo grep -R "server_name api.rexpilot.com" -n /etc/nginx/sites-enabled /etc/nginx/sites-available /etc/nginx/conf.d
+sudo nano /etc/nginx/sites-available/rex
+```
+
+After editing the `server_name` values:
 
 ```sh
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+Then issue or expand the TLS certificate:
+
+```sh
+sudo certbot --nginx -d api.goclarity.app -d api.rexpilot.com
+```
+
+Keep `api.goclarity.app` DNS-only in Cloudflare until the certificate and `/ready` checks pass.
 
 ## Health Checks
 
