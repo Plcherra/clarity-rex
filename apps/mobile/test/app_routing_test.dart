@@ -10,6 +10,7 @@ import 'package:clarity/features/assistant/chat/data/conversation_api.dart';
 import 'package:clarity/features/assistant/chat/domain/chat_message.dart';
 import 'package:clarity/features/assistant/voice/application/voice_call_controller.dart';
 import 'package:clarity/features/assistant/voice/domain/voice_call_state.dart';
+import 'package:clarity/features/profile/presentation/profile_screen.dart';
 import 'package:clarity/features/shell/presentation/home_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,7 +102,7 @@ void main() {
     expect(find.byType(HomeShell), findsOneWidget);
   });
 
-  testWidgets('sign out lives in the accounts menu, not a floating action', (
+  testWidgets('profile and security actions live in the Profile tab', (
     tester,
   ) async {
     final app = AppComposition(initialAuthenticated: true);
@@ -129,10 +130,14 @@ void main() {
     await tester.tap(find.text('Accounts'));
     await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Account menu'), findsOneWidget);
-    await tester.tap(find.byTooltip('Account menu'));
+    expect(find.byTooltip('Account menu'), findsNothing);
+    expect(find.text('Multi-factor authentication'), findsNothing);
+
+    await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
 
+    expect(find.byType(ProfileScreen), findsOneWidget);
+    expect(find.text('Multi-factor authentication'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
   });
 

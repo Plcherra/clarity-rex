@@ -7,17 +7,21 @@ import '../../accounts/presentation/accounts_screen.dart';
 import '../../assistant/presentation/assistant_screen.dart';
 import '../../budgets/presentation/budgets_screen.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
+import '../../profile/application/profile_controller.dart';
+import '../../profile/presentation/profile_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({
     super.key,
     required this.ui,
     required this.authController,
+    required this.profileController,
     this.signOut,
   });
 
   final AppUiDependencies ui;
   final AuthController authController;
+  final ProfileController profileController;
   final Future<void> Function()? signOut;
 
   @override
@@ -73,14 +77,17 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         transactionController: widget.ui.transactions,
         budgetController: widget.ui.budgets,
         importJobStatusController: widget.ui.importJobStatus,
-        authController: widget.authController,
-        signOut: widget.signOut,
       ),
       BudgetsScreen(
         controller: widget.ui.budgets,
         manageCategoriesRequest: _manageCategoriesRequest,
       ),
       const AssistantScreen(),
+      ProfileScreen(
+        profileController: widget.profileController,
+        authController: widget.authController,
+        signOut: widget.signOut,
+      ),
     ];
 
     return HeroMode(
@@ -120,6 +127,11 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               icon: Icon(Icons.psychology_alt_outlined),
               selectedIcon: Icon(Icons.psychology_alt_rounded),
               label: 'Assistant',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person_rounded),
+              label: 'Profile',
             ),
           ],
         ),

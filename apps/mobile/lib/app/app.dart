@@ -204,6 +204,7 @@ final class ClarityApp extends StatelessWidget {
     return HomeShell(
       ui: ui,
       authController: authController,
+      profileController: profileController,
       signOut: authController.signOut,
     );
   }

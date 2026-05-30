@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../app/ui_dependencies.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
-import '../../auth/application/auth_controller.dart';
-import '../../auth/presentation/mfa_enrollment_screen.dart';
 import 'account_detail_screen.dart';
 
 class AccountsScreen extends StatefulWidget {
@@ -15,8 +13,6 @@ class AccountsScreen extends StatefulWidget {
     required this.transactionController,
     required this.budgetController,
     required this.importJobStatusController,
-    required this.authController,
-    this.signOut,
   });
 
   final AccountUiController controller;
@@ -24,8 +20,6 @@ class AccountsScreen extends StatefulWidget {
   final TransactionUiController transactionController;
   final BudgetUiController budgetController;
   final ImportJobStatusController importJobStatusController;
-  final AuthController authController;
-  final Future<void> Function()? signOut;
 
   @override
   State<AccountsScreen> createState() => _AccountsScreenState();
@@ -94,40 +88,6 @@ class _AccountsScreenState extends State<AccountsScreen> {
     );
   }
 
-  Future<void> _confirmSignOut() async {
-    final signOut = widget.signOut;
-    if (signOut == null) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Sign out?'),
-        content: const Text('You can sign back in when you are ready.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Sign out'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await signOut();
-    }
-  }
-
-  Future<void> _openMfaSettings() async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (context) =>
-            MfaEnrollmentScreen(controller: widget.authController),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     widget.controller.removeListener(_handleControllerChanged);
@@ -151,39 +111,6 @@ class _AccountsScreenState extends State<AccountsScreen> {
             onPressed: () => _showAddAccountDialog(context),
             icon: const Icon(Icons.add_rounded),
           ),
-          if (widget.signOut != null)
-            PopupMenuButton<_AccountMenuAction>(
-              tooltip: 'Account menu',
-              icon: const Icon(Icons.account_circle_outlined),
-              onSelected: (action) {
-                switch (action) {
-                  case _AccountMenuAction.mfa:
-                    _openMfaSettings();
-                    break;
-                  case _AccountMenuAction.signOut:
-                    _confirmSignOut();
-                    break;
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: _AccountMenuAction.mfa,
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.verified_user_outlined),
-                    title: Text('Multi-factor authentication'),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: _AccountMenuAction.signOut,
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.logout_rounded),
-                    title: Text('Sign out'),
-                  ),
-                ),
-              ],
-            ),
         ],
       ),
       body: ListenableBuilder(
@@ -265,8 +192,6 @@ class _AccountsScreenState extends State<AccountsScreen> {
     );
   }
 }
-
-enum _AccountMenuAction { mfa, signOut }
 
 class _AccountsSummaryCard extends StatelessWidget {
   const _AccountsSummaryCard({required this.accounts});
