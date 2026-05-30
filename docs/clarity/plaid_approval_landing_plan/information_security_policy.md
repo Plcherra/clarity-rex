@@ -1,442 +1,305 @@
 # Clarity Information Security Policy
 
-Version: 1.0  
+Version: 1.1  
 Effective date: May 30, 2026  
 Owner: Pedro Martins, Founder  
 Application: Clarity, including Rex, the AI financial co-pilot
+
+## Current Security Posture Summary
+
+Clarity is an early-stage, solo-founder personal finance application built with a security posture appropriate for a small product preparing for Plaid Production access. The current program emphasizes user authorization, limited data collection, Supabase Auth, user-scoped database access controls, HTTPS/TLS, managed infrastructure protections, restricted handling of Plaid data and credentials, and a direct founder-led incident response process. Clarity does not claim enterprise certifications or a dedicated security team; instead, this policy documents the practical controls currently used or expected for production operation and the areas that will mature as the company grows.
 
 ## 1. Introduction
 
 ### Company
 
-Clarity is an early-stage personal AI financial co-pilot mobile application developed and operated by Pedro Martins as a solo founder. Clarity helps users understand their spending, budgets, goals, and financial context through a mobile app and an AI assistant named Rex.
+Clarity is a mobile personal AI financial co-pilot developed and operated by Pedro Martins as a solo founder. Clarity helps users understand spending, budgets, goals, and financial context through the Clarity app and Rex, the AI assistant inside the product.
 
-Clarity is currently preparing for Plaid Production access. This policy describes Clarity's current information security practices, the intended security baseline for production use, and the controls that will mature as the company grows.
-
-Clarity is not a bank, broker, lender, investment advisor, tax advisor, accountant, law firm, or credit counselor. Clarity does not move money, execute transactions, open accounts, apply for credit, or make financial decisions on behalf of users.
+Clarity is not a bank, broker, lender, investment adviser, tax adviser, accountant, law firm, or credit counselor. Clarity does not move money, execute transactions, open accounts, apply for credit, file taxes, or make financial decisions on behalf of users.
 
 ### Purpose
 
-The purpose of this Information Security Policy is to define how Clarity protects user data, financial account data, application systems, credentials, and supporting infrastructure. The policy is intended to:
-
-- Establish clear security expectations for Clarity's production environment.
-- Protect user-authorized financial data received through Plaid.
-- Protect authentication, application, and AI-assistant data handled by Clarity.
-- Support Plaid Production access review and related compliance diligence.
-- Provide a realistic security governance baseline for an early-stage, solo-founder product.
-- Define future improvement areas as Clarity grows.
+This Information Security Policy defines how Clarity protects user data, Plaid-connected financial data, application systems, credentials, and supporting infrastructure. It is intended to support Plaid Production review, guide current operations, and establish a clear baseline for future security maturity.
 
 ### Scope
 
 This policy applies to:
 
-- The Clarity mobile application.
-- Rex, the AI assistant experience inside Clarity.
-- Backend services, APIs, serverless functions, and databases used by Clarity.
-- Supabase authentication, database, storage, and related managed services used by Clarity.
+- The Clarity mobile application and Rex assistant experience.
+- Backend services, APIs, serverless functions, databases, and storage used by Clarity.
+- Supabase authentication, database, and managed infrastructure services.
 - Plaid integrations used for user-authorized account connections.
-- AI and supporting providers, including Grok or other model providers used to power Rex.
-- Source code repositories, development tools, deployment workflows, environment variables, credentials, and operational logs.
-- Support, privacy, security, and data deletion workflows.
+- AI, speech, text-to-speech, support, hosting, monitoring, and deployment providers used to operate Clarity.
+- Source code repositories, production credentials, environment variables, operational logs, and support workflows.
 
-This policy applies to Pedro Martins in his role as founder, developer, administrator, and operator of Clarity. If contractors or employees are added later, they will be required to follow this policy or a successor policy before receiving access to Clarity systems or user data.
+At the time of this policy, Pedro Martins is the only regular operator with administrative responsibility for Clarity. If employees or contractors are added later, they must follow this policy or a successor policy before receiving access to production systems or user data.
 
 ## 2. Information Security Objectives
 
-Clarity's security program is designed around practical controls that match the product's current stage while protecting sensitive user information with care. Clarity's security objectives are:
+Clarity's security objectives are to:
 
 - Protect user-authorized financial data from unauthorized access, disclosure, alteration, or loss.
-- Avoid collecting or storing data that is not needed for the product's stated functionality.
-- Use Plaid for bank account connection flows so Clarity does not collect or store users' bank usernames or passwords.
-- Authenticate users before allowing access to private product data.
-- Scope user data so users can access only their own Clarity records.
-- Use secure transport, including HTTPS/TLS, for application, backend, and provider communications.
-- Use managed infrastructure and database protections, including Supabase authentication, row-level security where applicable, and provider-supported encryption at rest.
-- Treat secrets, Plaid tokens, service keys, and production credentials as restricted information.
-- Limit internal access to user data to operational, support, security, compliance, and user-requested purposes.
-- Maintain a clear process for responding to security incidents, vulnerabilities, and user security reports.
-- Review and improve the security program as the product matures.
+- Collect and retain only the data reasonably needed to provide Clarity's features, support users, secure the service, and meet operational or compliance needs.
+- Use Plaid for bank connection flows so Clarity does not collect or store bank usernames or passwords.
+- Authenticate users before giving access to private app data.
+- Scope user data so each user can access only their own Clarity records.
+- Protect production credentials, Plaid tokens, service keys, and secrets as restricted information.
+- Use HTTPS/TLS for app, backend, website, and provider communications.
+- Use managed infrastructure controls, including Supabase Auth, Supabase Row Level Security where applicable, and provider-supported encryption at rest.
+- Limit internal access to legitimate operational, support, security, compliance, and user-requested purposes.
+- Respond promptly and responsibly to suspected security incidents, vulnerabilities, or data exposure.
+- Improve the security program as Clarity's product, team, and risk profile mature.
 
-Clarity acknowledges that, as an early-stage solo-founder application, it does not yet have enterprise-scale security operations such as a dedicated 24/7 security team, formal SOC 2 certification, or a mature vendor-risk department. This policy intentionally avoids claiming controls that are not yet implemented. Clarity's near-term objective is to operate with disciplined, transparent, and appropriate safeguards while building toward more formal security processes over time.
+Clarity is intentionally transparent about its current stage. It does not currently operate a dedicated 24/7 security operations center, maintain SOC 2 certification, or run an enterprise vendor-risk program. Those may become appropriate later. The current goal is to maintain a disciplined, accurate, and practical security baseline for a solo-founder product handling sensitive financial context.
 
 ## 3. Data Classification and Handling
 
-Clarity classifies information based on sensitivity and risk. These classifications guide access, storage, transmission, and incident-response decisions.
+Clarity classifies information by sensitivity so access, storage, transmission, and incident response can be handled consistently.
 
 ### Public Information
 
-Public information is intended for general availability and may be published on Clarity's website, app store listings, public documentation, or marketing materials.
+Public information may be shared on Clarity's website, app listings, public policies, or user-facing materials. Examples include product descriptions, public support instructions, privacy disclosures, terms, security pages, and data deletion pages.
 
-Examples include:
-
-- Public website content.
-- General product descriptions.
-- Public privacy, terms, security, and data deletion pages.
-- Non-sensitive support instructions.
-
-Public information should still be reviewed for accuracy. Clarity should not make unsupported claims about Plaid approval, bank-grade security, certifications, legal review, or financial outcomes.
+Public materials must be accurate and must not claim Plaid endorsement, bank-grade security, legal review, formal certifications, guaranteed outcomes, or controls that have not been implemented.
 
 ### Internal Information
 
-Internal information is used to operate and develop Clarity but is not intended for public release.
+Internal information supports product development and operations but is not intended for public release. Examples include product plans, implementation notes, non-production documentation, and testing records that do not contain real user data.
 
-Examples include:
-
-- Product plans and roadmaps.
-- Non-sensitive internal documentation.
-- Non-production configuration notes.
-- Testing notes that do not include real user data.
-
-Internal information should be stored in approved repositories, documentation systems, or founder-controlled accounts. It should not be published unless reviewed.
+Internal information should be stored only in founder-controlled or approved systems.
 
 ### Confidential Information
 
-Confidential information includes user and business information that could create privacy, security, or business risk if disclosed.
+Confidential information includes user or business information that could create privacy, security, or business risk if disclosed. Examples include:
 
-Examples include:
+- User profile information and email addresses.
+- Budgets, goals, categories, preferences, and financial summaries.
+- Rex conversation history, memory, prompts, and generated responses.
+- Support, privacy, deletion, or security request records.
+- Operational logs or analytics tied to user activity.
+- Vendor, billing, and non-public business records.
 
-- User profile information.
-- User email addresses.
-- Budget, goal, transaction categorization, and app preference data.
-- Conversation history with Rex.
-- User support requests.
-- Product analytics or operational logs tied to user behavior.
-- Vendor contracts, billing records, and non-public operational details.
-
-Confidential information must be accessed only for legitimate product, support, security, compliance, debugging, or user-requested purposes.
+Confidential information may be accessed only for legitimate product, support, security, compliance, debugging, or user-requested purposes.
 
 ### Restricted Information
 
-Restricted information is the most sensitive category and requires the strongest handling available within Clarity's current architecture.
+Restricted information is the most sensitive category and requires the strongest practical protections available to Clarity. Examples include:
 
-Examples include:
-
-- Plaid access tokens, item identifiers, account identifiers, and related connection metadata.
+- Plaid access tokens, item identifiers, account identifiers, and connection metadata.
 - User-authorized financial account and transaction data received through Plaid.
-- Authentication records and session-related information.
-- Supabase service-role keys or other privileged backend credentials.
-- API keys for Plaid, Supabase, Grok, AI services, speech services, email providers, monitoring tools, deployment systems, and app store systems.
+- Authentication records, privileged database access, and session-related information.
+- Supabase service-role keys and other privileged backend credentials.
+- API keys for Plaid, Supabase, Grok, speech providers, deployment tools, monitoring tools, support tools, and app store systems.
 - Production database credentials.
-- Security incident records.
-- Vulnerability details before remediation.
+- Security incident records and unresolved vulnerability details.
 
-Restricted information must not be placed in public repositories, public issue trackers, screenshots, support forms, chat messages, or unapproved documents. Secrets must be stored in environment variables, provider secret stores, or other appropriate secret-management mechanisms rather than hardcoded into source code.
+Restricted information must not be placed in public repositories, public issue trackers, screenshots, unsecured notes, chat messages, user support forms, or unapproved documents. Secrets must be stored in environment variables, deployment secret stores, Supabase configuration, or other appropriate secret-management mechanisms.
 
 ### Plaid Financial Data Handling
 
-Clarity uses Plaid to help users connect financial accounts with their permission. Clarity does not ask users to provide bank usernames or passwords directly to Clarity, and Clarity does not store bank login credentials.
+Clarity uses Plaid to help users connect financial accounts with permission. Users authenticate with their financial institution through the Plaid-supported connection flow; Clarity does not ask users to send bank usernames or passwords to Clarity and does not store bank login credentials.
 
-Depending on the user's institution, permissions, Plaid product configuration, and available data, Clarity may receive and process financial account data such as:
+Depending on the user's institution, permissions, product configuration, and Plaid availability, Clarity may receive:
 
 - Institution names or institution metadata.
-- Account names, display labels, types, or subtypes.
-- Account identifiers or provider identifiers.
-- Available, current, or statement balances where supported.
-- Transaction dates, descriptions, merchants, categories, and amounts.
-- Pending or posted transaction status where supported.
-- Account connection status, item metadata, and related troubleshooting information.
+- Account names, display labels, types, and subtypes.
+- Provider account identifiers and related connection metadata.
+- Balances where supported.
+- Transaction dates, descriptions, merchants, categories, amounts, and pending or posted status.
+- Account connection status and troubleshooting metadata.
 
-Clarity uses this data to provide user-facing functionality such as budgeting, spending insights, categorization, dashboard summaries, goals, financial coaching, and Rex assistant context. Clarity may also use this data for support, troubleshooting, security, abuse prevention, compliance review, and product reliability.
+Clarity uses Plaid-connected data to provide budgeting, spending insights, transaction review, categorization, dashboard summaries, goals, and Rex assistant context. Clarity may also use it for support, troubleshooting, reliability, abuse prevention, security, and compliance review.
 
-Plaid-connected data must be handled as Restricted Information. It should be stored only where needed to operate the product, should be scoped to the authorized user, and should not be used for unrelated advertising or sold as personal financial data.
+Plaid-connected data is treated as Restricted Information. It should be stored only where needed to provide or support the product, scoped to the authorized user, protected from unnecessary exposure, and not sold as personal financial data or used for unrelated third-party advertising.
 
 ### AI Assistant Data Handling
 
-Rex is the AI assistant inside Clarity. To provide AI-powered responses, Clarity may send relevant prompts, conversation content, approved product context, authorized financial context, and related metadata to AI model providers such as Grok.
+Rex may use approved Clarity context to help users understand spending, budgets, goals, and related product information. To generate responses, Clarity may send relevant user messages, conversation content, financial context, memory/context, and request metadata to AI model providers such as Grok.
 
-Clarity should send only the context reasonably needed to provide the requested assistant feature. Rex may help users understand spending, budgets, goals, and related product context, but Rex does not independently connect to banks, move money, open accounts, apply for credit, file taxes, or execute financial actions.
+Clarity should include only the context reasonably needed for the requested assistant feature. Rex does not independently access financial institutions, move money, open accounts, apply for credit, file taxes, make purchases, or execute financial actions.
 
-AI-related prompts, responses, transcripts, memory, and conversation context are Confidential or Restricted depending on whether they include financial or sensitive account information.
+AI prompts, responses, transcripts, and memory are Confidential or Restricted depending on whether they include sensitive financial or account information.
 
 ### Retention and Deletion
 
-Clarity should retain information only as long as reasonably needed to provide the product, support users, comply with legal or platform requirements, maintain security, resolve disputes, debug issues, or preserve operational records.
+Clarity retains information only as long as reasonably needed to provide the product, support users, maintain security and reliability, comply with legal or platform obligations, resolve disputes, debug issues, or preserve operational records.
 
-Disconnecting a financial account may stop future access to that account where supported, but stored historical data may remain unless deleted through product controls or a data deletion request. Some data may remain for a limited period in backups, logs, security records, support records, or systems where retention is needed for legal, fraud-prevention, security, dispute-resolution, or operational reasons.
+Disconnecting a financial account may stop future access where supported, but historical data already stored in Clarity may remain unless deleted through product controls or a data deletion request. Some records may remain for a limited period in backups, logs, support records, security records, or systems where retention is needed for legal, fraud-prevention, dispute-resolution, security, or operational reasons.
 
-Clarity will maintain a published contact or data deletion path for users who want help deleting account data.
+Clarity will maintain a published contact or data deletion path for users who request account or data deletion assistance.
 
 ## 4. Access Control and Authentication
 
 ### User Authentication
 
-Users access Clarity through authenticated accounts. Clarity uses Supabase Auth and OAuth or provider-supported authentication flows where applicable. Private user data should be available only after successful authentication.
+Users access Clarity through authenticated accounts using Supabase Auth and supported authentication flows. Private app data should be available only after successful authentication.
 
-Users are responsible for maintaining control of their devices, email accounts, and login credentials. Clarity support channels must not ask users to send bank passwords, full account numbers, full card numbers, Social Security numbers, one-time login codes, API keys, or private secrets.
+Users are responsible for keeping their devices, email accounts, and login credentials secure. Clarity support channels must not request bank passwords, full account numbers, full card numbers, Social Security numbers, one-time login codes, API keys, or private secrets.
 
 ### User-Scoped Access
 
-Clarity is designed so each user's product data is scoped to that user. Account records, transactions, budgets, goals, Rex conversations, memory/context, and related records should be associated with the authenticated user who owns or is authorized to use that data.
+Clarity is designed so user records are scoped to the authenticated user who owns or is authorized to use them. This includes account records, transactions, budgets, goals, Rex conversations, memory/context, preferences, and related data.
 
-Supabase Row Level Security (RLS) should be enabled and used for tables that contain user-scoped data. Database policies should restrict user access to only the records they are permitted to view or modify. Backend services that require elevated privileges must be implemented carefully and limited to defined use cases.
+Supabase Row Level Security should be enabled for tables containing user-scoped data. Database policies should restrict users to their own records. Backend services that require elevated privileges must be limited to defined server-side use cases and should not expose privileged credentials to the mobile client.
 
 ### Founder and Administrative Access
 
-Because Clarity is currently operated by a solo founder, Pedro Martins may hold administrative access to production systems, vendor dashboards, code repositories, and support channels. Administrative access is permitted only for legitimate purposes, including:
+Because Clarity is currently a solo-founder product, Pedro Martins may hold administrative access to production systems, vendor dashboards, code repositories, deployment tools, and support channels. This access is permitted only for legitimate purposes, including operations, debugging, support, privacy requests, security investigations, Plaid review, compliance, and data deletion.
 
-- Operating and maintaining Clarity.
-- Investigating and resolving user support requests.
-- Debugging product issues.
-- Responding to privacy or deletion requests.
-- Investigating suspicious activity or security reports.
-- Performing compliance, Plaid review, and operational duties.
-
-Administrative access must not be used for casual browsing of user data. Access should be minimized as the product matures, and additional role separation should be introduced when employees or contractors join.
+Administrative access must not be used for casual browsing of user data. As Clarity grows, role separation, access reviews, and least-privilege permissions will be expanded before additional personnel receive production access.
 
 ### Credential and Secret Management
 
-Production credentials, API keys, access tokens, and service-role secrets must be treated as Restricted Information.
-
-Clarity will:
+Production credentials, API keys, Plaid tokens, service-role keys, and deployment secrets are Restricted Information. Clarity will:
 
 - Avoid hardcoding secrets into source code.
-- Avoid committing secrets to public or shared repositories.
-- Store secrets in environment variables, deployment secrets, Supabase secret configuration, or other appropriate managed secret stores.
+- Avoid committing secrets to repositories.
+- Store secrets in deployment secrets, environment variables, Supabase configuration, or provider-supported secret stores.
+- Use separate development and production credentials where supported.
 - Rotate credentials if exposure is suspected.
-- Use separate credentials for development, staging, and production where supported.
-- Avoid exposing Plaid access tokens or backend service credentials to the mobile client.
+- Keep Plaid access tokens and backend service credentials server-side.
 
-### Plaid Token Handling
-
-Plaid access tokens and related identifiers must be stored server-side and treated as Restricted Information. They should be used only to retrieve and maintain user-authorized data for Clarity features. Clarity should not expose Plaid access tokens in client logs, frontend error messages, screenshots, public support requests, or analytics events.
-
-If a user disconnects an account or requests deletion, Clarity should follow the applicable provider flow and internal deletion process for the related account connection and stored data.
-
-### Multi-Factor Authentication and Account Security
-
-Where available, Clarity administrative accounts should use strong authentication and multi-factor authentication, especially for Plaid, Supabase, source code hosting, deployment platforms, app stores, email, and domain/DNS accounts.
-
-As Clarity grows, access reviews should be formalized to confirm that only authorized personnel have access to production systems and sensitive data.
+Where available, founder administrative accounts should use strong passwords and multi-factor authentication, especially for Plaid, Supabase, source code hosting, deployment, email, app store, and domain/DNS accounts.
 
 ## 5. Data Encryption
 
 ### Data in Transit
 
-Clarity uses HTTPS/TLS for data transmitted between users, the mobile app, backend services, hosted infrastructure, and service providers where data is sent over the internet. Production endpoints should use valid certificates and should not rely on self-signed certificates.
+Clarity uses HTTPS/TLS for data transmitted between the mobile app, public website, backend services, Supabase, Plaid, AI providers, and other service providers where data is sent over the internet. Production endpoints should use valid certificates and should not rely on self-signed certificates.
 
-Secure transport applies to:
-
-- Mobile app communication with backend services.
-- Website and public policy pages.
-- Supabase-hosted services.
-- Plaid API communication.
-- AI provider communication.
-- Support, monitoring, deployment, and operational service communication where applicable.
-
-Sensitive information should not be sent through insecure channels or public support forms. Users should be warned not to send bank credentials, full account numbers, full card numbers, Social Security numbers, one-time codes, API keys, or private secrets through public forms or email.
+Sensitive information should not be sent through insecure channels or public contact forms. Clarity's public support paths should instruct users not to send bank credentials, full account numbers, full card numbers, Social Security numbers, one-time codes, API keys, or private secrets.
 
 ### Data at Rest
 
-Clarity uses managed infrastructure providers, including Supabase, to store application data. Supabase and other managed providers provide platform-level security and encryption capabilities for stored data. Clarity relies on those providers' current security practices and production configuration for encryption at rest, backups, and infrastructure-level protections.
+Clarity uses managed infrastructure providers, including Supabase, to store application data. Clarity relies on provider-supported storage protections, including encryption at rest offered by those providers and the security configuration applied to Clarity's production environment.
 
-Stored product data may include user profiles, authorized account context, transaction data, budgets, goals, conversation history, Rex memory/context, support records, logs, and related operational records.
+Stored product data may include user profiles, Plaid-connected account context, transaction data, budgets, goals, Rex conversations, memory/context, support records, logs, and operational records.
 
-Clarity should not claim end-to-end encryption, zero-knowledge storage, field-level encryption, or a specific encryption algorithm unless those controls are implemented, verified, and documented. As Clarity matures, additional field-level protection may be considered for particularly sensitive values.
+Clarity does not claim end-to-end encryption, zero-knowledge storage, field-level encryption, or a specific encryption algorithm unless those controls are implemented, verified, and documented. Additional field-level protections may be evaluated as the product matures and the sensitivity or volume of stored data increases.
 
-### Backups, Logs, and Operational Records
+### Logs and Backups
 
-Backups, logs, error reports, and operational records may be maintained by Clarity or its service providers to operate, secure, debug, and improve the service. These records should be limited to operational need and protected according to their sensitivity.
+Logs, backups, error reports, and operational records may be maintained by Clarity or its service providers to operate, secure, debug, and improve the service. These records should be limited to operational need and protected according to sensitivity.
 
-Logs should avoid unnecessary collection of Plaid access tokens, API keys, bank credentials, full account numbers, full card numbers, Social Security numbers, or other secrets. If sensitive data is accidentally logged, Clarity should treat that as a security issue, remove or restrict the data where feasible, and rotate affected credentials if needed.
+Logs should avoid storing Plaid access tokens, API keys, bank credentials, full account numbers, full card numbers, Social Security numbers, or other secrets. If sensitive data is accidentally logged or exposed, Clarity will treat it as a security issue, restrict or remove the data where feasible, and rotate affected credentials when appropriate.
 
 ## 6. Third-Party Management
 
-Clarity relies on third-party service providers to operate the product. As an early-stage company, Clarity's vendor management process is lightweight but intentional. Vendors should be selected based on product need, security posture, reliability, data handling practices, and ability to support Clarity's obligations to users and platform partners.
+Clarity uses third-party providers to operate the product. As a solo-founder company, vendor management is lightweight but intentional. Providers are selected based on product need, security posture, reliability, and fit for the data they process.
 
-### Key Providers
+Current or expected provider categories include:
 
-Current or expected providers include:
+- Plaid for user-authorized financial account connections.
+- Supabase for authentication, database, storage, and managed backend infrastructure.
+- Grok or other AI model providers for Rex assistant responses.
+- Speech-to-text or text-to-speech providers if voice features are enabled.
+- Hosting, domain, email, monitoring, analytics, support/contact, deployment, app store, and device platform providers as needed.
 
-- Plaid: financial account connection and user-authorized account/transaction data access.
-- Supabase: authentication, database, storage, backend services, and related managed infrastructure.
-- Grok or other AI model providers: AI assistant responses and reasoning for Rex.
-- Speech-to-text or text-to-speech providers, if voice features are enabled.
-- App store and mobile platform providers.
-- Hosting, domain, email, monitoring, analytics, and support/contact providers as needed.
-
-Provider names and use may evolve. Public privacy and security disclosures should be updated when material provider categories or data-sharing practices change.
-
-### Vendor Data Handling Expectations
-
-Clarity should use third-party providers only for purposes needed to provide, secure, support, or improve the product. Providers may process information according to their own terms, privacy policies, security practices, and legal obligations.
-
-Clarity should avoid sending more data to providers than is reasonably needed for the feature being used. For example, AI model requests should include only the user message and relevant Clarity context needed to answer the user's request. Support tools should not receive raw financial data unless necessary for support and disclosed appropriately.
-
-### Plaid Relationship
-
-Clarity uses Plaid to help users connect financial accounts. Plaid provides the connection experience and access to user-authorized financial data according to the permissions granted by the user and supported by the user's institution.
-
-Clarity does not represent that Plaid sponsors, endorses, certifies, or approves Clarity unless that is formally true and authorized. Clarity will follow Plaid's applicable production, launch, and data-use requirements as part of the Production access process.
-
-### Vendor Review
-
-Before adding a new provider that will process Confidential or Restricted Information, Clarity should review:
+Before adding a provider that processes Confidential or Restricted Information, Clarity should review:
 
 - What data the provider will process.
 - Why the provider is needed.
-- Whether the provider is reputable and appropriate for the data involved.
+- Whether the provider is appropriate for the sensitivity of the data.
 - Available security and privacy documentation.
-- Whether the provider supports HTTPS/TLS and secure authentication.
-- Data retention, deletion, and training-use practices where relevant.
-- Whether the provider introduces new user-facing disclosures.
+- Authentication, transport security, retention, deletion, and AI training-use practices where relevant.
+- Whether public privacy or security disclosures need to be updated.
 
-As Clarity grows, this lightweight review should evolve into a formal vendor inventory and vendor-risk review process.
+Clarity should share only the data reasonably needed for the provider's function. Provider names, roles, and public disclosures should be kept accurate as the product evolves.
+
+Clarity uses Plaid for account connection and financial data access but does not represent that Plaid sponsors, endorses, certifies, or approves Clarity unless formally authorized. Clarity will follow applicable Plaid requirements for production access, user consent, data use, and security.
 
 ## 7. Incident Response Plan
 
-Clarity maintains a practical incident response process appropriate for a solo-founder operation. A security incident is any actual or suspected event that could compromise the confidentiality, integrity, or availability of Clarity systems or data.
+Clarity maintains a founder-led incident response process appropriate for an early-stage product. A security incident is any actual or suspected event that could compromise Clarity systems, credentials, user data, Plaid-connected data, or service availability.
 
 Examples include:
 
-- Unauthorized access to user data.
+- Unauthorized access to user or financial data.
 - Exposure of Plaid tokens, API keys, service-role keys, or production credentials.
-- Accidental publication of Restricted Information.
-- Unauthorized database access or suspicious administrative activity.
+- Misconfigured database policies, storage, or backend routes exposing user data.
+- Suspicious administrative access or account compromise.
 - Vulnerability exploitation.
 - Loss or compromise of a founder device or account with production access.
-- Misconfigured storage, database rules, or RLS policies that expose user data.
-- Provider breach notification affecting Clarity data.
+- Provider breach notifications affecting Clarity data.
 
-### Incident Response Roles
+Pedro Martins is currently responsible for incident triage, containment, remediation, communication, and post-incident review. If additional personnel are added, roles and escalation paths will be documented.
 
-Pedro Martins is currently responsible for incident response, including detection, triage, containment, remediation, user or provider communication, and post-incident review. If employees or contractors are added, incident response roles will be assigned and documented.
-
-### Response Steps
-
-Clarity's incident response process includes the following steps:
+Clarity's incident response process is:
 
 1. Identify and triage  
-   Determine what happened, what systems or data may be affected, when the event started, and whether user data, Plaid data, credentials, or production systems are involved.
+   Determine what happened, when it occurred, what systems or data may be affected, and whether Plaid-connected data, production credentials, or user data are involved.
 
 2. Contain  
-   Limit further exposure or damage. This may include disabling affected keys, revoking sessions, restricting database access, disabling a vulnerable feature, pausing a deployment, removing exposed data, or contacting a provider.
+   Stop further exposure or damage. Actions may include disabling keys, revoking sessions, restricting access, pausing a feature, rolling back a deployment, or contacting a provider.
 
 3. Preserve evidence  
-   Preserve relevant logs, timestamps, screenshots, provider notices, error reports, support messages, and deployment history where available. Evidence should be stored securely and not published.
+   Retain relevant logs, timestamps, provider notices, deployment history, screenshots, and support messages in a secure location.
 
-4. Eradicate and remediate  
-   Fix the root cause. This may include patching code, updating RLS policies, rotating secrets, changing access permissions, updating infrastructure settings, or deploying a corrected release.
+4. Remediate  
+   Fix the root cause, such as patching code, correcting RLS policies, rotating credentials, updating configuration, or deploying a corrected release.
 
-5. Recover  
-   Restore normal operation after confirming the issue has been addressed. Monitor for recurrence and verify that affected systems are functioning as expected.
+5. Recover and monitor  
+   Restore normal operation after verifying the fix and monitor for recurrence.
 
 6. Notify as appropriate  
-   Determine whether user, vendor, platform, legal, or regulatory notification is required. If Plaid-connected data or Plaid credentials are involved, Clarity should notify Plaid through the appropriate support or account channel as required by applicable agreements or instructions.
+   Determine whether users, Plaid, vendors, platforms, legal counsel, or regulators should be notified. If Plaid-connected data or Plaid credentials are involved, Clarity will contact Plaid through the appropriate support or account channel as required.
 
 7. Review and improve  
-   Document what happened, the impact, the response, and follow-up actions. Update this policy, code, monitoring, documentation, or controls where needed.
+   Document the incident, impact, response, root cause, and follow-up actions. Update controls, code, documentation, or this policy where needed.
 
-### Security Contact and Vulnerability Reports
-
-Clarity will maintain a published contact path for users and researchers to report security concerns. Reports should include a clear description, affected feature or page, safe reproduction steps if available, and non-sensitive contact information for follow-up.
-
-Reporters should not access, copy, publish, or share data they are not authorized to use. Clarity does not currently operate a formal bug bounty program and should not promise rewards, safe harbor terms, or specific response-time guarantees unless those programs are formally established.
+Clarity will maintain a published contact path for security concerns and vulnerability reports. Reporters should include a description, affected feature, safe reproduction steps if available, and non-sensitive contact information. Clarity does not currently operate a formal bug bounty program and does not promise rewards or specific response-time guarantees.
 
 ## 8. Vulnerability Management and Patching
 
-Clarity's vulnerability management process is designed to be realistic for a small, early-stage product while reducing avoidable security risk.
+Clarity reviews and updates dependencies on a regular basis, including Flutter packages, Supabase libraries, backend dependencies, Plaid SDKs or API clients, AI provider SDKs, and deployment tooling.
 
-### Dependency Updates
+Security updates are prioritized based on severity, exploitability, production exposure, and whether the affected component handles user data, Plaid data, authentication, or credentials. Critical production issues should be investigated immediately and remediated as soon as reasonably feasible.
 
-Clarity will review and update application dependencies on a regular basis, including Flutter packages, Supabase client libraries, backend libraries, Plaid SDKs or API clients, AI provider SDKs, and build/deployment dependencies.
+Security-sensitive changes receive careful founder review before release, especially changes involving:
 
-Security-related updates should be prioritized based on severity, exploitability, exposure, and whether the affected component is used in production. Critical security patches should be applied as soon as reasonably possible after review and testing.
-
-### Code Review and Testing
-
-As a solo-founder project, code review may initially be self-review. Before production deployment, security-sensitive changes should be reviewed carefully, especially changes involving:
-
-- Authentication and session handling.
-- Supabase RLS policies or database permissions.
-- Plaid token exchange, storage, or account connection logic.
-- Data deletion or disconnection workflows.
-- AI context selection and prompt construction involving financial data.
-- Logging, analytics, or monitoring.
+- Authentication, sessions, or authorization.
+- Supabase RLS policies and database permissions.
+- Plaid token exchange, storage, account connection, or webhook handling.
+- Data deletion and disconnection flows.
+- AI context selection involving financial data.
+- Logging, analytics, monitoring, or error reporting.
 - Environment variables and secret handling.
 
-Where practical, Clarity should use automated tests, manual QA, static analysis, dependency scanning, and provider dashboard checks to identify regressions before production release.
-
-### Configuration Review
-
-Clarity should periodically review production configuration for:
-
-- Supabase RLS coverage on user-scoped tables.
-- Production environment variables and secret storage.
-- Plaid dashboard settings and product scopes.
-- HTTPS/TLS configuration for public endpoints.
-- Redirect URLs, callback URLs, OAuth settings, and app identifiers.
-- Admin account access and multi-factor authentication.
-- Logging and analytics settings to avoid unnecessary sensitive data collection.
-
-### Vulnerability Remediation Targets
-
-Because Clarity is early-stage, remediation targets are practical guidelines rather than formal service-level agreements:
-
-- Critical vulnerabilities affecting production user data or credentials should be investigated immediately and remediated as soon as feasible.
-- High-risk vulnerabilities should be prioritized ahead of feature work.
-- Medium and low-risk vulnerabilities should be tracked and addressed based on risk and engineering capacity.
-- Issues involving exposed secrets should trigger credential rotation, exposure review, and repository or log cleanup where feasible.
+Where practical, Clarity uses automated tests, manual QA, dependency scanning, static analysis, provider dashboard review, and production configuration checks. As the product grows, Clarity will expand automated security checks and formal vulnerability tracking.
 
 ## 9. Employee and Contractor Security
 
-Clarity is currently operated by a solo founder, Pedro Martins. There are no employees or regular contractors with production access at the time of this policy.
-
-### Solo Founder Responsibilities
+Clarity is currently operated by Pedro Martins as a solo founder. There are no employees or regular contractors with standing production access as of this policy.
 
 The founder is responsible for:
 
-- Maintaining secure access to Clarity systems and vendor accounts.
+- Protecting accounts and devices used for development and administration.
 - Using strong passwords and multi-factor authentication where available.
-- Protecting founder devices used for development and administration.
-- Avoiding storage of production secrets in plaintext notes, screenshots, or public repositories.
 - Keeping local development tools, operating systems, and dependencies reasonably updated.
+- Avoiding plaintext storage of production secrets.
 - Separating development, test, and production data where practical.
 - Handling user data only for legitimate product, support, security, compliance, or user-requested purposes.
-- Monitoring support and security contact paths.
+- Monitoring support, privacy, deletion, and security contact paths.
 
-### Future Employees or Contractors
+If Clarity adds employees, contractors, advisors, or vendors with access to systems or user data, Clarity will establish appropriate access controls before granting access, including least-privilege permissions, confidentiality obligations where appropriate, security onboarding, access removal when no longer needed, and periodic access review.
 
-If Clarity adds employees, contractors, advisors, or vendors with access to systems or user data, Clarity will establish additional controls before granting access, including:
-
-- Role-based access appropriate to the person's responsibilities.
-- Least-privilege access to production systems.
-- Confidentiality obligations or written agreements where appropriate.
-- Security onboarding covering this policy, data handling, credentials, support boundaries, and incident reporting.
-- Access removal when the relationship ends or access is no longer needed.
-- Periodic access review.
-
-Contractors should not receive production data or production access unless necessary and approved by the founder. Test data or synthetic data should be used when possible.
+Contractors should not receive production data or production access unless necessary and approved by the founder. Synthetic or test data should be used when practical.
 
 ## 10. Policy Review and Maintenance
 
 This policy will be reviewed at least annually and whenever material changes occur, including:
 
 - Plaid Production access approval or major Plaid integration changes.
-- New categories of financial data collection.
-- New AI, speech, analytics, support, or infrastructure providers that process user data.
-- Significant changes to authentication, database access, RLS policies, or backend architecture.
+- New categories of financial data collection or processing.
+- New providers that process Confidential or Restricted Information.
+- Significant changes to authentication, database access, backend architecture, RLS policies, or AI context handling.
 - A security incident or near miss.
 - Addition of employees, contractors, or new administrative users.
 - New legal, platform, or vendor requirements.
 
-The founder is responsible for maintaining this policy and ensuring it remains accurate. Public-facing privacy, security, terms, and data deletion pages should be updated when this policy changes in a way that affects users.
+Pedro Martins is responsible for maintaining this policy and ensuring it remains accurate. Public privacy, security, terms, and data deletion pages should be updated when policy changes affect users or provider disclosures.
 
-### Planned Security Program Improvements
-
-As Clarity matures, planned improvements may include:
-
-- More formal access reviews.
-- Documented vendor inventory and vendor-risk review.
-- Expanded security logging and alerting.
-- More automated dependency and secret scanning.
-- Formal backup and disaster recovery documentation.
-- More granular data retention schedules.
-- Additional field-level protection for highly sensitive values if warranted.
-- External security review or penetration testing when product scale and risk justify it.
-- Formal employee and contractor onboarding processes.
-- SOC 2 or similar security framework evaluation if commercially appropriate.
-
-These items are future roadmap goals and should not be represented as completed controls until implemented.
+Planned maturity improvements may include more formal access reviews, vendor inventory, security logging and alerting, dependency and secret scanning, backup and recovery documentation, retention schedules, external security review, and a recognized security framework evaluation when commercially appropriate.
 
 ## 11. Approval
 
@@ -447,12 +310,14 @@ Title: Founder, Clarity
 Signature: ______________________________  
 Date: ______________________________
 
-## PDF Conversion Note
+## PDF Conversion Instructions
 
-To turn this Markdown document into a PDF, open it in a Markdown editor that supports export to PDF, such as VS Code with a Markdown PDF extension, Typora, Obsidian, or Google Docs. Alternatively, use Pandoc from the repository root:
+To create a clean PDF, open this Markdown file in a Markdown editor that supports PDF export, such as VS Code with a Markdown PDF extension, Typora, Obsidian, or Google Docs. Review page breaks and spacing before submission.
+
+You can also use Pandoc from the repository root:
 
 ```bash
 pandoc docs/clarity/plaid_approval_landing_plan/information_security_policy.md -o Clarity_Information_Security_Policy.pdf
 ```
 
-Before submitting the PDF, review the final formatting, fill in the approval date and signature, and confirm that the provider list and security claims still match the current production implementation.
+Before submitting the PDF to Plaid, fill in the approval date and signature, confirm that the provider list matches the current production implementation, and verify that no security claims exceed the controls currently in place.
