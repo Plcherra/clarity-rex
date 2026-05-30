@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../app/ui_dependencies.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../auth/presentation/mfa_enrollment_screen.dart';
 import 'account_detail_screen.dart';
 
 class AccountsScreen extends StatefulWidget {
@@ -13,6 +15,7 @@ class AccountsScreen extends StatefulWidget {
     required this.transactionController,
     required this.budgetController,
     required this.importJobStatusController,
+    required this.authController,
     this.signOut,
   });
 
@@ -21,6 +24,7 @@ class AccountsScreen extends StatefulWidget {
   final TransactionUiController transactionController;
   final BudgetUiController budgetController;
   final ImportJobStatusController importJobStatusController;
+  final AuthController authController;
   final Future<void> Function()? signOut;
 
   @override
@@ -115,6 +119,15 @@ class _AccountsScreenState extends State<AccountsScreen> {
     }
   }
 
+  Future<void> _openMfaSettings() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) =>
+            MfaEnrollmentScreen(controller: widget.authController),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     widget.controller.removeListener(_handleControllerChanged);
@@ -144,11 +157,23 @@ class _AccountsScreenState extends State<AccountsScreen> {
               icon: const Icon(Icons.account_circle_outlined),
               onSelected: (action) {
                 switch (action) {
+                  case _AccountMenuAction.mfa:
+                    _openMfaSettings();
+                    break;
                   case _AccountMenuAction.signOut:
                     _confirmSignOut();
+                    break;
                 }
               },
               itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: _AccountMenuAction.mfa,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.verified_user_outlined),
+                    title: Text('Multi-factor authentication'),
+                  ),
+                ),
                 PopupMenuItem(
                   value: _AccountMenuAction.signOut,
                   child: ListTile(
@@ -241,7 +266,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 }
 
-enum _AccountMenuAction { signOut }
+enum _AccountMenuAction { mfa, signOut }
 
 class _AccountsSummaryCard extends StatelessWidget {
   const _AccountsSummaryCard({required this.accounts});

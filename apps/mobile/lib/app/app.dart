@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/presentation/auth_screen.dart';
+import '../features/auth/presentation/mfa_verification_screen.dart';
 import '../features/assistant/data/financial_context_service.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/shell/presentation/home_shell.dart';
@@ -180,11 +181,17 @@ final class ClarityApp extends StatelessWidget {
   }
 
   Widget _homeForCurrentState() {
-    if (authController.isLoading || profileController.isLoading) {
+    if (authController.isLoading) {
       return const _AppLoadingScreen();
     }
     if (!authController.isAuthenticated) {
       return AuthScreen(controller: authController);
+    }
+    if (authController.isMfaRequired) {
+      return MfaVerificationScreen(controller: authController);
+    }
+    if (profileController.isLoading) {
+      return const _AppLoadingScreen();
     }
     if (!profileController.hasCompleteProfile) {
       return OnboardingScreen(
@@ -194,7 +201,11 @@ final class ClarityApp extends StatelessWidget {
         ui: ui,
       );
     }
-    return HomeShell(ui: ui, signOut: authController.signOut);
+    return HomeShell(
+      ui: ui,
+      authController: authController,
+      signOut: authController.signOut,
+    );
   }
 }
 

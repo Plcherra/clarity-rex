@@ -12,9 +12,11 @@ class AuthController extends ChangeNotifier {
   }) : _authService = authService,
        _authenticatedOverride = initialAuthenticated {
     _session = _authService.currentSession;
+    _syncMfaRequirement();
     _subscription = _authService.authStateChanges.listen((state) {
       _session = state.session;
       _authenticatedOverride = false;
+      _syncMfaRequirement();
       notifyListeners();
     });
   }
@@ -25,12 +27,19 @@ class AuthController extends ChangeNotifier {
   bool _authenticatedOverride;
 
   bool isLoading = false;
+  bool isMfaLoading = false;
+  bool isMfaRequired = false;
   String? errorMessage;
   String? infoMessage;
+  String? mfaErrorMessage;
+  String? mfaInfoMessage;
+  MfaEnrollment? pendingMfaEnrollment;
+  List<MfaFactorSummary> mfaFactors = const [];
 
   Session? get currentSession => _session;
   User? get currentUser => _session?.user ?? _authService.currentUser;
   bool get isAuthenticated => _authenticatedOverride || currentSession != null;
+  bool get hasVerifiedTotpFactor => mfaFactors.isNotEmpty;
 
   Future<void> signUpWithEmail({
     required String email,
@@ -44,6 +53,7 @@ class AuthController extends ChangeNotifier {
         fullName: fullName,
       );
       _session = response.session;
+      _syncMfaRequirement();
       if (_session == null) {
         infoMessage = 'Check your email to confirm your account.';
       }
@@ -60,6 +70,10 @@ class AuthController extends ChangeNotifier {
         password: password,
       );
       _session = response.session;
+      _syncMfaRequirement();
+      if (isMfaRequired) {
+        infoMessage = 'Enter your authenticator code to finish signing in.';
+      }
     });
   }
 
@@ -68,6 +82,82 @@ class AuthController extends ChangeNotifier {
       await _authService.signOut();
       _session = null;
       _authenticatedOverride = false;
+      _clearMfaState();
+    });
+  }
+
+  Future<void> cancelMfaSignIn() async {
+    await signOut();
+  }
+
+  Future<void> loadMfaFactors() async {
+    await _runMfaAction(() async {
+      mfaFactors = await _authService.verifiedTotpFactors();
+      if (mfaFactors.isEmpty && isMfaRequired) {
+        mfaErrorMessage =
+            'No verified authenticator app is available for this account.';
+      }
+    });
+  }
+
+  Future<void> beginMfaEnrollment() async {
+    await _runMfaAction(() async {
+      pendingMfaEnrollment = await _authService.enrollTotp();
+      mfaInfoMessage =
+          'Scan the QR code, then enter the 6-digit code from your app.';
+    });
+  }
+
+  Future<void> verifyMfaEnrollment({required String code}) async {
+    final enrollment = pendingMfaEnrollment;
+    if (enrollment == null) {
+      mfaErrorMessage = 'Start MFA enrollment before verifying a code.';
+      notifyListeners();
+      return;
+    }
+    await _runMfaAction(() async {
+      await _authService.verifyMfaCode(
+        factorId: enrollment.factorId,
+        code: code,
+      );
+      _session = _authService.currentSession;
+      pendingMfaEnrollment = null;
+      await _refreshMfaStateAfterVerification();
+      mfaInfoMessage = 'MFA is enabled for your account.';
+    });
+  }
+
+  Future<void> verifyMfaSignIn({required String code, String? factorId}) async {
+    await _runMfaAction(() async {
+      var resolvedFactorId = factorId;
+      if (resolvedFactorId == null || resolvedFactorId.isEmpty) {
+        if (mfaFactors.isEmpty) {
+          mfaFactors = await _authService.verifiedTotpFactors();
+        }
+        if (mfaFactors.isEmpty) {
+          throw const AuthException(
+            'No verified authenticator app is available for this account.',
+          );
+        }
+        resolvedFactorId = mfaFactors.first.id;
+      }
+      await _authService.verifyMfaCode(factorId: resolvedFactorId, code: code);
+      _session = _authService.currentSession;
+      await _refreshMfaStateAfterVerification();
+      mfaInfoMessage = 'Sign-in verified.';
+    });
+  }
+
+  Future<void> refreshMfaFactors() async {
+    await loadMfaFactors();
+  }
+
+  Future<void> unenrollMfaFactor(String factorId) async {
+    await _runMfaAction(() async {
+      await _authService.unenrollMfaFactor(factorId);
+      mfaFactors = await _authService.verifiedTotpFactors();
+      _syncMfaRequirement();
+      mfaInfoMessage = 'Authenticator app removed.';
     });
   }
 
@@ -79,11 +169,67 @@ class AuthController extends ChangeNotifier {
     try {
       await action();
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = _friendlyAuthError(e);
     } finally {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _runMfaAction(Future<void> Function() action) async {
+    isMfaLoading = true;
+    mfaErrorMessage = null;
+    mfaInfoMessage = null;
+    notifyListeners();
+    try {
+      await action();
+    } catch (e) {
+      mfaErrorMessage = _friendlyAuthError(e);
+    } finally {
+      isMfaLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _refreshMfaStateAfterVerification() async {
+    _syncMfaRequirement();
+    mfaFactors = await _authService.verifiedTotpFactors();
+  }
+
+  void _syncMfaRequirement() {
+    try {
+      isMfaRequired = _authService.isMfaVerificationRequired;
+    } on Object {
+      isMfaRequired = false;
+    }
+  }
+
+  void _clearMfaState() {
+    isMfaRequired = false;
+    isMfaLoading = false;
+    pendingMfaEnrollment = null;
+    mfaFactors = const [];
+    mfaErrorMessage = null;
+    mfaInfoMessage = null;
+  }
+
+  String _friendlyAuthError(Object error) {
+    if (error is AuthException) {
+      final message = error.message.toLowerCase();
+      if (message.contains('invalid') ||
+          message.contains('otp') ||
+          message.contains('code')) {
+        return 'That code was not accepted. Check your authenticator app and try again.';
+      }
+      if (message.contains('mfa') && message.contains('not enabled')) {
+        return 'MFA is not enabled for this Supabase project.';
+      }
+      if (message.contains('too many')) {
+        return 'Too many attempts. Wait a moment, then try again.';
+      }
+      return error.message;
+    }
+    return error.toString();
   }
 
   @override

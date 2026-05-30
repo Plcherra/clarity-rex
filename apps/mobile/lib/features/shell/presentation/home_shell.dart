@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../auth/application/auth_controller.dart';
 import 'import_job_progress_banner.dart';
 import '../../accounts/presentation/accounts_screen.dart';
 import '../../assistant/presentation/assistant_screen.dart';
@@ -8,9 +9,15 @@ import '../../budgets/presentation/budgets_screen.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
 
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key, required this.ui, this.signOut});
+  const HomeShell({
+    super.key,
+    required this.ui,
+    required this.authController,
+    this.signOut,
+  });
 
   final AppUiDependencies ui;
+  final AuthController authController;
   final Future<void> Function()? signOut;
 
   @override
@@ -66,6 +73,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         transactionController: widget.ui.transactions,
         budgetController: widget.ui.budgets,
         importJobStatusController: widget.ui.importJobStatus,
+        authController: widget.authController,
         signOut: widget.signOut,
       ),
       BudgetsScreen(
