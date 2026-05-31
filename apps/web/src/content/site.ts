@@ -58,7 +58,7 @@ export const publicRoutes = [
     label: 'Data Retention and Deletion',
     title: 'Data Retention and Deletion Policy - Clarity',
     description:
-      'Review Clarity data retention periods, deletion request steps, exceptions, and privacy contact information.',
+      'Review Clarity data retention practices, deletion rights, request timelines, disposal methods, and privacy contact information.',
     footerRequired: true,
   },
   {
