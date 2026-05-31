@@ -55,10 +55,10 @@ export const publicRoutes = [
   },
   {
     path: '/data-deletion',
-    label: 'Data Deletion',
-    title: 'Data Deletion - Clarity',
+    label: 'Data Retention and Deletion',
+    title: 'Data Retention and Deletion Policy - Clarity',
     description:
-      'Request deletion of Clarity account data or learn how to disconnect financial account access.',
+      'Review Clarity data retention periods, deletion request steps, exceptions, and privacy contact information.',
     footerRequired: true,
   },
   {

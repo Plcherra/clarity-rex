@@ -7,124 +7,179 @@ const page = publicRoutes.find((route) => route.path === '/data-deletion')!;
 
 <BaseLayout title={page.title} description={page.description}>
   <section class="page-shell">
-    <p class="eyebrow">Privacy controls</p>
-    <h1>Data Deletion</h1>
+    <p class="eyebrow">Last updated May 31, 2026</p>
+    <h1>Data Retention and Deletion Policy</h1>
     <p>
-      You can request deletion of your Clarity account or product data through the published
-      contact path. Clarity may need to verify your identity and review the request scope before
-      completing deletion.
+      This policy explains how Clarity retains, deletes, and handles requests related to personal
+      data, financial account data, and product records. It is intended for users, partners, and
+      compliance reviewers evaluating Clarity's data practices.
     </p>
-    <div class="hero__actions">
-      <a class="button" href="/contact">Request deletion</a>
-      <a class="button button--secondary" href={`mailto:${product.supportEmail}`}>
-        Email support
-      </a>
+    <p>
+      This policy should be read together with the <a href="/privacy">Privacy Policy</a>, which
+      explains what Clarity collects, how data is used, and how service providers may process data.
+    </p>
+  </section>
+
+  <section class="section" aria-labelledby="purpose-heading">
+    <div class="section__header">
+      <p class="eyebrow">1. Introduction / Purpose</p>
+      <h2 id="purpose-heading">Clarity keeps data only as long as it is needed for the product.</h2>
+    </div>
+    <div class="panel">
+      <p>
+        Clarity is an early-stage personal AI financial co-pilot operated by a solo founder. The
+        product is designed to help users understand their own financial context, including
+        accounts, transactions, budgets, categories, goals, and conversations with Rex, the
+        assistant inside Clarity.
+      </p>
+      <p>
+        Clarity's retention approach is to keep user data for as long as needed to provide the
+        service, comply with user instructions, maintain security and reliability, meet legal
+        obligations, and support legitimate operational needs.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="collect-heading">
+    <div class="section__header">
+      <p class="eyebrow">2. Data We Collect and Retain</p>
+      <h2 id="collect-heading">Data is tied to the account and features a user chooses to use.</h2>
+    </div>
+    <div class="card-grid">
+      <article class="panel">
+        <h3>Account and profile data</h3>
+        <p>
+          Name, email address, authentication records, app preferences, account metadata, support
+          requests, waitlist records, and privacy or deletion request correspondence.
+        </p>
+      </article>
+      <article class="panel">
+        <h3>Financial product data</h3>
+        <p>
+          User-authorized or user-imported account information, balances, transactions, categories,
+          budgets, statements, financial role labels, and related financial context.
+        </p>
+      </article>
+      <article class="panel">
+        <h3>Assistant and operational data</h3>
+        <p>
+          Rex conversations, approved memory, goals, plans, voice transcripts if used, generated
+          responses, security logs, diagnostic metadata, and system records needed to operate the
+          service.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="retention-heading">
+    <div class="section__header">
+      <p class="eyebrow">3. Retention Periods</p>
+      <h2 id="retention-heading">Retention depends on the type of record and why it is needed.</h2>
+    </div>
+    <div class="panel">
+      <ul>
+        <li>
+          <strong>Active account and product data:</strong> retained while the user's account is
+          active or until the user deletes the data or requests deletion.
+        </li>
+        <li>
+          <strong>Connected or imported financial data:</strong> retained while needed to provide
+          account, transaction, budget, categorization, and assistant features, unless removed by
+          the user or deleted through a verified request.
+        </li>
+        <li>
+          <strong>Support, privacy, and deletion records:</strong> retained as needed to document
+          and respond to requests, generally up to three years unless a longer period is required.
+        </li>
+        <li>
+          <strong>Security, audit, and diagnostic logs:</strong> retained for security, abuse
+          prevention, debugging, reliability, and legal purposes, generally up to twelve months.
+        </li>
+        <li>
+          <strong>Backups:</strong> may retain deleted data for a limited period, generally up to
+          ninety days, before backup rotation removes it from backup systems.
+        </li>
+      </ul>
     </div>
   </section>
 
   <section class="section" aria-labelledby="request-heading">
     <div class="section__header">
-      <p class="eyebrow">How to request deletion</p>
-      <h2 id="request-heading">Use the contact form or published support email.</h2>
+      <p class="eyebrow">4. How to Request Deletion</p>
+      <h2 id="request-heading">Users may request deletion through the published contact path.</h2>
     </div>
     <div class="panel">
       <p>
-        To request deletion, use the <a href="/contact">Contact</a> page and choose
-        <strong>Data deletion</strong>, or email
+        To request deletion of your Clarity account or product data, use the
+        <a href="/contact">Contact</a> page and choose <strong>Data deletion</strong>, or email
         <a href={`mailto:${product.supportEmail}`}>{product.supportEmail}</a> with the subject
         <strong>Data deletion request</strong>.
       </p>
       <p>
-        If possible, contact Clarity from the email address associated with your account. We may
-        ask for additional non-sensitive information needed to verify and complete the request.
+        Please contact Clarity from the email address associated with your account when possible.
+        Do not send bank passwords, full account numbers, card numbers, Social Security numbers,
+        one-time codes, API keys, screenshots, CSV files, or sensitive financial documents through
+        public forms or email.
       </p>
     </div>
   </section>
 
-  <section class="section" aria-labelledby="coverage-heading">
+  <section class="section" aria-labelledby="after-heading">
     <div class="section__header">
-      <p class="eyebrow">Request scope</p>
-      <h2 id="coverage-heading">What a deletion request can cover.</h2>
-    </div>
-    <div class="card-grid">
-      <article class="panel">
-        <h3>Account and financial context</h3>
-        <p>
-          Account/profile data, connected or imported account and transaction data, budgets,
-          categories, goals, plans, and progress where supported.
-        </p>
-      </article>
-      <article class="panel">
-        <h3>Rex assistant data</h3>
-        <p>
-          Rex conversations, approved memory/context, voice transcripts, generated responses, and
-          related metadata where supported by current product controls.
-        </p>
-      </article>
-      <article class="panel">
-        <h3>Support and waitlist records</h3>
-        <p>
-          Waitlist, contact, privacy, deletion, and support records where legally and
-          operationally possible.
-        </p>
-      </article>
-    </div>
-  </section>
-
-  <section class="section" aria-labelledby="disconnect-heading">
-    <div class="section__header">
-      <p class="eyebrow">Important distinction</p>
-      <h2 id="disconnect-heading">Disconnecting is different from deleting.</h2>
+      <p class="eyebrow">5. What Happens After a Deletion Request</p>
+      <h2 id="after-heading">Clarity verifies the request and deletes eligible records.</h2>
     </div>
     <div class="panel">
       <p>
-        Disconnecting a financial account may stop future access through that connection where
-        supported. Historical information already stored in Clarity may remain until you request
-        deletion or remove it through supported product controls.
+        After receiving a deletion request, Clarity may take reasonable steps to verify the
+        requester's identity and confirm the scope of the request. Once verified, Clarity will
+        delete or de-identify eligible account, financial, assistant, and product records from
+        active systems as reasonably practicable, generally within thirty days unless the request is
+        complex or an exception applies.
+      </p>
+      <p>
+        Disconnecting a financial account is different from deleting stored data. Disconnecting may
+        stop future access through an account connection provider, while historical data already in
+        Clarity may remain until removed through product controls or a deletion request.
       </p>
     </div>
   </section>
 
-  <section class="section" aria-labelledby="limits-heading">
+  <section class="section" aria-labelledby="exceptions-heading">
     <div class="section__header">
-      <p class="eyebrow">Limits and retention</p>
-      <h2 id="limits-heading">Some records may remain where retention is required.</h2>
+      <p class="eyebrow">6. Exceptions</p>
+      <h2 id="exceptions-heading">Some information may be retained when necessary.</h2>
     </div>
     <div class="panel">
       <p>
-        Some information may remain for a limited period in backups, logs, security records,
-        support records, or systems where retention is needed for legal, fraud-prevention,
-        security, dispute-resolution, or operational reasons. Some service providers may process
-        or retain information according to their own terms, settings, privacy policies, or legal
-        obligations.
+        Clarity may retain limited information where needed to comply with law, resolve disputes,
+        enforce terms, prevent fraud or abuse, maintain security, investigate incidents, preserve
+        audit records, process support requests, or complete backup rotation. Service providers may
+        also retain information according to their own legal obligations, terms, retention
+        schedules, and security practices.
+      </p>
+      <p>
+        When Clarity retains information under an exception, it will aim to retain only what is
+        reasonably necessary for the applicable purpose.
       </p>
     </div>
   </section>
 
-  <section class="section" aria-labelledby="safe-contact-heading">
+  <section class="section" aria-labelledby="contact-heading">
     <div class="section__header">
-      <p class="eyebrow">Safe contact</p>
-      <h2 id="safe-contact-heading">Do not send sensitive secrets.</h2>
+      <p class="eyebrow">7. Contact Information</p>
+      <h2 id="contact-heading">Questions and deletion requests may be sent to Clarity.</h2>
     </div>
     <div class="panel">
       <p>
-        Do not send bank passwords, full account numbers, full card numbers, Social Security
-        numbers, one-time codes, API keys, private keys, screenshots, CSV files, or sensitive
-        financial documents through public forms or email.
+        For deletion requests, privacy questions, or data retention questions, contact Clarity at
+        <a href={`mailto:${product.supportEmail}`}>{product.supportEmail}</a> or use the
+        <a href="/contact">Contact</a> page.
       </p>
-    </div>
-  </section>
-
-  <section class="section" aria-labelledby="related-heading">
-    <div class="section__header">
-      <p class="eyebrow">Related links</p>
-      <h2 id="related-heading">More about Clarity data practices.</h2>
-    </div>
-    <div class="hero__actions">
-      <a class="button button--secondary" href="/privacy">Privacy</a>
-      <a class="button button--secondary" href="/security">Security</a>
-      <a class="button button--secondary" href="/terms">Terms</a>
-      <a class="button button--secondary" href="/contact">Contact</a>
+      <p>
+        For more detail about collection, use, sharing, and user choices, review the
+        <a href="/privacy">Privacy Policy</a>.
+      </p>
     </div>
   </section>
 </BaseLayout>
