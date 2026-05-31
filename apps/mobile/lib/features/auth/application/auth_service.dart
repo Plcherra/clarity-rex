@@ -41,6 +41,18 @@ final class MfaFactorSummary {
   }
 }
 
+enum MfaSecurityEmailEvent {
+  enabled,
+  disabled;
+
+  String get functionValue {
+    return switch (this) {
+      MfaSecurityEmailEvent.enabled => 'mfa_enabled',
+      MfaSecurityEmailEvent.disabled => 'mfa_disabled',
+    };
+  }
+}
+
 class AuthService {
   AuthService({required SupabaseService supabaseService})
     : _supabaseService = supabaseService;
@@ -144,6 +156,21 @@ class AuthService {
 
   Future<void> unenrollMfaFactor(String factorId) async {
     await _supabaseService.auth.mfa.unenroll(factorId);
+  }
+
+  Future<bool> sendMfaSecurityEmail(MfaSecurityEmailEvent event) async {
+    if (!_supabaseService.isConfigured || currentSession == null) {
+      return false;
+    }
+    try {
+      final response = await _supabaseService.functions.invoke(
+        'send-mfa-security-email',
+        body: {'event': event.functionValue},
+      );
+      return response.status >= 200 && response.status < 300;
+    } on Object {
+      return false;
+    }
   }
 }
 

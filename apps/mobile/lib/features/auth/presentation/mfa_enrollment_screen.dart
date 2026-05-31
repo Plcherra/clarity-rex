@@ -38,6 +38,39 @@ final class _MfaEnrollmentScreenState extends State<MfaEnrollmentScreen> {
     await widget.controller.beginMfaEnrollment();
   }
 
+  Future<void> _toggleMfa(bool enabled) async {
+    if (enabled) {
+      await _startEnrollment();
+      return;
+    }
+
+    final factorCount = widget.controller.mfaFactors.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Turn off MFA?'),
+        content: Text(
+          factorCount <= 1
+              ? 'Your account will no longer ask for an authenticator code after password sign-in.'
+              : 'This removes all $factorCount authenticator apps. Your account will no longer ask for an authenticator code after password sign-in.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Turn off'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await widget.controller.disableMfa();
+    }
+  }
+
   Future<void> _verifyEnrollment() async {
     final code = _codeController.text.replaceAll(RegExp(r'\D'), '');
     setState(() => _localError = null);
@@ -100,6 +133,7 @@ final class _MfaEnrollmentScreenState extends State<MfaEnrollmentScreen> {
               _SecurityStatusCard(
                 enabled: controller.hasVerifiedTotpFactor,
                 isLoading: controller.isMfaLoading,
+                onChanged: _toggleMfa,
                 onEnroll: _startEnrollment,
               ),
               const SizedBox(height: 14),
@@ -165,11 +199,13 @@ final class _SecurityStatusCard extends StatelessWidget {
   const _SecurityStatusCard({
     required this.enabled,
     required this.isLoading,
+    required this.onChanged,
     required this.onEnroll,
   });
 
   final bool enabled;
   final bool isLoading;
+  final ValueChanged<bool> onChanged;
   final VoidCallback onEnroll;
 
   @override
@@ -187,24 +223,20 @@ final class _SecurityStatusCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  enabled
-                      ? Icons.verified_user_rounded
-                      : Icons.security_rounded,
-                  color: enabled ? const Color(0xFF1B7A4C) : cs.primary,
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: enabled,
+              onChanged: isLoading ? null : onChanged,
+              secondary: Icon(
+                enabled ? Icons.verified_user_rounded : Icons.security_rounded,
+                color: enabled ? const Color(0xFF1B7A4C) : cs.primary,
+              ),
+              title: Text(
+                enabled ? 'MFA is on' : 'MFA is off',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    enabled ? 'MFA is enabled' : 'MFA is optional',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -216,11 +248,18 @@ final class _SecurityStatusCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            OutlinedButton.icon(
-              onPressed: isLoading ? null : onEnroll,
-              icon: const Icon(Icons.add_moderator_outlined),
-              label: Text(enabled ? 'Add another app' : 'Enroll in MFA'),
-            ),
+            if (enabled)
+              OutlinedButton.icon(
+                onPressed: isLoading ? null : onEnroll,
+                icon: const Icon(Icons.add_moderator_outlined),
+                label: const Text('Add another app'),
+              )
+            else
+              FilledButton.icon(
+                onPressed: isLoading ? null : () => onChanged(true),
+                icon: const Icon(Icons.add_moderator_outlined),
+                label: const Text('Turn on MFA'),
+              ),
           ],
         ),
       ),

@@ -4,7 +4,8 @@ Flutter personal finance app with Supabase Auth, Supabase-backed profile and
 financial tables, CSV import, dashboard/budget views, and AI categorization
 through a Supabase Edge Function.
 
-Feature contract: [`docs/csv_import_ai_categorization.md`](docs/csv_import_ai_categorization.md)
+Feature contract:
+[`docs/csv_import_ai_categorization.md`](docs/csv_import_ai_categorization.md)
 is the source of truth for CSV import, automatic AI categorization, category
 creation, Budget page category visibility, and merchant learning.
 
@@ -17,9 +18,9 @@ creation, Budget page category visibility, and merchant learning.
 - Supabase boundary: `lib/core/supabase/`
 - Feature-first UI and workflows: `lib/features/`
 
-`AppState` has been removed. Auth/profile routing is owned by
-`AuthController` and `ProfileController`. App data services use Supabase table
-services through `SupabaseRepository`.
+`AppState` has been removed. Auth/profile routing is owned by `AuthController`
+and `ProfileController`. App data services use Supabase table services through
+`SupabaseRepository`.
 
 ## Local Setup
 
@@ -79,7 +80,10 @@ Deploy the OpenAI Edge Functions:
 ```sh
 supabase functions deploy call-openai
 supabase functions deploy categorize-transactions
+supabase functions deploy send-mfa-security-email
 supabase secrets set OPENAI_API_KEY=your-real-openai-key
+supabase secrets set RESEND_API_KEY=your-real-resend-key
+supabase secrets set SECURITY_EMAIL_FROM="Clarity Security <security@goclarity.app>"
 ```
 
 Keep JWT verification enabled for Edge Functions. Do not deploy these functions

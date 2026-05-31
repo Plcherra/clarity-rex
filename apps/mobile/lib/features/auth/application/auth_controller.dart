@@ -123,7 +123,12 @@ class AuthController extends ChangeNotifier {
       _session = _authService.currentSession;
       pendingMfaEnrollment = null;
       await _refreshMfaStateAfterVerification();
-      mfaInfoMessage = 'MFA is enabled for your account.';
+      final emailSent = await _authService.sendMfaSecurityEmail(
+        MfaSecurityEmailEvent.enabled,
+      );
+      mfaInfoMessage = emailSent
+          ? 'MFA is enabled. We sent you a confirmation email.'
+          : 'MFA is enabled. Confirmation email could not be sent right now.';
     });
   }
 
@@ -154,10 +159,47 @@ class AuthController extends ChangeNotifier {
 
   Future<void> unenrollMfaFactor(String factorId) async {
     await _runMfaAction(() async {
+      final hadSingleFactor = mfaFactors.length == 1;
       await _authService.unenrollMfaFactor(factorId);
       mfaFactors = await _authService.verifiedTotpFactors();
       _syncMfaRequirement();
-      mfaInfoMessage = 'Authenticator app removed.';
+      if (hadSingleFactor && mfaFactors.isEmpty) {
+        final emailSent = await _authService.sendMfaSecurityEmail(
+          MfaSecurityEmailEvent.disabled,
+        );
+        mfaInfoMessage = emailSent
+            ? 'MFA is off. We sent you a confirmation email.'
+            : 'MFA is off. Confirmation email could not be sent right now.';
+      } else {
+        mfaInfoMessage = 'Authenticator app removed.';
+      }
+    });
+  }
+
+  Future<void> disableMfa() async {
+    await _runMfaAction(() async {
+      if (mfaFactors.isEmpty) {
+        mfaFactors = await _authService.verifiedTotpFactors();
+      }
+      final factorsToRemove = List<MfaFactorSummary>.of(mfaFactors);
+      if (factorsToRemove.isEmpty) {
+        pendingMfaEnrollment = null;
+        _syncMfaRequirement();
+        mfaInfoMessage = 'MFA is already off.';
+        return;
+      }
+      for (final factor in factorsToRemove) {
+        await _authService.unenrollMfaFactor(factor.id);
+      }
+      mfaFactors = await _authService.verifiedTotpFactors();
+      pendingMfaEnrollment = null;
+      _syncMfaRequirement();
+      final emailSent = await _authService.sendMfaSecurityEmail(
+        MfaSecurityEmailEvent.disabled,
+      );
+      mfaInfoMessage = emailSent
+          ? 'MFA is off. We sent you a confirmation email.'
+          : 'MFA is off. Confirmation email could not be sent right now.';
     });
   }
 
