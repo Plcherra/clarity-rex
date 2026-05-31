@@ -19,9 +19,11 @@ from app.services.memory_candidate_service import (
     MemoryCandidateService,
     MemoryCandidateServiceError,
 )
+from app.services.rex_observability import MemoryOperationObserver
 
 
 router = APIRouter(prefix="/memory-candidates", tags=["memory-candidates"])
+_memory_observer = MemoryOperationObserver()
 
 
 @router.get("", response_model=list[MemoryCandidateResponse])
@@ -42,7 +44,7 @@ async def list_memory_candidates(
             limit=limit,
         )
     except MemoryCandidateServiceError as error:
-        raise _candidate_http_error(error) from error
+        raise _candidate_http_error("list_memory_candidates", error) from error
     return [MemoryCandidateResponse(**candidate) for candidate in candidates]
 
 
@@ -54,7 +56,7 @@ async def create_memory_candidate(
     try:
         candidate = await service.create_candidate(request)
     except MemoryCandidateServiceError as error:
-        raise _candidate_http_error(error) from error
+        raise _candidate_http_error("create_memory_candidate", error) from error
     return MemoryCandidateResponse(**candidate)
 
 
@@ -67,7 +69,11 @@ async def update_memory_candidate(
     try:
         candidate = await service.update_candidate(candidate_id, request)
     except MemoryCandidateServiceError as error:
-        raise _candidate_http_error(error) from error
+        raise _candidate_http_error(
+            "update_memory_candidate",
+            error,
+            candidate_id=candidate_id,
+        ) from error
     return MemoryCandidateResponse(**candidate)
 
 
@@ -83,7 +89,11 @@ async def approve_memory_candidate(
             request or MemoryCandidateApproveRequest(),
         )
     except MemoryCandidateServiceError as error:
-        raise _candidate_http_error(error) from error
+        raise _candidate_http_error(
+            "approve_memory_candidate",
+            error,
+            candidate_id=candidate_id,
+        ) from error
     return MemoryCandidateResponse(**candidate)
 
 
@@ -99,7 +109,11 @@ async def reject_memory_candidate(
             request or MemoryCandidateRejectRequest(),
         )
     except MemoryCandidateServiceError as error:
-        raise _candidate_http_error(error) from error
+        raise _candidate_http_error(
+            "reject_memory_candidate",
+            error,
+            candidate_id=candidate_id,
+        ) from error
     return MemoryCandidateResponse(**candidate)
 
 
@@ -111,7 +125,7 @@ async def approve_all_memory_candidates(
     try:
         result = await service.bulk_approve_candidates(request)
     except MemoryCandidateServiceError as error:
-        raise _candidate_http_error(error) from error
+        raise _candidate_http_error("approve_all_memory_candidates", error) from error
     return MemoryCandidateBulkDecisionResponse(**result)
 
 
@@ -123,11 +137,21 @@ async def reject_all_memory_candidates(
     try:
         result = await service.bulk_reject_candidates(request)
     except MemoryCandidateServiceError as error:
-        raise _candidate_http_error(error) from error
+        raise _candidate_http_error("reject_all_memory_candidates", error) from error
     return MemoryCandidateBulkDecisionResponse(**result)
 
 
-def _candidate_http_error(error: MemoryCandidateServiceError):
+def _candidate_http_error(
+    operation: str,
+    error: MemoryCandidateServiceError,
+    candidate_id: Optional[str] = None,
+):
     from fastapi import HTTPException
 
+    _memory_observer.log_failure(
+        operation=operation,
+        error=error,
+        candidate_id=candidate_id,
+        status_code=error.status_code,
+    )
     return HTTPException(status_code=error.status_code, detail=error.detail)

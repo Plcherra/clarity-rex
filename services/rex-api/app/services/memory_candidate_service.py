@@ -467,6 +467,10 @@ def _with_preview(row: dict[str, Any]) -> dict[str, Any]:
 def _preview(row: dict[str, Any]) -> str:
     payload = row.get("payload") or {}
     candidate_type = str(row.get("candidate_type") or "memory")
+    if candidate_type == "correction":
+        correction_preview = _correction_preview(payload)
+        if correction_preview:
+            return correction_preview
     title = _first_text(
         payload,
         "title",
@@ -482,6 +486,22 @@ def _preview(row: dict[str, Any]) -> str:
     if title:
         return f"{candidate_type}: {title}"
     return f"{candidate_type}: pending memory change"
+
+
+def _correction_preview(payload: dict[str, Any]) -> str | None:
+    intent = payload.get("intent")
+    if not isinstance(intent, dict):
+        return None
+    old_value = _clean_optional(intent.get("old_value"))
+    new_value = _clean_optional(intent.get("new_value"))
+    target_hint = _clean_optional(intent.get("target_hint"))
+    if old_value and new_value:
+        return f'correction: replace "{old_value}" with "{new_value}"'
+    if new_value and target_hint:
+        return f'correction: change "{target_hint}" to "{new_value}"'
+    if target_hint:
+        return f"correction: review {target_hint}"
+    return None
 
 
 def _first_text(payload: dict[str, Any], *keys: str) -> str | None:

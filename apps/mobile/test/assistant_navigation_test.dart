@@ -1,6 +1,8 @@
 import 'package:clarity/features/assistant/chat/data/chat_models.dart';
 import 'package:clarity/features/assistant/chat/data/conversation_api.dart';
 import 'package:clarity/features/assistant/chat/domain/chat_message.dart';
+import 'package:clarity/features/assistant/memory/data/memory_api.dart';
+import 'package:clarity/features/assistant/memory/data/memory_models.dart';
 import 'package:clarity/features/assistant/presentation/assistant_screen.dart';
 import 'package:clarity/features/assistant/presentation/assistant_tab.dart';
 import 'package:clarity/features/assistant/voice/application/voice_call_controller.dart';
@@ -132,6 +134,7 @@ Future<void> _pumpAssistantNavigation(
     ProviderScope(
       overrides: [
         conversationApiProvider.overrideWithValue(_FakeConversationApi()),
+        memoryApiProvider.overrideWithValue(_FakeMemoryApi()),
         if (voiceController != null)
           voiceCallProvider.overrideWith(() => voiceController),
       ],
@@ -149,6 +152,51 @@ class _FakeConversationApi extends ConversationApi {
   Future<List<ChatMessage>> getConversationMessages(
     String conversationId,
   ) async {
+    return const [];
+  }
+}
+
+class _FakeMemoryApi extends MemoryApi {
+  @override
+  Future<List<MemoryItem>> getMemories({
+    MemoryType? memoryType,
+    bool? active,
+    int limit = 50,
+  }) async {
+    return const [];
+  }
+
+  @override
+  Future<List<PersonMemoryItem>> getPeople({
+    bool? active,
+    int limit = 50,
+  }) async {
+    return const [];
+  }
+
+  @override
+  Future<List<RuleMemoryItem>> getRules({bool? active, int limit = 50}) async {
+    return const [];
+  }
+
+  @override
+  Future<List<PlanMemoryItem>> getPlans({bool? active, int limit = 50}) async {
+    return const [];
+  }
+
+  @override
+  Future<List<CommitmentMemoryItem>> getCommitments({
+    bool? active,
+    int limit = 50,
+  }) async {
+    return const [];
+  }
+
+  @override
+  Future<List<PendingMemoryCandidateItem>> getMemoryCandidates({
+    String status = 'pending',
+    int limit = 50,
+  }) async {
     return const [];
   }
 }

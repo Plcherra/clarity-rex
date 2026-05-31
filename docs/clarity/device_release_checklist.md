@@ -74,7 +74,23 @@ Expected `/ready` result:
 19. End the voice call and send a normal chat message in the same conversation.
 20. Toggle `Deep Think` in Rex chat, send one planning/analysis message, and
     confirm the toggle clears after send.
-21. Log out and sign back in; dashboard and account values should recover.
+21. Open Memory and confirm Saved shows grouped sections such as Identity,
+    Preferences, People & places, Plans, Rules, and Recent without raw backend
+    labels such as `long_term_memory`, `entity_event`, or `candidate_type`.
+22. In Memory, use search and the Saved, Pending, Corrections, People, and
+    Preferences chips. Confirm filtered-empty copy says `No matching memories`.
+23. In Memory Pending, review at least one real or seeded pending candidate.
+    Confirm the card shows a human proposal, reason/source when available,
+    risk/status labels, and clear Approve/Reject actions.
+24. Approve or reject one pending memory candidate and confirm the result copy
+    says the memory was saved or dismissed without leaking backend fields.
+25. Open a saved memory overflow menu. Confirm Edit and Archive are available
+    only from the menu, not via accidental swipe. Cancel Archive once, then
+    confirm Archive once; copy should say Rex stops using the memory and that it
+    remains in memory history.
+26. If a Memory error can be triggered during testing, confirm the app shows
+    retryable user copy rather than raw stack traces, ids, or backend metadata.
+27. Log out and sign back in; dashboard and account values should recover.
 
 ## Rex Brain Log Check
 
@@ -88,6 +104,17 @@ Expected log shape:
 
 - Contains request id, channel, status, layer, model profile, latency class, and cost tier.
 - Does **not** contain raw user message text, raw transaction rows, secrets, or prompt text.
+
+For Memory failures, inspect metadata-only failure logs if present:
+
+```sh
+sudo journalctl -u clarity-rex.service -n 200 --no-pager | grep memory_operation_failed
+```
+
+Expected Memory log shape:
+
+- Contains operation, status, safe error class, status code, and memory or candidate id when applicable.
+- Does **not** contain memory content, candidate payload bodies, prompt text, user message text, secrets, or financial rows.
 
 ## Failure Notes To Capture
 

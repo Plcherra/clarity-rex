@@ -16,12 +16,12 @@ class MemoryApi {
     RexAuthHeaders? authHeaders,
     RexApiClient? apiClient,
   }) : _apiClient =
-          apiClient ??
-          RexApiClient(
-            httpClient: client,
-            baseUrl: baseUrl,
-            authHeaders: authHeaders,
-          );
+           apiClient ??
+           RexApiClient(
+             httpClient: client,
+             baseUrl: baseUrl,
+             authHeaders: authHeaders,
+           );
 
   final RexApiClient _apiClient;
 
@@ -59,7 +59,7 @@ class MemoryApi {
     bool? active,
   }) async {
     final body = <String, dynamic>{};
-    if (memoryType != null) {
+    if (memoryType != null && memoryType != MemoryType.other) {
       body['memory_type'] = memoryType.apiValue;
     }
     if (content != null) {
@@ -124,6 +124,10 @@ class MemoryApi {
     await _delete('/entities/$personId');
   }
 
+  Future<void> archivePerson(String personId) async {
+    await deactivatePerson(personId);
+  }
+
   Future<List<RuleMemoryItem>> getRules({bool? active, int limit = 50}) async {
     final data = await _getList('/rules', {
       'limit': limit.toString(),
@@ -157,6 +161,10 @@ class MemoryApi {
 
   Future<void> deactivateRule(String ruleId) async {
     await _delete('/rules/$ruleId');
+  }
+
+  Future<void> archiveRule(String ruleId) async {
+    await deactivateRule(ruleId);
   }
 
   Future<List<PlanMemoryItem>> getPlans({bool? active, int limit = 50}) async {
@@ -194,6 +202,10 @@ class MemoryApi {
 
   Future<void> deactivatePlan(String planId) async {
     await _delete('/plans/$planId');
+  }
+
+  Future<void> archivePlan(String planId) async {
+    await deactivatePlan(planId);
   }
 
   Future<List<CommitmentMemoryItem>> getCommitments({
@@ -234,8 +246,67 @@ class MemoryApi {
     await _delete('/commitments/$commitmentId');
   }
 
+  Future<void> archiveCommitment(String commitmentId) async {
+    await deactivateCommitment(commitmentId);
+  }
+
   Future<void> deactivateMemory(String memoryId) async {
     await _delete('/memory/$memoryId');
+  }
+
+  Future<void> archiveMemory(String memoryId) async {
+    await deactivateMemory(memoryId);
+  }
+
+  Future<List<PendingMemoryCandidateItem>> getMemoryCandidates({
+    String status = 'pending',
+    int limit = 50,
+  }) async {
+    final data = await _getList('/memory-candidates', {
+      'status': status,
+      'limit': limit.toString(),
+    });
+    return data
+        .map(PendingMemoryCandidateItem.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<PendingMemoryCandidateItem> approveMemoryCandidate(
+    String candidateId,
+  ) async {
+    final response = await _apiClient.postJson(
+      '/memory-candidates/$candidateId/approve',
+      {'approved_by': 'user'},
+    );
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const MemoryApiException('Backend returned an invalid response.');
+    }
+    return PendingMemoryCandidateItem.fromJson(data);
+  }
+
+  Future<PendingMemoryCandidateItem> updateMemoryCandidate(
+    String candidateId, {
+    Map<String, dynamic>? payload,
+    String? reason,
+  }) async {
+    final body = _withoutNulls({'payload': payload, 'reason': reason});
+    final data = await _patchJson('/memory-candidates/$candidateId', body);
+    return PendingMemoryCandidateItem.fromJson(data);
+  }
+
+  Future<PendingMemoryCandidateItem> rejectMemoryCandidate(
+    String candidateId,
+  ) async {
+    final response = await _apiClient.postJson(
+      '/memory-candidates/$candidateId/reject',
+      {'reason': 'Rejected from Memory review.'},
+    );
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const MemoryApiException('Backend returned an invalid response.');
+    }
+    return PendingMemoryCandidateItem.fromJson(data);
   }
 
   Future<Map<String, dynamic>> _patchJson(
@@ -253,7 +324,10 @@ class MemoryApi {
   Future<void> _delete(String path) async {
     final response = await _apiClient.delete(path);
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw MemoryApiException(_errorMessage(response.body));
+      throw MemoryApiException(
+        _errorMessage(response.body),
+        statusCode: response.statusCode,
+      );
     }
   }
 
@@ -273,7 +347,10 @@ class MemoryApi {
 
   dynamic _decodeResponse(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw MemoryApiException(_errorMessage(response.body));
+      throw MemoryApiException(
+        _errorMessage(response.body),
+        statusCode: response.statusCode,
+      );
     }
 
     try {
@@ -324,9 +401,10 @@ class MemoryApi {
 }
 
 class MemoryApiException implements Exception {
-  const MemoryApiException(this.message);
+  const MemoryApiException(this.message, {this.statusCode});
 
   final String message;
+  final int? statusCode;
 
   @override
   String toString() => message;

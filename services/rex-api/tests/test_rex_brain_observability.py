@@ -7,7 +7,7 @@ from app.config import Settings
 from app.services.rex_brain import RexBrainInput, RexThinkingRouter
 from app.services.rex_brain_contracts import RexBrainChannel
 from app.services.rex_model_router import RexModelRouter
-from app.services.rex_observability import RexBrainObserver
+from app.services.rex_observability import MemoryOperationObserver, RexBrainObserver
 
 
 class FakeLogger:
@@ -15,6 +15,9 @@ class FakeLogger:
         self.records = []
 
     def info(self, message, *args):
+        self.records.append(message % args)
+
+    def warning(self, message, *args):
         self.records.append(message % args)
 
 
@@ -92,6 +95,29 @@ def test_observer_supports_error_class_without_exception_body():
     assert payload["error_class"] == "AIServiceError"
     assert "detail" not in payload
     assert "message" not in payload
+
+
+def test_memory_observer_logs_ids_and_error_class_without_private_content():
+    logger = FakeLogger()
+    observer = MemoryOperationObserver(logger=logger)
+
+    payload = observer.log_failure(
+        operation="approve_memory_candidate",
+        candidate_id="candidate-1",
+        error=RuntimeError("secret memory body should not be logged"),
+        status_code=503,
+    )
+
+    assert payload == {
+        "operation": "approve_memory_candidate",
+        "status": "failed",
+        "error_class": "RuntimeError",
+        "candidate_id": "candidate-1",
+        "status_code": 503,
+    }
+    rendered = json.dumps(payload) + "\n" + "\n".join(logger.records)
+    assert "secret memory body" not in rendered
+    assert "memory_operation_failed" in logger.records[0]
 
 
 @pytest.mark.parametrize(

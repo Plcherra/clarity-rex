@@ -1,3 +1,5 @@
+import 'package:clarity/features/assistant/memory/data/memory_models.dart';
+
 enum AccountabilitySignalType {
   ruleViolation,
   missedCommitment,
@@ -190,6 +192,14 @@ class AccountabilitySourceRef {
   final String? title;
   final String? excerpt;
   final Map<String, dynamic> metadata;
+
+  String get displayLabel {
+    final titleText = title?.trim();
+    if (titleText != null && titleText.isNotEmpty) {
+      return titleText;
+    }
+    return sourceType.label;
+  }
 }
 
 class PersonalRule {
@@ -342,6 +352,11 @@ class PendingMemoryCandidate {
   final String riskLevel;
   final String preview;
   final String reason;
+
+  String get candidateTypeLabel => memoryCandidateTypeLabel(candidateType);
+  String get statusLabel => memoryCandidateStatusLabel(status);
+  String get riskLabel => memoryRiskLevelLabel(riskLevel);
+  String get previewLabel => memoryPreviewWithHumanType(preview);
 }
 
 class DuplicateWarning {
@@ -502,14 +517,36 @@ extension AccountabilitySeverityLabel on AccountabilitySeverity {
 
 extension AccountabilityRecordLabels on String {
   String get accountabilityLabel {
-    if (isEmpty) {
-      return '';
-    }
+    return memoryRecordLabel;
+  }
+}
 
-    return split('_')
-        .where((part) => part.isNotEmpty)
-        .map((part) => part[0].toUpperCase() + part.substring(1))
-        .join(' ');
+extension AccountabilitySourceTypeLabel on AccountabilitySourceType {
+  String get label {
+    switch (this) {
+      case AccountabilitySourceType.personalRule:
+        return 'Rule';
+      case AccountabilitySourceType.commitment:
+        return 'Commitment';
+      case AccountabilitySourceType.plan:
+        return 'Plan';
+      case AccountabilitySourceType.planMilestone:
+        return 'Milestone';
+      case AccountabilitySourceType.entity:
+        return 'Person / place';
+      case AccountabilitySourceType.entityEvent:
+        return 'Related event';
+      case AccountabilitySourceType.longTermMemory:
+        return 'Memory';
+      case AccountabilitySourceType.message:
+        return 'Message';
+      case AccountabilitySourceType.conversation:
+        return 'Conversation';
+      case AccountabilitySourceType.system:
+        return 'System';
+      case AccountabilitySourceType.unknown:
+        return 'Source';
+    }
   }
 }
 

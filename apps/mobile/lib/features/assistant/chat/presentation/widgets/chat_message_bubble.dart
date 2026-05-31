@@ -273,13 +273,13 @@ class _ClarityActionCard extends StatelessWidget {
               spacing: 6,
               runSpacing: 6,
               children: [
-                _MemoryChip(label: action.action.replaceAll('_', ' ')),
+                _MemoryChip(label: action.actionLabel),
                 _MemoryChip(
-                  label: action.riskLevel,
+                  label: action.riskLabel,
                   color: isHighRisk ? scheme.error : scheme.primary,
                 ),
                 _MemoryChip(
-                  label: action.status,
+                  label: action.statusLabel,
                   color: action.isFailed ? scheme.error : scheme.primary,
                 ),
               ],
@@ -439,16 +439,20 @@ class _MemoryCandidateCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final isHighRisk = candidate.riskLevel == 'high';
+    final isHighRisk = candidate.isHighRisk;
     final verificationPassed = candidate.verificationPassed;
+    final isProblem = candidate.isFailed || isHighRisk;
+    final accent = isProblem ? scheme.error : scheme.primary;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.78),
+        color: candidate.isFailed
+            ? scheme.errorContainer.withValues(alpha: 0.35)
+            : scheme.surfaceContainerHighest.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isHighRisk
-              ? scheme.error.withValues(alpha: 0.42)
+          color: isProblem
+              ? scheme.error.withValues(alpha: 0.46)
               : scheme.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
@@ -461,12 +465,9 @@ class _MemoryCandidateCard extends StatelessWidget {
               spacing: 6,
               runSpacing: 6,
               children: [
-                _MemoryChip(label: candidate.candidateType),
-                _MemoryChip(
-                  label: candidate.riskLevel,
-                  color: isHighRisk ? scheme.error : scheme.primary,
-                ),
-                _MemoryChip(label: candidate.status),
+                _MemoryChip(label: candidate.candidateTypeLabel),
+                _MemoryChip(label: candidate.riskLabel, color: accent),
+                _MemoryChip(label: candidate.statusLabel, color: accent),
                 if (verificationPassed != null)
                   _MemoryChip(
                     label: verificationPassed ? 'verified' : 'failed',
@@ -476,19 +477,78 @@ class _MemoryCandidateCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              candidate.preview,
+              'Proposed memory',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              candidate.previewLabel,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 height: 1.3,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              candidate.expectedAction,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-                height: 1.3,
+            if (candidate.isCorrection &&
+                (candidate.correctionOldValue != null ||
+                    candidate.correctionNewValue != null)) ...[
+              if (candidate.correctionOldValue != null)
+                _MemoryReviewDetailRow(
+                  icon: Icons.history_rounded,
+                  text: 'May change: ${candidate.correctionOldValue}',
+                  color: scheme.onSurfaceVariant,
+                ),
+              if (candidate.correctionNewValue != null)
+                _MemoryReviewDetailRow(
+                  icon: Icons.update_rounded,
+                  text: 'Replace with: ${candidate.correctionNewValue}',
+                  color: scheme.onSurfaceVariant,
+                ),
+            ],
+            if (candidate.reasonLabel != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Why Rex suggested it',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
+              const SizedBox(height: 4),
+              Text(
+                candidate.reasonLabel!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  height: 1.3,
+                ),
+              ),
+            ],
+            const SizedBox(height: 4),
+            _MemoryReviewDetailRow(
+              icon: Icons.task_alt_rounded,
+              text: candidate.expectedActionLabel,
+              color: scheme.onSurfaceVariant,
+            ),
+            if (candidate.sourceLabel != null)
+              _MemoryReviewDetailRow(
+                icon: Icons.chat_bubble_outline_rounded,
+                text: candidate.sourceLabel!,
+                color: scheme.onSurfaceVariant,
+              ),
+            _MemoryReviewDetailRow(
+              icon: candidate.isPending
+                  ? Icons.info_outline_rounded
+                  : candidate.isApplied
+                  ? Icons.check_circle_outline_rounded
+                  : candidate.isRejected
+                  ? Icons.block_rounded
+                  : candidate.isFailed
+                  ? Icons.error_outline_rounded
+                  : Icons.remove_circle_outline_rounded,
+              text: candidate.statusDetail,
+              color: isProblem ? scheme.error : scheme.onSurfaceVariant,
             ),
             if (candidate.verificationMessage != null) ...[
               const SizedBox(height: 6),
@@ -512,7 +572,7 @@ class _MemoryCandidateCard extends StatelessWidget {
                     FilledButton.icon(
                       onPressed: () => onApprove!(candidate),
                       icon: const Icon(Icons.check_rounded, size: 16),
-                      label: Text(isHighRisk ? 'Confirm' : 'Approve'),
+                      label: Text(isHighRisk ? 'Confirm save' : 'Approve'),
                     ),
                   if (candidate.canReject && onReject != null)
                     OutlinedButton.icon(
@@ -524,13 +584,50 @@ class _MemoryCandidateCard extends StatelessWidget {
                     TextButton.icon(
                       onPressed: () => onEdit!(candidate),
                       icon: const Icon(Icons.edit_rounded, size: 16),
-                      label: const Text('Edit'),
+                      label: const Text('Edit first'),
                     ),
                 ],
               ),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MemoryReviewDetailRow extends StatelessWidget {
+  const _MemoryReviewDetailRow({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: color,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

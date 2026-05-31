@@ -248,6 +248,7 @@ class FakeMemoryCandidateService:
         self.pending = pending or []
         self.approved = approved or []
         self.rejected = []
+        self.updated = []
 
     async def create_candidate(self, request):
         candidate = {
@@ -299,6 +300,21 @@ class FakeMemoryCandidateService:
                 rejected = {**candidate, "status": "rejected"}
                 self.rejected.append(rejected)
                 return rejected
+        raise AssertionError(f"unknown candidate {candidate_id}")
+
+    async def update_candidate(self, candidate_id, request):
+        for index, candidate in enumerate(self.pending):
+            if candidate["id"] == candidate_id:
+                payload = request.payload or candidate.get("payload") or {}
+                updated = {
+                    **candidate,
+                    "payload": payload,
+                    "reason": request.reason,
+                    "preview": f"{candidate['candidate_type']}: {payload.get('content') or payload.get('title') or payload.get('text')}",
+                }
+                self.pending[index] = updated
+                self.updated.append(updated)
+                return updated
         raise AssertionError(f"unknown candidate {candidate_id}")
 
     async def bulk_approve_candidates(self, request):
@@ -464,6 +480,8 @@ async def test_chat_service_applies_memory_correction_and_prompts_summary():
 
     assert result["memory_correction"]["applied"] is False
     assert result["memory_correction"]["requires_confirmation"] is True
+    assert result["memory_correction"]["old_value"] == "Flowfirst"
+    assert result["memory_correction"]["new_value"] == "FlowForce"
     assert candidate_service.created[0]["candidate_type"] == "correction"
     assert candidate_service.created[0]["payload"]["text"] == (
         "not Flowfirst, it is FlowForce"
@@ -569,7 +587,7 @@ async def test_chat_service_blocks_vague_confirmation_for_high_risk_candidate():
     assert card["id"] == "candidate-high"
     assert card["risk_level"] == "high"
     assert card["requires_explicit_confirmation"] is True
-    assert card["expected_action"] == "Apply correction and verify stale facts are gone"
+    assert card["expected_action"] == "Review correction before changing saved memory"
 
 
 @pytest.mark.asyncio
@@ -702,6 +720,51 @@ async def test_chat_service_can_confirm_specific_candidate_by_id():
 
     assert candidate_service.approved[0]["id"] == "candidate-high"
     assert result["memory_changes"]["applied_candidates"][0]["id"] == ("candidate-high")
+
+
+@pytest.mark.asyncio
+async def test_chat_service_can_edit_specific_pending_candidate_by_id():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.conversations.add("conversation-existing")
+    candidate_service = FakeMemoryCandidateService(
+        pending=[
+            {
+                "id": "candidate-low",
+                "candidate_type": "long_term_memory",
+                "payload": {
+                    "memory_type": "preference",
+                    "content": "Pedro prefers email",
+                },
+                "risk_level": "medium",
+                "status": "pending",
+                "preview": "long_term_memory: Pedro prefers email",
+            },
+        ]
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        memory_candidate_service=candidate_service,
+    )
+
+    result = await chat_service.send_message(
+        "Edit pending memory candidate-low: Pedro prefers concise email updates",
+        "conversation-existing",
+    )
+
+    assert candidate_service.updated[0]["id"] == "candidate-low"
+    assert candidate_service.updated[0]["payload"]["content"] == (
+        "Pedro prefers concise email updates"
+    )
+    assert result["response"] == (
+        "Updated 1 pending memory request. Review it before saving."
+    )
+    assert result["memory_changes"]["pending_candidates"][0]["id"] == "candidate-low"
+    assert result["memory_changes"]["pending_candidates"][0]["reason"] == (
+        "Edited by the user before approval."
+    )
 
 
 @pytest.mark.asyncio

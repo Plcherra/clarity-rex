@@ -303,10 +303,19 @@ async def test_approve_correction_candidate_applies_and_verifies_stale_terms_rem
     created = await service.create_candidate(
         MemoryCandidateCreateRequest(
             candidate_type="correction",
-            payload={"text": "not Flowfirst, it is FlowForce"},
+            payload={
+                "text": "not Flowfirst, it is FlowForce",
+                "intent": {
+                    "intent_type": "replace_value",
+                    "old_value": "Flowfirst",
+                    "new_value": "FlowForce",
+                },
+            },
             risk_level="high",
         )
     )
+
+    assert created["preview"] == 'correction: replace "Flowfirst" with "FlowForce"'
 
     approved = await service.approve_candidate(
         created["id"],
@@ -318,6 +327,44 @@ async def test_approve_correction_candidate_applies_and_verifies_stale_terms_rem
     assert repo.corrections[0]["old_value"] == "Flowfirst"
     assert approved["verification"]["passed"] is True
     assert approved["verification"]["remaining_conflicts"] == []
+
+
+@pytest.mark.asyncio
+async def test_reject_correction_candidate_keeps_durable_memory_unchanged():
+    repo = FakeMemoryCandidateRepository()
+    repo.plans.append(
+        {
+            "id": "plan-1",
+            "title": "Launch Flowfirst",
+            "description": "Flowfirst is the wrong app name.",
+            "active": True,
+            "metadata": {},
+        }
+    )
+    service = MemoryCandidateService(repo)
+    created = await service.create_candidate(
+        MemoryCandidateCreateRequest(
+            candidate_type="correction",
+            payload={
+                "text": "not Flowfirst, it is FlowForce",
+                "intent": {
+                    "intent_type": "replace_value",
+                    "old_value": "Flowfirst",
+                    "new_value": "FlowForce",
+                },
+            },
+            risk_level="high",
+        )
+    )
+
+    rejected = await service.reject_candidate(
+        created["id"],
+        MemoryCandidateRejectRequest(reason="Do not change this memory."),
+    )
+
+    assert rejected["status"] == "rejected"
+    assert repo.plans[0]["title"] == "Launch Flowfirst"
+    assert repo.corrections == []
 
 
 @pytest.mark.asyncio

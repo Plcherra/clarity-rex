@@ -8,6 +8,8 @@ Working rule: implement one phase at a time. Memory persistence must remain safe
 
 Goal: document every Memory surface, backend route, model, and UI path that can show or mutate memories.
 
+Status: Complete. Audit notes are captured in `02_memory_system_notes.md`.
+
 Files to modify / create:
 
 - `apps/mobile/lib/features/assistant/memory/data/memory_api.dart`
@@ -36,6 +38,8 @@ Effort: Small.
 
 Goal: replace backend enum labels with stable human labels for memory type, candidate type, risk, and status.
 
+Status: Complete. Human memory labels are centralized in `memory_models.dart`, wired through Chat and Goals display models, and covered by `memory_label_test.dart`.
+
 Files to modify / create:
 
 - `apps/mobile/lib/features/assistant/memory/data/memory_models.dart`
@@ -63,6 +67,8 @@ Effort: Small.
 
 Goal: make the Memory tab clearly separate what Rex already knows from what Rex is asking permission to remember.
 
+Status: Complete. Memory now has Saved and Pending review modes, with pending candidate loading, approve/reject entry points, a visible pending count, and separate empty states.
+
 Files to modify / create:
 
 - `apps/mobile/lib/features/assistant/memory/presentation/`
@@ -87,6 +93,8 @@ Effort: Medium.
 ## Phase 4 - Improve Pending Candidate Cards
 
 Goal: make pending memory review cards readable, actionable, and safe.
+
+Status: Complete. Pending candidate cards now show proposal, reason, source context, expected action, high-risk guidance, real edit-before-approval, and distinct applied/rejected/failed outcome states.
 
 Files to modify / create:
 
@@ -114,6 +122,8 @@ Effort: Medium.
 
 Goal: make user corrections feel deliberate: Rex captures the correction, previews the affected memory, and waits for confirmation.
 
+Status: Complete. Correction candidates now preview old/new replacement details, use safer approval copy, and are covered by backend and mobile tests that verify pending capture, approval, and rejection behavior.
+
 Files to modify / create:
 
 - `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
@@ -140,6 +150,8 @@ Effort: Medium.
 
 Goal: group saved memories in a way users can scan: Identity, Preferences, People & places, Plans, Rules, and Recent.
 
+Status: Complete. Saved Memory now loads all saved memory surfaces into a presentation-only grouped overview with human labels, useful metadata, hidden empty groups, and an `Other memories` fallback that survives unknown durable-memory API values.
+
 Files to modify / create:
 
 - `apps/mobile/lib/features/assistant/memory/data/memory_models.dart`
@@ -165,6 +177,8 @@ Effort: Medium.
 
 Goal: let users find memories without turning the Memory tab into an admin table.
 
+Status: Complete. Memory now has local search and quick chips for Saved, Pending, Corrections, People, and Preferences, with filtered empty-state copy and search text preserved across Memory view switches.
+
 Files to modify / create:
 
 - `apps/mobile/lib/features/assistant/memory/presentation/`
@@ -188,6 +202,8 @@ Effort: Medium.
 ## Phase 8 - Add Safe Edit / Archive Entry Points
 
 Goal: expose memory maintenance actions without enabling destructive behavior by accident.
+
+Status: Complete. Saved memory actions now expose Edit and Archive from overflow menus, archive confirmation copy explains Rex stops using the memory without implying hard deletion, and tests cover edit payloads plus cancelled and confirmed archive actions.
 
 Files to modify / create:
 
@@ -215,6 +231,8 @@ Effort: Medium.
 
 Goal: make memory failures understandable to users and diagnosable to developers.
 
+Status: Complete. Memory failures now use operation-specific user copy, mobile API errors preserve HTTP status for classification, and backend memory routes log metadata-only failures with operation, ids, status code, and error class.
+
 Files to modify / create:
 
 - `apps/mobile/lib/features/assistant/memory/presentation/`
@@ -240,6 +258,8 @@ Effort: Medium.
 ## Phase 10 - Memory Release Gate
 
 Goal: verify Memory is ready before moving deeper into Goals and conversations polish.
+
+Status: Automated gate complete after review fixes; manual phone validation pending. Automated mobile and backend Memory checks pass, pending edit is wired through real update paths, unknown memory types fall back safely, and the device release checklist includes explicit Memory smoke tests for labels, pending review, approve/reject/edit/archive, and safe errors.
 
 Files to modify / create:
 

@@ -8,7 +8,11 @@ part of 'memory_models.dart';
 
 _MemoryItem _$MemoryItemFromJson(Map<String, dynamic> json) => _MemoryItem(
   id: json['id'] as String,
-  memoryType: $enumDecode(_$MemoryTypeEnumMap, json['memory_type']),
+  memoryType: $enumDecode(
+    _$MemoryTypeEnumMap,
+    json['memory_type'],
+    unknownValue: MemoryType.other,
+  ),
   content: json['content'] as String,
   sourceConversationId: json['source_conversation_id'] as String?,
   sourceMessageId: json['source_message_id'] as String?,
@@ -43,4 +47,5 @@ const _$MemoryTypeEnumMap = {
   MemoryType.fact: 'fact',
   MemoryType.preference: 'preference',
   MemoryType.event: 'event',
+  MemoryType.other: 'other',
 };

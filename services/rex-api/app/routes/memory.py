@@ -11,9 +11,11 @@ from app.models.memory import (
     MemoryUpdateRequest,
 )
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
+from app.services.rex_observability import MemoryOperationObserver
 
 
 router = APIRouter(prefix="/memory", tags=["memory"])
+_memory_observer = MemoryOperationObserver()
 
 
 @router.get("", response_model=list[MemoryResponse])
@@ -30,7 +32,7 @@ async def list_memory(
             active=active,
         )
     except MemoryServiceError as error:
-        raise _memory_http_error(error) from error
+        raise _memory_http_error("list_memory", error) from error
 
     return [MemoryResponse(**memory) for memory in memories]
 
@@ -53,7 +55,7 @@ async def list_memory_corrections(
             target_id=target_id,
         )
     except MemoryServiceError as error:
-        raise _memory_http_error(error) from error
+        raise _memory_http_error("list_memory_corrections", error) from error
 
     return [MemoryCorrectionResponse(**correction) for correction in corrections]
 
@@ -77,9 +79,15 @@ async def update_memory(
             **updates,
         )
     except MemoryServiceError as error:
-        raise _memory_http_error(error) from error
+        raise _memory_http_error("update_memory", error, memory_id=memory_id) from error
 
     if memory is None:
+        _memory_observer.log_failure(
+            operation="update_memory",
+            error=MemoryServiceError("Memory not found.", 404),
+            memory_id=memory_id,
+            status_code=404,
+        )
         raise HTTPException(status_code=404, detail="Memory not found.")
 
     return MemoryResponse(**memory)
@@ -93,13 +101,29 @@ async def deactivate_memory(
     try:
         deactivated = await memory_service.deactivate_long_term_memory(memory_id)
     except MemoryServiceError as error:
-        raise _memory_http_error(error) from error
+        raise _memory_http_error("archive_memory", error, memory_id=memory_id) from error
 
     if not deactivated:
+        _memory_observer.log_failure(
+            operation="archive_memory",
+            error=MemoryServiceError("Memory not found.", 404),
+            memory_id=memory_id,
+            status_code=404,
+        )
         raise HTTPException(status_code=404, detail="Memory not found.")
 
     return Response(status_code=204)
 
 
-def _memory_http_error(error: MemoryServiceError) -> HTTPException:
+def _memory_http_error(
+    operation: str,
+    error: MemoryServiceError,
+    memory_id: Optional[str] = None,
+) -> HTTPException:
+    _memory_observer.log_failure(
+        operation=operation,
+        error=error,
+        memory_id=memory_id,
+        status_code=error.status_code,
+    )
     return HTTPException(status_code=error.status_code, detail=error.detail)

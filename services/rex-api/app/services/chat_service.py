@@ -12,6 +12,7 @@ from app.models.memory_candidate import (
     MemoryCandidateBulkDecisionRequest,
     MemoryCandidateCreateRequest,
     MemoryCandidateRejectRequest,
+    MemoryCandidateUpdateRequest,
 )
 from app.services.ai_service import AIService
 from app.services.accountability_service import AccountabilityService
@@ -63,6 +64,10 @@ REJECT_ALL_PHRASES = {
 }
 CLARITY_ACTION_BLOCK_PATTERN = re.compile(
     r"```clarity_action\s*(.*?)```",
+    re.IGNORECASE | re.DOTALL,
+)
+EDIT_PENDING_MEMORY_PATTERN = re.compile(
+    r"^edit\s+pending\s+memory\s+([A-Za-z0-9_-]+)\s*:\s*(.+)$",
     re.IGNORECASE | re.DOTALL,
 )
 APPROVE_PHRASES = {
@@ -1281,6 +1286,9 @@ class ChatService:
             "candidate_type": candidate.get("candidate_type"),
             "risk_level": candidate.get("risk_level"),
             "preview": candidate.get("preview"),
+            "old_value": intent.old_value,
+            "new_value": intent.new_value,
+            "target_hint": intent.target_hint,
             "message": "Correction captured as a pending memory candidate.",
         }
 
@@ -1415,6 +1423,9 @@ class ChatService:
 
         selected_candidate = self._candidate_from_confirmation_text(message, pending)
 
+        if intent == "edit":
+            return await self._edit_pending_memory_candidate(message, pending)
+
         if intent == "approve_all":
             result = await self.memory_candidate_service.bulk_approve_candidates(
                 MemoryCandidateBulkDecisionRequest(
@@ -1487,6 +1498,8 @@ class ChatService:
             "all" in normalized or "pending" in normalized or "these" in normalized
         ):
             return "reject_all"
+        if EDIT_PENDING_MEMORY_PATTERN.match(message.strip()):
+            return "edit"
         if normalized in REJECT_PHRASES:
             return "reject"
         if normalized.startswith("do not save ") or normalized.startswith("dont save "):
@@ -1523,6 +1536,88 @@ class ChatService:
             if len(compact_id) >= 8 and compact_id[-8:] in normalized.replace(" ", ""):
                 return candidate
         return None
+
+    async def _edit_pending_memory_candidate(
+        self,
+        message: str,
+        pending: list[dict],
+    ) -> Optional[dict]:
+        match = EDIT_PENDING_MEMORY_PATTERN.match(message.strip())
+        if match is None:
+            return None
+
+        candidate_id = match.group(1).strip()
+        proposal = " ".join(match.group(2).split())
+        if not candidate_id or not proposal:
+            return None
+
+        normalized_candidate_id = self._normalized_confirmation_text(candidate_id)
+        candidate = next(
+            (
+                item
+                for item in pending
+                if self._normalized_confirmation_text(str(item.get("id") or ""))
+                == normalized_candidate_id
+            ),
+            None,
+        )
+        if candidate is None:
+            return None
+
+        payload = self._edited_candidate_payload(candidate, proposal)
+        updated = await self.memory_candidate_service.update_candidate(
+            candidate["id"],
+            MemoryCandidateUpdateRequest(
+                payload=payload,
+                reason="Edited by the user before approval.",
+            ),
+        )
+        card = self._candidate_card(updated)
+        return {
+            "response": "Updated 1 pending memory request. Review it before saving.",
+            "memory_changes": {
+                "created": 0,
+                "updated": 0,
+                "archived": 0,
+                "merged": 0,
+                "skipped": 0,
+                "confirmation_required": 1,
+                "low_risk_auto_apply_enabled": LOW_RISK_AUTO_APPLY_ENABLED,
+                "pending_candidates": [card],
+                "records": [
+                    {
+                        "kind": "memory_candidate",
+                        "action": "updated_pending",
+                        "id": updated.get("id"),
+                        "title": updated.get("preview"),
+                        "candidate": card,
+                    }
+                ],
+            },
+        }
+
+    def _edited_candidate_payload(self, candidate: dict, proposal: str) -> dict:
+        payload = dict(candidate.get("payload") or {})
+        key = self._candidate_primary_text_key(candidate, payload)
+        payload[key] = proposal
+        return payload
+
+    def _candidate_primary_text_key(self, candidate: dict, payload: dict) -> str:
+        candidate_type = str(candidate.get("candidate_type") or "")
+        keys = {
+            "entity": ("display_name", "title", "content"),
+            "personal_rule": ("rule_text", "title", "content"),
+            "commitment": ("commitment_text", "title", "content"),
+            "correction": ("text", "content"),
+            "plan": ("title", "description", "content"),
+            "plan_milestone": ("title", "description", "content"),
+            "entity_event": ("title", "content", "description"),
+        }.get(candidate_type, ("content", "title", "new_value"))
+        for key in keys:
+            value = payload.get(key)
+            if isinstance(value, str) and value.strip():
+                return key
+        return keys[0]
 
     def _pending_candidates_response(
         self,
@@ -1674,6 +1769,7 @@ class ChatService:
             "status": candidate.get("status"),
             "risk_level": candidate.get("risk_level"),
             "preview": candidate.get("preview"),
+            "reason": candidate.get("reason"),
             "expected_action": self._candidate_expected_action(candidate),
             "requires_explicit_confirmation": candidate.get("risk_level") == "high",
             "source_conversation_id": candidate.get("source_conversation_id"),
@@ -1700,7 +1796,7 @@ class ChatService:
             "plan": "Create or update top-level plan after confirmation",
             "plan_milestone": "Create or update achievement milestone after confirmation",
             "commitment": "Create or update task/commitment after confirmation",
-            "correction": "Apply correction and verify stale facts are gone",
+            "correction": "Review correction before changing saved memory",
             "archive": "Archive stale record after confirmation",
             "merge": "Merge duplicate records after confirmation",
         }.get(candidate_type, "Apply pending memory change after confirmation")

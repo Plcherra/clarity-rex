@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MemoryItem {
 
- String get id;@JsonKey(name: 'memory_type') MemoryType get memoryType; String get content;@JsonKey(name: 'source_conversation_id') String? get sourceConversationId;@JsonKey(name: 'source_message_id') String? get sourceMessageId; int get importance; bool get active;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;@JsonKey(name: 'last_accessed_at') DateTime? get lastAccessedAt;
+ String get id;@JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) MemoryType get memoryType; String get content;@JsonKey(name: 'source_conversation_id') String? get sourceConversationId;@JsonKey(name: 'source_message_id') String? get sourceMessageId; int get importance; bool get active;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;@JsonKey(name: 'last_accessed_at') DateTime? get lastAccessedAt;
 /// Create a copy of MemoryItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $MemoryItemCopyWith<$Res>  {
   factory $MemoryItemCopyWith(MemoryItem value, $Res Function(MemoryItem) _then) = _$MemoryItemCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'memory_type') MemoryType memoryType, String content,@JsonKey(name: 'source_conversation_id') String? sourceConversationId,@JsonKey(name: 'source_message_id') String? sourceMessageId, int importance, bool active,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt,@JsonKey(name: 'last_accessed_at') DateTime? lastAccessedAt
+ String id,@JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) MemoryType memoryType, String content,@JsonKey(name: 'source_conversation_id') String? sourceConversationId,@JsonKey(name: 'source_message_id') String? sourceMessageId, int importance, bool active,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt,@JsonKey(name: 'last_accessed_at') DateTime? lastAccessedAt
 });
 
 
@@ -162,7 +162,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'memory_type')  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other)  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MemoryItem() when $default != null:
 return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversationId,_that.sourceMessageId,_that.importance,_that.active,_that.createdAt,_that.updatedAt,_that.lastAccessedAt);case _:
@@ -183,7 +183,7 @@ return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversation
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'memory_type')  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other)  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)  $default,) {final _that = this;
 switch (_that) {
 case _MemoryItem():
 return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversationId,_that.sourceMessageId,_that.importance,_that.active,_that.createdAt,_that.updatedAt,_that.lastAccessedAt);case _:
@@ -203,7 +203,7 @@ return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversation
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'memory_type')  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other)  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _MemoryItem() when $default != null:
 return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversationId,_that.sourceMessageId,_that.importance,_that.active,_that.createdAt,_that.updatedAt,_that.lastAccessedAt);case _:
@@ -218,11 +218,11 @@ return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversation
 @JsonSerializable()
 
 class _MemoryItem implements MemoryItem {
-  const _MemoryItem({required this.id, @JsonKey(name: 'memory_type') required this.memoryType, required this.content, @JsonKey(name: 'source_conversation_id') this.sourceConversationId, @JsonKey(name: 'source_message_id') this.sourceMessageId, required this.importance, required this.active, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt, @JsonKey(name: 'last_accessed_at') this.lastAccessedAt});
+  const _MemoryItem({required this.id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) required this.memoryType, required this.content, @JsonKey(name: 'source_conversation_id') this.sourceConversationId, @JsonKey(name: 'source_message_id') this.sourceMessageId, required this.importance, required this.active, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt, @JsonKey(name: 'last_accessed_at') this.lastAccessedAt});
   factory _MemoryItem.fromJson(Map<String, dynamic> json) => _$MemoryItemFromJson(json);
 
 @override final  String id;
-@override@JsonKey(name: 'memory_type') final  MemoryType memoryType;
+@override@JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) final  MemoryType memoryType;
 @override final  String content;
 @override@JsonKey(name: 'source_conversation_id') final  String? sourceConversationId;
 @override@JsonKey(name: 'source_message_id') final  String? sourceMessageId;
@@ -265,7 +265,7 @@ abstract mixin class _$MemoryItemCopyWith<$Res> implements $MemoryItemCopyWith<$
   factory _$MemoryItemCopyWith(_MemoryItem value, $Res Function(_MemoryItem) _then) = __$MemoryItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'memory_type') MemoryType memoryType, String content,@JsonKey(name: 'source_conversation_id') String? sourceConversationId,@JsonKey(name: 'source_message_id') String? sourceMessageId, int importance, bool active,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt,@JsonKey(name: 'last_accessed_at') DateTime? lastAccessedAt
+ String id,@JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) MemoryType memoryType, String content,@JsonKey(name: 'source_conversation_id') String? sourceConversationId,@JsonKey(name: 'source_message_id') String? sourceMessageId, int importance, bool active,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt,@JsonKey(name: 'last_accessed_at') DateTime? lastAccessedAt
 });
 
 

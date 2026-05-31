@@ -283,7 +283,7 @@ class _PlanSection extends StatelessWidget {
         ...planTiles,
         if (orphanMilestones.isNotEmpty)
           _InternalMemoryTile(
-            title: 'Unlinked internal milestones',
+            title: 'Unlinked milestones',
             children: orphanMilestones,
           ),
       ],
@@ -523,15 +523,13 @@ class _PlanTile extends StatelessWidget {
         if (milestones.length >= 8)
           const Padding(
             padding: EdgeInsets.only(left: 44, right: 4, bottom: 8),
-            child: _InlineWarning(
-              text: 'This plan has too many raw open milestones.',
-            ),
+            child: _InlineWarning(text: 'This plan has many open milestones.'),
           ),
         if (milestones.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(left: 44, right: 4, bottom: 8),
             child: _InternalMemoryTile(
-              title: 'Internal milestones',
+              title: 'Open milestones',
               children: milestones
                   .map(
                     (milestone) => _InternalMilestoneRow(milestone: milestone),
@@ -651,7 +649,9 @@ class _InternalMemoryTile extends StatelessWidget {
       tilePadding: EdgeInsets.zero,
       childrenPadding: const EdgeInsets.only(bottom: 8),
       title: Text(title),
-      subtitle: Text('${children.length} raw records'),
+      subtitle: Text(
+        '${children.length} item${children.length == 1 ? '' : 's'}',
+      ),
       children: children,
     );
   }
@@ -1075,9 +1075,7 @@ Color _severityColor(ColorScheme scheme, AccountabilitySeverity severity) {
 }
 
 String _sourceLabel(AccountabilitySourceRef source) {
-  return source.title?.trim().isNotEmpty == true
-      ? source.title!
-      : source.sourceType.name.accountabilityLabel;
+  return source.displayLabel;
 }
 
 String _shortDate(DateTime dateTime) {

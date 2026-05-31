@@ -14,33 +14,102 @@ class MemoryPage extends ConsumerStatefulWidget {
 }
 
 class _MemoryPageState extends ConsumerState<MemoryPage> {
+  late final TextEditingController _searchController;
+  var _searchQuery = '';
+  var _quickFilter = _MemoryQuickFilter.saved;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(memoryProvider.notifier).loadMemories());
+    _searchController = TextEditingController();
+    _searchController.addListener(_handleSearchChanged);
+    Future.microtask(
+      () => ref.read(memoryProvider.notifier).loadSavedOverview(),
+    );
   }
 
-  Future<void> _setTypeFilter(MemoryType? memoryType) async {
-    await ref
-        .read(memoryProvider.notifier)
-        .loadMemories(layer: MemoryLayer.longTerm, memoryType: memoryType);
+  @override
+  void dispose() {
+    _searchController.removeListener(_handleSearchChanged);
+    _searchController.dispose();
+    super.dispose();
   }
 
-  Future<void> _setLayer(MemoryLayer layer) async {
-    await ref.read(memoryProvider.notifier).loadMemories(layer: layer);
+  void _handleSearchChanged() {
+    setState(() => _searchQuery = _searchController.text);
   }
 
   Future<void> _setActiveOnly(bool activeOnly) async {
-    final state = ref.read(memoryProvider);
     await ref
         .read(memoryProvider.notifier)
-        .loadMemories(
-          layer: state.selectedLayer,
-          memoryType: state.selectedLayer == MemoryLayer.longTerm
-              ? state.selectedType
-              : null,
-          activeOnly: activeOnly,
+        .loadSavedOverview(activeOnly: activeOnly);
+  }
+
+  Future<void> _setQuickFilter(_MemoryQuickFilter filter) async {
+    if (_quickFilter == filter) {
+      return;
+    }
+    setState(() => _quickFilter = filter);
+    final targetMode = filter.targetMode;
+    if (ref.read(memoryProvider).selectedMode != targetMode) {
+      await ref.read(memoryProvider.notifier).setMode(targetMode);
+    }
+  }
+
+  Future<void> _refresh() {
+    final state = ref.read(memoryProvider);
+    if (state.selectedMode == MemoryReviewMode.pending) {
+      return ref.read(memoryProvider.notifier).loadPendingCandidates();
+    }
+    return ref.read(memoryProvider.notifier).loadSavedOverview();
+  }
+
+  Future<void> _approvePendingCandidate(
+    PendingMemoryCandidateItem candidate,
+  ) async {
+    final approved = await ref
+        .read(memoryProvider.notifier)
+        .approvePendingCandidate(candidate.id);
+    if (!mounted) {
+      return;
+    }
+    _showSnackBar(approved ? 'Memory saved' : _currentError());
+  }
+
+  Future<void> _rejectPendingCandidate(
+    PendingMemoryCandidateItem candidate,
+  ) async {
+    final rejected = await ref
+        .read(memoryProvider.notifier)
+        .rejectPendingCandidate(candidate.id);
+    if (!mounted) {
+      return;
+    }
+    _showSnackBar(rejected ? 'Memory request dismissed' : _currentError());
+  }
+
+  Future<void> _editPendingCandidate(
+    PendingMemoryCandidateItem candidate,
+  ) async {
+    final result = await showDialog<_PendingCandidateEditResult>(
+      context: context,
+      builder: (context) => _PendingCandidateEditDialog(candidate: candidate),
+    );
+    if (result == null) {
+      return;
+    }
+
+    final saved = await ref
+        .read(memoryProvider.notifier)
+        .updatePendingCandidate(
+          candidate,
+          proposal: result.proposal,
+          reason: result.reason,
         );
+    if (!mounted) {
+      return;
+    }
+    _showSnackBar(saved ? 'Memory request updated' : _currentError());
   }
 
   Future<void> _editMemory(MemoryItem memory) async {
@@ -68,13 +137,13 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     _showSnackBar(saved ? 'Memory updated' : _currentError());
   }
 
-  Future<void> _deactivateMemory(MemoryItem memory) async {
+  Future<void> _archiveMemory(MemoryItem memory) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Deactivate memory?'),
+        title: const Text('Archive memory?'),
         content: const Text(
-          'Rex will stop using this memory in future conversations.',
+          'Rex will stop using this memory in future conversations. It will remain in memory history.',
         ),
         actions: [
           TextButton(
@@ -83,7 +152,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Deactivate'),
+            child: const Text('Archive'),
           ),
         ],
       ),
@@ -93,14 +162,14 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       return;
     }
 
-    final deactivated = await ref
+    final archived = await ref
         .read(memoryProvider.notifier)
-        .deactivateMemory(memory.id);
+        .archiveMemory(memory.id);
     if (!mounted) {
       return;
     }
 
-    _showSnackBar(deactivated ? 'Memory deactivated' : _currentError());
+    _showSnackBar(archived ? 'Memory archived' : _currentError());
   }
 
   Future<void> _editPerson(PersonMemoryItem person) async {
@@ -250,7 +319,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     }
   }
 
-  Future<void> _deactivateStructuredMemory(
+  Future<void> _archiveStructuredMemory(
     MemoryLayer layer,
     String id,
     String label,
@@ -258,8 +327,10 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Deactivate $label?'),
-        content: Text('Rex will stop treating this $label as active context.'),
+        title: Text('Archive $label?'),
+        content: Text(
+          'Rex will stop using this $label as active context. It will remain in memory history.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -267,7 +338,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Deactivate'),
+            child: const Text('Archive'),
           ),
         ],
       ),
@@ -276,11 +347,11 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       return;
     }
 
-    final deactivated = await ref
+    final archived = await ref
         .read(memoryProvider.notifier)
-        .deactivateStructuredMemory(layer, id);
+        .archiveStructuredMemory(layer, id);
     if (mounted) {
-      _showSnackBar(deactivated ? '$label deactivated' : _currentError());
+      _showSnackBar(archived ? '$label archived' : _currentError());
     }
   }
 
@@ -299,6 +370,8 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     final state = ref.watch(memoryProvider);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final filteredSaved = _filteredSavedMemory(state);
+    final filteredCandidates = _filteredPendingCandidates(state);
 
     return Scaffold(
       appBar: widget.showAppBar
@@ -306,17 +379,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
               title: const Text('Memory'),
               actions: [
                 IconButton(
-                  onPressed: state.isLoading
-                      ? null
-                      : () => ref
-                            .read(memoryProvider.notifier)
-                            .loadMemories(
-                              layer: state.selectedLayer,
-                              memoryType:
-                                  state.selectedLayer == MemoryLayer.longTerm
-                                  ? state.selectedType
-                                  : null,
-                            ),
+                  onPressed: state.isLoading ? null : _refresh,
                   icon: const Icon(Icons.refresh_rounded),
                   tooltip: 'Refresh memory',
                 ),
@@ -324,14 +387,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
             )
           : null,
       body: RefreshIndicator(
-        onRefresh: () => ref
-            .read(memoryProvider.notifier)
-            .loadMemories(
-              layer: state.selectedLayer,
-              memoryType: state.selectedLayer == MemoryLayer.longTerm
-                  ? state.selectedType
-                  : null,
-            ),
+        onRefresh: _refresh,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -341,54 +397,41 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: MemoryLayer.values
-                          .map(
-                            (layer) => FilterChip(
-                              label: Text(layer.label),
-                              selected: state.selectedLayer == layer,
-                              onSelected: state.isLoading
-                                  ? null
-                                  : (_) => _setLayer(layer),
-                            ),
-                          )
-                          .toList(growable: false),
+                    _MemorySearchAndFilters(
+                      controller: _searchController,
+                      selectedFilter: _quickFilter,
+                      pendingCount: state.pendingCandidates.length,
+                      onFilterSelected: state.isLoading
+                          ? null
+                          : _setQuickFilter,
                     ),
-                    if (state.selectedLayer == MemoryLayer.longTerm) ...[
+                    const SizedBox(height: 12),
+                    if (state.selectedMode == MemoryReviewMode.pending)
+                      _PendingReviewHeader(
+                        pendingCount: state.pendingCandidates.length,
+                      )
+                    else ...[
+                      const _SavedMemoryHeader(),
                       const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          FilterChip(
-                            label: const Text('All'),
-                            selected: state.selectedType == null,
-                            onSelected: state.isLoading
-                                ? null
-                                : (_) => _setTypeFilter(null),
-                          ),
-                          ...MemoryType.values.map(
-                            (type) => FilterChip(
-                              label: Text(type.label),
-                              selected: state.selectedType == type,
-                              onSelected: state.isLoading
-                                  ? null
-                                  : (_) => _setTypeFilter(type),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Active memories only'),
+                        value: state.activeOnly,
+                        onChanged: state.isLoading ? null : _setActiveOnly,
+                      ),
+                      if (state.errorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            state.errorMessage!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: scheme.error,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
                     ],
-                    const SizedBox(height: 8),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Active memories only'),
-                      value: state.activeOnly,
-                      onChanged: state.isLoading ? null : _setActiveOnly,
-                    ),
-                    if (state.errorMessage != null)
+                    if (state.selectedMode == MemoryReviewMode.pending &&
+                        state.errorMessage != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
@@ -402,28 +445,53 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                 ),
               ),
             ),
-            if (state.isLoading && state.isSelectedLayerEmpty)
+            if (state.selectedMode == MemoryReviewMode.pending)
+              if (state.isLoading && state.isPendingReviewEmpty)
+                const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (state.isPendingReviewEmpty)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _PendingReviewEmptyState(),
+                )
+              else if (filteredCandidates.isEmpty)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _MemoryFilteredEmptyState(),
+                )
+              else
+                _PendingCandidateList(
+                  candidates: filteredCandidates,
+                  isSaving: state.isSaving,
+                  onApprove: _approvePendingCandidate,
+                  onEdit: _editPendingCandidate,
+                  onReject: _rejectPendingCandidate,
+                )
+            else if (state.isLoading && state.isSavedOverviewEmpty)
               const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (state.isSelectedLayerEmpty)
+            else if (state.isSavedOverviewEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: _MemoryEmptyState(
-                  layer: state.selectedLayer,
-                  activeOnly: state.activeOnly,
-                ),
+                child: _MemoryEmptyState(activeOnly: state.activeOnly),
+              )
+            else if (filteredSaved.isEmpty)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: _MemoryFilteredEmptyState(),
               )
             else
-              _MemoryLayerList(
-                state: state,
+              _SavedMemoryGroupList(
+                saved: filteredSaved,
                 onEditMemory: _editMemory,
-                onDeactivateMemory: _deactivateMemory,
+                onArchiveMemory: _archiveMemory,
                 onEditPerson: _editPerson,
                 onEditRule: _editRule,
                 onEditPlan: _editPlan,
                 onEditCommitment: _editCommitment,
-                onDeactivateStructuredMemory: _deactivateStructuredMemory,
+                onArchiveStructuredMemory: _archiveStructuredMemory,
               ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
@@ -431,125 +499,795 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       ),
     );
   }
+
+  _SavedMemoryResults _filteredSavedMemory(MemoryState state) {
+    final query = _normalizedQuery;
+    final showPeopleOnly = _quickFilter == _MemoryQuickFilter.people;
+    final showPreferencesOnly = _quickFilter == _MemoryQuickFilter.preferences;
+
+    List<T> filterList<T>(Iterable<T> items, bool Function(T item) matches) {
+      return items.where(matches).toList(growable: false);
+    }
+
+    final memories = showPeopleOnly
+        ? const <MemoryItem>[]
+        : filterList(state.memories, (memory) {
+            if (showPreferencesOnly &&
+                memory.memoryType != MemoryType.preference) {
+              return false;
+            }
+            return _matchesQuery(query, [
+              memory.content,
+              memory.memoryType.label,
+              'Importance ${memory.importance}',
+            ]);
+          });
+
+    return _SavedMemoryResults(
+      identity: showPreferencesOnly
+          ? const []
+          : memories
+                .where(
+                  (memory) =>
+                      memory.memoryType.memoryGroup == MemoryGroup.identity,
+                )
+                .toList(growable: false),
+      preferences: showPeopleOnly
+          ? const []
+          : memories
+                .where(
+                  (memory) =>
+                      memory.memoryType.memoryGroup == MemoryGroup.preferences,
+                )
+                .toList(growable: false),
+      people: showPreferencesOnly
+          ? const []
+          : filterList(
+              state.people,
+              (person) => _matchesQuery(query, [
+                person.displayName,
+                person.relationship,
+                person.summary,
+                person.aliases.join(' '),
+                'Importance ${person.importance}',
+                person.status.memoryRecordLabel,
+              ]),
+            ),
+      rules: showPeopleOnly || showPreferencesOnly
+          ? const []
+          : filterList(
+              state.rules,
+              (rule) => _matchesQuery(query, [
+                rule.title,
+                rule.ruleText,
+                rule.ruleType.memoryRecordLabel,
+                rule.triggerKeywords.join(' '),
+                'Priority ${rule.priority}',
+                rule.status.memoryRecordLabel,
+              ]),
+            ),
+      plans: showPeopleOnly || showPreferencesOnly
+          ? const []
+          : filterList(
+              state.plans,
+              (plan) => _matchesQuery(query, [
+                plan.title,
+                plan.description,
+                plan.desiredOutcome,
+                plan.planType.memoryRecordLabel,
+                'Priority ${plan.priority}',
+                plan.status.memoryRecordLabel,
+              ]),
+            ),
+      commitments: showPeopleOnly || showPreferencesOnly
+          ? const []
+          : filterList(
+              state.commitments,
+              (commitment) => _matchesQuery(query, [
+                commitment.title,
+                commitment.commitmentText,
+                commitment.commitmentType.memoryRecordLabel,
+                'Priority ${commitment.priority}',
+                commitment.status.memoryRecordLabel,
+              ]),
+            ),
+      recent: showPeopleOnly || showPreferencesOnly
+          ? const []
+          : memories
+                .where(
+                  (memory) =>
+                      memory.memoryType.memoryGroup == MemoryGroup.recent,
+                )
+                .toList(growable: false),
+      other: showPeopleOnly || showPreferencesOnly
+          ? const []
+          : memories
+                .where(
+                  (memory) =>
+                      memory.memoryType.memoryGroup == MemoryGroup.other,
+                )
+                .toList(growable: false),
+    );
+  }
+
+  List<PendingMemoryCandidateItem> _filteredPendingCandidates(
+    MemoryState state,
+  ) {
+    final query = _normalizedQuery;
+    return state.pendingCandidates
+        .where((candidate) {
+          if (_quickFilter == _MemoryQuickFilter.corrections &&
+              !candidate.isCorrection) {
+            return false;
+          }
+          return _matchesQuery(query, [
+            candidate.previewLabel,
+            candidate.reasonLabel,
+            candidate.candidateTypeLabel,
+            candidate.riskLabel,
+            candidate.statusLabel,
+            candidate.expectedActionLabel,
+            candidate.correctionOldValue,
+            candidate.correctionNewValue,
+            candidate.correctionTargetHint,
+          ]);
+        })
+        .toList(growable: false);
+  }
+
+  String get _normalizedQuery => _searchQuery.trim().toLowerCase();
 }
 
-class _MemoryLayerList extends StatelessWidget {
-  const _MemoryLayerList({
-    required this.state,
+class _PendingReviewHeader extends StatelessWidget {
+  const _PendingReviewHeader({required this.pendingCount});
+
+  final int pendingCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.fact_check_outlined, color: scheme.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pendingCount == 0
+                        ? 'No memory requests waiting'
+                        : '$pendingCount memory request${pendingCount == 1 ? '' : 's'} waiting',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Rex only saves these after you approve them. Saved memories stay in the Saved view.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MemorySearchAndFilters extends StatelessWidget {
+  const _MemorySearchAndFilters({
+    required this.controller,
+    required this.selectedFilter,
+    required this.pendingCount,
+    required this.onFilterSelected,
+  });
+
+  final TextEditingController controller;
+  final _MemoryQuickFilter selectedFilter;
+  final int pendingCount;
+  final ValueChanged<_MemoryQuickFilter>? onFilterSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: 'Search memory',
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: controller.text.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: controller.clear,
+                    icon: const Icon(Icons.close_rounded),
+                    tooltip: 'Clear search',
+                  ),
+            filled: true,
+            fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: scheme.outlineVariant),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: scheme.outlineVariant),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final filter in _MemoryQuickFilter.values)
+              ChoiceChip(
+                label: Text(filter.label(pendingCount)),
+                selected: selectedFilter == filter,
+                onSelected: onFilterSelected == null
+                    ? null
+                    : (_) => onFilterSelected!(filter),
+                labelStyle: theme.textTheme.labelLarge,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SavedMemoryHeader extends StatelessWidget {
+  const _SavedMemoryHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.psychology_alt_outlined, color: scheme.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Saved memory',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Rex uses these approved memories to personalize future conversations. Pending suggestions stay separate until you approve them.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PendingCandidateList extends StatelessWidget {
+  const _PendingCandidateList({
+    required this.candidates,
+    required this.isSaving,
+    required this.onApprove,
+    required this.onEdit,
+    required this.onReject,
+  });
+
+  final List<PendingMemoryCandidateItem> candidates;
+  final bool isSaving;
+  final ValueChanged<PendingMemoryCandidateItem> onApprove;
+  final ValueChanged<PendingMemoryCandidateItem> onEdit;
+  final ValueChanged<PendingMemoryCandidateItem> onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverList.separated(
+      itemCount: candidates.length,
+      separatorBuilder: (context, index) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final candidate = candidates[index];
+        return _PendingCandidateTile(
+          candidate: candidate,
+          isSaving: isSaving,
+          onApprove: () => onApprove(candidate),
+          onEdit: () => onEdit(candidate),
+          onReject: () => onReject(candidate),
+        );
+      },
+    );
+  }
+}
+
+class _PendingCandidateTile extends StatelessWidget {
+  const _PendingCandidateTile({
+    required this.candidate,
+    required this.isSaving,
+    required this.onApprove,
+    required this.onEdit,
+    required this.onReject,
+  });
+
+  final PendingMemoryCandidateItem candidate;
+  final bool isSaving;
+  final VoidCallback onApprove;
+  final VoidCallback onEdit;
+  final VoidCallback onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final accent = candidate.isHighRisk ? scheme.error : scheme.primary;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      leading: CircleAvatar(
+        backgroundColor: accent.withValues(alpha: 0.14),
+        foregroundColor: accent,
+        child: Icon(
+          candidate.isHighRisk
+              ? Icons.warning_amber_rounded
+              : Icons.fact_check_outlined,
+          size: 20,
+        ),
+      ),
+      title: Text(
+        candidate.previewLabel,
+        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+      ),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (candidate.isCorrection &&
+                (candidate.correctionOldValue != null ||
+                    candidate.correctionNewValue != null)) ...[
+              if (candidate.correctionOldValue != null)
+                _MemoryReviewInfoRow(
+                  icon: Icons.history_rounded,
+                  text: 'May change: ${candidate.correctionOldValue}',
+                  color: scheme.onSurfaceVariant,
+                ),
+              if (candidate.correctionNewValue != null)
+                _MemoryReviewInfoRow(
+                  icon: Icons.update_rounded,
+                  text: 'Replace with: ${candidate.correctionNewValue}',
+                  color: scheme.onSurfaceVariant,
+                ),
+              const SizedBox(height: 8),
+            ],
+            if (candidate.reason?.trim().isNotEmpty == true) ...[
+              Text(
+                'Why Rex suggested it',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                candidate.reasonLabel!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  height: 1.3,
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                _MemoryMetaChip(label: candidate.candidateTypeLabel),
+                _MemoryMetaChip(label: candidate.riskLabel),
+                _MemoryMetaChip(label: candidate.statusLabel),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _MemoryReviewInfoRow(
+              icon: Icons.task_alt_rounded,
+              text: candidate.expectedActionLabel,
+              color: scheme.onSurfaceVariant,
+            ),
+            if (candidate.sourceLabel != null)
+              _MemoryReviewInfoRow(
+                icon: Icons.chat_bubble_outline_rounded,
+                text: candidate.sourceLabel!,
+                color: scheme.onSurfaceVariant,
+              ),
+            _MemoryReviewInfoRow(
+              icon: candidate.isHighRisk
+                  ? Icons.warning_amber_rounded
+                  : Icons.info_outline_rounded,
+              text: candidate.statusDetail,
+              color: candidate.isHighRisk
+                  ? scheme.error
+                  : scheme.onSurfaceVariant,
+            ),
+            if (candidate.verificationMessage != null)
+              _MemoryReviewInfoRow(
+                icon: candidate.verificationPassed == false
+                    ? Icons.error_outline_rounded
+                    : Icons.verified_outlined,
+                text: candidate.verificationMessage!,
+                color: candidate.verificationPassed == false
+                    ? scheme.error
+                    : scheme.onSurfaceVariant,
+              ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.icon(
+                  onPressed: isSaving ? null : onApprove,
+                  icon: const Icon(Icons.check_rounded, size: 16),
+                  label: Text(
+                    candidate.isHighRisk ? 'Confirm save' : 'Approve',
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: isSaving ? null : onEdit,
+                  icon: const Icon(Icons.edit_rounded, size: 16),
+                  label: const Text('Edit first'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: isSaving ? null : onReject,
+                  icon: const Icon(Icons.close_rounded, size: 16),
+                  label: const Text('Reject'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MemoryReviewInfoRow extends StatelessWidget {
+  const _MemoryReviewInfoRow({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: color,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingReviewEmptyState extends StatelessWidget {
+  const _PendingReviewEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.task_alt_rounded,
+              color: scheme.onSurfaceVariant,
+              size: 40,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No pending memory review',
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'When Rex notices something it should remember, it will ask here before saving it.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MemoryFilteredEmptyState extends StatelessWidget {
+  const _MemoryFilteredEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              color: scheme.onSurfaceVariant,
+              size: 40,
+            ),
+            const SizedBox(height: 16),
+            Text('No matching memories', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              'Try a different search or choose another memory filter.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SavedMemoryResults {
+  const _SavedMemoryResults({
+    required this.identity,
+    required this.preferences,
+    required this.people,
+    required this.rules,
+    required this.plans,
+    required this.commitments,
+    required this.recent,
+    required this.other,
+  });
+
+  final List<MemoryItem> identity;
+  final List<MemoryItem> preferences;
+  final List<PersonMemoryItem> people;
+  final List<RuleMemoryItem> rules;
+  final List<PlanMemoryItem> plans;
+  final List<CommitmentMemoryItem> commitments;
+  final List<MemoryItem> recent;
+  final List<MemoryItem> other;
+
+  bool get isEmpty {
+    return identity.isEmpty &&
+        preferences.isEmpty &&
+        people.isEmpty &&
+        rules.isEmpty &&
+        plans.isEmpty &&
+        commitments.isEmpty &&
+        recent.isEmpty &&
+        other.isEmpty;
+  }
+}
+
+class _SavedMemoryGroupList extends StatelessWidget {
+  const _SavedMemoryGroupList({
+    required this.saved,
     required this.onEditMemory,
-    required this.onDeactivateMemory,
+    required this.onArchiveMemory,
     required this.onEditPerson,
     required this.onEditRule,
     required this.onEditPlan,
     required this.onEditCommitment,
-    required this.onDeactivateStructuredMemory,
+    required this.onArchiveStructuredMemory,
   });
 
-  final MemoryState state;
+  final _SavedMemoryResults saved;
   final ValueChanged<MemoryItem> onEditMemory;
-  final ValueChanged<MemoryItem> onDeactivateMemory;
+  final ValueChanged<MemoryItem> onArchiveMemory;
   final ValueChanged<PersonMemoryItem> onEditPerson;
   final ValueChanged<RuleMemoryItem> onEditRule;
   final ValueChanged<PlanMemoryItem> onEditPlan;
   final ValueChanged<CommitmentMemoryItem> onEditCommitment;
   final void Function(MemoryLayer layer, String id, String label)
-  onDeactivateStructuredMemory;
+  onArchiveStructuredMemory;
 
   @override
   Widget build(BuildContext context) {
-    switch (state.selectedLayer) {
-      case MemoryLayer.longTerm:
-        return SliverList.separated(
-          itemCount: state.memories.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final memory = state.memories[index];
-            return _MemoryTile(
-              memory: memory,
-              onEdit: () => onEditMemory(memory),
-              onDeactivate: memory.active
-                  ? () => onDeactivateMemory(memory)
-                  : null,
-            );
-          },
-        );
-      case MemoryLayer.people:
-        return SliverList.separated(
-          itemCount: state.people.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final person = state.people[index];
-            return _PersonMemoryTile(
+    final children = <Widget>[];
+
+    void addGroup(MemoryGroup group, List<Widget> tiles) {
+      if (tiles.isEmpty) {
+        return;
+      }
+      children.add(_MemoryGroupHeader(group: group));
+      for (final (index, tile) in tiles.indexed) {
+        if (index > 0) {
+          children.add(const Divider(height: 1, indent: 72));
+        }
+        children.add(tile);
+      }
+    }
+
+    addGroup(
+      MemoryGroup.identity,
+      saved.identity.map(_memoryTile).toList(growable: false),
+    );
+    addGroup(
+      MemoryGroup.preferences,
+      saved.preferences.map(_memoryTile).toList(growable: false),
+    );
+    addGroup(
+      MemoryGroup.peoplePlaces,
+      saved.people
+          .map(
+            (person) => _PersonMemoryTile(
               person: person,
               onEdit: () => onEditPerson(person),
               onDeactivate: person.active
-                  ? () => onDeactivateStructuredMemory(
+                  ? () => onArchiveStructuredMemory(
                       MemoryLayer.people,
                       person.id,
                       'person',
                     )
                   : null,
-            );
-          },
-        );
-      case MemoryLayer.rules:
-        return SliverList.separated(
-          itemCount: state.rules.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final rule = state.rules[index];
-            return _RuleMemoryTile(
+            ),
+          )
+          .toList(growable: false),
+    );
+    addGroup(MemoryGroup.plans, [
+      ...saved.plans.map(
+        (plan) => _PlanMemoryTile(
+          plan: plan,
+          onEdit: () => onEditPlan(plan),
+          onDeactivate: plan.active
+              ? () => onArchiveStructuredMemory(
+                  MemoryLayer.plans,
+                  plan.id,
+                  'plan',
+                )
+              : null,
+        ),
+      ),
+      ...saved.commitments.map(
+        (commitment) => _CommitmentMemoryTile(
+          commitment: commitment,
+          onEdit: () => onEditCommitment(commitment),
+          onDeactivate: commitment.active
+              ? () => onArchiveStructuredMemory(
+                  MemoryLayer.commitments,
+                  commitment.id,
+                  'commitment',
+                )
+              : null,
+        ),
+      ),
+    ]);
+    addGroup(
+      MemoryGroup.rules,
+      saved.rules
+          .map(
+            (rule) => _RuleMemoryTile(
               rule: rule,
               onEdit: () => onEditRule(rule),
               onDeactivate: rule.active
-                  ? () => onDeactivateStructuredMemory(
+                  ? () => onArchiveStructuredMemory(
                       MemoryLayer.rules,
                       rule.id,
                       'rule',
                     )
                   : null,
-            );
-          },
-        );
-      case MemoryLayer.plans:
-        return SliverList.separated(
-          itemCount: state.plans.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final plan = state.plans[index];
-            return _PlanMemoryTile(
-              plan: plan,
-              onEdit: () => onEditPlan(plan),
-              onDeactivate: plan.active
-                  ? () => onDeactivateStructuredMemory(
-                      MemoryLayer.plans,
-                      plan.id,
-                      'plan',
-                    )
-                  : null,
-            );
-          },
-        );
-      case MemoryLayer.commitments:
-        return SliverList.separated(
-          itemCount: state.commitments.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final commitment = state.commitments[index];
-            return _CommitmentMemoryTile(
-              commitment: commitment,
-              onEdit: () => onEditCommitment(commitment),
-              onDeactivate: commitment.active
-                  ? () => onDeactivateStructuredMemory(
-                      MemoryLayer.commitments,
-                      commitment.id,
-                      'commitment',
-                    )
-                  : null,
-            );
-          },
-        );
-    }
+            ),
+          )
+          .toList(growable: false),
+    );
+    addGroup(
+      MemoryGroup.recent,
+      saved.recent.map(_memoryTile).toList(growable: false),
+    );
+    addGroup(
+      MemoryGroup.other,
+      saved.other.map(_memoryTile).toList(growable: false),
+    );
+
+    return SliverList.list(children: children);
+  }
+
+  Widget _memoryTile(MemoryItem memory) {
+    return _MemoryTile(
+      memory: memory,
+      onEdit: () => onEditMemory(memory),
+      onDeactivate: memory.active ? () => onArchiveMemory(memory) : null,
+    );
+  }
+}
+
+class _MemoryGroupHeader extends StatelessWidget {
+  const _MemoryGroupHeader({required this.group});
+
+  final MemoryGroup group;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 22, 16, 8),
+      child: Text(
+        group.label,
+        style: theme.textTheme.titleSmall?.copyWith(
+          color: scheme.onSurface,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
   }
 }
 
@@ -589,6 +1327,11 @@ class _MemoryTile extends StatelessWidget {
           children: [
             _MemoryMetaChip(label: memory.memoryType.label),
             _MemoryMetaChip(label: 'Importance ${memory.importance}'),
+            if (_savedDate(memory.updatedAt, memory.createdAt) != null)
+              _MemoryMetaChip(
+                label:
+                    'Updated ${_shortDate(_savedDate(memory.updatedAt, memory.createdAt)!)}',
+              ),
             if (!memory.active) const _MemoryMetaChip(label: 'Inactive'),
           ],
         ),
@@ -599,7 +1342,7 @@ class _MemoryTile extends StatelessWidget {
           switch (action) {
             case _MemoryAction.edit:
               onEdit();
-            case _MemoryAction.deactivate:
+            case _MemoryAction.archive:
               onDeactivate?.call();
           }
         },
@@ -614,11 +1357,11 @@ class _MemoryTile extends StatelessWidget {
           ),
           if (onDeactivate != null)
             const PopupMenuItem(
-              value: _MemoryAction.deactivate,
+              value: _MemoryAction.archive,
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.visibility_off_outlined),
-                title: Text('Deactivate'),
+                title: Text('Archive'),
               ),
             ),
         ],
@@ -639,6 +1382,8 @@ class _MemoryTile extends StatelessWidget {
         return Icons.tune_rounded;
       case MemoryType.event:
         return Icons.event_note_outlined;
+      case MemoryType.other:
+        return Icons.note_alt_outlined;
     }
   }
 }
@@ -668,7 +1413,11 @@ class _PersonMemoryTile extends StatelessWidget {
           _MemoryMetaChip(label: 'Also ${person.aliases.join(', ')}'),
         _MemoryMetaChip(label: 'Importance ${person.importance}'),
         _MemoryMetaChip(label: person.status.memoryRecordLabel),
-        _MemoryMetaChip(label: 'ID ${_shortId(person.id)}'),
+        if (_savedDate(person.updatedAt, person.createdAt) != null)
+          _MemoryMetaChip(
+            label:
+                'Updated ${_shortDate(_savedDate(person.updatedAt, person.createdAt)!)}',
+          ),
         if (!person.active) const _MemoryMetaChip(label: 'Inactive'),
       ],
       onEdit: onEdit,
@@ -699,6 +1448,11 @@ class _RuleMemoryTile extends StatelessWidget {
         _MemoryMetaChip(label: rule.ruleType.memoryRecordLabel),
         _MemoryMetaChip(label: rule.status.memoryRecordLabel),
         _MemoryMetaChip(label: 'Priority ${rule.priority}'),
+        if (_savedDate(rule.updatedAt, rule.createdAt) != null)
+          _MemoryMetaChip(
+            label:
+                'Updated ${_shortDate(_savedDate(rule.updatedAt, rule.createdAt)!)}',
+          ),
         if (rule.triggerKeywords.isNotEmpty)
           _MemoryMetaChip(label: rule.triggerKeywords.join(', ')),
         if (!rule.active) const _MemoryMetaChip(label: 'Inactive'),
@@ -733,8 +1487,11 @@ class _PlanMemoryTile extends StatelessWidget {
         _MemoryMetaChip(label: 'Priority ${plan.priority}'),
         if (plan.targetDate != null)
           _MemoryMetaChip(label: 'Target ${_shortDate(plan.targetDate!)}'),
-        if (plan.primaryEntityId != null)
-          _MemoryMetaChip(label: 'Person ${_shortId(plan.primaryEntityId!)}'),
+        if (_savedDate(plan.updatedAt, plan.createdAt) != null)
+          _MemoryMetaChip(
+            label:
+                'Updated ${_shortDate(_savedDate(plan.updatedAt, plan.createdAt)!)}',
+          ),
         if (!plan.active) const _MemoryMetaChip(label: 'Inactive'),
       ],
       onEdit: onEdit,
@@ -767,10 +1524,11 @@ class _CommitmentMemoryTile extends StatelessWidget {
         _MemoryMetaChip(label: 'Priority ${commitment.priority}'),
         if (commitment.dueAt != null)
           _MemoryMetaChip(label: 'Due ${_shortDate(commitment.dueAt!)}'),
-        if (commitment.planId != null)
-          _MemoryMetaChip(label: 'Plan ${_shortId(commitment.planId!)}'),
-        if (commitment.entityId != null)
-          _MemoryMetaChip(label: 'Person ${_shortId(commitment.entityId!)}'),
+        if (_savedDate(commitment.updatedAt, commitment.createdAt) != null)
+          _MemoryMetaChip(
+            label:
+                'Updated ${_shortDate(_savedDate(commitment.updatedAt, commitment.createdAt)!)}',
+          ),
         if (!commitment.active) const _MemoryMetaChip(label: 'Inactive'),
       ],
       onEdit: onEdit,
@@ -847,7 +1605,7 @@ class _StructuredMemoryTile extends StatelessWidget {
           switch (action) {
             case _MemoryAction.edit:
               onEdit();
-            case _MemoryAction.deactivate:
+            case _MemoryAction.archive:
               onDeactivate?.call();
           }
         },
@@ -862,11 +1620,11 @@ class _StructuredMemoryTile extends StatelessWidget {
           ),
           if (onDeactivate != null)
             const PopupMenuItem(
-              value: _MemoryAction.deactivate,
+              value: _MemoryAction.archive,
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.visibility_off_outlined),
-                title: Text('Deactivate'),
+                title: Text('Archive'),
               ),
             ),
         ],
@@ -905,9 +1663,8 @@ class _MemoryMetaChip extends StatelessWidget {
 }
 
 class _MemoryEmptyState extends StatelessWidget {
-  const _MemoryEmptyState({required this.layer, required this.activeOnly});
+  const _MemoryEmptyState({required this.activeOnly});
 
-  final MemoryLayer layer;
   final bool activeOnly;
 
   @override
@@ -943,33 +1700,11 @@ class _MemoryEmptyState extends StatelessWidget {
   }
 
   String get _emptyTitle {
-    switch (layer) {
-      case MemoryLayer.longTerm:
-        return activeOnly ? 'No active notes yet' : 'No notes found';
-      case MemoryLayer.people:
-        return activeOnly ? 'No active people yet' : 'No people found';
-      case MemoryLayer.rules:
-        return activeOnly ? 'No active rules yet' : 'No rules found';
-      case MemoryLayer.plans:
-        return activeOnly ? 'No active plans yet' : 'No plans found';
-      case MemoryLayer.commitments:
-        return activeOnly ? 'No open commitments yet' : 'No commitments found';
-    }
+    return activeOnly ? 'No active saved memory yet' : 'No saved memory found';
   }
 
   String get _emptyBody {
-    switch (layer) {
-      case MemoryLayer.longTerm:
-        return 'Important facts, preferences, and events will appear here.';
-      case MemoryLayer.people:
-        return 'People Rex knows about will appear as their own layer.';
-      case MemoryLayer.rules:
-        return 'Personal rules Rex should enforce will appear here.';
-      case MemoryLayer.plans:
-        return 'Active goals and plans will appear here.';
-      case MemoryLayer.commitments:
-        return 'Promises, deadlines, and follow-ups will appear here.';
-    }
+    return 'Approved facts, preferences, people, plans, rules, and recent context will appear here.';
   }
 }
 
@@ -980,11 +1715,8 @@ String _shortDate(DateTime value) {
   return '$month/$day/${local.year}';
 }
 
-String _shortId(String value) {
-  if (value.length <= 8) {
-    return value;
-  }
-  return value.substring(0, 8);
+DateTime? _savedDate(DateTime? updatedAt, DateTime? createdAt) {
+  return updatedAt ?? createdAt;
 }
 
 class _StructuredEditDialog extends StatefulWidget {
@@ -1153,6 +1885,94 @@ class _StructuredEditDialogState extends State<_StructuredEditDialog> {
   }
 }
 
+class _PendingCandidateEditDialog extends StatefulWidget {
+  const _PendingCandidateEditDialog({required this.candidate});
+
+  final PendingMemoryCandidateItem candidate;
+
+  @override
+  State<_PendingCandidateEditDialog> createState() =>
+      _PendingCandidateEditDialogState();
+}
+
+class _PendingCandidateEditDialogState
+    extends State<_PendingCandidateEditDialog> {
+  late final TextEditingController _proposalController;
+  late final TextEditingController _reasonController;
+
+  @override
+  void initState() {
+    super.initState();
+    _proposalController = TextEditingController(
+      text: widget.candidate.editableProposal,
+    );
+    _reasonController = TextEditingController(
+      text: widget.candidate.reasonLabel ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _proposalController.dispose();
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit memory request'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _proposalController,
+              minLines: 3,
+              maxLines: 6,
+              decoration: const InputDecoration(
+                labelText: 'Proposed memory',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _reasonController,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Reason Rex suggested it',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Save')),
+      ],
+    );
+  }
+
+  void _submit() {
+    final proposal = _proposalController.text.trim();
+    if (proposal.isEmpty) {
+      return;
+    }
+
+    Navigator.of(context).pop(
+      _PendingCandidateEditResult(
+        proposal: proposal,
+        reason: _nullableText(_reasonController.text),
+      ),
+    );
+  }
+}
+
 class _MemoryEditDialog extends StatefulWidget {
   const _MemoryEditDialog({required this.memory});
 
@@ -1196,8 +2016,11 @@ class _MemoryEditDialogState extends State<_MemoryEditDialog> {
               decoration: const InputDecoration(labelText: 'Type'),
               items: MemoryType.values
                   .map(
-                    (type) =>
-                        DropdownMenuItem(value: type, child: Text(type.label)),
+                    (type) => DropdownMenuItem(
+                      value: type,
+                      enabled: type != MemoryType.other,
+                      child: Text(type.label),
+                    ),
                   )
                   .toList(growable: false),
               onChanged: (value) {
@@ -1260,7 +2083,7 @@ class _MemoryEditDialogState extends State<_MemoryEditDialog> {
 
     Navigator.of(context).pop(
       _MemoryEditResult(
-        memoryType: _memoryType,
+        memoryType: _memoryType == MemoryType.other ? null : _memoryType,
         content: content,
         importance: _importance.round(),
         active: _active,
@@ -1277,13 +2100,58 @@ class _MemoryEditResult {
     required this.active,
   });
 
-  final MemoryType memoryType;
+  final MemoryType? memoryType;
   final String content;
   final int importance;
   final bool active;
 }
 
-enum _MemoryAction { edit, deactivate }
+class _PendingCandidateEditResult {
+  const _PendingCandidateEditResult({
+    required this.proposal,
+    required this.reason,
+  });
+
+  final String proposal;
+  final String? reason;
+}
+
+enum _MemoryAction { edit, archive }
+
+enum _MemoryQuickFilter {
+  saved,
+  pending,
+  corrections,
+  people,
+  preferences;
+
+  MemoryReviewMode get targetMode {
+    switch (this) {
+      case _MemoryQuickFilter.saved:
+      case _MemoryQuickFilter.people:
+      case _MemoryQuickFilter.preferences:
+        return MemoryReviewMode.saved;
+      case _MemoryQuickFilter.pending:
+      case _MemoryQuickFilter.corrections:
+        return MemoryReviewMode.pending;
+    }
+  }
+
+  String label(int pendingCount) {
+    switch (this) {
+      case _MemoryQuickFilter.saved:
+        return 'Saved';
+      case _MemoryQuickFilter.pending:
+        return pendingCount == 0 ? 'Pending' : 'Pending ($pendingCount)';
+      case _MemoryQuickFilter.corrections:
+        return 'Corrections';
+      case _MemoryQuickFilter.people:
+        return 'People';
+      case _MemoryQuickFilter.preferences:
+        return 'Preferences';
+    }
+  }
+}
 
 class _StructuredEditResult {
   const _StructuredEditResult({
@@ -1318,4 +2186,11 @@ List<String> _splitCommaText(String value) {
       .map((item) => item.trim())
       .where((item) => item.isNotEmpty)
       .toList(growable: false);
+}
+
+bool _matchesQuery(String query, Iterable<String?> fields) {
+  if (query.isEmpty) {
+    return true;
+  }
+  return fields.any((field) => field?.toLowerCase().contains(query) == true);
 }
