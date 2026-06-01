@@ -1,6 +1,7 @@
 import pytest
 
 from app.config import Settings
+from app.services.chat_service import PROFILE_MEMORY_QUERY
 from app.services.memory_service import SupabaseMemoryService
 
 
@@ -261,6 +262,40 @@ async def test_get_relevant_memories_keeps_high_priority_preferences_available()
     assert len(memories) == 1
     assert memories[0]["id"] == "memory-style"
     assert memories[0]["relevance_reason"] == "Included high-priority user preference."
+
+
+@pytest.mark.asyncio
+async def test_get_relevant_memories_keeps_high_priority_profile_facts_available():
+    service = InMemoryRetrievalService(
+        [
+            {
+                "id": "memory-founder",
+                "memory_type": "fact",
+                "content": "Pedro is building Clarity as a solo founder.",
+                "importance": 5,
+                "active": True,
+                "created_at": "2026-05-31T08:00:00Z",
+                "last_accessed_at": "2026-05-31T08:00:00Z",
+            },
+            {
+                "id": "memory-low-priority",
+                "memory_type": "fact",
+                "content": "Pedro once mentioned a random TV show.",
+                "importance": 2,
+                "active": True,
+                "created_at": "2026-05-31T08:00:00Z",
+                "last_accessed_at": "2026-05-31T08:00:00Z",
+            },
+        ]
+    )
+
+    memories = await service.get_relevant_memories(
+        PROFILE_MEMORY_QUERY,
+        limit=4,
+    )
+
+    assert [memory["id"] for memory in memories] == ["memory-founder"]
+    assert memories[0]["relevance_reason"] == "Included high-priority profile fact."
 
 
 @pytest.mark.asyncio

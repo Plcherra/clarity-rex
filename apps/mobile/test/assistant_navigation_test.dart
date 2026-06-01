@@ -59,7 +59,7 @@ void main() {
       expect(controller().index, tab.index);
     }
 
-    expect(voiceController.startCount, 1);
+    expect(voiceController.startCount, 0);
   });
 
   testWidgets(

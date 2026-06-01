@@ -1,14 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../accountability/presentation/pages/accountability_page.dart';
-import '../chat/application/chat_controller.dart';
 import '../chat/presentation/pages/chat_page.dart';
 import '../chat/presentation/pages/conversation_list_page.dart';
 import '../memory/presentation/pages/memory_page.dart';
-import '../voice/application/voice_call_controller.dart';
+import '../voice/presentation/pages/voice_chat_page.dart';
 import 'assistant_tab.dart';
 
 const _assistantCompactWidth = 360.0;
@@ -24,8 +21,6 @@ class AssistantScreen extends ConsumerStatefulWidget {
 class _AssistantScreenState extends ConsumerState<AssistantScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  var _lastTabIndex = AssistantTab.chat.index;
-  var _isStartingVoiceFromTab = false;
 
   @override
   void initState() {
@@ -34,61 +29,17 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       length: AssistantTab.values.length,
       vsync: this,
       initialIndex: AssistantTab.chat.index,
-    )..addListener(_handleTabControllerChange);
+    );
   }
 
   @override
   void dispose() {
-    _tabController
-      ..removeListener(_handleTabControllerChange)
-      ..dispose();
+    _tabController.dispose();
     super.dispose();
-  }
-
-  void _handleTabControllerChange() {
-    if (_tabController.indexIsChanging ||
-        _tabController.index == _lastTabIndex) {
-      return;
-    }
-    _lastTabIndex = _tabController.index;
-    _handleAssistantTabSelected(AssistantTab.values[_tabController.index]);
-  }
-
-  void _handleAssistantTabSelected(AssistantTab tab) {
-    if (tab == AssistantTab.voice) {
-      unawaited(_startVoiceFromVoiceTab());
-    }
   }
 
   void _openChatTab() {
     _tabController.animateTo(AssistantTab.chat.index);
-  }
-
-  Future<void> _startVoiceFromVoiceTab() async {
-    if (_isStartingVoiceFromTab || ref.read(voiceCallProvider).isCallActive) {
-      return;
-    }
-
-    _isStartingVoiceFromTab = true;
-    final bool started;
-    try {
-      started = await ref
-          .read(voiceCallProvider.notifier)
-          .startCall(conversationId: ref.read(chatProvider).conversationId);
-    } finally {
-      _isStartingVoiceFromTab = false;
-    }
-
-    if (!mounted || started) {
-      return;
-    }
-
-    final errorMessage =
-        ref.read(voiceCallProvider).errorMessage ?? 'Could not start Rex.';
-    final messenger = ScaffoldMessenger.of(context);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(errorMessage)));
   }
 
   @override
@@ -125,7 +76,6 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
             ),
             _AssistantTabNavigation(
               controller: _tabController,
-              onTabSelected: _handleAssistantTabSelected,
               isCompactWidth: isCompactWidth,
             ),
             Expanded(
@@ -150,12 +100,10 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
 class _AssistantTabNavigation extends StatelessWidget {
   const _AssistantTabNavigation({
     required this.controller,
-    required this.onTabSelected,
     required this.isCompactWidth,
   });
 
   final TabController controller;
-  final ValueChanged<AssistantTab> onTabSelected;
   final bool isCompactWidth;
 
   @override
@@ -172,7 +120,6 @@ class _AssistantTabNavigation extends StatelessWidget {
       ),
       child: TabBar(
         controller: controller,
-        onTap: (index) => onTabSelected(AssistantTab.values[index]),
         dividerColor: Colors.transparent,
         indicatorSize: TabBarIndicatorSize.tab,
         indicatorPadding: const EdgeInsets.symmetric(
@@ -257,7 +204,7 @@ class _AssistantTabContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (tab) {
       AssistantTab.chat => const ChatPage(showAppBar: false),
-      AssistantTab.voice => const ChatPage(showAppBar: false),
+      AssistantTab.voice => const VoiceChatPage(),
       AssistantTab.memory => const MemoryPage(showAppBar: false),
       AssistantTab.goals => const AccountabilityPage(showAppBar: false),
       AssistantTab.chats => ConversationListPage(

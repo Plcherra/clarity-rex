@@ -30,28 +30,33 @@ class VoiceCallControls extends StatelessWidget {
         state.phase == VoiceCallPhase.thinking;
 
     if (state.phase == VoiceCallPhase.failed) {
-      return Row(
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try again'),
-            ),
+          FilledButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Try voice again'),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: onEnd,
-              icon: const Icon(Icons.call_end_rounded),
-              label: const Text('End'),
-            ),
-          ),
-          const SizedBox(width: 12),
-          IconButton.outlined(
-            onPressed: onOpenSettings,
-            icon: const Icon(Icons.settings_rounded),
-            tooltip: 'Open app settings',
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onOpenSettings,
+                  icon: const Icon(Icons.settings_rounded),
+                  label: const Text('Settings'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onEnd,
+                  icon: const Icon(Icons.close_rounded),
+                  label: const Text('Dismiss'),
+                ),
+              ),
+            ],
           ),
         ],
       );
@@ -61,35 +66,50 @@ class VoiceCallControls extends StatelessWidget {
       return FilledButton.icon(
         onPressed: onStart,
         icon: const Icon(Icons.call_rounded),
-        label: const Text('Start call'),
+        label: const Text('Start voice'),
       );
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _RoundCallButton(
-          tooltip: state.isMuted ? 'Unmute mic' : 'Mute mic',
-          icon: state.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
-          onPressed: onToggleMute,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.48),
         ),
-        const SizedBox(width: 18),
-        _RoundCallButton(
-          tooltip: 'End call',
-          icon: Icons.call_end_rounded,
-          backgroundColor: scheme.error,
-          foregroundColor: scheme.onError,
-          onPressed: onEnd,
-          size: 70,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _RoundCallButton(
+              tooltip: state.isMuted ? 'Unmute mic' : 'Mute mic',
+              icon: state.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+              label: state.isMuted ? 'Unmute' : 'Mute',
+              onPressed: onToggleMute,
+            ),
+            const SizedBox(width: 12),
+            _RoundCallButton(
+              tooltip: 'End call',
+              icon: Icons.call_end_rounded,
+              label: 'End',
+              backgroundColor: scheme.error,
+              foregroundColor: scheme.onError,
+              onPressed: onEnd,
+              size: 68,
+            ),
+            const SizedBox(width: 12),
+            _RoundCallButton(
+              tooltip: 'Interrupt Rex',
+              icon: Icons.front_hand_rounded,
+              label: 'Pause',
+              onPressed: canInterrupt ? onInterrupt : null,
+              onLongPress: canInterrupt ? onInterrupt : null,
+            ),
+          ],
         ),
-        const SizedBox(width: 18),
-        _RoundCallButton(
-          tooltip: 'Interrupt Rex',
-          icon: Icons.front_hand_rounded,
-          onPressed: canInterrupt ? onInterrupt : null,
-          onLongPress: canInterrupt ? onInterrupt : null,
-        ),
-      ],
+      ),
     );
   }
 }
@@ -98,6 +118,7 @@ class _RoundCallButton extends StatelessWidget {
   const _RoundCallButton({
     required this.tooltip,
     required this.icon,
+    required this.label,
     required this.onPressed,
     this.onLongPress,
     this.backgroundColor,
@@ -107,6 +128,7 @@ class _RoundCallButton extends StatelessWidget {
 
   final String tooltip;
   final IconData icon;
+  final String label;
   final VoidCallback? onPressed;
   final VoidCallback? onLongPress;
   final Color? backgroundColor;
@@ -116,25 +138,46 @@ class _RoundCallButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
     return Tooltip(
       message: tooltip,
-      child: SizedBox.square(
-        dimension: size,
-        child: IconButton.filled(
-          onPressed: onPressed,
-          onLongPress: onLongPress,
-          style: IconButton.styleFrom(
-            backgroundColor: backgroundColor ?? scheme.surfaceContainerHighest,
-            foregroundColor: foregroundColor ?? scheme.onSurface,
-            disabledBackgroundColor: scheme.surfaceContainerHighest.withValues(
-              alpha: 0.45,
+      child: SizedBox(
+        width: size,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox.square(
+              dimension: size,
+              child: IconButton.filled(
+                onPressed: onPressed,
+                onLongPress: onLongPress,
+                style: IconButton.styleFrom(
+                  backgroundColor:
+                      backgroundColor ?? scheme.surfaceContainerHighest,
+                  foregroundColor: foregroundColor ?? scheme.onSurface,
+                  disabledBackgroundColor: scheme.surfaceContainerHighest
+                      .withValues(alpha: 0.45),
+                  disabledForegroundColor: scheme.onSurfaceVariant.withValues(
+                    alpha: 0.45,
+                  ),
+                ),
+                icon: Icon(icon),
+              ),
             ),
-            disabledForegroundColor: scheme.onSurfaceVariant.withValues(
-              alpha: 0.45,
+            const SizedBox(height: 6),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: onPressed == null
+                    ? scheme.onSurfaceVariant.withValues(alpha: 0.5)
+                    : scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          icon: Icon(icon),
+          ],
         ),
       ),
     );

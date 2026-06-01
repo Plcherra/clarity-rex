@@ -17,6 +17,7 @@ from app.services.prompt_service import (
     LONG_TERM_MEMORY_PREFIX,
     STRUCTURED_MEMORY_PREFIX,
 )
+from app.services.rex_brain_contracts import RexBrainChannel
 from app.services.time_context_service import TimeContextService
 
 
@@ -335,6 +336,43 @@ class FakeMemoryCandidateService:
         return {"approved": [], "rejected": rejected, "skipped": []}
 
 
+class DurableFakeMemoryCandidateService(FakeMemoryCandidateService):
+    def __init__(self, memory_service, pending=None):
+        super().__init__(pending=pending)
+        self.memory_service = memory_service
+
+    async def approve_candidate(self, candidate_id, request):
+        for candidate in self.pending:
+            if candidate["id"] != candidate_id:
+                continue
+
+            payload = candidate.get("payload") or {}
+            record = await self.memory_service.save_long_term_memory(
+                memory_type=payload["memory_type"],
+                content=payload["content"],
+                source_conversation_id=candidate.get("source_conversation_id"),
+                source_message_id=candidate.get("source_message_id"),
+                importance=int(payload.get("importance") or 4),
+            )
+            approved = {
+                **candidate,
+                "status": "applied",
+                "applied_record_table": "long_term_memory",
+                "applied_record_id": record["id"],
+                "verification": {
+                    "passed": True,
+                    "message": "Candidate applied and verified.",
+                    "applied_record": {
+                        "table": "long_term_memory",
+                        "id": record["id"],
+                    },
+                },
+            }
+            self.approved.append(approved)
+            return approved
+        raise AssertionError(f"unknown candidate {candidate_id}")
+
+
 class BlockingMemoryExtractionService:
     def __init__(self):
         self.calls = []
@@ -630,6 +668,70 @@ async def test_chat_service_explicit_confirmation_applies_and_reports_candidate_
     )
     assert result["memory_changes"]["records"][0]["candidate"]["id"] == (
         "candidate-high"
+    )
+
+
+@pytest.mark.asyncio
+async def test_approved_memory_is_recalled_in_later_text_and_voice_turns():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.conversations.add("conversation-existing")
+    candidate_service = DurableFakeMemoryCandidateService(
+        memory_service,
+        pending=[
+            {
+                "id": "candidate-memory",
+                "candidate_type": "long_term_memory",
+                "payload": {
+                    "memory_type": "preference",
+                    "content": "Pedro prefers weekly launch plans.",
+                    "importance": 5,
+                },
+                "risk_level": "medium",
+                "status": "pending",
+                "preview": "long_term_memory: Pedro prefers weekly launch plans.",
+                "source_conversation_id": "conversation-existing",
+                "source_message_id": "message-source",
+            }
+        ],
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        memory_candidate_service=candidate_service,
+    )
+
+    approval = await chat_service.send_message("confirm", "conversation-existing")
+
+    assert approval["memory_changes"]["applied_candidates"][0]["applied_record"] == {
+        "table": "long_term_memory",
+        "id": "memory-1",
+    }
+    assert memory_service.long_term_memory[0]["content"] == (
+        "Pedro prefers weekly launch plans."
+    )
+
+    await chat_service.send_message("What should I do next?", "conversation-existing")
+
+    assert (
+        "- preference: Pedro prefers weekly launch plans."
+        in ai_service.messages[0]["content"]
+    )
+
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "Can you help me plan this week?",
+            conversation_id="conversation-existing",
+            channel=RexBrainChannel.VOICE,
+        )
+    ]
+
+    assert any(event.get("event") == "done" for event in events)
+    assert (
+        "- preference: Pedro prefers weekly launch plans."
+        in ai_service.messages[0]["content"]
     )
 
 

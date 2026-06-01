@@ -1346,10 +1346,22 @@ class SupabaseMemoryService:
             memory.get("memory_type") == "preference"
             and int(memory.get("importance") or 0) >= 4
         )
+        is_profile_context_query = bool(
+            query_terms & {"profile", "identity", "important", "fact"}
+        )
+        is_high_priority_profile_fact = (
+            memory.get("memory_type") == "fact"
+            and int(memory.get("importance") or 0) >= 4
+            and is_profile_context_query
+        )
 
         if not query_terms:
             has_direct_match = True
-        if not has_direct_match and not is_high_priority_preference:
+        if (
+            not has_direct_match
+            and not is_high_priority_preference
+            and not is_high_priority_profile_fact
+        ):
             return None
 
         overlap_score = (
@@ -1373,6 +1385,8 @@ class SupabaseMemoryService:
             reason = f"Matched current message terms: {', '.join(matched_terms[:6])}"
         elif is_high_priority_preference:
             reason = "Included high-priority user preference."
+        elif is_high_priority_profile_fact:
+            reason = "Included high-priority profile fact."
         else:
             reason = "Included as recent important context."
         if correction_pairs:

@@ -265,6 +265,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(AssistantTab.voice.key));
     await tester.pumpAndSettle();
+    expect(find.text('Talk with Rex'), findsOneWidget);
+
+    await tester.tap(find.text('Start voice'));
+    await tester.pumpAndSettle();
 
     expect(voiceController.startCount, 1);
     expect(voiceController.lastConversationId, 'conversation-1');
