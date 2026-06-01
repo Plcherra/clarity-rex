@@ -13,6 +13,7 @@ import 'package:clarity/features/assistant/voice/data/streaming_audio_capture_se
 import 'package:clarity/features/assistant/voice/data/streaming_voice_api.dart';
 import 'package:clarity/features/assistant/voice/domain/voice_call_state.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
@@ -242,6 +243,125 @@ void main() {
       expect(playbackService.stopCount, 0);
     },
   );
+
+  test(
+    'streaming transcript does not duplicate partial and final text',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript':
+            "It's next week, but on the eighteenth, it's my mom's birthday",
+      });
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript':
+            "It's next week, but on the eighteenth, it's my mom's birthday.",
+        'speech_final': true,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      final state = container.read(voiceCallProvider);
+      expect(
+        state.currentTranscript,
+        "It's next week, but on the eighteenth, it's my mom's birthday.",
+      );
+      expect(
+        RegExp(
+          "mom's birthday",
+          caseSensitive: false,
+        ).allMatches(state.currentTranscript).length,
+        1,
+      );
+    },
+  );
+
+  test(
+    'inactive lifecycle keeps audio route stable and suppresses no-speech fail',
+    () async {
+      final captureService = _SilentStreamingAudioCaptureService();
+      final audioSessionService = _CountingVoiceAudioSessionService();
+      final backgroundVoiceService = _CountingBackgroundVoiceService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            audioSessionService,
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            backgroundVoiceService,
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          voiceCallNoSpeechTimeoutProvider.overrideWithValue(
+            const Duration(milliseconds: 10),
+          ),
+          voiceCallEmptyTurnLimitProvider.overrideWithValue(1),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.ready.future;
+      expect(audioSessionService.configureCount, 1);
+
+      controller.didChangeAppLifecycleState(AppLifecycleState.inactive);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(state.errorMessage, isNull);
+      expect(audioSessionService.configureCount, 1);
+      expect(backgroundVoiceService.startCount, 1);
+    },
+  );
 }
 
 class _GrantedMicrophonePermissionService
@@ -291,6 +411,47 @@ class _NoopBackgroundVoiceService implements BackgroundVoiceService {
 
   @override
   Future<void> stop() async {}
+}
+
+class _CountingVoiceAudioSessionService implements VoiceAudioSessionService {
+  var configureCount = 0;
+
+  @override
+  Future<void> configureForVoiceTurn() async {
+    configureCount++;
+  }
+
+  @override
+  StreamSubscription<AudioInterruptionEvent> listenForInterruptions(
+    VoiceAudioInterruptionCallback onInterrupted,
+  ) {
+    return const Stream<AudioInterruptionEvent>.empty().listen((_) {});
+  }
+
+  @override
+  StreamSubscription<void> listenForNoisyAudio(
+    VoiceAudioInterruptionCallback onInterrupted,
+  ) {
+    return const Stream<void>.empty().listen((_) {});
+  }
+
+  @override
+  Future<void> setActive(bool active) async {}
+}
+
+class _CountingBackgroundVoiceService implements BackgroundVoiceService {
+  var startCount = 0;
+  var stopCount = 0;
+
+  @override
+  Future<void> start() async {
+    startCount++;
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCount++;
+  }
 }
 
 class _NoopAudioCaptureService implements AudioCaptureService {

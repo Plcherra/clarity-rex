@@ -320,10 +320,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused ||
+    if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
-      unawaited(_audioSessionService.configureForVoiceTurn());
       unawaited(_backgroundVoiceService.start());
     }
   }
@@ -1075,7 +1073,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
               state.phase == VoiceCallPhase.listening) {
             _markListeningReady();
             _armNoSpeechTimeout(generation);
-            unawaited(_startInterimTranscription(generation));
           }
         },
         onSpeechStart: () {
@@ -1620,6 +1617,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
     _noSpeechTimeoutTimer = Timer(timeout, () {
       if (!_isCurrentCall(generation) ||
+          !_isAppInForeground ||
           !state.isCallActive ||
           state.phase != VoiceCallPhase.listening ||
           state.isMuted ||
@@ -1745,7 +1743,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     final previousPartial = _normalizeTranscript(_partialTranscriptBuffer);
     _partialTranscriptBuffer = '';
-    if (previousPartial.isNotEmpty && !next.contains(previousPartial)) {
+    if (previousPartial.isNotEmpty &&
+        !_transcriptContains(next, previousPartial)) {
       _appendTranscriptSegment(previousPartial);
     }
     _appendTranscriptSegment(next);
@@ -1760,11 +1759,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
       _finalTranscriptBuffer = next;
       return;
     }
-    if (_finalTranscriptBuffer == next ||
-        _finalTranscriptBuffer.endsWith(next)) {
+    if (_transcriptContains(_finalTranscriptBuffer, next)) {
       return;
     }
-    if (next.startsWith(_finalTranscriptBuffer)) {
+    if (_transcriptContains(next, _finalTranscriptBuffer)) {
       _finalTranscriptBuffer = next;
       return;
     }
@@ -1777,12 +1775,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
     if (finalText.isEmpty) {
       return partialText;
     }
-    if (partialText.isEmpty ||
-        finalText == partialText ||
-        finalText.endsWith(partialText)) {
+    if (partialText.isEmpty || _transcriptContains(finalText, partialText)) {
       return finalText;
     }
-    if (partialText.startsWith(finalText)) {
+    if (_transcriptContains(partialText, finalText)) {
       return partialText;
     }
     return '$finalText $partialText';
@@ -1790,6 +1786,22 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
   String _normalizeTranscript(String? transcript) {
     return (transcript ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  bool _transcriptContains(String text, String possibleDuplicate) {
+    final normalizedText = _normalizeTranscriptForComparison(text);
+    final normalizedDuplicate = _normalizeTranscriptForComparison(
+      possibleDuplicate,
+    );
+    return normalizedText.isNotEmpty &&
+        normalizedDuplicate.isNotEmpty &&
+        normalizedText.contains(normalizedDuplicate);
+  }
+
+  String _normalizeTranscriptForComparison(String? transcript) {
+    return _normalizeTranscript(
+      transcript,
+    ).toLowerCase().replaceAll(RegExp(r"[^a-z0-9']+"), ' ').trim();
   }
 
   String _permissionMessage(MicrophonePermissionDecision decision) {

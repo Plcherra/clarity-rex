@@ -47,10 +47,22 @@ class PackageAudioPlaybackService implements AudioPlaybackService {
     try {
       await _audioPlayer.stop();
       await _audioPlayer.setAudioContext(
-        AudioContextConfig(
-          route: AudioContextConfigRoute.speaker,
-          focus: AudioContextConfigFocus.gain,
-        ).build(),
+        AudioContext(
+          android: const AudioContextAndroid(
+            isSpeakerphoneOn: false,
+            stayAwake: true,
+            contentType: AndroidContentType.speech,
+            usageType: AndroidUsageType.voiceCommunication,
+            audioFocus: AndroidAudioFocus.gain,
+          ),
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playAndRecord,
+            options: const {
+              AVAudioSessionOptions.allowBluetooth,
+              AVAudioSessionOptions.allowBluetoothA2DP,
+            },
+          ),
+        ),
       );
       await _audioPlayer.setPlayerMode(PlayerMode.mediaPlayer);
       await _audioPlayer.setReleaseMode(ReleaseMode.stop);
