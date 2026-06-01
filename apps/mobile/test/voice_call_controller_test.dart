@@ -165,6 +165,83 @@ void main() {
       expect(state.currentTranscript, isEmpty);
     },
   );
+
+  test(
+    'streaming voice waits for playback before returning to listening',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final playbackService = _ControlledAudioPlaybackService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      captureService.finishCurrentWithSpeech();
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'Plan my launch week',
+        'speech_final': true,
+      });
+      streamingApi.socket.emit({'event': 'assistant.started'});
+      streamingApi.socket.emit({
+        'event': 'assistant.token',
+        'token': 'Use weekly launch plans.',
+      });
+      streamingApi.socket.emit({
+        'event': 'assistant.audio_chunk',
+        'audio_base64': base64Encode([1, 2, 3]),
+        'audio_content_type': 'audio/mpeg',
+        'text': 'Use weekly launch plans.',
+      });
+
+      await playbackService.playStarted.future;
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+
+      streamingApi.socket.emit({
+        'event': 'assistant.done',
+        'conversation_id': 'conversation-voice',
+        'response_text': 'Use weekly launch plans.',
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+
+      playbackService.complete();
+      await captureService.readyAt(1);
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(state.errorMessage, isNull);
+      expect(state.lastAssistantResponse, 'Use weekly launch plans.');
+      expect(playbackService.stopCount, 0);
+    },
+  );
 }
 
 class _GrantedMicrophonePermissionService
@@ -357,6 +434,92 @@ class _ReusableSilentStreamingAudioCaptureService
   }
 }
 
+class _ScriptedStreamingAudioCaptureService
+    implements StreamingAudioCaptureService {
+  final _ready = <Completer<void>>[];
+  final _captures = <Completer<bool>>[];
+
+  Future<void> readyAt(int index) {
+    while (_ready.length <= index) {
+      _ready.add(Completer<void>());
+    }
+    return _ready[index].future;
+  }
+
+  void finishCurrentWithSpeech() {
+    if (_captures.isEmpty) {
+      return;
+    }
+    final capture = _captures.last;
+    if (!capture.isCompleted) {
+      capture.complete(true);
+    }
+  }
+
+  @override
+  Future<void> cancel() async {
+    for (final capture in _captures) {
+      if (!capture.isCompleted) {
+        capture.complete(false);
+      }
+    }
+  }
+
+  @override
+  Future<bool> streamUtterance({
+    required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
+    required SpeechStartCallback onSpeechStart,
+    required SpeechEndCallback onSpeechEnded,
+    required AudioChunkCallback onAudioChunk,
+  }) {
+    final index = _captures.length;
+    while (_ready.length <= index) {
+      _ready.add(Completer<void>());
+    }
+    final capture = Completer<bool>();
+    _captures.add(capture);
+    onReady();
+    if (!_ready[index].isCompleted) {
+      _ready[index].complete();
+    }
+    return capture.future;
+  }
+}
+
+class _ControlledAudioPlaybackService implements AudioPlaybackService {
+  final playStarted = Completer<void>();
+  AudioPlaybackCompleteCallback? _onComplete;
+  var stopCount = 0;
+
+  @override
+  Future<void> pause() async {}
+
+  @override
+  Future<void> playBase64Audio(
+    String audioBase64, {
+    required String contentType,
+    required AudioPlaybackCompleteCallback onComplete,
+    required AudioPlaybackErrorCallback onError,
+  }) async {
+    _onComplete = onComplete;
+    if (!playStarted.isCompleted) {
+      playStarted.complete();
+    }
+  }
+
+  void complete() {
+    final onComplete = _onComplete;
+    _onComplete = null;
+    onComplete?.call();
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCount++;
+  }
+}
+
 class _FakeStreamingVoiceApi extends StreamingVoiceApi {
   _FakeStreamingVoiceApi() : super(baseUrl: 'http://localhost');
 
@@ -379,6 +542,10 @@ class _FakeVoiceWebSocket implements VoiceWebSocket {
 
   @override
   Stream<dynamic> get stream => _events.stream;
+
+  void emit(Map<String, dynamic> event) {
+    _events.add(jsonEncode(event));
+  }
 
   @override
   void add(dynamic data) {

@@ -1301,10 +1301,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
         },
         onQueueDrained: () {
           _stopBargeInMonitoring();
-          if (_isCurrentCall(generation) &&
-              state.phase == VoiceCallPhase.speaking) {
-            completeSpeaking();
-          }
         },
         onError: (message) {
           _stopBargeInMonitoring();
@@ -1397,12 +1393,14 @@ class VoiceCallController extends Notifier<VoiceCallState>
               callbacks: playbackCallbacks(),
             );
             await _streamingPlaybackQueue.waitUntilIdle();
-            if (_isCurrentCall(generation) &&
-                state.isCallActive &&
-                state.phase != VoiceCallPhase.speaking &&
-                state.phase != VoiceCallPhase.listening &&
-                !state.isMuted) {
-              resumeListening();
+            _stopBargeInMonitoring();
+            if (_isCurrentCall(generation) && state.isCallActive) {
+              if (state.phase == VoiceCallPhase.speaking) {
+                completeSpeaking();
+              } else if (state.phase != VoiceCallPhase.listening &&
+                  !state.isMuted) {
+                resumeListening();
+              }
             }
             unawaited(session.endSession());
             return;

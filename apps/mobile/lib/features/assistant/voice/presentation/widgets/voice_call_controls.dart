@@ -24,160 +24,131 @@ class VoiceCallControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final canInterrupt =
         state.phase == VoiceCallPhase.speaking ||
         state.phase == VoiceCallPhase.thinking;
 
     if (state.phase == VoiceCallPhase.failed) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      return _SubtleControlRow(
         children: [
-          FilledButton.icon(
+          _QuietControlButton(
+            tooltip: 'Try again',
+            icon: Icons.refresh_rounded,
+            label: 'Try again',
             onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Try voice again'),
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onOpenSettings,
-                  icon: const Icon(Icons.settings_rounded),
-                  label: const Text('Settings'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onEnd,
-                  icon: const Icon(Icons.close_rounded),
-                  label: const Text('Dismiss'),
-                ),
-              ),
-            ],
+          _QuietControlButton(
+            tooltip: 'Voice settings',
+            icon: Icons.settings_rounded,
+            label: 'Settings',
+            onPressed: onOpenSettings,
           ),
         ],
       );
     }
 
     if (!state.isCallActive) {
-      return FilledButton.icon(
-        onPressed: onStart,
-        icon: const Icon(Icons.call_rounded),
-        label: const Text('Start voice'),
+      return _SubtleControlRow(
+        children: [
+          _QuietControlButton(
+            tooltip: 'Start voice',
+            icon: Icons.mic_rounded,
+            label: 'Speak',
+            prominent: true,
+            onPressed: onStart,
+          ),
+        ],
       );
     }
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.48),
+    return _SubtleControlRow(
+      children: [
+        _QuietControlButton(
+          tooltip: state.isMuted ? 'Unmute microphone' : 'Mute microphone',
+          icon: state.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+          label: state.isMuted ? 'Unmute' : 'Mute',
+          onPressed: onToggleMute,
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _RoundCallButton(
-              tooltip: state.isMuted ? 'Unmute mic' : 'Mute mic',
-              icon: state.isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
-              label: state.isMuted ? 'Unmute' : 'Mute',
-              onPressed: onToggleMute,
-            ),
-            const SizedBox(width: 12),
-            _RoundCallButton(
-              tooltip: 'End call',
-              icon: Icons.call_end_rounded,
-              label: 'End',
-              backgroundColor: scheme.error,
-              foregroundColor: scheme.onError,
-              onPressed: onEnd,
-              size: 68,
-            ),
-            const SizedBox(width: 12),
-            _RoundCallButton(
-              tooltip: 'Interrupt Rex',
-              icon: Icons.front_hand_rounded,
-              label: 'Pause',
-              onPressed: canInterrupt ? onInterrupt : null,
-              onLongPress: canInterrupt ? onInterrupt : null,
-            ),
-          ],
+        _QuietControlButton(
+          tooltip: 'End voice call',
+          icon: Icons.call_end_rounded,
+          label: 'End',
+          destructive: true,
+          onPressed: onEnd,
         ),
-      ),
+        _QuietControlButton(
+          tooltip: 'Interrupt Rex',
+          icon: Icons.front_hand_rounded,
+          label: 'Interrupt',
+          onPressed: canInterrupt ? onInterrupt : null,
+        ),
+      ],
     );
   }
 }
 
-class _RoundCallButton extends StatelessWidget {
-  const _RoundCallButton({
+class _SubtleControlRow extends StatelessWidget {
+  const _SubtleControlRow({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 12,
+      runSpacing: 8,
+      children: children,
+    );
+  }
+}
+
+class _QuietControlButton extends StatelessWidget {
+  const _QuietControlButton({
     required this.tooltip,
     required this.icon,
     required this.label,
     required this.onPressed,
-    this.onLongPress,
-    this.backgroundColor,
-    this.foregroundColor,
-    this.size = 58,
+    this.prominent = false,
+    this.destructive = false,
   });
 
   final String tooltip;
   final IconData icon;
   final String label;
   final VoidCallback? onPressed;
-  final VoidCallback? onLongPress;
-  final Color? backgroundColor;
-  final Color? foregroundColor;
-  final double size;
+  final bool prominent;
+  final bool destructive;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final enabled = onPressed != null;
+    final foreground = destructive
+        ? scheme.error
+        : prominent
+        ? scheme.primary
+        : scheme.onSurfaceVariant;
 
     return Tooltip(
       message: tooltip,
-      child: SizedBox(
-        width: size,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox.square(
-              dimension: size,
-              child: IconButton.filled(
-                onPressed: onPressed,
-                onLongPress: onLongPress,
-                style: IconButton.styleFrom(
-                  backgroundColor:
-                      backgroundColor ?? scheme.surfaceContainerHighest,
-                  foregroundColor: foregroundColor ?? scheme.onSurface,
-                  disabledBackgroundColor: scheme.surfaceContainerHighest
-                      .withValues(alpha: 0.45),
-                  disabledForegroundColor: scheme.onSurfaceVariant.withValues(
-                    alpha: 0.45,
-                  ),
-                ),
-                icon: Icon(icon),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: onPressed == null
-                    ? scheme.onSurfaceVariant.withValues(alpha: 0.5)
-                    : scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+      child: TextButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18),
+        label: Text(label),
+        style: TextButton.styleFrom(
+          foregroundColor: enabled
+              ? foreground
+              : scheme.onSurfaceVariant.withValues(alpha: 0.42),
+          textStyle: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          minimumSize: const Size(0, 38),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
         ),
       ),
     );
