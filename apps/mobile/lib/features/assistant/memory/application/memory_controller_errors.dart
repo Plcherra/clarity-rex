@@ -15,9 +15,9 @@ String _memoryErrorMessage(Object error, _MemoryOperation operation) {
       case _MemoryOperation.edit:
         return 'That memory change could not be saved. Check the fields and try again.';
       case _MemoryOperation.approve:
-        return 'That memory request could not be saved. Refresh Memory and try again.';
+        return 'That memory review item could not be saved. Refresh Memory and try again.';
       case _MemoryOperation.reject:
-        return 'That memory request could not be dismissed. Refresh Memory and try again.';
+        return 'That memory review item could not be dismissed. Refresh Memory and try again.';
       case _MemoryOperation.archive:
         return 'That memory could not be archived. Refresh Memory and try again.';
       case _MemoryOperation.load:
@@ -29,9 +29,9 @@ String _memoryErrorMessage(Object error, _MemoryOperation operation) {
     case _MemoryOperation.load:
       return 'Could not load Rex Memory. Check your connection and try again.';
     case _MemoryOperation.approve:
-      return 'Could not save this memory. Please try again.';
+      return 'Could not save this review item. Please try again.';
     case _MemoryOperation.reject:
-      return 'Could not dismiss this memory request. Please try again.';
+      return 'Could not dismiss this review item. Please try again.';
     case _MemoryOperation.edit:
       return 'Could not update this memory. Please try again.';
     case _MemoryOperation.archive:

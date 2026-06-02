@@ -200,6 +200,7 @@ class MemoryPostTurnService:
                     "title": result.get("title")
                     or result.get("display_name")
                     or result.get("content"),
+                    "reason": result.get("reason"),
                     "memory_path": result.get("memory_path"),
                     "review_required": result.get("review_required"),
                     "review_reason": result.get("review_reason"),
@@ -238,7 +239,13 @@ class MemoryPostTurnService:
                 brain_metadata=brain_metadata,
             )
         except Exception:
-            return []
+            return [
+                {
+                    "extraction_kind": "memory_extraction",
+                    "extraction_action": "skip_failed",
+                    "reason": "Memory extraction failed after the response.",
+                }
+            ]
 
     def schedule_memory_extraction(
         self,

@@ -100,14 +100,14 @@ class SavedMemoryHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Saved memory',
+                    'What Rex knows',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Rex uses these approved memories to personalize future conversations. Pending suggestions stay separate until you approve them.',
+                    'These are approved facts, preferences, people, plans, and rules Rex can use in future conversations.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -160,10 +160,10 @@ class MemoryEmptyState extends StatelessWidget {
   }
 
   String get _emptyTitle {
-    return activeOnly ? 'No active saved memory yet' : 'No saved memory found';
+    return activeOnly ? 'Rex does not know much yet' : 'No saved memory found';
   }
 
   String get _emptyBody {
-    return 'Approved facts, preferences, people, plans, rules, and recent context will appear here.';
+    return 'When you approve something Rex should remember, it will appear here.';
   }
 }

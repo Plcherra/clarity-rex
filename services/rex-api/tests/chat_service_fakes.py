@@ -379,6 +379,8 @@ class FakeMemoryCandidateService:
         approved = []
         skipped = []
         for candidate in self.pending:
+            if request.candidate_ids and candidate["id"] not in request.candidate_ids:
+                continue
             if candidate.get("risk_level") == "high" and not request.include_high_risk:
                 skipped.append(candidate)
                 continue
@@ -389,6 +391,7 @@ class FakeMemoryCandidateService:
         rejected = [
             await self.reject_candidate(candidate["id"], request)
             for candidate in self.pending
+            if not request.candidate_ids or candidate["id"] in request.candidate_ids
         ]
         return {"approved": [], "rejected": rejected, "skipped": []}
 

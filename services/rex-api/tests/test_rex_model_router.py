@@ -1,6 +1,7 @@
 from app.config import Settings
 from app.services.rex_brain import RexBrainInput, RexThinkingRouter
 from app.services.rex_brain_contracts import (
+    RexBrainChannel,
     RexContextBudget,
     RexCostTier,
     RexModelProfile,
@@ -28,6 +29,7 @@ def test_model_router_uses_fallback_model_when_routing_disabled():
     assert route.selected_model == "grok-default"
     assert route.limits == PROFILE_LIMITS[RexModelProfile.STANDARD]
     assert route.reasons == ("rex_brain_routing_disabled",)
+    assert route.rollout_stage == "disabled"
 
 
 def test_model_router_maps_fast_standard_and_reasoning_profiles_when_enabled():
@@ -139,6 +141,7 @@ def test_model_router_metadata_is_safe_and_contains_cost_limits():
 
     assert metadata == {
         "routing_enabled": True,
+        "rollout_stage": "deep_think_ui",
         "requested_profile": "reasoning",
         "effective_profile": "reasoning",
         "selected_model": "grok-reasoning",
@@ -216,7 +219,7 @@ def test_model_router_fast_contextual_stage_blocks_analytical_routing():
     )
 
 
-def test_model_router_analytical_stage_allows_analytical_but_blocks_strategic():
+def test_model_router_analytical_stage_allows_analytical_but_blocks_advanced_layers():
     router = RexModelRouter(
         Settings(
             grok_model="grok-default",
@@ -235,6 +238,9 @@ def test_model_router_analytical_stage_allows_analytical_but_blocks_strategic():
             has_goals=True,
         )
     )
+    coaching = RexThinkingRouter().route(
+        RexBrainInput(message="Coach me through this habit change")
+    )
 
     assert router.route_for_decision(analytical).routing_enabled is True
     strategic_route = router.route_for_decision(strategic)
@@ -242,6 +248,109 @@ def test_model_router_analytical_stage_allows_analytical_but_blocks_strategic():
     assert strategic_route.reasons == (
         "rex_brain_rollout_analytical_blocked_layer_3_strategic",
     )
+    coaching_route = router.route_for_decision(coaching)
+    assert coaching_route.routing_enabled is False
+    assert coaching_route.reasons == (
+        "rex_brain_rollout_analytical_blocked_layer_5_coaching",
+    )
+
+
+def test_model_router_launch_safe_stage_allows_only_mvp_layers():
+    router = RexModelRouter(
+        Settings(
+            grok_model="grok-default",
+            grok_fast_model="grok-fast",
+            grok_standard_model="grok-standard",
+            grok_reasoning_model="grok-reasoning",
+            rex_brain_routing_enabled=True,
+            rex_brain_rollout_stage="launch_safe",
+        )
+    )
+    thinking_router = RexThinkingRouter()
+
+    fast = thinking_router.route(RexBrainInput(message="hey"))
+    contextual = thinking_router.route(
+        RexBrainInput(
+            message="Do you remember what I told you?",
+            has_structured_memory=True,
+        )
+    )
+    analytical = thinking_router.route(
+        RexBrainInput(message="Analyze my spending", has_financial_context=True)
+    )
+    strategic = thinking_router.route(
+        RexBrainInput(
+            message="Make a plan for my savings goal next month",
+            has_financial_context=True,
+            has_goals=True,
+        )
+    )
+    reflective = thinking_router.route(
+        RexBrainInput(
+            message="Double check this plan and tell me what I am missing",
+            has_structured_memory=True,
+        )
+    )
+    coaching = thinking_router.route(
+        RexBrainInput(message="Coach me through this habit change")
+    )
+
+    assert router.route_for_decision(fast).selected_model == "grok-fast"
+    assert router.route_for_decision(contextual).selected_model == "grok-standard"
+    assert router.route_for_decision(analytical).selected_model == "grok-reasoning"
+    for decision in (strategic, reflective, coaching):
+        route = router.route_for_decision(decision)
+        assert route.routing_enabled is False
+        assert route.selected_model == "grok-default"
+        assert route.rollout_stage == "launch_safe"
+        assert route.reasons == (
+            f"rex_brain_rollout_launch_safe_blocked_{decision.layer.value}",
+        )
+
+
+def test_model_router_production_alias_uses_launch_safe_profile():
+    decision = RexThinkingRouter().route(
+        RexBrainInput(
+            message="Make a strategy for my budget and goals",
+            has_financial_context=True,
+            has_goals=True,
+        )
+    )
+
+    route = RexModelRouter(
+        Settings(
+            grok_model="grok-default",
+            grok_reasoning_model="grok-reasoning",
+            rex_brain_routing_enabled=True,
+            rex_brain_rollout_stage="production",
+        )
+    ).route_for_decision(decision)
+
+    assert route.routing_enabled is False
+    assert route.rollout_stage == "launch_safe"
+
+
+def test_model_router_launch_safe_blocks_deep_voice_routing_by_default():
+    decision = RexThinkingRouter().route(
+        RexBrainInput(
+            message="Make a strategic plan for my financial goals",
+            channel=RexBrainChannel.VOICE,
+            has_financial_context=True,
+            has_goals=True,
+        )
+    )
+
+    route = RexModelRouter(
+        Settings(
+            grok_model="grok-default",
+            grok_reasoning_model="grok-reasoning",
+            rex_brain_routing_enabled=True,
+            rex_brain_rollout_stage="mvp",
+        )
+    ).route_for_decision(decision)
+
+    assert route.routing_enabled is False
+    assert route.rollout_stage == "launch_safe"
 
 
 def test_model_router_deep_think_ui_stage_allows_full_routing():

@@ -223,7 +223,9 @@ class MemoryCandidateCard {
     return correction ?? memoryPreviewWithHumanType(preview);
   }
 
-  String get expectedActionLabel => expectedAction.memoryRecordLabel;
+  String get expectedActionLabel => memoryExpectedActionLabel(expectedAction);
+  String get reviewTitleLabel =>
+      memoryReviewTitleLabel(candidateType: candidateType, status: status);
   String? get reasonLabel {
     final text = reason?.trim();
     return text == null || text.isEmpty ? null : text;
@@ -244,24 +246,24 @@ class MemoryCandidateCard {
 
   String get statusDetail {
     if (isApplied) {
-      return 'Saved to Rex Memory.';
+      return 'Saved. Rex can use this in future conversations.';
     }
     if (isRejected) {
-      return 'Rejected. Rex will not save this memory.';
+      return 'Not saved. Rex will ignore this suggestion.';
     }
     if (isFailed) {
-      return 'Could not save this memory. Review it before trying again.';
+      return 'Could not save this. Review it before trying again.';
     }
     if (isSkipped) {
-      return 'Skipped. This memory was not changed.';
+      return 'Skipped. What Rex knows was not changed.';
     }
     if (isHighRisk || requiresExplicitConfirmation) {
       if (isCorrection) {
         return 'Rex will wait for your approval before changing saved memory.';
       }
-      return 'Review carefully before confirming this memory.';
+      return 'Review carefully before changing what Rex knows.';
     }
-    return 'Approve only if Rex should remember this.';
+    return 'Not saved yet. Save only if Rex should remember this.';
   }
 }
 

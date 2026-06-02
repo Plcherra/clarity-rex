@@ -39,6 +39,7 @@ class MemoryTile extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             MemoryMetaChip(label: memory.memoryType.label),
+            const MemoryMetaChip(label: 'Rex knows this'),
             MemoryMetaChip(label: 'Importance ${memory.importance}'),
             if (_savedDate(memory.updatedAt, memory.createdAt) != null)
               MemoryMetaChip(
@@ -94,6 +95,7 @@ class PersonMemoryTile extends StatelessWidget {
       chips: [
         if (person.relationship != null)
           MemoryMetaChip(label: person.relationship!.memoryRecordLabel),
+        const MemoryMetaChip(label: 'Rex knows this'),
         if (person.aliases.isNotEmpty)
           MemoryMetaChip(label: 'Also ${person.aliases.join(', ')}'),
         MemoryMetaChip(label: 'Importance ${person.importance}'),
@@ -132,6 +134,7 @@ class RuleMemoryTile extends StatelessWidget {
       subtitle: rule.ruleText,
       chips: [
         MemoryMetaChip(label: rule.ruleType.memoryRecordLabel),
+        const MemoryMetaChip(label: 'Rex knows this'),
         MemoryMetaChip(label: rule.status.memoryRecordLabel),
         MemoryMetaChip(label: 'Priority ${rule.priority}'),
         if (_savedDate(rule.updatedAt, rule.createdAt) != null)
@@ -170,6 +173,7 @@ class PlanMemoryTile extends StatelessWidget {
       subtitle: plan.desiredOutcome ?? plan.description ?? 'Plan memory',
       chips: [
         MemoryMetaChip(label: plan.planType.memoryRecordLabel),
+        const MemoryMetaChip(label: 'Rex knows this'),
         MemoryMetaChip(label: plan.status.memoryRecordLabel),
         MemoryMetaChip(label: 'Priority ${plan.priority}'),
         if (plan.targetDate != null)
@@ -208,6 +212,7 @@ class CommitmentMemoryTile extends StatelessWidget {
       subtitle: commitment.commitmentText,
       chips: [
         MemoryMetaChip(label: commitment.commitmentType.memoryRecordLabel),
+        const MemoryMetaChip(label: 'Rex knows this'),
         MemoryMetaChip(label: commitment.status.memoryRecordLabel),
         MemoryMetaChip(label: 'Priority ${commitment.priority}'),
         if (commitment.dueAt != null)

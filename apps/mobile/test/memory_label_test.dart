@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('memory-facing labels', () {
     test('maps memory candidate types to human labels', () {
-      expect(memoryCandidateTypeLabel('long_term_memory'), 'Memory');
+      expect(memoryCandidateTypeLabel('long_term_memory'), 'Memory note');
       expect(memoryCandidateTypeLabel('entity'), 'Person / place');
       expect(memoryCandidateTypeLabel('entity_event'), 'Related event');
       expect(memoryCandidateTypeLabel('correction'), 'Correction');
@@ -53,7 +53,7 @@ void main() {
     test('cleans raw type prefixes from candidate preview text', () {
       expect(
         memoryPreviewWithHumanType('long_term_memory: Pedro prefers email'),
-        'Memory: Pedro prefers email',
+        'Memory note: Pedro prefers email',
       );
       expect(
         memoryPreviewWithHumanType('entity_event: Lunch with Ana'),
@@ -72,10 +72,12 @@ void main() {
         'reason': 'Raw extractor rationale.',
       });
 
-      expect(candidate.candidateTypeLabel, 'Memory');
+      expect(candidate.candidateTypeLabel, 'Memory note');
       expect(candidate.statusLabel, 'Needs review');
       expect(candidate.riskLabel, 'High risk');
-      expect(candidate.previewLabel, 'Memory: Pedro prefers email');
+      expect(candidate.previewLabel, 'Memory note: Pedro prefers email');
+      expect(candidate.reviewTitleLabel, 'Proposed memory');
+      expect(candidate.expectedActionLabel, 'Save this only after approval');
       expect(
         candidate.reasonLabel,
         'Extracted memory needs review before saving.',

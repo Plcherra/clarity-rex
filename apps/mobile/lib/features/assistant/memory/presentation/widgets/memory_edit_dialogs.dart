@@ -205,7 +205,7 @@ class _PendingCandidateEditDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Edit memory request'),
+      title: const Text('Edit memory review'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -215,7 +215,7 @@ class _PendingCandidateEditDialogState
               minLines: 3,
               maxLines: 6,
               decoration: const InputDecoration(
-                labelText: 'Proposed memory',
+                labelText: 'What Rex should know',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -225,7 +225,7 @@ class _PendingCandidateEditDialogState
               minLines: 2,
               maxLines: 4,
               decoration: const InputDecoration(
-                labelText: 'Reason Rex suggested it',
+                labelText: 'Why Rex paused here',
                 border: OutlineInputBorder(),
               ),
             ),

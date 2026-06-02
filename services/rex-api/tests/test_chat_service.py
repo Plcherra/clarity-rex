@@ -347,7 +347,7 @@ async def test_chat_service_runs_memory_extraction_after_successful_response():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_ignores_memory_extraction_failures():
+async def test_chat_service_reports_memory_extraction_failures_without_failing_chat():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     extraction_service = FakeMemoryExtractionService(should_fail=True)
@@ -362,6 +362,18 @@ async def test_chat_service_ignores_memory_extraction_failures():
 
     assert result["response"] == "Rex response"
     assert len(extraction_service.calls) == 1
+    assert result["memory_changes"]["skipped"] == 1
+    assert result["memory_changes"]["records"][0] == {
+        "kind": "memory_extraction",
+        "type": None,
+        "action": "skip_failed",
+        "id": None,
+        "title": None,
+        "reason": "Memory extraction failed after the response.",
+        "memory_path": None,
+        "review_required": None,
+        "review_reason": None,
+    }
 
 
 @pytest.mark.asyncio

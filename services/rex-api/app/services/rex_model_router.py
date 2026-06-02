@@ -20,6 +20,7 @@ class RexModelLimits:
 @dataclass(frozen=True)
 class RexModelRoute:
     routing_enabled: bool
+    rollout_stage: str
     requested_profile: RexModelProfile
     effective_profile: RexModelProfile
     selected_model: Optional[str]
@@ -31,6 +32,7 @@ class RexModelRoute:
     def metadata(self) -> dict:
         return {
             "routing_enabled": self.routing_enabled,
+            "rollout_stage": self.rollout_stage,
             "requested_profile": self.requested_profile.value,
             "effective_profile": self.effective_profile.value,
             "selected_model": self.selected_model,
@@ -64,18 +66,20 @@ class RexModelRouter:
 
     def route_for_decision(self, decision: RexBrainDecision) -> RexModelRoute:
         if not self.settings.rex_brain_routing_enabled:
-            return self._disabled_route(decision)
+            return self._disabled_route(decision, rollout_stage=self._rollout_stage())
 
         rollout_stage = self._rollout_stage()
         if rollout_stage in {"disabled", "logging_only"}:
             return self._disabled_route(
                 decision,
                 reason=f"rex_brain_rollout_{rollout_stage}",
+                rollout_stage=rollout_stage,
             )
         if not self._stage_allows_decision(rollout_stage, decision):
             return self._disabled_route(
                 decision,
                 reason=f"rex_brain_rollout_{rollout_stage}_blocked_{decision.layer.value}",
+                rollout_stage=rollout_stage,
             )
 
         requested_profile = self._profile_for_decision(decision)
@@ -93,6 +97,7 @@ class RexModelRouter:
 
         return RexModelRoute(
             routing_enabled=True,
+            rollout_stage=rollout_stage,
             requested_profile=requested_profile,
             effective_profile=effective_profile,
             selected_model=selected_model,
@@ -109,9 +114,11 @@ class RexModelRouter:
         self,
         decision: RexBrainDecision,
         reason: str = "rex_brain_routing_disabled",
+        rollout_stage: str = "disabled",
     ) -> RexModelRoute:
         return RexModelRoute(
             routing_enabled=False,
+            rollout_stage=rollout_stage,
             requested_profile=decision.model_profile,
             effective_profile=RexModelProfile.STANDARD,
             selected_model=self.settings.grok_model,
@@ -129,6 +136,10 @@ class RexModelRouter:
             "logs": "logging_only",
             "fast": "fast_contextual",
             "contextual": "fast_contextual",
+            "mvp": "launch_safe",
+            "launch": "launch_safe",
+            "production": "launch_safe",
+            "prod": "launch_safe",
             "full": "deep_think_ui",
         }
         return aliases.get(stage, stage)
@@ -146,7 +157,11 @@ class RexModelRouter:
             "analytical": {
                 RexThinkingLayer.FAST,
                 RexThinkingLayer.CONTEXTUAL,
-                RexThinkingLayer.COACHING,
+                RexThinkingLayer.ANALYTICAL,
+            },
+            "launch_safe": {
+                RexThinkingLayer.FAST,
+                RexThinkingLayer.CONTEXTUAL,
                 RexThinkingLayer.ANALYTICAL,
             },
             "strategic_reflective": set(RexThinkingLayer),

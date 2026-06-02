@@ -66,6 +66,8 @@ class FakeMemoryCandidateService:
         approved = []
         skipped = []
         for candidate in self.pending:
+            if request.candidate_ids and candidate["id"] not in request.candidate_ids:
+                continue
             if candidate.get("risk_level") == "high" and not request.include_high_risk:
                 skipped.append(candidate)
             else:
@@ -76,6 +78,7 @@ class FakeMemoryCandidateService:
         rejected = [
             await self.reject_candidate(candidate["id"], request)
             for candidate in self.pending
+            if not request.candidate_ids or candidate["id"] in request.candidate_ids
         ]
         return {"approved": [], "rejected": rejected, "skipped": []}
 
@@ -102,6 +105,8 @@ def candidate(
             "review_reason": "Extracted memory was not explicitly confirmed in chat, so it needs review.",
         },
     }
+
+
     return {
         "id": candidate_id,
         "candidate_type": candidate_type,
@@ -115,6 +120,46 @@ def candidate(
     }
 
 
+class FakeReviewSessionService:
+    def __init__(self, latest=None):
+        self.latest = latest
+        self.created = []
+        self.completed = []
+
+    async def create_session(self, *, conversation_id, candidates):
+        session = {
+            "id": f"session-{len(self.created) + 1}",
+            "conversation_id": conversation_id,
+            "candidate_ids": [item["id"] for item in candidates],
+            "status": "active",
+            "expires_at": "2026-06-02T12:30:00Z",
+            "metadata": {},
+        }
+        self.created.append(session)
+        self.latest = session
+        return session
+
+    async def latest_active_session(self, *, conversation_id):
+        return self.latest
+
+    async def complete_session(self, session):
+        self.completed.append(session)
+
+    def session_candidate_ids(self, session):
+        return list((session or {}).get("candidate_ids") or [])
+
+    def with_session_payload(self, response, session):
+        memory_changes = response["memory_changes"]
+        memory_changes["review_session"] = {
+            **(memory_changes.get("review_session") or {}),
+            "id": session["id"],
+            "status": session["status"],
+            "expires_at": session["expires_at"],
+            "candidate_ids": list(session["candidate_ids"]),
+        }
+        return response
+
+
 @pytest.mark.asyncio
 async def test_candidate_decision_service_ignores_normal_chat():
     fake_service = FakeMemoryCandidateService(pending=[candidate("candidate-1")])
@@ -126,6 +171,24 @@ async def test_candidate_decision_service_ignores_normal_chat():
     )
 
     assert result is None
+    assert fake_service.approved == []
+    assert fake_service.rejected == []
+
+
+@pytest.mark.asyncio
+async def test_candidate_decision_service_answers_memory_review_when_none_pending():
+    fake_service = FakeMemoryCandidateService(pending=[])
+    service = MemoryCandidateDecisionService(fake_service)
+
+    result = await service.handle_decision(
+        "Can we review pending memories?",
+        conversation_id="conversation-1",
+    )
+
+    assert result["response"] == (
+        "There are no memory review items waiting right now."
+    )
+    assert result["memory_changes"]["records"][0]["action"] == "none_pending"
     assert fake_service.approved == []
     assert fake_service.rejected == []
 
@@ -191,7 +254,7 @@ async def test_candidate_decision_service_lists_multiple_pending_candidates():
     assert fake_service.approved == []
     assert result["memory_changes"]["confirmation_required"] == 2
     assert "candidate card" not in result["response"]
-    assert "memory card" in result["response"]
+    assert "before saving" in result["response"]
     assert [card["id"] for card in result["memory_changes"]["pending_candidates"]] == [
         "candidate-1",
         "candidate-2",
@@ -202,6 +265,126 @@ async def test_candidate_decision_service_lists_multiple_pending_candidates():
     assert result["memory_changes"]["pending_candidates"][0]["review_reason"] == (
         "Extracted memory was not explicitly confirmed in chat, so it needs review."
     )
+
+
+@pytest.mark.asyncio
+async def test_candidate_decision_service_creates_review_session_when_listing():
+    fake_service = FakeMemoryCandidateService(
+        pending=[candidate("candidate-1"), candidate("candidate-2")]
+    )
+    review_sessions = FakeReviewSessionService()
+    service = MemoryCandidateDecisionService(
+        fake_service,
+        review_session_service=review_sessions,
+    )
+
+    result = await service.handle_decision("confirm", conversation_id="conversation-1")
+
+    assert review_sessions.created[0]["candidate_ids"] == [
+        "candidate-1",
+        "candidate-2",
+    ]
+    assert result["memory_changes"]["review_session"]["id"] == "session-1"
+    assert result["memory_changes"]["review_session"]["candidate_ids"] == [
+        "candidate-1",
+        "candidate-2",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_candidate_decision_service_confirms_them_from_review_session_only():
+    fake_service = FakeMemoryCandidateService(
+        pending=[
+            candidate("candidate-reviewed"),
+            candidate("candidate-unreviewed"),
+        ]
+    )
+    review_sessions = FakeReviewSessionService(
+        latest={
+            "id": "session-existing",
+            "candidate_ids": ["candidate-reviewed"],
+            "status": "active",
+        }
+    )
+    service = MemoryCandidateDecisionService(
+        fake_service,
+        review_session_service=review_sessions,
+    )
+
+    result = await service.handle_decision(
+        "Confirm them as saved.",
+        conversation_id="conversation-1",
+    )
+
+    assert [item["id"] for item in fake_service.approved] == ["candidate-reviewed"]
+    assert result["memory_changes"]["applied_candidates"][0]["id"] == (
+        "candidate-reviewed"
+    )
+    assert review_sessions.completed[0]["id"] == "session-existing"
+
+
+@pytest.mark.asyncio
+async def test_candidate_decision_service_approve_all_ignores_review_session_scope():
+    fake_service = FakeMemoryCandidateService(
+        pending=[
+            candidate("candidate-reviewed"),
+            candidate("candidate-unreviewed"),
+        ]
+    )
+    review_sessions = FakeReviewSessionService(
+        latest={
+            "id": "session-existing",
+            "candidate_ids": ["candidate-reviewed"],
+            "status": "active",
+        }
+    )
+    service = MemoryCandidateDecisionService(
+        fake_service,
+        review_session_service=review_sessions,
+    )
+
+    await service.handle_decision(
+        "Approve all pending.",
+        conversation_id="conversation-1",
+    )
+
+    assert [item["id"] for item in fake_service.approved] == [
+        "candidate-reviewed",
+        "candidate-unreviewed",
+    ]
+    assert review_sessions.completed == []
+
+
+@pytest.mark.asyncio
+async def test_candidate_decision_service_keeps_high_risk_session_item_pending():
+    fake_service = FakeMemoryCandidateService(
+        pending=[
+            candidate("candidate-low", risk_level="medium"),
+            candidate("candidate-high", candidate_type="correction", risk_level="high"),
+        ]
+    )
+    review_sessions = FakeReviewSessionService(
+        latest={
+            "id": "session-existing",
+            "candidate_ids": ["candidate-low", "candidate-high"],
+            "status": "active",
+        }
+    )
+    service = MemoryCandidateDecisionService(
+        fake_service,
+        review_session_service=review_sessions,
+    )
+
+    result = await service.handle_decision(
+        "Save those.",
+        conversation_id="conversation-1",
+    )
+
+    assert [item["id"] for item in fake_service.approved] == ["candidate-low"]
+    assert result["memory_changes"]["skipped_candidates"][0]["id"] == (
+        "candidate-high"
+    )
+    assert review_sessions.completed[0]["id"] == "session-existing"
 
 
 @pytest.mark.asyncio
@@ -239,7 +422,7 @@ async def test_candidate_decision_service_can_edit_pending_candidate():
         "Pedro prefers concise updates"
     )
     assert result["response"] == (
-        "Updated 1 pending memory request. Review it before saving."
+        "Updated 1 memory review item. Review it before saving."
     )
     assert result["memory_changes"]["pending_candidates"][0]["payload_preview"][
         "content"

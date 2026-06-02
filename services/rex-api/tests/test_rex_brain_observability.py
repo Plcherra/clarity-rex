@@ -62,11 +62,13 @@ def test_observer_logs_metadata_only_without_raw_text_or_financial_rows():
         "latency_class": "deep",
         "cost_tier": "high",
         "routing_enabled": True,
+        "rollout_stage": "deep_think_ui",
         "escalation_source": "analytical_language",
         "reasons": [
             "financial_context_available",
             "analytical_language",
         ],
+        "model_route_reasons": ["requested_profile:reasoning"],
         "duration_ms": 123,
     }
     rendered = json.dumps(payload) + "\n" + "\n".join(logger.records)

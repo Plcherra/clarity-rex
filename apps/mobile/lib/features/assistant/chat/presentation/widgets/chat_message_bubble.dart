@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:clarity/features/assistant/chat/domain/chat_message.dart';
+import 'package:clarity/features/assistant/chat/presentation/widgets/chat_bubble_effects.dart';
+import 'package:clarity/features/assistant/chat/presentation/widgets/chat_memory_candidate_cards.dart';
 
 /// A single chat line: assistant (left) or user (right).
 class ChatMessageBubble extends StatelessWidget {
@@ -63,7 +65,10 @@ class ChatMessageBubble extends StatelessWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
               child: CustomPaint(
-                painter: _BubbleTailPainter(color: background, isUser: isUser),
+                painter: ChatBubbleTailPainter(
+                  color: background,
+                  isUser: isUser,
+                ),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: background,
@@ -85,7 +90,7 @@ class ChatMessageBubble extends StatelessWidget {
                       vertical: 12,
                     ),
                     child: isLoading && text.isEmpty
-                        ? _TypingDots(color: foreground)
+                        ? ChatTypingDots(color: foreground)
                         : Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +111,7 @@ class ChatMessageBubble extends StatelessWidget {
                                     if (isStreaming)
                                       WidgetSpan(
                                         alignment: PlaceholderAlignment.middle,
-                                        child: _StreamingCursor(
+                                        child: ChatStreamingCursor(
                                           color: foreground,
                                         ),
                                       ),
@@ -115,7 +120,7 @@ class ChatMessageBubble extends StatelessWidget {
                               ),
                               if (!isUser && memoryCandidates.isNotEmpty) ...[
                                 const SizedBox(height: 12),
-                                _MemoryCandidateCards(
+                                ChatMemoryCandidateCards(
                                   candidates: memoryCandidates,
                                   onApprove: onApproveCandidate,
                                   onReject: onRejectCandidate,
@@ -352,287 +357,6 @@ class _ClarityActionCard extends StatelessWidget {
   }
 }
 
-class _MemoryCandidateCards extends StatelessWidget {
-  const _MemoryCandidateCards({
-    required this.candidates,
-    this.onApprove,
-    this.onReject,
-    this.onApproveAll,
-    this.onRejectAll,
-    this.onEdit,
-  });
-
-  final List<MemoryCandidateCard> candidates;
-  final ValueChanged<MemoryCandidateCard>? onApprove;
-  final ValueChanged<MemoryCandidateCard>? onReject;
-  final VoidCallback? onApproveAll;
-  final VoidCallback? onRejectAll;
-  final ValueChanged<MemoryCandidateCard>? onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final pendingCount = candidates
-        .where((candidate) => candidate.isPending)
-        .length;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.fact_check_rounded,
-              size: 16,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              pendingCount > 0 ? 'Pending memory' : 'Memory result',
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const Spacer(),
-            if (pendingCount > 1 && onApproveAll != null)
-              TextButton.icon(
-                onPressed: onApproveAll,
-                icon: const Icon(Icons.done_all_rounded, size: 16),
-                label: const Text('Approve all'),
-              ),
-            if (pendingCount > 1 && onRejectAll != null)
-              TextButton.icon(
-                onPressed: onRejectAll,
-                icon: const Icon(Icons.delete_outline_rounded, size: 16),
-                label: const Text('Reject all'),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        for (final candidate in candidates)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _MemoryCandidateCard(
-              candidate: candidate,
-              onApprove: onApprove,
-              onReject: onReject,
-              onEdit: onEdit,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _MemoryCandidateCard extends StatelessWidget {
-  const _MemoryCandidateCard({
-    required this.candidate,
-    this.onApprove,
-    this.onReject,
-    this.onEdit,
-  });
-
-  final MemoryCandidateCard candidate;
-  final ValueChanged<MemoryCandidateCard>? onApprove;
-  final ValueChanged<MemoryCandidateCard>? onReject;
-  final ValueChanged<MemoryCandidateCard>? onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final isHighRisk = candidate.isHighRisk;
-    final verificationPassed = candidate.verificationPassed;
-    final isProblem = candidate.isFailed || isHighRisk;
-    final accent = isProblem ? scheme.error : scheme.primary;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: candidate.isFailed
-            ? scheme.errorContainer.withValues(alpha: 0.35)
-            : scheme.surfaceContainerHighest.withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isProblem
-              ? scheme.error.withValues(alpha: 0.46)
-              : scheme.outlineVariant.withValues(alpha: 0.55),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                _MemoryChip(label: candidate.candidateTypeLabel),
-                _MemoryChip(label: candidate.riskLabel, color: accent),
-                _MemoryChip(label: candidate.statusLabel, color: accent),
-                if (verificationPassed != null)
-                  _MemoryChip(
-                    label: verificationPassed ? 'verified' : 'failed',
-                    color: verificationPassed ? scheme.primary : scheme.error,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Proposed memory',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              candidate.previewLabel,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                height: 1.3,
-              ),
-            ),
-            if (candidate.isCorrection &&
-                (candidate.correctionOldValue != null ||
-                    candidate.correctionNewValue != null)) ...[
-              if (candidate.correctionOldValue != null)
-                _MemoryReviewDetailRow(
-                  icon: Icons.history_rounded,
-                  text: 'May change: ${candidate.correctionOldValue}',
-                  color: scheme.onSurfaceVariant,
-                ),
-              if (candidate.correctionNewValue != null)
-                _MemoryReviewDetailRow(
-                  icon: Icons.update_rounded,
-                  text: 'Replace with: ${candidate.correctionNewValue}',
-                  color: scheme.onSurfaceVariant,
-                ),
-            ],
-            if (candidate.reasonLabel != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Why Rex suggested it',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                candidate.reasonLabel!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  height: 1.3,
-                ),
-              ),
-            ],
-            const SizedBox(height: 4),
-            _MemoryReviewDetailRow(
-              icon: Icons.task_alt_rounded,
-              text: candidate.expectedActionLabel,
-              color: scheme.onSurfaceVariant,
-            ),
-            if (candidate.sourceLabel != null)
-              _MemoryReviewDetailRow(
-                icon: Icons.chat_bubble_outline_rounded,
-                text: candidate.sourceLabel!,
-                color: scheme.onSurfaceVariant,
-              ),
-            _MemoryReviewDetailRow(
-              icon: candidate.isPending
-                  ? Icons.info_outline_rounded
-                  : candidate.isApplied
-                  ? Icons.check_circle_outline_rounded
-                  : candidate.isRejected
-                  ? Icons.block_rounded
-                  : candidate.isFailed
-                  ? Icons.error_outline_rounded
-                  : Icons.remove_circle_outline_rounded,
-              text: candidate.statusDetail,
-              color: isProblem ? scheme.error : scheme.onSurfaceVariant,
-            ),
-            if (candidate.verificationMessage != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                candidate.verificationMessage!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: verificationPassed == false
-                      ? scheme.error
-                      : scheme.onSurfaceVariant,
-                  height: 1.3,
-                ),
-              ),
-            ],
-            if (candidate.canApprove || candidate.canReject) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (candidate.canApprove && onApprove != null)
-                    FilledButton.icon(
-                      onPressed: () => onApprove!(candidate),
-                      icon: const Icon(Icons.check_rounded, size: 16),
-                      label: Text(isHighRisk ? 'Confirm save' : 'Approve'),
-                    ),
-                  if (candidate.canReject && onReject != null)
-                    OutlinedButton.icon(
-                      onPressed: () => onReject!(candidate),
-                      icon: const Icon(Icons.close_rounded, size: 16),
-                      label: const Text('Reject'),
-                    ),
-                  if (candidate.canApprove && onEdit != null)
-                    TextButton.icon(
-                      onPressed: () => onEdit!(candidate),
-                      icon: const Icon(Icons.edit_rounded, size: 16),
-                      label: const Text('Edit first'),
-                    ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MemoryReviewDetailRow extends StatelessWidget {
-  const _MemoryReviewDetailRow({
-    required this.icon,
-    required this.text,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String text;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 15, color: color),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: color,
-                height: 1.3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _MemoryChip extends StatelessWidget {
   const _MemoryChip({required this.label, this.color});
 
@@ -677,135 +401,5 @@ class _AssistantAvatar extends StatelessWidget {
       foregroundColor: scheme.primary,
       child: const Icon(Icons.auto_awesome_rounded, size: 15),
     );
-  }
-}
-
-class _TypingDots extends StatefulWidget {
-  const _TypingDots({required this.color});
-
-  final Color color;
-
-  @override
-  State<_TypingDots> createState() => _TypingDotsState();
-}
-
-class _TypingDotsState extends State<_TypingDots>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(3, (index) {
-            final phase = (_controller.value + (index * 0.22)) % 1;
-            final opacity = phase < 0.5 ? 0.35 + phase : 1.35 - phase;
-            return Container(
-              width: 6,
-              height: 6,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: widget.color.withValues(alpha: opacity.clamp(0.35, 1)),
-                shape: BoxShape.circle,
-              ),
-            );
-          }),
-        );
-      },
-    );
-  }
-}
-
-class _StreamingCursor extends StatefulWidget {
-  const _StreamingCursor({required this.color});
-
-  final Color color;
-
-  @override
-  State<_StreamingCursor> createState() => _StreamingCursorState();
-}
-
-class _StreamingCursorState extends State<_StreamingCursor>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 650),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.25, end: 1).animate(_controller),
-      child: Container(
-        width: 3,
-        height: 18,
-        margin: const EdgeInsets.only(left: 3),
-        decoration: BoxDecoration(
-          color: widget.color.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
-}
-
-class _BubbleTailPainter extends CustomPainter {
-  const _BubbleTailPainter({required this.color, required this.isUser});
-
-  final Color color;
-  final bool isUser;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    final path = Path();
-    if (isUser) {
-      path
-        ..moveTo(size.width - 1, size.height - 12)
-        ..lineTo(size.width + 7, size.height - 5)
-        ..lineTo(size.width - 1, size.height - 2);
-    } else {
-      path
-        ..moveTo(1, size.height - 12)
-        ..lineTo(-7, size.height - 5)
-        ..lineTo(1, size.height - 2);
-    }
-    path.close();
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _BubbleTailPainter oldDelegate) {
-    return oldDelegate.color != color || oldDelegate.isUser != isUser;
   }
 }

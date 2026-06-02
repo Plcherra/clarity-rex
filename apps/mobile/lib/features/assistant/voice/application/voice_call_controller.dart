@@ -1,10 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import 'package:clarity/core/rex/rex_auth_headers.dart';
 import 'package:clarity/core/rex/rex_config.dart';
@@ -22,7 +20,11 @@ import 'package:clarity/features/assistant/voice/data/speech_to_text_service.dar
 import 'package:clarity/features/assistant/voice/data/streaming_audio_capture_service.dart';
 import 'package:clarity/features/assistant/voice/data/streaming_audio_playback_queue.dart';
 import 'package:clarity/features/assistant/voice/data/streaming_voice_api.dart';
+import 'package:clarity/features/assistant/voice/application/voice_permission_service.dart';
+import 'package:clarity/features/assistant/voice/application/voice_transcript_buffer.dart';
 import 'package:clarity/features/assistant/voice/domain/voice_call_state.dart';
+
+export 'package:clarity/features/assistant/voice/application/voice_permission_service.dart';
 
 final microphonePermissionProvider = Provider<MicrophonePermissionService>(
   (ref) => PermissionHandlerMicrophonePermissionService(),
@@ -125,81 +127,6 @@ final voiceCallNoSpeechTimeoutProvider = Provider<Duration>(
 
 final voiceCallEmptyTurnLimitProvider = Provider<int>((ref) => 2);
 
-enum MicrophonePermissionDecision {
-  granted,
-  denied,
-  permanentlyDenied,
-  restricted,
-}
-
-abstract class MicrophonePermissionService {
-  Future<MicrophonePermissionDecision> requestMicrophonePermission({
-    bool includeSpeechRecognition = true,
-  });
-
-  Future<void> openSettings();
-}
-
-class PermissionHandlerMicrophonePermissionService
-    implements MicrophonePermissionService {
-  @override
-  Future<MicrophonePermissionDecision> requestMicrophonePermission({
-    bool includeSpeechRecognition = true,
-  }) async {
-    final microphoneStatus = await _requestPermission(Permission.microphone);
-    if (microphoneStatus.isPermanentlyDenied) {
-      return MicrophonePermissionDecision.permanentlyDenied;
-    }
-    if (microphoneStatus.isRestricted) {
-      return MicrophonePermissionDecision.restricted;
-    }
-    if (!microphoneStatus.isGranted) {
-      return MicrophonePermissionDecision.denied;
-    }
-
-    if (includeSpeechRecognition) {
-      final speechStatus = await _requestPermission(Permission.speech);
-      if (speechStatus.isPermanentlyDenied) {
-        return MicrophonePermissionDecision.permanentlyDenied;
-      }
-      if (speechStatus.isRestricted) {
-        return MicrophonePermissionDecision.restricted;
-      }
-      if (!speechStatus.isGranted) {
-        return MicrophonePermissionDecision.denied;
-      }
-    }
-
-    return MicrophonePermissionDecision.granted;
-  }
-
-  @override
-  Future<void> openSettings() async {
-    try {
-      await openAppSettings();
-    } on MissingPluginException {
-      // Desktop test/runtime targets may not provide permission_handler.
-    }
-  }
-
-  Future<PermissionStatus> _requestPermission(Permission permission) async {
-    try {
-      final currentStatus = await permission.status;
-      if (currentStatus.isGranted) {
-        return currentStatus;
-      }
-      return permission.request();
-    } on MissingPluginException {
-      return PermissionStatus.granted;
-    } on PlatformException catch (error) {
-      if (error.code == 'ERROR_ALREADY_REQUESTING_PERMISSIONS') {
-        return PermissionStatus.denied;
-      }
-      rethrow;
-    }
-  }
-}
-
 class VoiceCallController extends Notifier<VoiceCallState>
     with WidgetsBindingObserver {
   int _callGeneration = 0;
@@ -214,8 +141,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   BackgroundVoiceService? _activeBackgroundVoiceService;
   NativeVoiceSessionService? _activeNativeVoiceSessionService;
   StreamSubscription<NativeVoiceEvent>? _nativeVoiceSubscription;
-  var _finalTranscriptBuffer = '';
-  var _partialTranscriptBuffer = '';
+  final _transcriptBuffer = VoiceTranscriptBuffer();
   var _nativeAssistantText = '';
   var _isStartingCall = false;
   var _isBargeInMonitoring = false;
@@ -420,14 +346,14 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _isAwaitingFollowUpSpeech = false;
     _cancelNoSpeechTimeout();
     if (isFinal) {
-      _appendFinalTranscript(transcript);
+      _transcriptBuffer.appendFinal(transcript);
     } else {
-      _partialTranscriptBuffer = transcript.trim();
+      _transcriptBuffer.updatePartial(transcript);
     }
 
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
-      currentTranscript: _visibleTranscript(),
+      currentTranscript: _transcriptBuffer.visible,
       isCapturingSpeech: true,
       clearError: true,
     );
@@ -474,12 +400,12 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _cancelNoSpeechTimeout();
     _isAwaitingFollowUpSpeech = false;
     if (finalTranscript != null) {
-      _appendFinalTranscript(finalTranscript);
+      _transcriptBuffer.appendFinal(finalTranscript);
     }
 
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
-      currentTranscript: _visibleTranscript(),
+      currentTranscript: _transcriptBuffer.visible,
       isCapturingSpeech: false,
       clearError: true,
     );
@@ -1405,6 +1331,13 @@ class VoiceCallController extends Notifier<VoiceCallState>
             return;
           case 'session.interrupted':
             break;
+          case 'error':
+            if (event.errorCode == 'turn_in_progress') {
+              _handleTurnInProgressEvent();
+              break;
+            }
+            fail(event.detail ?? 'Rex voice stream failed.');
+            return;
         }
       }
     } on StreamingVoiceApiException catch (error) {
@@ -1575,7 +1508,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   }
 
   void _armTranscriptIdleEndpointTimeout(int generation) {
-    if (_activeStreamingSession == null || _visibleTranscript().isEmpty) {
+    if (_activeStreamingSession == null || _transcriptBuffer.visible.isEmpty) {
       return;
     }
     _armListeningEndpointTimeout(
@@ -1730,78 +1663,28 @@ class VoiceCallController extends Notifier<VoiceCallState>
     unawaited(_bargeInDetectionService.stop());
   }
 
-  void _clearVisibleTranscript() {
-    _finalTranscriptBuffer = '';
-    _partialTranscriptBuffer = '';
-  }
-
-  void _appendFinalTranscript(String? transcript) {
-    final next = _normalizeTranscript(transcript);
-    if (next.isEmpty) {
+  void _handleTurnInProgressEvent() {
+    if (!state.isCallActive) {
       return;
     }
-
-    final previousPartial = _normalizeTranscript(_partialTranscriptBuffer);
-    _partialTranscriptBuffer = '';
-    if (previousPartial.isNotEmpty &&
-        !_transcriptContains(next, previousPartial)) {
-      _appendTranscriptSegment(previousPartial);
-    }
-    _appendTranscriptSegment(next);
-  }
-
-  void _appendTranscriptSegment(String next) {
-    next = _normalizeTranscript(next);
-    if (next.isEmpty) {
+    _cancelListeningEndpointTimeout();
+    _cancelNoSpeechTimeout();
+    unawaited(_stopInterimTranscription());
+    if (state.phase == VoiceCallPhase.thinking ||
+        state.phase == VoiceCallPhase.speaking) {
+      state = state.copyWith(clearError: true);
       return;
     }
-    if (_finalTranscriptBuffer.isEmpty) {
-      _finalTranscriptBuffer = next;
-      return;
-    }
-    if (_transcriptContains(_finalTranscriptBuffer, next)) {
-      return;
-    }
-    if (_transcriptContains(next, _finalTranscriptBuffer)) {
-      _finalTranscriptBuffer = next;
-      return;
-    }
-    _finalTranscriptBuffer = '$_finalTranscriptBuffer $next';
-  }
-
-  String _visibleTranscript() {
-    final finalText = _normalizeTranscript(_finalTranscriptBuffer);
-    final partialText = _normalizeTranscript(_partialTranscriptBuffer);
-    if (finalText.isEmpty) {
-      return partialText;
-    }
-    if (partialText.isEmpty || _transcriptContains(finalText, partialText)) {
-      return finalText;
-    }
-    if (_transcriptContains(partialText, finalText)) {
-      return partialText;
-    }
-    return '$finalText $partialText';
-  }
-
-  String _normalizeTranscript(String? transcript) {
-    return (transcript ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
-
-  bool _transcriptContains(String text, String possibleDuplicate) {
-    final normalizedText = _normalizeTranscriptForComparison(text);
-    final normalizedDuplicate = _normalizeTranscriptForComparison(
-      possibleDuplicate,
+    state = state.copyWith(
+      phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
+      errorMessage:
+          'Rex is finishing the previous response. Try again after it finishes.',
     );
-    return normalizedText.isNotEmpty &&
-        normalizedDuplicate.isNotEmpty &&
-        normalizedText.contains(normalizedDuplicate);
   }
 
-  String _normalizeTranscriptForComparison(String? transcript) {
-    return _normalizeTranscript(
-      transcript,
-    ).toLowerCase().replaceAll(RegExp(r"[^a-z0-9']+"), ' ').trim();
+  void _clearVisibleTranscript() {
+    _transcriptBuffer.clear();
   }
 
   String _permissionMessage(MicrophonePermissionDecision decision) {

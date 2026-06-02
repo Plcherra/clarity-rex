@@ -32,15 +32,15 @@ class PendingReviewHeader extends StatelessWidget {
                 children: [
                   Text(
                     pendingCount == 0
-                        ? 'No memory requests waiting'
-                        : '$pendingCount memory request${pendingCount == 1 ? '' : 's'} waiting',
+                        ? 'No memory review needed'
+                        : '$pendingCount item${pendingCount == 1 ? '' : 's'} to review before saving',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Rex only saves these after you approve them. Saved memories stay in the Saved view.',
+                    'These are not part of what Rex knows yet. Save only the items Rex should remember.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -124,7 +124,7 @@ class _PendingCandidateTile extends StatelessWidget {
         ),
       ),
       title: Text(
-        candidate.previewLabel,
+        candidate.reviewTitleLabel,
         style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
       ),
       subtitle: Padding(
@@ -132,6 +132,15 @@ class _PendingCandidateTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              candidate.previewLabel,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurface,
+                height: 1.3,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
             if (candidate.isCorrection &&
                 (candidate.correctionOldValue != null ||
                     candidate.correctionNewValue != null)) ...[
@@ -151,7 +160,7 @@ class _PendingCandidateTile extends StatelessWidget {
             ],
             if (candidate.reason?.trim().isNotEmpty == true) ...[
               Text(
-                'Why Rex suggested it',
+                'Why Rex paused here',
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: scheme.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
@@ -215,9 +224,7 @@ class _PendingCandidateTile extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: isSaving ? null : onApprove,
                   icon: const Icon(Icons.check_rounded, size: 16),
-                  label: Text(
-                    candidate.isHighRisk ? 'Confirm save' : 'Approve',
-                  ),
+                  label: Text(candidate.isHighRisk ? 'Confirm save' : 'Save'),
                 ),
                 TextButton.icon(
                   onPressed: isSaving ? null : onEdit,
@@ -227,7 +234,7 @@ class _PendingCandidateTile extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: isSaving ? null : onReject,
                   icon: const Icon(Icons.close_rounded, size: 16),
-                  label: const Text('Reject'),
+                  label: const Text('Do not save'),
                 ),
               ],
             ),
@@ -301,7 +308,7 @@ class PendingReviewEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'When Rex notices something it should remember, it will ask here before saving it.',
+              'When Rex notices something worth remembering, it will wait for your approval here.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,

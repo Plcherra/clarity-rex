@@ -203,6 +203,10 @@ async def test_chat_service_lists_multiple_pending_candidates_as_cards():
         "candidate-1",
         "candidate-2",
     ]
+    assert result["memory_changes"]["review_session"]["candidate_ids"] == [
+        "candidate-1",
+        "candidate-2",
+    ]
     assert (
         result["memory_changes"]["pending_candidates"][1][
             "requires_explicit_confirmation"
@@ -291,7 +295,7 @@ async def test_chat_service_can_edit_specific_pending_candidate_by_id():
         "Pedro prefers concise email updates"
     )
     assert result["response"] == (
-        "Updated 1 pending memory request. Review it before saving."
+        "Updated 1 memory review item. Review it before saving."
     )
     assert result["memory_changes"]["pending_candidates"][0]["id"] == "candidate-low"
     assert result["memory_changes"]["pending_candidates"][0]["reason"] == (

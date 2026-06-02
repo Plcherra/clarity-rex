@@ -7,10 +7,31 @@ LOW_RISK_AUTO_APPLY_ENABLED = False
 class MemoryCandidateDecisionFormatter:
     """Builds user-facing pending memory candidate decision payloads."""
 
+    def no_pending_candidates_response(self) -> dict:
+        return {
+            "response": "There are no memory review items waiting right now.",
+            "memory_changes": {
+                "created": 0,
+                "updated": 0,
+                "archived": 0,
+                "merged": 0,
+                "skipped": 0,
+                "confirmation_required": 0,
+                "low_risk_auto_apply_enabled": LOW_RISK_AUTO_APPLY_ENABLED,
+                "pending_candidates": [],
+                "records": [
+                    {
+                        "kind": "memory_candidate",
+                        "action": "none_pending",
+                    }
+                ],
+            },
+        }
+
     def updated_candidate_response(self, updated: dict) -> dict:
         card = self.candidate_card(updated)
         return {
-            "response": "Updated 1 pending memory request. Review it before saving.",
+            "response": "Updated 1 memory review item. Review it before saving.",
             "memory_changes": {
                 "created": 0,
                 "updated": 0,
@@ -40,10 +61,10 @@ class MemoryCandidateDecisionFormatter:
     ) -> dict:
         if response is None:
             response = (
-                f"I found {len(pending)} memory update(s) that need review. "
-                'Review the memory card(s), then say "approve all pending" '
-                'for eligible low/medium-risk changes, "confirm" for a single '
-                'high-risk change, or "do not save" to reject the latest one.'
+                f"I found {len(pending)} item(s) Rex should review with you "
+                'before saving. Say "save those" for eligible low/medium-risk '
+                'items, "confirm" for one high-risk item, or "do not save" '
+                "to dismiss the latest one."
             )
         cards = [self.candidate_card(candidate) for candidate in pending]
         return {
@@ -56,6 +77,7 @@ class MemoryCandidateDecisionFormatter:
                 "skipped": 0,
                 "confirmation_required": len(pending),
                 "low_risk_auto_apply_enabled": LOW_RISK_AUTO_APPLY_ENABLED,
+                "review_session": self.review_session(cards),
                 "pending_candidates": cards,
                 "records": [
                     {
@@ -89,27 +111,29 @@ class MemoryCandidateDecisionFormatter:
 
         parts: list[str] = []
         if applied:
-            parts.append(f"Applied {len(applied)} pending memory change(s).")
+            parts.append(
+                f"Saved {len(applied)} item(s) to what Rex knows."
+            )
         if rejected:
-            parts.append(f"Rejected {len(rejected)} pending memory change(s).")
+            parts.append(f"Did not save {len(rejected)} reviewed item(s).")
         if skipped:
             parts.append(
-                f"Skipped {len(skipped)} high-risk pending change(s); those need "
-                "explicit individual confirmation."
+                f"Left {len(skipped)} high-risk item(s) for individual confirmation."
             )
         if failed:
             parts.append(
-                "Some pending changes failed verification, so I did not mark them done."
+                "Some reviewed items failed verification, so I left them for review."
             )
             remaining = self.remaining_conflict_text(failed)
             if remaining:
                 parts.append(f"Still wrong: {remaining}")
-        response = " ".join(parts) or "No pending memory changes were applied."
+        response = " ".join(parts) or "No reviewed memory items were saved."
 
         applied_cards = [self.candidate_card(candidate) for candidate in applied]
         rejected_cards = [self.candidate_card(candidate) for candidate in rejected]
         skipped_cards = [self.candidate_card(candidate) for candidate in skipped]
         failed_cards = [self.candidate_card(candidate) for candidate in failed]
+        pending_cards = skipped_cards + failed_cards
 
         return {
             "response": response,
@@ -125,7 +149,8 @@ class MemoryCandidateDecisionFormatter:
                 "rejected_candidates": rejected_cards,
                 "skipped_candidates": skipped_cards,
                 "failed_candidates": failed_cards,
-                "pending_candidates": skipped_cards + failed_cards,
+                "pending_candidates": pending_cards,
+                "review_session": self.review_session(pending_cards),
                 "records": [
                     *[
                         {
@@ -216,6 +241,26 @@ class MemoryCandidateDecisionFormatter:
             "archive": "Archive stale record after confirmation",
             "merge": "Merge duplicate records after confirmation",
         }.get(candidate_type, "Apply pending memory change after confirmation")
+
+    def review_session(self, cards: list[dict]) -> Optional[dict]:
+        if not cards:
+            return None
+        candidate_ids = [
+            str(card.get("id"))
+            for card in cards
+            if card.get("id") is not None
+        ]
+        return {
+            "candidate_ids": candidate_ids,
+            "high_risk_candidate_ids": [
+                str(card.get("id"))
+                for card in cards
+                if card.get("id") is not None and card.get("risk_level") == "high"
+            ],
+            "requires_individual_high_risk_confirmation": any(
+                card.get("risk_level") == "high" for card in cards
+            ),
+        }
 
     def review_reason(self, candidate: dict) -> Optional[str]:
         payload = candidate.get("payload") or {}

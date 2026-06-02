@@ -6,13 +6,14 @@ from app.services.long_term_memory_repository import LongTermMemoryRepository
 from app.services.memory_confirmation_facade import MemoryConfirmationFacade
 from app.services.memory_confirmation_repository import MemoryConfirmationRepository
 from app.services.memory_candidate_repository import MemoryCandidateRepository
+from app.services.memory_candidate_review_session_facade import MemoryCandidateReviewSessionFacade
 from app.services.memory_errors import MemoryServiceError
 from app.services.memory_retrieval_service import MemoryRetrievalService
 from app.services.structured_memory_repository import StructuredMemoryRepository
 from app.services.supabase_memory_transport import SupabaseMemoryTransport
 
 
-class SupabaseMemoryService(SupabaseMemoryTransport, MemoryConfirmationFacade):
+class SupabaseMemoryService(SupabaseMemoryTransport, MemoryConfirmationFacade, MemoryCandidateReviewSessionFacade):
     def __init__(
         self,
         settings: Optional[Settings] = None,

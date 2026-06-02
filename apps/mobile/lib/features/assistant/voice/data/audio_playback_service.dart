@@ -60,6 +60,7 @@ class PackageAudioPlaybackService implements AudioPlaybackService {
             options: const {
               AVAudioSessionOptions.allowBluetooth,
               AVAudioSessionOptions.allowBluetoothA2DP,
+              AVAudioSessionOptions.allowAirPlay,
             },
           ),
         ),

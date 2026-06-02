@@ -66,6 +66,8 @@ class VoiceStreamEvent {
       data['audio_content_type'] as String? ?? 'audio/mpeg';
 
   String? get detail => data['detail'] as String?;
+
+  String? get errorCode => data['code'] as String?;
 }
 
 class StreamingVoiceSession {
@@ -123,6 +125,9 @@ class StreamingVoiceSession {
 
     final event = VoiceStreamEvent.fromJson(decoded);
     if (event.name == 'error') {
+      if (event.errorCode == 'turn_in_progress') {
+        return event;
+      }
       throw StreamingVoiceApiException(
         event.detail ?? 'Rex voice stream failed.',
       );

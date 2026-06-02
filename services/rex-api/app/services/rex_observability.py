@@ -21,8 +21,10 @@ class RexBrainObservation:
     latency_class: str
     cost_tier: str
     routing_enabled: bool
+    rollout_stage: str
     escalation_source: str
     reasons: tuple[str, ...]
+    model_route_reasons: tuple[str, ...]
     error_class: Optional[str] = None
     duration_ms: Optional[int] = None
 
@@ -39,8 +41,10 @@ class RexBrainObservation:
             "latency_class": self.latency_class,
             "cost_tier": self.cost_tier,
             "routing_enabled": self.routing_enabled,
+            "rollout_stage": self.rollout_stage,
             "escalation_source": self.escalation_source,
             "reasons": list(self.reasons),
+            "model_route_reasons": list(self.model_route_reasons),
         }
         if self.error_class:
             payload["error_class"] = self.error_class
@@ -86,8 +90,10 @@ class RexBrainObserver:
             latency_class=decision.latency_class.value,
             cost_tier=model_route.cost_tier.value,
             routing_enabled=model_route.routing_enabled,
+            rollout_stage=model_route.rollout_stage,
             escalation_source=decision.escalation_source,
             reasons=tuple(decision.reasons),
+            model_route_reasons=tuple(model_route.reasons),
             error_class=error_class,
             duration_ms=duration_ms,
         )

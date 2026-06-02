@@ -454,7 +454,20 @@ async def test_memory_extraction_ignores_invalid_structured_payloads_but_keeps_v
             "priority": 4,
             "status": "active",
             "active": True,
-            "metadata": {"extraction_rationale": "Useful recurring budget rule."},
+            "metadata": {
+                "extraction_rationale": "Useful recurring budget rule.",
+                "memory_path": "pending_review",
+                "review_required": True,
+                "decision_reason": (
+                    "Structured memory needs review before changing saved records."
+                ),
+                "candidate_type": "personal_rule",
+                "risk_level": "medium",
+                "review_reason": (
+                    "Structured memory needs review before changing saved records."
+                ),
+                "review_rationale": "Useful recurring budget rule.",
+            },
         }
     ]
     assert memory_store.created_entities == []

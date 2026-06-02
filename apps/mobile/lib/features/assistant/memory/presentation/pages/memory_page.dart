@@ -80,7 +80,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     if (!mounted) {
       return;
     }
-    _showSnackBar(approved ? 'Memory saved' : _currentError());
+    _showSnackBar(approved ? 'Saved to what Rex knows' : _currentError());
   }
 
   Future<void> _rejectPendingCandidate(
@@ -92,7 +92,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     if (!mounted) {
       return;
     }
-    _showSnackBar(rejected ? 'Memory request dismissed' : _currentError());
+    _showSnackBar(rejected ? 'Not saved' : _currentError());
   }
 
   Future<void> _editPendingCandidate(
@@ -116,7 +116,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     if (!mounted) {
       return;
     }
-    _showSnackBar(saved ? 'Memory request updated' : _currentError());
+    _showSnackBar(saved ? 'Memory review updated' : _currentError());
   }
 
   Future<void> _editMemory(MemoryItem memory) async {

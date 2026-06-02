@@ -2,6 +2,7 @@ import asyncio
 from typing import Optional
 
 from app.services.accountability_service import AccountabilityService
+from app.services.goal_context_service import GoalContextService
 from app.services.prompt_service import PromptService
 from app.services.rex_brain_chat_service import RexBrainChatService
 from app.services.time_context_service import TimeContextService
@@ -21,12 +22,14 @@ class ChatContextService:
         prompt_service: Optional[PromptService] = None,
         time_context_service: Optional[TimeContextService] = None,
         accountability_service: Optional[AccountabilityService] = None,
+        goal_context_service: Optional[GoalContextService] = None,
         rex_brain_chat_service: Optional[RexBrainChatService] = None,
     ) -> None:
         self.memory_service = memory_service
         self.prompt_service = prompt_service or PromptService()
         self.time_context_service = time_context_service or TimeContextService()
         self.accountability_service = accountability_service or AccountabilityService()
+        self.goal_context_service = goal_context_service or GoalContextService()
         self.rex_brain_chat_service = (
             rex_brain_chat_service or RexBrainChatService()
         )
@@ -37,11 +40,11 @@ class ChatContextService:
         message: str,
         conversation_id: Optional[str],
     ) -> tuple[list[dict], list[dict], dict]:
-        long_term_memory_task = self.memory_service.get_relevant_memories(
+        long_term_memory_task = self.fetch_relevant_memories(
             query=message,
             limit=8,
         )
-        profile_memory_task = self.memory_service.get_relevant_memories(
+        profile_memory_task = self.fetch_relevant_memories(
             query=PROFILE_MEMORY_QUERY,
             limit=PROFILE_MEMORY_LIMIT,
         )
@@ -68,7 +71,7 @@ class ChatContextService:
             profile_memory,
             structured_context,
         ) = await asyncio.gather(
-            self.memory_service.get_recent_messages(conversation_id, limit=20),
+            self.fetch_recent_messages(conversation_id, limit=20),
             long_term_memory_task,
             profile_memory_task,
             structured_context_task,
@@ -78,6 +81,34 @@ class ChatContextService:
             self.merge_memories(long_term_memory, profile_memory),
             structured_context,
         )
+
+    async def fetch_recent_messages(
+        self,
+        conversation_id: str,
+        *,
+        limit: int = 20,
+    ) -> list[dict]:
+        try:
+            return await self.memory_service.get_recent_messages(
+                conversation_id,
+                limit=limit,
+            )
+        except Exception:
+            return []
+
+    async def fetch_relevant_memories(
+        self,
+        *,
+        query: str,
+        limit: int,
+    ) -> list[dict]:
+        try:
+            return await self.memory_service.get_relevant_memories(
+                query=query,
+                limit=limit,
+            )
+        except Exception:
+            return []
 
     def merge_memories(self, *memory_groups: list[dict]) -> list[dict]:
         merged: list[dict] = []
@@ -93,18 +124,26 @@ class ChatContextService:
         return merged[:8]
 
     async def fetch_structured_context(self, message: str) -> dict:
+        structured_context: dict = {}
         get_structured_context = getattr(
             self.memory_service,
             "get_structured_memory_context",
             None,
         )
-        if get_structured_context is None:
-            return {}
+        if get_structured_context is not None:
+            try:
+                structured_context = await get_structured_context(message)
+            except Exception:
+                structured_context = {}
 
-        try:
-            return await get_structured_context(message)
-        except Exception:
-            return {}
+        goal_context = await self.goal_context_service.fetch_goal_context(
+            self.memory_service,
+            message,
+        )
+        return self.goal_context_service.merge_structured_context(
+            structured_context,
+            goal_context,
+        )
 
     def build_prompt_messages(
         self,

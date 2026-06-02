@@ -135,4 +135,10 @@ async def test_memory_post_turn_service_extraction_failure_is_best_effort():
         {"id": "message-assistant"},
     )
 
-    assert result == []
+    assert result == [
+        {
+            "extraction_kind": "memory_extraction",
+            "extraction_action": "skip_failed",
+            "reason": "Memory extraction failed after the response.",
+        }
+    ]

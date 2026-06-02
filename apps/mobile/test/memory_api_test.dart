@@ -31,8 +31,8 @@ void main() {
     expect(requests.single.url.queryParameters['status'], 'pending');
     expect(requests.single.url.queryParameters['limit'], '25');
     expect(candidates.single.id, 'candidate-1');
-    expect(candidates.single.candidateTypeLabel, 'Memory');
-    expect(candidates.single.previewLabel, 'Memory: Pedro prefers email');
+    expect(candidates.single.candidateTypeLabel, 'Memory note');
+    expect(candidates.single.previewLabel, 'Memory note: Pedro prefers email');
   });
 
   test('MemoryApi posts approve and reject candidate decisions', () async {
@@ -95,7 +95,7 @@ void main() {
       contains('"content":"Pedro prefers concise email."'),
     );
     expect(requests.single.body, contains('"reason":"Edited by Pedro."'));
-    expect(updated.previewLabel, 'Memory: Pedro prefers concise email.');
+    expect(updated.previewLabel, 'Memory note: Pedro prefers concise email.');
     expect(updated.reasonLabel, 'Edited by Pedro.');
     expect(updated.editableProposal, 'Pedro prefers concise email.');
   });

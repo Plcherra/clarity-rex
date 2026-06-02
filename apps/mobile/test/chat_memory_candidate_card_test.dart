@@ -27,19 +27,16 @@ void main() {
     expect(find.text('Correction'), findsOneWidget);
     expect(find.text('High risk'), findsOneWidget);
     expect(find.text('Needs review'), findsOneWidget);
-    expect(find.text('Proposed memory'), findsOneWidget);
+    expect(find.text('Proposed correction'), findsOneWidget);
     expect(
       find.text('Correction: replace "Flowfirst" with "FlowForce"'),
       findsOneWidget,
     );
     expect(find.text('May change: Flowfirst'), findsOneWidget);
     expect(find.text('Replace with: FlowForce'), findsOneWidget);
-    expect(find.text('Why Rex suggested it'), findsOneWidget);
+    expect(find.text('Why Rex paused here'), findsOneWidget);
     expect(find.text('The user corrected a saved fact.'), findsOneWidget);
-    expect(
-      find.text('Replace Saved Memory After Confirmation'),
-      findsOneWidget,
-    );
+    expect(find.text('Review before changing what Rex knows'), findsOneWidget);
     expect(find.text('From recent chat'), findsOneWidget);
     expect(
       find.text(
@@ -48,7 +45,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Confirm save'), findsOneWidget);
-    expect(find.text('Reject'), findsOneWidget);
+    expect(find.text('Do not save'), findsOneWidget);
     expect(find.text('Edit first'), findsOneWidget);
   });
 
@@ -87,24 +84,27 @@ void main() {
     await _pumpBubble(tester, candidates);
 
     expect(find.text('Saved'), findsOneWidget);
-    expect(find.text('Saved to Rex Memory.'), findsOneWidget);
-    expect(find.text('Rejected'), findsOneWidget);
     expect(
-      find.text('Rejected. Rex will not save this memory.'),
+      find.text('Saved. Rex can use this in future conversations.'),
       findsOneWidget,
     );
-    expect(find.text('Needs attention'), findsOneWidget);
+    expect(find.text('Rejected'), findsOneWidget);
     expect(
-      find.text('Could not save this memory. Review it before trying again.'),
+      find.text('Not saved. Rex will ignore this suggestion.'),
+      findsOneWidget,
+    );
+    expect(find.text('Needs attention'), findsWidgets);
+    expect(
+      find.text('Could not save this. Review it before trying again.'),
       findsOneWidget,
     );
     expect(
       find.text('Candidate approval failed before durable write completed.'),
       findsOneWidget,
     );
-    expect(find.text('Approve'), findsNothing);
+    expect(find.text('Save'), findsNothing);
     expect(find.text('Confirm save'), findsNothing);
-    expect(find.text('Reject'), findsNothing);
+    expect(find.text('Do not save'), findsNothing);
     expect(find.text('Edit first'), findsNothing);
   });
 }

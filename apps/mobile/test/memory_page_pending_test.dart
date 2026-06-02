@@ -12,12 +12,12 @@ void main() {
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Pending (1)'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Approve'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     expect(api.approvedIds, ['candidate-1']);
     expect(find.text('No pending memory review'), findsOneWidget);
-    expect(find.text('Memory saved'), findsOneWidget);
+    expect(find.text('Saved to what Rex knows'), findsOneWidget);
   });
 
   testWidgets('MemoryPage can edit a pending candidate before approval', (
@@ -32,7 +32,7 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, 'Edit first'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Edit memory request'), findsOneWidget);
+    expect(find.text('Edit memory review'), findsOneWidget);
     await tester.enterText(
       find.byType(TextField).at(1),
       'Pedro prefers concise email updates.',
@@ -41,7 +41,12 @@ void main() {
       find.byType(TextField).at(2),
       'Pedro edited this before saving.',
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(FilledButton, 'Save'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(api.updatedCandidateId, 'candidate-1');
@@ -49,9 +54,9 @@ void main() {
       'content': 'Pedro prefers concise email updates.',
     });
     expect(api.updatedCandidateReason, 'Pedro edited this before saving.');
-    expect(find.text('Memory request updated'), findsOneWidget);
+    expect(find.text('Memory review updated'), findsOneWidget);
     expect(
-      find.text('Memory: Pedro prefers concise email updates.'),
+      find.text('Memory note: Pedro prefers concise email updates.'),
       findsOneWidget,
     );
   });
@@ -68,7 +73,7 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Pending (2)'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Memory: Pedro prefers email'), findsOneWidget);
+    expect(find.text('Memory note: Pedro prefers email'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Saved'));
     await tester.pumpAndSettle();
@@ -91,7 +96,7 @@ void main() {
       find.text('Correction: replace "Flowfirst" with "FlowForce"'),
       findsOneWidget,
     );
-    expect(find.text('Memory: Pedro prefers email'), findsNothing);
+    expect(find.text('Memory note: Pedro prefers email'), findsNothing);
   });
 
   testWidgets('MemoryPage sends edited memory payload', (tester) async {

@@ -18,7 +18,11 @@ void main() {
     expect(find.text('Pedro prefers email updates.'), findsOneWidget);
     expect(find.text('Updated 05/31/2026'), findsWidgets);
 
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -700));
+    await tester.scrollUntilVisible(
+      find.text('People & places'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('People & places'), findsOneWidget);
@@ -32,8 +36,8 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Pending (1)'));
     await tester.pumpAndSettle();
 
-    expect(find.text('1 memory request waiting'), findsOneWidget);
-    expect(find.text('Memory: Pedro prefers email'), findsOneWidget);
+    expect(find.text('1 item to review before saving'), findsOneWidget);
+    expect(find.text('Memory note: Pedro prefers email'), findsOneWidget);
     expect(find.text('long_term_memory: Pedro prefers email'), findsNothing);
     expect(find.text('Needs review'), findsOneWidget);
     expect(find.text('Medium risk'), findsOneWidget);
