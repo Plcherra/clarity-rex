@@ -3,6 +3,8 @@ from typing import Optional
 from app.config import Settings, get_settings
 from app.services.conversation_repository import ConversationRepository
 from app.services.long_term_memory_repository import LongTermMemoryRepository
+from app.services.memory_confirmation_facade import MemoryConfirmationFacade
+from app.services.memory_confirmation_repository import MemoryConfirmationRepository
 from app.services.memory_candidate_repository import MemoryCandidateRepository
 from app.services.memory_errors import MemoryServiceError
 from app.services.memory_retrieval_service import MemoryRetrievalService
@@ -10,7 +12,7 @@ from app.services.structured_memory_repository import StructuredMemoryRepository
 from app.services.supabase_memory_transport import SupabaseMemoryTransport
 
 
-class SupabaseMemoryService(SupabaseMemoryTransport):
+class SupabaseMemoryService(SupabaseMemoryTransport, MemoryConfirmationFacade):
     def __init__(
         self,
         settings: Optional[Settings] = None,
@@ -25,6 +27,7 @@ class SupabaseMemoryService(SupabaseMemoryTransport):
         self.memory_retrieval_service = MemoryRetrievalService(self)
         self.structured_memory_repository = StructuredMemoryRepository(self)
         self.memory_candidate_repository = MemoryCandidateRepository(self)
+        self.memory_confirmation_repository = MemoryConfirmationRepository(self)
 
     def _get_conversation_repository(self) -> ConversationRepository:
         repository = getattr(self, "conversation_repository", None)

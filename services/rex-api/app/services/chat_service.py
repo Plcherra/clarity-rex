@@ -1,12 +1,16 @@
-import logging
 from collections.abc import AsyncIterator
-from typing import Optional, Protocol
+from typing import Optional
 
 from fastapi import UploadFile
 
 from app.services.ai_service import AIService
 from app.services.accountability_service import AccountabilityService
 from app.services.chat_context_service import ChatContextService
+from app.services.chat_turn_context import (
+    ChatTurnContextService,
+    ConversationNotFoundError,
+    MemoryService,
+)
 from app.services.clarity_action_parser import (
     ClarityActionParser,
     ClarityActionStreamFilter,
@@ -31,62 +35,6 @@ from app.services.rex_brain_contracts import (
 from app.services.rex_model_router import RexModelRouter
 from app.services.rex_observability import RexBrainObserver
 from app.services.time_context_service import TimeContextService
-
-LOGGER = logging.getLogger("rex.chat")
-
-
-class ConversationNotFoundError(Exception):
-    pass
-
-
-class MemoryService(Protocol):
-    async def create_conversation(self) -> str:
-        pass
-
-    async def conversation_exists(self, conversation_id: str) -> bool:
-        pass
-
-    async def save_message(self, conversation_id: str, role: str, content: str) -> dict:
-        pass
-
-    async def get_recent_messages(
-        self,
-        conversation_id: str,
-        limit: int = 20,
-    ) -> list[dict]:
-        pass
-
-    async def save_long_term_memory(
-        self,
-        memory_type: str,
-        content: str,
-        source_conversation_id: Optional[str] = None,
-        source_message_id: Optional[str] = None,
-        importance: int = 3,
-    ) -> dict:
-        pass
-
-    async def get_relevant_memories(self, query: str, limit: int = 8) -> list[dict]:
-        pass
-
-    async def get_structured_memory_context(self, query: str) -> dict:
-        pass
-
-    async def save_voice_turn(
-        self,
-        conversation_id: str,
-        user_message_id: Optional[str] = None,
-        assistant_message_id: Optional[str] = None,
-        transcript_confidence: Optional[float] = None,
-        audio_duration_seconds: Optional[float] = None,
-        input_mime_type: Optional[str] = None,
-        output_audio_encoding: Optional[str] = None,
-        stt_vendor: str = "deepgram",
-        tts_vendor: str = "google_tts",
-        metadata: Optional[dict] = None,
-    ) -> dict:
-        pass
-
 
 class ChatService:
     def __init__(
@@ -115,15 +63,11 @@ class ChatService:
         rex_brain_observer: Optional[RexBrainObserver] = None,
     ) -> None:
         self.ai_service = ai_service
-        self.file_service = file_service
         self.memory_service = memory_service
-        self.memory_extraction_service = memory_extraction_service
         self.prompt_service = prompt_service or PromptService()
         self.time_context_service = time_context_service or TimeContextService()
         self.accountability_service = accountability_service or AccountabilityService()
         self.memory_discipline_service = memory_discipline_service
-        self.memory_correction_service = memory_correction_service
-        self.memory_candidate_service = memory_candidate_service
         self.memory_candidate_decision_service = (
             memory_candidate_decision_service
             or MemoryCandidateDecisionService(memory_candidate_service)
@@ -145,6 +89,11 @@ class ChatService:
             accountability_service=self.accountability_service,
             rex_brain_chat_service=self.rex_brain_chat_service,
         )
+        self.chat_turn_context_service = ChatTurnContextService(
+            file_service=file_service,
+            memory_service=memory_service,
+            chat_context_service=self.chat_context_service,
+        )
         self.memory_post_turn_service = (
             memory_post_turn_service
             or MemoryPostTurnService(
@@ -165,36 +114,19 @@ class ChatService:
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
     ) -> dict:
-        conversation_id = await self._existing_conversation_id(conversation_id)
-        file_text = await self.file_service.read_text_file(file) if file else None
-
-        (
-            conversation_history,
-            long_term_memory,
-            structured_context,
-        ) = await self.chat_context_service.fetch_prompt_context(
+        turn_context = await self.chat_turn_context_service.prepare(
             message=message,
             conversation_id=conversation_id,
+            file=file,
         )
-
-        if conversation_id is None:
-            conversation_id = await self.memory_service.create_conversation()
-
-        time_context = self.chat_context_service.current_time_context(
-            conversation_history
-        )
-        accountability_signals = await self.chat_context_service.accountability_signals(
-            message=message,
-            time_context=time_context,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-        )
-
-        user_message = await self.memory_service.save_message(
-            conversation_id,
-            "user",
-            message,
-        )
+        conversation_id = turn_context.conversation_id
+        file_text = turn_context.file_text
+        conversation_history = turn_context.conversation_history
+        long_term_memory = turn_context.long_term_memory
+        structured_context = turn_context.structured_context
+        time_context = turn_context.time_context
+        accountability_signals = turn_context.accountability_signals
+        user_message = turn_context.user_message
         simple_memory_turn = await self.memory_turn_service.handle_turn(
             message,
             conversation_id=conversation_id,
@@ -384,36 +316,19 @@ class ChatService:
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
     ) -> AsyncIterator[dict]:
-        conversation_id = await self._existing_conversation_id(conversation_id)
-        file_text = await self.file_service.read_text_file(file) if file else None
-
-        (
-            conversation_history,
-            long_term_memory,
-            structured_context,
-        ) = await self.chat_context_service.fetch_prompt_context(
+        turn_context = await self.chat_turn_context_service.prepare(
             message=message,
             conversation_id=conversation_id,
+            file=file,
         )
-
-        if conversation_id is None:
-            conversation_id = await self.memory_service.create_conversation()
-
-        time_context = self.chat_context_service.current_time_context(
-            conversation_history
-        )
-        accountability_signals = await self.chat_context_service.accountability_signals(
-            message=message,
-            time_context=time_context,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-        )
-
-        user_message = await self.memory_service.save_message(
-            conversation_id,
-            "user",
-            message,
-        )
+        conversation_id = turn_context.conversation_id
+        file_text = turn_context.file_text
+        conversation_history = turn_context.conversation_history
+        long_term_memory = turn_context.long_term_memory
+        structured_context = turn_context.structured_context
+        time_context = turn_context.time_context
+        accountability_signals = turn_context.accountability_signals
+        user_message = turn_context.user_message
         yield {"event": "conversation", "conversation_id": conversation_id}
         simple_memory_turn = await self.memory_turn_service.handle_turn(
             message,
@@ -581,15 +496,3 @@ class ChatService:
             ),
             "memory_changes": memory_changes,
         }
-
-    async def _existing_conversation_id(
-        self,
-        conversation_id: Optional[str],
-    ) -> Optional[str]:
-        if conversation_id is None:
-            return None
-
-        if not await self.memory_service.conversation_exists(conversation_id):
-            raise ConversationNotFoundError()
-
-        return conversation_id

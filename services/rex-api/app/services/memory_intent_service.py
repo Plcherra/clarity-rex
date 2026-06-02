@@ -1,7 +1,7 @@
 import base64
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
@@ -19,6 +19,7 @@ class SimpleMemoryIntent:
     importance: int
     confirmation_question: str
     source: str = "simple_memory_intent"
+    metadata: dict = field(default_factory=dict)
 
 
 class MemoryIntentService:
@@ -127,6 +128,11 @@ class MemoryIntentService:
                 importance=int(payload.get("importance") or 4),
                 confirmation_question="",
                 source=str(payload.get("source") or "simple_memory_intent"),
+                metadata=(
+                    payload.get("metadata")
+                    if isinstance(payload.get("metadata"), dict)
+                    else {}
+                ),
             )
         except (KeyError, TypeError, ValueError):
             return None
@@ -151,6 +157,7 @@ class MemoryIntentService:
             "content": intent.content,
             "importance": intent.importance,
             "source": intent.source,
+            "metadata": intent.metadata,
         }
         encoded = base64.b64encode(json.dumps(payload).encode("utf-8")).decode(
             "ascii"
@@ -198,10 +205,16 @@ class MemoryIntentService:
         content = f"User's {person}'s birthday is {date_text}."
         question = f"So your {person}'s birthday is {date_text}, correct?"
         return SimpleMemoryIntent(
-            memory_type="personal_fact",
+            memory_type="fact",
             content=content,
             importance=5,
             confirmation_question=question,
+            metadata={
+                "fact_kind": "birthday",
+                "entity_label": person,
+                "normalized_date": date_text,
+                "topic_fingerprint": f"fact:birthday:{person.lower()}",
+            },
         )
 
     def _detect_remember_that(self, message: str) -> Optional[SimpleMemoryIntent]:
@@ -215,10 +228,14 @@ class MemoryIntentService:
 
         content = f"{fact[0].upper()}{fact[1:]}."
         return SimpleMemoryIntent(
-            memory_type="personal_fact",
+            memory_type="fact",
             content=content,
             importance=4,
             confirmation_question=f"Should I remember that {fact}?",
+            metadata={
+                "fact_kind": "remember_that",
+                "topic_fingerprint": f"fact:remember_that:{self._fingerprint(fact)}",
+            },
         )
 
     def _normalize_date_phrase(
@@ -288,6 +305,10 @@ class MemoryIntentService:
         normalized = re.sub(r"[.!?]+$", "", normalized)
         normalized = re.sub(r"\s+", " ", normalized)
         return normalized
+
+    def _fingerprint(self, text: str) -> str:
+        normalized = re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
+        return normalized[:80] or "unknown"
 
     def _ordinal(self, day: int) -> str:
         if 10 <= day % 100 <= 20:

@@ -13,8 +13,9 @@ This plan focuses on large files and high-risk coupling. Each phase should be co
 
 | File | Approx. lines | Problem | Refactor target |
 | --- | ---: | --- | --- |
-| `services/rex-api/app/services/chat_service.py` | 595 after Phase 2 continuation, down from 2,225 | Chat orchestration still owns text/streaming flow; memory turns, candidates, actions, Rex Brain glue, prompt context, corrections, and extraction summaries are extracted. | Treat as active only if streaming/non-streaming duplication needs more work. |
+| `services/rex-api/app/services/chat_service.py` | 498 after guardrail cleanup, down from 2,225 | Chat orchestration still owns text/streaming flow; turn prep, memory turns, candidates, actions, Rex Brain glue, prompt context, corrections, and extraction summaries are extracted. | Mark complete; keep below 500 as Plaid/Stripe work begins. |
 | `services/rex-api/app/services/chat_context_service.py` | 218 | New extracted service for prompt context gathering, memory/profile merge, structured context fallback, time context, accountability signals, and prompt message building. | Keep as the focused home for context assembly; do not let it grow past 500 lines. |
+| `services/rex-api/app/services/chat_turn_context.py` | 145 | New extracted service for file text, conversation validation/creation, prompt context fetch, accountability signals, and user message persistence. | Keep duplicated send/stream setup out of `chat_service.py`. |
 | `services/rex-api/app/services/memory_post_turn_service.py` | 245 | New extracted service for memory correction candidates, correction prompts, memory-change summaries, and best-effort extraction scheduling. | Keep as the focused home for post-response memory side effects; do not let it grow past 500 lines. |
 | `services/rex-api/app/services/rex_brain_chat_service.py` | 434 | New extracted service for Rex Brain chat planning, routing metadata, model kwargs, and chat contract application. | Keep as the focused home for Rex Brain chat glue; do not let it grow past 500 lines. |
 | `services/rex-api/app/services/memory_turn_service.py` | 275 | New extracted service for simple memory turn orchestration. | Keep as the focused home for natural confirmation, direct durable save/reject/failure summaries, and public message marker stripping. |
@@ -42,7 +43,7 @@ This plan focuses on large files and high-risk coupling. Each phase should be co
 | `services/rex-api/tests/test_chat_service.py` | 399 after Phase 10, down from 2,137 | Core smoke, action proposal, correction/extraction, streaming, AI failure, and Supabase config tests remain. | Mark complete unless we want tiny single-purpose files. |
 | `services/rex-api/tests/chat_service_fakes.py` / focused chat test files | 390 / 185-424 | Extracted shared fakes plus Rex Brain, candidate decision, simple memory, and prompt context suites. | Keep all below 500 lines. |
 | `services/rex-api/tests/test_memory_extraction.py` | 461 after Phase 10, down from 1,396 | Core parser/dedupe/filter tests remain; fakes, correction tests, and structured candidate tests moved to focused files at 307/390/248 lines. | Mark complete unless we want smaller edge-case suites. |
-| `apps/mobile/test/memory_page_test.dart` | 588 | Widget tests may become brittle as the page is split. | Keep behavior tests while moving helpers into smaller test files. |
+| `apps/mobile/test/memory_page_test.dart` | 69 after Phase 10, down from 588 | Saved overview/filter tests remain; pending, archive/error, and shared fake helpers moved to focused files at 118/93/279 lines. | Mark complete; all memory page test files stay below 500. |
 
 ## Refactor Rules
 - Do one phase at a time.
@@ -422,10 +423,7 @@ Steps:
 Ledger: `memory_controller.dart` 647 -> 111 lines; `memory_api.dart` 411 -> 161 lines. Moved read/query methods, mutation/action methods, error copy, saved-memory endpoints, structured-memory endpoints, and candidate endpoints into focused files; all new files are below 500 lines. Verification: focused memory tests 21 passed; `flutter analyze` no issues.
 
 ## Phase 10 - Split Oversized Tests Into Behavior Suites
-Status: Backend chat and extraction splits complete; mobile memory page test split remains optional.
-Primary files:
-
-- `services/rex-api/tests/test_chat_service.py`, `services/rex-api/tests/test_memory_extraction.py`, `apps/mobile/test/memory_page_test.dart`
+Status: Complete. Primary files: `test_chat_service.py`, `test_memory_extraction.py`, `memory_page_test.dart`.
 
 Goal: make future memory changes faster and safer.
 
@@ -437,8 +435,8 @@ Steps:
    - `test_chat_prompt_context.py`
    - `test_chat_streaming.py`
 2. Complete: split `test_memory_extraction.py` 1,396 -> 461 lines; moved fakes, corrections, and structured candidate coverage into focused files.
-3. Split mobile memory page tests by saved view, pending review, dialogs/actions, and filters if needed.
-4. Move shared fakes/builders into `conftest.py` or focused fixture helpers.
+3. Complete: split `memory_page_test.dart` 588 -> 69 lines; moved pending, archive/error, and helpers into focused files.
+4. Move shared fakes/builders into `conftest.py` or focused fixture helpers. Complete for chat, extraction, and mobile memory page tests.
 5. Avoid changing assertions while moving tests.
 6. Run moved tests after each file split.
 7. Run full backend and mobile targeted tests.
@@ -449,7 +447,7 @@ Acceptance criteria:
 - Test failures point to a specific memory subsystem.
 - No test coverage is lost during file moves.
 
-Ledger: `test_chat_service.py` 2,137 -> 1,276 -> 945 -> 744 -> 399 lines. Moved shared fakes, Rex Brain contracts, candidate decisions, simple memory flow, and prompt context into focused files; largest extracted file is `test_chat_service_rex_brain.py` at 424 lines. Latest focused verification: 52 passed.
+Ledger: chat tests 2,137 -> 399 plus focused suites at 185-424; extraction tests 1,396 -> 461 plus focused files at 248-390; mobile page tests 588 -> 69 plus focused files at 93-279. Verification: backend split suites 71 passed; mobile memory tests 21 passed; `flutter analyze` no issues.
 
 ## Final Manual Release And Phone Test
 

@@ -55,9 +55,11 @@ class FakeMemoryService:
         self.conversations = set()
         self.messages = []
         self.long_term_memory = []
+        self.memory_confirmations = []
         self.next_conversation_id = 1
         self.next_message_id = 1
         self.next_memory_id = 1
+        self.next_confirmation_id = 1
         self.relevant_memory_queries = []
         self.structured_context_queries = []
         self.structured_context = {}
@@ -116,6 +118,7 @@ class FakeMemoryService:
         source_conversation_id=None,
         source_message_id=None,
         importance=3,
+        metadata=None,
     ):
         memory = {
             "id": f"memory-{self.next_memory_id}",
@@ -124,11 +127,67 @@ class FakeMemoryService:
             "source_conversation_id": source_conversation_id,
             "source_message_id": source_message_id,
             "importance": importance,
+            "metadata": metadata or {},
             "active": True,
         }
         self.next_memory_id += 1
         self.long_term_memory.append(memory)
         return memory
+
+    async def create_memory_confirmation(self, confirmation):
+        row = {
+            "id": f"confirmation-{self.next_confirmation_id}",
+            "status": "pending",
+            "confirmation_message_id": None,
+            **confirmation,
+        }
+        self.next_confirmation_id += 1
+        self.memory_confirmations.append(row)
+        return row
+
+    async def get_latest_pending_memory_confirmation(self, conversation_id):
+        pending = [
+            row
+            for row in self.memory_confirmations
+            if row.get("conversation_id") == conversation_id
+            and row.get("status") == "pending"
+        ]
+        return pending[-1] if pending else None
+
+    async def update_memory_confirmation(self, confirmation_id, **updates):
+        for row in self.memory_confirmations:
+            if row["id"] == confirmation_id:
+                row.update(updates)
+                return row
+        return None
+
+    async def confirm_memory_confirmation(
+        self,
+        confirmation_id,
+        *,
+        applied_memory_id=None,
+        metadata=None,
+    ):
+        return await self.update_memory_confirmation(
+            confirmation_id,
+            status="confirmed",
+            applied_memory_id=applied_memory_id,
+            metadata=metadata,
+        )
+
+    async def reject_memory_confirmation(self, confirmation_id, *, metadata=None):
+        return await self.update_memory_confirmation(
+            confirmation_id,
+            status="rejected",
+            metadata=metadata,
+        )
+
+    async def fail_memory_confirmation(self, confirmation_id, *, metadata=None):
+        return await self.update_memory_confirmation(
+            confirmation_id,
+            status="failed",
+            metadata=metadata,
+        )
 
     async def get_relevant_memories(self, query, limit=8):
         self.relevant_memory_queries.append({"query": query, "limit": limit})

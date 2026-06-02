@@ -13,10 +13,16 @@ def test_detects_birthday_with_current_month_context():
     )
 
     assert intent == SimpleMemoryIntent(
-        memory_type="personal_fact",
+        memory_type="fact",
         content="User's mom's birthday is June 18.",
         importance=5,
         confirmation_question="So your mom's birthday is June 18, correct?",
+        metadata={
+            "fact_kind": "birthday",
+            "entity_label": "mom",
+            "normalized_date": "June 18",
+            "topic_fingerprint": "fact:birthday:mom",
+        },
     )
 
 
@@ -29,10 +35,16 @@ def test_detects_birthday_with_explicit_month():
     )
 
     assert intent == SimpleMemoryIntent(
-        memory_type="personal_fact",
+        memory_type="fact",
         content="User's mom's birthday is March 4.",
         importance=5,
         confirmation_question="So your mom's birthday is March 4, correct?",
+        metadata={
+            "fact_kind": "birthday",
+            "entity_label": "mom",
+            "normalized_date": "March 4",
+            "topic_fingerprint": "fact:birthday:mom",
+        },
     )
 
 
@@ -44,10 +56,14 @@ def test_detects_explicit_remember_that_fact():
     )
 
     assert intent == SimpleMemoryIntent(
-        memory_type="personal_fact",
+        memory_type="fact",
         content="I work best in the morning.",
         importance=4,
         confirmation_question="Should I remember that I work best in the morning?",
+        metadata={
+            "fact_kind": "remember_that",
+            "topic_fingerprint": "fact:remember_that:i_work_best_in_the_morning",
+        },
     )
 
 
@@ -72,10 +88,11 @@ def test_classifies_confirmation_and_rejection_replies():
 def test_confirmation_marker_round_trips_and_strips_from_public_text():
     service = MemoryIntentService()
     intent = SimpleMemoryIntent(
-        memory_type="personal_fact",
+        memory_type="fact",
         content="User's mom's birthday is June 18.",
         importance=5,
         confirmation_question="So your mom's birthday is June 18, correct?",
+        metadata={"fact_kind": "birthday"},
     )
 
     stored_text = service.with_confirmation_marker(
@@ -88,10 +105,11 @@ def test_confirmation_marker_round_trips_and_strips_from_public_text():
         "So your mom's birthday is June 18, correct?"
     )
     assert service.confirmation_payload(stored_text) == {
-        "memory_type": "personal_fact",
+        "memory_type": "fact",
         "content": "User's mom's birthday is June 18.",
         "importance": 5,
         "source": "simple_memory_intent",
+        "metadata": {"fact_kind": "birthday"},
     }
 
 
@@ -100,10 +118,11 @@ def test_pending_confirmation_only_reads_last_assistant_marker():
     marked_text = service.with_confirmation_marker(
         "So your mom's birthday is June 18, correct?",
         SimpleMemoryIntent(
-            memory_type="personal_fact",
+            memory_type="fact",
             content="User's mom's birthday is June 18.",
             importance=5,
             confirmation_question="So your mom's birthday is June 18, correct?",
+            metadata={"fact_kind": "birthday"},
         ),
     )
 
@@ -115,10 +134,11 @@ def test_pending_confirmation_only_reads_last_assistant_marker():
     )
 
     assert pending == SimpleMemoryIntent(
-        memory_type="personal_fact",
+        memory_type="fact",
         content="User's mom's birthday is June 18.",
         importance=5,
         confirmation_question="",
+        metadata={"fact_kind": "birthday"},
     )
     assert (
         service.pending_confirmation_from_history(

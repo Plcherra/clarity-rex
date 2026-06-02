@@ -21,7 +21,49 @@ class MemoryTurnStore(Protocol):
         source_conversation_id: Optional[str] = None,
         source_message_id: Optional[str] = None,
         importance: int = 3,
+        metadata: Optional[dict] = None,
     ) -> dict:
+        pass
+
+    async def create_memory_confirmation(self, confirmation: dict) -> dict:
+        pass
+
+    async def get_latest_pending_memory_confirmation(
+        self,
+        conversation_id: str,
+    ) -> Optional[dict]:
+        pass
+
+    async def update_memory_confirmation(
+        self,
+        confirmation_id: str,
+        **updates: object,
+    ) -> Optional[dict]:
+        pass
+
+    async def confirm_memory_confirmation(
+        self,
+        confirmation_id: str,
+        *,
+        applied_memory_id: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> Optional[dict]:
+        pass
+
+    async def reject_memory_confirmation(
+        self,
+        confirmation_id: str,
+        *,
+        metadata: Optional[dict] = None,
+    ) -> Optional[dict]:
+        pass
+
+    async def fail_memory_confirmation(
+        self,
+        confirmation_id: str,
+        *,
+        metadata: Optional[dict] = None,
+    ) -> Optional[dict]:
         pass
 
 
@@ -45,9 +87,26 @@ class MemoryTurnService:
         conversation_history: list[dict],
         time_context: dict,
     ) -> Optional[dict]:
-        pending_intent = self.memory_intent_service.pending_confirmation_from_history(
-            conversation_history
+        pending_confirmation = await self._latest_pending_confirmation(
+            conversation_id,
         )
+        pending_intent = self._intent_from_confirmation_record(pending_confirmation)
+        pending_confirmation_id = (
+            str(pending_confirmation.get("id"))
+            if pending_confirmation and pending_confirmation.get("id")
+            else None
+        )
+        pending_source_message_id = (
+            str(pending_confirmation.get("source_message_id"))
+            if pending_confirmation and pending_confirmation.get("source_message_id")
+            else None
+        )
+        if pending_intent is None:
+            pending_intent = self.memory_intent_service.pending_confirmation_from_history(
+                conversation_history
+            )
+            pending_source_message_id = str(user_message.get("id") or "") or None
+
         if pending_intent is not None:
             confirmation_decision = (
                 self.memory_intent_service.classify_confirmation_reply(message)
@@ -57,12 +116,15 @@ class MemoryTurnService:
                     pending_intent,
                     conversation_id=conversation_id,
                     user_message=user_message,
+                    confirmation_id=pending_confirmation_id,
+                    source_message_id=pending_source_message_id,
                 )
             if confirmation_decision == "reject":
                 return await self._reject_simple_memory(
                     pending_intent,
                     conversation_id=conversation_id,
                     user_message=user_message,
+                    confirmation_id=pending_confirmation_id,
                 )
 
         intent = self.memory_intent_service.detect_simple_memory(
@@ -72,15 +134,33 @@ class MemoryTurnService:
         if intent is None:
             return None
 
-        public_response = intent.confirmation_question
-        stored_response = self.memory_intent_service.with_confirmation_marker(
-            public_response,
+        confirmation = await self._create_pending_confirmation(
             intent,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            fallback_message=message,
         )
+        if confirmation is None:
+            return None
+        public_response = intent.confirmation_question
         assistant_message = await self.memory_service.save_message(
             conversation_id,
             "assistant",
-            stored_response,
+            public_response,
+        )
+        if confirmation.get("id") and assistant_message.get("id"):
+            await self._update_confirmation(
+                str(confirmation["id"]),
+                confirmation_message_id=str(assistant_message["id"]),
+            )
+            confirmation = {
+                **confirmation,
+                "confirmation_message_id": assistant_message["id"],
+            }
+        confirmation_id = str(confirmation.get("id") or "") or None
+        confirmation_summary = self._simple_memory_confirmation_summary(
+            intent,
+            confirmation_id=confirmation_id,
         )
         return {
             "conversation_id": conversation_id,
@@ -88,7 +168,7 @@ class MemoryTurnService:
             "user_message": user_message,
             "assistant_message": self.public_message(assistant_message),
             "memory_correction": None,
-            "memory_changes": self._simple_memory_confirmation_summary(intent),
+            "memory_changes": confirmation_summary,
             "messages": await self.recent_public_messages(conversation_id),
         }
 
@@ -120,16 +200,29 @@ class MemoryTurnService:
         *,
         conversation_id: str,
         user_message: dict,
+        confirmation_id: Optional[str] = None,
+        source_message_id: Optional[str] = None,
     ) -> dict:
         try:
             record = await self.memory_service.save_long_term_memory(
                 memory_type=intent.memory_type,
                 content=intent.content,
                 source_conversation_id=conversation_id,
-                source_message_id=str(user_message.get("id") or "") or None,
+                source_message_id=source_message_id
+                or str(user_message.get("id") or "")
+                or None,
                 importance=intent.importance,
+                metadata=intent.metadata,
             )
         except Exception:
+            if confirmation_id is not None:
+                await self._fail_confirmation(
+                    confirmation_id,
+                    metadata={
+                        **intent.metadata,
+                        "error": "durable_memory_save_failed",
+                    },
+                )
             response = (
                 "I understood that, but I couldn't save it just now. "
                 "Please try again in a moment."
@@ -155,6 +248,12 @@ class MemoryTurnService:
             "assistant",
             response,
         )
+        if confirmation_id is not None:
+            await self._confirm_confirmation(
+                confirmation_id,
+                applied_memory_id=str(record.get("id") or "") or None,
+                metadata=intent.metadata,
+            )
         return {
             "conversation_id": conversation_id,
             "response": response,
@@ -171,6 +270,7 @@ class MemoryTurnService:
         *,
         conversation_id: str,
         user_message: dict,
+        confirmation_id: Optional[str] = None,
     ) -> dict:
         response = self.memory_intent_service.rejected_response()
         assistant_message = await self.memory_service.save_message(
@@ -178,6 +278,11 @@ class MemoryTurnService:
             "assistant",
             response,
         )
+        if confirmation_id is not None:
+            await self._reject_confirmation(
+                confirmation_id,
+                metadata=intent.metadata,
+            )
         return {
             "conversation_id": conversation_id,
             "response": response,
@@ -191,6 +296,8 @@ class MemoryTurnService:
     def _simple_memory_confirmation_summary(
         self,
         intent: SimpleMemoryIntent,
+        *,
+        confirmation_id: Optional[str] = None,
     ) -> dict:
         return {
             "created": 0,
@@ -204,7 +311,9 @@ class MemoryTurnService:
                     "kind": "simple_memory",
                     "type": intent.memory_type,
                     "action": "confirmation_requested",
+                    "id": confirmation_id,
                     "title": intent.content,
+                    "metadata": intent.metadata,
                 }
             ],
         }
@@ -228,6 +337,7 @@ class MemoryTurnService:
                     "action": "direct_saved",
                     "id": record.get("id"),
                     "title": intent.content,
+                    "metadata": intent.metadata,
                 }
             ],
         }
@@ -249,6 +359,7 @@ class MemoryTurnService:
                     "type": intent.memory_type,
                     "action": "rejected",
                     "title": intent.content,
+                    "metadata": intent.metadata,
                 }
             ],
         }
@@ -270,6 +381,125 @@ class MemoryTurnService:
                     "type": intent.memory_type,
                     "action": "save_failed",
                     "title": intent.content,
+                    "metadata": intent.metadata,
                 }
             ],
         }
+
+    def _intent_from_confirmation_record(
+        self,
+        confirmation: Optional[dict],
+    ) -> Optional[SimpleMemoryIntent]:
+        if not confirmation:
+            return None
+        try:
+            return SimpleMemoryIntent(
+                memory_type=str(confirmation["memory_type"]),
+                content=str(confirmation["content"]),
+                importance=int(confirmation.get("importance") or 3),
+                confirmation_question="",
+                source=str(confirmation.get("source") or "simple_memory_intent"),
+                metadata=(
+                    confirmation.get("metadata")
+                    if isinstance(confirmation.get("metadata"), dict)
+                    else {}
+                ),
+            )
+        except (KeyError, TypeError, ValueError):
+            return None
+
+    async def _latest_pending_confirmation(
+        self,
+        conversation_id: str,
+    ) -> Optional[dict]:
+        try:
+            return await self.memory_service.get_latest_pending_memory_confirmation(
+                conversation_id,
+            )
+        except Exception:
+            return None
+
+    async def _create_pending_confirmation(
+        self,
+        intent: SimpleMemoryIntent,
+        *,
+        conversation_id: str,
+        user_message: dict,
+        fallback_message: str,
+    ) -> Optional[dict]:
+        try:
+            return await self.memory_service.create_memory_confirmation(
+                {
+                    "conversation_id": conversation_id,
+                    "source_message_id": str(user_message.get("id") or "") or None,
+                    "memory_type": intent.memory_type,
+                    "content": intent.content,
+                    "importance": intent.importance,
+                    "source": intent.source,
+                    "metadata": {
+                        **intent.metadata,
+                        "original_text": str(
+                            user_message.get("content") or fallback_message
+                        ),
+                    },
+                }
+            )
+        except Exception:
+            return None
+
+    async def _update_confirmation(
+        self,
+        confirmation_id: str,
+        **updates: object,
+    ) -> Optional[dict]:
+        try:
+            return await self.memory_service.update_memory_confirmation(
+                confirmation_id,
+                **updates,
+            )
+        except Exception:
+            return None
+
+    async def _confirm_confirmation(
+        self,
+        confirmation_id: str,
+        *,
+        applied_memory_id: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> Optional[dict]:
+        try:
+            return await self.memory_service.confirm_memory_confirmation(
+                confirmation_id,
+                applied_memory_id=applied_memory_id,
+                metadata=metadata,
+            )
+        except Exception:
+            return None
+
+    async def _reject_confirmation(
+        self,
+        confirmation_id: str,
+        *,
+        metadata: Optional[dict] = None,
+    ) -> Optional[dict]:
+        try:
+            return await self.memory_service.reject_memory_confirmation(
+                confirmation_id,
+                metadata=metadata,
+            )
+        except Exception:
+            return None
+
+    async def _fail_confirmation(
+        self,
+        confirmation_id: str,
+        *,
+        metadata: Optional[dict] = None,
+    ) -> Optional[dict]:
+        try:
+            return await self.memory_service.fail_memory_confirmation(
+                confirmation_id,
+                metadata=metadata,
+            )
+        except Exception:
+            return None

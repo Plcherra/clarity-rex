@@ -47,7 +47,13 @@ async def test_simple_memory_asks_confirmation_then_saves_durable_memory():
     assert confirmation["memory_changes"]["confirmation_required"] == 1
     assert confirmation["messages"][-1]["content"] == confirmation["response"]
     assert "rex_memory_confirmation" not in confirmation["messages"][-1]["content"]
-    assert "rex_memory_confirmation" in memory_service.messages[-1]["content"]
+    assert "rex_memory_confirmation" not in memory_service.messages[-1]["content"]
+    assert memory_service.memory_confirmations[0]["content"] == (
+        "User's mom's birthday is June 18."
+    )
+    assert memory_service.memory_confirmations[0]["confirmation_message_id"] == (
+        "message-2"
+    )
     assert ai_service.messages == []
     assert extraction_service.calls == []
 
@@ -58,10 +64,11 @@ async def test_simple_memory_asks_confirmation_then_saves_durable_memory():
     )
     assert saved["memory_changes"]["created"] == 1
     assert saved["memory_changes"]["records"][0]["action"] == "direct_saved"
-    assert memory_service.long_term_memory[0]["memory_type"] == "personal_fact"
+    assert memory_service.long_term_memory[0]["memory_type"] == "fact"
     assert memory_service.long_term_memory[0]["content"] == (
         "User's mom's birthday is June 18."
     )
+    assert memory_service.memory_confirmations[0]["status"] == "confirmed"
     assert extraction_service.calls == []
 
     await chat_service.send_message(
@@ -70,7 +77,7 @@ async def test_simple_memory_asks_confirmation_then_saves_durable_memory():
     )
 
     assert (
-        "- personal_fact: User's mom's birthday is June 18."
+        "- fact: User's mom's birthday is June 18."
         in ai_service.messages[0]["content"]
     )
     assert "rex_memory_confirmation" not in str(ai_service.messages)
@@ -125,6 +132,7 @@ async def test_simple_memory_confirmation_works_in_voice_stream():
     assert memory_service.long_term_memory[0]["content"] == (
         "User's mom's birthday is June 18."
     )
+    assert memory_service.memory_confirmations[0]["status"] == "confirmed"
 
     follow_up_events = [
         event
@@ -137,7 +145,7 @@ async def test_simple_memory_confirmation_works_in_voice_stream():
 
     assert follow_up_events[-1]["event"] == "done"
     assert (
-        "- personal_fact: User's mom's birthday is June 18."
+        "- fact: User's mom's birthday is June 18."
         in ai_service.messages[0]["content"]
     )
 
@@ -159,6 +167,7 @@ async def test_simple_memory_rejection_does_not_create_durable_memory():
     assert rejected["response"] == "No problem. I won't save that."
     assert rejected["memory_changes"]["skipped"] == 1
     assert memory_service.long_term_memory == []
+    assert memory_service.memory_confirmations[0]["status"] == "rejected"
 
 
 @pytest.mark.asyncio
