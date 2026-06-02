@@ -64,6 +64,19 @@ Recommended iPhone release command from the repository root:
 ./scripts/mobile_release_run.sh
 ```
 
+If `SUPABASE_URL` and `SUPABASE_ANON_KEY` are not exported and
+`apps/mobile/.env` is missing, the helper falls back to the VPS env file at
+`rex@209.126.87.50:/opt/clarity/shared/rex-api.env` and reads only those two
+public Supabase client values. It does not copy backend secrets into the phone
+build. The release helper points Rex at `https://api.goclarity.app` by default
+even if local `.env` contains a localhost backend. Override that only by
+exporting `REX_BACKEND_URL` before running the helper. Disable the VPS fallback
+with:
+
+```sh
+MOBILE_RELEASE_USE_VPS_ENV=false ./scripts/mobile_release_run.sh
+```
+
 Do not pass `REX_NATIVE_IOS_VOICE_ENABLED` for normal testing. That legacy flag
 is intentionally reported in startup logs but is not the supported voice path.
 

@@ -16,6 +16,12 @@ with stale flags:
 The helper reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` from your shell
 environment or from `apps/mobile/.env`, points Rex at
 `https://api.goclarity.app`, and enables the supported streaming voice path.
+If local values are missing, it falls back to
+`rex@209.126.87.50:/opt/clarity/shared/rex-api.env` and reads only the public
+Supabase client values needed by Flutter.
+Local `.env` may contain `REX_BACKEND_URL=http://localhost:8000` for simulator
+work; the release helper ignores that value unless you explicitly export
+`REX_BACKEND_URL`.
 
 Do not use `REX_NATIVE_IOS_VOICE_ENABLED` for normal testing.
 
