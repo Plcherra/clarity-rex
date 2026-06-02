@@ -15,7 +15,8 @@ class StreamingVoiceApiException implements Exception {
   String toString() => message;
 }
 
-typedef VoiceWebSocketConnector = Future<VoiceWebSocket> Function(Uri uri);
+typedef VoiceWebSocketConnector =
+    Future<VoiceWebSocket> Function(Uri uri, {Map<String, String>? headers});
 
 abstract class VoiceWebSocket {
   Stream<dynamic> get stream;
@@ -153,7 +154,10 @@ class StreamingVoiceApi {
     int sampleRate = 16000,
     Map<String, dynamic>? financialContext,
   }) async {
-    final socket = await _connector(_streamUri());
+    final socket = await _connector(
+      _streamUri(),
+      headers: _apiClient.authHeaders(),
+    );
     final payload = <String, Object>{
       'event': 'session.start',
       'input_mime_type': inputMimeType,
@@ -181,11 +185,15 @@ class StreamingVoiceApi {
     }
   }
 
-  static Future<VoiceWebSocket> _connectIoWebSocket(Uri uri) async {
+  static Future<VoiceWebSocket> _connectIoWebSocket(
+    Uri uri, {
+    Map<String, String>? headers,
+  }) async {
     try {
       return IoVoiceWebSocket(
         await WebSocket.connect(
           uri.toString(),
+          headers: headers,
         ).timeout(const Duration(seconds: 8)),
       );
     } on Object {

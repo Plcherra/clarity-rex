@@ -24,22 +24,10 @@ final class RexAuthHeaders {
 
   String accessToken() => _accessToken();
 
-  Uri authenticatedWebSocketUri(Uri uri) {
-    final token = _accessToken();
-    return uri.replace(
-      queryParameters: {
-        ...uri.queryParameters,
-        'access_token': token,
-      },
-    );
-  }
-
   String _accessToken() {
     final token = (_accessTokenProvider ?? _currentSupabaseAccessToken)();
     if (token == null || token.trim().isEmpty) {
-      throw const RexAuthException(
-        'Sign in again before using the assistant.',
-      );
+      throw const RexAuthException('Sign in again before using the assistant.');
     }
     return token.trim();
   }

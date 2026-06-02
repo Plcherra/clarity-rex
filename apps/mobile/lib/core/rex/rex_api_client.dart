@@ -40,25 +40,24 @@ final class RexApiClient {
       ),
     };
 
-    return _authHeaders.authenticatedWebSocketUri(
-      baseUri.replace(
-        scheme: scheme,
-        path: '${baseUri.path.replaceAll(RegExp(r'/$'), '')}$path',
-      ),
+    return baseUri.replace(
+      scheme: scheme,
+      path: '${baseUri.path.replaceAll(RegExp(r'/$'), '')}$path',
+      query: null,
     );
   }
 
-  Future<http.Response> get(
-    String path, {
-    Map<String, String>? query,
-  }) {
+  Map<String, String> authHeaders([
+    Map<String, String> baseHeaders = const {},
+  ]) {
+    return _authHeaders.headers(baseHeaders);
+  }
+
+  Future<http.Response> get(String path, {Map<String, String>? query}) {
     return _httpClient.get(uri(path, query), headers: _authHeaders.headers());
   }
 
-  Future<http.Response> postJson(
-    String path,
-    Map<String, dynamic> body,
-  ) {
+  Future<http.Response> postJson(String path, Map<String, dynamic> body) {
     return _httpClient.post(
       uri(path),
       headers: _authHeaders.headers({'Content-Type': 'application/json'}),
@@ -70,10 +69,7 @@ final class RexApiClient {
     return _httpClient.post(uri(path), headers: _authHeaders.headers());
   }
 
-  Future<http.Response> patchJson(
-    String path,
-    Map<String, dynamic> body,
-  ) {
+  Future<http.Response> patchJson(String path, Map<String, dynamic> body) {
     return _httpClient.patch(
       uri(path),
       headers: _authHeaders.headers({'Content-Type': 'application/json'}),

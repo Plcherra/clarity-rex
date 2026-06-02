@@ -38,7 +38,7 @@ void main() {
     },
   );
 
-  test('RexApiClient attaches access token to websocket URLs', () {
+  test('RexApiClient builds websocket URLs without leaking access tokens', () {
     final client = RexApiClient(
       baseUrl: 'https://clarity.example.com/rex',
       authHeaders: const RexAuthHeaders(accessTokenProvider: _testAccessToken),
@@ -48,7 +48,8 @@ void main() {
 
     expect(uri.scheme, 'wss');
     expect(uri.path, '/rex/voice/stream');
-    expect(uri.queryParameters['access_token'], 'test-token');
+    expect(uri.queryParameters, isEmpty);
+    expect(client.authHeaders()['Authorization'], 'Bearer test-token');
   });
 
   test('RexAuthHeaders rejects missing sessions', () {

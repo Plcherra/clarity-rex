@@ -32,8 +32,6 @@ async def authenticate_websocket(
     settings: Optional[Settings] = None,
 ) -> AuthenticatedUser:
     token = _authorization_header_token(websocket.headers.get("authorization"))
-    if token is None:
-        token = websocket.query_params.get("access_token")
     return await authenticate_access_token(token, settings=settings or get_settings())
 
 

@@ -1,8 +1,9 @@
 import pytest
 from fastapi import HTTPException
+from types import SimpleNamespace
 
 from app.auth import supabase_auth
-from app.auth.supabase_auth import authenticate_access_token
+from app.auth.supabase_auth import authenticate_access_token, authenticate_websocket
 from app.config import Settings
 
 
@@ -83,3 +84,58 @@ async def test_auth_validates_token_with_supabase_user_endpoint(monkeypatch):
         }
     ]
 
+
+@pytest.mark.asyncio
+async def test_websocket_auth_uses_bearer_header_instead_of_query_param(
+    monkeypatch,
+):
+    calls = []
+
+    async def fake_request(method, url, headers=None, **kwargs):
+        calls.append({"method": method, "url": url, "headers": headers})
+        return FakeSupabaseUserResponse(
+            {
+                "id": "user-123",
+                "email": "person@example.com",
+            }
+        )
+
+    monkeypatch.setattr(supabase_auth, "request_with_retries", fake_request)
+    websocket = SimpleNamespace(
+        headers={"authorization": "Bearer header-token"},
+        query_params={"access_token": "query-token"},
+    )
+
+    user = await authenticate_websocket(
+        websocket,
+        settings=Settings(
+            supabase_url="https://example.supabase.co",
+            supabase_anon_key="anon-key",
+            _env_file=None,
+        ),
+    )
+
+    assert user.id == "user-123"
+    assert user.access_token == "header-token"
+    assert calls[0]["headers"]["Authorization"] == "Bearer header-token"
+
+
+@pytest.mark.asyncio
+async def test_websocket_auth_rejects_query_param_tokens_when_supabase_configured():
+    websocket = SimpleNamespace(
+        headers={},
+        query_params={"access_token": "query-token"},
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        await authenticate_websocket(
+            websocket,
+            settings=Settings(
+                supabase_url="https://example.supabase.co",
+                supabase_anon_key="anon-key",
+                _env_file=None,
+            ),
+        )
+
+    assert exc.value.status_code == 401
+    assert exc.value.detail == "Missing Supabase access token."

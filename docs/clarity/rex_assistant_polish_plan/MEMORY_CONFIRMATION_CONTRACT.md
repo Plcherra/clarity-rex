@@ -214,6 +214,16 @@ create index if not exists memory_confirmations_user_topic_pending_idx
     created_at desc
   )
   where status = 'pending' and metadata ? 'topic_fingerprint';
+
+alter table public.memory_confirmations enable row level security;
+
+drop policy if exists "Users can manage their own memory confirmations"
+  on public.memory_confirmations;
+create policy "Users can manage their own memory confirmations"
+on public.memory_confirmations
+for all to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 ```
 
 ## Phase 1 Acceptance Check
