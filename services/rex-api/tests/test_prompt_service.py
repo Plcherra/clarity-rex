@@ -39,6 +39,9 @@ def test_prompt_service_always_includes_rex_personality():
     )
     assert "holds the user accountable" in messages[0]["content"]
     assert "Memory Discipline rules:" in messages[0]["content"]
+    assert "Never claim a reminder, calendar event, notification" in (
+        messages[0]["content"]
+    )
 
 
 def test_prompt_service_sanitizes_recent_message_history():

@@ -36,6 +36,8 @@ def test_prompt_contracts_include_shared_safety_and_data_boundaries():
         assert "do not invent obligations" in prompt
         assert "planning workspace requests" in prompt
         assert "do not claim a plan was saved" in prompt
+        assert "do not say a reminder was set" in prompt
+        assert "backend execution result confirms a reminder record" in prompt
         assert "internal self-evaluation" in prompt
         assert "correctness, usefulness, missing context, and tone fit" in prompt
         assert "hidden unless debug exposure is enabled" in prompt

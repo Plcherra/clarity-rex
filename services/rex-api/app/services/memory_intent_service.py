@@ -35,6 +35,10 @@ class MemoryIntentService:
         r"\bremember\s+that\s+(?P<fact>[^.!?]+)",
         re.IGNORECASE,
     )
+    _date_only_pattern = re.compile(
+        r"^(?:on\s+)?(?:the\s+)?(?P<date>[A-Za-z]+|\d{1,2}(?:st|nd|rd|th)?)$",
+        re.IGNORECASE,
+    )
     _month_names = {
         "january": "January",
         "jan": "January",
@@ -60,6 +64,49 @@ class MemoryIntentService:
         "nov": "November",
         "december": "December",
         "dec": "December",
+    }
+    _ordinal_words = {
+        "first": 1,
+        "second": 2,
+        "third": 3,
+        "fourth": 4,
+        "fifth": 5,
+        "sixth": 6,
+        "seventh": 7,
+        "eighth": 8,
+        "ninth": 9,
+        "tenth": 10,
+        "eleventh": 11,
+        "twelfth": 12,
+        "thirteenth": 13,
+        "fourteenth": 14,
+        "fifteenth": 15,
+        "sixteenth": 16,
+        "seventeenth": 17,
+        "eighteenth": 18,
+        "nineteenth": 19,
+        "twentieth": 20,
+        "twenty first": 21,
+        "twenty-first": 21,
+        "twenty second": 22,
+        "twenty-second": 22,
+        "twenty third": 23,
+        "twenty-third": 23,
+        "twenty fourth": 24,
+        "twenty-fourth": 24,
+        "twenty fifth": 25,
+        "twenty-fifth": 25,
+        "twenty sixth": 26,
+        "twenty-sixth": 26,
+        "twenty seventh": 27,
+        "twenty-seventh": 27,
+        "twenty eighth": 28,
+        "twenty-eighth": 28,
+        "twenty ninth": 29,
+        "twenty-ninth": 29,
+        "thirtieth": 30,
+        "thirty first": 31,
+        "thirty-first": 31,
     }
     _confirmation_phrases = {
         "yes",
@@ -105,6 +152,34 @@ class MemoryIntentService:
             return remember_intent
 
         return None
+
+    def detect_contextual_memory(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+        time_context: Optional[dict] = None,
+    ) -> Optional[SimpleMemoryIntent]:
+        date_only = self._date_only_pattern.match(self._clean_fact(message))
+        if date_only is None:
+            return None
+
+        raw_date = date_only.group("date")
+        if not self._is_day_only_date(raw_date):
+            return None
+
+        person = self._recent_birthday_person(conversation_history)
+        if person is None:
+            return None
+
+        date_text = self._normalize_date_phrase(
+            raw_date,
+            time_context=time_context,
+        )
+        if not date_text:
+            return None
+
+        return self._birthday_intent(person, date_text)
 
     def pending_confirmation_from_history(
         self,
@@ -202,6 +277,13 @@ class MemoryIntentService:
         if not person or not date_text:
             return None
 
+        return self._birthday_intent(person, date_text)
+
+    def _birthday_intent(
+        self,
+        person: str,
+        date_text: str,
+    ) -> SimpleMemoryIntent:
         content = f"User's {person}'s birthday is {date_text}."
         question = f"So your {person}'s birthday is {date_text}, correct?"
         return SimpleMemoryIntent(
@@ -245,7 +327,7 @@ class MemoryIntentService:
         time_context: Optional[dict],
     ) -> Optional[str]:
         cleaned = self._clean_fact(raw_date)
-        cleaned = re.sub(r"^(on|the)\s+", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"^(?:(?:on|the)\s+)+", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"\s+", " ", cleaned).strip(" .")
         if not cleaned:
             return None
@@ -253,9 +335,13 @@ class MemoryIntentService:
         month = self._month_from_text(cleaned)
         day_match = re.search(r"\b(?P<day>\d{1,2})(?:st|nd|rd|th)?\b", cleaned)
         if day_match is None:
-            return cleaned
+            word_day = self._day_from_words(cleaned)
+            if word_day is None:
+                return cleaned
+            day = word_day
+        else:
+            day = int(day_match.group("day"))
 
-        day = int(day_match.group("day"))
         if day < 1 or day > 31:
             return None
 
@@ -280,6 +366,31 @@ class MemoryIntentService:
         except ValueError:
             return None
         return parsed.strftime("%B")
+
+    def _day_from_words(self, text: str) -> Optional[int]:
+        normalized = re.sub(r"\s+", " ", text.lower()).strip()
+        return self._ordinal_words.get(normalized)
+
+    def _is_day_only_date(self, text: str) -> bool:
+        normalized = re.sub(r"\s+", " ", text.lower()).strip()
+        return bool(
+            re.fullmatch(r"\d{1,2}(?:st|nd|rd|th)?", normalized)
+            or normalized in self._ordinal_words
+        )
+
+    def _recent_birthday_person(self, conversation_history: list[dict]) -> Optional[str]:
+        recent_text = " ".join(
+            str(message.get("content") or "")
+            for message in conversation_history[-6:]
+            if message.get("role") in {"user", "assistant"}
+        ).lower()
+        if "birthday" not in recent_text:
+            return None
+        if re.search(r"\b(my\s+)?(mom|mother|mum|mama)\b", recent_text):
+            return "mom"
+        if re.search(r"\b(my\s+)?(dad|father|papa)\b", recent_text):
+            return "dad"
+        return None
 
     def _clean_person(self, person: str) -> str:
         cleaned = re.sub(r"\s+", " ", person).strip(" .'_-").lower()

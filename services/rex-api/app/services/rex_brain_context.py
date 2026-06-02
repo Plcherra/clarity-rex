@@ -429,10 +429,20 @@ def _select_financial_context(
 
     safe_context = _sanitize_value(financial_context)
     if isinstance(safe_context, dict):
-        for error in safe_context.get("load_errors") or []:
-            diagnostics.append(f"financial_context_degraded:{error}")
-        if safe_context.get("data_status") in {"degraded", "partial"}:
-            diagnostics.append(f"financial_context_{safe_context.get('data_status')}")
+        load_errors = safe_context.get("load_errors")
+        if isinstance(load_errors, list):
+            for error in load_errors:
+                diagnostics.append(f"financial_context_degraded:{error}")
+        elif load_errors:
+            diagnostics.append("financial_context_degraded")
+
+        data_status = safe_context.get("data_status")
+        if isinstance(data_status, str) and data_status in {"degraded", "partial"}:
+            diagnostics.append(f"financial_context_{data_status}")
+        elif data_status is not None and not isinstance(
+            data_status, (str, int, float, bool)
+        ):
+            diagnostics.append("financial_context_data_status_invalid")
 
     if scope == RexFinancialContextScope.SUMMARY_ONLY:
         selected = _copy_keys(safe_context, FINANCIAL_SUMMARY_KEYS)

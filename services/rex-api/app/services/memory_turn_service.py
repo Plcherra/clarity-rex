@@ -150,6 +150,12 @@ class MemoryTurnService(MemoryTurnConfirmationHelpers):
             time_context=time_context,
         )
         if intent is None:
+            intent = self.memory_intent_service.detect_contextual_memory(
+                message,
+                conversation_history=conversation_history,
+                time_context=time_context,
+            )
+        if intent is None:
             return None
 
         existing_memory = await self._find_equivalent_active_memory(intent)

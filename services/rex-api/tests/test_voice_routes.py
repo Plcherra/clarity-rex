@@ -369,7 +369,9 @@ def test_voice_turn_completes_full_non_streaming_pipeline(client):
                 "response_instructions": (
                     "Voice turn response style: answer in 2-4 short spoken sentences. "
                     "Do not emit clarity_action blocks in voice mode. If a Clarity financial "
-                    "change needs confirmation, ask the user to open Chat to confirm it."
+                    "change needs confirmation, ask the user to open Chat to confirm it. "
+                    "Do not claim reminders, calendar events, notifications, or scheduled "
+                    "follow-ups were set unless a backend execution result confirms the write."
                 ),
                 "max_response_tokens": VOICE_RESPONSE_MAX_TOKENS,
                 "channel": RexBrainChannel.VOICE,

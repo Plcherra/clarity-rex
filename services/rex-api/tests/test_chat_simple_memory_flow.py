@@ -84,6 +84,42 @@ async def test_simple_memory_asks_confirmation_then_saves_durable_memory():
 
 
 @pytest.mark.asyncio
+async def test_contextual_birthday_answer_asks_confirmation_then_saves():
+    ai_service = FakeAIService(response="Nice, when's her birthday exactly?")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    first_turn = await chat_service.send_message(
+        "I'm thinking about my mom and her birthday. It is on this month."
+    )
+    confirmation = await chat_service.send_message(
+        "On the eighteenth.",
+        first_turn["conversation_id"],
+    )
+
+    assert confirmation["response"] == "So your mom's birthday is June 18, correct?"
+    assert confirmation["memory_changes"]["confirmation_required"] == 1
+    assert memory_service.memory_confirmations[0]["content"] == (
+        "User's mom's birthday is June 18."
+    )
+
+    saved = await chat_service.send_message("yes", first_turn["conversation_id"])
+
+    assert saved["response"] == (
+        "Saved. I'll remember that your mom's birthday is June 18."
+    )
+    assert saved["memory_changes"]["created"] == 1
+    assert memory_service.long_term_memory[0]["content"] == (
+        "User's mom's birthday is June 18."
+    )
+
+
+@pytest.mark.asyncio
 async def test_simple_memory_confirmation_works_in_voice_stream():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

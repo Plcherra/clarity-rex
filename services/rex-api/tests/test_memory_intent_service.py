@@ -26,6 +26,76 @@ def test_detects_birthday_with_current_month_context():
     )
 
 
+def test_detects_birthday_with_spelled_out_ordinal():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory(
+        "My mom's birthday is on the eighteenth.",
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert intent == SimpleMemoryIntent(
+        memory_type="fact",
+        content="User's mom's birthday is June 18.",
+        importance=5,
+        confirmation_question="So your mom's birthday is June 18, correct?",
+        metadata={
+            "fact_kind": "birthday",
+            "entity_label": "mom",
+            "normalized_date": "June 18",
+            "topic_fingerprint": "fact:birthday:mom",
+        },
+    )
+
+
+def test_detects_contextual_birthday_date_answer():
+    service = MemoryIntentService()
+
+    intent = service.detect_contextual_memory(
+        "On the eighteenth.",
+        conversation_history=[
+            {
+                "role": "user",
+                "content": "I'm thinking about my mom and her birthday this month.",
+            },
+            {
+                "role": "assistant",
+                "content": "Nice, when's her birthday exactly?",
+            },
+        ],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert intent == SimpleMemoryIntent(
+        memory_type="fact",
+        content="User's mom's birthday is June 18.",
+        importance=5,
+        confirmation_question="So your mom's birthday is June 18, correct?",
+        metadata={
+            "fact_kind": "birthday",
+            "entity_label": "mom",
+            "normalized_date": "June 18",
+            "topic_fingerprint": "fact:birthday:mom",
+        },
+    )
+
+
+def test_contextual_date_answer_needs_birthday_context():
+    service = MemoryIntentService()
+
+    assert (
+        service.detect_contextual_memory(
+            "On the eighteenth.",
+            conversation_history=[
+                {"role": "user", "content": "I need to send rent."},
+                {"role": "assistant", "content": "When is it due?"},
+            ],
+            time_context={"date": "2026-06-01"},
+        )
+        is None
+    )
+
+
 def test_detects_birthday_with_explicit_month():
     service = MemoryIntentService()
 

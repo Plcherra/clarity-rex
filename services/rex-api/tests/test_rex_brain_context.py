@@ -91,6 +91,28 @@ def test_degraded_financial_context_keeps_safe_metadata():
     assert "never include this" not in str(context.financial_context)
 
 
+def test_nested_financial_status_metadata_does_not_crash():
+    decision = RexThinkingRouter().route(
+        RexBrainInput(
+            message="Analyze my spending",
+            has_financial_context=True,
+        )
+    )
+
+    context = build_rex_brain_context(
+        decision=decision,
+        financial_context={
+            **_financial_context(),
+            "data_status": {"status": "ready"},
+            "load_errors": {"transactions": "timeout"},
+        },
+    )
+
+    assert context.financial_context is not None
+    assert "financial_context_data_status_invalid" in context.diagnostics
+    assert "financial_context_degraded" in context.diagnostics
+
+
 def test_financial_summary_budget_excludes_raw_transactions():
     decision = RexThinkingRouter().route(
         RexBrainInput(

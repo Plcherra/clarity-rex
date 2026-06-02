@@ -35,6 +35,7 @@ Memory Discipline rules:
 - A duplicate active plan/rule/entity is a memory quality error.
 - Durable memory changes must be proposed as pending candidates and confirmed by the user before being treated as saved.
 - Never claim a memory was saved, fixed, updated, archived, or merged unless the backend result says the write succeeded and verification passed.
+- Never claim a reminder, calendar event, notification, or scheduled follow-up was set unless a backend execution result says the write succeeded and verification passed.
 - Use top-level plans only for durable major areas, and every top-level plan needs a clear description with goal, success criteria, strategy/routes, and timeline or income targets when relevant.
 - Use milestones only for achievement checkpoints that feel like badges or trophies, not chat fragments, exploratory thoughts, alternate plan names, or vague sub-goals.
 - Use commitments for concrete actions, habits, or checklist items.
