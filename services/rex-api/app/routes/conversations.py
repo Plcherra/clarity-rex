@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.dependencies import get_memory_service
 from app.models.conversation import ConversationResponse, MessageResponse
+from app.services.memory_intent_service import MemoryIntentService
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
+memory_intent_service = MemoryIntentService()
 
 
 @router.get("", response_model=list[ConversationResponse])
@@ -17,7 +19,10 @@ async def list_conversations(
     except MemoryServiceError as error:
         raise _memory_http_error(error) from error
 
-    return [ConversationResponse(**conversation) for conversation in conversations]
+    return [
+        ConversationResponse(**_public_conversation(conversation))
+        for conversation in conversations
+    ]
 
 
 @router.post("", response_model=ConversationResponse, status_code=201)
@@ -45,7 +50,7 @@ async def get_conversation_messages(
     if messages is None:
         raise HTTPException(status_code=404, detail="Conversation not found.")
 
-    return [MessageResponse(**message) for message in messages]
+    return [MessageResponse(**_public_message(message)) for message in messages]
 
 
 @router.delete("/{conversation_id}", status_code=204)
@@ -66,3 +71,19 @@ async def delete_conversation(
 
 def _memory_http_error(error: MemoryServiceError) -> HTTPException:
     return HTTPException(status_code=error.status_code, detail=error.detail)
+
+
+def _public_conversation(conversation: dict) -> dict:
+    public_conversation = dict(conversation)
+    last_message = public_conversation.get("last_message")
+    if isinstance(last_message, dict):
+        public_conversation["last_message"] = _public_message(last_message)
+    return public_conversation
+
+
+def _public_message(message: dict) -> dict:
+    public_message = dict(message)
+    public_message["content"] = memory_intent_service.strip_internal_markers(
+        str(public_message.get("content") or "")
+    )
+    return public_message

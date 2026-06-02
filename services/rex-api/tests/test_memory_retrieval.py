@@ -1,7 +1,7 @@
 import pytest
 
 from app.config import Settings
-from app.services.chat_service import PROFILE_MEMORY_QUERY
+from app.services.chat_context_service import PROFILE_MEMORY_QUERY
 from app.services.memory_service import SupabaseMemoryService
 
 

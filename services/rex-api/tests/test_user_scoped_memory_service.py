@@ -1,6 +1,6 @@
 import pytest
 
-import app.services.memory_service as memory_service_module
+import app.services.supabase_memory_transport as transport_module
 from app.config import Settings
 from app.services.memory_service import SupabaseMemoryService
 
@@ -27,7 +27,7 @@ async def test_memory_service_uses_user_token_and_scopes_reads(monkeypatch):
         )
         return FakeSupabaseRestResponse()
 
-    monkeypatch.setattr(memory_service_module, "request_with_retries", fake_request)
+    monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
     service = SupabaseMemoryService(
         settings=Settings(
             supabase_url="https://example.supabase.co",
@@ -58,7 +58,7 @@ async def test_memory_service_attaches_user_id_to_inserts(monkeypatch):
         calls.append({"method": method, "url": url, "json": json})
         return FakeSupabaseRestResponse()
 
-    monkeypatch.setattr(memory_service_module, "request_with_retries", fake_request)
+    monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
     service = SupabaseMemoryService(
         settings=Settings(
             supabase_url="https://example.supabase.co",
@@ -93,7 +93,7 @@ async def test_memory_service_overrides_untrusted_user_id_on_inserts(monkeypatch
         calls.append({"method": method, "url": url, "json": json})
         return FakeSupabaseRestResponse()
 
-    monkeypatch.setattr(memory_service_module, "request_with_retries", fake_request)
+    monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
     service = SupabaseMemoryService(
         settings=Settings(
             supabase_url="https://example.supabase.co",
@@ -130,7 +130,7 @@ async def test_memory_service_strips_protected_fields_on_updates(monkeypatch):
         calls.append({"method": method, "url": url, "json": json})
         return FakeSupabaseRestResponse()
 
-    monkeypatch.setattr(memory_service_module, "request_with_retries", fake_request)
+    monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
     service = SupabaseMemoryService(
         settings=Settings(
             supabase_url="https://example.supabase.co",
