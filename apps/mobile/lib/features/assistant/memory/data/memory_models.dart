@@ -1,5 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'package:clarity/features/assistant/memory/data/memory_labels.dart';
+
+export 'package:clarity/features/assistant/memory/data/memory_labels.dart';
+export 'package:clarity/features/assistant/memory/data/person_memory_model.dart';
+export 'package:clarity/features/assistant/memory/data/rule_memory_model.dart';
+
 part 'memory_models.freezed.dart';
 part 'memory_models.g.dart';
 
@@ -8,16 +14,6 @@ enum MemoryType { fact, preference, event, other }
 enum MemoryLayer { longTerm, people, rules, plans, commitments }
 
 enum MemoryReviewMode { saved, pending }
-
-enum MemoryGroup {
-  identity,
-  preferences,
-  peoplePlaces,
-  plans,
-  rules,
-  recent,
-  other,
-}
 
 @freezed
 abstract class MemoryItem with _$MemoryItem {
@@ -110,27 +106,6 @@ extension MemoryReviewModeLabel on MemoryReviewMode {
   }
 }
 
-extension MemoryGroupLabel on MemoryGroup {
-  String get label {
-    switch (this) {
-      case MemoryGroup.identity:
-        return 'Identity';
-      case MemoryGroup.preferences:
-        return 'Preferences';
-      case MemoryGroup.peoplePlaces:
-        return 'People & places';
-      case MemoryGroup.plans:
-        return 'Plans';
-      case MemoryGroup.rules:
-        return 'Rules';
-      case MemoryGroup.recent:
-        return 'Recent';
-      case MemoryGroup.other:
-        return 'Other memories';
-    }
-  }
-}
-
 class PendingMemoryCandidateItem {
   const PendingMemoryCandidateItem({
     required this.id,
@@ -163,7 +138,10 @@ class PendingMemoryCandidateItem {
       status: _string(json['status']) ?? 'pending',
       riskLevel: _string(json['risk_level']) ?? 'medium',
       preview: _string(json['preview']) ?? 'Pending memory change',
-      reason: _string(json['reason']) ?? _string(json['rationale']),
+      reason:
+          _string(json['review_reason']) ??
+          _string(json['reason']) ??
+          _string(json['rationale']),
       expectedAction:
           _string(json['expected_action']) ??
           'Apply pending memory change after confirmation',
@@ -284,88 +262,6 @@ class PendingMemoryCandidateItem {
   }
 }
 
-class PersonMemoryItem {
-  const PersonMemoryItem({
-    required this.id,
-    required this.displayName,
-    required this.relationship,
-    required this.summary,
-    required this.aliases,
-    required this.importance,
-    required this.status,
-    required this.active,
-    this.createdAt,
-    this.updatedAt,
-  });
-
-  factory PersonMemoryItem.fromJson(Map<String, dynamic> json) {
-    return PersonMemoryItem(
-      id: _string(json['id']) ?? '',
-      displayName: _string(json['display_name']) ?? 'Person',
-      relationship: _string(json['relationship']),
-      summary: _string(json['summary']),
-      aliases: _stringList(json['aliases']),
-      importance: _int(json['importance']) ?? 3,
-      status: _string(json['status']) ?? 'active',
-      active: _bool(json['active']) ?? true,
-      createdAt: _dateTime(json['created_at']),
-      updatedAt: _dateTime(json['updated_at']),
-    );
-  }
-
-  final String id;
-  final String displayName;
-  final String? relationship;
-  final String? summary;
-  final List<String> aliases;
-  final int importance;
-  final String status;
-  final bool active;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-}
-
-class RuleMemoryItem {
-  const RuleMemoryItem({
-    required this.id,
-    required this.ruleType,
-    required this.title,
-    required this.ruleText,
-    required this.triggerKeywords,
-    required this.priority,
-    required this.status,
-    required this.active,
-    this.createdAt,
-    this.updatedAt,
-  });
-
-  factory RuleMemoryItem.fromJson(Map<String, dynamic> json) {
-    return RuleMemoryItem(
-      id: _string(json['id']) ?? '',
-      ruleType: _string(json['rule_type']) ?? 'other',
-      title: _string(json['title']) ?? 'Rule',
-      ruleText: _string(json['rule_text']) ?? '',
-      triggerKeywords: _stringList(json['trigger_keywords']),
-      priority: _int(json['priority']) ?? 3,
-      status: _string(json['status']) ?? 'active',
-      active: _bool(json['active']) ?? true,
-      createdAt: _dateTime(json['created_at']),
-      updatedAt: _dateTime(json['updated_at']),
-    );
-  }
-
-  final String id;
-  final String ruleType;
-  final String title;
-  final String ruleText;
-  final List<String> triggerKeywords;
-  final int priority;
-  final String status;
-  final bool active;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-}
-
 class PlanMemoryItem {
   const PlanMemoryItem({
     required this.id,
@@ -460,136 +356,6 @@ class CommitmentMemoryItem {
   final DateTime? updatedAt;
 }
 
-extension MemoryRecordLabel on String {
-  String get memoryRecordLabel {
-    final mapped = humanMemoryLabel(this);
-    if (mapped != null) {
-      return mapped;
-    }
-
-    return fallbackHumanLabel;
-  }
-
-  String get fallbackHumanLabel {
-    final value = trim();
-    if (value.isEmpty) {
-      return '';
-    }
-
-    return value
-        .replaceAllMapped(RegExp(r'(?<=[a-z0-9])(?=[A-Z])'), (_) => ' ')
-        .split(RegExp(r'[_\s-]+'))
-        .where((part) => part.isNotEmpty)
-        .map((part) {
-          final lowered = part.toLowerCase();
-          return lowered[0].toUpperCase() + lowered.substring(1);
-        })
-        .join(' ');
-  }
-}
-
-String memoryCandidateTypeLabel(String value) {
-  return _candidateTypeLabels[_normalLabelKey(value)] ??
-      value.fallbackHumanLabel;
-}
-
-String memoryCandidateStatusLabel(String value) {
-  return _candidateStatusLabels[_normalLabelKey(value)] ??
-      value.fallbackHumanLabel;
-}
-
-String memoryRiskLevelLabel(String value) {
-  return _riskLevelLabels[_normalLabelKey(value)] ?? value.fallbackHumanLabel;
-}
-
-String? humanMemoryLabel(String value) {
-  final key = _normalLabelKey(value);
-  return _candidateTypeLabels[key] ??
-      _recordTypeLabels[key] ??
-      _statusLabels[key] ??
-      _riskLevelLabels[key];
-}
-
-MemoryGroup memoryGroupForTypeLabel(String value) {
-  switch (_normalLabelKey(value)) {
-    case 'fact':
-    case 'identity':
-      return MemoryGroup.identity;
-    case 'preference':
-    case 'preferences':
-      return MemoryGroup.preferences;
-    case 'entity':
-    case 'person':
-    case 'people':
-    case 'place':
-    case 'people_places':
-      return MemoryGroup.peoplePlaces;
-    case 'plan':
-    case 'plan_milestone':
-    case 'commitment':
-      return MemoryGroup.plans;
-    case 'personal_rule':
-    case 'rule':
-      return MemoryGroup.rules;
-    case 'event':
-    case 'entity_event':
-    case 'recent':
-      return MemoryGroup.recent;
-    default:
-      return MemoryGroup.other;
-  }
-}
-
-String memoryPreviewWithHumanType(String value) {
-  final trimmed = value.trim();
-  if (trimmed.isEmpty) {
-    return trimmed;
-  }
-
-  final separator = trimmed.indexOf(':');
-  if (separator <= 0) {
-    return trimmed;
-  }
-
-  final prefix = trimmed.substring(0, separator).trim();
-  final label = _candidateTypeLabels[_normalLabelKey(prefix)];
-  if (label == null) {
-    return trimmed;
-  }
-
-  final rest = trimmed.substring(separator + 1).trimLeft();
-  if (rest.isEmpty) {
-    return label;
-  }
-  return '$label: $rest';
-}
-
-String? correctionPreviewLabel({
-  required String? oldValue,
-  required String? newValue,
-  required String? targetHint,
-}) {
-  final oldText = oldValue?.trim();
-  final newText = newValue?.trim();
-  final targetText = targetHint?.trim();
-  if (oldText != null &&
-      oldText.isNotEmpty &&
-      newText != null &&
-      newText.isNotEmpty) {
-    return 'Correction: replace "$oldText" with "$newText"';
-  }
-  if (targetText != null &&
-      targetText.isNotEmpty &&
-      newText != null &&
-      newText.isNotEmpty) {
-    return 'Correction: change "$targetText" to "$newText"';
-  }
-  if (targetText != null && targetText.isNotEmpty) {
-    return 'Correction: review $targetText';
-  }
-  return null;
-}
-
 Map<String, dynamic> editedMemoryCandidatePayload(
   PendingMemoryCandidateItem candidate,
   String proposal,
@@ -621,7 +387,7 @@ String? _firstPayloadText(Map<String, dynamic> payload, List<String> keys) {
 }
 
 List<String> _candidatePrimaryTextKeys(String candidateType) {
-  switch (_normalLabelKey(candidateType)) {
+  switch (normalMemoryLabelKey(candidateType)) {
     case 'entity':
       return const ['display_name', 'title', 'content'];
     case 'personal_rule':
@@ -640,65 +406,6 @@ List<String> _candidatePrimaryTextKeys(String candidateType) {
   }
 }
 
-String _normalLabelKey(String value) {
-  return value
-      .trim()
-      .replaceAllMapped(RegExp(r'(?<=[a-z0-9])(?=[A-Z])'), (_) => '_')
-      .replaceAll(RegExp(r'[\s-]+'), '_')
-      .toLowerCase();
-}
-
-const _candidateTypeLabels = {
-  'long_term_memory': 'Memory',
-  'memory_update': 'Memory update',
-  'entity': 'Person / place',
-  'entity_event': 'Related event',
-  'personal_rule': 'Rule',
-  'plan': 'Plan',
-  'plan_milestone': 'Milestone',
-  'commitment': 'Commitment',
-  'correction': 'Correction',
-  'archive': 'Archive',
-  'merge': 'Merge',
-};
-
-const _recordTypeLabels = {
-  'fact': 'Fact',
-  'preference': 'Preference',
-  'event': 'Event',
-  'other': 'Other',
-  'gentle_direct': 'Gentle reminder',
-  'checkpoint': 'Checkpoint',
-};
-
-const _candidateStatusLabels = {
-  'pending': 'Needs review',
-  'approved': 'Approved',
-  'applied': 'Saved',
-  'rejected': 'Rejected',
-  'failed': 'Needs attention',
-  'skipped': 'Skipped',
-};
-
-const _statusLabels = {
-  ..._candidateStatusLabels,
-  'active': 'Active',
-  'inactive': 'Inactive',
-  'open': 'Open',
-  'completed': 'Completed',
-  'resolved': 'Resolved',
-  'dismissed': 'Dismissed',
-  'archived': 'Archived',
-};
-
-const _riskLevelLabels = {
-  'low': 'Low risk',
-  'medium': 'Medium risk',
-  'high': 'High risk',
-  'critical': 'Critical risk',
-  'info': 'Info',
-};
-
 String? _string(Object? value) => value is String ? value : null;
 
 int? _int(Object? value) {
@@ -712,13 +419,6 @@ int? _int(Object? value) {
 }
 
 bool? _bool(Object? value) => value is bool ? value : null;
-
-List<String> _stringList(Object? value) {
-  if (value is! List) {
-    return const [];
-  }
-  return value.whereType<String>().toList(growable: false);
-}
 
 Map<String, dynamic> _map(Object? value) {
   return value is Map<String, dynamic> ? value : const {};

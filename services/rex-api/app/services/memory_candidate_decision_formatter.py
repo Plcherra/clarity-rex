@@ -40,10 +40,10 @@ class MemoryCandidateDecisionFormatter:
     ) -> dict:
         if response is None:
             response = (
-                f"I found {len(pending)} pending memory change(s). Review the "
-                'candidate card(s), then say "approve all pending" for eligible '
-                'low/medium-risk changes, "confirm" for a single high-risk '
-                'change, or "do not save" to reject the latest one.'
+                f"I found {len(pending)} memory update(s) that need review. "
+                'Review the memory card(s), then say "approve all pending" '
+                'for eligible low/medium-risk changes, "confirm" for a single '
+                'high-risk change, or "do not save" to reject the latest one.'
             )
         cards = [self.candidate_card(candidate) for candidate in pending]
         return {
@@ -183,6 +183,9 @@ class MemoryCandidateDecisionFormatter:
             "risk_level": candidate.get("risk_level"),
             "preview": candidate.get("preview"),
             "reason": candidate.get("reason"),
+            "review_reason": self.review_reason(candidate),
+            "memory_path": self.memory_path(candidate),
+            "review_required": True,
             "expected_action": self.candidate_expected_action(candidate),
             "requires_explicit_confirmation": candidate.get("risk_level") == "high",
             "source_conversation_id": candidate.get("source_conversation_id"),
@@ -213,6 +216,24 @@ class MemoryCandidateDecisionFormatter:
             "archive": "Archive stale record after confirmation",
             "merge": "Merge duplicate records after confirmation",
         }.get(candidate_type, "Apply pending memory change after confirmation")
+
+    def review_reason(self, candidate: dict) -> Optional[str]:
+        payload = candidate.get("payload") or {}
+        metadata = payload.get("metadata") if isinstance(payload, dict) else {}
+        if isinstance(metadata, dict):
+            review_reason = metadata.get("review_reason")
+            if review_reason:
+                return str(review_reason)
+        reason = candidate.get("reason")
+        return str(reason) if reason else None
+
+    def memory_path(self, candidate: dict) -> Optional[str]:
+        payload = candidate.get("payload") or {}
+        metadata = payload.get("metadata") if isinstance(payload, dict) else {}
+        if not isinstance(metadata, dict):
+            return None
+        memory_path = metadata.get("memory_path")
+        return str(memory_path) if memory_path else None
 
     def payload_preview(self, payload: dict) -> dict:
         preview: dict[str, object] = {}

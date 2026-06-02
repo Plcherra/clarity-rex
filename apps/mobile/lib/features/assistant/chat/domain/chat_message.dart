@@ -183,7 +183,10 @@ class MemoryCandidateCard {
       correctionOldValue: correctionValues.oldValue,
       correctionNewValue: correctionValues.newValue,
       correctionTargetHint: correctionValues.targetHint,
-      reason: _optionalText(json['reason']) ?? _optionalText(json['rationale']),
+      reason:
+          _optionalText(json['review_reason']) ??
+          _optionalText(json['reason']) ??
+          _optionalText(json['rationale']),
       sourceConversationId: _optionalText(json['source_conversation_id']),
       sourceMessageId: _optionalText(json['source_message_id']),
       verificationPassed: verificationMap['passed'] is bool

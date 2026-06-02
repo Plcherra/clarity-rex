@@ -68,12 +68,32 @@ void main() {
         'status': 'pending',
         'risk_level': 'high',
         'preview': 'long_term_memory: Pedro prefers email',
+        'review_reason': 'Extracted memory needs review before saving.',
+        'reason': 'Raw extractor rationale.',
       });
 
       expect(candidate.candidateTypeLabel, 'Memory');
       expect(candidate.statusLabel, 'Needs review');
       expect(candidate.riskLabel, 'High risk');
       expect(candidate.previewLabel, 'Memory: Pedro prefers email');
+      expect(
+        candidate.reasonLabel,
+        'Extracted memory needs review before saving.',
+      );
+    });
+
+    test('memory review candidate prefers review reason copy', () {
+      final candidate = PendingMemoryCandidateItem.fromJson({
+        'id': 'candidate-1',
+        'candidate_type': 'long_term_memory',
+        'status': 'pending',
+        'risk_level': 'medium',
+        'preview': 'long_term_memory: Pedro prefers email',
+        'review_reason': 'Review this before Rex saves it.',
+        'reason': 'Raw extractor rationale.',
+      });
+
+      expect(candidate.reasonLabel, 'Review this before Rex saves it.');
     });
 
     test('accountability source and candidate labels avoid raw enum names', () {

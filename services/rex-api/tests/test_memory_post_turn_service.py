@@ -59,9 +59,15 @@ async def test_memory_post_turn_service_creates_pending_correction_candidate():
 
     assert result["requires_confirmation"] is True
     assert result["candidate_id"] == "candidate-1"
+    assert result["memory_path"] == "pending_review"
+    assert result["review_required"] is True
+    assert result["review_reason"] == (
+        "Correction could change saved memory, so it needs explicit review."
+    )
     request = candidate_service.created[0]
     assert request.candidate_type == "correction"
     assert request.payload["metadata"]["rex_brain"] == {"layer": "fast_contextual"}
+    assert request.payload["metadata"]["memory_path"] == "pending_review"
 
 
 def test_memory_post_turn_service_summarizes_extraction_and_correction_changes():
@@ -90,6 +96,31 @@ def test_memory_post_turn_service_summarizes_extraction_and_correction_changes()
     assert summary["created"] == 1
     assert summary["confirmation_required"] == 2
     assert len(summary["records"]) == 3
+    assert summary["records"][1]["memory_path"] is None
+    assert summary["records"][2]["memory_path"] is None
+
+
+def test_memory_post_turn_service_counts_reused_candidate_as_review_required():
+    service = MemoryPostTurnService()
+
+    summary = service.memory_change_summary(
+        [
+            {
+                "extraction_kind": "memory_candidate",
+                "structured_type": "long_term_memory",
+                "extraction_action": "candidate_reused",
+                "id": "candidate-1",
+                "content": "Mom's birthday is June 18",
+                "memory_path": "pending_review",
+                "review_required": True,
+                "review_reason": "Extracted memory needs review before saving.",
+            },
+        ],
+    )
+
+    assert summary["created"] == 0
+    assert summary["confirmation_required"] == 1
+    assert summary["records"][0]["memory_path"] == "pending_review"
 
 
 @pytest.mark.asyncio

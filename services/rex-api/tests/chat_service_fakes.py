@@ -134,6 +134,22 @@ class FakeMemoryService:
         self.long_term_memory.append(memory)
         return memory
 
+    async def list_long_term_memory(self, limit=50, memory_type=None, active=None):
+        memories = self.long_term_memory
+        if memory_type is not None:
+            memories = [
+                memory
+                for memory in memories
+                if memory.get("memory_type") == memory_type
+            ]
+        if active is not None:
+            memories = [
+                memory
+                for memory in memories
+                if memory.get("active", True) is active
+            ]
+        return memories[:limit]
+
     async def create_memory_confirmation(self, confirmation):
         row = {
             "id": f"confirmation-{self.next_confirmation_id}",

@@ -8,7 +8,7 @@ from app.services.time_context_service import TimeContextService
 
 PROFILE_MEMORY_QUERY = (
     "user profile location timezone where I live state city home current time "
-    "important identity facts"
+    "important identity facts birthdays family important dates preferences"
 )
 PROFILE_MEMORY_LIMIT = 4
 

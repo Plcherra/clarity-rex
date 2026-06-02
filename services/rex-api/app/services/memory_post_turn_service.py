@@ -6,6 +6,7 @@ from app.models.memory_candidate import MemoryCandidateCreateRequest
 from app.services.memory_candidate_service import MemoryCandidateService
 from app.services.memory_correction_service import MemoryCorrectionService
 from app.services.memory_extraction_service import MemoryExtractionService
+from app.services.memory_path_policy import pending_review_metadata
 
 
 class MemoryPostTurnService:
@@ -39,6 +40,22 @@ class MemoryPostTurnService:
             return None
         if self.memory_candidate_service is None:
             return None
+        reason = (
+            "User correction detected. It must be confirmed before anything "
+            "durable is changed."
+        )
+        candidate_metadata = self.memory_candidate_metadata(
+            pending_review_metadata(
+                {
+                    "correction_intent": True,
+                    "phase": "2_pending_verified_correction",
+                },
+                candidate_type="correction",
+                risk_level="high",
+                rationale=reason,
+            ),
+            brain_metadata=brain_metadata,
+        )
         try:
             candidate = await self.memory_candidate_service.create_candidate(
                 MemoryCandidateCreateRequest(
@@ -52,19 +69,10 @@ class MemoryPostTurnService:
                             "target_hint": intent.target_hint,
                             "confidence": intent.confidence,
                         },
-                        "metadata": self.memory_candidate_metadata(
-                            {
-                                "correction_intent": True,
-                                "phase": "2_pending_verified_correction",
-                            },
-                            brain_metadata=brain_metadata,
-                        ),
+                        "metadata": candidate_metadata,
                     },
                     risk_level="high",
-                    reason=(
-                        "User correction detected. It must be confirmed before "
-                        "anything durable is changed."
-                    ),
+                    reason=reason,
                     source_conversation_id=conversation_id,
                     source_message_id=user_message_id or None,
                 )
@@ -82,6 +90,9 @@ class MemoryPostTurnService:
             "new_value": intent.new_value,
             "target_hint": intent.target_hint,
             "message": "Correction captured as a pending memory candidate.",
+            "memory_path": "pending_review",
+            "review_required": True,
+            "review_reason": candidate_metadata.get("review_reason"),
         }
 
     def memory_candidate_metadata(
@@ -147,6 +158,9 @@ class MemoryPostTurnService:
                     "requires_confirmation": bool(
                         memory_correction.get("requires_confirmation")
                     ),
+                    "memory_path": memory_correction.get("memory_path"),
+                    "review_required": memory_correction.get("review_required"),
+                    "review_reason": memory_correction.get("review_reason"),
                 }
             )
 
@@ -172,7 +186,7 @@ class MemoryPostTurnService:
                 summary["merged"] += 1
             elif action in {"ask_confirmation", "confirmation_required"}:
                 summary["confirmation_required"] += 1
-            elif action == "candidate_created":
+            elif action in {"candidate_created", "candidate_reused"}:
                 summary["confirmation_required"] += 1
             elif action.startswith("skip") or action.startswith("ignore"):
                 summary["skipped"] += 1
@@ -186,6 +200,9 @@ class MemoryPostTurnService:
                     "title": result.get("title")
                     or result.get("display_name")
                     or result.get("content"),
+                    "memory_path": result.get("memory_path"),
+                    "review_required": result.get("review_required"),
+                    "review_reason": result.get("review_reason"),
                 }
             )
 

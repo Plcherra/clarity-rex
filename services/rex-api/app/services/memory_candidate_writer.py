@@ -1,3 +1,4 @@
+import re
 from typing import Any, Optional
 
 from app.models.memory_candidate import MemoryCandidateCreateRequest
@@ -6,6 +7,7 @@ from app.models.memory_discipline import (
     MemoryDisciplineDecision,
 )
 from app.services.memory_discipline_service import MemoryDisciplineService
+from app.services.memory_path_policy import pending_review_metadata
 from app.services.memory_structured_candidate_normalizer import clean_text
 
 
@@ -113,10 +115,29 @@ class MemoryCandidateWriter:
         create_candidate = getattr(self.memory_service, "create_memory_candidate", None)
         if create_candidate is None:
             return None
+        payload = self.payload_with_review_metadata(
+            payload,
+            candidate_type=candidate_type,
+            risk_level=risk_level,
+            rationale=rationale,
+        )
         payload = self.payload_with_brain_metadata(
             payload,
             brain_metadata=brain_metadata,
         )
+        duplicate = await self.find_pending_duplicate_candidate(
+            candidate_type=candidate_type,
+            payload=payload,
+            conversation_id=conversation_id,
+        )
+        if duplicate is not None:
+            return self.extraction_result(
+                payload=payload,
+                row=duplicate,
+                candidate_type=candidate_type,
+                rationale=rationale,
+                action="candidate_reused",
+            )
         try:
             row = await create_candidate(
                 MemoryCandidateCreateRequest(
@@ -130,6 +151,26 @@ class MemoryCandidateWriter:
             )
         except Exception:
             return None
+        return self.extraction_result(
+            payload=payload,
+            row=row,
+            candidate_type=candidate_type,
+            rationale=rationale,
+            action="candidate_created",
+        )
+
+    def extraction_result(
+        self,
+        *,
+        payload: dict[str, Any],
+        row: dict[str, Any],
+        candidate_type: str,
+        rationale: str,
+        action: str,
+    ) -> dict:
+        metadata = payload.get("metadata") if isinstance(payload, dict) else {}
+        if not isinstance(metadata, dict):
+            metadata = {}
         return {
             **payload,
             **row,
@@ -140,10 +181,80 @@ class MemoryCandidateWriter:
             "memory_type": payload.get("memory_type")
             if candidate_type == "long_term_memory"
             else None,
-            "extraction_action": "candidate_created",
+            "extraction_action": action,
             "extraction_rationale": rationale,
             "pending": True,
+            "memory_path": metadata.get("memory_path") if metadata else None,
+            "review_required": metadata.get("review_required") if metadata else True,
+            "review_reason": metadata.get("review_reason") if metadata else rationale,
         }
+
+    def payload_with_review_metadata(
+        self,
+        payload: dict[str, Any],
+        *,
+        candidate_type: str,
+        risk_level: str,
+        rationale: str,
+    ) -> dict[str, Any]:
+        updated = dict(payload)
+        metadata = updated.get("metadata")
+        updated["metadata"] = pending_review_metadata(
+            metadata if isinstance(metadata, dict) else {},
+            candidate_type=candidate_type,
+            risk_level=risk_level,
+            rationale=rationale,
+        )
+        return updated
+
+    async def find_pending_duplicate_candidate(
+        self,
+        *,
+        candidate_type: str,
+        payload: dict[str, Any],
+        conversation_id: str,
+    ) -> Optional[dict]:
+        list_candidates = getattr(self.memory_service, "list_memory_candidates", None)
+        if list_candidates is None:
+            return None
+        try:
+            candidates = await list_candidates(
+                limit=20,
+                candidate_type=candidate_type,
+                status="pending",
+                source_conversation_id=conversation_id or None,
+            )
+        except Exception:
+            return None
+
+        for candidate in candidates:
+            if self.payloads_match(candidate.get("payload") or {}, payload):
+                return candidate
+        return None
+
+    def payloads_match(self, existing: dict[str, Any], incoming: dict[str, Any]) -> bool:
+        existing_fingerprint = self.payload_fingerprint(existing)
+        incoming_fingerprint = self.payload_fingerprint(incoming)
+        if existing_fingerprint and incoming_fingerprint:
+            return existing_fingerprint == incoming_fingerprint
+        return self.normalized_payload_text(existing) == self.normalized_payload_text(
+            incoming
+        )
+
+    def payload_fingerprint(self, payload: dict[str, Any]) -> Optional[str]:
+        metadata = payload.get("metadata")
+        if not isinstance(metadata, dict):
+            return None
+        fingerprint = metadata.get("topic_fingerprint")
+        return str(fingerprint) if fingerprint else None
+
+    def normalized_payload_text(self, payload: dict[str, Any]) -> str:
+        text = " ".join(
+            str(payload.get(field) or "")
+            for field in ("content", "title", "display_name", "commitment_text")
+        )
+        normalized = re.sub(r"[^a-z0-9]+", " ", text.lower())
+        return re.sub(r"\s+", " ", normalized).strip()
 
     def candidate_risk_level(
         self,

@@ -2,6 +2,12 @@ import re
 from datetime import datetime, timezone
 from typing import Optional
 
+from app.services.memory_retrieval_terms import (
+    CONCEPT_GROUPS,
+    PROFILE_CONTEXT_TERMS,
+    STOP_WORDS,
+)
+
 RELEVANT_MEMORY_SCAN_LIMIT = 100
 RELEVANT_MEMORY_MINIMUM_SCORE = 0.12
 STRUCTURED_MEMORY_SCAN_LIMIT = 50
@@ -10,103 +16,6 @@ STRUCTURED_MEMORY_RELATED_LIMIT = 8
 STRUCTURED_MEMORY_MINIMUM_SCORE = 0.14
 HIGH_PRIORITY_STRUCTURED_THRESHOLD = 4
 
-STOP_WORDS = {
-    "about",
-    "after",
-    "again",
-    "also",
-    "and",
-    "are",
-    "because",
-    "but",
-    "can",
-    "could",
-    "for",
-    "from",
-    "have",
-    "how",
-    "into",
-    "just",
-    "like",
-    "more",
-    "need",
-    "not",
-    "now",
-    "should",
-    "that",
-    "the",
-    "this",
-    "what",
-    "when",
-    "where",
-    "with",
-    "would",
-    "you",
-    "your",
-}
-
-CONCEPT_GROUPS = {
-    "work": {"career", "job", "manager", "office", "salary", "work", "workplace"},
-    "money": {"bill", "budget", "debt", "finance", "money", "rent", "savings"},
-    "location": {
-        "address",
-        "area",
-        "city",
-        "eastern",
-        "edt",
-        "est",
-        "home",
-        "house",
-        "live",
-        "lives",
-        "living",
-        "location",
-        "massachusetts",
-        "place",
-        "state",
-        "timezone",
-    },
-    "relationship": {
-        "date",
-        "dating",
-        "girl",
-        "girlfriend",
-        "monday",
-        "name",
-        "offday",
-        "person",
-        "restaurant",
-        "relationship",
-        "wife",
-    },
-    "time": {
-        "clock",
-        "date",
-        "day",
-        "eastern",
-        "edt",
-        "est",
-        "morning",
-        "night",
-        "schedule",
-        "time",
-        "timezone",
-        "today",
-        "tomorrow",
-        "tonight",
-        "week",
-    },
-    "immigration": {"ead", "green", "immigration", "status", "uscis", "visa"},
-    "stress": {
-        "anxiety",
-        "burnout",
-        "frustrated",
-        "pressure",
-        "stress",
-        "stressed",
-    },
-}
-
 
 class MemoryRetrievalRanker:
     def score_memory(
@@ -114,7 +23,7 @@ class MemoryRetrievalRanker:
         memory: dict,
         query_terms: set[str],
     ) -> Optional[dict]:
-        content = str(memory.get("content", ""))
+        content = self.memory_text(memory)
         memory_terms = self.expanded_terms(content)
         matched_terms = sorted(query_terms & memory_terms)
         has_direct_match = bool(matched_terms)
@@ -122,9 +31,7 @@ class MemoryRetrievalRanker:
             memory.get("memory_type") == "preference"
             and int(memory.get("importance") or 0) >= 4
         )
-        is_profile_context_query = bool(
-            query_terms & {"profile", "identity", "important", "fact"}
-        )
+        is_profile_context_query = bool(query_terms & PROFILE_CONTEXT_TERMS)
         is_high_priority_profile_fact = (
             memory.get("memory_type") == "fact"
             and int(memory.get("importance") or 0) >= 4
@@ -173,6 +80,21 @@ class MemoryRetrievalRanker:
             "relevance_score": round(relevance_score, 4),
             "relevance_reason": reason,
         }
+
+    def memory_text(self, memory: dict) -> str:
+        metadata = memory.get("metadata")
+        metadata_values = []
+        if isinstance(metadata, dict):
+            for key in (
+                "fact_kind",
+                "entity_label",
+                "normalized_date",
+                "topic_fingerprint",
+            ):
+                value = metadata.get(key)
+                if value:
+                    metadata_values.append(str(value))
+        return " ".join([str(memory.get("content") or ""), *metadata_values])
 
     def rank_structured_records(
         self,

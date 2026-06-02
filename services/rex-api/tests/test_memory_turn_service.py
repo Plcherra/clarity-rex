@@ -1,116 +1,7 @@
 import pytest
 
+from memory_turn_fakes import FakeMemoryTurnStore
 from app.services.memory_turn_service import MemoryTurnService
-
-
-class FakeMemoryTurnStore:
-    def __init__(self, *, fail_save_memory=False):
-        self.fail_save_memory = fail_save_memory
-        self.messages = []
-        self.long_term_memory = []
-        self.memory_confirmations = []
-        self.next_message_id = 1
-        self.next_memory_id = 1
-        self.next_confirmation_id = 1
-
-    async def save_message(self, conversation_id, role, content):
-        message = {
-            "id": f"message-{self.next_message_id}",
-            "conversation_id": conversation_id,
-            "role": role,
-            "content": content,
-            "timestamp": "2026-06-01T12:00:00Z",
-        }
-        self.next_message_id += 1
-        self.messages.append(message)
-        return message
-
-    async def get_recent_messages(self, conversation_id, limit=20):
-        messages = [
-            message
-            for message in self.messages
-            if message["conversation_id"] == conversation_id
-        ]
-        return messages[-limit:]
-
-    async def save_long_term_memory(
-        self,
-        memory_type,
-        content,
-        source_conversation_id=None,
-        source_message_id=None,
-        importance=3,
-        metadata=None,
-    ):
-        if self.fail_save_memory:
-            raise RuntimeError("memory write failed")
-        memory = {
-            "id": f"memory-{self.next_memory_id}",
-            "memory_type": memory_type,
-            "content": content,
-            "source_conversation_id": source_conversation_id,
-            "source_message_id": source_message_id,
-            "importance": importance,
-            "metadata": metadata or {},
-        }
-        self.next_memory_id += 1
-        self.long_term_memory.append(memory)
-        return memory
-
-    async def create_memory_confirmation(self, confirmation):
-        row = {
-            "id": f"confirmation-{self.next_confirmation_id}",
-            "status": "pending",
-            "confirmation_message_id": None,
-            **confirmation,
-        }
-        self.next_confirmation_id += 1
-        self.memory_confirmations.append(row)
-        return row
-
-    async def get_latest_pending_memory_confirmation(self, conversation_id):
-        pending = [
-            row
-            for row in self.memory_confirmations
-            if row.get("conversation_id") == conversation_id
-            and row.get("status") == "pending"
-        ]
-        return pending[-1] if pending else None
-
-    async def update_memory_confirmation(self, confirmation_id, **updates):
-        for row in self.memory_confirmations:
-            if row["id"] == confirmation_id:
-                row.update(updates)
-                return row
-        return None
-
-    async def confirm_memory_confirmation(
-        self,
-        confirmation_id,
-        *,
-        applied_memory_id=None,
-        metadata=None,
-    ):
-        return await self.update_memory_confirmation(
-            confirmation_id,
-            status="confirmed",
-            applied_memory_id=applied_memory_id,
-            metadata=metadata,
-        )
-
-    async def reject_memory_confirmation(self, confirmation_id, *, metadata=None):
-        return await self.update_memory_confirmation(
-            confirmation_id,
-            status="rejected",
-            metadata=metadata,
-        )
-
-    async def fail_memory_confirmation(self, confirmation_id, *, metadata=None):
-        return await self.update_memory_confirmation(
-            confirmation_id,
-            status="failed",
-            metadata=metadata,
-        )
 
 
 @pytest.mark.asyncio
@@ -136,6 +27,9 @@ async def test_memory_turn_service_requests_simple_memory_confirmation():
     assert result is not None
     assert result["response"] == "So your mom's birthday is June 18, correct?"
     assert result["memory_changes"]["confirmation_required"] == 1
+    metadata = result["memory_changes"]["records"][0]["metadata"]
+    assert metadata["memory_path"] == "pending_confirmation"
+    assert metadata["review_required"] is True
     assert result["assistant_message"]["content"] == result["response"]
     assert "rex_memory_confirmation" not in str(result)
     assert "rex_memory_confirmation" not in store.messages[-1]["content"]
@@ -144,6 +38,72 @@ async def test_memory_turn_service_requests_simple_memory_confirmation():
     )
     assert store.memory_confirmations[0]["confirmation_message_id"] == "message-1"
     assert store.long_term_memory == []
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_reuses_existing_pending_confirmation_for_same_topic():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+    await store.create_memory_confirmation(
+        {
+            "conversation_id": "conversation-1",
+            "source_message_id": "message-original",
+            "memory_type": "fact",
+            "content": "User's mom's birthday is June 18.",
+            "importance": 5,
+            "metadata": {"topic_fingerprint": "fact:birthday:mom"},
+        }
+    )
+
+    result = await service.handle_turn(
+        "My mom's birthday is on the 18th.",
+        conversation_id="conversation-1",
+        user_message={
+            "id": "message-repeat",
+            "role": "user",
+            "content": "My mom's birthday is on the 18th.",
+        },
+        conversation_history=[],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert result is not None
+    assert result["response"] == "So your mom's birthday is June 18, correct?"
+    assert result["memory_changes"]["confirmation_required"] == 1
+    assert result["memory_changes"]["records"][0]["id"] == "confirmation-1"
+    assert len(store.memory_confirmations) == 1
+    assert store.long_term_memory == []
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_skips_confirmation_when_memory_already_saved():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User's mom's birthday is June 18.",
+            "importance": 5,
+            "metadata": {"topic_fingerprint": "fact:birthday:mom"},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "My mom's birthday is June 18",
+        conversation_id="conversation-1",
+        user_message={"id": "message-repeat", "content": "My mom's birthday is June 18"},
+        conversation_history=[],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert result is not None
+    assert result["response"] == "I already have that saved."
+    assert result["memory_changes"]["skipped"] == 1
+    assert result["memory_changes"]["records"][0]["action"] == "already_saved"
+    assert len(store.memory_confirmations) == 0
+    assert len(store.long_term_memory) == 1
 
 
 @pytest.mark.asyncio
@@ -195,10 +155,14 @@ async def test_memory_turn_service_confirms_and_saves_simple_memory():
     )
     assert result["memory_changes"]["created"] == 1
     assert result["memory_changes"]["records"][0]["action"] == "direct_saved"
+    metadata = result["memory_changes"]["records"][0]["metadata"]
+    assert metadata["memory_path"] == "direct_save"
+    assert metadata["review_required"] is False
     assert store.long_term_memory[0]["memory_type"] == "fact"
     assert store.long_term_memory[0]["content"] == (
         "User's mom's birthday is June 18."
     )
+    assert store.long_term_memory[0]["metadata"]["memory_path"] == "direct_save"
     assert "rex_memory_confirmation" not in str(result["messages"])
 
 
@@ -237,6 +201,151 @@ async def test_memory_turn_service_confirms_explicit_pending_confirmation():
     assert store.long_term_memory[0]["source_message_id"] == "message-original"
     assert store.memory_confirmations[0]["status"] == "confirmed"
     assert store.memory_confirmations[0]["applied_memory_id"] == "memory-1"
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_confirmation_does_not_duplicate_existing_memory():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User's mom's birthday is June 18.",
+            "importance": 5,
+            "metadata": {"topic_fingerprint": "fact:birthday:mom"},
+            "active": True,
+        }
+    )
+    await store.create_memory_confirmation(
+        {
+            "conversation_id": "conversation-1",
+            "source_message_id": "message-original",
+            "memory_type": "fact",
+            "content": "User's mom's birthday is June 18.",
+            "importance": 5,
+            "metadata": {"topic_fingerprint": "fact:birthday:mom"},
+        }
+    )
+
+    result = await service.handle_turn(
+        "yes",
+        conversation_id="conversation-1",
+        user_message={"id": "message-yes", "content": "yes"},
+        conversation_history=[],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert result is not None
+    assert result["response"] == "I already have that saved."
+    assert result["memory_changes"]["records"][0]["action"] == "already_saved"
+    assert len(store.long_term_memory) == 1
+    assert store.memory_confirmations[0]["status"] == "confirmed"
+    assert store.memory_confirmations[0]["applied_memory_id"] == "memory-existing"
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_rejects_explicit_pending_confirmation():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+    await store.create_memory_confirmation(
+        {
+            "conversation_id": "conversation-1",
+            "source_message_id": "message-original",
+            "memory_type": "fact",
+            "content": "User's mom's birthday is June 18.",
+            "importance": 5,
+            "metadata": {"fact_kind": "birthday"},
+        }
+    )
+    user_message = {
+        "id": "message-no",
+        "conversation_id": "conversation-1",
+        "role": "user",
+        "content": "no",
+    }
+    store.messages.append(user_message)
+
+    result = await service.handle_turn(
+        "no",
+        conversation_id="conversation-1",
+        user_message=user_message,
+        conversation_history=[],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert result is not None
+    assert result["response"] == "No problem. I won't save that."
+    assert result["memory_changes"]["skipped"] == 1
+    assert store.long_term_memory == []
+    assert store.memory_confirmations[0]["status"] == "rejected"
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_marks_explicit_confirmation_failed_on_save_error():
+    store = FakeMemoryTurnStore(fail_save_memory=True)
+    service = MemoryTurnService(store)
+    await store.create_memory_confirmation(
+        {
+            "conversation_id": "conversation-1",
+            "source_message_id": "message-original",
+            "memory_type": "fact",
+            "content": "User's mom's birthday is June 18.",
+            "importance": 5,
+            "metadata": {"fact_kind": "birthday"},
+        }
+    )
+    user_message = {
+        "id": "message-yes",
+        "conversation_id": "conversation-1",
+        "role": "user",
+        "content": "yes",
+    }
+    store.messages.append(user_message)
+
+    result = await service.handle_turn(
+        "yes",
+        conversation_id="conversation-1",
+        user_message=user_message,
+        conversation_history=[],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["records"][0]["action"] == "save_failed"
+    assert store.long_term_memory == []
+    assert store.memory_confirmations[0]["status"] == "failed"
+    assert store.memory_confirmations[0]["metadata"]["error"] == (
+        "durable_memory_save_failed"
+    )
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_ignores_unrelated_reply_to_explicit_confirmation():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+    await store.create_memory_confirmation(
+        {
+            "conversation_id": "conversation-1",
+            "source_message_id": "message-original",
+            "memory_type": "fact",
+            "content": "User's mom's birthday is June 18.",
+            "importance": 5,
+            "metadata": {"fact_kind": "birthday"},
+        }
+    )
+
+    result = await service.handle_turn(
+        "Why does that matter?",
+        conversation_id="conversation-1",
+        user_message={"id": "message-question", "content": "Why does that matter?"},
+        conversation_history=[],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert result is None
+    assert store.long_term_memory == []
+    assert store.memory_confirmations[0]["status"] == "pending"
 
 
 @pytest.mark.asyncio
@@ -296,6 +405,29 @@ async def test_memory_turn_service_returns_none_for_normal_chat():
 
     assert result is None
     assert store.messages == []
+    assert store.long_term_memory == []
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_does_not_crash_when_confirmation_storage_fails():
+    store = FakeMemoryTurnStore(fail_confirmation_create=True)
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "My mom's birthday is June 18",
+        conversation_id="conversation-1",
+        user_message={
+            "id": "message-1",
+            "role": "user",
+            "content": "My mom's birthday is June 18",
+        },
+        conversation_history=[],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert result is None
+    assert store.messages == []
+    assert store.memory_confirmations == []
     assert store.long_term_memory == []
 
 

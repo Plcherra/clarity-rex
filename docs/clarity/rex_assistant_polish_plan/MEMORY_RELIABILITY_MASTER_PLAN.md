@@ -134,9 +134,14 @@ Acceptance criteria:
 
 Goal: Rex asks natural confirmation questions while storing pending state in explicit records.
 
+Status: Completed. New simple-memory confirmations create
+`memory_confirmations` records and save assistant confirmation messages as plain
+public text. Legacy hidden markers remain readable as fallback only.
+
 Files to change:
 
 - `services/rex-api/app/services/memory_turn_service.py`
+- New: `services/rex-api/app/services/memory_turn_confirmation_helpers.py`
 - `services/rex-api/app/services/memory_intent_service.py`
 - `services/rex-api/app/services/chat_service.py` only if wiring is needed
 - `services/rex-api/tests/test_memory_turn_service.py`
@@ -175,10 +180,15 @@ Acceptance criteria:
 
 Goal: User confirmation should resolve the explicit pending record and immediately save durable memory.
 
+Status: Completed. Explicit pending records now confirm, reject, or fail through
+the confirmation lifecycle; unrelated replies continue normal chat without
+saving; repeated confirmations do not create duplicate durable memories.
+
 Files to change:
 
 - `services/rex-api/app/services/memory_turn_service.py`
 - `services/rex-api/app/services/memory_intent_service.py`
+- `services/rex-api/app/services/memory_turn_confirmation_helpers.py`
 - `services/rex-api/app/services/long_term_memory_repository.py` if metadata needs improvement
 - `services/rex-api/tests/test_memory_turn_service.py`
 - `services/rex-api/tests/test_chat_simple_memory_flow.py`
@@ -218,13 +228,19 @@ Acceptance criteria:
 
 Goal: Rex should reliably recall confirmed personal facts such as birthdays, location, timezone, names, preferences, and important dates.
 
+Status: Completed. Retrieval now expands birthday, family, important-date, and
+profile concepts; profile-memory context explicitly asks for birthdays and
+family facts; memory ranking considers simple-memory metadata such as
+`fact_kind`, `entity_label`, `normalized_date`, and `topic_fingerprint`.
+
 Files to change:
 
 - `services/rex-api/app/services/memory_retrieval_service.py`
 - `services/rex-api/app/services/memory_retrieval_ranker.py`
+- New: `services/rex-api/app/services/memory_retrieval_terms.py`
 - `services/rex-api/app/services/chat_context_service.py`
 - `services/rex-api/app/services/memory_intent_service.py`
-- Tests: `services/rex-api/tests/test_memory_retrieval.py`, `services/rex-api/tests/test_chat_simple_memory_flow.py`
+- Tests: `services/rex-api/tests/test_memory_retrieval.py`, `services/rex-api/tests/test_chat_simple_memory_flow.py`, `services/rex-api/tests/test_memory_profile_recall.py`
 
 Steps:
 
@@ -259,13 +275,20 @@ Acceptance criteria:
 
 Goal: Avoid creating multiple pending candidates or durable facts for the same topic.
 
+Status: Completed. Rex now reuses an existing pending confirmation for the same
+`topic_fingerprint`, skips confirmation when an equivalent active durable memory
+already exists, avoids duplicate durable writes if the same fact is confirmed
+again, and reuses equivalent pending memory candidates instead of creating
+duplicate candidate cards.
+
 Files to change:
 
 - `services/rex-api/app/services/memory_turn_service.py`
+- `services/rex-api/app/services/memory_turn_confirmation_helpers.py`
 - `services/rex-api/app/services/memory_candidate_writer.py`
 - `services/rex-api/app/services/memory_extraction_service.py`
 - `services/rex-api/app/services/memory_candidate_service.py`
-- Tests: candidate writer, extraction, simple memory flow
+- Tests: `services/rex-api/tests/test_memory_turn_service.py`, `services/rex-api/tests/test_chat_simple_memory_flow.py`, `services/rex-api/tests/test_memory_candidate_writer.py`, extraction
 
 Steps:
 
@@ -298,6 +321,13 @@ Acceptance criteria:
 ## Phase 7 - Clarify Pending Candidate Vs Direct Save Rules
 
 Goal: Make the system behavior internally clear and user-facing language consistent.
+
+Status: Completed. Direct simple memories now carry `direct_save` metadata after
+explicit chat confirmation, simple memory confirmation records carry
+`pending_confirmation` metadata, and extraction/correction candidates carry
+`pending_review` metadata with review reasons. Candidate review copy now uses
+"memory card" language instead of leaking "candidate card" terminology, and
+mobile review models prefer the clean `review_reason` field.
 
 Files to change:
 
@@ -340,6 +370,13 @@ Acceptance criteria:
 
 Goal: Reduce future reliability risk by splitting the largest remaining policy-heavy files.
 
+Status: Completed. The remaining memory hubs were split into focused backend
+and mobile modules while preserving public facades and provider/import
+compatibility. `memory_correction_service.py`, `memory_discipline_service.py`,
+`memory_candidate_service.py`, `chat_controller.dart`, and
+`memory_models.dart` are now at or below the line-count guardrail, with new
+helper modules kept small.
+
 Files to change:
 
 - `services/rex-api/app/services/memory_candidate_service.py`
@@ -378,6 +415,11 @@ Acceptance criteria:
 ## Phase 9 - Add Reliability-Focused Test Suite
 
 Goal: Create tests that match the way users actually expect memory to work.
+
+Status: Completed. Added a single behavior-focused reliability suite covering
+mom birthday confirmation/save/recall, rejection, duplicate prevention,
+pending correction review, voice streaming save/recall, voice metadata,
+archived-memory non-recall, and old hidden-marker fallback.
 
 Files to change:
 
@@ -459,6 +501,17 @@ Acceptance criteria:
 - Rex explains pending corrections clearly.
 - Memory tab shows one current saved memory, not duplicates.
 - Backend readiness stays healthy.
+
+Phase 10 completion notes:
+
+- Added `MEMORY_RELEASE_SMOKE_CHECKLIST.md` for local preflight, VPS deploy,
+  phone release run, text/voice memory smoke tests, correction tests, duplicate
+  checks, archive checks, and backend log review.
+- Added privacy-safe confirmation lifecycle logs through
+  `memory_confirmation_lifecycle_logger.py` and call sites in
+  `memory_turn_service.py`. Logs include confirmation/memory IDs, memory type,
+  topic fingerprint, and fact kind only. They do not log raw memory content.
+- Phase 10 is ready for manual phone validation before Plaid integration.
 
 ## Recommended Execution Order
 

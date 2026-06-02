@@ -171,6 +171,51 @@ async def test_simple_memory_rejection_does_not_create_durable_memory():
 
 
 @pytest.mark.asyncio
+async def test_simple_memory_repeated_confirmation_does_not_save_duplicate_memory():
+    ai_service = FakeAIService(response="Rex normal follow-up")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    confirmation = await chat_service.send_message("My mom's birthday is June 18")
+    saved = await chat_service.send_message("yes", confirmation["conversation_id"])
+    follow_up = await chat_service.send_message("yes", confirmation["conversation_id"])
+
+    assert saved["memory_changes"]["created"] == 1
+    assert follow_up["response"] == "Rex normal follow-up"
+    assert follow_up["memory_changes"] is None
+    assert len(memory_service.long_term_memory) == 1
+    assert memory_service.memory_confirmations[0]["status"] == "confirmed"
+
+
+@pytest.mark.asyncio
+async def test_simple_memory_repeated_fact_before_confirmation_reuses_pending_record():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    confirmation = await chat_service.send_message("My mom's birthday is on the 18th")
+    repeated = await chat_service.send_message(
+        "My mom's birthday is June 18",
+        confirmation["conversation_id"],
+    )
+
+    assert repeated["response"] == "So your mom's birthday is June 18, correct?"
+    assert repeated["memory_changes"]["confirmation_required"] == 1
+    assert len(memory_service.memory_confirmations) == 1
+    assert memory_service.long_term_memory == []
+
+
+@pytest.mark.asyncio
 async def test_simple_memory_non_confirmation_continues_normal_chat_without_save():
     ai_service = FakeAIService(response="Rex normal follow-up")
     memory_service = FakeMemoryService()
@@ -190,5 +235,6 @@ async def test_simple_memory_non_confirmation_continues_normal_chat_without_save
     assert follow_up["response"] == "Rex normal follow-up"
     assert follow_up["memory_changes"] is None
     assert memory_service.long_term_memory == []
+    assert memory_service.memory_confirmations[0]["status"] == "pending"
     assert "rex_memory_confirmation" not in str(ai_service.messages)
     assert ai_service.messages[-1]["content"] == "Why does that matter?"

@@ -11,10 +11,32 @@ from app.services.memory_candidate_writer import MemoryCandidateWriter
 class FakeCandidateStore:
     def __init__(self):
         self.created = []
+        self.pending = []
 
     async def create_memory_candidate(self, payload):
         self.created.append(payload)
         return {"id": "candidate-1", **payload}
+
+    async def list_memory_candidates(
+        self,
+        limit=20,
+        candidate_type=None,
+        status=None,
+        source_conversation_id=None,
+        **kwargs,
+    ):
+        rows = self.pending
+        if candidate_type is not None:
+            rows = [row for row in rows if row.get("candidate_type") == candidate_type]
+        if status is not None:
+            rows = [row for row in rows if row.get("status") == status]
+        if source_conversation_id is not None:
+            rows = [
+                row
+                for row in rows
+                if row.get("source_conversation_id") == source_conversation_id
+            ]
+        return rows[:limit]
 
 
 class FakeDisciplineService:
@@ -54,7 +76,85 @@ async def test_memory_candidate_writer_creates_pending_candidate_with_brain_meta
     assert result["pending"] is True
     assert result["memory_type"] == "fact"
     assert result["metadata"]["rex_brain"] == {"layer": "fast_contextual"}
+    assert result["metadata"]["memory_path"] == "pending_review"
+    assert result["metadata"]["review_required"] is True
+    assert result["metadata"]["review_reason"] == (
+        "High-importance extracted memory needs review before saving."
+    )
+    assert result["memory_path"] == "pending_review"
+    assert result["review_required"] is True
     assert store.created[0]["risk_level"] == "high"
+
+
+@pytest.mark.asyncio
+async def test_memory_candidate_writer_reuses_pending_candidate_by_fingerprint():
+    store = FakeCandidateStore()
+    store.pending.append(
+        {
+            "id": "candidate-existing",
+            "candidate_type": "long_term_memory",
+            "payload": {
+                "memory_type": "fact",
+                "content": "Mom's birthday is June 18",
+                "metadata": {"topic_fingerprint": "fact:birthday:mom"},
+            },
+            "status": "pending",
+            "source_conversation_id": "conversation-1",
+        }
+    )
+    writer = MemoryCandidateWriter(store, FakeDisciplineService())
+
+    result = await writer.create_pending_memory_candidate(
+        candidate_type="long_term_memory",
+        payload={
+            "memory_type": "fact",
+            "content": "Mom's birthday is June 18",
+            "metadata": {"topic_fingerprint": "fact:birthday:mom"},
+        },
+        rationale="Important family context",
+        conversation_id="conversation-1",
+        user_message_id="message-1",
+        risk_level="high",
+    )
+
+    assert result["id"] == "candidate-existing"
+    assert result["extraction_action"] == "candidate_reused"
+    assert result["memory_path"] == "pending_review"
+    assert store.created == []
+
+
+@pytest.mark.asyncio
+async def test_memory_candidate_writer_reuses_pending_candidate_by_text():
+    store = FakeCandidateStore()
+    store.pending.append(
+        {
+            "id": "candidate-existing",
+            "candidate_type": "long_term_memory",
+            "payload": {
+                "memory_type": "fact",
+                "content": "Mom's birthday is June 18.",
+            },
+            "status": "pending",
+            "source_conversation_id": "conversation-1",
+        }
+    )
+    writer = MemoryCandidateWriter(store, FakeDisciplineService())
+
+    result = await writer.create_pending_memory_candidate(
+        candidate_type="long_term_memory",
+        payload={
+            "memory_type": "fact",
+            "content": "Mom's birthday is June 18",
+        },
+        rationale="Important family context",
+        conversation_id="conversation-1",
+        user_message_id="message-1",
+        risk_level="high",
+    )
+
+    assert result["id"] == "candidate-existing"
+    assert result["extraction_action"] == "candidate_reused"
+    assert store.created == []
 
 
 @pytest.mark.asyncio

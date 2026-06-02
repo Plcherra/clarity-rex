@@ -97,6 +97,10 @@ def candidate(
         "memory_type": "preference",
         "content": "Pedro prefers weekly launch plans.",
         "importance": 5,
+        "metadata": {
+            "memory_path": "pending_review",
+            "review_reason": "Extracted memory was not explicitly confirmed in chat, so it needs review.",
+        },
     }
     return {
         "id": candidate_id,
@@ -186,10 +190,18 @@ async def test_candidate_decision_service_lists_multiple_pending_candidates():
 
     assert fake_service.approved == []
     assert result["memory_changes"]["confirmation_required"] == 2
+    assert "candidate card" not in result["response"]
+    assert "memory card" in result["response"]
     assert [card["id"] for card in result["memory_changes"]["pending_candidates"]] == [
         "candidate-1",
         "candidate-2",
     ]
+    assert result["memory_changes"]["pending_candidates"][0]["memory_path"] == (
+        "pending_review"
+    )
+    assert result["memory_changes"]["pending_candidates"][0]["review_reason"] == (
+        "Extracted memory was not explicitly confirmed in chat, so it needs review."
+    )
 
 
 @pytest.mark.asyncio

@@ -4,48 +4,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clarity/features/assistant/chat/data/conversation_api.dart';
 import 'package:clarity/features/assistant/actions/data/clarity_actions_api.dart';
 import 'package:clarity/features/assistant/chat/data/chat_models.dart';
+import 'package:clarity/features/assistant/chat/application/chat_action_result_formatter.dart';
 import 'package:clarity/features/assistant/chat/domain/chat_attachment.dart';
 import 'package:clarity/features/assistant/chat/domain/chat_message.dart';
 import 'package:clarity/features/assistant/chat/data/chat_api.dart';
+import 'package:clarity/features/assistant/chat/application/chat_memory_change_parser.dart';
+import 'package:clarity/features/assistant/chat/application/chat_response_text.dart';
+import 'package:clarity/features/assistant/chat/application/chat_state.dart';
 import 'package:clarity/features/assistant/data/financial_context_service.dart';
+
+export 'package:clarity/features/assistant/chat/application/chat_state.dart';
 
 final chatApiProvider = Provider<ChatApi>((ref) => ChatApi());
 
 final chatProvider = NotifierProvider<ChatController, ChatState>(
   ChatController.new,
 );
-
-class ChatState {
-  const ChatState({
-    this.messages = const [],
-    this.isLoading = false,
-    this.conversationId,
-    this.errorMessage,
-  });
-
-  final List<ChatMessage> messages;
-  final bool isLoading;
-  final String? conversationId;
-  final String? errorMessage;
-
-  ChatState copyWith({
-    List<ChatMessage>? messages,
-    bool? isLoading,
-    String? conversationId,
-    bool clearConversationId = false,
-    String? errorMessage,
-    bool clearError = false,
-  }) {
-    return ChatState(
-      messages: messages ?? this.messages,
-      isLoading: isLoading ?? this.isLoading,
-      conversationId: clearConversationId
-          ? null
-          : conversationId ?? this.conversationId,
-      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-    );
-  }
-}
 
 class ChatController extends Notifier<ChatState> {
   int _streamGeneration = 0;
@@ -106,7 +80,7 @@ class ChatController extends Notifier<ChatState> {
         ChatMessage(
           id: 'local-assistant-action-${DateTime.now().microsecondsSinceEpoch}',
           role: ChatMessageRole.assistant,
-          content: _actionResultMessage(action.action, result.result),
+          content: actionResultMessage(action.action, result.result),
           timestamp: DateTime.now(),
         ),
       );
@@ -167,8 +141,8 @@ class ChatController extends Notifier<ChatState> {
           role: ChatMessageRole.assistant,
           content: fallbackAssistantResponse.trim(),
           timestamp: DateTime.now(),
-          memoryCandidates: _candidateCardsFromMemoryChanges(memoryChanges),
-          clarityActions: _clarityActionCardsFromMemoryChanges(memoryChanges),
+          memoryCandidates: candidateCardsFromMemoryChanges(memoryChanges),
+          clarityActions: clarityActionCardsFromMemoryChanges(memoryChanges),
         ),
       );
     }
@@ -292,10 +266,10 @@ class ChatController extends Notifier<ChatState> {
                   role: ChatMessageRole.assistant,
                   content: result.response,
                   timestamp: DateTime.now(),
-                  memoryCandidates: _candidateCardsFromMemoryChanges(
+                  memoryCandidates: candidateCardsFromMemoryChanges(
                     result.memoryChanges,
                   ),
-                  clarityActions: _clarityActionCardsFromMemoryChanges(
+                  clarityActions: clarityActionCardsFromMemoryChanges(
                     result.memoryChanges,
                   ),
                 ),
@@ -303,7 +277,8 @@ class ChatController extends Notifier<ChatState> {
         isLoading: false,
         clearError: true,
       );
-      return _assistantTextFromApiResponse(result) ?? _latestAssistantContent();
+      return assistantTextFromApiResponse(result) ??
+          latestAssistantContent(state.messages);
     } on ChatApiException catch (error) {
       state = state.copyWith(isLoading: false, errorMessage: error.message);
       return null;
@@ -362,8 +337,8 @@ class ChatController extends Notifier<ChatState> {
             isLoading: false,
             clearError: true,
           );
-          return _assistantTextFromApiResponse(response) ??
-              _latestAssistantContent();
+          return assistantTextFromApiResponse(response) ??
+              latestAssistantContent(state.messages);
         }
       }
 
@@ -372,7 +347,7 @@ class ChatController extends Notifier<ChatState> {
         messages: _messagesWithStreamingStopped(state.messages),
         clearError: true,
       );
-      return _latestAssistantContent();
+      return latestAssistantContent(state.messages);
     } on ChatApiException catch (error) {
       if (generation == _streamGeneration) {
         state = state.copyWith(
@@ -465,8 +440,8 @@ class ChatController extends Notifier<ChatState> {
     List<ChatMessage> messages,
     Map<String, dynamic>? memoryChanges,
   ) {
-    final candidates = _candidateCardsFromMemoryChanges(memoryChanges);
-    final clarityActions = _clarityActionCardsFromMemoryChanges(memoryChanges);
+    final candidates = candidateCardsFromMemoryChanges(memoryChanges);
+    final clarityActions = clarityActionCardsFromMemoryChanges(memoryChanges);
     if ((candidates.isEmpty && clarityActions.isEmpty) || messages.isEmpty) {
       return List.unmodifiable(messages);
     }
@@ -482,26 +457,6 @@ class ChatController extends Notifier<ChatState> {
       }
     }
     return List.unmodifiable(updated);
-  }
-
-  List<ClarityActionCard> _clarityActionCardsFromMemoryChanges(
-    Map<String, dynamic>? memoryChanges,
-  ) {
-    if (memoryChanges == null) {
-      return const [];
-    }
-    final proposals = memoryChanges['clarity_action_proposals'];
-    if (proposals is! List) {
-      return const [];
-    }
-
-    final cards = <ClarityActionCard>[];
-    for (final proposal in proposals) {
-      if (proposal is Map<String, dynamic>) {
-        cards.add(ClarityActionCard.fromJson(proposal));
-      }
-    }
-    return List.unmodifiable(cards);
   }
 
   void _updateClarityAction(
@@ -521,94 +476,5 @@ class ChatController extends Notifier<ChatState> {
           message,
     ];
     state = state.copyWith(messages: List.unmodifiable(updatedMessages));
-  }
-
-  String _actionResultMessage(
-    String action,
-    List<Map<String, dynamic>> result,
-  ) {
-    final label = action.replaceAll('_', ' ');
-    if (result.isEmpty) {
-      return 'Done. I applied the $label change.';
-    }
-    if (result.length == 1) {
-      final merchant = result.single['merchant'];
-      final description = result.single['description'];
-      final name = result.single['name'];
-      final subject = (merchant ?? description ?? name)?.toString().trim();
-      if (subject != null && subject.isNotEmpty) {
-        return 'Done. I applied the $label change for $subject.';
-      }
-    }
-    return 'Done. I applied the $label change to ${result.length} record${result.length == 1 ? '' : 's'}.';
-  }
-
-  List<MemoryCandidateCard> _candidateCardsFromMemoryChanges(
-    Map<String, dynamic>? memoryChanges,
-  ) {
-    if (memoryChanges == null) {
-      return const [];
-    }
-
-    final cards = <MemoryCandidateCard>[];
-    for (final key in const [
-      'pending_candidates',
-      'applied_candidates',
-      'failed_candidates',
-      'skipped_candidates',
-      'rejected_candidates',
-    ]) {
-      final value = memoryChanges[key];
-      if (value is! List) {
-        continue;
-      }
-      for (final item in value) {
-        if (item is Map<String, dynamic>) {
-          cards.add(MemoryCandidateCard.fromJson(item));
-        }
-      }
-    }
-    if (cards.isNotEmpty) {
-      return List.unmodifiable(cards);
-    }
-
-    final records = memoryChanges['records'];
-    if (records is! List) {
-      return const [];
-    }
-    for (final record in records) {
-      if (record is! Map<String, dynamic>) {
-        continue;
-      }
-      final candidate = record['candidate'];
-      if (candidate is Map<String, dynamic>) {
-        cards.add(MemoryCandidateCard.fromJson(candidate));
-      }
-    }
-    return List.unmodifiable(cards);
-  }
-
-  String? _assistantTextFromApiResponse(ChatApiResponse response) {
-    if (response.messages.isEmpty) {
-      final responseText = response.response.trim();
-      return responseText.isEmpty ? null : responseText;
-    }
-
-    for (final message in response.messages.reversed) {
-      if (message.role == 'assistant' && message.content.trim().isNotEmpty) {
-        return message.content;
-      }
-    }
-    return null;
-  }
-
-  String? _latestAssistantContent() {
-    for (final message in state.messages.reversed) {
-      if (message.role == ChatMessageRole.assistant &&
-          message.content.trim().isNotEmpty) {
-        return message.content;
-      }
-    }
-    return null;
   }
 }
