@@ -7,6 +7,10 @@ from app.models.memory_discipline import (
     MemoryDisciplineDecision,
 )
 from app.services.memory_discipline_service import MemoryDisciplineService
+from app.services.memory_failure_reporting import (
+    log_memory_failure,
+    memory_degraded_metadata,
+)
 from app.services.memory_path_policy import pending_review_metadata
 from app.services.memory_structured_candidate_normalizer import clean_text
 
@@ -32,7 +36,18 @@ class MemoryCandidateWriter:
         candidate = self._discipline_candidate(kind, payload)
         try:
             decision = await self.memory_discipline_service.decide(candidate)
-        except Exception:
+        except Exception as error:
+            log_memory_failure(
+                "discipline_decision_failed",
+                operation="memory_discipline_decide",
+                error=error,
+                conversation_id=str(payload.get("source_conversation_id") or "")
+                or None,
+                memory_type=str(payload.get("memory_type") or "") or None,
+                metadata=payload.get("metadata")
+                if isinstance(payload.get("metadata"), dict)
+                else None,
+            )
             decision = None
 
         decision_kind = decision.candidate_kind if decision is not None else kind
@@ -149,8 +164,28 @@ class MemoryCandidateWriter:
                     source_message_id=user_message_id,
                 ).model_dump(exclude_none=True)
             )
-        except Exception:
-            return None
+        except Exception as error:
+            metadata = payload.get("metadata") if isinstance(payload, dict) else {}
+            metadata = memory_degraded_metadata(
+                metadata if isinstance(metadata, dict) else {},
+                operation="create_memory_candidate",
+                failure_reason="memory_candidate_create_failed",
+            )
+            log_memory_failure(
+                "candidate_create_failed",
+                operation="create_memory_candidate",
+                error=error,
+                conversation_id=conversation_id,
+                candidate_type=candidate_type,
+                memory_type=str(payload.get("memory_type") or "") or None,
+                metadata=metadata,
+            )
+            return self.failed_extraction_result(
+                payload=payload,
+                candidate_type=candidate_type,
+                rationale=rationale,
+                metadata=metadata,
+            )
         return self.extraction_result(
             payload=payload,
             row=row,
@@ -189,6 +224,33 @@ class MemoryCandidateWriter:
             "review_reason": metadata.get("review_reason") if metadata else rationale,
         }
 
+    def failed_extraction_result(
+        self,
+        *,
+        payload: dict[str, Any],
+        candidate_type: str,
+        rationale: str,
+        metadata: dict[str, Any],
+    ) -> dict:
+        return {
+            **payload,
+            "metadata": metadata,
+            "extraction_kind": "memory_candidate",
+            "structured_type": candidate_type
+            if candidate_type != "long_term_memory"
+            else None,
+            "memory_type": payload.get("memory_type")
+            if candidate_type == "long_term_memory"
+            else None,
+            "extraction_action": "skip_candidate_create_failed",
+            "extraction_rationale": rationale,
+            "pending": False,
+            "memory_path": "degraded",
+            "review_required": False,
+            "review_reason": metadata.get("failure_reason"),
+            "reason": "Memory review candidate could not be created.",
+        }
+
     def payload_with_review_metadata(
         self,
         payload: dict[str, Any],
@@ -223,7 +285,17 @@ class MemoryCandidateWriter:
                 candidate_type=candidate_type,
                 status="pending",
             )
-        except Exception:
+        except Exception as error:
+            log_memory_failure(
+                "candidate_duplicate_lookup_failed",
+                operation="list_memory_candidates",
+                error=error,
+                conversation_id=conversation_id,
+                candidate_type=candidate_type,
+                metadata=payload.get("metadata")
+                if isinstance(payload.get("metadata"), dict)
+                else None,
+            )
             return None
 
         for candidate in candidates:
@@ -280,5 +352,10 @@ class MemoryCandidateWriter:
     async def call_service_create(self, method: Any, request: Any) -> Optional[dict]:
         try:
             return await method(request)
-        except Exception:
+        except Exception as error:
+            log_memory_failure(
+                "service_create_failed",
+                operation="memory_service_create",
+                error=error,
+            )
             return None

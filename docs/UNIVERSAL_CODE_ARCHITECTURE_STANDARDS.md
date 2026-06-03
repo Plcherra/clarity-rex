@@ -71,6 +71,8 @@ A file may exceed the hard limit only if all are true:
 3. The exception is documented in the module contract.
 4. A future cleanup trigger is defined.
 
+For a concrete project, keep a project-specific exception ledger near the release checklist. The ledger should list generated exceptions separately from production cleanup targets and include the command used to reproduce the scan.
+
 ## 3. Layered Architecture
 
 Use a layered structure that separates business meaning from delivery mechanisms.

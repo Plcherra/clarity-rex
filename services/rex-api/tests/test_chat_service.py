@@ -364,7 +364,21 @@ async def test_chat_service_reports_memory_extraction_failures_without_failing_c
     assert result["response"] == "Rex response"
     assert len(extraction_service.calls) == 1
     assert result["memory_changes"]["skipped"] == 1
-    assert result["memory_changes"]["records"][0] == {
+    record = result["memory_changes"]["records"][0]
+    assert {
+        key: record.get(key)
+        for key in (
+            "kind",
+            "type",
+            "action",
+            "id",
+            "title",
+            "reason",
+            "memory_path",
+            "review_required",
+            "review_reason",
+        )
+    } == {
         "kind": "memory_extraction",
         "type": None,
         "action": "skip_failed",
@@ -375,6 +389,9 @@ async def test_chat_service_reports_memory_extraction_failures_without_failing_c
         "review_required": None,
         "review_reason": None,
     }
+    assert record["metadata"]["degraded"] is True
+    assert record["metadata"]["operation"] == "extract_memory_after_success"
+    assert record["metadata"]["failure_reason"] == "memory_extraction_failed"
 
 
 @pytest.mark.asyncio

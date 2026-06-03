@@ -29,6 +29,11 @@ class FakeMemoryCandidateService:
         }
 
 
+class FailingMemoryCandidateService:
+    async def create_candidate(self, request):
+        raise RuntimeError("candidate failed")
+
+
 class FailingMemoryExtractionService:
     async def extract_and_save(self, **kwargs):
         raise RuntimeError("extraction failed")
@@ -70,6 +75,37 @@ async def test_memory_post_turn_service_creates_pending_correction_candidate():
     assert request.payload["metadata"]["memory_path"] == "pending_review"
 
 
+@pytest.mark.asyncio
+async def test_memory_post_turn_service_reports_correction_candidate_failure():
+    service = MemoryPostTurnService(
+        memory_correction_service=FakeMemoryCorrectionService(
+            CorrectionIntent(
+                CorrectionIntentType.REPLACE_VALUE,
+                old_value="June 19",
+                new_value="June 18",
+                target_hint="mom birthday",
+                confidence=0.9,
+            )
+        ),
+        memory_candidate_service=FailingMemoryCandidateService(),
+    )
+
+    result = await service.apply_memory_correction(
+        "Actually my mom's birthday is June 18",
+        conversation_id="conversation-1",
+        user_message_id="message-1",
+    )
+
+    assert result["failed"] is True
+    assert result["requires_confirmation"] is False
+    assert result["memory_path"] == "degraded"
+    assert result["metadata"]["degraded"] is True
+    assert result["metadata"]["operation"] == "create_correction_candidate"
+    assert result["metadata"]["failure_reason"] == (
+        "correction_candidate_create_failed"
+    )
+
+
 def test_memory_post_turn_service_summarizes_extraction_and_correction_changes():
     service = MemoryPostTurnService()
 
@@ -98,6 +134,26 @@ def test_memory_post_turn_service_summarizes_extraction_and_correction_changes()
     assert len(summary["records"]) == 3
     assert summary["records"][1]["memory_path"] is None
     assert summary["records"][2]["memory_path"] is None
+
+
+def test_memory_post_turn_service_summarizes_failed_correction_as_skipped():
+    service = MemoryPostTurnService()
+
+    summary = service.memory_change_summary(
+        [],
+        memory_correction={
+            "failed": True,
+            "memory_path": "degraded",
+            "review_required": False,
+            "review_reason": "correction_candidate_create_failed",
+            "metadata": {"degraded": True},
+        },
+    )
+
+    assert summary["skipped"] == 1
+    assert summary["confirmation_required"] == 0
+    assert summary["records"][0]["action"] == "failed"
+    assert summary["records"][0]["metadata"]["degraded"] is True
 
 
 def test_memory_post_turn_service_counts_reused_candidate_as_review_required():
@@ -135,10 +191,8 @@ async def test_memory_post_turn_service_extraction_failure_is_best_effort():
         {"id": "message-assistant"},
     )
 
-    assert result == [
-        {
-            "extraction_kind": "memory_extraction",
-            "extraction_action": "skip_failed",
-            "reason": "Memory extraction failed after the response.",
-        }
-    ]
+    assert result[0]["extraction_kind"] == "memory_extraction"
+    assert result[0]["extraction_action"] == "skip_failed"
+    assert result[0]["metadata"]["degraded"] is True
+    assert result[0]["metadata"]["operation"] == "extract_memory_after_success"
+    assert result[0]["metadata"]["failure_reason"] == "memory_extraction_failed"

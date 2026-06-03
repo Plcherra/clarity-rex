@@ -313,9 +313,14 @@ async def test_memory_turn_service_marks_explicit_confirmation_failed_on_save_er
 
     assert result is not None
     assert result["memory_changes"]["records"][0]["action"] == "save_failed"
+    metadata = result["memory_changes"]["records"][0]["metadata"]
+    assert metadata["degraded"] is True
+    assert metadata["operation"] == "save_long_term_memory"
+    assert metadata["failure_reason"] == "durable_memory_save_failed"
+    assert metadata["user_visible"] is True
     assert store.long_term_memory == []
     assert store.memory_confirmations[0]["status"] == "failed"
-    assert store.memory_confirmations[0]["metadata"]["error"] == (
+    assert store.memory_confirmations[0]["metadata"]["failure_reason"] == (
         "durable_memory_save_failed"
     )
 
@@ -472,4 +477,7 @@ async def test_memory_turn_service_reports_save_failure_without_raising():
         "Please try again in a moment."
     )
     assert result["memory_changes"]["records"][0]["action"] == "save_failed"
+    metadata = result["memory_changes"]["records"][0]["metadata"]
+    assert metadata["degraded"] is True
+    assert metadata["failure_reason"] == "durable_memory_save_failed"
     assert store.long_term_memory == []

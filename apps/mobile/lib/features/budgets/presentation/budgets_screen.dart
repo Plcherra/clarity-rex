@@ -8,6 +8,8 @@ import 'budgets_header.dart';
 import 'budgets_viewmodel.dart';
 import 'category_management_sheet.dart';
 
+part 'budgets_screen_widgets.dart';
+
 /// Monthly budgets per category (picker list). Hidden categories are omitted here;
 /// their persisted amounts remain until edited elsewhere (Rule A).
 class BudgetsScreen extends StatefulWidget {
@@ -391,256 +393,29 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
         final weeklyDate = _viewModel.parseDateKey(_selectedPeriodKey);
         final canAttemptSave = rows.isNotEmpty && hasSelectedPeriod;
 
-        return Scaffold(
-          backgroundColor: cs.surface,
-          appBar: AppBar(
-            toolbarHeight: 52,
-            titleSpacing: 6,
-            title: const Text('Budgets'),
-            leading: const SizedBox(width: 48),
-            actions: [
-              IconButton(
-                tooltip: 'Manage categories',
-                visualDensity: VisualDensity.compact,
-                onPressed: _openCategoryManagement,
-                icon: const Icon(Icons.category_outlined, size: 22),
-              ),
-              ValueListenableBuilder<bool>(
-                valueListenable: _viewModel.hasUnsavedChanges,
-                builder: (context, hasChanges, _) {
-                  final canSave = canAttemptSave && hasChanges;
-
-                  return IconButton(
-                    tooltip: 'Save changes',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: canSave
-                        ? () async {
-                            await _save(rows);
-                          }
-                        : null,
-                    icon: Icon(
-                      Icons.check_rounded,
-                      size: 22,
-                      color: hasChanges ? cs.primary : Colors.grey,
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
-              child: ListenableBuilder(
-                listenable: _dataNotifier,
-                builder: (context, _) {
-                  final data = _dataNotifier.data;
-                  if (data == null) {
-                    if (_dataNotifier.error != null) {
-                      return const Center(
-                        child: Text('Could not load budgets.'),
-                      );
-                    }
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final metrics = data.metrics;
-                  final categoryItems = data.categoryItems;
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      BudgetsHeader(
-                        selectedType: _selectedType,
-                        selectedPeriodKey: _selectedPeriodKey,
-                        keys: keys,
-                        monthlyLabel: _selectedPeriodKey.trim().isEmpty
-                            ? 'Select month'
-                            : formatYearMonthLabel(_selectedPeriodKey),
-                        weeklyLabel: weeklyDate == null
-                            ? 'Pick week start'
-                            : _viewModel.formatLongDate(weeklyDate),
-                        weeklyRangeLabel: _viewModel.weeklyRangeLabel(
-                          _selectedPeriodKey,
-                        ),
-                        customStartLabel: _customStart == null
-                            ? 'Start'
-                            : formatShortDate(_customStart!),
-                        customEndLabel: _customEnd == null
-                            ? 'End'
-                            : formatShortDate(_customEnd!),
-                        onPeriodTypeChanged: _onPeriodTypeChanged,
-                        onPickMonthly: () => _pickMonthly(),
-                        onPickWeekly: () => _pickWeeklyStartDate(),
-                        onPickCustomStart: () => _pickCustomDate(start: true),
-                        onPickCustomEnd: () => _pickCustomDate(start: false),
-                        compactButtonStyle: compactButtonStyle,
-                      ),
-                      const SizedBox(height: 14),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cs.surfaceContainerHighest.withValues(
-                            alpha: 0.24,
-                          ),
-                          borderRadius: BorderRadius.circular(11),
-                          border: Border.all(
-                            color: cs.outline.withValues(alpha: 0.08),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _SummaryMetric(
-                                label: 'Budgeted',
-                                value: formatMoney(
-                                  metrics.performance.totalBudgeted,
-                                ),
-                                valueColor: cs.onSurface,
-                                alignment: CrossAxisAlignment.start,
-                              ),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 28,
-                              color: cs.outline.withValues(alpha: 0.10),
-                            ),
-                            Expanded(
-                              child: _SummaryMetric(
-                                label: 'Spent',
-                                value: formatMoney(
-                                  metrics.performance.totalSpent,
-                                ),
-                                valueColor: cs.onSurface,
-                                alignment: CrossAxisAlignment.center,
-                              ),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 28,
-                              color: cs.outline.withValues(alpha: 0.10),
-                            ),
-                            Expanded(
-                              child: _SummaryMetric(
-                                label: metrics.totalOver > 0 ? 'Over' : 'Left',
-                                value: metrics.totalOver > 0
-                                    ? formatMoney(metrics.totalOver)
-                                    : formatMoney(metrics.totalRemaining),
-                                valueColor: metrics.totalOver > 0
-                                    ? const Color(0xFFC41E3A)
-                                    : const Color(0xFF1B7A4C),
-                                alignment: CrossAxisAlignment.end,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Expanded(
-                        child: BudgetCategoryList(
-                          items: categoryItems,
-                          controllers: _controllers,
-                          focusNodes: _focusNodes,
-                          onCategoryValueChanged: _onDraftEdited,
-                          onTrackCategoryCount:
-                              metrics.performance.onTrackCategoryCount,
-                          budgetedCategoryCount:
-                              metrics.performance.budgetedCategoryCount,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
+        return _BudgetsScaffold(
+          viewModel: _viewModel,
+          dataNotifier: _dataNotifier,
+          selectedType: _selectedType,
+          selectedPeriodKey: _selectedPeriodKey,
+          keys: keys,
+          weeklyDate: weeklyDate,
+          customStart: _customStart,
+          customEnd: _customEnd,
+          compactButtonStyle: compactButtonStyle,
+          canAttemptSave: canAttemptSave,
+          controllers: _controllers,
+          focusNodes: _focusNodes,
+          onManageCategories: _openCategoryManagement,
+          onSave: _save,
+          onPeriodTypeChanged: _onPeriodTypeChanged,
+          onPickMonthly: _pickMonthly,
+          onPickWeekly: _pickWeeklyStartDate,
+          onPickCustomStart: () => _pickCustomDate(start: true),
+          onPickCustomEnd: () => _pickCustomDate(start: false),
+          onDraftEdited: _onDraftEdited,
         );
       },
-    );
-  }
-}
-
-class _BudgetsDataNotifier extends ChangeNotifier {
-  _BudgetScreenData? _data;
-  Object? _error;
-  var _loading = false;
-
-  _BudgetScreenData? get data => _data;
-  Object? get error => _error;
-  bool get loading => _loading;
-
-  void setLoading() {
-    _loading = true;
-    _error = null;
-    notifyListeners();
-  }
-
-  void setData(_BudgetScreenData data) {
-    _data = data;
-    _error = null;
-    _loading = false;
-    notifyListeners();
-  }
-
-  void setError(Object error) {
-    _error = error;
-    _loading = false;
-    notifyListeners();
-  }
-}
-
-class _BudgetScreenData {
-  const _BudgetScreenData({
-    required this.rows,
-    required this.metrics,
-    required this.categoryItems,
-  });
-
-  final List<BudgetCategoryRow> rows;
-  final BudgetsPresentationMetrics metrics;
-  final List<BudgetCategoryListItemData> categoryItems;
-}
-
-class _SummaryMetric extends StatelessWidget {
-  const _SummaryMetric({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-    required this.alignment,
-  });
-
-  final String label;
-  final String value;
-  final Color valueColor;
-  final CrossAxisAlignment alignment;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return Column(
-      crossAxisAlignment: alignment,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: cs.onSurface.withValues(alpha: 0.54),
-            letterSpacing: 0.2,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: valueColor,
-          ),
-        ),
-      ],
     );
   }
 }

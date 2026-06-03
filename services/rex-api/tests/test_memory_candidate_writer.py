@@ -39,6 +39,11 @@ class FakeCandidateStore:
         return rows[:limit]
 
 
+class FailingCandidateStore(FakeCandidateStore):
+    async def create_memory_candidate(self, payload):
+        raise RuntimeError("candidate write failed")
+
+
 class FakeDisciplineService:
     def __init__(self, decision=None, fail=False):
         self.decision = decision
@@ -121,6 +126,32 @@ async def test_memory_candidate_writer_reuses_pending_candidate_by_fingerprint()
     assert result["extraction_action"] == "candidate_reused"
     assert result["memory_path"] == "pending_review"
     assert store.created == []
+
+
+@pytest.mark.asyncio
+async def test_memory_candidate_writer_reports_candidate_create_failure():
+    writer = MemoryCandidateWriter(FailingCandidateStore(), FakeDisciplineService())
+
+    result = await writer.create_pending_memory_candidate(
+        candidate_type="long_term_memory",
+        payload={
+            "memory_type": "fact",
+            "content": "Mom's birthday is June 18",
+            "metadata": {"topic_fingerprint": "fact:birthday:mom"},
+        },
+        rationale="Important family context",
+        conversation_id="conversation-1",
+        user_message_id="message-1",
+        risk_level="high",
+    )
+
+    assert result["extraction_action"] == "skip_candidate_create_failed"
+    assert result["pending"] is False
+    assert result["memory_path"] == "degraded"
+    assert result["review_required"] is False
+    assert result["metadata"]["degraded"] is True
+    assert result["metadata"]["operation"] == "create_memory_candidate"
+    assert result["metadata"]["failure_reason"] == "memory_candidate_create_failed"
 
 
 @pytest.mark.asyncio

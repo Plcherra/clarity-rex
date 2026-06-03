@@ -1,0 +1,111 @@
+from typing import Optional
+
+from app.services.memory_failure_reporting import memory_degraded_metadata
+from app.services.memory_intent_service import SimpleMemoryIntent
+from app.services.memory_path_policy import (
+    direct_save_metadata,
+    pending_confirmation_metadata,
+)
+
+
+class MemoryTurnSummaries:
+    def _simple_memory_confirmation_summary(
+        self,
+        intent: SimpleMemoryIntent,
+        *,
+        confirmation_id: Optional[str] = None,
+    ) -> dict:
+        return {
+            "created": 0,
+            "updated": 0,
+            "archived": 0,
+            "merged": 0,
+            "skipped": 0,
+            "confirmation_required": 1,
+            "records": [
+                {
+                    "kind": "simple_memory",
+                    "type": intent.memory_type,
+                    "action": "confirmation_requested",
+                    "id": confirmation_id,
+                    "title": intent.content,
+                    "metadata": pending_confirmation_metadata(intent.metadata),
+                }
+            ],
+        }
+
+    def _simple_memory_saved_summary(
+        self,
+        intent: SimpleMemoryIntent,
+        record: dict,
+    ) -> dict:
+        return {
+            "created": 1,
+            "updated": 0,
+            "archived": 0,
+            "merged": 0,
+            "skipped": 0,
+            "confirmation_required": 0,
+            "records": [
+                {
+                    "kind": "long_term_memory",
+                    "type": intent.memory_type,
+                    "action": "direct_saved",
+                    "id": record.get("id"),
+                    "title": intent.content,
+                    "metadata": direct_save_metadata(intent.metadata),
+                }
+            ],
+        }
+
+    def _simple_memory_rejected_summary(
+        self,
+        intent: SimpleMemoryIntent,
+    ) -> dict:
+        return {
+            "created": 0,
+            "updated": 0,
+            "archived": 0,
+            "merged": 0,
+            "skipped": 1,
+            "confirmation_required": 0,
+            "records": [
+                {
+                    "kind": "simple_memory",
+                    "type": intent.memory_type,
+                    "action": "rejected",
+                    "title": intent.content,
+                    "metadata": pending_confirmation_metadata(intent.metadata),
+                }
+            ],
+        }
+
+    def _simple_memory_failed_summary(
+        self,
+        intent: SimpleMemoryIntent,
+        *,
+        metadata: Optional[dict] = None,
+    ) -> dict:
+        failed_metadata = metadata or memory_degraded_metadata(
+            pending_confirmation_metadata(intent.metadata),
+            operation="save_long_term_memory",
+            failure_reason="durable_memory_save_failed",
+            user_visible=True,
+        )
+        return {
+            "created": 0,
+            "updated": 0,
+            "archived": 0,
+            "merged": 0,
+            "skipped": 1,
+            "confirmation_required": 0,
+            "records": [
+                {
+                    "kind": "simple_memory",
+                    "type": intent.memory_type,
+                    "action": "save_failed",
+                    "title": intent.content,
+                    "metadata": failed_metadata,
+                }
+            ],
+        }

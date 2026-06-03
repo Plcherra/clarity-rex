@@ -6,6 +6,10 @@ from app.models.memory_candidate import MemoryCandidateCreateRequest
 from app.services.memory_candidate_service import MemoryCandidateService
 from app.services.memory_correction_service import MemoryCorrectionService
 from app.services.memory_extraction_service import MemoryExtractionService
+from app.services.memory_failure_reporting import (
+    log_memory_failure,
+    memory_degraded_metadata,
+)
 from app.services.memory_path_policy import pending_review_metadata
 
 
@@ -36,7 +40,14 @@ class MemoryPostTurnService:
             intent = self.memory_correction_service.detect_correction_intent(message)
             if intent.confidence < 0.5:
                 return None
-        except Exception:
+        except Exception as error:
+            log_memory_failure(
+                "correction_detection_failed",
+                operation="detect_correction_intent",
+                error=error,
+                conversation_id=conversation_id,
+                metadata=brain_metadata,
+            )
             return None
         if self.memory_candidate_service is None:
             return None
@@ -77,8 +88,35 @@ class MemoryPostTurnService:
                     source_message_id=user_message_id or None,
                 )
             )
-        except Exception:
-            return None
+        except Exception as error:
+            metadata = memory_degraded_metadata(
+                candidate_metadata,
+                operation="create_correction_candidate",
+                failure_reason="correction_candidate_create_failed",
+            )
+            log_memory_failure(
+                "correction_candidate_create_failed",
+                operation="create_correction_candidate",
+                error=error,
+                conversation_id=conversation_id,
+                candidate_type="correction",
+                metadata=metadata,
+            )
+            return {
+                "applied": False,
+                "requires_confirmation": False,
+                "failed": True,
+                "candidate_type": "correction",
+                "risk_level": "high",
+                "old_value": intent.old_value,
+                "new_value": intent.new_value,
+                "target_hint": intent.target_hint,
+                "message": "Correction detected, but memory review could not be created.",
+                "memory_path": "degraded",
+                "review_required": False,
+                "review_reason": metadata.get("failure_reason"),
+                "metadata": metadata,
+            }
         return {
             "applied": False,
             "requires_confirmation": True,
@@ -154,8 +192,11 @@ class MemoryPostTurnService:
         }
 
         if memory_correction:
+            correction_failed = bool(memory_correction.get("failed"))
             if memory_correction.get("requires_confirmation"):
                 summary["confirmation_required"] += 1
+            if correction_failed:
+                summary["skipped"] += 1
             if memory_correction.get("applied"):
                 summary["updated"] += len(memory_correction.get("updated") or [])
                 summary["archived"] += len(memory_correction.get("archived") or [])
@@ -171,6 +212,8 @@ class MemoryPostTurnService:
                     "memory_path": memory_correction.get("memory_path"),
                     "review_required": memory_correction.get("review_required"),
                     "review_reason": memory_correction.get("review_reason"),
+                    "action": "failed" if correction_failed else None,
+                    "metadata": memory_correction.get("metadata"),
                 }
             )
 
@@ -214,6 +257,7 @@ class MemoryPostTurnService:
                     "memory_path": result.get("memory_path"),
                     "review_required": result.get("review_required"),
                     "review_reason": result.get("review_reason"),
+                    "metadata": result.get("metadata"),
                 }
             )
 
@@ -248,12 +292,25 @@ class MemoryPostTurnService:
                 assistant_message=assistant_message,
                 brain_metadata=brain_metadata,
             )
-        except Exception:
+        except Exception as error:
+            metadata = memory_degraded_metadata(
+                brain_metadata,
+                operation="extract_memory_after_success",
+                failure_reason="memory_extraction_failed",
+            )
+            log_memory_failure(
+                "post_turn_extraction_failed",
+                operation="extract_memory_after_success",
+                error=error,
+                conversation_id=conversation_id,
+                metadata=metadata,
+            )
             return [
                 {
                     "extraction_kind": "memory_extraction",
                     "extraction_action": "skip_failed",
                     "reason": "Memory extraction failed after the response.",
+                    "metadata": metadata,
                 }
             ]
 

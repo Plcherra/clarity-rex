@@ -3,14 +3,18 @@ from typing import Optional, Protocol
 from app.services.memory_confirmation_lifecycle_logger import (
     log_confirmation_lifecycle,
 )
+from app.services.memory_failure_reporting import (
+    log_memory_failure,
+    memory_degraded_metadata,
+)
 from app.services.memory_intent_service import MemoryIntentService, SimpleMemoryIntent
 from app.services.memory_path_policy import (
     direct_save_metadata,
-    pending_confirmation_metadata,
 )
 from app.services.memory_turn_confirmation_helpers import (
     MemoryTurnConfirmationHelpers,
 )
+from app.services.memory_turn_summaries import MemoryTurnSummaries
 
 
 class MemoryTurnStore(Protocol):
@@ -85,7 +89,7 @@ class MemoryTurnStore(Protocol):
         pass
 
 
-class MemoryTurnService(MemoryTurnConfirmationHelpers):
+class MemoryTurnService(MemoryTurnConfirmationHelpers, MemoryTurnSummaries):
     """Handles natural in-chat memory confirmations before AI generation."""
 
     def __init__(
@@ -308,14 +312,26 @@ class MemoryTurnService(MemoryTurnConfirmationHelpers):
                 importance=intent.importance,
                 metadata=memory_metadata,
             )
-        except Exception:
+        except Exception as error:
+            failure_metadata = memory_degraded_metadata(
+                intent.metadata,
+                operation="save_long_term_memory",
+                failure_reason="durable_memory_save_failed",
+                user_visible=True,
+            )
+            log_memory_failure(
+                "direct_save_failed",
+                operation="save_long_term_memory",
+                error=error,
+                conversation_id=conversation_id,
+                confirmation_id=confirmation_id,
+                memory_type=intent.memory_type,
+                metadata=failure_metadata,
+            )
             if confirmation_id is not None:
                 await self._fail_confirmation(
                     confirmation_id,
-                    metadata={
-                        **intent.metadata,
-                        "error": "durable_memory_save_failed",
-                    },
+                    metadata=failure_metadata,
                 )
             log_confirmation_lifecycle(
                 "save_failed",
@@ -338,7 +354,10 @@ class MemoryTurnService(MemoryTurnConfirmationHelpers):
                 "user_message": user_message,
                 "assistant_message": self.public_message(assistant_message),
                 "memory_correction": None,
-                "memory_changes": self._simple_memory_failed_summary(intent),
+                "memory_changes": self._simple_memory_failed_summary(
+                    intent,
+                    metadata=failure_metadata,
+                ),
                 "messages": await self.recent_public_messages(conversation_id),
             }
 
@@ -404,97 +423,4 @@ class MemoryTurnService(MemoryTurnConfirmationHelpers):
             "memory_correction": None,
             "memory_changes": self._simple_memory_rejected_summary(intent),
             "messages": await self.recent_public_messages(conversation_id),
-        }
-
-    def _simple_memory_confirmation_summary(
-        self,
-        intent: SimpleMemoryIntent,
-        *,
-        confirmation_id: Optional[str] = None,
-    ) -> dict:
-        return {
-            "created": 0,
-            "updated": 0,
-            "archived": 0,
-            "merged": 0,
-            "skipped": 0,
-            "confirmation_required": 1,
-            "records": [
-                {
-                    "kind": "simple_memory",
-                    "type": intent.memory_type,
-                    "action": "confirmation_requested",
-                    "id": confirmation_id,
-                    "title": intent.content,
-                    "metadata": pending_confirmation_metadata(intent.metadata),
-                }
-            ],
-        }
-
-    def _simple_memory_saved_summary(
-        self,
-        intent: SimpleMemoryIntent,
-        record: dict,
-    ) -> dict:
-        return {
-            "created": 1,
-            "updated": 0,
-            "archived": 0,
-            "merged": 0,
-            "skipped": 0,
-            "confirmation_required": 0,
-            "records": [
-                {
-                    "kind": "long_term_memory",
-                    "type": intent.memory_type,
-                    "action": "direct_saved",
-                    "id": record.get("id"),
-                    "title": intent.content,
-                    "metadata": direct_save_metadata(intent.metadata),
-                }
-            ],
-        }
-
-    def _simple_memory_rejected_summary(
-        self,
-        intent: SimpleMemoryIntent,
-    ) -> dict:
-        return {
-            "created": 0,
-            "updated": 0,
-            "archived": 0,
-            "merged": 0,
-            "skipped": 1,
-            "confirmation_required": 0,
-            "records": [
-                {
-                    "kind": "simple_memory",
-                    "type": intent.memory_type,
-                    "action": "rejected",
-                    "title": intent.content,
-                    "metadata": pending_confirmation_metadata(intent.metadata),
-                }
-            ],
-        }
-
-    def _simple_memory_failed_summary(
-        self,
-        intent: SimpleMemoryIntent,
-    ) -> dict:
-        return {
-            "created": 0,
-            "updated": 0,
-            "archived": 0,
-            "merged": 0,
-            "skipped": 1,
-            "confirmation_required": 0,
-            "records": [
-                {
-                    "kind": "simple_memory",
-                    "type": intent.memory_type,
-                    "action": "save_failed",
-                    "title": intent.content,
-                    "metadata": pending_confirmation_metadata(intent.metadata),
-                }
-            ],
         }
