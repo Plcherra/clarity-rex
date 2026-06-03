@@ -21,6 +21,14 @@ from app.services.memory_candidate_review_session_service import (
 from app.services.memory_candidate_service import MemoryCandidateService
 
 
+GLOBAL_PENDING_INTENTS = {
+    "approve_all",
+    "approve_with_correction",
+    "reject_all",
+    "review",
+}
+
+
 class MemoryCandidateDecisionService:
     """Handles chat approvals/rejections/edits for pending memory candidates."""
 
@@ -58,10 +66,9 @@ class MemoryCandidateDecisionService:
         if intent is None:
             return None
 
-        pending = await self.memory_candidate_service.list_candidates(
-            status="pending",
-            source_conversation_id=conversation_id,
-            limit=20,
+        pending = await self._pending_candidates_for_intent(
+            intent.kind,
+            conversation_id=conversation_id,
         )
         if not pending:
             if intent.kind in {"approve_all", "reject_all", "review", "edit"}:
@@ -178,6 +185,24 @@ class MemoryCandidateDecisionService:
             candidates=pending,
         )
         return self.review_session_service.with_session_payload(result, session)
+
+    async def _pending_candidates_for_intent(
+        self,
+        intent_kind: str,
+        *,
+        conversation_id: str,
+    ) -> list[dict]:
+        scoped = await self.memory_candidate_service.list_candidates(
+            status="pending",
+            source_conversation_id=conversation_id,
+            limit=20,
+        )
+        if scoped or intent_kind not in GLOBAL_PENDING_INTENTS:
+            return scoped
+        return await self.memory_candidate_service.list_candidates(
+            status="pending",
+            limit=20,
+        )
 
     async def _review_session_for_group_reference(
         self,

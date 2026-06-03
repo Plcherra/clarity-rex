@@ -118,6 +118,16 @@ class MemoryPostTurnService:
             ),
         }
 
+    def pending_correction_response(self, memory_correction: dict) -> str:
+        old_value = str(memory_correction.get("old_value") or "").strip()
+        new_value = str(memory_correction.get("new_value") or "").strip()
+        if old_value and new_value:
+            return (
+                f"I caught that correction: replace {old_value} with {new_value}. "
+                "Please confirm before I update memory."
+            )
+        return "I caught that memory correction. Please confirm before I update memory."
+
     def correction_blocks_extraction(self, memory_correction: Optional[dict]) -> bool:
         if not memory_correction:
             return False

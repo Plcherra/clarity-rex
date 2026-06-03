@@ -2,7 +2,6 @@ import asyncio
 import contextlib
 import logging
 import time
-from collections.abc import AsyncIterator
 from typing import Any, Optional
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -13,42 +12,25 @@ from app.services.deepgram_service import DeepgramServiceError
 from app.services.deepgram_streaming_service import DeepgramStreamingService
 from app.services.google_tts_service import GoogleTTSService, GoogleTTSServiceError
 from app.services.memory_service import MemoryServiceError
-from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.voice_stream_config import (
+    VOICE_DEEP_RESPONSE_MAX_TOKENS,
+    VOICE_RESPONSE_INSTRUCTIONS,
+    VOICE_RESPONSE_MAX_TOKENS,
+    voice_response_max_tokens,
+)
+from app.services.voice_stream_live_transcription import (
+    VoiceStreamLiveTranscriptionMixin,
+)
+from app.services.voice_stream_response_writer import VoiceStreamResponseWriterMixin
 
 
 LOGGER = logging.getLogger("rex.voice_stream")
 
-VOICE_RESPONSE_INSTRUCTIONS = (
-    "Voice call response style: answer in 2-4 short spoken sentences. "
-    "Be direct and conversational. Do not produce long checklists, long plans, "
-    "or multi-section explanations unless the user explicitly asks for detail. "
-    "If more depth is useful, offer one concrete next step instead of explaining everything. "
-    "Do not emit clarity_action blocks in voice mode. If a Clarity financial change "
-    "needs confirmation, ask the user to open Chat to confirm it. Do not claim "
-    "reminders, calendar events, notifications, or scheduled follow-ups were set "
-    "unless a backend execution result confirms the write."
-)
-VOICE_RESPONSE_MAX_TOKENS = 180
-VOICE_DEEP_RESPONSE_MAX_TOKENS = 420
-VOICE_DEEP_THINKING_PHRASES = (
-    "deep think",
-    "think deeply",
-    "analyze thoroughly",
-    "full analysis",
-    "reason through",
-    "go deeper",
-    "deeper thinking",
-)
 
-
-def voice_response_max_tokens(transcript: str) -> int:
-    normalized = transcript.lower()
-    if any(phrase in normalized for phrase in VOICE_DEEP_THINKING_PHRASES):
-        return VOICE_DEEP_RESPONSE_MAX_TOKENS
-    return VOICE_RESPONSE_MAX_TOKENS
-
-
-class VoiceStreamSession:
+class VoiceStreamSession(
+    VoiceStreamResponseWriterMixin,
+    VoiceStreamLiveTranscriptionMixin,
+):
     def __init__(
         self,
         websocket: WebSocket,
@@ -219,7 +201,6 @@ class VoiceStreamSession:
             )
 
             await self._send_event("assistant.started")
-            chat_started_at = time.perf_counter()
             response_text = await self._stream_chat_and_audio(
                 transcription["transcript"],
                 transcription,
@@ -232,16 +213,14 @@ class VoiceStreamSession:
                 response_text=response_text,
                 timings=timings,
             )
-        except DeepgramServiceError as error:
-            await self._send_error(error.detail, status_code=error.status_code)
-        except ConversationNotFoundError:
-            await self._send_error("Conversation not found.", status_code=404)
-        except AIServiceError as error:
-            await self._send_error(error.detail, status_code=error.status_code)
-        except MemoryServiceError as error:
-            await self._send_error(error.detail, status_code=error.status_code)
-        except GoogleTTSServiceError as error:
-            await self._send_error(error.detail, status_code=error.status_code)
+        except (
+            DeepgramServiceError,
+            ConversationNotFoundError,
+            AIServiceError,
+            MemoryServiceError,
+            GoogleTTSServiceError,
+        ) as error:
+            await self._send_turn_error(error)
         except asyncio.CancelledError:
             raise
         except Exception as error:
@@ -286,16 +265,14 @@ class VoiceStreamSession:
                 response_text=response_text,
                 timings=timings,
             )
-        except DeepgramServiceError as error:
-            await self._send_error(error.detail, status_code=error.status_code)
-        except ConversationNotFoundError:
-            await self._send_error("Conversation not found.", status_code=404)
-        except AIServiceError as error:
-            await self._send_error(error.detail, status_code=error.status_code)
-        except MemoryServiceError as error:
-            await self._send_error(error.detail, status_code=error.status_code)
-        except GoogleTTSServiceError as error:
-            await self._send_error(error.detail, status_code=error.status_code)
+        except (
+            DeepgramServiceError,
+            ConversationNotFoundError,
+            AIServiceError,
+            MemoryServiceError,
+            GoogleTTSServiceError,
+        ) as error:
+            await self._send_turn_error(error)
         except asyncio.CancelledError:
             raise
         except Exception as error:
@@ -305,250 +282,6 @@ class VoiceStreamSession:
             current_task = asyncio.current_task()
             if self._active_turn_task is current_task:
                 self._active_turn_task = None
-
-    async def _stream_chat_and_audio(
-        self,
-        transcript: str,
-        transcription: dict[str, Any],
-        timings: dict[str, int],
-    ) -> str:
-        response_parts: list[str] = []
-        speech_buffer = ""
-        first_token_at: Optional[float] = None
-        first_audio_at: Optional[float] = None
-        user_message_id: Optional[str] = None
-        assistant_message_id: Optional[str] = None
-        messages: list[dict[str, Any]] = []
-        chat_started_at = time.perf_counter()
-
-        async for event in self.chat_service.stream_message(
-            transcript,
-            conversation_id=self.conversation_id,
-            response_instructions=VOICE_RESPONSE_INSTRUCTIONS,
-            max_response_tokens=voice_response_max_tokens(transcript),
-            financial_context=self.financial_context,
-            channel=RexBrainChannel.VOICE,
-        ):
-            event_name = event.get("event")
-            if event_name == "conversation":
-                self.conversation_id = event.get("conversation_id") or self.conversation_id
-                await self._send_event(
-                    "conversation.updated",
-                    conversation_id=self.conversation_id,
-                )
-            elif event_name == "token":
-                token = str(event.get("token") or "")
-                if not token:
-                    continue
-                if first_token_at is None:
-                    first_token_at = time.perf_counter()
-                    timings["grok_first_token_ms"] = self._elapsed_ms(chat_started_at)
-                response_parts.append(token)
-                speech_buffer += token
-                await self._send_event("assistant.token", token=token)
-                chunk, speech_buffer = self._next_speakable_chunk(speech_buffer)
-                if chunk:
-                    first_audio_at = await self._synthesize_and_send_audio_chunk(
-                        chunk,
-                        timings,
-                        first_audio_at,
-                    )
-            elif event_name == "done":
-                self.conversation_id = event.get("conversation_id") or self.conversation_id
-                messages = event.get("messages") or []
-                user_message_id, assistant_message_id = self._message_ids(messages)
-
-        response_text = "".join(response_parts).strip()
-        if speech_buffer.strip():
-            first_audio_at = await self._synthesize_and_send_audio_chunk(
-                speech_buffer.strip(),
-                timings,
-                first_audio_at,
-            )
-
-        metadata_record = await self.chat_service.save_voice_turn_metadata(
-            conversation_id=self.conversation_id or "",
-            user_message_id=user_message_id,
-            assistant_message_id=assistant_message_id,
-            transcript_confidence=transcription.get("confidence"),
-            audio_duration_seconds=transcription.get("duration_seconds"),
-            input_mime_type=self.input_mime_type,
-            output_audio_encoding=None,
-            metadata={
-                "stt": transcription.get("metadata") or {},
-                "stream": {"session_id": self._session_id, "timings": timings},
-            },
-        )
-        await self._send_event(
-            "messages.updated",
-            conversation_id=self.conversation_id,
-            messages=messages,
-            voice_metadata={"record": metadata_record} if metadata_record else {},
-        )
-        return response_text
-
-    async def _synthesize_and_send_audio_chunk(
-        self,
-        text: str,
-        timings: dict[str, int],
-        first_audio_at: Optional[float],
-    ) -> Optional[float]:
-        synthesis_started_at = time.perf_counter()
-        synthesis = await self.google_tts_service.synthesize_speech(text)
-        if first_audio_at is None:
-            first_audio_at = time.perf_counter()
-            timings["tts_first_audio_ms"] = self._elapsed_ms(synthesis_started_at)
-
-        await self._send_event(
-            "assistant.audio_chunk",
-            text=text,
-            audio_content_type=synthesis["audio_content_type"],
-            audio_base64=synthesis["audio_base64"],
-            audio_encoding=synthesis["audio_encoding"],
-            voice_name=synthesis["voice_name"],
-            language_code=synthesis["language_code"],
-            metadata=synthesis.get("metadata") or {},
-        )
-        return first_audio_at
-
-    async def _send_transcript_event(self, event: dict[str, Any]) -> None:
-        if event.get("event") == "transcript.partial":
-            await self._send_event(
-                "transcript.partial",
-                transcript=event.get("transcript") or "",
-                confidence=event.get("confidence"),
-                metadata=event.get("metadata") or {},
-            )
-        elif event.get("event") == "transcript.final":
-            await self._send_event(
-                "transcript.final",
-                transcript=event.get("transcript") or "",
-                confidence=event.get("confidence"),
-                speech_final=bool(event.get("speech_final")),
-                metadata=event.get("metadata") or {},
-            )
-
-    def _next_speakable_chunk(self, text: str) -> tuple[Optional[str], str]:
-        stripped = text.strip()
-        if not stripped:
-            return None, ""
-
-        for index, character in enumerate(text):
-            if character in ".!?;\n" and index >= 28:
-                chunk = text[: index + 1].strip()
-                rest = text[index + 1 :]
-                return chunk, rest
-
-        if len(stripped) >= 140:
-            split_at = text.rfind(" ", 0, 140)
-            if split_at < 45:
-                split_at = 140
-            return text[:split_at].strip(), text[split_at:]
-
-        return None, text
-
-    def _message_ids(self, messages: list[dict[str, Any]]) -> tuple[Optional[str], Optional[str]]:
-        user_message_id = None
-        assistant_message_id = None
-        for message in messages:
-            if message.get("role") == "user":
-                user_message_id = message.get("id") or user_message_id
-            elif message.get("role") == "assistant":
-                assistant_message_id = message.get("id") or assistant_message_id
-        return user_message_id, assistant_message_id
-
-    async def _chunk_iterator(self, chunks: list[bytes]) -> AsyncIterator[bytes]:
-        for chunk in chunks:
-            yield chunk
-
-    def _supports_live_transcription(self) -> bool:
-        return hasattr(self.deepgram_streaming_service, "open_live_transcription")
-
-    async def _ensure_live_transcription(self) -> Any:
-        if self._live_transcription is not None:
-            return self._live_transcription
-        self._live_transcription = (
-            await self.deepgram_streaming_service.open_live_transcription(
-                content_type=self.input_mime_type,
-                sample_rate=self.sample_rate,
-                on_transcript=self._handle_live_transcript_event,
-            )
-        )
-        return self._live_transcription
-
-    async def _handle_live_transcript_event(self, event: dict[str, Any]) -> None:
-        await self._send_transcript_event(event)
-        transcript = str(event.get("transcript") or "").strip()
-        if transcript and not self._requires_explicit_utterance_end():
-            self._schedule_live_endpoint_check()
-        if (
-            event.get("event") == "transcript.final"
-            and event.get("speech_final")
-            and not self._requires_explicit_utterance_end()
-            and (
-                self._active_turn_task is None
-                or self._active_turn_task.done()
-            )
-        ):
-            self._active_turn_task = asyncio.create_task(
-                self._process_live_utterance()
-            )
-
-    async def _close_live_transcription(self) -> None:
-        await self._cancel_live_endpoint_check()
-        live_transcription = self._live_transcription
-        self._live_transcription = None
-        if live_transcription is not None:
-            await live_transcription.close()
-
-    def _schedule_live_endpoint_check(self) -> None:
-        self._last_live_transcript_at = time.perf_counter()
-        task = self._live_endpoint_task
-        if task is not None and not task.done():
-            task.cancel()
-        self._live_endpoint_task = asyncio.create_task(
-            self._process_live_utterance_after_transcript_idle(
-                self._last_live_transcript_at
-            )
-        )
-
-    async def _process_live_utterance_after_transcript_idle(
-        self,
-        transcript_timestamp: float,
-    ) -> None:
-        if self._requires_explicit_utterance_end():
-            return
-        settings = getattr(self.deepgram_streaming_service, "settings", None)
-        endpointing_ms = getattr(settings, "deepgram_endpointing_ms", 900)
-        idle_ms = getattr(
-            settings,
-            "deepgram_live_transcript_idle_ms",
-            endpointing_ms + 200,
-        )
-        await asyncio.sleep(max(endpointing_ms + 200, idle_ms) / 1000)
-        if self._last_live_transcript_at != transcript_timestamp:
-            return
-        if self._live_transcription is None:
-            return
-        if self._active_turn_task is not None and not self._active_turn_task.done():
-            return
-        self._active_turn_task = asyncio.create_task(self._process_live_utterance())
-
-    def _requires_explicit_utterance_end(self) -> bool:
-        return self.client == "ios_native"
-
-    async def _cancel_live_endpoint_check(self) -> None:
-        task = self._live_endpoint_task
-        if task is None or task.done():
-            self._live_endpoint_task = None
-            return
-        if task is asyncio.current_task():
-            self._live_endpoint_task = None
-            return
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
-        self._live_endpoint_task = None
 
     def _audio_bytes_received(self) -> int:
         if self._supports_live_transcription():
@@ -585,6 +318,44 @@ class VoiceStreamSession:
             detail=message,
             status_code=status_code,
         )
+
+    async def _send_turn_error(self, error: Exception) -> None:
+        if isinstance(error, DeepgramServiceError):
+            await self._send_error(
+                error.detail,
+                status_code=error.status_code,
+                code="transcription_failed",
+            )
+            return
+        if isinstance(error, ConversationNotFoundError):
+            await self._send_error(
+                "Conversation not found.",
+                status_code=404,
+                code="conversation_not_found",
+            )
+            return
+        if isinstance(error, AIServiceError):
+            await self._send_error(
+                error.detail,
+                status_code=error.status_code,
+                code="assistant_planning_failed",
+            )
+            return
+        if isinstance(error, MemoryServiceError):
+            await self._send_error(
+                error.detail,
+                status_code=error.status_code,
+                code="memory_context_failed",
+            )
+            return
+        if isinstance(error, GoogleTTSServiceError):
+            await self._send_error(
+                error.detail,
+                status_code=error.status_code,
+                code="tts_failed",
+            )
+            return
+        await self._send_error("Voice stream failed.", status_code=500)
 
     def _log_unexpected_error(self, error: Exception) -> None:
         LOGGER.exception(

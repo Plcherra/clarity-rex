@@ -105,7 +105,7 @@ async def test_chat_service_accepts_memory_discipline_dependency_without_behavio
 
 
 @pytest.mark.asyncio
-async def test_chat_service_applies_memory_correction_and_prompts_summary():
+async def test_chat_service_correction_requires_confirmation_without_ai_claim():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     correction_service = FakeMemoryCorrectionService(
@@ -145,11 +145,12 @@ async def test_chat_service_applies_memory_correction_and_prompts_summary():
     assert rex_brain_metadata["decision"]["model_profile"] == "fast"
     assert "not Flowfirst" not in str(rex_brain_metadata)
     assert correction_service.calls == [("detect", "not Flowfirst, it is FlowForce")]
-    assert "Memory correction status" in ai_service.messages[-1]["content"]
-    assert any(
-        message["content"] == "not Flowfirst, it is FlowForce"
-        for message in ai_service.messages
+    assert ai_service.messages == []
+    assert result["response"] == (
+        "I caught that correction: replace Flowfirst with FlowForce. "
+        "Please confirm before I update memory."
     )
+    assert result["assistant_message"]["content"] == result["response"]
     assert result["memory_changes"]["confirmation_required"] == 1
     assert result["memory_changes"]["records"][-1]["reason"] == (
         "correction_already_handled"

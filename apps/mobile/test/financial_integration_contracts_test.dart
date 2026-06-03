@@ -7,6 +7,7 @@ import 'package:clarity/features/categories/domain/category_normalization.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_snapshot.dart';
 import 'package:clarity/features/finance/application/financial_read_model_service.dart';
 import 'package:clarity/features/transactions/domain/transaction_review.dart';
+import 'package:clarity/features/transactions/domain/transaction_fingerprint.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -304,6 +305,39 @@ void main() {
       expect(selected, hasLength(120));
       expect(selected.map((record) => record.id), contains('old-unknown'));
       expect(selected.first.id, 'recent-159');
+    },
+  );
+
+  test(
+    'Plaid-style and CSV-style imports share the same dedupe fingerprint',
+    () {
+      final csvTransaction = Transaction(
+        accountId: 'checking',
+        date: DateTime(2026, 3, 18),
+        amount: -42.17,
+        description: ' SQ *Coffee   Shop ',
+      );
+      final plaidTransaction = Transaction(
+        accountId: 'checking',
+        date: DateTime(2026, 3, 18),
+        amount: -42.17,
+        description: 'sq *coffee shop',
+      );
+      final otherAccountTransaction = Transaction(
+        accountId: 'visa',
+        date: DateTime(2026, 3, 18),
+        amount: -42.17,
+        description: 'sq *coffee shop',
+      );
+
+      expect(
+        transactionFingerprint(plaidTransaction),
+        transactionFingerprint(csvTransaction),
+      );
+      expect(
+        transactionFingerprint(otherAccountTransaction),
+        isNot(transactionFingerprint(csvTransaction)),
+      );
     },
   );
 }

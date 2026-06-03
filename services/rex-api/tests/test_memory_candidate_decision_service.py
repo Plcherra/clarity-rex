@@ -11,6 +11,7 @@ class FakeMemoryCandidateService:
         self.approved = []
         self.rejected = []
         self.updated = []
+        self.list_calls = []
 
     async def list_candidates(
         self,
@@ -20,7 +21,25 @@ class FakeMemoryCandidateService:
         limit=20,
         **kwargs,
     ):
-        return self.pending[:limit]
+        self.list_calls.append(
+            {
+                "status": status,
+                "source_conversation_id": source_conversation_id,
+                "limit": limit,
+            }
+        )
+        pending = self.pending
+        if status is not None:
+            pending = [
+                candidate for candidate in pending if candidate.get("status") == status
+            ]
+        if source_conversation_id is not None:
+            pending = [
+                candidate
+                for candidate in pending
+                if candidate.get("source_conversation_id") == source_conversation_id
+            ]
+        return pending[:limit]
 
     async def approve_candidate(self, candidate_id, request):
         candidate = self._candidate(candidate_id)
@@ -94,6 +113,7 @@ def candidate(
     *,
     candidate_type="long_term_memory",
     risk_level="medium",
+    source_conversation_id="conversation-1",
     payload=None,
 ):
     payload = payload or {
@@ -114,7 +134,7 @@ def candidate(
         "risk_level": risk_level,
         "status": "pending",
         "preview": f"{candidate_type}: pending memory change",
-        "source_conversation_id": "conversation-1",
+        "source_conversation_id": source_conversation_id,
         "source_message_id": "message-1",
         "reason": "Memory-worthy user preference.",
     }
@@ -191,6 +211,37 @@ async def test_candidate_decision_service_answers_memory_review_when_none_pendin
     assert result["memory_changes"]["records"][0]["action"] == "none_pending"
     assert fake_service.approved == []
     assert fake_service.rejected == []
+
+
+@pytest.mark.asyncio
+async def test_candidate_decision_service_review_falls_back_to_global_pending():
+    fake_service = FakeMemoryCandidateService(
+        pending=[
+            candidate(
+                "candidate-other-chat",
+                source_conversation_id="conversation-old",
+            )
+        ]
+    )
+    service = MemoryCandidateDecisionService(fake_service)
+
+    result = await service.handle_decision(
+        "Can we review pending memories?",
+        conversation_id="conversation-new",
+    )
+
+    assert result["memory_changes"]["confirmation_required"] == 1
+    assert result["memory_changes"]["pending_candidates"][0]["id"] == (
+        "candidate-other-chat"
+    )
+    assert fake_service.list_calls == [
+        {
+            "status": "pending",
+            "source_conversation_id": "conversation-new",
+            "limit": 20,
+        },
+        {"status": "pending", "source_conversation_id": None, "limit": 20},
+    ]
 
 
 @pytest.mark.asyncio

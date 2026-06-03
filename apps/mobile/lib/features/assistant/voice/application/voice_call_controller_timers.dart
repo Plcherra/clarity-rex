@@ -1,0 +1,337 @@
+// ignore_for_file: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+
+part of 'voice_call_controller.dart';
+
+extension VoiceCallControllerTimers on VoiceCallController {
+  bool _isCurrentCall(int generation) => generation == _callGeneration;
+
+  void _armThinkingTimeout(int generation) {
+    _thinkingTimeoutTimer?.cancel();
+    final timeout = ref.read(voiceCallThinkingTimeoutProvider);
+    if (timeout <= Duration.zero) {
+      return;
+    }
+    _thinkingTimeoutTimer = Timer(timeout, () {
+      _recoverFromStuckThinking(generation);
+    });
+  }
+
+  void _cancelThinkingTimeout() {
+    _thinkingTimeoutTimer?.cancel();
+    _thinkingTimeoutTimer = null;
+  }
+
+  bool _isNoAudioError(String message) {
+    final normalized = message.toLowerCase();
+    return normalized.contains('did not catch') ||
+        normalized.contains('no audio') ||
+        normalized.contains('empty audio');
+  }
+
+  Future<void> _startInterimTranscription(int generation) async {
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.listening) {
+      return;
+    }
+
+    final service = _interimSpeechToTextService;
+    try {
+      final available = await service.initialize(onError: (_) {});
+      if (!available ||
+          !_isCurrentCall(generation) ||
+          state.phase != VoiceCallPhase.listening) {
+        return;
+      }
+      await service.startListening(
+        onPartialTranscript: (transcript) {
+          if (_isCurrentCall(generation) &&
+              state.phase == VoiceCallPhase.listening) {
+            updateTranscript(transcript);
+          }
+        },
+        onFinalTranscript: (transcript) {
+          if (_isCurrentCall(generation) &&
+              state.phase == VoiceCallPhase.listening) {
+            updateTranscript(transcript);
+          }
+        },
+        onError: (_) {},
+      );
+    } on Object {
+      // Interim local transcription is only a UI aid. Deepgram remains the
+      // source of truth after the recorded turn is uploaded.
+    }
+  }
+
+  Future<void> _stopInterimTranscription() async {
+    final service = _activeInterimSpeechToTextService;
+    if (service == null) {
+      return;
+    }
+    try {
+      await service.cancel();
+    } on Object {
+      // Best effort cleanup only.
+    }
+  }
+
+  void _recoverFromEmptyVoiceTurn(String message) {
+    if (!state.isCallActive) {
+      return;
+    }
+    if (_isAwaitingFollowUpSpeech) {
+      final generation = ++_callGeneration;
+      _cancelThinkingTimeout();
+      _cancelListeningEndpointTimeout();
+      _cancelNoSpeechTimeout();
+      unawaited(_stopInterimTranscription());
+      unawaited(_captureService.cancel());
+      unawaited(_streamingCaptureService.cancel());
+      _stopBargeInMonitoring();
+      final streamingSession = _activeStreamingSession;
+      _activeStreamingSession = null;
+      streamingSession?.interrupt();
+      unawaited(streamingSession?.endSession());
+      state = state.copyWith(
+        phase: VoiceCallPhase.listening,
+        isCapturingSpeech: false,
+        clearCurrentTranscript: true,
+        clearError: true,
+      );
+      _clearVisibleTranscript();
+      _startListeningCycle(generation);
+      return;
+    }
+    _emptyVoiceTurnCount++;
+    if (_emptyVoiceTurnCount >= ref.read(voiceCallEmptyTurnLimitProvider)) {
+      fail(
+        'I did not catch any audio. Tap Try again and speak after the tone.',
+      );
+      return;
+    }
+    final generation = ++_callGeneration;
+    _cancelThinkingTimeout();
+    _cancelListeningEndpointTimeout();
+    _cancelNoSpeechTimeout();
+    unawaited(_stopInterimTranscription());
+    unawaited(_captureService.cancel());
+    unawaited(_streamingCaptureService.cancel());
+    _stopBargeInMonitoring();
+    final streamingSession = _activeStreamingSession;
+    _activeStreamingSession = null;
+    streamingSession?.interrupt();
+    unawaited(streamingSession?.endSession());
+
+    state = state.copyWith(
+      phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
+      clearCurrentTranscript: true,
+      errorMessage: message,
+    );
+    _clearVisibleTranscript();
+    _startListeningCycle(generation);
+  }
+
+  void _markListeningReady() {
+    if (!state.isCallActive || state.phase != VoiceCallPhase.listening) {
+      return;
+    }
+
+    state = state.copyWith(
+      listeningReadySignal: state.listeningReadySignal + 1,
+    );
+  }
+
+  void _armTranscriptIdleEndpointTimeout(int generation) {
+    if (_activeStreamingSession == null || _transcriptBuffer.visible.isEmpty) {
+      return;
+    }
+    _armListeningEndpointTimeout(
+      generation,
+      ref.read(voiceCallTranscriptIdleTimeoutProvider),
+    );
+  }
+
+  void _armSpeechStartedEndpointTimeout(int generation) {
+    if (_activeStreamingSession == null) {
+      return;
+    }
+    _armListeningEndpointTimeout(
+      generation,
+      ref.read(voiceCallSpeechStartTimeoutProvider),
+    );
+  }
+
+  void _armListeningEndpointTimeout(int generation, Duration timeout) {
+    _listeningEndpointTimer?.cancel();
+    if (timeout <= Duration.zero) {
+      return;
+    }
+    _listeningEndpointTimer = Timer(timeout, () {
+      _forceEndStreamingUtterance(generation);
+    });
+  }
+
+  void _cancelListeningEndpointTimeout() {
+    _listeningEndpointTimer?.cancel();
+    _listeningEndpointTimer = null;
+  }
+
+  void _armNoSpeechTimeout(int generation) {
+    _noSpeechTimeoutTimer?.cancel();
+    final timeout = ref.read(voiceCallNoSpeechTimeoutProvider);
+    if (timeout <= Duration.zero) {
+      return;
+    }
+    _noSpeechTimeoutTimer = Timer(timeout, () {
+      if (!_isCurrentCall(generation) ||
+          !_isAppInForeground ||
+          !state.isCallActive ||
+          state.phase != VoiceCallPhase.listening ||
+          state.isMuted ||
+          state.isCapturingSpeech ||
+          state.currentTranscript.trim().isNotEmpty) {
+        return;
+      }
+      _recoverFromEmptyVoiceTurn(
+        'I did not hear anything. I am listening again.',
+      );
+    });
+  }
+
+  void _cancelNoSpeechTimeout() {
+    _noSpeechTimeoutTimer?.cancel();
+    _noSpeechTimeoutTimer = null;
+  }
+
+  void _forceEndStreamingUtterance(int generation) {
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.listening ||
+        state.isMuted) {
+      return;
+    }
+
+    final streamingSession = _activeStreamingSession;
+    if (streamingSession == null) {
+      return;
+    }
+
+    unawaited(_streamingCaptureService.cancel());
+    endpointUtterance();
+    streamingSession.endUtterance();
+  }
+
+  void _recoverFromStuckThinking(int generation) {
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.thinking) {
+      return;
+    }
+
+    final nextGeneration = ++_callGeneration;
+    _cancelThinkingTimeout();
+    if (_isUsingNativeVoice) {
+      unawaited(_nativeVoiceSessionService.interrupt());
+      state = state.copyWith(
+        phase: VoiceCallPhase.listening,
+        isCapturingSpeech: false,
+        errorMessage:
+            'Rex got stuck thinking, so I reset the native voice stream. Try again.',
+      );
+      return;
+    }
+    unawaited(_captureService.cancel());
+    unawaited(_streamingCaptureService.cancel());
+    _stopBargeInMonitoring();
+    final streamingSession = _activeStreamingSession;
+    _activeStreamingSession = null;
+    streamingSession?.interrupt();
+    unawaited(_streamingPlaybackQueue.cancel());
+    unawaited(streamingSession?.endSession());
+    unawaited(_playbackService.stop());
+    unawaited(_audioSessionService.configureForVoiceTurn());
+    unawaited(_backgroundVoiceService.start());
+
+    state = state.copyWith(
+      phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
+      errorMessage:
+          'Rex got stuck thinking, so I reset the voice stream. Try again.',
+    );
+    _startListeningCycle(nextGeneration);
+  }
+
+  void _startBargeInMonitoring(int generation) {
+    if (_isBargeInMonitoring ||
+        !ref.read(voiceCallBargeInEnabledProvider) ||
+        !_isCurrentCall(generation) ||
+        state.phase != VoiceCallPhase.speaking ||
+        state.isMuted) {
+      return;
+    }
+
+    _isBargeInMonitoring = true;
+    unawaited(
+      _bargeInDetectionService
+          .start(
+            config: ref.read(voiceCaptureConfigProvider),
+            onBargeIn: () {
+              if (_isCurrentCall(generation) &&
+                  state.phase == VoiceCallPhase.speaking &&
+                  !state.isMuted) {
+                interruptAndListen();
+              }
+            },
+          )
+          .catchError((Object _) {
+            _isBargeInMonitoring = false;
+          }),
+    );
+  }
+
+  void _stopBargeInMonitoring() {
+    if (!_isBargeInMonitoring && _activeBargeInDetectionService == null) {
+      return;
+    }
+    _isBargeInMonitoring = false;
+    unawaited(_bargeInDetectionService.stop());
+  }
+
+  void _handleTurnInProgressEvent() {
+    if (!state.isCallActive) {
+      return;
+    }
+    _cancelListeningEndpointTimeout();
+    _cancelNoSpeechTimeout();
+    unawaited(_stopInterimTranscription());
+    if (state.phase == VoiceCallPhase.thinking ||
+        state.phase == VoiceCallPhase.speaking) {
+      state = state.copyWith(clearError: true);
+      return;
+    }
+    state = state.copyWith(
+      phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
+      errorMessage:
+          'Rex is finishing the previous response. Try again after it finishes.',
+    );
+  }
+
+  void _clearVisibleTranscript() {
+    _transcriptBuffer.clear();
+  }
+
+  String _permissionMessage(MicrophonePermissionDecision decision) {
+    return switch (decision) {
+      MicrophonePermissionDecision.permanentlyDenied =>
+        'Microphone permission is blocked. Enable it in iOS Settings > Privacy & Security > Microphone to call Rex.',
+      MicrophonePermissionDecision.restricted =>
+        'Microphone access is restricted on this device.',
+      MicrophonePermissionDecision.denied =>
+        'Microphone permission is required to call Rex. Tap Try again to prompt access, or enable it in iOS Settings > Privacy & Security > Microphone.',
+      MicrophonePermissionDecision.granted => '',
+    };
+  }
+}

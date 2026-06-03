@@ -2,7 +2,7 @@
 
 Status: Draft
 
-Last updated: June 2, 2026
+Last updated: June 3, 2026
 
 ## Purpose
 
@@ -172,18 +172,25 @@ Line-count ledger:
 | `services/rex-api/tests/test_chat_simple_memory_flow.py` | 276 | 353 | added contextual memory save/reject regression tests |
 | `apps/mobile/lib/features/assistant/voice/data/audio_capture_service.dart` | 238 | 238 | longer default post-speech silence |
 | `apps/mobile/lib/features/assistant/voice/data/streaming_audio_capture_service.dart` | 314 | 314 | longer streaming post-speech silence |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart` | 1791 | 1791 | transcript idle timeout increased; Phase 3 still splits file |
+| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart` | 1791 | 409 | transcript idle timeout increased; Phase 3 split completed |
 
 ## Phase 3 - Split Mobile Voice Controller
+
+Status: Completed on June 3, 2026. Manual device smoke test remains deferred
+until the release/device test pass.
 
 Goal: Reduce `voice_call_controller.dart` from 1,791 lines into focused controller, streaming, lifecycle, playback, and fallback modules.
 
 Files to change:
 
 - `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_lifecycle_coordinator.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_streaming_turn_runner.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_playback_coordinator.dart`
+- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_providers.dart`
+- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_commands.dart`
+- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_lifecycle.dart`
+- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_streaming.dart`
+- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_native.dart`
+- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_timers.dart`
+- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_dependencies.dart`
 - `apps/mobile/test/voice_call_controller_test.dart`
 
 Steps:
@@ -207,26 +214,41 @@ Manual test steps:
 
 Acceptance criteria:
 
-- [ ] `voice_call_controller.dart` < 500 lines
-- [ ] `flutter analyze` passes
-- [ ] `flutter test test/voice_call_controller_test.dart` passes
+- [x] `voice_call_controller.dart` < 500 lines
+- [x] `flutter analyze` passes
+- [x] `flutter test test/voice_call_controller_test.dart` passes
 - [ ] Device voice smoke test passes
 
 Line-count ledger:
 
 | File | Before | After | Moved To |
 | --- | ---: | ---: | --- |
-| `voice_call_controller.dart` | 1791 | target 350-500 | lifecycle/streaming/playback modules |
+| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart` | 1791 | 409 | provider wiring and helper methods moved out |
+| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_providers.dart` | 0 | 113 | provider wiring and voice timeout providers |
+| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_commands.dart` | 0 | 180 | internal transcript/interrupt/reset commands |
+| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_lifecycle.dart` | 0 | 65 | lifecycle resume and background restart handling |
+| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_streaming.dart` | 0 | 445 | streaming WebSocket turns and cloud fallback path |
+| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_native.dart` | 0 | 202 | native iOS voice session handling |
+| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_timers.dart` | 0 | 337 | endpointing, no-speech, thinking timeout, barge-in helpers |
+| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_dependencies.dart` | 0 | 95 | cached service dependency getters |
 
 ## Phase 4 - Harden Voice Backend Session
+
+Status: Completed on June 3, 2026. Manual stress/device test remains deferred
+to the release gate.
 
 Goal: Make voice streaming resilient to planning failures, duplicate turn starts, TTS failures, and network interruptions.
 
 Files to change:
 
 - `services/rex-api/app/services/voice_stream_session.py`
+- `services/rex-api/app/services/voice_stream_config.py`
+- `services/rex-api/app/services/voice_stream_response_writer.py`
+- `services/rex-api/app/services/voice_stream_live_transcription.py`
 - `services/rex-api/app/routes/voice_stream.py`
 - `services/rex-api/tests/test_voice_stream_routes.py`
+- `services/rex-api/tests/test_voice_stream_reliability.py`
+- `services/rex-api/tests/voice_stream_fakes.py`
 - `services/rex-api/tests/test_rex_brain_voice_integration.py`
 
 Steps:
@@ -239,6 +261,8 @@ Steps:
 Done looks like:
 
 - Voice backend errors degrade into user-visible retry states, not vague failure.
+- Voice session orchestration, response audio writing, live transcription, and
+  voice token configuration are separate focused modules.
 
 Manual test steps:
 
@@ -248,17 +272,28 @@ Manual test steps:
 
 Acceptance criteria:
 
-- [ ] `voice_stream_session.py` < 500 lines
-- [ ] Voice route tests pass
-- [ ] Manual stress test passes
+- [x] `voice_stream_session.py` < 500 lines
+- [x] Voice route tests pass
+- [x] Duplicate turn starts return `turn_in_progress`
+- [x] Planning/TTS/transcription failures return typed error codes
+- [ ] Manual stress test passes during final release gate
 
 Line-count ledger:
 
 | File | Before | After | Moved To |
 | --- | ---: | ---: | --- |
-| `services/rex-api/app/services/voice_stream_session.py` | 614 | target < 450 | `voice_turn_coordinator.py`, `voice_audio_event_writer.py` |
+| `services/rex-api/app/services/voice_stream_session.py` | 614 | 385 | response writing and live transcription moved out |
+| `services/rex-api/app/services/voice_stream_config.py` | 0 | 28 | voice response prompt/token constants |
+| `services/rex-api/app/services/voice_stream_response_writer.py` | 0 | 166 | chat streaming, TTS audio chunks, transcript events |
+| `services/rex-api/app/services/voice_stream_live_transcription.py` | 0 | 95 | live transcription lifecycle and endpointing |
+| `services/rex-api/tests/test_voice_stream_routes.py` | 510 | 321 | fakes moved to `voice_stream_fakes.py` |
+| `services/rex-api/tests/voice_stream_fakes.py` | 0 | 208 | reusable voice stream fakes/helpers |
+| `services/rex-api/tests/test_voice_stream_reliability.py` | 0 | 101 | duplicate turn and typed error regression tests |
 
 ## Phase 5 - Simplify Memory Candidate Review
+
+Status: Backend source-of-truth pass completed on June 3, 2026. Mobile copy polish
+and final device smoke test remain deferred to the release gate.
 
 Goal: Reduce pending-memory noise and make the Memory tab reflect what Rex knows vs what needs review.
 
@@ -290,17 +325,22 @@ Manual test steps:
 
 Acceptance criteria:
 
-- [ ] Duplicate pending candidate tests pass
+- [x] Duplicate pending candidate tests pass
 - [ ] Memory tab copy no longer implies pending equals saved
-- [ ] Manual memory review test passes
+- [ ] Manual memory review test passes during final release gate
 
 Line-count ledger:
 
 | File | Before | After | Moved To |
 | --- | ---: | ---: | --- |
 | `memory_page.dart` | 483 | target < 400 | widgets only if needed |
+| `memory_candidate_writer.py` | 285 | 284 | global duplicate lookup |
+| `memory_candidate_decision_service.py` | 349 | 357 | global review intent fallback |
+| `test_memory_candidate_phase5_reliability.py` | 0 | 229 | new focused regression suite |
 
 ## Phase 6 - Split Rex Brain Router
+
+Status: Completed on June 3, 2026.
 
 Goal: Reduce deterministic routing complexity and make launch-safe routing easier to tune.
 
@@ -309,6 +349,12 @@ Files to change:
 - `services/rex-api/app/services/rex_brain.py`
 - `services/rex-api/app/services/rex_model_router.py`
 - `services/rex-api/tests/test_rex_brain.py`
+- `services/rex-api/app/services/rex_brain_config.py`
+- `services/rex-api/app/services/rex_brain_terms.py`
+- `services/rex-api/app/services/rex_brain_scoring.py`
+- `services/rex-api/app/services/rex_brain_decision_builder.py`
+- `services/rex-api/tests/test_rex_brain_capabilities.py`
+- `services/rex-api/tests/test_rex_brain_contracts.py`
 
 Steps:
 
@@ -330,17 +376,38 @@ Manual test steps:
 
 Acceptance criteria:
 
-- [ ] `rex_brain.py` < 500 lines
-- [ ] `test_rex_brain.py` passes
-- [ ] Launch-safe routing remains default for production
+- [x] `rex_brain.py` < 500 lines
+- [x] `test_rex_brain.py` passes
+- [x] Launch-safe routing remains default for production
+
+Verification completed:
+
+- `.venv/bin/python -m py_compile app/services/rex_brain.py app/services/rex_brain_config.py app/services/rex_brain_terms.py app/services/rex_brain_scoring.py app/services/rex_brain_decision_builder.py app/services/rex_model_router.py`
+- `.venv/bin/python -m pytest tests/test_rex_brain.py tests/test_rex_brain_capabilities.py tests/test_rex_brain_contracts.py tests/test_rex_brain_observability.py tests/test_rex_model_router.py tests/test_rex_brain_voice_integration.py -q`
+- `.venv/bin/python -m pytest tests/ -q`
+
+Notes:
+
+- Public imports from `app.services.rex_brain` remain stable for `RexBrain`, `RexBrainInput`, `RexThinkingRouter`, and `RexThinkingRouterConfig`.
+- `RexModelRouter` already preserves launch-safe rollout gating through the `launch_safe` stage and aliases for `mvp`, `launch`, `production`, and `prod`.
 
 Line-count ledger:
 
 | File | Before | After | Moved To |
 | --- | ---: | ---: | --- |
-| `services/rex-api/app/services/rex_brain.py` | 1186 | target < 450 | terms/scoring/decision modules |
+| `services/rex-api/app/services/rex_brain.py` | 1186 | 101 | facade/orchestration only |
+| `services/rex-api/app/services/rex_brain_config.py` | 0 | 9 | router config |
+| `services/rex-api/app/services/rex_brain_terms.py` | 0 | 477 | deterministic term catalogs |
+| `services/rex-api/app/services/rex_brain_scoring.py` | 0 | 307 | score calculation and intent extraction |
+| `services/rex-api/app/services/rex_brain_decision_builder.py` | 0 | 407 | layer/model/context decision construction |
+| `services/rex-api/tests/test_rex_brain.py` | 876 | 417 | core routing examples |
+| `services/rex-api/tests/test_rex_brain_capabilities.py` | 0 | 325 | research/proactive/planning/action routing |
+| `services/rex-api/tests/test_rex_brain_contracts.py` | 0 | 143 | metadata and pending action contracts |
 
 ## Phase 7 - Split Accountability And Goals Services
+
+Status: Completed on June 2, 2026. Manual Goals/Assistant device QA remains
+deferred to the release gate.
 
 Goal: Make goals/accountability reliable enough for daily use and safe to extend.
 
@@ -372,19 +439,36 @@ Manual test steps:
 
 Acceptance criteria:
 
-- [ ] `accountability_service.py` < 500 lines
-- [ ] `routes/accountability.py` < 500 lines
-- [ ] Route/service tests pass
+- [x] `accountability_service.py` < 500 lines
+- [x] `routes/accountability.py` < 500 lines
+- [x] Route/service tests pass
+- [x] Accountability module contract added
 
 Line-count ledger:
 
 | File | Before | After | Moved To |
 | --- | ---: | ---: | --- |
-| `accountability_service.py` | 1323 | target < 450 | risk detectors |
-| `routes/accountability.py` | 698 | target < 400 | context loader/formatter |
-| `plan_intelligence_service.py` | 1036 | target < 500 | scoring/classification modules |
+| `accountability_service.py` | 1323 | 95 | detector modules |
+| `accountability_shared.py` | 0 | 283 | shared constants, time/date/text helpers |
+| `accountability_rule_risk.py` | 0 | 141 | rule-risk detection |
+| `accountability_commitment_detector.py` | 0 | 237 | commitment signals |
+| `accountability_plan_drift.py` | 0 | 342 | plan and milestone signals |
+| `accountability_pattern_detector.py` | 0 | 187 | repeated-pattern signals |
+| `routes/accountability.py` | 698 | 138 | context loader/filter/overview modules |
+| `routes/accountability_context_loader.py` | 0 | 183 | context loading and loader diagnostics |
+| `routes/accountability_signal_filters.py` | 0 | 62 | analyze wrapper and filters |
+| `routes/accountability_overview_builder.py` | 0 | 419 | overview buckets and warnings |
+| `plan_intelligence_service.py` | 1036 | 471 | models/rules/text/payload modules |
+| `plan_intelligence_models.py` | 0 | 39 | plan intelligence contracts/constants |
+| `plan_intelligence_text.py` | 0 | 130 | text/context helpers |
+| `plan_intelligence_rules.py` | 0 | 402 | plan scoring and classification heuristics |
+| `plan_intelligence_payloads.py` | 0 | 156 | payload builders |
+| `ACCOUNTABILITY_MODULE_CONTRACT.md` | 0 | 178 | module boundaries and test contract |
 
 ## Phase 8 - Split Mobile Finance And Import God-Files
+
+Status: Completed on June 3, 2026. Manual device/import smoke test remains
+deferred to the release gate.
 
 Goal: Prepare finance UI/data architecture for Plaid without adding Plaid to oversized CSV/dashboard files.
 
@@ -415,19 +499,40 @@ Manual test steps:
 
 Acceptance criteria:
 
-- [ ] Key finance/import files below hard limit or documented exception
-- [ ] Existing finance tests pass
-- [ ] Plaid insertion boundary documented
+- [x] Key finance/import files below hard limit or documented exception
+- [x] Existing finance tests pass
+- [x] Plaid insertion boundary documented
+- [ ] Manual CSV import/dashboard/Rex finance smoke test passes
 
 Line-count ledger:
 
 | File | Before | After | Moved To |
 | --- | ---: | ---: | --- |
-| `csv_import_service.dart` | 1037 | target < 500 | import steps/services |
-| `financial_dashboard_view.dart` | 939 | target < 500 | section widgets |
-| `financial_dashboard_transactions.dart` | 1001 | target < 500 | transaction list widgets |
+| `csv_import_service.dart` | 1037 | 493 | import models, categorizer, and helpers |
+| `csv_import_models.dart` | 0 | 146 | import result/progress/preview contracts |
+| `csv_import_categorizer.dart` | 0 | 414 | learned rules, AI category suggestions, fallback categories |
+| `csv_import_helpers.dart` | 0 | 45 | account stamping, spend reference, date range helpers |
+| `csv_parser.dart` | 798 | 165 | parser models, layout detection, value parsing |
+| `csv_parser_models.dart` | 0 | 58 | parse result and diagnostics contracts |
+| `csv_parser_layout.dart` | 0 | 456 | header detection, table inference, column mapping |
+| `csv_parser_values.dart` | 0 | 126 | money/date parsing helpers |
+| `financial_dashboard_view.dart` | 939 | 339 | shell, summary sections, and card widgets |
+| `financial_dashboard_shell.dart` | 0 | 301 | dashboard scroll/loading/upload shell |
+| `financial_dashboard_summary_sections.dart` | 0 | 306 | cash-flow and monthly summary sections |
+| `financial_dashboard_transactions.dart` | 1001 | 390 | transaction controls and list widgets |
+| `financial_dashboard_transaction_controls.dart` | 0 | 266 | mode picker, search field, filter controls |
+| `financial_dashboard_transaction_lists.dart` | 0 | 347 | grouped/inline transaction lists |
+| `financial_read_model_service.dart` | 718 | 149 | read model contract and helpers |
+| `financial_read_model.dart` | 0 | 466 | financial read model data/derived totals |
+| `financial_read_model_helpers.dart` | 0 | 114 | budget identity, import comparison, date helpers |
+| `financial_context_service.dart` | 539 | 334 | Rex transaction selection policy |
+| `rex_financial_transaction_policy.dart` | 0 | 205 | Rex transaction context/drilldown selection |
+| `financial_integration_contracts_test.dart` | 427 | 447 | Plaid-vs-CSV dedupe fingerprint contract |
+| `PLAID_CSV_IMPORT_BOUNDARY.md` | 0 | 62 | Plaid insertion boundary and dedupe contract |
 
 ## Phase 9 - Create Plaid Module Contract And ADR
+
+Status: Completed on June 3, 2026. No Plaid SDK/runtime integration added.
 
 Goal: Define Plaid boundaries before implementation begins.
 
@@ -455,15 +560,19 @@ Manual test steps:
 
 Acceptance criteria:
 
-- [ ] Module contract complete
-- [ ] ADR accepted
-- [ ] No Plaid code added to god-files
+- [x] Module contract complete
+- [x] ADR accepted
+- [x] No Plaid code added to god-files
+- [x] Fail-closed backend skeleton added with contract tests
 
 Line-count ledger:
 
 | File | Before | After | Moved To |
 | --- | ---: | ---: | --- |
-| New docs | 0 | target concise | n/a |
+| `MODULE_CONTRACT_PLAID_SYNC.md` | 0 | 186 | new Plaid module contract |
+| `ADR_PLAID_SYNC_ARCHITECTURE.md` | 0 | 134 | new accepted architecture decision |
+| `plaid_sync_service.py` | 0 | 147 | fail-closed Plaid service skeleton |
+| `test_plaid_sync_service_contract.py` | 0 | 44 | fail-closed service contract tests |
 
 ## Phase 10 - Documentation And Release Gate Cleanup
 
@@ -549,9 +658,9 @@ Manual:
 
 1. Phase 1 - Fix Security And Schema Gaps
 2. Phase 2 - Add Action Truth Contract
-3. Phase 3 - Split Mobile Voice Controller
+3. Phase 5 - Simplify Memory Candidate Review
 4. Phase 4 - Harden Voice Backend Session
-5. Phase 5 - Simplify Memory Candidate Review
+5. Phase 3 - Split Mobile Voice Controller
 6. Phase 6 - Split Rex Brain Router
 7. Phase 7 - Split Accountability And Goals Services
 8. Phase 8 - Split Mobile Finance And Import God-Files

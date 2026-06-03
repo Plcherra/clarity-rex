@@ -11,10 +11,12 @@ from app.services.chat_turn_context import (
     ConversationNotFoundError,
     MemoryService,
 )
+from app.services.chat_pending_correction_response import pending_correction_turn_response
 from app.services.clarity_action_parser import (
     ClarityActionParser,
     ClarityActionStreamFilter,
 )
+from app.services.chat_voice_metadata import ChatVoiceMetadataMixin
 from app.services.file_service import FileService
 from app.services.memory_candidate_decision_service import (
     MemoryCandidateDecisionService,
@@ -36,7 +38,7 @@ from app.services.rex_model_router import RexModelRouter
 from app.services.rex_observability import RexBrainObserver
 from app.services.time_context_service import TimeContextService
 
-class ChatService:
+class ChatService(ChatVoiceMetadataMixin):
     def __init__(
         self,
         ai_service: AIService,
@@ -203,11 +205,16 @@ class ChatService:
             user_message_id=str(user_message.get("id") or ""),
             brain_metadata=brain_metadata,
         )
-        if memory_correction:
-            ai_messages.append(
-                self.memory_post_turn_service.memory_correction_prompt(
-                    memory_correction
-                )
+        if self.memory_post_turn_service.correction_blocks_extraction(
+            memory_correction
+        ):
+            return await pending_correction_turn_response(
+                memory_service=self.memory_service,
+                memory_turn_service=self.memory_turn_service,
+                memory_post_turn_service=self.memory_post_turn_service,
+                conversation_id=conversation_id,
+                user_message=user_message,
+                memory_correction=memory_correction,
             )
         if response_instructions:
             ai_messages.append({"role": "system", "content": response_instructions})
@@ -277,33 +284,6 @@ class ChatService:
                 conversation_id
             ),
         }
-
-    async def save_voice_turn_metadata(
-        self,
-        conversation_id: str,
-        user_message_id: Optional[str] = None,
-        assistant_message_id: Optional[str] = None,
-        transcript_confidence: Optional[float] = None,
-        audio_duration_seconds: Optional[float] = None,
-        input_mime_type: Optional[str] = None,
-        output_audio_encoding: Optional[str] = None,
-        metadata: Optional[dict] = None,
-    ) -> Optional[dict]:
-        try:
-            return await self.memory_service.save_voice_turn(
-                conversation_id=conversation_id,
-                user_message_id=user_message_id,
-                assistant_message_id=assistant_message_id,
-                transcript_confidence=transcript_confidence,
-                audio_duration_seconds=audio_duration_seconds,
-                input_mime_type=input_mime_type,
-                output_audio_encoding=output_audio_encoding,
-                metadata=metadata,
-            )
-        except Exception:
-            # Voice metadata is useful for debugging, but raw conversation
-            # success should not depend on trace metadata persistence.
-            return None
 
     async def stream_message(
         self,
@@ -419,13 +399,21 @@ class ChatService:
             user_message_id=str(user_message.get("id") or ""),
             brain_metadata=brain_metadata,
         )
-        if memory_correction:
-            ai_messages.append(
-                self.memory_post_turn_service.memory_correction_prompt(
-                    memory_correction
-                )
+        if self.memory_post_turn_service.correction_blocks_extraction(
+            memory_correction
+        ):
+            correction_turn = await pending_correction_turn_response(
+                memory_service=self.memory_service,
+                memory_turn_service=self.memory_turn_service,
+                memory_post_turn_service=self.memory_post_turn_service,
+                conversation_id=conversation_id,
+                user_message=user_message,
+                memory_correction=memory_correction,
             )
             yield {"event": "memory_correction", "memory_correction": memory_correction}
+            yield {"event": "token", "token": correction_turn["response"]}
+            yield {"event": "done", **correction_turn}
+            return
 
         if response_instructions:
             ai_messages.append({"role": "system", "content": response_instructions})

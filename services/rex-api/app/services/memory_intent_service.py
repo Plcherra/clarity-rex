@@ -43,7 +43,7 @@ class MemoryIntentService:
         r"\b(?:do\s+not|don't|dont|no|nope)\b.*\b(?:save|remember|keep)\b", re.IGNORECASE,
     )
     _date_only_pattern = re.compile(
-        r"^(?:on\s+)?(?:the\s+)?(?P<date>[A-Za-z]+|\d{1,2}(?:st|nd|rd|th)?)$",
+        r"^(?:on\s+)?(?:the\s+)?(?P<date>[A-Za-z]+(?:\s+\d{1,2}(?:st|nd|rd|th)?)?|\d{1,2}(?:st|nd|rd|th)?)$",
         re.IGNORECASE,
     )
     _month_names = {
@@ -178,7 +178,7 @@ class MemoryIntentService:
             return None
 
         raw_date = date_only.group("date")
-        if not self._is_day_only_date(raw_date):
+        if not (self._is_day_only_date(raw_date) or self._month_from_text(raw_date)):
             return None
 
         person = self._recent_birthday_person(conversation_history)
@@ -382,7 +382,7 @@ class MemoryIntentService:
             if explicit is not None:
                 return explicit
             date_only = self._date_only_pattern.match(self._clean_fact(content))
-            if date_only is not None and self._is_day_only_date(date_only.group("date")):
+            if date_only is not None and (self._is_day_only_date(date_only.group("date")) or self._month_from_text(date_only.group("date"))):
                 date_text = self._normalize_date_phrase(
                     date_only.group("date"),
                     time_context=time_context,

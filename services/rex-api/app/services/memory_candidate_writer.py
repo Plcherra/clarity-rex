@@ -219,10 +219,9 @@ class MemoryCandidateWriter:
             return None
         try:
             candidates = await list_candidates(
-                limit=20,
+                limit=100,
                 candidate_type=candidate_type,
                 status="pending",
-                source_conversation_id=conversation_id or None,
             )
         except Exception:
             return None
