@@ -114,7 +114,7 @@ final voiceCallThinkingTimeoutProvider = Provider<Duration>(
 );
 
 final voiceCallTranscriptIdleTimeoutProvider = Provider<Duration>(
-  (ref) => const Duration(milliseconds: 2200),
+  (ref) => const Duration(seconds: 4),
 );
 
 final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(

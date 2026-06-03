@@ -155,6 +155,19 @@ class MemoryTurnService(MemoryTurnConfirmationHelpers):
                 conversation_history=conversation_history,
                 time_context=time_context,
             )
+            if intent is not None:
+                if self.memory_intent_service.is_contextual_memory_reject_request(message):
+                    return await self._reject_simple_memory(
+                        intent,
+                        conversation_id=conversation_id,
+                        user_message=user_message,
+                    )
+                if self.memory_intent_service.is_contextual_memory_save_request(message):
+                    return await self._save_confirmed_simple_memory(
+                        intent,
+                        conversation_id=conversation_id,
+                        user_message=user_message,
+                    )
         if intent is None:
             return None
 

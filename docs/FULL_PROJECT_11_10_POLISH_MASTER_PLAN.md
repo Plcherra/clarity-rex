@@ -120,12 +120,19 @@ Goal: Make false action claims impossible across chat and voice unless execution
 
 Files to change:
 
+- `services/rex-api/app/services/action_truth_policy.py`
+- `services/rex-api/app/services/memory_intent_service.py`
+- `services/rex-api/app/services/memory_turn_service.py`
 - `services/rex-api/app/services/prompt_service.py`
 - `services/rex-api/app/services/rex_brain_prompts.py`
 - `services/rex-api/app/services/rex_brain_chat_service.py`
 - `services/rex-api/app/services/clarity_action_parser.py`
 - `services/rex-api/tests/test_chat_service.py`
+- `services/rex-api/tests/test_chat_simple_memory_flow.py`
 - `services/rex-api/tests/test_rex_brain_prompts.py`
+- `apps/mobile/lib/features/assistant/voice/data/audio_capture_service.dart`
+- `apps/mobile/lib/features/assistant/voice/data/streaming_audio_capture_service.dart`
+- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
 
 Steps:
 
@@ -145,15 +152,27 @@ Manual test steps:
 
 Acceptance criteria:
 
-- [ ] Text chat action-claim tests pass
-- [ ] Voice action-claim tests pass
-- [ ] No prompt duplicates drift from the shared contract
+- [x] Text chat action-claim tests pass
+- [x] Voice action-claim tests pass
+- [x] No prompt duplicates drift from the shared contract
+- [x] Contextual "yes keep that in memory" saves a recent simple birthday fact directly
+- [x] Contextual "no don't save that" rejects without durable memory
+- [x] Mobile voice endpointing waits longer before cutting off longer speech
+- [ ] Manual phone test passes
 
 Line-count ledger:
 
 | File | Before | After | Moved To |
 | --- | ---: | ---: | --- |
-| `services/rex-api/app/services/prompt_service.py` | 864 | target < 700 | `action_truth_policy.py` |
+| `services/rex-api/app/services/action_truth_policy.py` | 0 | 9 | new shared action truth prompt contract |
+| `services/rex-api/app/services/memory_intent_service.py` | 429 | 500 | contextual save/reject detection added in place |
+| `services/rex-api/app/services/memory_turn_service.py` | 487 | 500 | contextual direct save/reject branch added in place |
+| `services/rex-api/app/services/prompt_service.py` | 864 | 865 | imports shared truth policy; full split remains future cleanup |
+| `services/rex-api/app/services/rex_brain_prompts.py` | 203 | 203 | imports shared truth policy; removed duplicate reminder rule |
+| `services/rex-api/tests/test_chat_simple_memory_flow.py` | 276 | 353 | added contextual memory save/reject regression tests |
+| `apps/mobile/lib/features/assistant/voice/data/audio_capture_service.dart` | 238 | 238 | longer default post-speech silence |
+| `apps/mobile/lib/features/assistant/voice/data/streaming_audio_capture_service.dart` | 314 | 314 | longer streaming post-speech silence |
+| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart` | 1791 | 1791 | transcript idle timeout increased; Phase 3 still splits file |
 
 ## Phase 3 - Split Mobile Voice Controller
 

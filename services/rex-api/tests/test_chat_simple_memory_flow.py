@@ -252,6 +252,83 @@ async def test_simple_memory_repeated_fact_before_confirmation_reuses_pending_re
 
 
 @pytest.mark.asyncio
+async def test_contextual_memory_save_request_saves_recent_birthday_without_card():
+    ai_service = FakeAIService(response="Rex normal follow-up")
+    memory_service = FakeMemoryService()
+    extraction_service = FakeMemoryExtractionService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        extraction_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+    conversation_id = await memory_service.create_conversation()
+    await memory_service.save_message(
+        conversation_id,
+        "user",
+        "I'm thinking about my mom and her birthday. It is on this month.",
+    )
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        "Nice, when's her birthday exactly?",
+    )
+    await memory_service.save_message(conversation_id, "user", "On the eighteenth.")
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        "June 18th, got it. Want me to remember that?",
+    )
+
+    saved = await chat_service.send_message("yes keep that in memory", conversation_id)
+
+    assert saved["response"] == (
+        "Saved. I'll remember that your mom's birthday is June 18."
+    )
+    assert saved["memory_changes"]["created"] == 1
+    assert saved["memory_changes"]["records"][0]["action"] == "direct_saved"
+    assert memory_service.long_term_memory[0]["content"] == (
+        "User's mom's birthday is June 18."
+    )
+    assert memory_service.memory_confirmations == []
+    assert extraction_service.calls == []
+
+
+@pytest.mark.asyncio
+async def test_contextual_memory_reject_request_does_not_save_recent_birthday():
+    ai_service = FakeAIService(response="Rex normal follow-up")
+    memory_service = FakeMemoryService()
+    extraction_service = FakeMemoryExtractionService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        extraction_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+    conversation_id = await memory_service.create_conversation()
+    await memory_service.save_message(
+        conversation_id,
+        "user",
+        "My mom's birthday is June 18.",
+    )
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        "Want me to remember that?",
+    )
+
+    rejected = await chat_service.send_message("no don't save that", conversation_id)
+
+    assert rejected["response"] == "No problem. I won't save that."
+    assert rejected["memory_changes"]["skipped"] == 1
+    assert memory_service.long_term_memory == []
+    assert memory_service.memory_confirmations == []
+    assert extraction_service.calls == []
+
+
+@pytest.mark.asyncio
 async def test_simple_memory_non_confirmation_continues_normal_chat_without_save():
     ai_service = FakeAIService(response="Rex normal follow-up")
     memory_service = FakeMemoryService()

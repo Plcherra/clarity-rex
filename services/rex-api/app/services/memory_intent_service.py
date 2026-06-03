@@ -35,6 +35,13 @@ class MemoryIntentService:
         r"\bremember\s+that\s+(?P<fact>[^.!?]+)",
         re.IGNORECASE,
     )
+    _explicit_save_request_pattern = re.compile(
+        r"\b(?:remember|save|keep|note)\b.*\b(?:this|that|memory|birthday)\b|"
+        r"\bremember\s+me\s+(?:about|to)\b", re.IGNORECASE,
+    )
+    _explicit_reject_request_pattern = re.compile(
+        r"\b(?:do\s+not|don't|dont|no|nope)\b.*\b(?:save|remember|keep)\b", re.IGNORECASE,
+    )
     _date_only_pattern = re.compile(
         r"^(?:on\s+)?(?:the\s+)?(?P<date>[A-Za-z]+|\d{1,2}(?:st|nd|rd|th)?)$",
         re.IGNORECASE,
@@ -160,6 +167,12 @@ class MemoryIntentService:
         conversation_history: list[dict],
         time_context: Optional[dict] = None,
     ) -> Optional[SimpleMemoryIntent]:
+        contextual_birthday = self._detect_contextual_birthday_memory(
+            message, conversation_history=conversation_history, time_context=time_context,
+        )
+        if contextual_birthday is not None:
+            return contextual_birthday
+
         date_only = self._date_only_pattern.match(self._clean_fact(message))
         if date_only is None:
             return None
@@ -180,6 +193,15 @@ class MemoryIntentService:
             return None
 
         return self._birthday_intent(person, date_text)
+
+    def is_contextual_memory_save_request(self, message: str) -> bool:
+        normalized = self._normalize_reply(message)
+        is_recall = normalized.startswith(("do you remember", "did you remember"))
+        return not is_recall and bool(self._explicit_save_request_pattern.search(normalized))
+
+    def is_contextual_memory_reject_request(self, message: str) -> bool:
+        normalized = self._normalize_reply(message)
+        return bool(self._explicit_reject_request_pattern.search(normalized))
 
     def pending_confirmation_from_history(
         self,
@@ -319,6 +341,55 @@ class MemoryIntentService:
                 "topic_fingerprint": f"fact:remember_that:{self._fingerprint(fact)}",
             },
         )
+
+    def _detect_contextual_birthday_memory(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+        time_context: Optional[dict],
+    ) -> Optional[SimpleMemoryIntent]:
+        if not self._mentions_contextual_birthday_memory(message):
+            return None
+        return self._recent_birthday_intent(
+            conversation_history,
+            time_context=time_context,
+        )
+
+    def _mentions_contextual_birthday_memory(self, message: str) -> bool:
+        normalized = self._normalize_reply(message)
+        if "birthday" in normalized and self.is_contextual_memory_save_request(normalized):
+            return True
+        if self.is_contextual_memory_save_request(normalized) or (
+            self.is_contextual_memory_reject_request(normalized)
+        ):
+            return any(token in normalized for token in {"this", "that", "memory"})
+        return False
+
+    def _recent_birthday_intent(
+        self,
+        conversation_history: list[dict],
+        *,
+        time_context: Optional[dict],
+    ) -> Optional[SimpleMemoryIntent]:
+        person = self._recent_birthday_person(conversation_history)
+        if person is None:
+            return None
+
+        for message in reversed(conversation_history[-10:]):
+            content = str(message.get("content") or "")
+            explicit = self._detect_birthday(content, time_context=time_context)
+            if explicit is not None:
+                return explicit
+            date_only = self._date_only_pattern.match(self._clean_fact(content))
+            if date_only is not None and self._is_day_only_date(date_only.group("date")):
+                date_text = self._normalize_date_phrase(
+                    date_only.group("date"),
+                    time_context=time_context,
+                )
+                if date_text:
+                    return self._birthday_intent(person, date_text)
+        return None
 
     def _normalize_date_phrase(
         self,

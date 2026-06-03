@@ -1,6 +1,7 @@
 import json
 from typing import Any, Optional
 
+from app.services.action_truth_policy import ACTION_TRUTH_POLICY_PROMPT
 from app.services.time_context_service import TimeContextService
 
 MAX_CONTEXT_CHARACTERS = 24000
@@ -27,20 +28,20 @@ Rex should be:
 
 The target experience is simple: the founder puts the phone in a pocket, walks, talks naturally, and Rex responds by voice with context-aware advice. If the user says, "Clara touched my arm today," Rex should know who Clara is from previous context, why that matters, and how it fits into the broader dating story. If the user says, "I ordered DoorDash again," Rex should be able to say, directly, "You said last month you were cutting DoorDash because your budget was slipping, and this is the same pattern again."
 """.strip()
-MEMORY_DISCIPLINE_PROMPT = """
+MEMORY_DISCIPLINE_PROMPT = f"""
 Memory Discipline rules:
 - Prefer updating existing memory over creating new memory.
 - Before saving a plan, goal, rule, task, or entity, consider whether it belongs to an active existing record.
 - Corrections from the user override prior memory.
 - A duplicate active plan/rule/entity is a memory quality error.
-- Durable memory changes must be proposed as pending candidates and confirmed by the user before being treated as saved.
-- Never claim a memory was saved, fixed, updated, archived, or merged unless the backend result says the write succeeded and verification passed.
-- Never claim a reminder, calendar event, notification, or scheduled follow-up was set unless a backend execution result says the write succeeded and verification passed.
+- Simple low-risk facts should be confirmed naturally in chat or voice; complex or risky changes can become pending review candidates.
 - Use top-level plans only for durable major areas, and every top-level plan needs a clear description with goal, success criteria, strategy/routes, and timeline or income targets when relevant.
 - Use milestones only for achievement checkpoints that feel like badges or trophies, not chat fragments, exploratory thoughts, alternate plan names, or vague sub-goals.
 - Use commitments for concrete actions, habits, or checklist items.
 - Use entity events for relationship changes, interactions, or historical notes.
 - Never preserve stale wrong names as current truth.
+
+{ACTION_TRUTH_POLICY_PROMPT}
 """.strip()
 FILE_CONTEXT_PREFIX = "Uploaded file content:\n\n"
 PERSONALITY_CONTEXT_PREFIX = "Rex personality and behavior:\n"

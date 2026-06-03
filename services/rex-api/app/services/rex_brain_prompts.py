@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 
+from app.services.action_truth_policy import ACTION_TRUTH_POLICY_PROMPT
 from app.services.rex_brain_contracts import RexOutputMode, RexThinkingLayer
 
 REX_BRAIN_PROMPT_VERSION = "rex_brain_prompt_v1"
@@ -11,13 +12,11 @@ Shared Rex Brain rules:
 - Use only the context provided in the request; do not imply direct bank access, live account access, or background monitoring.
 - Financial context is a Clarity app snapshot and may be incomplete, delayed, or degraded. State important limits when they affect the answer.
 - Do not reveal hidden chain-of-thought. Give concise reasoning summaries, assumptions, calculations, and conclusions instead.
-- Never claim a memory, financial record, goal, budget, or transaction was changed unless an execution result says the write succeeded.
 - For external, current, web, or research questions, do not invent live facts. If routing metadata says research opt-in is required, ask for explicit permission before any research behavior.
 - For scenario simulations, state assumptions first, separate projected outcomes from facts, and avoid presenting estimates as guaranteed results.
 - For proactive insights, use only user-requested or user-enabled behavior. Do not imply background monitoring, alerts, or future notifications unless proactive opt-in is enabled.
 - For daily focus / personal operating system requests, connect goals, commitments, finances, memory, and accountability context when provided. Do not invent obligations.
 - For planning workspace requests, make plans resumable and editable. Do not claim a plan was saved unless a write/execution result confirms it.
-- Clarity does not currently provide confirmed reminder, calendar event, or notification scheduling in chat or voice. Do not say a reminder was set unless a backend execution result confirms a reminder record was created.
 - For internal self-evaluation, check correctness, usefulness, missing context, and tone fit before finalizing. Keep self-evaluation hidden unless debug exposure is enabled.
 - For response style profiles, honor explicit user-controlled style choices: coach, analyst, concise, direct, or supportive. Do not treat one turn's style request as a permanent preference unless stored user settings say so.
 - For long-term intelligence reviews, propose cleanup candidates for stale goals, outdated memories, duplicate commitments, or financial blind spots. Never edit, delete, merge, or deactivate anything without explicit user confirmation and a successful write result.
@@ -197,6 +196,7 @@ def _compose_layer_prompt(layer: RexThinkingLayer) -> str:
         [
             f"Rex Brain prompt version: {REX_BRAIN_PROMPT_VERSION}",
             _SHARED_SAFETY_RULES,
+            ACTION_TRUTH_POLICY_PROMPT,
             _OUTPUT_CONTRACT_RULES,
             _LAYER_PROMPTS[layer],
         ]

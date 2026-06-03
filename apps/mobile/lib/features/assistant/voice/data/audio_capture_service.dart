@@ -14,7 +14,7 @@ class VoiceCaptureConfig {
     this.amplitudeInterval = const Duration(milliseconds: 80),
     this.speechStartThresholdDb = -50,
     this.silenceThresholdDb = -58,
-    this.silenceAfterSpeech = const Duration(milliseconds: 700),
+    this.silenceAfterSpeech = const Duration(milliseconds: 1600),
     this.noSpeechTimeout = const Duration(seconds: 5),
     this.maxUtteranceDuration = const Duration(seconds: 90),
     this.minSpeechDuration = const Duration(milliseconds: 220),
