@@ -28,25 +28,14 @@ Future<void> openFirstMemoryActions(WidgetTester tester) async {
 }
 
 class MemoryPageFakeMemoryApi extends MemoryApi {
-  MemoryPageFakeMemoryApi({
-    this.includeCorrectionCandidate = false,
-    this.loadError,
-    this.archiveError,
-  });
+  MemoryPageFakeMemoryApi({this.loadError, this.archiveError});
 
-  final bool includeCorrectionCandidate;
   final Object? loadError;
   final Object? archiveError;
-  final approvedIds = <String>[];
-  final rejectedIds = <String>[];
   final archivedMemoryIds = <String>[];
   String? updatedMemoryId;
   String? updatedContent;
   MemoryType? updatedMemoryType;
-  String? updatedCandidateId;
-  Map<String, dynamic>? updatedCandidatePayload;
-  String? updatedCandidateReason;
-  var _candidatePending = true;
 
   @override
   Future<List<MemoryItem>> getMemories({
@@ -156,43 +145,6 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
   }
 
   @override
-  Future<List<PendingMemoryCandidateItem>> getMemoryCandidates({
-    String status = 'pending',
-    int limit = 50,
-  }) async {
-    if (!_candidatePending) {
-      return const [];
-    }
-    return [
-      PendingMemoryCandidateItem.fromJson({
-        'id': 'candidate-1',
-        'candidate_type': 'long_term_memory',
-        'status': 'pending',
-        'risk_level': 'medium',
-        'preview': 'long_term_memory: Pedro prefers email',
-        'reason': 'Rex heard this preference in chat.',
-        'payload': {'content': 'Pedro prefers email'},
-      }),
-      if (includeCorrectionCandidate)
-        PendingMemoryCandidateItem.fromJson({
-          'id': 'candidate-2',
-          'candidate_type': 'correction',
-          'status': 'pending',
-          'risk_level': 'high',
-          'preview': 'correction: FlowForce spelling',
-          'reason': 'Pedro corrected the product name.',
-          'payload_preview': {
-            'intent': {
-              'old_value': 'Flowfirst',
-              'new_value': 'FlowForce',
-              'target_hint': 'product name',
-            },
-          },
-        }),
-    ];
-  }
-
-  @override
   Future<MemoryItem> updateMemory(
     String memoryId, {
     MemoryType? memoryType,
@@ -225,55 +177,5 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
   @override
   Future<void> deactivateMemory(String memoryId) async {
     await archiveMemory(memoryId);
-  }
-
-  @override
-  Future<PendingMemoryCandidateItem> approveMemoryCandidate(
-    String candidateId,
-  ) async {
-    approvedIds.add(candidateId);
-    _candidatePending = false;
-    return PendingMemoryCandidateItem.fromJson({
-      'id': candidateId,
-      'candidate_type': 'long_term_memory',
-      'status': 'applied',
-      'risk_level': 'medium',
-      'preview': 'long_term_memory: Pedro prefers email',
-    });
-  }
-
-  @override
-  Future<PendingMemoryCandidateItem> updateMemoryCandidate(
-    String candidateId, {
-    Map<String, dynamic>? payload,
-    String? reason,
-  }) async {
-    updatedCandidateId = candidateId;
-    updatedCandidatePayload = payload;
-    updatedCandidateReason = reason;
-    return PendingMemoryCandidateItem.fromJson({
-      'id': candidateId,
-      'candidate_type': 'long_term_memory',
-      'status': 'pending',
-      'risk_level': 'medium',
-      'preview': 'long_term_memory: ${payload?['content']}',
-      'reason': reason,
-      'payload': payload ?? const {},
-    });
-  }
-
-  @override
-  Future<PendingMemoryCandidateItem> rejectMemoryCandidate(
-    String candidateId,
-  ) async {
-    rejectedIds.add(candidateId);
-    _candidatePending = false;
-    return PendingMemoryCandidateItem.fromJson({
-      'id': candidateId,
-      'candidate_type': 'long_term_memory',
-      'status': 'rejected',
-      'risk_level': 'medium',
-      'preview': 'long_term_memory: Pedro prefers email',
-    });
   }
 }

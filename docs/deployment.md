@@ -38,6 +38,19 @@ supabase link --project-ref <project-ref>
 supabase db push
 ```
 
+The Phase 9 Rex migration archives and drops the old pending-memory review
+tables. Before pushing it to production, optionally inspect whether those legacy
+tables still contain rows:
+
+```sql
+select count(*) from public.memory_candidates;
+select count(*) from public.memory_confirmations;
+select count(*) from public.memory_candidate_review_sessions;
+```
+
+After `supabase db push`, any remaining rows are copied into legacy archive
+tables with owner-only RLS before the old runtime tables are removed.
+
 Do not run `supabase db lint` unless a local Supabase database is running; it attempts to connect to local Postgres.
 
 Required public Flutter values:

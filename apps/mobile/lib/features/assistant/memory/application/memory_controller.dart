@@ -18,8 +18,6 @@ class MemoryState {
     this.rules = const [],
     this.plans = const [],
     this.commitments = const [],
-    this.pendingCandidates = const [],
-    this.selectedMode = MemoryReviewMode.saved,
     this.selectedLayer = MemoryLayer.longTerm,
     this.selectedType,
     this.activeOnly = true,
@@ -33,8 +31,6 @@ class MemoryState {
   final List<RuleMemoryItem> rules;
   final List<PlanMemoryItem> plans;
   final List<CommitmentMemoryItem> commitments;
-  final List<PendingMemoryCandidateItem> pendingCandidates;
-  final MemoryReviewMode selectedMode;
   final MemoryLayer selectedLayer;
   final MemoryType? selectedType;
   final bool activeOnly;
@@ -48,8 +44,6 @@ class MemoryState {
     List<RuleMemoryItem>? rules,
     List<PlanMemoryItem>? plans,
     List<CommitmentMemoryItem>? commitments,
-    List<PendingMemoryCandidateItem>? pendingCandidates,
-    MemoryReviewMode? selectedMode,
     MemoryLayer? selectedLayer,
     MemoryType? selectedType,
     bool clearSelectedType = false,
@@ -65,8 +59,6 @@ class MemoryState {
       rules: rules ?? this.rules,
       plans: plans ?? this.plans,
       commitments: commitments ?? this.commitments,
-      pendingCandidates: pendingCandidates ?? this.pendingCandidates,
-      selectedMode: selectedMode ?? this.selectedMode,
       selectedLayer: selectedLayer ?? this.selectedLayer,
       selectedType: clearSelectedType
           ? null
@@ -92,8 +84,6 @@ class MemoryState {
         return commitments.isEmpty;
     }
   }
-
-  bool get isPendingReviewEmpty => pendingCandidates.isEmpty;
 
   bool get isSavedOverviewEmpty {
     return memories.isEmpty &&

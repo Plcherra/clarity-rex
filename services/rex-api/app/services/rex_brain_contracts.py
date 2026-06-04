@@ -54,7 +54,7 @@ class RexCostTier(str, Enum):
 
 class RexPendingActionStatus(str, Enum):
     PREVIEW_ONLY = "preview_only"
-    PENDING_CONFIRMATION = "pending_confirmation"
+    AWAITING_USER = "awaiting_user"
     CONFIRMED = "confirmed"
     EXECUTED = "executed"
     FAILED = "failed"

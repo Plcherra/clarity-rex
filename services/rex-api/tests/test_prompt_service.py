@@ -4,6 +4,7 @@ from app.services.prompt_service import (
     FILE_CONTEXT_PREFIX,
     FINANCIAL_CONTEXT_PREFIX,
     LONG_TERM_MEMORY_PREFIX,
+    MAX_DEFAULT_REX_PROMPT_CHARACTERS,
     MEMORY_DISCIPLINE_PROMPT,
     PERSONALITY_CONTEXT_PREFIX,
     PromptService,
@@ -31,17 +32,11 @@ def test_prompt_service_always_includes_rex_personality():
         },
         {"role": "user", "content": "Hello Rex"},
     ]
-    assert "maximally honest, human-like, truth-seeking co-pilot" in (
-        messages[0]["content"]
-    )
-    assert "fake positivity, vague disclaimers, or motivational fluff" in (
-        messages[0]["content"]
-    )
-    assert "holds the user accountable" in messages[0]["content"]
-    assert "Memory Discipline rules:" in messages[0]["content"]
-    assert "Never claim a reminder, calendar event, notification" in (
-        messages[0]["content"]
-    )
+    assert len(messages[0]["content"]) <= MAX_DEFAULT_REX_PROMPT_CHARACTERS
+    assert "private, voice-first AI companion" in messages[0]["content"]
+    assert "answer fast and briefly" in messages[0]["content"]
+    assert "Memory rules:" in messages[0]["content"]
+    assert "backend execution metadata confirms success" in messages[0]["content"]
 
 
 def test_prompt_service_sanitizes_recent_message_history():
@@ -115,7 +110,7 @@ def test_prompt_service_injects_time_conversation_memory_and_file_context():
     assert messages[0]["role"] == "system"
     system_content = messages[0]["content"]
     assert system_content.startswith(PERSONALITY_CONTEXT_PREFIX)
-    assert "direct, natural, sharp" in system_content
+    assert "direct, warm, honest, practical, and natural" in system_content
     assert "Current time context:" in system_content
     assert "- Clock: Tuesday afternoon" in system_content
     assert "- Previous message delta: earlier today" in system_content
@@ -505,9 +500,9 @@ def test_prompt_shape_contains_required_time_aware_founder_context():
         LONG_TERM_MEMORY_PREFIX
     )
 
-    assert "uncensored, voice-first, time-aware" in system_content
-    assert "fake positivity, vague disclaimers, or motivational fluff" in system_content
-    assert "holds the user accountable" in system_content
+    assert "private, voice-first AI companion" in system_content
+    assert "answer fast and briefly" in system_content
+    assert "Corrections override older facts" in system_content
     assert "- Clock: Tuesday afternoon (15:30 America/New_York (EDT))" in (
         system_content
     )
@@ -607,7 +602,8 @@ def test_prompt_service_omits_memory_age_for_missing_or_invalid_timestamps():
     system_content = messages[0]["content"]
     assert "- fact: I prefer direct advice." in system_content
     assert "- event: I started a new plan." in system_content
-    assert "saved " not in system_content
+    memory_section = system_content.split(LONG_TERM_MEMORY_PREFIX, 1)[1]
+    assert "saved " not in memory_section
 
 
 def test_prompt_service_trims_large_context_to_recent_messages():

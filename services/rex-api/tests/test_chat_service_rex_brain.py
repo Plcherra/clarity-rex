@@ -94,13 +94,8 @@ async def test_rex_brain_chat_routing_adds_layer_prompt_and_model_limits_when_en
     system_prompt = ai_service.messages[0]["content"]
     assert "Rex Brain routing contract" in system_prompt
     assert "Layer 2 Analytical" in system_prompt
-    assert "Internal self-evaluation contract" in system_prompt
-    assert (
-        "Keep the self-evaluation internal unless debug exposure is explicitly enabled"
-        in system_prompt
-    )
-    assert '"needs_self_evaluation": true' in system_prompt
-    assert '"expose_self_evaluation": false' in system_prompt
+    assert "Self-check internally" in system_prompt
+    assert "Keep it hidden unless debug exposure is enabled" in system_prompt
     assert "Private merchant" not in system_prompt
     assert "remove" not in system_prompt
     rex_brain_section = system_prompt.split("Rex Brain routing contract", 1)[1]
@@ -147,7 +142,7 @@ async def test_rex_brain_chat_deep_think_flag_escalates_casual_message_when_enab
     assert ai_service.kwargs["model_override"] == "grok-reasoning"
     system_prompt = ai_service.messages[0]["content"]
     assert "Rex Brain routing contract" in system_prompt
-    assert "user_requested_deep_thinking" in system_prompt
+    assert "Layer 1 Contextual Recall" in system_prompt
 
 
 @pytest.mark.asyncio
@@ -162,13 +157,11 @@ async def test_rex_brain_chat_requires_opt_in_for_current_external_research():
     await chat_service.send_message("What is the latest mortgage rate today?")
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "Research opt-in required" in system_prompt
+    assert "Research guard" in system_prompt
     assert (
-        "Do not answer with live, current, web, or externally verified facts yet"
+        "ask before claiming live/current external facts"
         in system_prompt
     )
-    assert '"needs_external_research": true' in system_prompt
-    assert '"requires_research_opt_in": true' in system_prompt
 
 
 @pytest.mark.asyncio
@@ -187,10 +180,9 @@ async def test_rex_brain_chat_marks_scenario_simulations_with_assumption_contrac
     )
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "Scenario simulation contract" in system_prompt
-    assert "State the assumptions before the simulated outcome" in system_prompt
-    assert '"needs_scenario_simulation": true' in system_prompt
-    assert "projections as guaranteed results" in system_prompt
+    assert "Simulation guard" in system_prompt
+    assert "state assumptions" in system_prompt
+    assert "avoid guaranteed outcomes" in system_prompt
 
 
 @pytest.mark.asyncio
@@ -209,14 +201,8 @@ async def test_rex_brain_chat_marks_proactive_insights_as_user_controlled():
     )
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "Proactive insight contract" in system_prompt
-    assert (
-        "Surface only insights requested in this turn or enabled by user settings"
-        in system_prompt
-    )
-    assert "do not imply background monitoring" in system_prompt
-    assert '"needs_proactive_insight": true' in system_prompt
-    assert '"requires_proactive_opt_in": false' in system_prompt
+    assert "Proactive guard" in system_prompt
+    assert "do not imply monitoring" in system_prompt
 
 
 @pytest.mark.asyncio
@@ -234,10 +220,8 @@ async def test_rex_brain_chat_requires_opt_in_for_background_proactive_monitorin
     )
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "Proactive insight contract" in system_prompt
-    assert "Ask for explicit proactive insight opt-in" in system_prompt
-    assert '"needs_proactive_insight": true' in system_prompt
-    assert '"requires_proactive_opt_in": true' in system_prompt
+    assert "Proactive guard" in system_prompt
+    assert "Ask opt-in before promising alerts" in system_prompt
 
 
 @pytest.mark.asyncio
@@ -260,14 +244,8 @@ async def test_rex_brain_chat_marks_daily_focus_personal_operating_system_turns(
     )
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "Daily focus contract" in system_prompt
-    assert (
-        "Connect goals, commitments, finances, memory, and accountability context"
-        in system_prompt
-    )
-    assert "Give 1-3 priorities" in system_prompt
-    assert '"needs_daily_focus": true' in system_prompt
-    assert '"needs_external_research": false' in system_prompt
+    assert "Daily focus" in system_prompt
+    assert "give 1-3 priorities" in system_prompt
 
 
 @pytest.mark.asyncio
@@ -290,12 +268,9 @@ async def test_rex_brain_chat_marks_planning_workspace_turns_as_resumable():
     )
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "Planning workspace contract" in system_prompt
-    assert "Intent: create" in system_prompt
-    assert "Make the plan resumable and editable in later turns" in system_prompt
-    assert "Do not claim the plan was saved unless an execution result confirms" in system_prompt
-    assert '"needs_planning_workspace": true' in system_prompt
-    assert '"planning_workspace_intent": "create"' in system_prompt
+    assert "Planning: intent=create" in system_prompt
+    assert "objective, constraints, milestones" in system_prompt
+    assert "Do not claim saved without execution metadata" in system_prompt
 
 
 @pytest.mark.asyncio
@@ -315,15 +290,8 @@ async def test_rex_brain_chat_can_expose_self_evaluation_when_debug_enabled():
     )
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "Internal self-evaluation contract" in system_prompt
-    assert "Debug exposure is enabled" in system_prompt
-    assert '"needs_self_evaluation": true' in system_prompt
-    assert '"expose_self_evaluation": true' in system_prompt
-    assert (
-        '"self_evaluation_dimensions": ["correctness", "usefulness", '
-        '"missing_context", "tone_fit"]'
-        in system_prompt
-    )
+    assert "Self-check internally" in system_prompt
+    assert "Debug exposure enabled" in system_prompt
 
 
 @pytest.mark.asyncio
@@ -342,12 +310,8 @@ async def test_rex_brain_chat_adds_response_style_contract_for_explicit_profile(
     )
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "Response style contract" in system_prompt
-    assert "Profile: direct" in system_prompt
-    assert "Source: explicit_message" in system_prompt
-    assert "Do not store or treat this as a permanent preference" in system_prompt
-    assert '"response_style_profile": "direct"' in system_prompt
-    assert '"response_style_source": "explicit_message"' in system_prompt
+    assert "Style: direct from explicit_message" in system_prompt
+    assert "Honor it for this turn only" in system_prompt
 
 
 @pytest.mark.asyncio
@@ -366,13 +330,9 @@ async def test_rex_brain_chat_adds_long_term_review_contract():
     )
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "Long-term intelligence review contract" in system_prompt
-    assert "Targets: memories, commitments" in system_prompt
-    assert "Propose cleanup candidates" in system_prompt
-    assert "Ask the user to confirm specific changes" in system_prompt
-    assert '"needs_long_term_review": true' in system_prompt
-    assert '"long_term_review_targets": ["memories", "commitments"]' in system_prompt
-    assert '"requires_long_term_review_confirmation": true' in system_prompt
+    assert "Long-term review: targets=memories, commitments" in system_prompt
+    assert "Review only provided context" in system_prompt
+    assert "ask before destructive edits" in system_prompt
 
 
 @pytest.mark.asyncio
@@ -388,20 +348,9 @@ async def test_rex_brain_chat_adds_confirmed_action_preview_contract():
     await chat_service.send_message("Go ahead and delete those memories")
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "Confirmed action preview contract" in system_prompt
-    assert "Intent: delete" in system_prompt
-    assert "Targets: memories" in system_prompt
-    assert "Summarize the exact candidate changes" in system_prompt
-    assert "A real mutation requires a pending-action contract" in system_prompt
-    assert "This turn is preview-only unless that pending-action contract already exists" in system_prompt
-    assert "Do not claim anything was changed unless an execution result confirms" in system_prompt
-    assert '"needs_confirmed_action_preview": true' in system_prompt
-    assert '"confirmed_action_intent": "delete"' in system_prompt
-    assert '"confirmed_action_targets": ["memories"]' in system_prompt
-    assert '"requires_action_confirmation": true' in system_prompt
-    assert '"pending_action_contract": {' in system_prompt
-    assert '"status": "preview_only"' in system_prompt
-    assert '"is_executable": false' in system_prompt
+    assert "Action preview: intent=delete; targets=memories" in system_prompt
+    assert "Summarize exact changes" in system_prompt
+    assert "never claim a mutation without execution metadata" in system_prompt
 
 
 @pytest.mark.asyncio

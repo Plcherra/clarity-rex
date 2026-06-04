@@ -1,16 +1,10 @@
-import asyncio
-
 import pytest
 from fastapi import HTTPException
 
 from chat_service_fakes import (
-    BlockingMemoryExtractionService,
     FailingAIService,
     FakeAIService,
-    FakeMemoryCandidateService,
-    FakeMemoryCorrectionService,
     FakeMemoryDisciplineService,
-    FakeMemoryExtractionService,
     FakeMemoryService,
     FakeUpload,
 )
@@ -18,6 +12,7 @@ from app.config import Settings
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.memory_service import SupabaseMemoryService, MemoryServiceError
+from app.services.rex_brain_contracts import RexBrainChannel
 
 
 @pytest.mark.asyncio
@@ -105,131 +100,31 @@ async def test_chat_service_accepts_memory_discipline_dependency_without_behavio
 
 
 @pytest.mark.asyncio
-async def test_chat_service_correction_requires_confirmation_without_ai_claim():
+async def test_chat_service_correction_uses_normal_single_llm_turn():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
-    correction_service = FakeMemoryCorrectionService(
-        {
-            "applied": True,
-            "requires_confirmation": False,
-            "affected_records": [
-                {"table": "plans", "id": "plan-1", "action": "updated"}
-            ],
-        }
-    )
-    candidate_service = FakeMemoryCandidateService()
-    chat_service = ChatService(
-        ai_service,
-        FileService(),
-        memory_service,
-        memory_correction_service=correction_service,
-        memory_candidate_service=candidate_service,
-    )
+    chat_service = ChatService(ai_service, FileService(), memory_service)
 
     result = await chat_service.send_message("not Flowfirst, it is FlowForce")
 
-    assert result["memory_correction"]["applied"] is False
-    assert result["memory_correction"]["requires_confirmation"] is True
-    assert result["memory_correction"]["old_value"] == "Flowfirst"
-    assert result["memory_correction"]["new_value"] == "FlowForce"
-    assert candidate_service.created[0]["candidate_type"] == "correction"
-    assert candidate_service.created[0]["payload"]["text"] == (
-        "not Flowfirst, it is FlowForce"
-    )
-    assert candidate_service.created[0]["payload"]["intent"]["old_value"] == "Flowfirst"
-    assert candidate_service.created[0]["payload"]["intent"]["new_value"] == "FlowForce"
-    rex_brain_metadata = candidate_service.created[0]["payload"]["metadata"][
-        "rex_brain"
-    ]
-    assert rex_brain_metadata["decision"]["layer"] == "layer_0_fast"
-    assert rex_brain_metadata["decision"]["model_profile"] == "fast"
-    assert "not Flowfirst" not in str(rex_brain_metadata)
-    assert correction_service.calls == [("detect", "not Flowfirst, it is FlowForce")]
-    assert ai_service.messages == []
-    assert result["response"] == (
-        "I caught that correction: replace Flowfirst with FlowForce. "
-        "Please confirm before I update memory."
-    )
+    assert result["memory_correction"] is None
+    assert result["response"] == "Rex response"
     assert result["assistant_message"]["content"] == result["response"]
-    assert result["memory_changes"]["confirmation_required"] == 1
-    assert result["memory_changes"]["records"][-1]["reason"] == (
-        "correction_already_handled"
-    )
+    assert result["memory_changes"] is None
+    assert ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio
-async def test_chat_service_skips_extraction_after_applied_correction():
+async def test_chat_service_does_not_run_post_turn_extraction_on_normal_chat():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
-    extraction_service = FakeMemoryExtractionService(
-        result=[
-            {
-                "id": "plan-duplicate",
-                "extraction_kind": "structured_memory",
-                "structured_type": "plan",
-                "extraction_action": "create_plan",
-            }
-        ]
-    )
-    correction_service = FakeMemoryCorrectionService(
-        {
-            "applied": True,
-            "requires_confirmation": False,
-            "updated": [{"table": "entities", "id": "entity-1"}],
-        }
-    )
-    candidate_service = FakeMemoryCandidateService()
-    chat_service = ChatService(
-        ai_service,
-        FileService(),
-        memory_service,
-        extraction_service,
-        memory_correction_service=correction_service,
-        memory_candidate_service=candidate_service,
-    )
-
-    result = await chat_service.send_message("wrong name, fix it")
-
-    assert extraction_service.calls == []
-    assert result["memory_changes"]["updated"] == 0
-    assert result["memory_changes"]["confirmation_required"] == 1
-    assert result["memory_changes"]["skipped"] == 1
-
-
-@pytest.mark.asyncio
-async def test_chat_service_returns_memory_change_summary_for_extraction():
-    ai_service = FakeAIService()
-    memory_service = FakeMemoryService()
-    extraction_service = FakeMemoryExtractionService(
-        result=[
-            {
-                "id": "milestone-1",
-                "title": "$5k monthly revenue target",
-                "extraction_kind": "structured_memory",
-                "structured_type": "plan_milestone",
-                "extraction_action": "create_milestone",
-            },
-            {
-                "id": "plan-1",
-                "title": "Relocate to Europe next year",
-                "extraction_kind": "structured_memory",
-                "structured_type": "plan",
-                "extraction_action": "update_plan",
-            },
-        ]
-    )
-    chat_service = ChatService(
-        ai_service,
-        FileService(),
-        memory_service,
-        extraction_service,
-    )
+    chat_service = ChatService(ai_service, FileService(), memory_service)
 
     result = await chat_service.send_message("Add $5k income under Europe plan")
 
-    assert result["memory_changes"]["created"] == 1
-    assert result["memory_changes"]["updated"] == 1
-    assert result["memory_changes"]["records"][0]["type"] == "plan_milestone"
+    assert result["response"] == "Rex response"
+    assert result["memory_changes"] is None
+    assert ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio
@@ -295,15 +190,13 @@ async def test_chat_service_stream_hides_clarity_action_block():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_stream_done_does_not_wait_for_memory_extraction():
+async def test_chat_service_stream_uses_one_llm_call_without_post_turn_memory_work():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
-    extraction_service = BlockingMemoryExtractionService()
     chat_service = ChatService(
         ai_service,
         FileService(),
         memory_service,
-        extraction_service,
     )
 
     events = [
@@ -312,97 +205,68 @@ async def test_chat_service_stream_done_does_not_wait_for_memory_extraction():
 
     assert events[-1]["event"] == "done"
     assert events[-1]["response"] == "Rex stream"
-
-    await asyncio.wait_for(extraction_service.started.wait(), timeout=1)
-    assert len(extraction_service.calls) == 1
-    assert extraction_service.calls[0]["conversation_id"] == "conversation-1"
-
-    extraction_service.release.set()
-    await asyncio.sleep(0)
+    assert ai_service.stream_calls == 1
 
 
 @pytest.mark.asyncio
-async def test_chat_service_runs_memory_extraction_after_successful_response():
+async def test_chat_service_voice_stream_uses_one_llm_call():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
-    extraction_service = FakeMemoryExtractionService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "Tell me about my day",
+            channel=RexBrainChannel.VOICE,
+        )
+    ]
+
+    assert events[-1]["event"] == "done"
+    assert events[-1]["response"] == "Rex stream"
+    assert ai_service.stream_calls == 1
+    assert ai_service.generate_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_chat_service_skips_memory_extraction_after_successful_response():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
     chat_service = ChatService(
         ai_service,
         FileService(),
         memory_service,
-        extraction_service,
     )
 
     await chat_service.send_message("I work best in the morning")
 
-    assert len(extraction_service.calls) == 1
-    assert extraction_service.calls[0]["conversation_id"] == "conversation-1"
-    assert extraction_service.calls[0]["user_message"]["content"] == (
-        "I work best in the morning"
-    )
-    assert extraction_service.calls[0]["assistant_message"]["content"] == (
-        "Rex response"
-    )
-    assert extraction_service.calls[0]["brain_metadata"]["source"] == "rex_brain"
-    assert "morning" not in str(extraction_service.calls[0]["brain_metadata"])
+    assert ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio
-async def test_chat_service_reports_memory_extraction_failures_without_failing_chat():
+async def test_chat_service_ignores_memory_extraction_failures_when_extraction_is_disabled():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
-    extraction_service = FakeMemoryExtractionService(should_fail=True)
     chat_service = ChatService(
         ai_service,
         FileService(),
         memory_service,
-        extraction_service,
     )
 
     result = await chat_service.send_message("I work best in the morning")
 
     assert result["response"] == "Rex response"
-    assert len(extraction_service.calls) == 1
-    assert result["memory_changes"]["skipped"] == 1
-    record = result["memory_changes"]["records"][0]
-    assert {
-        key: record.get(key)
-        for key in (
-            "kind",
-            "type",
-            "action",
-            "id",
-            "title",
-            "reason",
-            "memory_path",
-            "review_required",
-            "review_reason",
-        )
-    } == {
-        "kind": "memory_extraction",
-        "type": None,
-        "action": "skip_failed",
-        "id": None,
-        "title": None,
-        "reason": "Memory extraction failed after the response.",
-        "memory_path": None,
-        "review_required": None,
-        "review_reason": None,
-    }
-    assert record["metadata"]["degraded"] is True
-    assert record["metadata"]["operation"] == "extract_memory_after_success"
-    assert record["metadata"]["failure_reason"] == "memory_extraction_failed"
+    assert result["memory_changes"] is None
+    assert ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio
 async def test_chat_service_does_not_extract_memory_when_ai_fails():
     memory_service = FakeMemoryService()
-    extraction_service = FakeMemoryExtractionService()
     chat_service = ChatService(
         FailingAIService(),
         FileService(),
         memory_service,
-        extraction_service,
     )
 
     with pytest.raises(RuntimeError):
@@ -411,7 +275,77 @@ async def test_chat_service_does_not_extract_memory_when_ai_fails():
     assert memory_service.conversations == {"conversation-1"}
     assert [message["role"] for message in memory_service.messages] == ["user"]
     assert memory_service.long_term_memory == []
-    assert extraction_service.calls == []
+
+
+@pytest.mark.asyncio
+async def test_chat_service_saves_explicit_goal_without_llm_call():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Track save $5000 by August as a goal")
+
+    assert result["response"] == "Got it, I added this as a goal: Save $5000 by August."
+    assert ai_service.generate_calls == 0
+    assert len(memory_service.created_plans) == 1
+    assert memory_service.created_plans[0]["plan_type"] == "finance"
+    assert memory_service.created_plans[0]["target_date"] == "August"
+    assert result["memory_changes"]["records"][0]["kind"] == "plan"
+
+
+@pytest.mark.asyncio
+async def test_chat_service_reuses_duplicate_explicit_goal():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    await chat_service.send_message("Track save $5000 by August as a goal")
+    await chat_service.send_message("Track save $5000 by August as a goal")
+
+    assert ai_service.generate_calls == 0
+    assert len(memory_service.created_plans) == 1
+    assert len(memory_service.plans) == 1
+
+
+@pytest.mark.asyncio
+async def test_chat_service_saves_explicit_commitment_without_llm_call():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Remind me to send her $200 on the 10th")
+
+    assert result["response"] == (
+        "Got it, I saved that commitment: Send her $200 on the 10th."
+    )
+    assert ai_service.generate_calls == 0
+    assert len(memory_service.created_commitments) == 1
+    assert memory_service.created_commitments[0]["commitment_type"] == "money"
+    assert memory_service.created_commitments[0]["due_at"] == "June 10"
+    assert result["memory_changes"]["records"][0]["kind"] == "commitment"
+
+
+@pytest.mark.asyncio
+async def test_chat_service_voice_stream_saves_commitment_without_llm_call():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "Remind me to send her $200 on the 10th",
+            channel=RexBrainChannel.VOICE,
+        )
+    ]
+
+    assert events[-1]["event"] == "done"
+    assert events[-1]["response"] == (
+        "Got it, I saved that commitment: Send her $200 on the 10th."
+    )
+    assert ai_service.stream_calls == 0
+    assert ai_service.generate_calls == 0
+    assert len(memory_service.created_commitments) == 1
 
 
 @pytest.mark.asyncio

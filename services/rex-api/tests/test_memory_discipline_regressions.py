@@ -1,7 +1,7 @@
 import pytest
 
 from app.models.memory_discipline import (
-    MemoryCandidateKind,
+    MemoryRecordKind,
     MemoryDisciplineAction,
     MemoryDisciplineCandidate,
     MemoryDisciplineDecision,
@@ -87,7 +87,7 @@ async def test_income_goal_routes_under_europe_plan_instead_of_new_plan():
 
     decision = await service.decide(
         MemoryDisciplineCandidate(
-            kind=MemoryCandidateKind.PLAN,
+            kind=MemoryRecordKind.PLAN,
             payload={
                 "plan_type": "finance",
                 "title": "$5k monthly revenue target",
@@ -120,7 +120,7 @@ async def test_duplicate_dating_plan_does_not_create_new_top_level_plan():
 
     decision = await service.decide(
         MemoryDisciplineCandidate(
-            kind=MemoryCandidateKind.PLAN,
+            kind=MemoryRecordKind.PLAN,
             payload={
                 "plan_type": "dating",
                 "title": "Date with Melissa next week",
@@ -165,7 +165,7 @@ async def test_direct_duplicate_milestone_updates_existing_milestone():
 
     decision = await MemoryDisciplineService(repo).decide(
         MemoryDisciplineCandidate(
-            kind=MemoryCandidateKind.PLAN_MILESTONE,
+            kind=MemoryRecordKind.PLAN_MILESTONE,
             payload={
                 "plan_id": "plan-europe",
                 "title": "$5k monthly revenue target",
@@ -197,7 +197,7 @@ async def test_project_name_drift_updates_canonical_entity():
 
     decision = await service.decide(
         MemoryDisciplineCandidate(
-            kind=MemoryCandidateKind.ENTITY,
+            kind=MemoryRecordKind.ENTITY,
             payload={
                 "entity_type": "project",
                 "display_name": "Flowfirst",
@@ -231,7 +231,7 @@ async def test_duplicate_rule_updates_existing_rule():
 
     decision = await service.decide(
         MemoryDisciplineCandidate(
-            kind=MemoryCandidateKind.PERSONAL_RULE,
+            kind=MemoryRecordKind.PERSONAL_RULE,
             payload={
                 "rule_type": "food_delivery",
                 "title": "No Uber or DoorDash",
@@ -261,7 +261,7 @@ async def test_small_task_misclassified_as_plan_becomes_commitment():
 
     decision = await service.decide(
         MemoryDisciplineCandidate(
-            kind=MemoryCandidateKind.PLAN,
+            kind=MemoryRecordKind.PLAN,
             payload={
                 "plan_type": "career",
                 "title": "Email FlowForce lead",
@@ -293,7 +293,7 @@ async def test_correction_workflow_can_archive_stale_entity():
     applied = await service.apply_decision(
         MemoryDisciplineDecision(
             action=MemoryDisciplineAction.ARCHIVE_ENTITY,
-            candidate_kind=MemoryCandidateKind.ENTITY,
+            record_kind=MemoryRecordKind.ENTITY,
             payload={},
             reason="Stale corrected entity should not stay active.",
             target_id="entity-stale",

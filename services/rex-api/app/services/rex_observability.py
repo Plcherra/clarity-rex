@@ -140,7 +140,7 @@ class MemoryOperationObserver:
         operation: str,
         error: Exception,
         memory_id: Optional[str] = None,
-        candidate_id: Optional[str] = None,
+        record_id: Optional[str] = None,
         status_code: Optional[int] = None,
     ) -> dict:
         payload = {
@@ -150,8 +150,8 @@ class MemoryOperationObserver:
         }
         if memory_id:
             payload["memory_id"] = memory_id
-        if candidate_id:
-            payload["candidate_id"] = candidate_id
+        if record_id:
+            payload["record_id"] = record_id
         if status_code is not None:
             payload["status_code"] = status_code
 

@@ -115,33 +115,6 @@ SavedMemoryResults filterSavedMemory({
   );
 }
 
-List<PendingMemoryCandidateItem> filterPendingCandidates({
-  required MemoryState state,
-  required String query,
-  required MemoryQuickFilter quickFilter,
-}) {
-  final normalizedQuery = query.trim().toLowerCase();
-  return state.pendingCandidates
-      .where((candidate) {
-        if (quickFilter == MemoryQuickFilter.corrections &&
-            !candidate.isCorrection) {
-          return false;
-        }
-        return _matchesQuery(normalizedQuery, [
-          candidate.previewLabel,
-          candidate.reasonLabel,
-          candidate.candidateTypeLabel,
-          candidate.riskLabel,
-          candidate.statusLabel,
-          candidate.expectedActionLabel,
-          candidate.correctionOldValue,
-          candidate.correctionNewValue,
-          candidate.correctionTargetHint,
-        ]);
-      })
-      .toList(growable: false);
-}
-
 bool _matchesQuery(String query, Iterable<String?> fields) {
   if (query.isEmpty) {
     return true;

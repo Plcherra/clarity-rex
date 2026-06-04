@@ -247,53 +247,6 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     }
   }
 
-  Future<bool> approvePendingCandidate(String candidateId) async {
-    return _decidePendingCandidate(
-      candidateId,
-      (api) => api.approveMemoryCandidate(candidateId),
-      _MemoryOperation.approve,
-    );
-  }
-
-  Future<bool> rejectPendingCandidate(String candidateId) async {
-    return _decidePendingCandidate(
-      candidateId,
-      (api) => api.rejectMemoryCandidate(candidateId),
-      _MemoryOperation.reject,
-    );
-  }
-
-  Future<bool> updatePendingCandidate(
-    PendingMemoryCandidateItem candidate, {
-    required String proposal,
-    required String? reason,
-  }) async {
-    state = state.copyWith(isSaving: true, clearError: true);
-    try {
-      final updated = await ref
-          .read(memoryApiProvider)
-          .updateMemoryCandidate(
-            candidate.id,
-            payload: editedMemoryCandidatePayload(candidate, proposal),
-            reason: reason,
-          );
-      state = state.copyWith(
-        pendingCandidates: state.pendingCandidates
-            .map((item) => item.id == candidate.id ? updated : item)
-            .toList(growable: false),
-        isSaving: false,
-        clearError: true,
-      );
-      return true;
-    } on Object catch (error) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: _memoryErrorMessage(error, _MemoryOperation.edit),
-      );
-      return false;
-    }
-  }
-
   bool _matchesCurrentFilters(MemoryItem memory) {
     if (state.activeOnly && !memory.active) {
       return false;
@@ -303,42 +256,5 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     }
 
     return true;
-  }
-
-  Future<bool> _decidePendingCandidate(
-    String candidateId,
-    Future<PendingMemoryCandidateItem> Function(MemoryApi api) decide,
-    _MemoryOperation operation,
-  ) async {
-    final previousCandidates = state.pendingCandidates;
-    state = state.copyWith(
-      pendingCandidates: previousCandidates
-          .where((candidate) => candidate.id != candidateId)
-          .toList(growable: false),
-      isSaving: true,
-      clearError: true,
-    );
-
-    try {
-      final result = await decide(ref.read(memoryApiProvider));
-      state = state.copyWith(
-        pendingCandidates: result.isPending
-            ? [...state.pendingCandidates, result]
-            : state.pendingCandidates,
-        isSaving: false,
-        clearError: true,
-      );
-      if (result.status == 'applied') {
-        await loadSavedOverview(preserveSelectedMode: true);
-      }
-      return true;
-    } on Object catch (error) {
-      state = state.copyWith(
-        pendingCandidates: previousCandidates,
-        isSaving: false,
-        errorMessage: _memoryErrorMessage(error, operation),
-      );
-      return false;
-    }
   }
 }

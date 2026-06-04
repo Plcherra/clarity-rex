@@ -17,7 +17,7 @@ extension AssistantTabContract on AssistantTab {
     return switch (this) {
       AssistantTab.chat => 'Chat',
       AssistantTab.voice => 'Voice',
-      AssistantTab.memory => 'Memory',
+      AssistantTab.memory => 'Knows',
       AssistantTab.goals => 'Goals',
       AssistantTab.chats => 'Chats',
     };

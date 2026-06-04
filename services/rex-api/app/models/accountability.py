@@ -74,6 +74,5 @@ class AccountabilityOverviewResponse(BaseModel):
     open_milestones: list[dict[str, Any]] = Field(default_factory=list)
     completed_milestones: list[dict[str, Any]] = Field(default_factory=list)
     plan_hierarchy: list[dict[str, Any]] = Field(default_factory=list)
-    pending_memory_candidates: list[dict[str, Any]] = Field(default_factory=list)
     duplicate_warnings: list[dict[str, Any]] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)

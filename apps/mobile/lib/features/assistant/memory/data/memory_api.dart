@@ -7,7 +7,6 @@ import 'package:clarity/core/rex/rex_api_client.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
 import 'package:clarity/features/assistant/memory/data/memory_models.dart';
 
-part 'memory_candidate_api.dart';
 part 'memory_saved_api.dart';
 part 'memory_structured_api.dart';
 
@@ -36,7 +35,7 @@ abstract class _MemoryApiTransport {
 }
 
 class MemoryApi extends _MemoryApiTransport
-    with _SavedMemoryApi, _StructuredMemoryApi, _MemoryCandidateApi {
+    with _SavedMemoryApi, _StructuredMemoryApi {
   MemoryApi({
     http.Client? client,
     String? baseUrl,

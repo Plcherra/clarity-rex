@@ -28,14 +28,14 @@ void main() {
     expect(AssistantTab.values.map((tab) => tab.label), [
       'Chat',
       'Voice',
-      'Memory',
+      'Knows',
       'Goals',
       'Chats',
     ]);
     expect(AssistantTab.values.map((tab) => tab.semanticLabel), [
       'Assistant Chat tab',
       'Assistant Voice tab',
-      'Assistant Memory tab',
+      'Assistant Knows tab',
       'Assistant Goals tab',
       'Assistant Chats tab',
     ]);
@@ -142,7 +142,7 @@ void main() {
   });
 
   testWidgets(
-    'assistant tab exposes Chat Voice Memory Goals and Chats sections',
+    'assistant tab exposes Chat Voice Knows Goals and Chats sections',
     (tester) async {
       final app = AppComposition(initialAuthenticated: true);
       addTearDown(app.dispose);
@@ -168,7 +168,7 @@ void main() {
 
       expect(find.byType(AssistantScreen), findsOneWidget);
       expect(find.byTooltip('Conversations'), findsNothing);
-      expect(find.byTooltip('Memory'), findsNothing);
+      expect(find.byTooltip('Knows'), findsNothing);
       expect(find.byTooltip('Accountability'), findsNothing);
       for (final tab in AssistantTab.values) {
         expect(find.byKey(tab.key), findsOneWidget);
@@ -242,38 +242,39 @@ void main() {
     expect(find.text('Conversations'), findsNothing);
   });
 
-  testWidgets('assistant Voice tab opens minimal voice for the active conversation', (
-    tester,
-  ) async {
-    final voiceController = _FakeVoiceCallController();
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          conversationApiProvider.overrideWithValue(
-            _FakeConversationApi.withConversation(),
-          ),
-          voiceCallProvider.overrideWith(() => voiceController),
-        ],
-        child: const MaterialApp(home: AssistantScreen()),
-      ),
-    );
-    await tester.pump();
+  testWidgets(
+    'assistant Voice tab opens minimal voice for the active conversation',
+    (tester) async {
+      final voiceController = _FakeVoiceCallController();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            conversationApiProvider.overrideWithValue(
+              _FakeConversationApi.withConversation(),
+            ),
+            voiceCallProvider.overrideWith(() => voiceController),
+          ],
+          child: const MaterialApp(home: AssistantScreen()),
+        ),
+      );
+      await tester.pump();
 
-    await tester.tap(find.byKey(AssistantTab.chats.key));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Budget check-in'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(AssistantTab.voice.key));
-    await tester.pumpAndSettle();
-    expect(find.text('Tap to speak'), findsOneWidget);
+      await tester.tap(find.byKey(AssistantTab.chats.key));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Budget check-in'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AssistantTab.voice.key));
+      await tester.pumpAndSettle();
+      expect(find.text('Tap to speak'), findsOneWidget);
 
-    await tester.tap(find.text('Speak'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Speak'));
+      await tester.pumpAndSettle();
 
-    expect(voiceController.startCount, 1);
-    expect(voiceController.lastConversationId, 'conversation-1');
-    expect(find.text('Listening...'), findsOneWidget);
-  });
+      expect(voiceController.startCount, 1);
+      expect(voiceController.lastConversationId, 'conversation-1');
+      expect(find.text('Listening...'), findsOneWidget);
+    },
+  );
 }
 
 Future<void> _pumpAssistantScreen(

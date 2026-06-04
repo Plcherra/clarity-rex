@@ -141,7 +141,6 @@ class ChatController extends Notifier<ChatState> {
           role: ChatMessageRole.assistant,
           content: fallbackAssistantResponse.trim(),
           timestamp: DateTime.now(),
-          memoryCandidates: candidateCardsFromMemoryChanges(memoryChanges),
           clarityActions: clarityActionCardsFromMemoryChanges(memoryChanges),
         ),
       );
@@ -266,9 +265,6 @@ class ChatController extends Notifier<ChatState> {
                   role: ChatMessageRole.assistant,
                   content: result.response,
                   timestamp: DateTime.now(),
-                  memoryCandidates: candidateCardsFromMemoryChanges(
-                    result.memoryChanges,
-                  ),
                   clarityActions: clarityActionCardsFromMemoryChanges(
                     result.memoryChanges,
                   ),
@@ -330,7 +326,7 @@ class ChatController extends Notifier<ChatState> {
             conversationId: response.conversationId,
             messages: response.messages.isNotEmpty
                 ? _messagesFromApiResponse(response)
-                : _messagesWithMemoryCandidates(
+                : _messagesWithClarityActions(
                     _messagesWithStreamingStopped(state.messages),
                     response.memoryChanges,
                   ),
@@ -433,16 +429,15 @@ class ChatController extends Notifier<ChatState> {
     Map<String, dynamic>? memoryChanges,
   }) {
     final mapped = messages.map(_messageFromApi).toList(growable: false);
-    return _messagesWithMemoryCandidates(mapped, memoryChanges);
+    return _messagesWithClarityActions(mapped, memoryChanges);
   }
 
-  List<ChatMessage> _messagesWithMemoryCandidates(
+  List<ChatMessage> _messagesWithClarityActions(
     List<ChatMessage> messages,
     Map<String, dynamic>? memoryChanges,
   ) {
-    final candidates = candidateCardsFromMemoryChanges(memoryChanges);
     final clarityActions = clarityActionCardsFromMemoryChanges(memoryChanges);
-    if ((candidates.isEmpty && clarityActions.isEmpty) || messages.isEmpty) {
+    if (clarityActions.isEmpty || messages.isEmpty) {
       return List.unmodifiable(messages);
     }
 
@@ -450,7 +445,6 @@ class ChatController extends Notifier<ChatState> {
     for (var index = updated.length - 1; index >= 0; index--) {
       if (updated[index].role == ChatMessageRole.assistant) {
         updated[index] = updated[index].copyWith(
-          memoryCandidates: candidates,
           clarityActions: clarityActions,
         );
         return List.unmodifiable(updated);

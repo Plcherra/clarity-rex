@@ -159,10 +159,10 @@ async def test_chat_service_includes_long_term_memory():
     )
     chat_service = ChatService(ai_service, FileService(), memory_service)
 
-    await chat_service.send_message("What should I do next?")
+    await chat_service.send_message("What do you remember about my preferences?")
 
     assert memory_service.relevant_memory_queries == [
-        {"query": "What should I do next?", "limit": 8},
+        {"query": "What do you remember about my preferences?", "limit": 8},
         {"query": PROFILE_MEMORY_QUERY, "limit": 4},
     ]
     assert ai_service.messages[0]["role"] == "system"
@@ -171,7 +171,7 @@ async def test_chat_service_includes_long_term_memory():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_includes_profile_memory_for_new_chat_openers():
+async def test_chat_service_skips_profile_memory_for_casual_chat_openers():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     memory_service.long_term_memory.append(
@@ -186,11 +186,8 @@ async def test_chat_service_includes_profile_memory_for_new_chat_openers():
 
     await chat_service.send_message("Hey")
 
-    assert memory_service.relevant_memory_queries == [
-        {"query": "Hey", "limit": 8},
-        {"query": PROFILE_MEMORY_QUERY, "limit": 4},
-    ]
-    assert "- fact: I am in Massachusetts." in ai_service.messages[0]["content"]
+    assert memory_service.relevant_memory_queries == []
+    assert "- fact: I am in Massachusetts." not in ai_service.messages[0]["content"]
 
 
 @pytest.mark.asyncio
@@ -270,7 +267,7 @@ async def test_chat_service_injects_accountability_context():
     call = accountability_service.calls[0]
     assert call["message"] == "I ordered DoorDash again."
     assert call["personal_rules"] == memory_service.structured_context["personal_rules"]
-    assert call["relevant_memories"][0]["id"] == "memory-doordash"
+    assert call["relevant_memories"] == []
     system_content = ai_service.messages[0]["content"]
     assert ACCOUNTABILITY_CONTEXT_PREFIX in system_content
     assert "rule_violation/high: Possible rule violation" in system_content

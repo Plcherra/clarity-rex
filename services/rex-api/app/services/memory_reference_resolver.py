@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
 from app.services.entity_normalization_service import EntityNormalizationService
-from app.services.memory_structured_candidate_normalizer import (
+from app.services.memory_text_normalization import (
     clean_text,
     normalized_text,
 )

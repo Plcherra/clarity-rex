@@ -11,22 +11,15 @@ from app.services.chat_turn_context import (
     ConversationNotFoundError,
     MemoryService,
 )
-from app.services.chat_pending_correction_response import pending_correction_turn_response
 from app.services.clarity_action_parser import (
     ClarityActionParser,
     ClarityActionStreamFilter,
 )
 from app.services.chat_voice_metadata import ChatVoiceMetadataMixin
 from app.services.file_service import FileService
-from app.services.memory_candidate_decision_service import (
-    MemoryCandidateDecisionService,
-)
-from app.services.memory_candidate_service import MemoryCandidateService
-from app.services.memory_extraction_service import MemoryExtractionService
-from app.services.memory_correction_service import MemoryCorrectionService
+from app.services.goal_command_service import GoalCommandService
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_intent_service import MemoryIntentService
-from app.services.memory_post_turn_service import MemoryPostTurnService
 from app.services.memory_turn_service import MemoryTurnService
 from app.services.prompt_service import PromptService
 from app.services.rex_brain import RexBrain
@@ -34,6 +27,7 @@ from app.services.rex_brain_chat_service import RexBrainChatService
 from app.services.rex_brain_contracts import (
     RexBrainChannel,
 )
+from app.services.rex_intent_router import RexIntentRouter
 from app.services.rex_model_router import RexModelRouter
 from app.services.rex_observability import RexBrainObserver
 from app.services.time_context_service import TimeContextService
@@ -44,25 +38,20 @@ class ChatService(ChatVoiceMetadataMixin):
         ai_service: AIService,
         file_service: FileService,
         memory_service: MemoryService,
-        memory_extraction_service: Optional[MemoryExtractionService] = None,
         prompt_service: Optional[PromptService] = None,
         time_context_service: Optional[TimeContextService] = None,
         accountability_service: Optional[AccountabilityService] = None,
         memory_discipline_service: Optional[MemoryDisciplineService] = None,
-        memory_correction_service: Optional[MemoryCorrectionService] = None,
-        memory_candidate_service: Optional[MemoryCandidateService] = None,
         memory_intent_service: Optional[MemoryIntentService] = None,
         memory_turn_service: Optional[MemoryTurnService] = None,
-        memory_candidate_decision_service: Optional[
-            MemoryCandidateDecisionService
-        ] = None,
+        goal_command_service: Optional[GoalCommandService] = None,
         chat_context_service: Optional[ChatContextService] = None,
-        memory_post_turn_service: Optional[MemoryPostTurnService] = None,
         clarity_action_parser: Optional[ClarityActionParser] = None,
         rex_brain_chat_service: Optional[RexBrainChatService] = None,
         rex_brain: Optional[RexBrain] = None,
         rex_model_router: Optional[RexModelRouter] = None,
         rex_brain_observer: Optional[RexBrainObserver] = None,
+        rex_intent_router: Optional[RexIntentRouter] = None,
     ) -> None:
         self.ai_service = ai_service
         self.memory_service = memory_service
@@ -70,15 +59,15 @@ class ChatService(ChatVoiceMetadataMixin):
         self.time_context_service = time_context_service or TimeContextService()
         self.accountability_service = accountability_service or AccountabilityService()
         self.memory_discipline_service = memory_discipline_service
-        self.memory_candidate_decision_service = (
-            memory_candidate_decision_service
-            or MemoryCandidateDecisionService(memory_candidate_service)
-        )
         self.memory_turn_service = memory_turn_service or MemoryTurnService(
             memory_service,
             memory_intent_service=memory_intent_service,
         )
+        self.goal_command_service = goal_command_service or GoalCommandService(
+            memory_service
+        )
         self.clarity_action_parser = clarity_action_parser or ClarityActionParser()
+        self.rex_intent_router = rex_intent_router or RexIntentRouter()
         self.rex_brain_chat_service = rex_brain_chat_service or RexBrainChatService(
             rex_brain=rex_brain,
             rex_model_router=rex_model_router,
@@ -96,14 +85,6 @@ class ChatService(ChatVoiceMetadataMixin):
             memory_service=memory_service,
             chat_context_service=self.chat_context_service,
         )
-        self.memory_post_turn_service = (
-            memory_post_turn_service
-            or MemoryPostTurnService(
-                memory_extraction_service=memory_extraction_service,
-                memory_correction_service=memory_correction_service,
-                memory_candidate_service=memory_candidate_service,
-            )
-        )
 
     async def send_message(
         self,
@@ -116,10 +97,17 @@ class ChatService(ChatVoiceMetadataMixin):
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
     ) -> dict:
+        intent_decision = self.rex_intent_router.classify(
+            message,
+            has_file=file is not None,
+            has_financial_context=financial_context is not None,
+            user_requested_deep_thinking=user_requested_deep_thinking,
+        )
         turn_context = await self.chat_turn_context_service.prepare(
             message=message,
             conversation_id=conversation_id,
             file=file,
+            intent_decision=intent_decision,
         )
         conversation_id = turn_context.conversation_id
         file_text = turn_context.file_text
@@ -138,28 +126,15 @@ class ChatService(ChatVoiceMetadataMixin):
         )
         if simple_memory_turn:
             return simple_memory_turn
-
-        candidate_decision = await self.memory_candidate_decision_service.handle_decision(
+        goal_command_turn = await self.goal_command_service.handle_turn(
             message,
             conversation_id=conversation_id,
+            user_message=user_message,
+            conversation_history=conversation_history,
+            time_context=time_context,
         )
-        if candidate_decision:
-            assistant_message = await self.memory_service.save_message(
-                conversation_id,
-                "assistant",
-                candidate_decision["response"],
-            )
-            return {
-                "conversation_id": conversation_id,
-                "response": candidate_decision["response"],
-                "user_message": user_message,
-                "assistant_message": assistant_message,
-                "memory_correction": None,
-                "memory_changes": candidate_decision["memory_changes"],
-                "messages": await self.memory_turn_service.recent_public_messages(
-                    conversation_id
-                ),
-            }
+        if goal_command_turn:
+            return goal_command_turn
         conversation_history = self.memory_turn_service.public_messages(
             conversation_history
         )
@@ -185,7 +160,6 @@ class ChatService(ChatVoiceMetadataMixin):
             request_id=request_id,
             status="planned",
         )
-        brain_metadata = self.rex_brain_chat_service.memory_metadata(rex_brain_plan)
         ai_messages = self.chat_context_service.build_prompt_messages_for_rex_brain(
             message=message,
             conversation_id=conversation_id,
@@ -199,23 +173,6 @@ class ChatService(ChatVoiceMetadataMixin):
             rex_brain_plan=rex_brain_plan,
         )
 
-        memory_correction = await self.memory_post_turn_service.apply_memory_correction(
-            message,
-            conversation_id=conversation_id,
-            user_message_id=str(user_message.get("id") or ""),
-            brain_metadata=brain_metadata,
-        )
-        if self.memory_post_turn_service.correction_blocks_extraction(
-            memory_correction
-        ):
-            return await pending_correction_turn_response(
-                memory_service=self.memory_service,
-                memory_turn_service=self.memory_turn_service,
-                memory_post_turn_service=self.memory_post_turn_service,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                memory_correction=memory_correction,
-            )
         if response_instructions:
             ai_messages.append({"role": "system", "content": response_instructions})
 
@@ -246,30 +203,8 @@ class ChatService(ChatVoiceMetadataMixin):
             status="completed",
         )
 
-        memory_changes = None
-        if self.memory_post_turn_service.correction_blocks_extraction(
-            memory_correction
-        ):
-            memory_changes = self.memory_post_turn_service.memory_change_summary(
-                [],
-                memory_correction=memory_correction,
-                skipped_reason="correction_already_handled",
-            )
-        else:
-            extracted_memories = (
-                await self.memory_post_turn_service.extract_memory_after_success(
-                    conversation_id,
-                    user_message,
-                    assistant_message,
-                    brain_metadata=brain_metadata,
-                )
-            )
-            memory_changes = self.memory_post_turn_service.memory_change_summary(
-                extracted_memories,
-                memory_correction=memory_correction,
-            )
         memory_changes = self.clarity_action_parser.with_memory_changes(
-            memory_changes,
+            None,
             clarity_action_proposals,
         )
 
@@ -278,7 +213,7 @@ class ChatService(ChatVoiceMetadataMixin):
             "response": assistant_response,
             "user_message": user_message,
             "assistant_message": assistant_message,
-            "memory_correction": memory_correction,
+            "memory_correction": None,
             "memory_changes": memory_changes,
             "messages": await self.memory_turn_service.recent_public_messages(
                 conversation_id
@@ -296,10 +231,17 @@ class ChatService(ChatVoiceMetadataMixin):
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
     ) -> AsyncIterator[dict]:
+        intent_decision = self.rex_intent_router.classify(
+            message,
+            has_file=file is not None,
+            has_financial_context=financial_context is not None,
+            user_requested_deep_thinking=user_requested_deep_thinking,
+        )
         turn_context = await self.chat_turn_context_service.prepare(
             message=message,
             conversation_id=conversation_id,
             file=file,
+            intent_decision=intent_decision,
         )
         conversation_id = turn_context.conversation_id
         file_text = turn_context.file_text
@@ -328,30 +270,22 @@ class ChatService(ChatVoiceMetadataMixin):
                 "assistant_message": simple_memory_turn["assistant_message"],
             }
             return
-
-        candidate_decision = await self.memory_candidate_decision_service.handle_decision(
+        goal_command_turn = await self.goal_command_service.handle_turn(
             message,
             conversation_id=conversation_id,
+            user_message=user_message,
+            conversation_history=conversation_history,
+            time_context=time_context,
         )
-        if candidate_decision:
-            assistant_message = await self.memory_service.save_message(
-                conversation_id,
-                "assistant",
-                candidate_decision["response"],
-            )
-            yield {
-                "event": "memory_candidate_decision",
-                "memory_candidate_decision": candidate_decision,
-            }
+        if goal_command_turn:
+            yield {"event": "token", "token": goal_command_turn["response"]}
             yield {
                 "event": "done",
                 "conversation_id": conversation_id,
-                "response": candidate_decision["response"],
-                "messages": await self.memory_turn_service.recent_public_messages(
-                    conversation_id
-                ),
-                "memory_changes": candidate_decision["memory_changes"],
-                "assistant_message": assistant_message,
+                "response": goal_command_turn["response"],
+                "messages": goal_command_turn["messages"],
+                "memory_changes": goal_command_turn["memory_changes"],
+                "assistant_message": goal_command_turn["assistant_message"],
             }
             return
         conversation_history = self.memory_turn_service.public_messages(
@@ -379,7 +313,6 @@ class ChatService(ChatVoiceMetadataMixin):
             request_id=request_id,
             status="planned",
         )
-        brain_metadata = self.rex_brain_chat_service.memory_metadata(rex_brain_plan)
         ai_messages = self.chat_context_service.build_prompt_messages_for_rex_brain(
             message=message,
             conversation_id=conversation_id,
@@ -392,28 +325,6 @@ class ChatService(ChatVoiceMetadataMixin):
             financial_context=financial_context,
             rex_brain_plan=rex_brain_plan,
         )
-
-        memory_correction = await self.memory_post_turn_service.apply_memory_correction(
-            message,
-            conversation_id=conversation_id,
-            user_message_id=str(user_message.get("id") or ""),
-            brain_metadata=brain_metadata,
-        )
-        if self.memory_post_turn_service.correction_blocks_extraction(
-            memory_correction
-        ):
-            correction_turn = await pending_correction_turn_response(
-                memory_service=self.memory_service,
-                memory_turn_service=self.memory_turn_service,
-                memory_post_turn_service=self.memory_post_turn_service,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                memory_correction=memory_correction,
-            )
-            yield {"event": "memory_correction", "memory_correction": memory_correction}
-            yield {"event": "token", "token": correction_turn["response"]}
-            yield {"event": "done", **correction_turn}
-            return
 
         if response_instructions:
             ai_messages.append({"role": "system", "content": response_instructions})
@@ -454,24 +365,8 @@ class ChatService(ChatVoiceMetadataMixin):
             status="completed",
         )
 
-        memory_changes = None
-        if self.memory_post_turn_service.correction_blocks_extraction(
-            memory_correction
-        ):
-            memory_changes = self.memory_post_turn_service.memory_change_summary(
-                [],
-                memory_correction=memory_correction,
-                skipped_reason="correction_already_handled",
-            )
-        else:
-            self.memory_post_turn_service.schedule_memory_extraction(
-                conversation_id,
-                user_message,
-                assistant_message,
-                brain_metadata=brain_metadata,
-            )
         memory_changes = self.clarity_action_parser.with_memory_changes(
-            memory_changes,
+            None,
             clarity_action_proposals,
         )
 

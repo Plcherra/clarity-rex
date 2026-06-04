@@ -7,7 +7,6 @@ import 'package:clarity/features/assistant/memory/presentation/widgets/memory_ar
 import 'package:clarity/features/assistant/memory/presentation/widgets/memory_edit_dialogs.dart';
 import 'package:clarity/features/assistant/memory/presentation/widgets/memory_page_filters.dart';
 import 'package:clarity/features/assistant/memory/presentation/widgets/memory_page_header_widgets.dart';
-import 'package:clarity/features/assistant/memory/presentation/widgets/memory_pending_review_widgets.dart';
 import 'package:clarity/features/assistant/memory/presentation/widgets/memory_quick_filter.dart';
 import 'package:clarity/features/assistant/memory/presentation/widgets/saved_memory_group_list.dart';
 
@@ -57,67 +56,10 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       return;
     }
     setState(() => _quickFilter = filter);
-    final targetMode = filter.targetMode;
-    if (ref.read(memoryProvider).selectedMode != targetMode) {
-      await ref.read(memoryProvider.notifier).setMode(targetMode);
-    }
   }
 
-  Future<void> _refresh() {
-    final state = ref.read(memoryProvider);
-    if (state.selectedMode == MemoryReviewMode.pending) {
-      return ref.read(memoryProvider.notifier).loadPendingCandidates();
-    }
-    return ref.read(memoryProvider.notifier).loadSavedOverview();
-  }
-
-  Future<void> _approvePendingCandidate(
-    PendingMemoryCandidateItem candidate,
-  ) async {
-    final approved = await ref
-        .read(memoryProvider.notifier)
-        .approvePendingCandidate(candidate.id);
-    if (!mounted) {
-      return;
-    }
-    _showSnackBar(approved ? 'Saved to what Rex knows' : _currentError());
-  }
-
-  Future<void> _rejectPendingCandidate(
-    PendingMemoryCandidateItem candidate,
-  ) async {
-    final rejected = await ref
-        .read(memoryProvider.notifier)
-        .rejectPendingCandidate(candidate.id);
-    if (!mounted) {
-      return;
-    }
-    _showSnackBar(rejected ? 'Not saved' : _currentError());
-  }
-
-  Future<void> _editPendingCandidate(
-    PendingMemoryCandidateItem candidate,
-  ) async {
-    final result = await showDialog<PendingCandidateEditResult>(
-      context: context,
-      builder: (context) => PendingCandidateEditDialog(candidate: candidate),
-    );
-    if (result == null) {
-      return;
-    }
-
-    final saved = await ref
-        .read(memoryProvider.notifier)
-        .updatePendingCandidate(
-          candidate,
-          proposal: result.proposal,
-          reason: result.reason,
-        );
-    if (!mounted) {
-      return;
-    }
-    _showSnackBar(saved ? 'Memory review updated' : _currentError());
-  }
+  Future<void> _refresh() =>
+      ref.read(memoryProvider.notifier).loadSavedOverview();
 
   Future<void> _editMemory(MemoryItem memory) async {
     final result = await showDialog<MemoryEditResult>(
@@ -348,16 +290,10 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       query: _searchQuery,
       quickFilter: _quickFilter,
     );
-    final filteredCandidates = filterPendingCandidates(
-      state: state,
-      query: _searchQuery,
-      quickFilter: _quickFilter,
-    );
-
     return Scaffold(
       appBar: widget.showAppBar
           ? AppBar(
-              title: const Text('Memory'),
+              title: const Text('What Rex Knows'),
               actions: [
                 IconButton(
                   onPressed: state.isLoading ? null : _refresh,
@@ -381,38 +317,20 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                     MemorySearchAndFilters(
                       controller: _searchController,
                       selectedFilter: _quickFilter,
-                      pendingCount: state.pendingCandidates.length,
                       onFilterSelected: state.isLoading
                           ? null
                           : _setQuickFilter,
                     ),
                     const SizedBox(height: 12),
-                    if (state.selectedMode == MemoryReviewMode.pending)
-                      PendingReviewHeader(
-                        pendingCount: state.pendingCandidates.length,
-                      )
-                    else ...[
-                      const SavedMemoryHeader(),
-                      const SizedBox(height: 8),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Active memories only'),
-                        value: state.activeOnly,
-                        onChanged: state.isLoading ? null : _setActiveOnly,
-                      ),
-                      if (state.errorMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            state.errorMessage!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: scheme.error,
-                            ),
-                          ),
-                        ),
-                    ],
-                    if (state.selectedMode == MemoryReviewMode.pending &&
-                        state.errorMessage != null)
+                    const SavedMemoryHeader(),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Active memories only'),
+                      value: state.activeOnly,
+                      onChanged: state.isLoading ? null : _setActiveOnly,
+                    ),
+                    if (state.errorMessage != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
@@ -426,30 +344,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                 ),
               ),
             ),
-            if (state.selectedMode == MemoryReviewMode.pending)
-              if (state.isLoading && state.isPendingReviewEmpty)
-                const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (state.isPendingReviewEmpty)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: PendingReviewEmptyState(),
-                )
-              else if (filteredCandidates.isEmpty)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: MemoryFilteredEmptyState(),
-                )
-              else
-                PendingCandidateList(
-                  candidates: filteredCandidates,
-                  isSaving: state.isSaving,
-                  onApprove: _approvePendingCandidate,
-                  onEdit: _editPendingCandidate,
-                  onReject: _rejectPendingCandidate,
-                )
-            else if (state.isLoading && state.isSavedOverviewEmpty)
+            if (state.isLoading && state.isSavedOverviewEmpty)
               const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator()),
               )
@@ -459,7 +354,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                 child: MemoryEmptyState(activeOnly: state.activeOnly),
               )
             else if (filteredSaved.isEmpty)
-              const SliverFillRemaining(
+              SliverFillRemaining(
                 hasScrollBody: false,
                 child: MemoryFilteredEmptyState(),
               )

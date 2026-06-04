@@ -4,7 +4,7 @@ from typing import Any, Optional
 from pydantic import BaseModel, Field
 
 
-class MemoryCandidateKind(str, Enum):
+class MemoryRecordKind(str, Enum):
     LONG_TERM_MEMORY = "long_term_memory"
     ENTITY = "entity"
     ENTITY_EVENT = "entity_event"
@@ -34,7 +34,7 @@ class MemoryDisciplineAction(str, Enum):
 
 
 class MemoryDisciplineCandidate(BaseModel):
-    kind: MemoryCandidateKind
+    kind: MemoryRecordKind
     payload: dict[str, Any] = Field(default_factory=dict)
     source_conversation_id: Optional[str] = None
     source_message_id: Optional[str] = None
@@ -68,7 +68,7 @@ class MemoryDisciplineContext(BaseModel):
 
 class MemoryDisciplineDecision(BaseModel):
     action: MemoryDisciplineAction
-    candidate_kind: MemoryCandidateKind
+    record_kind: MemoryRecordKind
     payload: dict[str, Any] = Field(default_factory=dict)
     reason: str
     confidence: float = Field(default=0.75, ge=0, le=1)

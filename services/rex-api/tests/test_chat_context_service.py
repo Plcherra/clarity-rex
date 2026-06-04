@@ -1,6 +1,9 @@
+import logging
+
 import pytest
 
 from app.services.chat_context_service import ChatContextService, PROFILE_MEMORY_QUERY
+from app.services.rex_intent_router import RexIntent, RexIntentDecision
 
 
 class FakeContextMemoryStore:
@@ -15,6 +18,7 @@ class FakeContextMemoryStore:
         self.fail_relevant_memories = fail_relevant_memories
         self.fail_structured_context = fail_structured_context
         self.relevant_memory_queries = []
+        self.structured_context_queries = []
         self.plan_calls = []
         self.milestone_calls = []
         self.commitment_calls = []
@@ -77,6 +81,7 @@ class FakeContextMemoryStore:
         return self.messages[-limit:]
 
     async def get_structured_memory_context(self, query):
+        self.structured_context_queries.append(query)
         if self.fail_structured_context:
             raise RuntimeError("structured context failed")
         return {"profile_facts": [{"fact": "timezone is America/New_York"}]}
@@ -126,6 +131,109 @@ async def test_chat_context_fetches_and_deduplicates_prompt_context():
         {"query": "remember my preferences", "limit": 8},
         {"query": PROFILE_MEMORY_QUERY, "limit": 4},
     ]
+
+
+@pytest.mark.asyncio
+async def test_chat_context_skips_memory_and_goals_for_casual_intent():
+    store = FakeContextMemoryStore()
+    service = ChatContextService(store)
+
+    history, memories, structured_context = await service.fetch_prompt_context(
+        message="Hey Rex",
+        conversation_id="conversation-1",
+        intent_decision=RexIntentDecision(RexIntent.CASUAL),
+    )
+
+    assert history == store.messages
+    assert memories == []
+    assert structured_context == {}
+    assert store.relevant_memory_queries == []
+    assert store.structured_context_queries == []
+    assert store.plan_calls == []
+
+
+@pytest.mark.asyncio
+async def test_chat_context_loads_memory_only_for_memory_recall_intent():
+    store = FakeContextMemoryStore()
+    service = ChatContextService(store)
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message="Do you remember my mom's birthday?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert [memory["id"] for memory in memories] == [
+        "shared-1",
+        "memory-1",
+        "profile-1",
+    ]
+    assert structured_context["profile_facts"][0]["fact"] == (
+        "timezone is America/New_York"
+    )
+    assert store.relevant_memory_queries == [
+        {"query": "Do you remember my mom's birthday?", "limit": 8},
+        {"query": PROFILE_MEMORY_QUERY, "limit": 4},
+    ]
+    assert store.plan_calls == []
+
+
+@pytest.mark.asyncio
+async def test_chat_context_loads_goals_without_long_term_memory_for_goal_intent():
+    store = FakeContextMemoryStore()
+    service = ChatContextService(store)
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message="How am I doing on my goals?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.GOAL_OR_COMMITMENT),
+    )
+
+    assert memories == []
+    assert "profile_facts" not in structured_context
+    assert structured_context["plans"][0]["title"] == "Build emergency fund"
+    assert store.relevant_memory_queries == []
+    assert store.structured_context_queries == []
+    assert store.plan_calls
+
+
+@pytest.mark.asyncio
+async def test_chat_context_skips_memory_and_goals_for_finance_intent():
+    store = FakeContextMemoryStore()
+    service = ChatContextService(store)
+
+    history, memories, structured_context = await service.fetch_prompt_context(
+        message="How much did I spend this week?",
+        conversation_id="conversation-1",
+        intent_decision=RexIntentDecision(RexIntent.FINANCE),
+    )
+
+    assert history == store.messages
+    assert memories == []
+    assert structured_context == {}
+    assert store.relevant_memory_queries == []
+    assert store.structured_context_queries == []
+    assert store.plan_calls == []
+
+
+@pytest.mark.asyncio
+async def test_chat_context_logs_context_fetch_timings(caplog):
+    store = FakeContextMemoryStore()
+    service = ChatContextService(store)
+    caplog.set_level(logging.INFO, logger="rex.context")
+
+    await service.fetch_prompt_context(
+        message="Hey Rex",
+        conversation_id="conversation-1",
+        intent_decision=RexIntentDecision(RexIntent.CASUAL),
+    )
+
+    rendered_logs = "\n".join(record.getMessage() for record in caplog.records)
+    assert "rex_context_fetch" in rendered_logs
+    assert '"intent": "casual"' in rendered_logs
+    assert '"long_term_memory": false' in rendered_logs
+    assert '"structured_memory": false' in rendered_logs
+    assert '"timings_ms"' in rendered_logs
 
 
 @pytest.mark.asyncio

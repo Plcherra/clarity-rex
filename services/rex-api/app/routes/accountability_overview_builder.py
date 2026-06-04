@@ -67,7 +67,6 @@ def build_accountability_overview(
         open_milestones=open_milestones,
         completed_milestones=completed_milestones,
         plan_hierarchy=plan_hierarchy,
-        pending_memory_candidates=context["pending_memory_candidates"],
         duplicate_warnings=duplicate_warnings,
         metadata={
             "message": message,
@@ -78,9 +77,6 @@ def build_accountability_overview(
             "open_milestone_count": len(open_milestones),
             "completed_milestone_count": len(completed_milestones),
             "open_task_count": len(open_commitments),
-            "pending_memory_candidate_count": len(
-                context["pending_memory_candidates"]
-            ),
             "duplicate_warning_count": len(duplicate_warnings),
             "loader_diagnostics": context.get("loader_diagnostics", []),
         },

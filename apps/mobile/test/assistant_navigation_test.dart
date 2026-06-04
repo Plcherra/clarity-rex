@@ -191,14 +191,6 @@ class _FakeMemoryApi extends MemoryApi {
   }) async {
     return const [];
   }
-
-  @override
-  Future<List<PendingMemoryCandidateItem>> getMemoryCandidates({
-    String status = 'pending',
-    int limit = 50,
-  }) async {
-    return const [];
-  }
 }
 
 class _FakeVoiceCallController extends VoiceCallController {

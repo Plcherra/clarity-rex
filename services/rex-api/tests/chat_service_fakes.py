@@ -1,5 +1,3 @@
-import asyncio
-
 from app.services.memory_correction_service import CorrectionIntentType
 
 
@@ -8,13 +6,17 @@ class FakeAIService:
         self.messages = []
         self.response = response
         self.stream_tokens = stream_tokens or ["Rex ", "stream"]
+        self.generate_calls = 0
+        self.stream_calls = 0
 
     async def generate_response(self, messages, **kwargs):
+        self.generate_calls += 1
         self.messages = messages
         self.kwargs = kwargs
         return self.response
 
     async def stream_response(self, messages, **kwargs):
+        self.stream_calls += 1
         self.messages = messages
         self.kwargs = kwargs
         for token in self.stream_tokens:
@@ -55,14 +57,18 @@ class FakeMemoryService:
         self.conversations = set()
         self.messages = []
         self.long_term_memory = []
-        self.memory_confirmations = []
         self.next_conversation_id = 1
         self.next_message_id = 1
         self.next_memory_id = 1
-        self.next_confirmation_id = 1
+        self.next_plan_id = 1
+        self.next_commitment_id = 1
         self.relevant_memory_queries = []
         self.structured_context_queries = []
         self.structured_context = {}
+        self.plans = []
+        self.commitments = []
+        self.created_plans = []
+        self.created_commitments = []
 
     async def create_conversation(self):
         conversation_id = f"conversation-{self.next_conversation_id}"
@@ -92,24 +98,6 @@ class FakeMemoryService:
             if message["conversation_id"] == conversation_id
         ]
         return messages[-limit:]
-
-    async def save_long_term_memory_from_message(self, conversation_id, message):
-        content = message["content"]
-        if not content.lower().startswith("remember that "):
-            return None
-
-        memory = {
-            "id": f"memory-{self.next_memory_id}",
-            "memory_type": "fact",
-            "content": content.removeprefix("Remember that "),
-            "source_conversation_id": conversation_id,
-            "source_message_id": message["id"],
-            "importance": 5,
-            "active": True,
-        }
-        self.next_memory_id += 1
-        self.long_term_memory.append(memory)
-        return memory
 
     async def save_long_term_memory(
         self,
@@ -150,60 +138,39 @@ class FakeMemoryService:
             ]
         return memories[:limit]
 
-    async def create_memory_confirmation(self, confirmation):
-        row = {
-            "id": f"confirmation-{self.next_confirmation_id}",
-            "status": "pending",
-            "confirmation_message_id": None,
-            **confirmation,
-        }
-        self.next_confirmation_id += 1
-        self.memory_confirmations.append(row)
-        return row
-
-    async def get_latest_pending_memory_confirmation(self, conversation_id):
-        pending = [
-            row
-            for row in self.memory_confirmations
-            if row.get("conversation_id") == conversation_id
-            and row.get("status") == "pending"
-        ]
-        return pending[-1] if pending else None
-
-    async def update_memory_confirmation(self, confirmation_id, **updates):
-        for row in self.memory_confirmations:
-            if row["id"] == confirmation_id:
-                row.update(updates)
-                return row
-        return None
-
-    async def confirm_memory_confirmation(
+    async def update_long_term_memory(
         self,
-        confirmation_id,
-        *,
-        applied_memory_id=None,
+        memory_id,
+        memory_type=None,
+        content=None,
+        importance=None,
+        active=None,
+        superseded_by=None,
+        confidence=None,
+        correction_group=None,
         metadata=None,
     ):
-        return await self.update_memory_confirmation(
-            confirmation_id,
-            status="confirmed",
-            applied_memory_id=applied_memory_id,
-            metadata=metadata,
-        )
-
-    async def reject_memory_confirmation(self, confirmation_id, *, metadata=None):
-        return await self.update_memory_confirmation(
-            confirmation_id,
-            status="rejected",
-            metadata=metadata,
-        )
-
-    async def fail_memory_confirmation(self, confirmation_id, *, metadata=None):
-        return await self.update_memory_confirmation(
-            confirmation_id,
-            status="failed",
-            metadata=metadata,
-        )
+        for memory in self.long_term_memory:
+            if memory["id"] != memory_id:
+                continue
+            if memory_type is not None:
+                memory["memory_type"] = memory_type
+            if content is not None:
+                memory["content"] = content
+            if importance is not None:
+                memory["importance"] = importance
+            if active is not None:
+                memory["active"] = active
+            if superseded_by is not None:
+                memory["superseded_by"] = superseded_by
+            if confidence is not None:
+                memory["confidence"] = confidence
+            if correction_group is not None:
+                memory["correction_group"] = correction_group
+            if metadata is not None:
+                memory["metadata"] = metadata
+            return memory
+        return None
 
     async def get_relevant_memories(self, query, limit=8):
         self.relevant_memory_queries.append({"query": query, "limit": limit})
@@ -213,31 +180,112 @@ class FakeMemoryService:
         self.structured_context_queries.append(query)
         return self.structured_context
 
+    async def create_plan(self, payload):
+        plan = {
+            "id": f"plan-{self.next_plan_id}",
+            "status": "active",
+            "active": True,
+            "created_at": "2026-05-11T00:00:00Z",
+            "updated_at": "2026-05-11T00:00:00Z",
+            **payload,
+        }
+        self.next_plan_id += 1
+        self.plans.append(plan)
+        self.created_plans.append(plan)
+        return plan
 
-class FakeMemoryExtractionService:
-    def __init__(self, should_fail=False, result=None):
-        self.should_fail = should_fail
-        self.result = result or []
-        self.calls = []
-
-    async def extract_and_save(
+    async def list_plans(
         self,
-        conversation_id,
-        user_message,
-        assistant_message,
-        brain_metadata=None,
+        *,
+        plan_type=None,
+        status=None,
+        active=True,
+        limit=50,
     ):
-        self.calls.append(
-            {
-                "conversation_id": conversation_id,
-                "user_message": user_message,
-                "assistant_message": assistant_message,
-                "brain_metadata": brain_metadata,
-            }
-        )
-        if self.should_fail:
-            raise RuntimeError("extraction failed")
-        return self.result
+        plans = self.plans
+        if plan_type is not None:
+            plans = [plan for plan in plans if plan.get("plan_type") == plan_type]
+        if status is not None:
+            plans = [plan for plan in plans if plan.get("status") == status]
+        if active is not None:
+            plans = [plan for plan in plans if plan.get("active", True) is active]
+        return plans[:limit]
+
+    async def update_plan(self, plan_id, **updates):
+        for plan in self.plans:
+            if plan["id"] == plan_id:
+                plan.update(updates)
+                plan["updated_at"] = "2026-05-11T00:00:00Z"
+                return plan
+        return None
+
+    async def list_plan_milestones(
+        self,
+        *,
+        plan_id=None,
+        status=None,
+        active=True,
+        limit=50,
+    ):
+        return []
+
+    async def create_commitment(self, payload):
+        commitment = {
+            "id": f"commitment-{self.next_commitment_id}",
+            "status": "open",
+            "active": True,
+            "created_at": "2026-05-11T00:00:00Z",
+            "updated_at": "2026-05-11T00:00:00Z",
+            **payload,
+        }
+        self.next_commitment_id += 1
+        self.commitments.append(commitment)
+        self.created_commitments.append(commitment)
+        return commitment
+
+    async def list_commitments(
+        self,
+        *,
+        commitment_type=None,
+        milestone_id=None,
+        status=None,
+        active=True,
+        limit=50,
+    ):
+        commitments = self.commitments
+        if commitment_type is not None:
+            commitments = [
+                commitment
+                for commitment in commitments
+                if commitment.get("commitment_type") == commitment_type
+            ]
+        if milestone_id is not None:
+            commitments = [
+                commitment
+                for commitment in commitments
+                if commitment.get("milestone_id") == milestone_id
+            ]
+        if status is not None:
+            commitments = [
+                commitment
+                for commitment in commitments
+                if commitment.get("status") == status
+            ]
+        if active is not None:
+            commitments = [
+                commitment
+                for commitment in commitments
+                if commitment.get("active", True) is active
+            ]
+        return commitments[:limit]
+
+    async def update_commitment(self, commitment_id, **updates):
+        for commitment in self.commitments:
+            if commitment["id"] == commitment_id:
+                commitment.update(updates)
+                commitment["updated_at"] = "2026-05-11T00:00:00Z"
+                return commitment
+        return None
 
 
 class FakeAccountabilityService:
@@ -298,165 +346,6 @@ class FakeMemoryCorrectionService:
             )
         )
         return FakeCorrectionReport(self.payload)
-
-
-class FakeMemoryCandidateService:
-    def __init__(self, pending=None, approved=None):
-        self.created = []
-        self.pending = pending or []
-        self.approved = approved or []
-        self.rejected = []
-        self.updated = []
-
-    async def create_candidate(self, request):
-        candidate = {
-            "id": f"candidate-{len(self.created) + 1}",
-            "candidate_type": request.candidate_type,
-            "payload": request.payload,
-            "risk_level": request.risk_level,
-            "status": "pending",
-            "preview": f"{request.candidate_type}: pending memory change",
-        }
-        self.created.append(candidate)
-        return candidate
-
-    async def list_candidates(
-        self,
-        *,
-        status=None,
-        source_conversation_id=None,
-        limit=20,
-        **kwargs,
-    ):
-        return self.pending[:limit]
-
-    async def approve_candidate(self, candidate_id, request):
-        for candidate in self.pending:
-            if candidate["id"] == candidate_id:
-                approved = {
-                    **candidate,
-                    "status": "applied",
-                    "applied_record_table": "entities",
-                    "applied_record_id": "entity-1",
-                    "verification": {
-                        "passed": True,
-                        "message": "Candidate applied and verified.",
-                        "remaining_conflicts": [],
-                        "applied_record": {
-                            "table": "entities",
-                            "id": "entity-1",
-                        },
-                    },
-                }
-                self.approved.append(approved)
-                return approved
-        raise AssertionError(f"unknown candidate {candidate_id}")
-
-    async def reject_candidate(self, candidate_id, request):
-        for candidate in self.pending:
-            if candidate["id"] == candidate_id:
-                rejected = {**candidate, "status": "rejected"}
-                self.rejected.append(rejected)
-                return rejected
-        raise AssertionError(f"unknown candidate {candidate_id}")
-
-    async def update_candidate(self, candidate_id, request):
-        for index, candidate in enumerate(self.pending):
-            if candidate["id"] == candidate_id:
-                payload = request.payload or candidate.get("payload") or {}
-                updated = {
-                    **candidate,
-                    "payload": payload,
-                    "reason": request.reason,
-                    "preview": f"{candidate['candidate_type']}: {payload.get('content') or payload.get('title') or payload.get('text')}",
-                }
-                self.pending[index] = updated
-                self.updated.append(updated)
-                return updated
-        raise AssertionError(f"unknown candidate {candidate_id}")
-
-    async def bulk_approve_candidates(self, request):
-        approved = []
-        skipped = []
-        for candidate in self.pending:
-            if request.candidate_ids and candidate["id"] not in request.candidate_ids:
-                continue
-            if candidate.get("risk_level") == "high" and not request.include_high_risk:
-                skipped.append(candidate)
-                continue
-            approved.append(await self.approve_candidate(candidate["id"], request))
-        return {"approved": approved, "rejected": [], "skipped": skipped}
-
-    async def bulk_reject_candidates(self, request):
-        rejected = [
-            await self.reject_candidate(candidate["id"], request)
-            for candidate in self.pending
-            if not request.candidate_ids or candidate["id"] in request.candidate_ids
-        ]
-        return {"approved": [], "rejected": rejected, "skipped": []}
-
-
-class DurableFakeMemoryCandidateService(FakeMemoryCandidateService):
-    def __init__(self, memory_service, pending=None):
-        super().__init__(pending=pending)
-        self.memory_service = memory_service
-
-    async def approve_candidate(self, candidate_id, request):
-        for candidate in self.pending:
-            if candidate["id"] != candidate_id:
-                continue
-
-            payload = candidate.get("payload") or {}
-            record = await self.memory_service.save_long_term_memory(
-                memory_type=payload["memory_type"],
-                content=payload["content"],
-                source_conversation_id=candidate.get("source_conversation_id"),
-                source_message_id=candidate.get("source_message_id"),
-                importance=int(payload.get("importance") or 4),
-            )
-            approved = {
-                **candidate,
-                "status": "applied",
-                "applied_record_table": "long_term_memory",
-                "applied_record_id": record["id"],
-                "verification": {
-                    "passed": True,
-                    "message": "Candidate applied and verified.",
-                    "applied_record": {
-                        "table": "long_term_memory",
-                        "id": record["id"],
-                    },
-                },
-            }
-            self.approved.append(approved)
-            return approved
-        raise AssertionError(f"unknown candidate {candidate_id}")
-
-
-class BlockingMemoryExtractionService:
-    def __init__(self):
-        self.calls = []
-        self.started = asyncio.Event()
-        self.release = asyncio.Event()
-
-    async def extract_and_save(
-        self,
-        conversation_id,
-        user_message,
-        assistant_message,
-        brain_metadata=None,
-    ):
-        self.calls.append(
-            {
-                "conversation_id": conversation_id,
-                "user_message": user_message,
-                "assistant_message": assistant_message,
-                "brain_metadata": brain_metadata,
-            }
-        )
-        self.started.set()
-        await self.release.wait()
-        return []
 
 
 class FakeUpload:

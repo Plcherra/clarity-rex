@@ -2,12 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.dependencies import get_memory_service
 from app.models.conversation import ConversationResponse, MessageResponse
-from app.services.memory_intent_service import MemoryIntentService
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
-memory_intent_service = MemoryIntentService()
 
 
 @router.get("", response_model=list[ConversationResponse])
@@ -82,8 +80,4 @@ def _public_conversation(conversation: dict) -> dict:
 
 
 def _public_message(message: dict) -> dict:
-    public_message = dict(message)
-    public_message["content"] = memory_intent_service.strip_internal_markers(
-        str(public_message.get("content") or "")
-    )
-    return public_message
+    return dict(message)

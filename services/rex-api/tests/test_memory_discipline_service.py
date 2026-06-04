@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.models.memory_discipline import (
-    MemoryCandidateKind,
+    MemoryRecordKind,
     MemoryDisciplineAction,
     MemoryDisciplineCandidate,
     MemoryDisciplineDecision,
@@ -144,7 +144,7 @@ def _update(rows, row_id, updates):
 def test_memory_discipline_models_validate_action_values():
     decision = MemoryDisciplineDecision(
         action=MemoryDisciplineAction.CREATE_PLAN,
-        candidate_kind=MemoryCandidateKind.PLAN,
+        record_kind=MemoryRecordKind.PLAN,
         reason="new durable plan",
     )
 
@@ -153,7 +153,7 @@ def test_memory_discipline_models_validate_action_values():
     with pytest.raises(ValidationError):
         MemoryDisciplineDecision(
             action="make_random_thing",
-            candidate_kind=MemoryCandidateKind.PLAN,
+            record_kind=MemoryRecordKind.PLAN,
             reason="invalid",
         )
 
@@ -180,7 +180,7 @@ async def test_gather_context_retrieves_related_active_records():
         ]
     )
     candidate = MemoryDisciplineCandidate(
-        kind=MemoryCandidateKind.PLAN,
+        kind=MemoryRecordKind.PLAN,
         payload={
             "plan_type": "finance",
             "title": "Reach 5k monthly income",
@@ -226,7 +226,7 @@ async def test_plan_candidate_routes_to_milestone_under_existing_top_level_plan(
         }
     )
     candidate = MemoryDisciplineCandidate(
-        kind=MemoryCandidateKind.PLAN,
+        kind=MemoryRecordKind.PLAN,
         payload={
             "plan_type": "finance",
             "title": "Reach $5k monthly income",
@@ -239,7 +239,7 @@ async def test_plan_candidate_routes_to_milestone_under_existing_top_level_plan(
     decision = await MemoryDisciplineService(repo).decide(candidate)
 
     assert decision.action == MemoryDisciplineAction.CREATE_MILESTONE
-    assert decision.candidate_kind == MemoryCandidateKind.PLAN_MILESTONE
+    assert decision.record_kind == MemoryRecordKind.PLAN_MILESTONE
     assert decision.payload["plan_id"] == "plan-europe"
     assert decision.metadata["parent_plan_id"] == "plan-europe"
 
@@ -259,7 +259,7 @@ async def test_plan_candidate_small_step_routes_to_commitment():
         }
     )
     candidate = MemoryDisciplineCandidate(
-        kind=MemoryCandidateKind.PLAN,
+        kind=MemoryRecordKind.PLAN,
         payload={
             "plan_type": "dating",
             "title": "Confirm Monday dinner time with Melissa",
@@ -272,7 +272,7 @@ async def test_plan_candidate_small_step_routes_to_commitment():
     decision = await MemoryDisciplineService(repo).decide(candidate)
 
     assert decision.action == MemoryDisciplineAction.CREATE_COMMITMENT
-    assert decision.candidate_kind == MemoryCandidateKind.COMMITMENT
+    assert decision.record_kind == MemoryRecordKind.COMMITMENT
     assert decision.payload["plan_id"] == "plan-melissa"
     assert decision.payload["commitment_type"] == "relationship"
 
@@ -291,7 +291,7 @@ async def test_decide_updates_strong_duplicate_same_kind_records():
     )
     service = MemoryDisciplineService(repo)
     candidate = MemoryDisciplineCandidate(
-        kind=MemoryCandidateKind.PLAN,
+        kind=MemoryRecordKind.PLAN,
         payload={
             "plan_type": "dating",
             "title": "Ask Melissa out for dinner",
@@ -304,7 +304,7 @@ async def test_decide_updates_strong_duplicate_same_kind_records():
     assert decision.action == MemoryDisciplineAction.UPDATE_PLAN
     assert decision.target_id == "plan-melissa"
     assert decision.metadata["discipline_version"] == 1
-    assert decision.metadata["source_candidate_kind"] == "plan"
+    assert decision.metadata["source_record_kind"] == "plan"
 
 
 @pytest.mark.asyncio
@@ -322,7 +322,7 @@ async def test_apply_decision_writes_standard_metadata_on_updates():
     service = MemoryDisciplineService(repo)
     decision = MemoryDisciplineDecision(
         action=MemoryDisciplineAction.UPDATE_PLAN,
-        candidate_kind=MemoryCandidateKind.PLAN,
+        record_kind=MemoryRecordKind.PLAN,
         target_table="plans",
         target_id="plan-1",
         payload={"description": "Ship Rex and polish voice mode."},
@@ -343,7 +343,7 @@ async def test_apply_decision_writes_standard_metadata_on_updates():
             "merged_from_id": None,
             "archived_by_correction_id": None,
             "canonical_entity_id": None,
-            "source_candidate_kind": "plan",
+            "source_record_kind": "plan",
             "requires_confirmation": False,
         },
     )
@@ -361,7 +361,7 @@ async def test_apply_decision_creates_records_with_standard_metadata():
     repo = FakeMemoryDisciplineRepository()
     service = MemoryDisciplineService(repo)
     candidate = MemoryDisciplineCandidate(
-        kind=MemoryCandidateKind.COMMITMENT,
+        kind=MemoryRecordKind.COMMITMENT,
         payload={
             "commitment_type": "work",
             "title": "Ship small piece",
@@ -395,7 +395,7 @@ async def test_apply_decision_normalizes_obsolete_entity_references():
     service = MemoryDisciplineService(repo)
     decision = MemoryDisciplineDecision(
         action=MemoryDisciplineAction.CREATE_PLAN,
-        candidate_kind=MemoryCandidateKind.PLAN,
+        record_kind=MemoryRecordKind.PLAN,
         payload={
             "plan_type": "career",
             "title": "Launch Flowfirst",

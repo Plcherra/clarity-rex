@@ -104,17 +104,17 @@ def test_memory_observer_logs_ids_and_error_class_without_private_content():
     observer = MemoryOperationObserver(logger=logger)
 
     payload = observer.log_failure(
-        operation="approve_memory_candidate",
-        candidate_id="candidate-1",
+        operation="save_memory",
+        memory_id="memory-1",
         error=RuntimeError("secret memory body should not be logged"),
         status_code=503,
     )
 
     assert payload == {
-        "operation": "approve_memory_candidate",
+        "operation": "save_memory",
         "status": "failed",
         "error_class": "RuntimeError",
-        "candidate_id": "candidate-1",
+        "memory_id": "memory-1",
         "status_code": 503,
     }
     rendered = json.dumps(payload) + "\n" + "\n".join(logger.records)

@@ -32,7 +32,6 @@ class FakeMemoryService:
         self.entities = [_entity_row()]
         self.entity_events = [_entity_event_row()]
         self.memories = [_memory_row()]
-        self.memory_candidates = [_memory_candidate_row()]
 
     def _raise_if_configured(self):
         if self.error is not None:
@@ -73,12 +72,6 @@ class FakeMemoryService:
         self.calls.append(("memories", kwargs))
         return self.memories
 
-    async def list_memory_candidates(self, **kwargs):
-        self._raise_if_configured()
-        self.calls.append(("memory_candidates", kwargs))
-        return self.memory_candidates
-
-
 class EmptyMemoryService(FakeMemoryService):
     def __init__(self):
         super().__init__()
@@ -89,7 +82,6 @@ class EmptyMemoryService(FakeMemoryService):
         self.entities = []
         self.entity_events = []
         self.memories = []
-        self.memory_candidates = []
 
 
 class FakeAccountabilityService:
@@ -245,14 +237,10 @@ def test_overview_returns_backing_context_and_filtered_buckets(client):
     assert payload["metadata"]["completed_milestone_count"] == 1
     assert payload["metadata"]["active_plan_count"] == 1
     assert payload["metadata"]["open_task_count"] == 1
-    assert payload["metadata"]["pending_memory_candidate_count"] == 1
     assert [item["id"] for item in payload["open_commitments"]] == ["commitment-open"]
     assert [item["id"] for item in payload["open_milestones"]] == ["milestone-open"]
     assert [item["id"] for item in payload["completed_milestones"]] == [
         "milestone-done"
-    ]
-    assert [item["id"] for item in payload["pending_memory_candidates"]] == [
-        "candidate-1"
     ]
     assert payload["plan_hierarchy"] == [
         {
@@ -301,7 +289,6 @@ def test_empty_overview_returns_empty_lists(client):
     assert payload["open_milestones"] == []
     assert payload["completed_milestones"] == []
     assert payload["plan_hierarchy"] == []
-    assert payload["pending_memory_candidates"] == []
     assert payload["duplicate_warnings"] == []
 
 
@@ -629,14 +616,3 @@ def _memory_row() -> dict:
         "importance": 4,
     }
 
-
-def _memory_candidate_row() -> dict:
-    return {
-        "id": "candidate-1",
-        "candidate_type": "plan_update",
-        "status": "pending",
-        "risk_level": "medium",
-        "preview": "Update relocation plan description.",
-        "reason": "User correction requires confirmation.",
-        "active": True,
-    }

@@ -6,14 +6,12 @@ class MemorySearchAndFilters extends StatelessWidget {
   const MemorySearchAndFilters({
     required this.controller,
     required this.selectedFilter,
-    required this.pendingCount,
     required this.onFilterSelected,
     super.key,
   });
 
   final TextEditingController controller;
   final MemoryQuickFilter selectedFilter;
-  final int pendingCount;
   final ValueChanged<MemoryQuickFilter>? onFilterSelected;
 
   @override
@@ -28,7 +26,7 @@ class MemorySearchAndFilters extends StatelessWidget {
           controller: controller,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: 'Search memory',
+            hintText: 'Search what Rex knows',
             prefixIcon: const Icon(Icons.search_rounded),
             suffixIcon: controller.text.isEmpty
                 ? null
@@ -60,7 +58,7 @@ class MemorySearchAndFilters extends StatelessWidget {
           children: [
             for (final filter in MemoryQuickFilter.values)
               ChoiceChip(
-                label: Text(filter.label(pendingCount)),
+                label: Text(filter.label),
                 selected: selectedFilter == filter,
                 onSelected: onFilterSelected == null
                     ? null
@@ -107,7 +105,7 @@ class SavedMemoryHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'These are approved facts, preferences, people, plans, and rules Rex can use in future conversations.',
+                    'These are saved facts, preferences, people, plans, and rules Rex can use in future conversations.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -164,6 +162,38 @@ class MemoryEmptyState extends StatelessWidget {
   }
 
   String get _emptyBody {
-    return 'When you approve something Rex should remember, it will appear here.';
+    return 'When Rex saves something from chat or voice, it will appear here.';
+  }
+}
+
+class MemoryFilteredEmptyState extends StatelessWidget {
+  const MemoryFilteredEmptyState({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.search_off_rounded, color: scheme.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text('No matching information', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              'Try another search or filter.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

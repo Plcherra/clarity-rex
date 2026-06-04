@@ -3,16 +3,12 @@ class FakeMemoryTurnStore:
         self,
         *,
         fail_save_memory=False,
-        fail_confirmation_create=False,
     ):
         self.fail_save_memory = fail_save_memory
-        self.fail_confirmation_create = fail_confirmation_create
         self.messages = []
         self.long_term_memory = []
-        self.memory_confirmations = []
         self.next_message_id = 1
         self.next_memory_id = 1
-        self.next_confirmation_id = 1
 
     async def save_message(self, conversation_id, role, content):
         message = {
@@ -74,59 +70,36 @@ class FakeMemoryTurnStore:
             ]
         return memories[:limit]
 
-    async def create_memory_confirmation(self, confirmation):
-        if self.fail_confirmation_create:
-            raise RuntimeError("confirmation write failed")
-        row = {
-            "id": f"confirmation-{self.next_confirmation_id}",
-            "status": "pending",
-            "confirmation_message_id": None,
-            **confirmation,
-        }
-        self.next_confirmation_id += 1
-        self.memory_confirmations.append(row)
-        return row
-
-    async def get_latest_pending_memory_confirmation(self, conversation_id):
-        pending = [
-            row
-            for row in self.memory_confirmations
-            if row.get("conversation_id") == conversation_id
-            and row.get("status") == "pending"
-        ]
-        return pending[-1] if pending else None
-
-    async def update_memory_confirmation(self, confirmation_id, **updates):
-        for row in self.memory_confirmations:
-            if row["id"] == confirmation_id:
-                row.update(updates)
-                return row
-        return None
-
-    async def confirm_memory_confirmation(
+    async def update_long_term_memory(
         self,
-        confirmation_id,
-        *,
-        applied_memory_id=None,
+        memory_id,
+        memory_type=None,
+        content=None,
+        importance=None,
+        active=None,
+        superseded_by=None,
+        confidence=None,
+        correction_group=None,
         metadata=None,
     ):
-        return await self.update_memory_confirmation(
-            confirmation_id,
-            status="confirmed",
-            applied_memory_id=applied_memory_id,
-            metadata=metadata,
-        )
-
-    async def reject_memory_confirmation(self, confirmation_id, *, metadata=None):
-        return await self.update_memory_confirmation(
-            confirmation_id,
-            status="rejected",
-            metadata=metadata,
-        )
-
-    async def fail_memory_confirmation(self, confirmation_id, *, metadata=None):
-        return await self.update_memory_confirmation(
-            confirmation_id,
-            status="failed",
-            metadata=metadata,
-        )
+        for memory in self.long_term_memory:
+            if memory["id"] != memory_id:
+                continue
+            if memory_type is not None:
+                memory["memory_type"] = memory_type
+            if content is not None:
+                memory["content"] = content
+            if importance is not None:
+                memory["importance"] = importance
+            if active is not None:
+                memory["active"] = active
+            if superseded_by is not None:
+                memory["superseded_by"] = superseded_by
+            if confidence is not None:
+                memory["confidence"] = confidence
+            if correction_group is not None:
+                memory["correction_group"] = correction_group
+            if metadata is not None:
+                memory["metadata"] = metadata
+            return memory
+        return None

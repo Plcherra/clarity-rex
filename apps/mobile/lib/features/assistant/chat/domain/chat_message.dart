@@ -9,7 +9,6 @@ class ChatMessage {
     required this.content,
     this.timestamp,
     this.isStreaming = false,
-    this.memoryCandidates = const [],
     this.clarityActions = const [],
   });
 
@@ -18,7 +17,6 @@ class ChatMessage {
   final String content;
   final DateTime? timestamp;
   final bool isStreaming;
-  final List<MemoryCandidateCard> memoryCandidates;
   final List<ClarityActionCard> clarityActions;
 
   bool get isUser => role == ChatMessageRole.user;
@@ -29,7 +27,6 @@ class ChatMessage {
     String? content,
     DateTime? timestamp,
     bool? isStreaming,
-    List<MemoryCandidateCard>? memoryCandidates,
     List<ClarityActionCard>? clarityActions,
   }) {
     return ChatMessage(
@@ -38,7 +35,6 @@ class ChatMessage {
       content: content ?? this.content,
       timestamp: timestamp ?? this.timestamp,
       isStreaming: isStreaming ?? this.isStreaming,
-      memoryCandidates: memoryCandidates ?? this.memoryCandidates,
       clarityActions: clarityActions ?? this.clarityActions,
     );
   }
@@ -99,7 +95,7 @@ class ClarityActionCard {
   bool get canDismiss => isPending || isFailed;
   String get actionLabel => action.memoryRecordLabel;
   String get riskLabel => memoryRiskLevelLabel(riskLevel);
-  String get statusLabel => memoryCandidateStatusLabel(status);
+  String get statusLabel => memoryActionStatusLabel(status);
 
   ClarityActionCard copyWith({
     String? id,
@@ -125,188 +121,10 @@ class ClarityActionCard {
   }
 }
 
-class MemoryCandidateCard {
-  const MemoryCandidateCard({
-    required this.id,
-    required this.candidateType,
-    required this.status,
-    required this.riskLevel,
-    required this.preview,
-    required this.expectedAction,
-    required this.requiresExplicitConfirmation,
-    this.correctionOldValue,
-    this.correctionNewValue,
-    this.correctionTargetHint,
-    this.reason,
-    this.sourceConversationId,
-    this.sourceMessageId,
-    this.verificationPassed,
-    this.verificationMessage,
-    this.remainingConflictCount = 0,
-  });
-
-  final String id;
-  final String candidateType;
-  final String status;
-  final String riskLevel;
-  final String preview;
-  final String expectedAction;
-  final bool requiresExplicitConfirmation;
-  final String? correctionOldValue;
-  final String? correctionNewValue;
-  final String? correctionTargetHint;
-  final String? reason;
-  final String? sourceConversationId;
-  final String? sourceMessageId;
-  final bool? verificationPassed;
-  final String? verificationMessage;
-  final int remainingConflictCount;
-
-  factory MemoryCandidateCard.fromJson(Map<String, dynamic> json) {
-    final verification = json['verification'];
-    final verificationMap = verification is Map<String, dynamic>
-        ? verification
-        : const <String, dynamic>{};
-    final correctionValues = _correctionValues(json);
-    return MemoryCandidateCard(
-      id: _text(json['id']),
-      candidateType: _text(json['candidate_type']),
-      status: _text(json['status'], fallback: 'pending'),
-      riskLevel: _text(json['risk_level'], fallback: 'medium'),
-      preview: _text(json['preview'], fallback: 'Pending memory change'),
-      expectedAction: _text(
-        json['expected_action'],
-        fallback: 'Apply pending memory change after confirmation',
-      ),
-      requiresExplicitConfirmation:
-          json['requires_explicit_confirmation'] == true,
-      correctionOldValue: correctionValues.oldValue,
-      correctionNewValue: correctionValues.newValue,
-      correctionTargetHint: correctionValues.targetHint,
-      reason:
-          _optionalText(json['review_reason']) ??
-          _optionalText(json['reason']) ??
-          _optionalText(json['rationale']),
-      sourceConversationId: _optionalText(json['source_conversation_id']),
-      sourceMessageId: _optionalText(json['source_message_id']),
-      verificationPassed: verificationMap['passed'] is bool
-          ? verificationMap['passed'] as bool
-          : null,
-      verificationMessage: verificationMap['message'] is String
-          ? verificationMap['message'] as String
-          : null,
-      remainingConflictCount: verificationMap['remaining_conflict_count'] is int
-          ? verificationMap['remaining_conflict_count'] as int
-          : 0,
-    );
-  }
-
-  bool get isPending => status == 'pending';
-  bool get isApplied => status == 'applied';
-  bool get isRejected => status == 'rejected';
-  bool get isFailed => status == 'failed';
-  bool get isSkipped => status == 'skipped';
-  bool get isHighRisk => riskLevel == 'high';
-  bool get isCorrection => candidateType == 'correction';
-  bool get canApprove => isPending;
-  bool get canReject => isPending;
-  bool get canEdit => isPending;
-  String get candidateTypeLabel => memoryCandidateTypeLabel(candidateType);
-  String get riskLabel => memoryRiskLevelLabel(riskLevel);
-  String get statusLabel => memoryCandidateStatusLabel(status);
-  String get previewLabel {
-    final correction = correctionPreviewLabel(
-      oldValue: correctionOldValue,
-      newValue: correctionNewValue,
-      targetHint: correctionTargetHint,
-    );
-    return correction ?? memoryPreviewWithHumanType(preview);
-  }
-
-  String get expectedActionLabel => memoryExpectedActionLabel(expectedAction);
-  String get reviewTitleLabel =>
-      memoryReviewTitleLabel(candidateType: candidateType, status: status);
-  String? get reasonLabel {
-    final text = reason?.trim();
-    return text == null || text.isEmpty ? null : text;
-  }
-
-  String? get sourceLabel {
-    final conversation = sourceConversationId?.trim();
-    final message = sourceMessageId?.trim();
-    if ((conversation == null || conversation.isEmpty) &&
-        (message == null || message.isEmpty)) {
-      return null;
-    }
-    if (conversation != null && conversation.isNotEmpty) {
-      return 'From recent chat';
-    }
-    return 'From recent message';
-  }
-
-  String get statusDetail {
-    if (isApplied) {
-      return 'Saved. Rex can use this in future conversations.';
-    }
-    if (isRejected) {
-      return 'Not saved. Rex will ignore this suggestion.';
-    }
-    if (isFailed) {
-      return 'Could not save this. Review it before trying again.';
-    }
-    if (isSkipped) {
-      return 'Skipped. What Rex knows was not changed.';
-    }
-    if (isHighRisk || requiresExplicitConfirmation) {
-      if (isCorrection) {
-        return 'Rex will wait for your approval before changing saved memory.';
-      }
-      return 'Review carefully before changing what Rex knows.';
-    }
-    return 'Not saved yet. Save only if Rex should remember this.';
-  }
-}
-
-typedef _CorrectionValues = ({
-  String? oldValue,
-  String? newValue,
-  String? targetHint,
-});
-
 String _text(Object? value, {String fallback = ''}) {
   if (value == null) {
     return fallback;
   }
   final text = value.toString().trim();
   return text.isEmpty ? fallback : text;
-}
-
-String? _optionalText(Object? value) {
-  final text = _text(value);
-  return text.isEmpty ? null : text;
-}
-
-_CorrectionValues _correctionValues(Map<String, dynamic> json) {
-  final payloadPreview = _map(json['payload_preview']);
-  final payload = _map(json['payload']);
-  final previewIntent = _map(payloadPreview['intent']);
-  final payloadIntent = _map(payload['intent']);
-  return (
-    oldValue:
-        _optionalText(json['old_value']) ??
-        _optionalText(previewIntent['old_value']) ??
-        _optionalText(payloadIntent['old_value']),
-    newValue:
-        _optionalText(json['new_value']) ??
-        _optionalText(previewIntent['new_value']) ??
-        _optionalText(payloadIntent['new_value']),
-    targetHint:
-        _optionalText(json['target_hint']) ??
-        _optionalText(previewIntent['target_hint']) ??
-        _optionalText(payloadIntent['target_hint']),
-  );
-}
-
-Map<String, dynamic> _map(Object? value) {
-  return value is Map<String, dynamic> ? value : const {};
 }

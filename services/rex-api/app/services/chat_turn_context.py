@@ -5,6 +5,7 @@ from fastapi import UploadFile
 
 from app.services.chat_context_service import ChatContextService
 from app.services.file_service import FileService
+from app.services.rex_intent_router import RexIntentDecision
 
 
 class ConversationNotFoundError(Exception):
@@ -68,7 +69,7 @@ class ChatTurnContext:
     long_term_memory: list[dict]
     structured_context: dict
     time_context: dict
-    accountability_signals: dict
+    accountability_signals: list
     user_message: dict
 
 
@@ -90,6 +91,7 @@ class ChatTurnContextService:
         message: str,
         conversation_id: Optional[str],
         file: Optional[UploadFile],
+        intent_decision: Optional[RexIntentDecision] = None,
     ) -> ChatTurnContext:
         conversation_id = await self.existing_conversation_id(conversation_id)
         file_text = await self.file_service.read_text_file(file) if file else None
@@ -101,6 +103,7 @@ class ChatTurnContextService:
         ) = await self.chat_context_service.fetch_prompt_context(
             message=message,
             conversation_id=conversation_id,
+            intent_decision=intent_decision,
         )
 
         if conversation_id is None:
@@ -109,12 +112,16 @@ class ChatTurnContextService:
         time_context = self.chat_context_service.current_time_context(
             conversation_history
         )
-        accountability_signals = await self.chat_context_service.accountability_signals(
-            message=message,
-            time_context=time_context,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-        )
+        accountability_signals = []
+        if self.chat_context_service.should_analyze_accountability(intent_decision):
+            accountability_signals = (
+                await self.chat_context_service.accountability_signals(
+                    message=message,
+                    time_context=time_context,
+                    long_term_memory=long_term_memory,
+                    structured_context=structured_context,
+                )
+            )
         user_message = await self.memory_service.save_message(
             conversation_id,
             "user",

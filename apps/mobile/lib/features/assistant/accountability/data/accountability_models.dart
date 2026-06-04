@@ -41,7 +41,6 @@ class AccountabilityOverview {
     required this.openMilestones,
     required this.completedMilestones,
     required this.planHierarchy,
-    required this.pendingMemoryCandidates,
     required this.duplicateWarnings,
     required this.metadata,
   });
@@ -64,10 +63,6 @@ class AccountabilityOverview {
         PlanMilestone.fromJson,
       ),
       planHierarchy: _list(json['plan_hierarchy'], PlanHierarchyItem.fromJson),
-      pendingMemoryCandidates: _list(
-        json['pending_memory_candidates'],
-        PendingMemoryCandidate.fromJson,
-      ),
       duplicateWarnings: _list(
         json['duplicate_warnings'],
         DuplicateWarning.fromJson,
@@ -86,7 +81,6 @@ class AccountabilityOverview {
   final List<PlanMilestone> openMilestones;
   final List<PlanMilestone> completedMilestones;
   final List<PlanHierarchyItem> planHierarchy;
-  final List<PendingMemoryCandidate> pendingMemoryCandidates;
   final List<DuplicateWarning> duplicateWarnings;
   final Map<String, dynamic> metadata;
 
@@ -98,7 +92,6 @@ class AccountabilityOverview {
       openMilestones.isEmpty &&
       completedMilestones.isEmpty &&
       planHierarchy.isEmpty &&
-      pendingMemoryCandidates.isEmpty &&
       duplicateWarnings.isEmpty;
 
   int get activePlanCount =>
@@ -112,10 +105,6 @@ class AccountabilityOverview {
 
   int get openTaskCount =>
       _int(metadata['open_task_count']) ?? openCommitments.length;
-
-  int get pendingMemoryCandidateCount =>
-      _int(metadata['pending_memory_candidate_count']) ??
-      pendingMemoryCandidates.length;
 }
 
 class AccountabilitySignal {
@@ -320,43 +309,6 @@ class PlanHierarchyItem {
   final List<PlanMilestone> completedMilestones;
   final List<Commitment> openCommitments;
   final Map<String, dynamic> counts;
-}
-
-class PendingMemoryCandidate {
-  const PendingMemoryCandidate({
-    required this.id,
-    required this.candidateType,
-    required this.status,
-    required this.riskLevel,
-    required this.preview,
-    required this.reason,
-  });
-
-  factory PendingMemoryCandidate.fromJson(Map<String, dynamic> json) {
-    return PendingMemoryCandidate(
-      id: _string(json['id']) ?? '',
-      candidateType: _string(json['candidate_type']) ?? 'memory_update',
-      status: _string(json['status']) ?? 'pending',
-      riskLevel: _string(json['risk_level']) ?? 'medium',
-      preview:
-          _string(json['preview']) ??
-          _string(json['proposed_summary']) ??
-          'Pending memory change',
-      reason: _string(json['reason']) ?? _string(json['rationale']) ?? '',
-    );
-  }
-
-  final String id;
-  final String candidateType;
-  final String status;
-  final String riskLevel;
-  final String preview;
-  final String reason;
-
-  String get candidateTypeLabel => memoryCandidateTypeLabel(candidateType);
-  String get statusLabel => memoryCandidateStatusLabel(status);
-  String get riskLabel => memoryRiskLevelLabel(riskLevel);
-  String get previewLabel => memoryPreviewWithHumanType(preview);
 }
 
 class DuplicateWarning {

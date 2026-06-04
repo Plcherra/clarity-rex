@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 
 from app.dependencies import get_memory_service
 from app.main import app
-from app.services.memory_intent_service import MemoryIntentService, SimpleMemoryIntent
 from app.services.memory_service import MemoryServiceError
 
 
@@ -139,37 +138,6 @@ def test_get_conversation_messages(client):
     assert len(data) == 2
     assert data[0]["role"] == "user"
     assert data[1]["role"] == "assistant"
-
-
-def test_conversation_routes_hide_internal_memory_confirmation_markers(client):
-    marker_service = MemoryIntentService()
-    marked_content = marker_service.with_confirmation_marker(
-        "So your mom's birthday is June 18, correct?",
-        SimpleMemoryIntent(
-            memory_type="personal_fact",
-            content="User's mom's birthday is June 18.",
-            importance=5,
-            confirmation_question="So your mom's birthday is June 18, correct?",
-        ),
-    )
-    fake_memory_service = FakeConversationMemoryService()
-    fake_memory_service.conversations[0]["last_message"]["content"] = marked_content
-    fake_memory_service.messages["conversation-1"][1]["content"] = marked_content
-    override_memory_service(fake_memory_service)
-
-    list_response = client.get("/conversations")
-    messages_response = client.get("/conversations/conversation-1/messages")
-
-    assert list_response.status_code == 200
-    assert messages_response.status_code == 200
-    assert list_response.json()[0]["last_message"]["content"] == (
-        "So your mom's birthday is June 18, correct?"
-    )
-    assert messages_response.json()[1]["content"] == (
-        "So your mom's birthday is June 18, correct?"
-    )
-    assert "rex_memory_confirmation" not in str(list_response.json())
-    assert "rex_memory_confirmation" not in str(messages_response.json())
 
 
 def test_get_conversation_messages_returns_404_for_missing_conversation(client):

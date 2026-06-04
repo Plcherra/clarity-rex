@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:clarity/features/assistant/chat/domain/chat_message.dart';
 import 'package:clarity/features/assistant/chat/presentation/widgets/chat_bubble_effects.dart';
-import 'package:clarity/features/assistant/chat/presentation/widgets/chat_memory_candidate_cards.dart';
 
 /// A single chat line: assistant (left) or user (right).
 class ChatMessageBubble extends StatelessWidget {
@@ -12,13 +11,7 @@ class ChatMessageBubble extends StatelessWidget {
     this.isUser = false,
     this.isLoading = false,
     this.isStreaming = false,
-    this.memoryCandidates = const [],
     this.clarityActions = const [],
-    this.onApproveCandidate,
-    this.onRejectCandidate,
-    this.onApproveAllCandidates,
-    this.onRejectAllCandidates,
-    this.onEditCandidate,
     this.onConfirmClarityAction,
     this.onDismissClarityAction,
   });
@@ -27,13 +20,7 @@ class ChatMessageBubble extends StatelessWidget {
   final bool isUser;
   final bool isLoading;
   final bool isStreaming;
-  final List<MemoryCandidateCard> memoryCandidates;
   final List<ClarityActionCard> clarityActions;
-  final ValueChanged<MemoryCandidateCard>? onApproveCandidate;
-  final ValueChanged<MemoryCandidateCard>? onRejectCandidate;
-  final VoidCallback? onApproveAllCandidates;
-  final VoidCallback? onRejectAllCandidates;
-  final ValueChanged<MemoryCandidateCard>? onEditCandidate;
   final ValueChanged<ClarityActionCard>? onConfirmClarityAction;
   final ValueChanged<ClarityActionCard>? onDismissClarityAction;
 
@@ -118,17 +105,6 @@ class ChatMessageBubble extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              if (!isUser && memoryCandidates.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                ChatMemoryCandidateCards(
-                                  candidates: memoryCandidates,
-                                  onApprove: onApproveCandidate,
-                                  onReject: onRejectCandidate,
-                                  onApproveAll: onApproveAllCandidates,
-                                  onRejectAll: onRejectAllCandidates,
-                                  onEdit: onEditCandidate,
-                                ),
-                              ],
                               if (!isUser && clarityActions.isNotEmpty) ...[
                                 const SizedBox(height: 12),
                                 _ClarityActionCards(

@@ -3,17 +3,14 @@ from typing import Optional
 from app.config import Settings, get_settings
 from app.services.conversation_repository import ConversationRepository
 from app.services.long_term_memory_repository import LongTermMemoryRepository
-from app.services.memory_confirmation_facade import MemoryConfirmationFacade
-from app.services.memory_confirmation_repository import MemoryConfirmationRepository
-from app.services.memory_candidate_repository import MemoryCandidateRepository
-from app.services.memory_candidate_review_session_facade import MemoryCandidateReviewSessionFacade
+from app.services.memory_correction_repository import MemoryCorrectionRepository
 from app.services.memory_errors import MemoryServiceError
 from app.services.memory_retrieval_service import MemoryRetrievalService
 from app.services.structured_memory_repository import StructuredMemoryRepository
 from app.services.supabase_memory_transport import SupabaseMemoryTransport
 
 
-class SupabaseMemoryService(SupabaseMemoryTransport, MemoryConfirmationFacade, MemoryCandidateReviewSessionFacade):
+class SupabaseMemoryService(SupabaseMemoryTransport):
     def __init__(
         self,
         settings: Optional[Settings] = None,
@@ -27,8 +24,7 @@ class SupabaseMemoryService(SupabaseMemoryTransport, MemoryConfirmationFacade, M
         self.long_term_memory_repository = LongTermMemoryRepository(self)
         self.memory_retrieval_service = MemoryRetrievalService(self)
         self.structured_memory_repository = StructuredMemoryRepository(self)
-        self.memory_candidate_repository = MemoryCandidateRepository(self)
-        self.memory_confirmation_repository = MemoryConfirmationRepository(self)
+        self.memory_correction_repository = MemoryCorrectionRepository(self)
 
     def _get_conversation_repository(self) -> ConversationRepository:
         repository = getattr(self, "conversation_repository", None)
@@ -58,11 +54,11 @@ class SupabaseMemoryService(SupabaseMemoryTransport, MemoryConfirmationFacade, M
             self.structured_memory_repository = repository
         return repository
 
-    def _get_memory_candidate_repository(self) -> MemoryCandidateRepository:
-        repository = getattr(self, "memory_candidate_repository", None)
+    def _get_memory_correction_repository(self) -> MemoryCorrectionRepository:
+        repository = getattr(self, "memory_correction_repository", None)
         if repository is None:
-            repository = MemoryCandidateRepository(self)
-            self.memory_candidate_repository = repository
+            repository = MemoryCorrectionRepository(self)
+            self.memory_correction_repository = repository
         return repository
 
     async def create_conversation(self) -> str:
@@ -232,7 +228,7 @@ class SupabaseMemoryService(SupabaseMemoryTransport, MemoryConfirmationFacade, M
         )
 
     async def create_memory_correction(self, correction: dict) -> dict:
-        return await self._get_memory_candidate_repository().create_memory_correction(
+        return await self._get_memory_correction_repository().create_memory_correction(
             correction,
         )
 
@@ -244,48 +240,12 @@ class SupabaseMemoryService(SupabaseMemoryTransport, MemoryConfirmationFacade, M
         target_table: Optional[str] = None,
         target_id: Optional[str] = None,
     ) -> list[dict]:
-        return await self._get_memory_candidate_repository().list_memory_corrections(
+        return await self._get_memory_correction_repository().list_memory_corrections(
             limit=limit,
             correction_type=correction_type,
             applied=applied,
             target_table=target_table,
             target_id=target_id,
-        )
-
-    async def create_memory_candidate(self, candidate: dict) -> dict:
-        return await self._get_memory_candidate_repository().create_memory_candidate(
-            candidate,
-        )
-
-    async def list_memory_candidates(
-        self,
-        limit: int = 50,
-        candidate_type: Optional[str] = None,
-        status: Optional[str] = None,
-        risk_level: Optional[str] = None,
-        source_conversation_id: Optional[str] = None,
-    ) -> list[dict]:
-        return await self._get_memory_candidate_repository().list_memory_candidates(
-            limit=limit,
-            candidate_type=candidate_type,
-            status=status,
-            risk_level=risk_level,
-            source_conversation_id=source_conversation_id,
-        )
-
-    async def get_memory_candidate(self, candidate_id: str) -> Optional[dict]:
-        return await self._get_memory_candidate_repository().get_memory_candidate(
-            candidate_id,
-        )
-
-    async def update_memory_candidate(
-        self,
-        candidate_id: str,
-        **updates: object,
-    ) -> Optional[dict]:
-        return await self._get_memory_candidate_repository().update_memory_candidate(
-            candidate_id,
-            **updates,
         )
 
     async def create_entity(self, entity: dict) -> dict:

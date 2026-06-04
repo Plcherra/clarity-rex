@@ -163,16 +163,3 @@ async def test_memory_service_strips_protected_fields_on_updates(monkeypatch):
     assert "id=eq.entity-1" in calls[0]["url"]
     assert "user_id=eq.user-123" in calls[0]["url"]
 
-
-def test_memory_confirmations_schema_enables_user_scoped_rls():
-    migration = (
-        PROJECT_ROOT
-        / "supabase/migrations/000025_enable_memory_confirmations_rls.sql"
-    )
-    sql = migration.read_text()
-
-    assert "alter table public.memory_confirmations enable row level security" in sql
-    assert "create policy" in sql
-    assert "Users can manage their own memory confirmations" in sql
-    assert "using (auth.uid() = user_id)" in sql
-    assert "with check (auth.uid() = user_id)" in sql

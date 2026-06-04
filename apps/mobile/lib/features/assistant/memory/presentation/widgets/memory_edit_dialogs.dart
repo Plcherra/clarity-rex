@@ -169,94 +169,6 @@ class _StructuredEditDialogState extends State<StructuredEditDialog> {
   }
 }
 
-class PendingCandidateEditDialog extends StatefulWidget {
-  const PendingCandidateEditDialog({required this.candidate, super.key});
-
-  final PendingMemoryCandidateItem candidate;
-
-  @override
-  State<PendingCandidateEditDialog> createState() =>
-      _PendingCandidateEditDialogState();
-}
-
-class _PendingCandidateEditDialogState
-    extends State<PendingCandidateEditDialog> {
-  late final TextEditingController _proposalController;
-  late final TextEditingController _reasonController;
-
-  @override
-  void initState() {
-    super.initState();
-    _proposalController = TextEditingController(
-      text: widget.candidate.editableProposal,
-    );
-    _reasonController = TextEditingController(
-      text: widget.candidate.reasonLabel ?? '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _proposalController.dispose();
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Edit memory review'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _proposalController,
-              minLines: 3,
-              maxLines: 6,
-              decoration: const InputDecoration(
-                labelText: 'What Rex should know',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _reasonController,
-              minLines: 2,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Why Rex paused here',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(onPressed: _submit, child: const Text('Save')),
-      ],
-    );
-  }
-
-  void _submit() {
-    final proposal = _proposalController.text.trim();
-    if (proposal.isEmpty) {
-      return;
-    }
-
-    Navigator.of(context).pop(
-      PendingCandidateEditResult(
-        proposal: proposal,
-        reason: _nullableText(_reasonController.text),
-      ),
-    );
-  }
-}
-
 class MemoryEditDialog extends StatefulWidget {
   const MemoryEditDialog({required this.memory, super.key});
 
@@ -388,16 +300,6 @@ class MemoryEditResult {
   final String content;
   final int importance;
   final bool active;
-}
-
-class PendingCandidateEditResult {
-  const PendingCandidateEditResult({
-    required this.proposal,
-    required this.reason,
-  });
-
-  final String proposal;
-  final String? reason;
 }
 
 class StructuredEditResult {

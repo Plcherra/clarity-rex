@@ -1,10 +1,14 @@
 import asyncio
+import json
+import logging
+import time
 from typing import Optional
 
 from app.services.accountability_service import AccountabilityService
 from app.services.goal_context_service import GoalContextService
 from app.services.prompt_service import PromptService
 from app.services.rex_brain_chat_service import RexBrainChatService
+from app.services.rex_intent_router import RexIntentDecision
 from app.services.time_context_service import TimeContextService
 
 PROFILE_MEMORY_QUERY = (
@@ -12,6 +16,7 @@ PROFILE_MEMORY_QUERY = (
     "important identity facts birthdays family important dates preferences"
 )
 PROFILE_MEMORY_LIMIT = 4
+LOGGER = logging.getLogger("rex.context")
 
 
 class ChatContextService:
@@ -39,16 +44,45 @@ class ChatContextService:
         *,
         message: str,
         conversation_id: Optional[str],
+        intent_decision: Optional[RexIntentDecision] = None,
     ) -> tuple[list[dict], list[dict], dict]:
-        long_term_memory_task = self.fetch_relevant_memories(
-            query=message,
-            limit=8,
+        fetch_started = time.perf_counter()
+        timings_ms: dict[str, int] = {}
+        load_long_term_memory = self._load_long_term_memory(intent_decision)
+        load_profile_memory = self._load_profile_memory(intent_decision)
+        load_structured_memory = self._load_structured_memory(intent_decision)
+        load_goal_context = self._load_goal_context(intent_decision)
+
+        long_term_memory_task = (
+            self.timed_fetch(
+                "long_term_memory",
+                self.fetch_relevant_memories(query=message, limit=8),
+                timings_ms,
+            )
+            if load_long_term_memory
+            else self.empty_list()
         )
-        profile_memory_task = self.fetch_relevant_memories(
-            query=PROFILE_MEMORY_QUERY,
-            limit=PROFILE_MEMORY_LIMIT,
+        profile_memory_task = (
+            self.timed_fetch(
+                "profile_memory",
+                self.fetch_relevant_memories(
+                    query=PROFILE_MEMORY_QUERY,
+                    limit=PROFILE_MEMORY_LIMIT,
+                ),
+                timings_ms,
+            )
+            if load_profile_memory
+            else self.empty_list()
         )
-        structured_context_task = self.fetch_structured_context(message)
+        structured_context_task = self.timed_fetch(
+            "structured_context",
+            self.fetch_structured_context(
+                message,
+                include_structured_memory=load_structured_memory,
+                include_goal_context=load_goal_context,
+            ),
+            timings_ms,
+        )
         if conversation_id is None:
             (
                 long_term_memory,
@@ -59,9 +93,28 @@ class ChatContextService:
                 profile_memory_task,
                 structured_context_task,
             )
+            merged_memory = self.merge_memories(long_term_memory, profile_memory)
+            self.log_context_fetch(
+                intent_decision=intent_decision,
+                conversation_id=None,
+                loaded={
+                    "recent_messages": False,
+                    "long_term_memory": load_long_term_memory,
+                    "profile_memory": load_profile_memory,
+                    "structured_memory": load_structured_memory,
+                    "goal_context": load_goal_context,
+                },
+                counts={
+                    "recent_messages": 0,
+                    "long_term_memory": len(merged_memory),
+                    "structured_context_keys": len(structured_context),
+                },
+                timings_ms=timings_ms,
+                total_ms=self.elapsed_ms(fetch_started),
+            )
             return (
                 [],
-                self.merge_memories(long_term_memory, profile_memory),
+                merged_memory,
                 structured_context,
             )
 
@@ -71,14 +124,37 @@ class ChatContextService:
             profile_memory,
             structured_context,
         ) = await asyncio.gather(
-            self.fetch_recent_messages(conversation_id, limit=20),
+            self.timed_fetch(
+                "recent_messages",
+                self.fetch_recent_messages(conversation_id, limit=20),
+                timings_ms,
+            ),
             long_term_memory_task,
             profile_memory_task,
             structured_context_task,
         )
+        merged_memory = self.merge_memories(long_term_memory, profile_memory)
+        self.log_context_fetch(
+            intent_decision=intent_decision,
+            conversation_id=conversation_id,
+            loaded={
+                "recent_messages": True,
+                "long_term_memory": load_long_term_memory,
+                "profile_memory": load_profile_memory,
+                "structured_memory": load_structured_memory,
+                "goal_context": load_goal_context,
+            },
+            counts={
+                "recent_messages": len(conversation_history),
+                "long_term_memory": len(merged_memory),
+                "structured_context_keys": len(structured_context),
+            },
+            timings_ms=timings_ms,
+            total_ms=self.elapsed_ms(fetch_started),
+        )
         return (
             conversation_history,
-            self.merge_memories(long_term_memory, profile_memory),
+            merged_memory,
             structured_context,
         )
 
@@ -123,23 +199,41 @@ class ChatContextService:
                 merged.append(memory)
         return merged[:8]
 
-    async def fetch_structured_context(self, message: str) -> dict:
-        structured_context: dict = {}
-        get_structured_context = getattr(
-            self.memory_service,
-            "get_structured_memory_context",
-            None,
-        )
-        if get_structured_context is not None:
-            try:
-                structured_context = await get_structured_context(message)
-            except Exception:
-                structured_context = {}
+    async def empty_list(self) -> list[dict]:
+        return []
 
-        goal_context = await self.goal_context_service.fetch_goal_context(
-            self.memory_service,
-            message,
-        )
+    async def timed_fetch(self, name: str, awaitable, timings_ms: dict[str, int]):
+        started = time.perf_counter()
+        result = await awaitable
+        timings_ms[name] = self.elapsed_ms(started)
+        return result
+
+    async def fetch_structured_context(
+        self,
+        message: str,
+        *,
+        include_structured_memory: bool = True,
+        include_goal_context: bool = True,
+    ) -> dict:
+        structured_context: dict = {}
+        if include_structured_memory:
+            get_structured_context = getattr(
+                self.memory_service,
+                "get_structured_memory_context",
+                None,
+            )
+            if get_structured_context is not None:
+                try:
+                    structured_context = await get_structured_context(message)
+                except Exception:
+                    structured_context = {}
+
+        goal_context = {}
+        if include_goal_context:
+            goal_context = await self.goal_context_service.fetch_goal_context(
+                self.memory_service,
+                message,
+            )
         return self.goal_context_service.merge_structured_context(
             structured_context,
             goal_context,
@@ -243,6 +337,81 @@ class ChatContextService:
             )
         except Exception:
             return []
+
+    def should_analyze_accountability(
+        self,
+        intent_decision: Optional[RexIntentDecision],
+    ) -> bool:
+        return (
+            True
+            if intent_decision is None
+            else intent_decision.should_load_accountability
+        )
+
+    def log_context_fetch(
+        self,
+        *,
+        intent_decision: Optional[RexIntentDecision],
+        conversation_id: Optional[str],
+        loaded: dict,
+        counts: dict,
+        timings_ms: dict[str, int],
+        total_ms: int,
+    ) -> None:
+        payload = {
+            "conversation_id": conversation_id,
+            "intent": (
+                intent_decision.intent.value if intent_decision is not None else "legacy"
+            ),
+            "loaded": loaded,
+            "counts": counts,
+            "timings_ms": timings_ms,
+            "total_ms": total_ms,
+        }
+        LOGGER.info("rex_context_fetch %s", json.dumps(payload, sort_keys=True))
+
+    def elapsed_ms(self, started: float) -> int:
+        return int((time.perf_counter() - started) * 1000)
+
+    def _load_long_term_memory(
+        self,
+        intent_decision: Optional[RexIntentDecision],
+    ) -> bool:
+        return (
+            True
+            if intent_decision is None
+            else intent_decision.should_load_long_term_memory
+        )
+
+    def _load_profile_memory(
+        self,
+        intent_decision: Optional[RexIntentDecision],
+    ) -> bool:
+        return (
+            True
+            if intent_decision is None
+            else intent_decision.should_load_profile_memory
+        )
+
+    def _load_structured_memory(
+        self,
+        intent_decision: Optional[RexIntentDecision],
+    ) -> bool:
+        return (
+            True
+            if intent_decision is None
+            else intent_decision.should_load_structured_memory
+        )
+
+    def _load_goal_context(
+        self,
+        intent_decision: Optional[RexIntentDecision],
+    ) -> bool:
+        return (
+            True
+            if intent_decision is None
+            else intent_decision.should_load_goal_context
+        )
 
     def last_message_timestamp(self, conversation_history: list[dict]) -> Optional[str]:
         if not conversation_history:

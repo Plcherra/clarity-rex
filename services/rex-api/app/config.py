@@ -28,11 +28,6 @@ class Settings(BaseSettings):
     supabase_messages_table: str = "messages"
     supabase_long_term_memory_table: str = "long_term_memory"
     supabase_memory_corrections_table: str = "memory_corrections"
-    supabase_memory_candidates_table: str = "memory_candidates"
-    supabase_memory_confirmations_table: str = "memory_confirmations"
-    supabase_memory_candidate_review_sessions_table: str = (
-        "memory_candidate_review_sessions"
-    )
     supabase_voice_turns_table: str = "voice_turns"
 
     deepgram_api_key: Optional[str] = None

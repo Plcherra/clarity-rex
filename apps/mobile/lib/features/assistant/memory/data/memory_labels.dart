@@ -57,13 +57,13 @@ extension MemoryRecordLabel on String {
   }
 }
 
-String memoryCandidateTypeLabel(String value) {
-  return _candidateTypeLabels[_normalLabelKey(value)] ??
+String memoryActionTypeLabel(String value) {
+  return _memoryActionTypeLabels[_normalLabelKey(value)] ??
       value.fallbackHumanLabel;
 }
 
-String memoryCandidateStatusLabel(String value) {
-  return _candidateStatusLabels[_normalLabelKey(value)] ??
+String memoryActionStatusLabel(String value) {
+  return _memoryActionStatusLabels[_normalLabelKey(value)] ??
       value.fallbackHumanLabel;
 }
 
@@ -76,8 +76,8 @@ String memoryExpectedActionLabel(String value) {
   return _expectedActionLabels[key] ?? value.fallbackHumanLabel;
 }
 
-String memoryReviewTitleLabel({
-  required String candidateType,
+String memoryActionTitleLabel({
+  required String actionType,
   required String status,
 }) {
   final statusKey = _normalLabelKey(status);
@@ -91,7 +91,7 @@ String memoryReviewTitleLabel({
     return 'Needs attention';
   }
 
-  switch (_normalLabelKey(candidateType)) {
+  switch (_normalLabelKey(actionType)) {
     case 'correction':
       return 'Proposed correction';
     case 'plan':
@@ -111,7 +111,7 @@ String memoryReviewTitleLabel({
 
 String? humanMemoryLabel(String value) {
   final key = _normalLabelKey(value);
-  return _candidateTypeLabels[key] ??
+  return _memoryActionTypeLabels[key] ??
       _recordTypeLabels[key] ??
       _statusLabels[key] ??
       _riskLevelLabels[key];
@@ -147,7 +147,7 @@ MemoryGroup memoryGroupForTypeLabel(String value) {
   }
 }
 
-String memoryPreviewWithHumanType(String value) {
+String memoryPreviewWithRecordType(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) {
     return trimmed;
@@ -159,7 +159,7 @@ String memoryPreviewWithHumanType(String value) {
   }
 
   final prefix = trimmed.substring(0, separator).trim();
-  final label = _candidateTypeLabels[_normalLabelKey(prefix)];
+  final label = _memoryActionTypeLabels[_normalLabelKey(prefix)];
   if (label == null) {
     return trimmed;
   }
@@ -209,7 +209,7 @@ String _normalLabelKey(String value) {
       .toLowerCase();
 }
 
-const _candidateTypeLabels = {
+const _memoryActionTypeLabels = {
   'long_term_memory': 'Memory note',
   'memory_update': 'Memory update',
   'entity': 'Person / place',
@@ -232,7 +232,7 @@ const _recordTypeLabels = {
   'checkpoint': 'Checkpoint',
 };
 
-const _candidateStatusLabels = {
+const _memoryActionStatusLabels = {
   'pending': 'Needs review',
   'approved': 'Approved',
   'applied': 'Saved',
@@ -242,7 +242,7 @@ const _candidateStatusLabels = {
 };
 
 const _statusLabels = {
-  ..._candidateStatusLabels,
+  ..._memoryActionStatusLabels,
   'active': 'Active',
   'inactive': 'Inactive',
   'open': 'Open',

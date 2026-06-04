@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from app.models.memory_discipline import (
-    MemoryCandidateKind,
+    MemoryRecordKind,
     MemoryDisciplineAction,
     MemoryDisciplineCandidate,
     MemoryDisciplineContext,
@@ -150,7 +150,7 @@ class MemoryDisciplineService:
         if not candidate_text:
             return MemoryDisciplineDecision(
                 action=MemoryDisciplineAction.IGNORE_NOISY_CANDIDATE,
-                candidate_kind=candidate.kind,
+                record_kind=candidate.kind,
                 payload=candidate.payload,
                 reason="Candidate has no useful searchable content.",
                 confidence=0.95,
@@ -167,7 +167,7 @@ class MemoryDisciplineService:
             if action:
                 return MemoryDisciplineDecision(
                     action=action,
-                    candidate_kind=candidate.kind,
+                    record_kind=candidate.kind,
                     payload=candidate.payload,
                     reason="Candidate strongly matches an active existing record.",
                     confidence=duplicate.score,
@@ -177,7 +177,7 @@ class MemoryDisciplineService:
                     metadata=self._decision_metadata(action, candidate),
                 )
 
-        if candidate.kind == MemoryCandidateKind.PLAN:
+        if candidate.kind == MemoryRecordKind.PLAN:
             plan_decision = self.plan_intelligence_service.classify_plan_candidate(
                 candidate.payload,
                 context,
@@ -189,7 +189,7 @@ class MemoryDisciplineService:
                     context,
                 )
 
-        if candidate.kind == MemoryCandidateKind.PLAN_MILESTONE:
+        if candidate.kind == MemoryRecordKind.PLAN_MILESTONE:
             milestone_decision = self._decide_milestone_candidate(candidate, context)
             if milestone_decision is not None:
                 return milestone_decision
@@ -198,7 +198,7 @@ class MemoryDisciplineService:
         if action is None:
             return MemoryDisciplineDecision(
                 action=MemoryDisciplineAction.ASK_CONFIRMATION,
-                candidate_kind=candidate.kind,
+                record_kind=candidate.kind,
                 payload=candidate.payload,
                 reason="Candidate kind needs a later phase-specific decision.",
                 confidence=0.5,
@@ -212,7 +212,7 @@ class MemoryDisciplineService:
 
         return MemoryDisciplineDecision(
             action=action,
-            candidate_kind=candidate.kind,
+            record_kind=candidate.kind,
             payload=candidate.payload,
             reason="No duplicate existing record passed the update threshold.",
             confidence=0.7,
@@ -256,7 +256,7 @@ class MemoryDisciplineService:
         if classification.existing_milestone_id:
             return MemoryDisciplineDecision(
                 action=MemoryDisciplineAction.UPDATE_MILESTONE,
-                candidate_kind=MemoryCandidateKind.PLAN_MILESTONE,
+                record_kind=MemoryRecordKind.PLAN_MILESTONE,
                 payload=candidate.payload,
                 reason=classification.reason,
                 confidence=classification.confidence,
@@ -297,7 +297,7 @@ class MemoryDisciplineService:
         if classification.kind == "noisy_ignore":
             return MemoryDisciplineDecision(
                 action=MemoryDisciplineAction.IGNORE_NOISY_CANDIDATE,
-                candidate_kind=MemoryCandidateKind.PLAN_MILESTONE,
+                record_kind=MemoryRecordKind.PLAN_MILESTONE,
                 payload=candidate.payload,
                 reason=classification.reason,
                 confidence=classification.confidence,
@@ -353,20 +353,20 @@ class MemoryDisciplineService:
 
     def _same_kind_related(
         self,
-        kind: MemoryCandidateKind,
+        kind: MemoryRecordKind,
         context: MemoryDisciplineContext,
     ) -> list[MemoryRelatedRecord]:
-        if kind == MemoryCandidateKind.LONG_TERM_MEMORY:
+        if kind == MemoryRecordKind.LONG_TERM_MEMORY:
             return context.related_long_term_memories
-        if kind == MemoryCandidateKind.ENTITY:
+        if kind == MemoryRecordKind.ENTITY:
             return context.related_entities
-        if kind == MemoryCandidateKind.PERSONAL_RULE:
+        if kind == MemoryRecordKind.PERSONAL_RULE:
             return context.related_rules
-        if kind == MemoryCandidateKind.PLAN:
+        if kind == MemoryRecordKind.PLAN:
             return context.related_plans
-        if kind == MemoryCandidateKind.PLAN_MILESTONE:
+        if kind == MemoryRecordKind.PLAN_MILESTONE:
             return context.related_milestones
-        if kind == MemoryCandidateKind.COMMITMENT:
+        if kind == MemoryRecordKind.COMMITMENT:
             return context.related_commitments
         return []
 
@@ -400,7 +400,7 @@ class MemoryDisciplineService:
             "merged_from_id": None,
             "archived_by_correction_id": None,
             "canonical_entity_id": None,
-            "source_candidate_kind": candidate.kind.value,
+            "source_record_kind": candidate.kind.value,
             "requires_confirmation": requires_confirmation,
         }
 
@@ -411,13 +411,13 @@ class MemoryDisciplineService:
         context: MemoryDisciplineContext,
     ) -> MemoryDisciplineDecision:
         action_to_kind = {
-            MemoryDisciplineAction.CREATE_ENTITY_EVENT: MemoryCandidateKind.ENTITY_EVENT,
-            MemoryDisciplineAction.UPDATE_PLAN: MemoryCandidateKind.PLAN,
-            MemoryDisciplineAction.CREATE_MILESTONE: MemoryCandidateKind.PLAN_MILESTONE,
-            MemoryDisciplineAction.UPDATE_MILESTONE: MemoryCandidateKind.PLAN_MILESTONE,
-            MemoryDisciplineAction.CREATE_COMMITMENT: MemoryCandidateKind.COMMITMENT,
-            MemoryDisciplineAction.UPDATE_COMMITMENT: MemoryCandidateKind.COMMITMENT,
-            MemoryDisciplineAction.ASK_CONFIRMATION: MemoryCandidateKind.PLAN,
+            MemoryDisciplineAction.CREATE_ENTITY_EVENT: MemoryRecordKind.ENTITY_EVENT,
+            MemoryDisciplineAction.UPDATE_PLAN: MemoryRecordKind.PLAN,
+            MemoryDisciplineAction.CREATE_MILESTONE: MemoryRecordKind.PLAN_MILESTONE,
+            MemoryDisciplineAction.UPDATE_MILESTONE: MemoryRecordKind.PLAN_MILESTONE,
+            MemoryDisciplineAction.CREATE_COMMITMENT: MemoryRecordKind.COMMITMENT,
+            MemoryDisciplineAction.UPDATE_COMMITMENT: MemoryRecordKind.COMMITMENT,
+            MemoryDisciplineAction.ASK_CONFIRMATION: MemoryRecordKind.PLAN,
             MemoryDisciplineAction.IGNORE_NOISY_CANDIDATE: candidate.kind,
         }
         target_table = None
@@ -454,7 +454,7 @@ class MemoryDisciplineService:
         related_records = self._top_related_records(context)
         return MemoryDisciplineDecision(
             action=plan_decision.action,
-            candidate_kind=action_to_kind.get(plan_decision.action, candidate.kind),
+            record_kind=action_to_kind.get(plan_decision.action, candidate.kind),
             payload=plan_decision.payload,
             reason=plan_decision.reason,
             confidence=plan_decision.confidence,
@@ -466,25 +466,25 @@ class MemoryDisciplineService:
         )
 
 def _create_action_for_kind(
-    kind: MemoryCandidateKind,
+    kind: MemoryRecordKind,
 ) -> MemoryDisciplineAction | None:
     return {
-        MemoryCandidateKind.ENTITY: MemoryDisciplineAction.CREATE_ENTITY,
-        MemoryCandidateKind.ENTITY_EVENT: MemoryDisciplineAction.CREATE_ENTITY_EVENT,
-        MemoryCandidateKind.PERSONAL_RULE: MemoryDisciplineAction.CREATE_RULE,
-        MemoryCandidateKind.PLAN: MemoryDisciplineAction.CREATE_PLAN,
-        MemoryCandidateKind.PLAN_MILESTONE: MemoryDisciplineAction.CREATE_MILESTONE,
-        MemoryCandidateKind.COMMITMENT: MemoryDisciplineAction.CREATE_COMMITMENT,
+        MemoryRecordKind.ENTITY: MemoryDisciplineAction.CREATE_ENTITY,
+        MemoryRecordKind.ENTITY_EVENT: MemoryDisciplineAction.CREATE_ENTITY_EVENT,
+        MemoryRecordKind.PERSONAL_RULE: MemoryDisciplineAction.CREATE_RULE,
+        MemoryRecordKind.PLAN: MemoryDisciplineAction.CREATE_PLAN,
+        MemoryRecordKind.PLAN_MILESTONE: MemoryDisciplineAction.CREATE_MILESTONE,
+        MemoryRecordKind.COMMITMENT: MemoryDisciplineAction.CREATE_COMMITMENT,
     }.get(kind)
 
 
 def _update_action_for_kind(
-    kind: MemoryCandidateKind,
+    kind: MemoryRecordKind,
 ) -> MemoryDisciplineAction | None:
     return {
-        MemoryCandidateKind.ENTITY: MemoryDisciplineAction.UPDATE_ENTITY,
-        MemoryCandidateKind.PERSONAL_RULE: MemoryDisciplineAction.UPDATE_RULE,
-        MemoryCandidateKind.PLAN: MemoryDisciplineAction.UPDATE_PLAN,
-        MemoryCandidateKind.PLAN_MILESTONE: MemoryDisciplineAction.UPDATE_MILESTONE,
-        MemoryCandidateKind.COMMITMENT: MemoryDisciplineAction.UPDATE_COMMITMENT,
+        MemoryRecordKind.ENTITY: MemoryDisciplineAction.UPDATE_ENTITY,
+        MemoryRecordKind.PERSONAL_RULE: MemoryDisciplineAction.UPDATE_RULE,
+        MemoryRecordKind.PLAN: MemoryDisciplineAction.UPDATE_PLAN,
+        MemoryRecordKind.PLAN_MILESTONE: MemoryDisciplineAction.UPDATE_MILESTONE,
+        MemoryRecordKind.COMMITMENT: MemoryDisciplineAction.UPDATE_COMMITMENT,
     }.get(kind)

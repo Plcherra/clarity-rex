@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.models.memory_discipline import (
-    MemoryCandidateKind,
+    MemoryRecordKind,
     MemoryDisciplineAction,
     MemoryDisciplineDecision,
 )
@@ -86,30 +86,30 @@ class MemoryDisciplineDecisionApplier:
         )
         if not entities:
             return payload
-        if decision.candidate_kind == MemoryCandidateKind.ENTITY:
+        if decision.record_kind == MemoryRecordKind.ENTITY:
             return self.entity_normalization_service.normalize_candidate_entity(
                 payload,
                 entities,
             ).payload
 
-        text_fields_by_kind: dict[MemoryCandidateKind, tuple[str, ...]] = {
-            MemoryCandidateKind.PERSONAL_RULE: (
+        text_fields_by_kind: dict[MemoryRecordKind, tuple[str, ...]] = {
+            MemoryRecordKind.PERSONAL_RULE: (
                 "title",
                 "rule_text",
                 "trigger_keywords",
             ),
-            MemoryCandidateKind.PLAN: ("title", "description", "desired_outcome"),
-            MemoryCandidateKind.PLAN_MILESTONE: ("title", "description"),
-            MemoryCandidateKind.COMMITMENT: ("title", "commitment_text"),
-            MemoryCandidateKind.ENTITY_EVENT: ("title", "content"),
+            MemoryRecordKind.PLAN: ("title", "description", "desired_outcome"),
+            MemoryRecordKind.PLAN_MILESTONE: ("title", "description"),
+            MemoryRecordKind.COMMITMENT: ("title", "commitment_text"),
+            MemoryRecordKind.ENTITY_EVENT: ("title", "content"),
         }
-        text_fields = text_fields_by_kind.get(decision.candidate_kind)
+        text_fields = text_fields_by_kind.get(decision.record_kind)
         if text_fields is None:
             return payload
         link_field = None
-        if decision.candidate_kind == MemoryCandidateKind.PLAN:
+        if decision.record_kind == MemoryRecordKind.PLAN:
             link_field = "primary_entity_id"
-        elif decision.candidate_kind == MemoryCandidateKind.COMMITMENT:
+        elif decision.record_kind == MemoryRecordKind.COMMITMENT:
             link_field = "entity_id"
         return self.entity_normalization_service.normalize_payload_references(
             payload,

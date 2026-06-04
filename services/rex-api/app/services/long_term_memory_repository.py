@@ -49,7 +49,7 @@ class LongTermMemoryRepository:
         conversation_id: str,
         message: dict,
     ) -> Optional[dict]:
-        memory = self.memory_candidate(str(message.get("content", "")))
+        memory = self.memory_from_message_text(str(message.get("content", "")))
         if not memory:
             return None
 
@@ -137,7 +137,7 @@ class LongTermMemoryRepository:
         memory = await self.update_long_term_memory(memory_id, active=False)
         return memory is not None
 
-    def memory_candidate(self, message: str) -> Optional[dict]:
+    def memory_from_message_text(self, message: str) -> Optional[dict]:
         text = " ".join(message.strip().split())
         if not text:
             return None
