@@ -243,6 +243,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
       startThinking(finalTranscript: response.transcript);
       startSpeaking(response.responseText);
       _startBargeInMonitoring(generation);
+      await _audioSessionService.preferLoudSpeaker();
       await _playbackService.playBase64Audio(
         response.audioBase64,
         contentType: response.audioContentType,
@@ -287,6 +288,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         return;
       }
       responseAudioStarted = true;
+      unawaited(_audioSessionService.preferLoudSpeaker());
       _streamingPlaybackQueue.beginResponse();
     }
 

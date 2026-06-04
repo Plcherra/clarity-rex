@@ -22,6 +22,9 @@ class _NoopVoiceAudioSessionService implements VoiceAudioSessionService {
   Future<void> configureForVoiceTurn() async {}
 
   @override
+  Future<void> preferLoudSpeaker() async {}
+
+  @override
   StreamSubscription<AudioInterruptionEvent> listenForInterruptions(
     VoiceAudioInterruptionCallback onInterrupted,
   ) {
@@ -51,10 +54,16 @@ class _NoopBackgroundVoiceService implements BackgroundVoiceService {
 
 class _CountingVoiceAudioSessionService implements VoiceAudioSessionService {
   var configureCount = 0;
+  var preferLoudSpeakerCount = 0;
 
   @override
   Future<void> configureForVoiceTurn() async {
     configureCount++;
+  }
+
+  @override
+  Future<void> preferLoudSpeaker() async {
+    preferLoudSpeakerCount++;
   }
 
   @override

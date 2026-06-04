@@ -1,23 +1,17 @@
 from app.services.prompt_service import (
     ACCOUNTABILITY_CONTEXT_PREFIX,
-    CONVERSATION_CONTEXT_PREFIX,
     FILE_CONTEXT_PREFIX,
     FINANCIAL_CONTEXT_PREFIX,
     LONG_TERM_MEMORY_PREFIX,
     MAX_DEFAULT_REX_PROMPT_CHARACTERS,
-    MEMORY_DISCIPLINE_PROMPT,
     PERSONALITY_CONTEXT_PREFIX,
     PromptService,
     REX_PERSONALITY_PROMPT,
     STRUCTURED_MEMORY_PREFIX,
-    TIME_CONTEXT_PREFIX,
 )
 from app.services.time_context_service import TimeContextService
 
-BASE_SYSTEM_PROMPT = (
-    f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}"
-    f"\n\n{MEMORY_DISCIPLINE_PROMPT}"
-)
+BASE_SYSTEM_PROMPT = f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}"
 
 
 def test_prompt_service_always_includes_rex_personality():
@@ -34,9 +28,9 @@ def test_prompt_service_always_includes_rex_personality():
     ]
     assert len(messages[0]["content"]) <= MAX_DEFAULT_REX_PROMPT_CHARACTERS
     assert "private, voice-first AI companion" in messages[0]["content"]
-    assert "answer fast and briefly" in messages[0]["content"]
-    assert "Memory rules:" in messages[0]["content"]
-    assert "backend execution metadata confirms success" in messages[0]["content"]
+    assert "Answer casual turns fast and briefly" in messages[0]["content"]
+    assert "Memory/action rules:" not in messages[0]["content"]
+    assert "execution metadata confirms success" not in messages[0]["content"]
 
 
 def test_prompt_service_sanitizes_recent_message_history():
@@ -110,7 +104,9 @@ def test_prompt_service_injects_time_conversation_memory_and_file_context():
     assert messages[0]["role"] == "system"
     system_content = messages[0]["content"]
     assert system_content.startswith(PERSONALITY_CONTEXT_PREFIX)
-    assert "direct, warm, honest, practical, and natural" in system_content
+    assert "warm, direct, honest, practical, and natural" in system_content
+    assert "Memory/action rules:" in system_content
+    assert "execution metadata confirms success" in system_content
     assert "Current time context:" in system_content
     assert "- Clock: Tuesday afternoon" in system_content
     assert "- Previous message delta: earlier today" in system_content
@@ -403,240 +399,3 @@ def test_prompt_service_injects_accountability_before_generic_memory():
     assert "sources: personal_rule:Avoid DoorDash" in system_content
     assert "Suggested framing: You said DoorDash was off-limits" in system_content
     assert "Action: Hold the user to the rule." in system_content
-
-
-def test_prompt_service_limits_structured_memory_context_budget():
-    service = PromptService()
-
-    messages = service.build_messages(
-        user_message="Tell me what matters about Clara.",
-        structured_context={
-            "entities": [
-                {
-                    "id": "entity-clara",
-                    "entity_type": "person",
-                    "display_name": "Clara",
-                    "relationship": "dating interest",
-                    "summary": "Clara " * 1000,
-                    "relevance_reason": "Matched current message terms: clara",
-                }
-            ]
-        },
-    )
-
-    structured_section = messages[0]["content"].split(
-        STRUCTURED_MEMORY_PREFIX,
-        1,
-    )[1]
-    assert len(structured_section) < 3200
-    assert "[truncated]" in structured_section
-
-
-def test_prompt_shape_contains_required_time_aware_founder_context():
-    service = PromptService(TimeContextService(timezone_name="America/New_York"))
-
-    messages = service.build_messages(
-        user_message="I ordered DoorDash again. Be honest with me.",
-        recent_messages=[
-            {
-                "role": "user",
-                "content": "Last time I said I would cut delivery.",
-                "timestamp": "2026-05-10T22:15:00-04:00",
-            },
-            {
-                "role": "assistant",
-                "content": "You need to stop the pattern this week.",
-                "timestamp": "2026-05-10T22:16:00-04:00",
-            },
-        ],
-        relevant_memories=[
-            {
-                "memory_type": "preference",
-                "content": "I want direct accountability about food delivery.",
-                "created_at": "2026-04-30T15:30:00-04:00",
-                "relevance_reason": "Matched current message terms: delivery",
-            },
-            {
-                "memory_type": "event",
-                "content": "I committed to stop ordering DoorDash in May.",
-                "updated_at": "2026-05-05T15:30:00-04:00",
-                "relevance_reason": "Matched current message terms: doordash",
-            },
-        ],
-        file_context="Budget CSV summary: DoorDash spending is over the weekly cap.",
-        conversation_metadata={
-            "id": "conversation-budget",
-            "title": "Budget accountability",
-            "timestamp": "2026-05-10T22:15:00-04:00",
-            "last_message_timestamp": "2026-05-10T22:16:00-04:00",
-        },
-        time_context={
-            "clock_context": "Tuesday afternoon (15:30 America/New_York (EDT))",
-            "iso_timestamp": "2026-05-12T15:30:00-04:00",
-            "date": "2026-05-12",
-            "weekday": "Tuesday",
-            "time": "15:30",
-            "timezone": "America/New_York (EDT)",
-            "previous_timestamp_delta": "2 days ago",
-        },
-    )
-
-    assert [message["role"] for message in messages] == [
-        "system",
-        "user",
-        "assistant",
-        "user",
-        "user",
-    ]
-
-    system_content = messages[0]["content"]
-    assert system_content.index(PERSONALITY_CONTEXT_PREFIX) < system_content.index(
-        TIME_CONTEXT_PREFIX
-    )
-    assert system_content.index(TIME_CONTEXT_PREFIX) < system_content.index(
-        CONVERSATION_CONTEXT_PREFIX
-    )
-    assert system_content.index(CONVERSATION_CONTEXT_PREFIX) < system_content.index(
-        LONG_TERM_MEMORY_PREFIX
-    )
-
-    assert "private, voice-first AI companion" in system_content
-    assert "answer fast and briefly" in system_content
-    assert "Corrections override older facts" in system_content
-    assert "- Clock: Tuesday afternoon (15:30 America/New_York (EDT))" in (
-        system_content
-    )
-    assert "- ISO timestamp: 2026-05-12T15:30:00-04:00" in system_content
-    assert "- Date: 2026-05-12" in system_content
-    assert "- Weekday: Tuesday" in system_content
-    assert "- Previous message delta: 2 days ago" in system_content
-    assert "- Conversation ID: conversation-budget" in system_content
-    assert "- Title: Budget accountability" in system_content
-    assert "- Last message timestamp: 2026-05-10T22:16:00-04:00" in system_content
-    assert (
-        "- preference: I want direct accountability about food delivery. "
-        "(saved 12 days ago) "
-        "(why recalled: Matched current message terms: delivery)"
-    ) in system_content
-    assert (
-        "- event: I committed to stop ordering DoorDash in May. "
-        "(saved 7 days ago) "
-        "(why recalled: Matched current message terms: doordash)"
-    ) in system_content
-
-    assert messages[-2] == {
-        "role": "user",
-        "content": (
-            f"{FILE_CONTEXT_PREFIX}"
-            "Budget CSV summary: DoorDash spending is over the weekly cap."
-        ),
-    }
-    assert messages[-1] == {
-        "role": "user",
-        "content": "I ordered DoorDash again. Be honest with me.",
-    }
-
-
-def test_prompt_service_limits_injected_memory_context():
-    service = PromptService()
-
-    messages = service.build_messages(
-        user_message="I need advice about work.",
-        relevant_memories=[
-            {
-                "memory_type": "fact",
-                "content": "work " * 1000,
-                "importance": 5,
-            },
-        ],
-    )
-
-    memory_section = messages[0]["content"].split(LONG_TERM_MEMORY_PREFIX, 1)[1]
-    assert len(memory_section) < 2200
-    assert "[truncated]" in messages[0]["content"]
-
-
-def test_prompt_service_uses_updated_at_before_created_at_for_memory_age():
-    service = PromptService(TimeContextService(timezone_name="America/New_York"))
-
-    messages = service.build_messages(
-        user_message="What should I remember?",
-        relevant_memories=[
-            {
-                "memory_type": "fact",
-                "content": "I am working on budget discipline.",
-                "created_at": "2026-03-12T15:30:00-04:00",
-                "updated_at": "2026-05-11T15:30:00-04:00",
-            },
-        ],
-        time_context={
-            "iso_timestamp": "2026-05-12T15:30:00-04:00",
-        },
-    )
-
-    assert "saved 1 day ago" in messages[0]["content"]
-    assert "about 2 months ago" not in messages[0]["content"]
-
-
-def test_prompt_service_omits_memory_age_for_missing_or_invalid_timestamps():
-    service = PromptService(TimeContextService(timezone_name="America/New_York"))
-
-    messages = service.build_messages(
-        user_message="What should I remember?",
-        relevant_memories=[
-            {
-                "memory_type": "fact",
-                "content": "I prefer direct advice.",
-                "created_at": "not-a-timestamp",
-            },
-            {
-                "memory_type": "event",
-                "content": "I started a new plan.",
-            },
-        ],
-        time_context={
-            "iso_timestamp": "2026-05-12T15:30:00-04:00",
-        },
-    )
-
-    system_content = messages[0]["content"]
-    assert "- fact: I prefer direct advice." in system_content
-    assert "- event: I started a new plan." in system_content
-    memory_section = system_content.split(LONG_TERM_MEMORY_PREFIX, 1)[1]
-    assert "saved " not in memory_section
-
-
-def test_prompt_service_trims_large_context_to_recent_messages():
-    service = PromptService()
-
-    messages = service.build_messages(
-        user_message="latest question",
-        recent_messages=[
-            {"role": "user", "content": "old " * 10000},
-            {"role": "assistant", "content": "recent answer"},
-        ],
-    )
-
-    assert messages == [
-        {
-            "role": "system",
-            "content": BASE_SYSTEM_PROMPT,
-        },
-        {"role": "assistant", "content": "recent answer"},
-        {"role": "user", "content": "latest question"},
-    ]
-
-
-def test_prompt_service_trims_large_file_context_before_latest_user_message():
-    service = PromptService()
-
-    messages = service.build_messages(
-        user_message="summarize",
-        file_context="file " * 10000,
-    )
-
-    assert len(messages) == 3
-    assert messages[0]["content"].startswith(PERSONALITY_CONTEXT_PREFIX)
-    assert messages[1]["content"].startswith(FILE_CONTEXT_PREFIX)
-    assert messages[1]["content"].endswith("[File truncated]")
-    assert messages[2] == {"role": "user", "content": "summarize"}

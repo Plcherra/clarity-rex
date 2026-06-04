@@ -6,7 +6,10 @@ from app.main import app
 from app.services.ai_service import AIServiceError
 from app.services.chat_service import ConversationNotFoundError
 from app.services.rex_brain_contracts import RexBrainChannel
-from app.services.voice_stream_session import VOICE_RESPONSE_MAX_TOKENS
+from app.services.voice_stream_session import (
+    VOICE_RESPONSE_INSTRUCTIONS,
+    VOICE_RESPONSE_MAX_TOKENS,
+)
 from app.services.deepgram_service import DeepgramServiceError
 from app.services.google_tts_service import GoogleTTSServiceError
 from app.services.memory_service import MemoryServiceError
@@ -366,15 +369,7 @@ def test_voice_turn_completes_full_non_streaming_pipeline(client):
                 "conversation_id": "conversation-existing",
                 "file": None,
                 "financial_context": None,
-                "response_instructions": (
-                    "Voice turn response style: answer in 2-4 short spoken sentences. "
-                    "Memory facts and corrections can be saved directly by the backend in voice. "
-                    "Never tell the user to open Chat for memory saves. "
-                    "Do not emit clarity_action blocks in voice mode. If a Clarity financial "
-                    "change needs confirmation, ask the user to open Chat to confirm it. "
-                    "Do not claim reminders, calendar events, notifications, or scheduled "
-                    "follow-ups were set unless a backend execution result confirms the write."
-                ),
+                "response_instructions": VOICE_RESPONSE_INSTRUCTIONS,
                 "max_response_tokens": VOICE_RESPONSE_MAX_TOKENS,
                 "channel": RexBrainChannel.VOICE,
             }

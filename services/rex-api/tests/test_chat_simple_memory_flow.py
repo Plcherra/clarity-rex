@@ -268,7 +268,7 @@ async def test_voice_stream_directly_saves_personal_movie_plan():
     assert ai_service.messages == []
     assert memory_service.long_term_memory[0]["memory_type"] == "event"
     assert memory_service.long_term_memory[0]["content"] == (
-        "User plans to watch Messes Of The Universe movie today."
+        "User plans to watch Masters of the Universe movie today."
     )
 
 

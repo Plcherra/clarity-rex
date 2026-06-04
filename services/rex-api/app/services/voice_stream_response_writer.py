@@ -23,6 +23,8 @@ class VoiceStreamResponseWriterMixin:
         user_message_id: Optional[str] = None
         assistant_message_id: Optional[str] = None
         messages: list[dict[str, Any]] = []
+        memory_changes: Optional[dict[str, Any]] = None
+        self._last_memory_changes = None
         chat_started_at = time.perf_counter()
 
         async for event in self.chat_service.stream_message(
@@ -60,6 +62,7 @@ class VoiceStreamResponseWriterMixin:
             elif event_name == "done":
                 self.conversation_id = event.get("conversation_id") or self.conversation_id
                 messages = event.get("messages") or []
+                memory_changes = event.get("memory_changes")
                 user_message_id, assistant_message_id = self._message_ids(messages)
 
         response_text = "".join(response_parts).strip()
@@ -87,8 +90,10 @@ class VoiceStreamResponseWriterMixin:
             "messages.updated",
             conversation_id=self.conversation_id,
             messages=messages,
+            memory_changes=memory_changes,
             voice_metadata={"record": metadata_record} if metadata_record else {},
         )
+        self._last_memory_changes = memory_changes
         return response_text
 
     async def _synthesize_and_send_audio_chunk(

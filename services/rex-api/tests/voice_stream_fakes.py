@@ -11,8 +11,17 @@ from app.main import app
 
 
 class FakeDeepgramStreamingService:
-    def __init__(self, error=None):
+    def __init__(
+        self,
+        error=None,
+        transcript="Hey Rex",
+        partial_transcript="Hey",
+        confidence=0.96,
+    ):
         self.error = error
+        self.transcript = transcript
+        self.partial_transcript = partial_transcript
+        self.confidence = confidence
         self.calls = []
 
     async def transcribe_audio_stream(
@@ -38,14 +47,14 @@ class FakeDeepgramStreamingService:
             await on_transcript(
                 {
                     "event": "transcript.partial",
-                    "transcript": "Hey",
+                    "transcript": self.partial_transcript,
                     "confidence": 0.7,
                     "metadata": {"vendor": "deepgram"},
                 }
             )
         return {
-            "transcript": "Hey Rex",
-            "confidence": 0.96,
+            "transcript": self.transcript,
+            "confidence": self.confidence,
             "duration_seconds": 1.4,
             "metadata": {"request_id": "stream-request-1"},
         }

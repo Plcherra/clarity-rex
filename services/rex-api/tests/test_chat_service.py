@@ -4,7 +4,6 @@ from fastapi import HTTPException
 from chat_service_fakes import (
     FailingAIService,
     FakeAIService,
-    FakeMemoryDisciplineService,
     FakeMemoryService,
     FakeUpload,
 )
@@ -82,24 +81,6 @@ async def test_chat_service_extracts_clarity_action_proposal():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_accepts_memory_discipline_dependency_without_behavior_change():
-    ai_service = FakeAIService()
-    memory_service = FakeMemoryService()
-    discipline_service = FakeMemoryDisciplineService()
-    chat_service = ChatService(
-        ai_service,
-        FileService(),
-        memory_service,
-        memory_discipline_service=discipline_service,
-    )
-
-    result = await chat_service.send_message("Hello Rex")
-
-    assert result["response"] == "Rex response"
-    assert chat_service.memory_discipline_service is discipline_service
-
-
-@pytest.mark.asyncio
 async def test_chat_service_correction_uses_normal_single_llm_turn():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
@@ -115,7 +96,7 @@ async def test_chat_service_correction_uses_normal_single_llm_turn():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_does_not_run_post_turn_extraction_on_normal_chat():
+async def test_chat_service_normal_chat_uses_one_llm_call():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     chat_service = ChatService(ai_service, FileService(), memory_service)
@@ -190,7 +171,7 @@ async def test_chat_service_stream_hides_clarity_action_block():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_stream_uses_one_llm_call_without_post_turn_memory_work():
+async def test_chat_service_stream_uses_one_llm_call():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     chat_service = ChatService(
@@ -229,7 +210,7 @@ async def test_chat_service_voice_stream_uses_one_llm_call():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_skips_memory_extraction_after_successful_response():
+async def test_chat_service_uses_direct_memory_path_after_successful_response():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     chat_service = ChatService(
@@ -244,7 +225,7 @@ async def test_chat_service_skips_memory_extraction_after_successful_response():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_ignores_memory_extraction_failures_when_extraction_is_disabled():
+async def test_chat_service_normal_memory_statement_uses_single_llm_path():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     chat_service = ChatService(

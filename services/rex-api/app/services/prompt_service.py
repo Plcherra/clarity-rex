@@ -89,10 +89,15 @@ class PromptService(
         time_context: Optional[dict],
         financial_context: Optional[dict],
     ) -> list[str]:
-        sections = [
-            f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}",
-            MEMORY_DISCIPLINE_PROMPT,
-        ]
+        sections = [f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}"]
+
+        if (
+            relevant_memories
+            or structured_context
+            or accountability_signals
+            or financial_context
+        ):
+            sections.append(MEMORY_DISCIPLINE_PROMPT)
 
         time_section = self._time_context_section(time_context)
         if time_section:

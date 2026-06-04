@@ -56,6 +56,8 @@ class VoiceStreamSession(
         self._live_transcription: Optional[Any] = None
         self._live_endpoint_task: Optional[asyncio.Task[None]] = None
         self._last_live_transcript_at: Optional[float] = None
+        self._turn_audio_bytes = 0
+        self._turn_audio_chunks = 0
 
     async def run(self) -> None:
         await self.websocket.accept()
@@ -172,6 +174,8 @@ class VoiceStreamSession(
         self._audio_chunks = []
         audio_started_at = self._audio_started_at
         self._audio_started_at = None
+        self._turn_audio_bytes = self._audio_bytes_received()
+        self._turn_audio_chunks = self._audio_chunk_count()
         self._audio_bytes = 0
         self._audio_chunks_received = 0
 
@@ -207,10 +211,12 @@ class VoiceStreamSession(
                 timings,
             )
             timings["turn_ms"] = self._elapsed_ms(started_at)
+            self._log_turn_timings(timings, mode="buffered")
             await self._send_event(
                 "assistant.done",
                 conversation_id=self.conversation_id,
                 response_text=response_text,
+                memory_changes=getattr(self, "_last_memory_changes", None),
                 timings=timings,
             )
         except (
@@ -237,6 +243,8 @@ class VoiceStreamSession(
         self._live_transcription = None
         audio_started_at = self._audio_started_at
         self._audio_started_at = None
+        self._turn_audio_bytes = self._audio_bytes_received()
+        self._turn_audio_chunks = self._audio_chunk_count()
         self._audio_bytes = 0
         self._audio_chunks_received = 0
 
@@ -259,10 +267,12 @@ class VoiceStreamSession(
                 timings,
             )
             timings["turn_ms"] = self._elapsed_ms(started_at)
+            self._log_turn_timings(timings, mode="live")
             await self._send_event(
                 "assistant.done",
                 conversation_id=self.conversation_id,
                 response_text=response_text,
+                memory_changes=getattr(self, "_last_memory_changes", None),
                 timings=timings,
             )
         except (
@@ -292,6 +302,24 @@ class VoiceStreamSession(
         if self._supports_live_transcription():
             return self._audio_chunks_received
         return len(self._audio_chunks)
+
+    def _log_turn_timings(self, timings: dict[str, int], *, mode: str) -> None:
+        LOGGER.info(
+            "voice_turn_timing session_id=%s conversation_id=%s client=%s "
+            "mode=%s capture_ms=%s stt_ms=%s grok_first_token_ms=%s "
+            "tts_first_audio_ms=%s turn_ms=%s audio_bytes=%s audio_chunks=%s",
+            self._session_id,
+            self.conversation_id,
+            self.client,
+            mode,
+            timings.get("capture_ms"),
+            timings.get("stt_ms"),
+            timings.get("grok_first_token_ms"),
+            timings.get("tts_first_audio_ms"),
+            timings.get("turn_ms"),
+            self._turn_audio_bytes,
+            self._turn_audio_chunks,
+        )
 
     async def _cancel_active_turn(self) -> None:
         task = self._active_turn_task

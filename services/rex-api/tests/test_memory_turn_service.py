@@ -140,6 +140,106 @@ async def test_memory_turn_service_updates_legacy_location_from_voice_correction
 
 
 @pytest.mark.asyncio
+async def test_memory_turn_service_updates_legacy_name_without_fingerprint():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User's name is Pedro.",
+            "importance": 5,
+            "metadata": {},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "My name is Pedro Martins",
+        conversation_id="conversation-1",
+        user_message={"id": "message-update", "content": "name correction"},
+        conversation_history=[],
+        time_context={"date": "2026-06-04"},
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["updated"] == 1
+    assert len(store.long_term_memory) == 1
+    assert store.long_term_memory[0]["content"] == "User's name is Pedro Martins."
+    assert store.long_term_memory[0]["metadata"]["topic_fingerprint"] == (
+        "fact:identity:name"
+    )
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_updates_legacy_preference_without_fingerprint():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "preference",
+            "content": "User prefers coffee over tea.",
+            "importance": 4,
+            "metadata": {},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "I prefer tea over coffee.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-update", "content": "preference correction"},
+        conversation_history=[],
+        time_context={"date": "2026-06-04"},
+    )
+
+    assert result is not None
+    assert result["response"] == "Got it, I updated that: you prefer tea over coffee."
+    assert result["memory_changes"]["updated"] == 1
+    assert len(store.long_term_memory) == 1
+    assert store.long_term_memory[0]["content"] == "User prefers tea over coffee."
+    assert store.long_term_memory[0]["metadata"]["topic_fingerprint"] == (
+        "preference:tea:coffee"
+    )
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_updates_legacy_movie_plan_without_fingerprint():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "event",
+            "content": "User plans to watch Messes Of The Universe movie today.",
+            "importance": 3,
+            "metadata": {},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "Today, they released the masters of the universe movie. I'm gonna watch.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-update", "content": "movie plan correction"},
+        conversation_history=[],
+        time_context={"date": "2026-06-04"},
+    )
+
+    assert result is not None
+    assert result["response"] == (
+        "Got it, I updated that: "
+        "you plan to watch Masters of the Universe movie today."
+    )
+    assert result["memory_changes"]["updated"] == 1
+    assert len(store.long_term_memory) == 1
+    assert store.long_term_memory[0]["content"] == (
+        "User plans to watch Masters of the Universe movie today."
+    )
+
+
+@pytest.mark.asyncio
 async def test_memory_turn_service_saves_personal_movie_plan_directly():
     store = FakeMemoryTurnStore()
     service = MemoryTurnService(store)
@@ -154,12 +254,35 @@ async def test_memory_turn_service_saves_personal_movie_plan_directly():
 
     assert result is not None
     assert result["response"] == (
-        "Got it, you plan to watch Messes Of The Universe movie today."
+        "Got it, you plan to watch Masters of the Universe movie today."
     )
     assert result["memory_changes"]["created"] == 1
     assert store.long_term_memory[0]["memory_type"] == "event"
     assert store.long_term_memory[0]["content"] == (
-        "User plans to watch Messes Of The Universe movie today."
+        "User plans to watch Masters of the Universe movie today."
+    )
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_saves_specific_preference_directly():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "I prefer tea over coffee.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-preference", "content": "preference"},
+        conversation_history=[],
+        time_context={"date": "2026-06-04"},
+    )
+
+    assert result is not None
+    assert result["response"] == "Got it, you prefer tea over coffee."
+    assert result["memory_changes"]["created"] == 1
+    assert store.long_term_memory[0]["memory_type"] == "preference"
+    assert store.long_term_memory[0]["content"] == "User prefers tea over coffee."
+    assert store.long_term_memory[0]["metadata"]["topic_fingerprint"] == (
+        "preference:tea:coffee"
     )
 
 

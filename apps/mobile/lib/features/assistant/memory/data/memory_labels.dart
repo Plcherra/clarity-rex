@@ -71,44 +71,6 @@ String memoryRiskLevelLabel(String value) {
   return _riskLevelLabels[_normalLabelKey(value)] ?? value.fallbackHumanLabel;
 }
 
-String memoryExpectedActionLabel(String value) {
-  final key = _normalLabelKey(value);
-  return _expectedActionLabels[key] ?? value.fallbackHumanLabel;
-}
-
-String memoryActionTitleLabel({
-  required String actionType,
-  required String status,
-}) {
-  final statusKey = _normalLabelKey(status);
-  if (statusKey == 'applied') {
-    return 'Saved memory';
-  }
-  if (statusKey == 'rejected') {
-    return 'Not saved';
-  }
-  if (statusKey == 'failed') {
-    return 'Needs attention';
-  }
-
-  switch (_normalLabelKey(actionType)) {
-    case 'correction':
-      return 'Proposed correction';
-    case 'plan':
-    case 'plan_milestone':
-      return 'Proposed plan memory';
-    case 'commitment':
-      return 'Proposed commitment';
-    case 'entity':
-    case 'entity_event':
-      return 'Proposed people memory';
-    case 'personal_rule':
-      return 'Proposed rule';
-    default:
-      return 'Proposed memory';
-  }
-}
-
 String? humanMemoryLabel(String value) {
   final key = _normalLabelKey(value);
   return _memoryActionTypeLabels[key] ??
@@ -169,32 +131,6 @@ String memoryPreviewWithRecordType(String value) {
     return label;
   }
   return '$label: $rest';
-}
-
-String? correctionPreviewLabel({
-  required String? oldValue,
-  required String? newValue,
-  required String? targetHint,
-}) {
-  final oldText = oldValue?.trim();
-  final newText = newValue?.trim();
-  final targetText = targetHint?.trim();
-  if (oldText != null &&
-      oldText.isNotEmpty &&
-      newText != null &&
-      newText.isNotEmpty) {
-    return 'Correction: replace "$oldText" with "$newText"';
-  }
-  if (targetText != null &&
-      targetText.isNotEmpty &&
-      newText != null &&
-      newText.isNotEmpty) {
-    return 'Correction: change "$targetText" to "$newText"';
-  }
-  if (targetText != null && targetText.isNotEmpty) {
-    return 'Correction: review $targetText';
-  }
-  return null;
 }
 
 String normalMemoryLabelKey(String value) {
@@ -258,30 +194,4 @@ const _riskLevelLabels = {
   'high': 'High risk',
   'critical': 'Critical risk',
   'info': 'Info',
-};
-
-const _expectedActionLabels = {
-  'create_long_term_memory_after_confirmation':
-      'Save this as something Rex knows',
-  'create_or_update_canonical_entity_after_confirmation':
-      'Update what Rex knows about this person or place',
-  'create_historical_entity_event_after_confirmation':
-      'Save this event to Rex memory',
-  'create_or_update_personal_rule_after_confirmation':
-      'Save this as a personal rule',
-  'create_or_update_top_level_plan_after_confirmation':
-      'Save this plan to Rex memory',
-  'create_or_update_achievement_milestone_after_confirmation':
-      'Save this milestone to Rex memory',
-  'create_or_update_task_commitment_after_confirmation':
-      'Save this commitment to Rex memory',
-  'review_correction_before_changing_saved_memory':
-      'Review before changing what Rex knows',
-  'replace_saved_memory_after_confirmation':
-      'Review before changing what Rex knows',
-  'archive_stale_record_after_confirmation': 'Archive an outdated saved memory',
-  'merge_duplicate_records_after_confirmation':
-      'Merge duplicate saved memories',
-  'apply_pending_memory_change_after_confirmation':
-      'Save this only after approval',
 };

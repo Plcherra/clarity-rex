@@ -301,10 +301,6 @@ class FakeAccountabilityService:
         return self.signals
 
 
-class FakeMemoryDisciplineService:
-    pass
-
-
 class FakeCorrectionIntent:
     confidence = 0.9
     intent_type = CorrectionIntentType.REPLACE_VALUE

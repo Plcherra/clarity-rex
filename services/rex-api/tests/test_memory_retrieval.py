@@ -392,6 +392,41 @@ async def test_get_relevant_memories_ignores_inactive_stale_correction_rows():
 
 
 @pytest.mark.asyncio
+async def test_get_relevant_memories_returns_corrected_location_only():
+    service = InMemoryRetrievalService(
+        [
+            {
+                "id": "memory-stale-location",
+                "memory_type": "fact",
+                "content": "User lives in Summerville, Massachusetts.",
+                "importance": 4,
+                "active": False,
+                "created_at": "2026-06-01T08:00:00Z",
+                "last_accessed_at": "2026-06-01T08:00:00Z",
+            },
+            {
+                "id": "memory-corrected-location",
+                "memory_type": "fact",
+                "content": "User lives in Somerville, Massachusetts.",
+                "importance": 4,
+                "active": True,
+                "metadata": {"topic_fingerprint": "fact:identity:location"},
+                "created_at": "2026-06-04T08:00:00Z",
+                "last_accessed_at": "2026-06-04T08:00:00Z",
+            },
+        ]
+    )
+
+    memories = await service.get_relevant_memories(
+        "Where do I live?",
+        limit=5,
+    )
+
+    assert [memory["id"] for memory in memories] == ["memory-corrected-location"]
+    assert "Somerville" in memories[0]["content"]
+
+
+@pytest.mark.asyncio
 async def test_get_relevant_memories_prefers_active_correction_over_stale_row():
     service = InMemoryRetrievalService(
         [

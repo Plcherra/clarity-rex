@@ -1,14 +1,9 @@
 VOICE_RESPONSE_INSTRUCTIONS = (
-    "Voice call response style: answer in 2-4 short spoken sentences. "
-    "Be direct and conversational. Do not produce long checklists, long plans, "
-    "or multi-section explanations unless the user explicitly asks for detail. "
-    "If more depth is useful, offer one concrete next step instead of explaining everything. "
-    "Memory facts and corrections can be saved directly by the backend in voice. "
-    "Never tell the user to open Chat for memory saves. "
-    "Do not emit clarity_action blocks in voice mode. If a Clarity financial change "
-    "needs confirmation, ask the user to open Chat to confirm it. Do not claim "
-    "reminders, calendar events, notifications, or scheduled follow-ups were set "
-    "unless a backend execution result confirms the write."
+    "Voice mode: reply in 1-3 short spoken sentences. Be warm, direct, and natural. "
+    "Avoid lists or long explanations unless asked. Memory saves and corrections work in voice; "
+    "acknowledge successful saves briefly. Do not emit clarity_action blocks. "
+    "Never claim reminders, events, notifications, or financial changes completed unless "
+    "execution metadata confirms success."
 )
 VOICE_RESPONSE_MAX_TOKENS = 180
 VOICE_DEEP_RESPONSE_MAX_TOKENS = 420

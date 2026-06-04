@@ -57,6 +57,16 @@ class MemoryIntentService:
         r"watch\s+(?P<object>[^.!?]{2,100})",
         re.IGNORECASE,
     )
+    _preference_pattern = re.compile(
+        r"\bi\s+prefer\s+(?P<preferred>[^.!?]{2,80}?)\s+"
+        r"(?:over|to|more\s+than|instead\s+of)\s+(?P<other>[^.!?]{2,80})",
+        re.IGNORECASE,
+    )
+    _like_preference_pattern = re.compile(
+        r"\bi\s+like\s+(?P<preferred>[^.!?]{2,80}?)\s+"
+        r"(?:more\s+than|better\s+than|over)\s+(?P<other>[^.!?]{2,80})",
+        re.IGNORECASE,
+    )
     _explicit_save_request_pattern = re.compile(
         r"\b(?:remember|save|keep|note)\b.*\b(?:this|that|memory|birthday)\b|"
         r"\bremember\s+me\s+(?:about|to)\b", re.IGNORECASE,
@@ -87,6 +97,10 @@ class MemoryIntentService:
         identity_intent = self._detect_identity_fact(message)
         if identity_intent is not None:
             return identity_intent
+
+        preference_intent = self._detect_preference(message)
+        if preference_intent is not None:
+            return preference_intent
 
         personal_plan_intent = self._detect_personal_plan(message)
         if personal_plan_intent is not None:
@@ -290,6 +304,34 @@ class MemoryIntentService:
             },
         )
 
+    def _detect_preference(self, message: str) -> Optional[SimpleMemoryIntent]:
+        match = self._preference_pattern.search(message)
+        if match is None:
+            match = self._like_preference_pattern.search(message)
+        if match is None:
+            return None
+
+        preferred = self._clean_fact(match.group("preferred"))
+        other = self._clean_fact(match.group("other"))
+        if len(preferred) < 2 or len(other) < 2:
+            return None
+
+        content = f"User prefers {preferred} over {other}."
+        return SimpleMemoryIntent(
+            memory_type="preference",
+            content=content,
+            importance=4,
+            metadata={
+                "fact_kind": "preference",
+                "preferred": preferred,
+                "compared_to": other,
+                "topic_fingerprint": (
+                    f"preference:{self._fingerprint(preferred)}:"
+                    f"{self._fingerprint(other)}"
+                ),
+            },
+        )
+
     def _detect_contextual_birthday_memory(
         self,
         message: str,
@@ -404,6 +446,16 @@ class MemoryIntentService:
         cleaned = cleaned.strip()
         if len(cleaned) < 3:
             return ""
+        normalized = re.sub(r"[^a-z0-9]+", " ", cleaned.lower()).strip()
+        known_titles = {
+            "masters of the universe": "Masters of the Universe",
+            "masters universe": "Masters of the Universe",
+            "messes of the universe": "Masters of the Universe",
+            "mess of the universe": "Masters of the Universe",
+            "master of the universe": "Masters of the Universe",
+        }
+        if normalized in known_titles:
+            return known_titles[normalized]
         return " ".join(word.capitalize() for word in cleaned.split())
 
     def _sentence_body(self, content: str) -> str:

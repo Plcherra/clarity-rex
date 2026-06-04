@@ -1,3 +1,7 @@
+import logging
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -5,9 +9,14 @@ import app.services.voice_stream_session as voice_stream_session_module
 from app.main import app
 from app.services.deepgram_service import DeepgramServiceError
 from app.services.google_tts_service import GoogleTTSServiceError
+from app.services.chat_service import ChatService
+from app.services.file_service import FileService
 from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.time_context_service import TimeContextService
+from chat_service_fakes import FakeAIService, FakeMemoryService
 from app.services.voice_stream_session import (
     VOICE_DEEP_RESPONSE_MAX_TOKENS,
+    VOICE_RESPONSE_INSTRUCTIONS,
     VOICE_RESPONSE_MAX_TOKENS,
     VoiceStreamSession,
     voice_response_max_tokens,
@@ -33,7 +42,31 @@ def client():
     app.dependency_overrides.clear()
 
 
-def test_voice_stream_completes_streaming_turn(client):
+def _fixed_time_context_service():
+    return TimeContextService(
+        timezone_name="America/New_York",
+        now_provider=lambda: datetime(
+            2026,
+            6,
+            1,
+            12,
+            0,
+            tzinfo=ZoneInfo("America/New_York"),
+        ),
+    )
+
+
+def _real_chat_service(ai_service=None, memory_service=None):
+    return ChatService(
+        ai_service or FakeAIService(),
+        FileService(),
+        memory_service or FakeMemoryService(),
+        time_context_service=_fixed_time_context_service(),
+    )
+
+
+def test_voice_stream_completes_streaming_turn(client, caplog):
+    caplog.set_level(logging.INFO, logger="rex.voice_stream")
     deepgram = FakeDeepgramStreamingService()
     chat = FakeChatService()
     tts = FakeGoogleTTSService()
@@ -84,6 +117,12 @@ def test_voice_stream_completes_streaming_turn(client):
         assert done["response_text"] == "Rex streaming response."
         assert "stt_ms" in done["timings"]
         assert "turn_ms" in done["timings"]
+        assert any(
+            "voice_turn_timing" in record.message
+            and "stt_ms=" in record.message
+            and "turn_ms=" in record.message
+            for record in caplog.records
+        )
 
         websocket.send_json({"event": "session.end"})
         ended = websocket.receive_json()
@@ -101,18 +140,7 @@ def test_voice_stream_completes_streaming_turn(client):
             "message": "Hey Rex",
             "conversation_id": "conversation-existing",
             "file": None,
-            "response_instructions": (
-                "Voice call response style: answer in 2-4 short spoken sentences. "
-                "Be direct and conversational. Do not produce long checklists, long plans, "
-                "or multi-section explanations unless the user explicitly asks for detail. "
-                "If more depth is useful, offer one concrete next step instead of explaining everything. "
-                "Memory facts and corrections can be saved directly by the backend in voice. "
-                "Never tell the user to open Chat for memory saves. "
-                "Do not emit clarity_action blocks in voice mode. If a Clarity financial change "
-                "needs confirmation, ask the user to open Chat to confirm it. Do not claim "
-                "reminders, calendar events, notifications, or scheduled follow-ups were set "
-                "unless a backend execution result confirms the write."
-            ),
+            "response_instructions": VOICE_RESPONSE_INSTRUCTIONS,
             "max_response_tokens": VOICE_RESPONSE_MAX_TOKENS,
             "financial_context": None,
             "channel": RexBrainChannel.VOICE,
@@ -122,6 +150,98 @@ def test_voice_stream_completes_streaming_turn(client):
     assert chat.metadata_calls[0]["conversation_id"] == "conversation-existing"
     assert chat.metadata_calls[0]["user_message_id"] == "user-message-1"
     assert chat.metadata_calls[0]["assistant_message_id"] == "assistant-message-1"
+
+
+def test_voice_stream_saves_direct_memory_through_real_chat_service(client):
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat = _real_chat_service(ai_service, memory_service)
+    deepgram = FakeDeepgramStreamingService(
+        transcript="My mom's birthday is June 18",
+        partial_transcript="My mom",
+    )
+    tts = FakeGoogleTTSService()
+    override_services(deepgram, chat, tts)
+
+    with client.websocket_connect("/voice/stream") as websocket:
+        websocket.send_json({"event": "session.start"})
+        websocket.receive_json()
+        websocket.send_bytes(b"pcm-frame")
+        websocket.receive_json()
+        websocket.send_json({"event": "utterance.end"})
+
+        final = receive_until(websocket, "transcript.final")
+        assert final["transcript"] == "My mom's birthday is June 18"
+
+        token = receive_until(websocket, "assistant.token")
+        assert token["token"] == "Got it, your mom's birthday is June 18."
+
+        messages = receive_until(websocket, "messages.updated")
+        assert messages["memory_changes"]["created"] == 1
+        assert messages["memory_changes"]["records"][0]["action"] == "direct_saved"
+
+        done = receive_until(websocket, "assistant.done")
+        assert done["response_text"] == "Got it, your mom's birthday is June 18."
+        assert done["memory_changes"]["created"] == 1
+
+    assert ai_service.generate_calls == 0
+    assert ai_service.stream_calls == 0
+    assert memory_service.long_term_memory[0]["content"] == (
+        "User's mom's birthday is June 18."
+    )
+    assert tts.calls == ["Got it, your mom's birthday is June 18."]
+
+
+def test_voice_stream_updates_memory_through_real_chat_service(client):
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.conversations.add("conversation-existing")
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Summerville, Massachusetts.",
+            "importance": 4,
+            "metadata": {},
+            "active": True,
+        }
+    )
+    chat = _real_chat_service(ai_service, memory_service)
+    deepgram = FakeDeepgramStreamingService(
+        transcript=(
+            "Can you change my location? It's Somerville with one o and one m."
+        ),
+        partial_transcript="Can you change my location?",
+    )
+    override_services(deepgram_streaming_service=deepgram, chat_service=chat)
+
+    with client.websocket_connect("/voice/stream") as websocket:
+        websocket.send_json(
+            {
+                "event": "session.start",
+                "conversation_id": "conversation-existing",
+            }
+        )
+        websocket.receive_json()
+        websocket.send_bytes(b"pcm-frame")
+        websocket.receive_json()
+        websocket.send_json({"event": "utterance.end"})
+
+        messages = receive_until(websocket, "messages.updated")
+        assert messages["memory_changes"]["updated"] == 1
+
+        done = receive_until(websocket, "assistant.done")
+        assert done["response_text"] == (
+            "Got it, I updated that: you live in Somerville, Massachusetts."
+        )
+        assert done["memory_changes"]["updated"] == 1
+
+    assert ai_service.generate_calls == 0
+    assert ai_service.stream_calls == 0
+    assert len(memory_service.long_term_memory) == 1
+    assert memory_service.long_term_memory[0]["content"] == (
+        "User lives in Somerville, Massachusetts."
+    )
 
 
 @pytest.mark.asyncio

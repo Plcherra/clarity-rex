@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:clarity/features/assistant/voice/application/voice_call_controller.dart';
@@ -12,6 +11,7 @@ import 'package:clarity/features/assistant/voice/data/background_voice_service.d
 import 'package:clarity/features/assistant/voice/data/streaming_audio_capture_service.dart';
 import 'package:clarity/features/assistant/voice/data/streaming_voice_api.dart';
 import 'package:clarity/features/assistant/voice/domain/voice_call_state.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +20,69 @@ part 'voice_call_controller_test_fakes.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test(
+    'voice endpoint detector keeps short pauses inside long speech open',
+    () {
+      const config = VoiceCaptureConfig();
+      expect(config.silenceAfterSpeech, const Duration(milliseconds: 2100));
+      expect(config.maxUtteranceDuration, const Duration(seconds: 120));
+
+      final startedAt = DateTime(2026);
+      final detector = VoiceEndpointDetector(
+        config: config,
+        startedAt: startedAt,
+      );
+
+      final speechStart = detector.addAmplitude(currentDb: -42, now: startedAt);
+      expect(speechStart.speechStarted, isTrue);
+      expect(speechStart.endpointReached, isFalse);
+
+      final shortPause = detector.addAmplitude(
+        currentDb: -80,
+        now: startedAt.add(const Duration(milliseconds: 1800)),
+      );
+      expect(shortPause.endpointReached, isFalse);
+
+      final resumedSpeech = detector.addAmplitude(
+        currentDb: -43,
+        now: startedAt.add(const Duration(milliseconds: 1900)),
+      );
+      expect(resumedSpeech.endpointReached, isFalse);
+
+      final secondShortPause = detector.addAmplitude(
+        currentDb: -80,
+        now: startedAt.add(const Duration(milliseconds: 3700)),
+      );
+      expect(secondShortPause.endpointReached, isFalse);
+
+      final realEndpoint = detector.addAmplitude(
+        currentDb: -80,
+        now: startedAt.add(const Duration(milliseconds: 4100)),
+      );
+      expect(realEndpoint.endpointReached, isTrue);
+    },
+  );
+
+  test('voice audio session asks native iOS to prefer loud speaker', () async {
+    const channel = MethodChannel('clarity/voice_audio');
+    final calls = <String>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call.method);
+          return null;
+        });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+
+    await PackageVoiceAudioSessionService(
+      voiceAudioChannel: channel,
+    ).preferLoudSpeaker();
+
+    expect(calls, ['preferLoudSpeaker']);
+  });
 
   test(
     'streaming voice force-endpoints after speech starts but no final event',
@@ -175,13 +238,14 @@ void main() {
       final captureService = _ScriptedStreamingAudioCaptureService();
       final streamingApi = _FakeStreamingVoiceApi();
       final playbackService = _ControlledAudioPlaybackService();
+      final audioSessionService = _CountingVoiceAudioSessionService();
       final container = ProviderContainer(
         overrides: [
           microphonePermissionProvider.overrideWithValue(
             const _GrantedMicrophonePermissionService(),
           ),
           voiceAudioSessionServiceProvider.overrideWithValue(
-            const _NoopVoiceAudioSessionService(),
+            audioSessionService,
           ),
           backgroundVoiceServiceProvider.overrideWithValue(
             const _NoopBackgroundVoiceService(),
@@ -225,6 +289,10 @@ void main() {
 
       await playbackService.playStarted.future;
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+      expect(
+        audioSessionService.preferLoudSpeakerCount,
+        greaterThanOrEqualTo(1),
+      );
 
       streamingApi.socket.emit({
         'event': 'assistant.done',

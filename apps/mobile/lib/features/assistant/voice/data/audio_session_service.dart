@@ -8,6 +8,8 @@ typedef VoiceAudioInterruptionCallback = void Function(String message);
 abstract class VoiceAudioSessionService {
   Future<void> configureForVoiceTurn();
 
+  Future<void> preferLoudSpeaker();
+
   Future<void> setActive(bool active);
 
   StreamSubscription<void> listenForNoisyAudio(
@@ -20,6 +22,11 @@ abstract class VoiceAudioSessionService {
 }
 
 class PackageVoiceAudioSessionService implements VoiceAudioSessionService {
+  PackageVoiceAudioSessionService({MethodChannel? voiceAudioChannel})
+    : _voiceAudioChannel =
+          voiceAudioChannel ?? const MethodChannel('clarity/voice_audio');
+
+  final MethodChannel _voiceAudioChannel;
   AudioSession? _session;
 
   @override
@@ -44,10 +51,22 @@ class PackageVoiceAudioSessionService implements VoiceAudioSessionService {
         ),
       );
       await session.setActive(true);
+      await preferLoudSpeaker();
     } on MissingPluginException {
       // Tests and unsupported platforms can run without native audio sessions.
     } on Object {
       // Audio-session setup should improve reliability, not block voice mode.
+    }
+  }
+
+  @override
+  Future<void> preferLoudSpeaker() async {
+    try {
+      await _voiceAudioChannel.invokeMethod<void>('preferLoudSpeaker');
+    } on MissingPluginException {
+      // Android, tests, and old builds can rely on audio-session flags.
+    } on Object {
+      // Speaker preference should never block voice mode.
     }
   }
 

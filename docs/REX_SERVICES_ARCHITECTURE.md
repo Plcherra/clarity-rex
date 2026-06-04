@@ -16,6 +16,7 @@ This root-level guide documents the post-refactor Rex service structure so futur
 | `rex_brain_chat_service.py` | Owns Rex Brain planning, model kwargs, request ids, metadata, and chat contract application. |
 | `memory_turn_service.py` | Owns natural simple-memory confirmation, direct durable save/reject paths, and public message cleanup. |
 | `memory_service.py` | Compatibility facade over transport, repositories, retrieval, structured CRUD, corrections, and direct durable memory writes. |
+| `memory_discipline_service.py` | Structured plan/entity/rule policy helper only. It is no longer injected into normal chat or voice turns. |
 | `voice_stream_session.py` | Backend voice WebSocket session orchestration. Capture, planning, response streaming, playback coordination, and shutdown are delegated where practical. |
 | `plaid_sync_service.py` | Fail-closed Plaid service skeleton. It documents the boundary and prevents Plaid work from leaking into chat or memory services before runtime integration is approved. |
 
@@ -35,9 +36,22 @@ This root-level guide documents the post-refactor Rex service structure so futur
 - Keep public facades stable: `ChatService`, `MemoryService`, `memoryProvider`, and `memoryApiProvider`.
 - Normal chat and voice turns must not run post-turn memory extraction or a second LLM call. Durable memory writes flow through `memory_turn_service.py`.
 - Pending memory review tables are legacy-only. Product code must not import, route to, render, or recreate pending memory review flows.
+- Structured memory policy helpers may use neutral "candidate" naming internally for plan classification, but they must not create pending memory cards or UI review queues.
 - Extract pure helpers before changing orchestration code.
 - Move tests with behavior, not after behavior.
 - New Plaid or Stripe work should start in focused service files and integrate through existing facades only after the service has tests.
+
+## Oversized File Exceptions
+
+Generated files are exempt from the 500-line source limit. Existing oversized hand-written files should not grow further before they are split.
+
+| File | Current status |
+| --- | --- |
+| `apps/mobile/lib/features/assistant/chat/data/chat_models.freezed.dart` | Generated; exempt. |
+| `apps/mobile/lib/app/ui_dependencies.dart` | Existing app bootstrap aggregate; split when the next dependency group changes. |
+| `services/rex-api/app/services/entity_service.py` | Existing structured-memory facade; split entity CRUD/lookup before adding behavior. |
+| `services/rex-api/app/services/plan_service.py` | Existing structured-plan facade; split plan, milestone, and commitment paths before adding behavior. |
+| `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart` | Existing chat UI shell; next cleanup should extract composer and scroll orchestration. |
 
 ## Known Follow-Up Areas
 

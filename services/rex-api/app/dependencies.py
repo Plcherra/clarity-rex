@@ -12,7 +12,6 @@ from app.services.deepgram_streaming_service import DeepgramStreamingService
 from app.services.entity_service import EntityService
 from app.services.file_service import FileService
 from app.services.google_tts_service import GoogleTTSService
-from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_service import SupabaseMemoryService
 from app.services.plan_service import PlanService
 from app.services.rule_service import RuleService
@@ -69,12 +68,6 @@ def get_accountability_service() -> AccountabilityService:
     return AccountabilityService()
 
 
-def get_memory_discipline_service(
-    memory_service: SupabaseMemoryService = Depends(get_memory_service),
-) -> MemoryDisciplineService:
-    return MemoryDisciplineService(memory_service)
-
-
 def get_deepgram_service() -> DeepgramService:
     return DeepgramService()
 
@@ -90,9 +83,6 @@ def get_google_tts_service() -> GoogleTTSService:
 def get_chat_service(
     ai_service: AIService = Depends(get_ai_service),
     memory_service: SupabaseMemoryService = Depends(get_memory_service),
-    memory_discipline_service: MemoryDisciplineService = Depends(
-        get_memory_discipline_service
-    ),
 ) -> ChatService:
     settings = get_settings()
     return ChatService(
@@ -101,5 +91,4 @@ def get_chat_service(
         memory_service,
         time_context_service=TimeContextService(timezone_name=settings.app_timezone),
         accountability_service=get_accountability_service(),
-        memory_discipline_service=memory_discipline_service,
     )

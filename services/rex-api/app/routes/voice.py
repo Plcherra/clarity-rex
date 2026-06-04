@@ -20,7 +20,10 @@ from app.services.deepgram_service import DeepgramService, DeepgramServiceError
 from app.services.google_tts_service import GoogleTTSService, GoogleTTSServiceError
 from app.services.memory_service import MemoryServiceError
 from app.services.rex_brain_contracts import RexBrainChannel
-from app.services.voice_stream_session import voice_response_max_tokens
+from app.services.voice_stream_session import (
+    VOICE_RESPONSE_INSTRUCTIONS,
+    voice_response_max_tokens,
+)
 
 
 router = APIRouter(prefix="/voice", tags=["voice"])
@@ -38,15 +41,7 @@ SUPPORTED_AUDIO_TYPES = {
     "audio/webm",
     "application/octet-stream",
 }
-VOICE_TURN_RESPONSE_INSTRUCTIONS = (
-    "Voice turn response style: answer in 2-4 short spoken sentences. "
-    "Memory facts and corrections can be saved directly by the backend in voice. "
-    "Never tell the user to open Chat for memory saves. "
-    "Do not emit clarity_action blocks in voice mode. If a Clarity financial "
-    "change needs confirmation, ask the user to open Chat to confirm it. "
-    "Do not claim reminders, calendar events, notifications, or scheduled "
-    "follow-ups were set unless a backend execution result confirms the write."
-)
+VOICE_TURN_RESPONSE_INSTRUCTIONS = VOICE_RESPONSE_INSTRUCTIONS
 
 
 @router.post("/transcribe", response_model=VoiceTranscriptionResponse)

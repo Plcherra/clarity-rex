@@ -9,6 +9,22 @@ from app.services.memory_intent_service import SimpleMemoryIntent
 from app.services.memory_path_policy import direct_save_metadata
 
 
+_MEMORY_TOPIC_STOP_WORDS = {
+    "and",
+    "for",
+    "have",
+    "movie",
+    "plan",
+    "plans",
+    "today",
+    "tomorrow",
+    "tonight",
+    "user",
+    "watch",
+    "will",
+}
+
+
 class MemoryTurnDirectHelpers:
     async def _find_equivalent_active_memory(
         self,
@@ -100,6 +116,8 @@ class MemoryTurnDirectHelpers:
         normalized_content = self._normalize_memory_text(
             str(memory.get("content") or "")
         )
+        if fact_kind == "name":
+            return "name" in normalized_content
         if fact_kind == "location":
             return "live" in normalized_content and (
                 "user" in normalized_content or "i " in f"{normalized_content} "
@@ -111,11 +129,73 @@ class MemoryTurnDirectHelpers:
             return "birthday" in normalized_content and (
                 not entity or entity in normalized_content
             )
+        if fact_kind == "preference":
+            return self._memory_preference_topic_matches(normalized_content, intent)
+        if fact_kind == "personal_plan":
+            return self._memory_plan_topic_matches(normalized_content, intent)
         return False
 
     def _normalize_memory_text(self, text: str) -> str:
         normalized = re.sub(r"[^a-z0-9]+", " ", text.lower())
         return re.sub(r"\s+", " ", normalized).strip()
+
+    def _memory_preference_topic_matches(
+        self,
+        normalized_content: str,
+        intent: SimpleMemoryIntent,
+    ) -> bool:
+        preferred = self._normalize_memory_text(
+            str(intent.metadata.get("preferred") or "")
+        )
+        compared_to = self._normalize_memory_text(
+            str(intent.metadata.get("compared_to") or "")
+        )
+        if not preferred or not compared_to:
+            return False
+        return (
+            "prefer" in normalized_content
+            and preferred in normalized_content
+            and compared_to in normalized_content
+        )
+
+    def _memory_plan_topic_matches(
+        self,
+        normalized_content: str,
+        intent: SimpleMemoryIntent,
+    ) -> bool:
+        if "watch" not in normalized_content:
+            return False
+        if "watch" not in self._normalize_memory_text(intent.content):
+            return False
+
+        content_words = self._memory_topic_words(normalized_content)
+        intent_words = self._memory_topic_words(intent.content)
+        if not intent_words:
+            return False
+
+        shared = content_words & intent_words
+        if len(shared) >= 2:
+            return True
+
+        title_words = {"masters", "messes", "universe"}
+        has_title_overlap = bool(shared & title_words) or (
+            bool(content_words & title_words) and bool(intent_words & title_words)
+        )
+        has_time_overlap = bool(
+            {"today", "tonight", "tomorrow"} & set(normalized_content.split())
+        ) and bool(
+            {"today", "tonight", "tomorrow"}
+            & set(self._normalize_memory_text(intent.content).split())
+        )
+        return has_title_overlap and has_time_overlap
+
+    def _memory_topic_words(self, text: str) -> set[str]:
+        normalized = self._normalize_memory_text(text)
+        return {
+            word
+            for word in normalized.split()
+            if len(word) >= 4 and word not in _MEMORY_TOPIC_STOP_WORDS
+        }
 
     async def _already_saved_simple_memory(
         self,

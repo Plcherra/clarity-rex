@@ -10,6 +10,7 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
     _isHandlingLifecycleResume = true;
     try {
       await _audioSessionService.configureForVoiceTurn();
+      await _audioSessionService.preferLoudSpeaker();
       await _backgroundVoiceService.start();
       if (state.isCallActive &&
           state.phase == VoiceCallPhase.thinking &&
