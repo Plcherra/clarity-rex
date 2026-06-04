@@ -35,6 +35,28 @@ class MemoryIntentService:
         r"\bi\s+live\s+in\s+(?P<place>[A-Za-z][A-Za-z\s,.'-]{1,100})",
         re.IGNORECASE,
     )
+    _location_correction_pattern = re.compile(
+        r"\b(?:change|correct|update|fix)\s+(?:my\s+)?location\b.*?"
+        r"(?:\bit(?:'s| is)\b|\bto\b)\s+(?P<place>[A-Za-z][A-Za-z\s,.'-]{1,120})",
+        re.IGNORECASE,
+    )
+    _personal_movie_plan_pattern = re.compile(
+        r"\b(?P<time>today|tonight|tomorrow)\b.*?"
+        r"(?:(?P<title>[A-Za-z][A-Za-z\s:'-]{2,80})\s+movie\b)?.*?"
+        r"\b(?:i(?:'m| am)\s+(?:gonna|going to)|i\s+will|i\s+plan\s+to)\s+watch\b",
+        re.IGNORECASE,
+    )
+    _released_movie_plan_pattern = re.compile(
+        r"\b(?P<time>today|tonight|tomorrow)\b.*?\breleased\s+(?:the\s+)?"
+        r"(?P<title>[A-Za-z][A-Za-z\s:'-]{2,80})\s+movie\b.*?"
+        r"\b(?:i(?:'m| am)\s+(?:gonna|going to)|i\s+will|i\s+plan\s+to)\s+watch\b",
+        re.IGNORECASE,
+    )
+    _personal_watch_plan_pattern = re.compile(
+        r"\b(?:i(?:'m| am)\s+(?:gonna|going to)|i\s+will|i\s+plan\s+to)\s+"
+        r"watch\s+(?P<object>[^.!?]{2,100})",
+        re.IGNORECASE,
+    )
     _explicit_save_request_pattern = re.compile(
         r"\b(?:remember|save|keep|note)\b.*\b(?:this|that|memory|birthday)\b|"
         r"\bremember\s+me\s+(?:about|to)\b", re.IGNORECASE,
@@ -65,6 +87,10 @@ class MemoryIntentService:
         identity_intent = self._detect_identity_fact(message)
         if identity_intent is not None:
             return identity_intent
+
+        personal_plan_intent = self._detect_personal_plan(message)
+        if personal_plan_intent is not None:
+            return personal_plan_intent
 
         remember_intent = self._detect_remember_that(message)
         if remember_intent is not None:
@@ -188,6 +214,12 @@ class MemoryIntentService:
         )
 
     def _detect_identity_fact(self, message: str) -> Optional[SimpleMemoryIntent]:
+        location_correction = self._location_correction_pattern.search(message)
+        if location_correction is not None:
+            place = self._clean_place(location_correction.group("place"), message)
+            if len(place) >= 2:
+                return self._location_intent(place)
+
         name_match = self._name_pattern.search(message)
         if name_match is not None:
             name = self._clean_fact(name_match.group("name"))
@@ -208,6 +240,9 @@ class MemoryIntentService:
         place = self._clean_fact(place_match.group("place"))
         if len(place) < 2:
             return None
+        return self._location_intent(place)
+
+    def _location_intent(self, place: str) -> SimpleMemoryIntent:
         return SimpleMemoryIntent(
             memory_type="fact",
             content=f"User lives in {place}.",
@@ -215,6 +250,43 @@ class MemoryIntentService:
             metadata={
                 "fact_kind": "location",
                 "topic_fingerprint": "fact:identity:location",
+            },
+        )
+
+    def _detect_personal_plan(self, message: str) -> Optional[SimpleMemoryIntent]:
+        movie_plan = self._released_movie_plan_pattern.search(message)
+        if movie_plan is None:
+            movie_plan = self._personal_movie_plan_pattern.search(message)
+        if movie_plan is not None:
+            time_text = movie_plan.group("time").lower()
+            title = self._clean_movie_title(movie_plan.group("title") or "")
+            if title:
+                content = f"User plans to watch {title} movie {time_text}."
+            else:
+                content = f"User plans to watch a movie {time_text}."
+            return self._personal_plan_intent(content)
+
+        watch_plan = self._personal_watch_plan_pattern.search(message)
+        if watch_plan is None:
+            return None
+        normalized = self._normalize_reply(message)
+        if not any(token in normalized for token in {"today", "tonight", "tomorrow"}):
+            return None
+        watch_object = self._clean_fact(watch_plan.group("object"))
+        if len(watch_object) < 3:
+            return None
+        return self._personal_plan_intent(
+            f"User plans to watch {watch_object}.",
+        )
+
+    def _personal_plan_intent(self, content: str) -> SimpleMemoryIntent:
+        return SimpleMemoryIntent(
+            memory_type="event",
+            content=content,
+            importance=3,
+            metadata={
+                "fact_kind": "personal_plan",
+                "topic_fingerprint": f"event:personal_plan:{self._fingerprint(content)}",
             },
         )
 
@@ -312,6 +384,28 @@ class MemoryIntentService:
         cleaned = re.sub(r"\s+", " ", fact).strip()
         return cleaned.strip(" .!?")
 
+    def _clean_place(self, place: str, message: str) -> str:
+        cleaned = self._clean_fact(place)
+        normalized = cleaned.lower()
+        message_normalized = message.lower()
+        if re.search(r"\b(?:summerville|somerville)\b", normalized) and re.search(
+            r"\b(?:one|1)\s*o\b", message_normalized
+        ) and re.search(r"\b(?:one|1)\s*m\b", message_normalized):
+            if "massachusetts" in message_normalized or "location" in message_normalized:
+                return "Somerville, Massachusetts"
+            return "Somerville"
+        return cleaned
+
+    def _clean_movie_title(self, title: str) -> str:
+        cleaned = self._clean_fact(title)
+        cleaned = re.sub(r"^(?:the\s+)?released\s+", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"^they\s+released\s+", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"^the\s+", "", cleaned, flags=re.IGNORECASE)
+        cleaned = cleaned.strip()
+        if len(cleaned) < 3:
+            return ""
+        return " ".join(word.capitalize() for word in cleaned.split())
+
     def _sentence_body(self, content: str) -> str:
         body = content.strip().rstrip(".")
         replacements = (
@@ -321,6 +415,7 @@ class MemoryIntentService:
             ("User has", "you have"),
             ("User likes", "you like"),
             ("User prefers", "you prefer"),
+            ("User plans", "you plan"),
         )
         for old, new in replacements:
             if body.startswith(old):

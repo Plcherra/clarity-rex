@@ -40,6 +40,8 @@ SUPPORTED_AUDIO_TYPES = {
 }
 VOICE_TURN_RESPONSE_INSTRUCTIONS = (
     "Voice turn response style: answer in 2-4 short spoken sentences. "
+    "Memory facts and corrections can be saved directly by the backend in voice. "
+    "Never tell the user to open Chat for memory saves. "
     "Do not emit clarity_action blocks in voice mode. If a Clarity financial "
     "change needs confirmation, ask the user to open Chat to confirm it. "
     "Do not claim reminders, calendar events, notifications, or scheduled "

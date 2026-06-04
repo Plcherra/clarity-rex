@@ -49,7 +49,7 @@ class PackageAudioPlaybackService implements AudioPlaybackService {
       await _audioPlayer.setAudioContext(
         AudioContext(
           android: const AudioContextAndroid(
-            isSpeakerphoneOn: false,
+            isSpeakerphoneOn: true,
             stayAwake: true,
             contentType: AndroidContentType.speech,
             usageType: AndroidUsageType.voiceCommunication,
@@ -61,6 +61,7 @@ class PackageAudioPlaybackService implements AudioPlaybackService {
               AVAudioSessionOptions.allowBluetooth,
               AVAudioSessionOptions.allowBluetoothA2DP,
               AVAudioSessionOptions.allowAirPlay,
+              AVAudioSessionOptions.defaultToSpeaker,
             },
           ),
         ),

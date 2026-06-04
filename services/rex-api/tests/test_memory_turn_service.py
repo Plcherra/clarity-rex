@@ -102,6 +102,68 @@ async def test_memory_turn_service_updates_same_topic_instead_of_duplicating():
 
 
 @pytest.mark.asyncio
+async def test_memory_turn_service_updates_legacy_location_from_voice_correction():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Summerville, Massachusetts.",
+            "importance": 4,
+            "metadata": {},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "Quick reminder. Can you change my location? "
+        "Because you wrote it wrong. It's Summerville with one o and one m.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-update", "content": "location correction"},
+        conversation_history=[],
+        time_context={"date": "2026-06-04"},
+    )
+
+    assert result is not None
+    assert result["response"] == (
+        "Got it, I updated that: you live in Somerville, Massachusetts."
+    )
+    assert result["memory_changes"]["updated"] == 1
+    assert len(store.long_term_memory) == 1
+    assert store.long_term_memory[0]["content"] == (
+        "User lives in Somerville, Massachusetts."
+    )
+    assert store.long_term_memory[0]["metadata"]["topic_fingerprint"] == (
+        "fact:identity:location"
+    )
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_saves_personal_movie_plan_directly():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "Today, they released the messes of the universe movie. I'm gonna watch.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-plan", "content": "movie plan"},
+        conversation_history=[],
+        time_context={"date": "2026-06-04"},
+    )
+
+    assert result is not None
+    assert result["response"] == (
+        "Got it, you plan to watch Messes Of The Universe movie today."
+    )
+    assert result["memory_changes"]["created"] == 1
+    assert store.long_term_memory[0]["memory_type"] == "event"
+    assert store.long_term_memory[0]["content"] == (
+        "User plans to watch Messes Of The Universe movie today."
+    )
+
+
+@pytest.mark.asyncio
 async def test_memory_turn_service_saves_contextual_birthday_answer():
     store = FakeMemoryTurnStore()
     service = MemoryTurnService(store)

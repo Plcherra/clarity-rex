@@ -32,8 +32,9 @@ class PackageVoiceAudioSessionService implements VoiceAudioSessionService {
           avAudioSessionCategoryOptions:
               AVAudioSessionCategoryOptions.allowBluetooth |
               AVAudioSessionCategoryOptions.allowBluetoothA2dp |
-              AVAudioSessionCategoryOptions.allowAirPlay,
-          avAudioSessionMode: AVAudioSessionMode.voiceChat,
+              AVAudioSessionCategoryOptions.allowAirPlay |
+              AVAudioSessionCategoryOptions.defaultToSpeaker,
+          avAudioSessionMode: AVAudioSessionMode.spokenAudio,
           androidAudioAttributes: const AndroidAudioAttributes(
             contentType: AndroidAudioContentType.speech,
             usage: AndroidAudioUsage.voiceCommunication,

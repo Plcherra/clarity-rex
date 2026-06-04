@@ -76,6 +76,7 @@ class PackageTextToSpeechService implements TextToSpeechService {
           IosTextToSpeechAudioCategoryOptions.duckOthers,
           IosTextToSpeechAudioCategoryOptions.allowBluetooth,
           IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+          IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
         ],
         IosTextToSpeechAudioMode.spokenAudio,
       );

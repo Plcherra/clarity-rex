@@ -106,6 +106,8 @@ def test_voice_stream_completes_streaming_turn(client):
                 "Be direct and conversational. Do not produce long checklists, long plans, "
                 "or multi-section explanations unless the user explicitly asks for detail. "
                 "If more depth is useful, offer one concrete next step instead of explaining everything. "
+                "Memory facts and corrections can be saved directly by the backend in voice. "
+                "Never tell the user to open Chat for memory saves. "
                 "Do not emit clarity_action blocks in voice mode. If a Clarity financial change "
                 "needs confirmation, ask the user to open Chat to confirm it. Do not claim "
                 "reminders, calendar events, notifications, or scheduled follow-ups were set "

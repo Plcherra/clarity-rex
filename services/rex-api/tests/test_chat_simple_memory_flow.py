@@ -206,6 +206,73 @@ async def test_simple_memory_direct_save_works_in_voice_stream():
 
 
 @pytest.mark.asyncio
+async def test_voice_stream_directly_updates_location_memory():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Summerville, Massachusetts.",
+            "importance": 4,
+            "metadata": {},
+            "active": True,
+        }
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "Can you change my location? It's Summerville with one o and one m.",
+            channel=RexBrainChannel.VOICE,
+        )
+    ]
+
+    assert events[-1]["memory_changes"]["updated"] == 1
+    assert events[-1]["response"] == (
+        "Got it, I updated that: you live in Somerville, Massachusetts."
+    )
+    assert ai_service.messages == []
+    assert len(memory_service.long_term_memory) == 1
+    assert memory_service.long_term_memory[0]["content"] == (
+        "User lives in Somerville, Massachusetts."
+    )
+
+
+@pytest.mark.asyncio
+async def test_voice_stream_directly_saves_personal_movie_plan():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "Today, they released the messes of the universe movie. I'm gonna watch.",
+            channel=RexBrainChannel.VOICE,
+        )
+    ]
+
+    assert events[-1]["memory_changes"]["created"] == 1
+    assert ai_service.messages == []
+    assert memory_service.long_term_memory[0]["memory_type"] == "event"
+    assert memory_service.long_term_memory[0]["content"] == (
+        "User plans to watch Messes Of The Universe movie today."
+    )
+
+
+@pytest.mark.asyncio
 async def test_simple_memory_rejection_does_not_create_durable_memory():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

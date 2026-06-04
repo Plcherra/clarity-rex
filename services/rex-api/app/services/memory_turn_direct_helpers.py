@@ -31,6 +31,9 @@ class MemoryTurnDirectHelpers:
         for memory in memories:
             if self._payload_fingerprint(memory) == intent_fingerprint:
                 return memory
+        for memory in memories:
+            if self._memory_topic_matches_intent(memory, intent):
+                return memory
         return None
 
     async def _active_memories_for_intent(
@@ -87,6 +90,28 @@ class MemoryTurnDirectHelpers:
     def _intent_fingerprint(self, intent: SimpleMemoryIntent) -> Optional[str]:
         fingerprint = intent.metadata.get("topic_fingerprint")
         return str(fingerprint) if fingerprint else None
+
+    def _memory_topic_matches_intent(
+        self,
+        memory: dict,
+        intent: SimpleMemoryIntent,
+    ) -> bool:
+        fact_kind = str(intent.metadata.get("fact_kind") or "")
+        normalized_content = self._normalize_memory_text(
+            str(memory.get("content") or "")
+        )
+        if fact_kind == "location":
+            return "live" in normalized_content and (
+                "user" in normalized_content or "i " in f"{normalized_content} "
+            )
+        if fact_kind == "birthday":
+            entity = self._normalize_memory_text(
+                str(intent.metadata.get("entity_label") or "")
+            )
+            return "birthday" in normalized_content and (
+                not entity or entity in normalized_content
+            )
+        return False
 
     def _normalize_memory_text(self, text: str) -> str:
         normalized = re.sub(r"[^a-z0-9]+", " ", text.lower())
