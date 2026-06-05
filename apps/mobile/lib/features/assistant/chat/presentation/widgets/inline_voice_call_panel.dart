@@ -157,7 +157,7 @@ class InlineVoiceCallPanel extends StatelessWidget {
       VoiceCallPhase.listening => 'Listening',
       VoiceCallPhase.thinking => 'Thinking',
       VoiceCallPhase.speaking => 'Speaking',
-      VoiceCallPhase.failed => 'Voice needs attention',
+      VoiceCallPhase.failed => 'Voice paused',
     };
   }
 }

@@ -10,6 +10,7 @@ import 'package:clarity/features/assistant/memory/presentation/widgets/memory_pa
 import 'package:clarity/features/assistant/memory/presentation/widgets/memory_quick_filter.dart';
 import 'package:clarity/features/assistant/memory/presentation/widgets/saved_memory_group_list.dart';
 import 'package:clarity/features/assistant/presentation/rex_surfaces.dart';
+import 'package:clarity/features/assistant/presentation/rex_ui_tokens.dart';
 
 class MemoryPage extends ConsumerStatefulWidget {
   const MemoryPage({super.key, this.showAppBar = true});
@@ -284,8 +285,6 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(memoryProvider);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final filteredSaved = filterSavedMemory(
       state: state,
       query: _searchQuery,
@@ -325,30 +324,23 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                     const SizedBox(height: 12),
                     const SavedMemoryHeader(),
                     const SizedBox(height: 8),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Active memories only'),
+                    ActiveMemoryToggle(
                       value: state.activeOnly,
                       onChanged: state.isLoading ? null : _setActiveOnly,
                     ),
                     if (state.errorMessage != null)
                       Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          state.errorMessage!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: scheme.error,
-                          ),
+                        padding: const EdgeInsets.only(
+                          top: RexUiTokens.space12,
                         ),
+                        child: MemoryErrorBanner(message: state.errorMessage!),
                       ),
                   ],
                 ),
               ),
             ),
             if (state.isLoading && state.isSavedOverviewEmpty)
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              )
+              const SliverFillRemaining(child: MemoryLoadingState())
             else if (state.isSavedOverviewEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,

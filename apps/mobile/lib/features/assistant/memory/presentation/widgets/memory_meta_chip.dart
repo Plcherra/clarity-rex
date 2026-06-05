@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:clarity/features/assistant/presentation/rex_ui_tokens.dart';
+
 class MemoryMetaChip extends StatelessWidget {
   const MemoryMetaChip({required this.label, super.key});
 
@@ -8,19 +10,20 @@ class MemoryMetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
+        color: RexUiTokens.surfaceSoft,
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusSmall),
+        border: Border.all(color: RexUiTokens.border.withValues(alpha: 0.55)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         child: Text(
           label,
           style: theme.textTheme.labelSmall?.copyWith(
-            color: scheme.onSurfaceVariant,
+            color: RexUiTokens.textMuted,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

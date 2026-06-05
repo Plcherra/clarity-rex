@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:clarity/features/assistant/memory/data/memory_models.dart';
 import 'package:clarity/features/assistant/memory/presentation/widgets/saved_memory_results.dart';
 import 'package:clarity/features/assistant/memory/presentation/widgets/saved_memory_tiles.dart';
+import 'package:clarity/features/assistant/presentation/rex_ui_tokens.dart';
 
 class SavedMemoryGroupList extends StatelessWidget {
   const SavedMemoryGroupList({
@@ -36,10 +37,7 @@ class SavedMemoryGroupList extends StatelessWidget {
         return;
       }
       children.add(_MemoryGroupHeader(group: group));
-      for (final (index, tile) in tiles.indexed) {
-        if (index > 0) {
-          children.add(const Divider(height: 1, indent: 72));
-        }
+      for (final tile in tiles) {
         children.add(tile);
       }
     }
@@ -145,14 +143,17 @@ class _MemoryGroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 22, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        RexUiTokens.space16,
+        RexUiTokens.space24,
+        RexUiTokens.space16,
+        RexUiTokens.space8,
+      ),
       child: Text(
         group.label,
         style: theme.textTheme.titleSmall?.copyWith(
-          color: scheme.onSurface,
+          color: RexUiTokens.text,
           fontWeight: FontWeight.w800,
         ),
       ),

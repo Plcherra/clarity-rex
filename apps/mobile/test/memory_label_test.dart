@@ -16,7 +16,6 @@ void main() {
       expect(memoryRiskLevelLabel('low'), 'Low risk');
       expect(memoryRiskLevelLabel('medium'), 'Medium risk');
       expect(memoryRiskLevelLabel('high'), 'High risk');
-      expect(memoryActionStatusLabel('pending'), 'Needs review');
       expect(memoryActionStatusLabel('applied'), 'Saved');
       expect(memoryActionStatusLabel('failed'), 'Needs attention');
     });
@@ -26,10 +25,7 @@ void main() {
       expect(memoryRiskLevelLabel('needs_review'), 'Needs Review');
       expect(memoryActionStatusLabel('waitingForUser'), 'Waiting For User');
       expect(memoryGroupForTypeLabel('custom_memory_kind'), MemoryGroup.other);
-      expect(
-        memoryGroupForTypeLabel('custom_memory_kind').label,
-        'Other memories',
-      );
+      expect(memoryGroupForTypeLabel('custom_memory_kind').label, 'Other');
     });
 
     test('unknown durable memory types render as other memories', () {

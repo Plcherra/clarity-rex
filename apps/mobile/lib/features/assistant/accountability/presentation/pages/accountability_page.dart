@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/features/assistant/assistant_providers.dart';
 import 'package:clarity/features/assistant/accountability/data/accountability_models.dart';
+import 'package:clarity/features/assistant/presentation/rex_surfaces.dart';
+import 'package:clarity/features/assistant/presentation/rex_ui_tokens.dart';
 
 part 'accountability_page_sections.dart';
 part 'accountability_page_shared.dart';
@@ -35,26 +37,33 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     final state = ref.watch(accountabilityProvider);
     final overview = state.overview;
 
-    return Scaffold(
+    return RexScaffold(
       appBar: widget.showAppBar
           ? AppBar(
-              title: const Text('Accountability'),
+              title: const Text('Goals'),
               actions: [
                 IconButton(
                   onPressed: state.isLoading ? null : _refresh,
                   icon: const Icon(Icons.refresh_rounded),
-                  tooltip: 'Refresh accountability',
+                  tooltip: 'Refresh goals',
                 ),
               ],
             )
           : null,
       body: RefreshIndicator(
+        color: RexUiTokens.accent,
+        backgroundColor: RexUiTokens.surfaceRaised,
         onRefresh: _refresh,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              padding: const EdgeInsets.fromLTRB(
+                RexUiTokens.space16,
+                RexUiTokens.space8,
+                RexUiTokens.space16,
+                RexUiTokens.space24,
+              ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   if (state.errorMessage != null)

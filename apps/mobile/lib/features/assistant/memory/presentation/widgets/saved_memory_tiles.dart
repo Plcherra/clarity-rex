@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:clarity/features/assistant/memory/data/memory_models.dart';
 import 'package:clarity/features/assistant/memory/presentation/widgets/memory_meta_chip.dart';
+import 'package:clarity/features/assistant/presentation/rex_surfaces.dart';
+import 'package:clarity/features/assistant/presentation/rex_ui_tokens.dart';
 
 class MemoryTile extends StatelessWidget {
   const MemoryTile({
@@ -17,45 +19,17 @@ class MemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: memory.active
-            ? scheme.primaryContainer
-            : scheme.surfaceContainerHighest,
-        foregroundColor: memory.active
-            ? scheme.onPrimaryContainer
-            : scheme.onSurfaceVariant,
-        child: Icon(_iconForType(memory.memoryType), size: 20),
+    return _SavedMemoryTileShell(
+      icon: _iconForType(memory.memoryType),
+      active: memory.active,
+      title: memory.content,
+      chips: _baseChips(
+        typeLabel: memory.memoryType.label,
+        active: memory.active,
+        savedAt: _savedDate(memory.updatedAt, memory.createdAt),
       ),
-      title: Text(memory.content),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            MemoryMetaChip(label: memory.memoryType.label),
-            const MemoryMetaChip(label: 'Rex knows this'),
-            MemoryMetaChip(label: 'Importance ${memory.importance}'),
-            if (_savedDate(memory.updatedAt, memory.createdAt) != null)
-              MemoryMetaChip(
-                label:
-                    'Updated ${_shortDate(_savedDate(memory.updatedAt, memory.createdAt)!)}',
-              ),
-            if (!memory.active) const MemoryMetaChip(label: 'Inactive'),
-          ],
-        ),
-      ),
-      trailing: _MemoryActionsMenu(onEdit: onEdit, onDeactivate: onDeactivate),
-      onTap: onEdit,
-      textColor: memory.active ? null : scheme.onSurfaceVariant,
-      titleTextStyle: theme.textTheme.bodyLarge?.copyWith(
-        color: memory.active ? scheme.onSurface : scheme.onSurfaceVariant,
-      ),
+      onEdit: onEdit,
+      onDeactivate: onDeactivate,
     );
   }
 
@@ -95,11 +69,8 @@ class PersonMemoryTile extends StatelessWidget {
       chips: [
         if (person.relationship != null)
           MemoryMetaChip(label: person.relationship!.memoryRecordLabel),
-        const MemoryMetaChip(label: 'Rex knows this'),
         if (person.aliases.isNotEmpty)
           MemoryMetaChip(label: 'Also ${person.aliases.join(', ')}'),
-        MemoryMetaChip(label: 'Importance ${person.importance}'),
-        MemoryMetaChip(label: person.status.memoryRecordLabel),
         if (_savedDate(person.updatedAt, person.createdAt) != null)
           MemoryMetaChip(
             label:
@@ -134,9 +105,6 @@ class RuleMemoryTile extends StatelessWidget {
       subtitle: rule.ruleText,
       chips: [
         MemoryMetaChip(label: rule.ruleType.memoryRecordLabel),
-        const MemoryMetaChip(label: 'Rex knows this'),
-        MemoryMetaChip(label: rule.status.memoryRecordLabel),
-        MemoryMetaChip(label: 'Priority ${rule.priority}'),
         if (_savedDate(rule.updatedAt, rule.createdAt) != null)
           MemoryMetaChip(
             label:
@@ -173,9 +141,6 @@ class PlanMemoryTile extends StatelessWidget {
       subtitle: plan.desiredOutcome ?? plan.description ?? 'Plan memory',
       chips: [
         MemoryMetaChip(label: plan.planType.memoryRecordLabel),
-        const MemoryMetaChip(label: 'Rex knows this'),
-        MemoryMetaChip(label: plan.status.memoryRecordLabel),
-        MemoryMetaChip(label: 'Priority ${plan.priority}'),
         if (plan.targetDate != null)
           MemoryMetaChip(label: 'Target ${_shortDate(plan.targetDate!)}'),
         if (_savedDate(plan.updatedAt, plan.createdAt) != null)
@@ -212,9 +177,6 @@ class CommitmentMemoryTile extends StatelessWidget {
       subtitle: commitment.commitmentText,
       chips: [
         MemoryMetaChip(label: commitment.commitmentType.memoryRecordLabel),
-        const MemoryMetaChip(label: 'Rex knows this'),
-        MemoryMetaChip(label: commitment.status.memoryRecordLabel),
-        MemoryMetaChip(label: 'Priority ${commitment.priority}'),
         if (commitment.dueAt != null)
           MemoryMetaChip(label: 'Due ${_shortDate(commitment.dueAt!)}'),
         if (_savedDate(commitment.updatedAt, commitment.createdAt) != null)
@@ -252,51 +214,151 @@ class StructuredMemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: active
-            ? scheme.primaryContainer
-            : scheme.surfaceContainerHighest,
-        foregroundColor: active
-            ? scheme.onPrimaryContainer
-            : scheme.onSurfaceVariant,
-        child: Icon(icon, size: 20),
-      ),
-      title: Text(title),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              subtitle,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: active ? scheme.onSurfaceVariant : scheme.outline,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: chips,
-            ),
-          ],
-        ),
-      ),
-      textColor: active ? null : scheme.onSurfaceVariant,
-      titleTextStyle: theme.textTheme.bodyLarge?.copyWith(
-        color: active ? scheme.onSurface : scheme.onSurfaceVariant,
-      ),
-      trailing: _MemoryActionsMenu(onEdit: onEdit, onDeactivate: onDeactivate),
-      onTap: onEdit,
+    return _SavedMemoryTileShell(
+      icon: icon,
+      active: active,
+      title: title,
+      subtitle: subtitle,
+      chips: chips,
+      onEdit: onEdit,
+      onDeactivate: onDeactivate,
     );
   }
+}
+
+class _SavedMemoryTileShell extends StatelessWidget {
+  const _SavedMemoryTileShell({
+    required this.icon,
+    required this.active,
+    required this.title,
+    required this.chips,
+    required this.onEdit,
+    required this.onDeactivate,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final bool active;
+  final String title;
+  final String? subtitle;
+  final List<Widget> chips;
+  final VoidCallback onEdit;
+  final VoidCallback? onDeactivate;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        RexUiTokens.space16,
+        RexUiTokens.space4,
+        RexUiTokens.space16,
+        RexUiTokens.space8,
+      ),
+      child: RexSurface(
+        color: active ? RexUiTokens.surface : RexUiTokens.surfaceSoft,
+        borderColor: active
+            ? RexUiTokens.border
+            : RexUiTokens.border.withValues(alpha: 0.55),
+        radius: RexUiTokens.radiusMedium,
+        padding: const EdgeInsets.all(RexUiTokens.space16),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onEdit,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _MemoryIcon(icon: icon, active: active),
+              const SizedBox(width: RexUiTokens.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: active
+                            ? RexUiTokens.text
+                            : RexUiTokens.textSubtle,
+                        fontWeight: FontWeight.w700,
+                        height: 1.3,
+                      ),
+                    ),
+                    if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+                      const SizedBox(height: RexUiTokens.space8),
+                      Text(
+                        subtitle!,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: active
+                              ? RexUiTokens.textMuted
+                              : RexUiTokens.textSubtle,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                    if (chips.isNotEmpty) ...[
+                      const SizedBox(height: RexUiTokens.space12),
+                      Wrap(
+                        spacing: RexUiTokens.space8,
+                        runSpacing: RexUiTokens.space8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: chips,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: RexUiTokens.space8),
+              _MemoryActionsMenu(onEdit: onEdit, onDeactivate: onDeactivate),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MemoryIcon extends StatelessWidget {
+  const _MemoryIcon({required this.icon, required this.active});
+
+  final IconData icon;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: active
+            ? RexUiTokens.accent.withValues(alpha: 0.18)
+            : RexUiTokens.surfaceRaised,
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+      ),
+      child: SizedBox.square(
+        dimension: 44,
+        child: Icon(
+          icon,
+          color: active ? RexUiTokens.accent : RexUiTokens.textSubtle,
+          size: 22,
+        ),
+      ),
+    );
+  }
+}
+
+List<Widget> _baseChips({
+  required String typeLabel,
+  required bool active,
+  required DateTime? savedAt,
+}) {
+  return [
+    MemoryMetaChip(label: typeLabel),
+    if (savedAt != null)
+      MemoryMetaChip(label: 'Updated ${_shortDate(savedAt)}'),
+    if (!active) const MemoryMetaChip(label: 'Inactive'),
+  ];
 }
 
 class _MemoryActionsMenu extends StatelessWidget {
@@ -309,6 +371,12 @@ class _MemoryActionsMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<_MemoryAction>(
       tooltip: 'Memory actions',
+      color: RexUiTokens.surfaceRaised,
+      iconColor: RexUiTokens.textMuted,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+        side: const BorderSide(color: RexUiTokens.border),
+      ),
       onSelected: (action) {
         switch (action) {
           case _MemoryAction.edit:
@@ -320,21 +388,43 @@ class _MemoryActionsMenu extends StatelessWidget {
       itemBuilder: (context) => [
         const PopupMenuItem(
           value: _MemoryAction.edit,
-          child: ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.edit_outlined),
-            title: Text('Edit'),
-          ),
+          child: _MemoryMenuItem(icon: Icons.edit_outlined, label: 'Edit'),
         ),
         if (onDeactivate != null)
           const PopupMenuItem(
             value: _MemoryAction.archive,
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.visibility_off_outlined),
-              title: Text('Archive'),
+            child: _MemoryMenuItem(
+              icon: Icons.visibility_off_outlined,
+              label: 'Archive',
             ),
           ),
+      ],
+    );
+  }
+}
+
+class _MemoryMenuItem extends StatelessWidget {
+  const _MemoryMenuItem({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: RexUiTokens.textMuted, size: 20),
+        const SizedBox(width: RexUiTokens.space12),
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: RexUiTokens.text,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ],
     );
   }

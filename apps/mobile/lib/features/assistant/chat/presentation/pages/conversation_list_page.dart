@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/features/assistant/assistant_providers.dart';
 import 'package:clarity/features/assistant/chat/data/chat_models.dart';
+import 'package:clarity/features/assistant/chat/presentation/widgets/conversation_history_widgets.dart';
+import 'package:clarity/features/assistant/presentation/rex_surfaces.dart';
+import 'package:clarity/features/assistant/presentation/rex_ui_tokens.dart';
 
 class ConversationListPage extends ConsumerStatefulWidget {
   const ConversationListPage({
@@ -69,16 +72,29 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete conversation?'),
+        backgroundColor: RexUiTokens.surfaceRaised,
+        surfaceTintColor: Colors.transparent,
+        title: const Text(
+          'Delete conversation?',
+          style: TextStyle(color: RexUiTokens.text),
+        ),
         content: const Text(
           'This removes the conversation and its messages from Rex.',
+          style: TextStyle(color: RexUiTokens.textMuted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: RexUiTokens.textMuted),
+            ),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: RexUiTokens.danger,
+              foregroundColor: RexUiTokens.background,
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Delete'),
           ),
@@ -125,10 +141,10 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
 
     final state = ref.watch(conversationListProvider);
     final currentConversation = ref.watch(currentConversationProvider);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     final body = RefreshIndicator(
+      color: RexUiTokens.accent,
+      backgroundColor: RexUiTokens.surfaceRaised,
       onRefresh: () =>
           ref.read(conversationListProvider.notifier).loadConversations(),
       child: CustomScrollView(
@@ -142,17 +158,18 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                   children: [
                     Expanded(
                       child: Text(
-                        'Conversations',
-                        style: theme.textTheme.titleLarge?.copyWith(
+                        'Chats',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: scheme.onSurface,
+                          color: RexUiTokens.text,
                         ),
                       ),
                     ),
-                    IconButton.filledTonal(
+                    IconButton(
                       onPressed: state.isLoading ? null : _newConversation,
                       icon: const Icon(Icons.add_rounded),
                       tooltip: 'New conversation',
+                      color: RexUiTokens.accent,
                     ),
                   ],
                 ),
@@ -162,17 +179,14 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Text(
-                  state.errorMessage!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: scheme.error,
-                  ),
-                ),
+                child: _HistoryErrorBanner(message: state.errorMessage!),
               ),
             ),
           if (state.isLoading && state.conversations.isEmpty)
             const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(
+                child: CircularProgressIndicator(color: RexUiTokens.accent),
+              ),
             )
           else if (state.conversations.isEmpty)
             SliverFillRemaining(
@@ -180,34 +194,9 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.forum_outlined,
-                        color: scheme.onSurfaceVariant,
-                        size: 40,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No conversations yet',
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Start a new one when you are ready.',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      FilledButton.icon(
-                        onPressed: state.isLoading ? null : _newConversation,
-                        icon: const Icon(Icons.add_rounded),
-                        label: const Text('New Conversation'),
-                      ),
-                    ],
+                  child: _EmptyConversationState(
+                    isLoading: state.isLoading,
+                    onNewConversation: _newConversation,
                   ),
                 ),
               ),
@@ -215,12 +204,12 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
           else
             SliverList(
               delegate: SliverChildListDelegate(
-                _conversationGroups(state.conversations)
+                conversationGroups(state.conversations)
                     .expand<Widget>(
                       (group) => [
-                        _ConversationDateHeader(label: group.label),
+                        ConversationDateHeader(label: group.label),
                         for (final conversation in group.conversations)
-                          _ConversationTile(
+                          ConversationHistoryTile(
                             conversation: conversation,
                             isSelected:
                                 conversation.id == currentConversation?.id,
@@ -236,230 +225,110 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
       ),
     );
 
-    return Scaffold(
+    return RexScaffold(
       appBar: widget.showAppBar
           ? AppBar(
-              title: const Text('Conversations'),
+              title: const Text('Chats'),
               actions: [
                 IconButton(
                   onPressed: state.isLoading ? null : _newConversation,
                   icon: const Icon(Icons.add_rounded),
                   tooltip: 'New conversation',
+                  color: RexUiTokens.accent,
                 ),
               ],
             )
           : null,
       body: body,
-      floatingActionButton: state.conversations.isEmpty
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: state.isLoading ? null : _newConversation,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('New'),
-            ),
     );
   }
 }
 
-class _ConversationDateHeader extends StatelessWidget {
-  const _ConversationDateHeader({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 18, 24, 6),
-      child: Text(
-        label,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: scheme.onSurfaceVariant,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _ConversationTile extends StatelessWidget {
-  const _ConversationTile({
-    required this.conversation,
-    required this.isSelected,
-    required this.onTap,
-    required this.onDelete,
+class _EmptyConversationState extends StatelessWidget {
+  const _EmptyConversationState({
+    required this.isLoading,
+    required this.onNewConversation,
   });
 
-  final Conversation conversation;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
+  final bool isLoading;
+  final VoidCallback onNewConversation;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final preview = conversation.lastMessage?.content ?? 'No messages yet';
 
-    return ListTile(
-      selected: isSelected,
-      selectedTileColor: scheme.primaryContainer.withValues(alpha: 0.45),
-      leading: CircleAvatar(
-        backgroundColor: isSelected
-            ? scheme.primary
-            : scheme.surfaceContainerHighest,
-        foregroundColor: isSelected
-            ? scheme.onPrimary
-            : scheme.onSurfaceVariant,
-        child: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
-      ),
-      title: Text(
-        _conversationTitle(conversation),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(preview, maxLines: 2, overflow: TextOverflow.ellipsis),
-      trailing: Row(
+    return RexSurface(
+      padding: const EdgeInsets.all(RexUiTokens.space24),
+      color: RexUiTokens.surface,
+      radius: RexUiTokens.radiusLarge,
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const Icon(Icons.forum_outlined, color: RexUiTokens.accent, size: 34),
+          const SizedBox(height: RexUiTokens.space16),
           Text(
-            _timestampLabel(conversation.timestamp),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+            'No chats yet',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: RexUiTokens.text,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(width: 4),
-          PopupMenuButton<_ConversationAction>(
-            tooltip: 'Conversation actions',
-            onSelected: (action) {
-              switch (action) {
-                case _ConversationAction.delete:
-                  onDelete();
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: _ConversationAction.delete,
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.delete_outline_rounded),
-                  title: Text('Delete'),
-                ),
-              ),
-            ],
+          const SizedBox(height: RexUiTokens.space8),
+          Text(
+            'Start a fresh conversation when you are ready.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: RexUiTokens.textMuted,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: RexUiTokens.space20),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: RexUiTokens.accent,
+              foregroundColor: RexUiTokens.background,
+            ),
+            onPressed: isLoading ? null : onNewConversation,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('New chat'),
           ),
         ],
       ),
-      onTap: onTap,
-      onLongPress: onDelete,
     );
   }
-
-  String _conversationTitle(Conversation conversation) {
-    final title = conversation.title?.trim();
-    if (title != null && title.isNotEmpty) {
-      return title;
-    }
-
-    final preview = conversation.lastMessage?.content.trim();
-    if (preview != null && preview.isNotEmpty) {
-      return preview;
-    }
-
-    return 'New conversation';
-  }
-
-  String _timestampLabel(DateTime? timestamp) {
-    if (timestamp == null) {
-      return '';
-    }
-
-    final local = timestamp.toLocal();
-    final hour = local.hour.toString().padLeft(2, '0');
-    final minute = local.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
 }
 
-class _ConversationGroup {
-  _ConversationGroup({required this.label}) : conversations = [];
+class _HistoryErrorBanner extends StatelessWidget {
+  const _HistoryErrorBanner({required this.message});
 
-  final String label;
-  final List<Conversation> conversations;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return RexSurface(
+      padding: const EdgeInsets.all(RexUiTokens.space16),
+      color: RexUiTokens.danger.withValues(alpha: 0.12),
+      borderColor: RexUiTokens.danger.withValues(alpha: 0.45),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: RexUiTokens.danger,
+            size: 20,
+          ),
+          const SizedBox(width: RexUiTokens.space12),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: RexUiTokens.text,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
-
-List<_ConversationGroup> _conversationGroups(List<Conversation> conversations) {
-  final now = DateTime.now();
-  final groups = <_ConversationGroup>[];
-
-  for (final conversation in conversations) {
-    final label = _conversationDateLabel(conversation.timestamp, now);
-    if (groups.isEmpty || groups.last.label != label) {
-      groups.add(_ConversationGroup(label: label));
-    }
-    groups.last.conversations.add(conversation);
-  }
-
-  return groups;
-}
-
-String _conversationDateLabel(DateTime? timestamp, DateTime now) {
-  if (timestamp == null) {
-    return 'Undated';
-  }
-
-  final local = timestamp.toLocal();
-  final today = DateTime(now.year, now.month, now.day);
-  final date = DateTime(local.year, local.month, local.day);
-  final dayDifference = today.difference(date).inDays;
-
-  if (dayDifference < 0) {
-    return 'Upcoming';
-  }
-  if (dayDifference == 0) {
-    return 'Today';
-  }
-  if (dayDifference == 1) {
-    return 'Yesterday';
-  }
-  if (dayDifference < 7) {
-    return _weekdayName(local.weekday);
-  }
-
-  return '${_monthName(local.month)} ${local.day}, ${local.year}';
-}
-
-String _weekdayName(int weekday) {
-  return switch (weekday) {
-    DateTime.monday => 'Monday',
-    DateTime.tuesday => 'Tuesday',
-    DateTime.wednesday => 'Wednesday',
-    DateTime.thursday => 'Thursday',
-    DateTime.friday => 'Friday',
-    DateTime.saturday => 'Saturday',
-    DateTime.sunday => 'Sunday',
-    _ => 'Older',
-  };
-}
-
-String _monthName(int month) {
-  return switch (month) {
-    DateTime.january => 'January',
-    DateTime.february => 'February',
-    DateTime.march => 'March',
-    DateTime.april => 'April',
-    DateTime.may => 'May',
-    DateTime.june => 'June',
-    DateTime.july => 'July',
-    DateTime.august => 'August',
-    DateTime.september => 'September',
-    DateTime.october => 'October',
-    DateTime.november => 'November',
-    DateTime.december => 'December',
-    _ => 'Older',
-  };
-}
-
-enum _ConversationAction { delete }

@@ -14,7 +14,6 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -22,38 +21,99 @@ class _Section extends StatelessWidget {
         Text(
           title,
           style: theme.textTheme.titleMedium?.copyWith(
+            color: RexUiTokens.text,
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: RexUiTokens.space8),
         if (children.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              emptyText,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+          RexSurface(
+            color: RexUiTokens.surfaceSoft.withValues(alpha: 0.6),
+            borderColor: RexUiTokens.border.withValues(alpha: 0.58),
+            padding: const EdgeInsets.all(RexUiTokens.space16),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: RexUiTokens.textSubtle,
+                  size: 18,
+                ),
+                const SizedBox(width: RexUiTokens.space8),
+                Expanded(
+                  child: Text(
+                    emptyText,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: RexUiTokens.textMuted,
+                    ),
+                  ),
+                ),
+              ],
             ),
           )
         else
-          DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: scheme.outlineVariant),
-                bottom: BorderSide(color: scheme.outlineVariant),
-              ),
-            ),
-            child: Column(
-              children: [
-                for (var index = 0; index < children.length; index++) ...[
-                  children[index],
-                  if (index != children.length - 1) const Divider(height: 1),
-                ],
+          Column(
+            children: [
+              for (var index = 0; index < children.length; index++) ...[
+                children[index],
+                if (index != children.length - 1)
+                  const SizedBox(height: RexUiTokens.space8),
               ],
-            ),
+            ],
           ),
       ],
+    );
+  }
+}
+
+class _GoalTileShell extends StatelessWidget {
+  const _GoalTileShell({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+    this.iconColor = RexUiTokens.accent,
+  });
+
+  final IconData icon;
+  final Widget title;
+  final Widget subtitle;
+  final Widget? trailing;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return RexSurface(
+      color: RexUiTokens.surface,
+      borderColor: RexUiTokens.border.withValues(alpha: 0.78),
+      radius: RexUiTokens.radiusMedium,
+      padding: const EdgeInsets.all(RexUiTokens.space16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+            ),
+            child: SizedBox(
+              width: 38,
+              height: 38,
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+          ),
+          const SizedBox(width: RexUiTokens.space12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [title, subtitle],
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: RexUiTokens.space8),
+            trailing!,
+          ],
+        ],
+      ),
     );
   }
 }
@@ -66,35 +126,31 @@ class _InlineWarning extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.errorContainer.withValues(alpha: 0.34),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              size: 17,
-              color: scheme.onErrorContainer,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                text,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onErrorContainer,
-                  fontWeight: FontWeight.w600,
-                ),
+    return RexSurface(
+      radius: RexUiTokens.radiusSmall,
+      color: RexUiTokens.danger.withValues(alpha: 0.1),
+      borderColor: RexUiTokens.danger.withValues(alpha: 0.32),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 17,
+            color: RexUiTokens.danger,
+          ),
+          const SizedBox(width: RexUiTokens.space8),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: RexUiTokens.danger,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -109,10 +165,9 @@ class _RecordSubtitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.only(top: RexUiTokens.space8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -120,13 +175,14 @@ class _RecordSubtitle extends StatelessWidget {
             Text(
               text,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
+                color: RexUiTokens.textMuted,
               ),
             ),
-          if (text.trim().isNotEmpty) const SizedBox(height: 8),
+          if (text.trim().isNotEmpty)
+            const SizedBox(height: RexUiTokens.space8),
           Wrap(
-            spacing: 7,
-            runSpacing: 7,
+            spacing: RexUiTokens.space8,
+            runSpacing: RexUiTokens.space8,
             children: chips
                 .where((chip) => chip.trim().isNotEmpty)
                 .map((chip) => _MetaChip(label: chip))
@@ -147,25 +203,25 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.primaryContainer.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(999),
+        color: RexUiTokens.accent.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+        border: Border.all(color: RexUiTokens.accent.withValues(alpha: 0.28)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: scheme.onPrimaryContainer),
+            Icon(icon, size: 15, color: RexUiTokens.accent),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
                 label,
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: scheme.onPrimaryContainer,
+                  color: RexUiTokens.text,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -177,21 +233,11 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-class _TileIcon extends StatelessWidget {
-  const _TileIcon({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return CircleAvatar(
-      backgroundColor: scheme.primaryContainer,
-      foregroundColor: scheme.onPrimaryContainer,
-      child: Icon(icon, size: 20),
-    );
-  }
+TextStyle? _tileTitleStyle(BuildContext context) {
+  return Theme.of(context).textTheme.titleSmall?.copyWith(
+    color: RexUiTokens.text,
+    fontWeight: FontWeight.w700,
+  );
 }
 
 class _MetaChip extends StatelessWidget {
@@ -202,19 +248,19 @@ class _MetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(7),
+        color: RexUiTokens.surfaceRaised.withValues(alpha: 0.74),
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusSmall),
+        border: Border.all(color: RexUiTokens.border.withValues(alpha: 0.58)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Text(
           label,
           style: theme.textTheme.labelMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
+            color: RexUiTokens.textMuted,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -230,7 +276,9 @@ class _InitialLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     return const SizedBox(
       height: 320,
-      child: Center(child: CircularProgressIndicator()),
+      child: Center(
+        child: CircularProgressIndicator(color: RexUiTokens.accent),
+      ),
     );
   }
 }
@@ -241,31 +289,39 @@ class _EmptyAccountabilityState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return SizedBox(
       height: 360,
       child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.fact_check_outlined, size: 40, color: scheme.primary),
-            const SizedBox(height: 14),
-            Text(
-              'Nothing to review yet',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+        child: RexSurface(
+          color: RexUiTokens.surface,
+          padding: const EdgeInsets.all(RexUiTokens.space20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.flag_outlined,
+                size: 34,
+                color: RexUiTokens.accent,
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Rules, commitments, plans, and risks will appear here.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
+              const SizedBox(height: RexUiTokens.space12),
+              Text(
+                'No goals yet',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: RexUiTokens.text,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: RexUiTokens.space4),
+              Text(
+                'Plans, commitments, and helpful nudges will show up here.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: RexUiTokens.textMuted,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -280,35 +336,30 @@ class _ErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: scheme.errorContainer,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                color: scheme.onErrorContainer,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  message,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: scheme.onErrorContainer,
-                  ),
+      child: RexSurface(
+        color: RexUiTokens.danger.withValues(alpha: 0.12),
+        borderColor: RexUiTokens.danger.withValues(alpha: 0.34),
+        padding: const EdgeInsets.all(RexUiTokens.space12),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              color: RexUiTokens.danger,
+              size: 18,
+            ),
+            const SizedBox(width: RexUiTokens.space8),
+            Expanded(
+              child: Text(
+                message,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: RexUiTokens.danger,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -336,17 +387,17 @@ IconData _signalIcon(AccountabilitySignalType type) {
   }
 }
 
-Color _severityColor(ColorScheme scheme, AccountabilitySeverity severity) {
+Color _severityColor(AccountabilitySeverity severity) {
   switch (severity) {
     case AccountabilitySeverity.critical:
     case AccountabilitySeverity.high:
-      return scheme.error;
+      return RexUiTokens.danger;
     case AccountabilitySeverity.medium:
-      return scheme.tertiary;
+      return RexUiTokens.accentStrong;
     case AccountabilitySeverity.low:
     case AccountabilitySeverity.info:
     case AccountabilitySeverity.unknown:
-      return scheme.primary;
+      return RexUiTokens.accent;
   }
 }
 

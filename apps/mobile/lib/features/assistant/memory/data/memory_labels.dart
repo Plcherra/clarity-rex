@@ -12,19 +12,19 @@ extension MemoryGroupLabel on MemoryGroup {
   String get label {
     switch (this) {
       case MemoryGroup.identity:
-        return 'Identity';
+        return 'About me';
       case MemoryGroup.preferences:
         return 'Preferences';
       case MemoryGroup.peoplePlaces:
-        return 'People & places';
+        return 'People';
       case MemoryGroup.plans:
         return 'Plans';
       case MemoryGroup.rules:
-        return 'Rules';
+        return 'Preferences';
       case MemoryGroup.recent:
         return 'Recent';
       case MemoryGroup.other:
-        return 'Other memories';
+        return 'Other';
     }
   }
 }
@@ -169,7 +169,6 @@ const _recordTypeLabels = {
 };
 
 const _memoryActionStatusLabels = {
-  'pending': 'Needs review',
   'approved': 'Approved',
   'applied': 'Saved',
   'rejected': 'Rejected',

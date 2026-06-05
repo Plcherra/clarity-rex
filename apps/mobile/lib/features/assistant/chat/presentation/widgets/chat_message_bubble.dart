@@ -244,7 +244,7 @@ class _ClarityActionCard extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.78),
+        color: RexUiTokens.surfaceRaised.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
       ),

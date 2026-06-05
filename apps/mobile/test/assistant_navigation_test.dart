@@ -73,7 +73,7 @@ void main() {
       await tester.tap(find.byKey(AssistantTab.chats.key));
       await tester.pumpAndSettle();
 
-      expect(find.text('Conversations'), findsOneWidget);
+      expect(find.text('Chats'), findsWidgets);
       expect(find.byTooltip('Conversations'), findsNothing);
     },
   );

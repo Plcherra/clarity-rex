@@ -56,7 +56,7 @@ extension MemoryTypeLabel on MemoryType {
       case MemoryType.event:
         return 'Events';
       case MemoryType.other:
-        return 'Other memories';
+        return 'Other';
     }
   }
 

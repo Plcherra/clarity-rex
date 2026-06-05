@@ -7,42 +7,20 @@ class _SignalTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final accent = _severityColor(scheme, signal.severity);
+    final accent = _severityColor(signal.severity);
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
-      leading: CircleAvatar(
-        backgroundColor: accent.withValues(alpha: 0.16),
-        foregroundColor: accent,
-        child: Icon(_signalIcon(signal.signalType), size: 20),
-      ),
-      title: Text(
-        signal.title,
-        style: theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(signal.summary.isEmpty ? signal.reason : signal.summary),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 7,
-              runSpacing: 7,
-              children: [
-                _MetaChip(label: signal.signalType.label),
-                _MetaChip(label: signal.severity.label),
-                if (signal.sourceRefs.isNotEmpty)
-                  _MetaChip(label: _sourceLabel(signal.sourceRefs.first)),
-              ],
-            ),
-          ],
-        ),
+    return _GoalTileShell(
+      icon: _signalIcon(signal.signalType),
+      iconColor: accent,
+      title: Text(signal.title, style: _tileTitleStyle(context)),
+      subtitle: _RecordSubtitle(
+        text: signal.summary.isEmpty ? signal.reason : signal.summary,
+        chips: [
+          signal.signalType.label,
+          signal.severity.label,
+          if (signal.sourceRefs.isNotEmpty)
+            _sourceLabel(signal.sourceRefs.first),
+        ],
       ),
     );
   }
@@ -55,9 +33,8 @@ class _RuleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
-      leading: const _TileIcon(icon: Icons.rule_rounded),
+    return _GoalTileShell(
+      icon: Icons.rule_rounded,
       title: Text(rule.title),
       subtitle: _RecordSubtitle(
         text: rule.ruleText,
@@ -78,9 +55,8 @@ class _CommitmentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
-      leading: const _TileIcon(icon: Icons.check_circle_outline_rounded),
+    return _GoalTileShell(
+      icon: Icons.check_circle_outline_rounded,
       title: Text(commitment.title),
       subtitle: _RecordSubtitle(
         text: commitment.commitmentText,
@@ -116,12 +92,8 @@ class _PlanTile extends StatelessWidget {
 
     return Column(
       children: [
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 0,
-            vertical: 6,
-          ),
-          leading: const _TileIcon(icon: Icons.flag_rounded),
+        _GoalTileShell(
+          icon: Icons.flag_rounded,
           title: Text(plan.title),
           trailing: const _PlanActions(),
           subtitle: _RecordSubtitle(
@@ -136,7 +108,7 @@ class _PlanTile extends StatelessWidget {
         ),
         if (tasks.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(left: 44, right: 4, bottom: 8),
+            padding: const EdgeInsets.fromLTRB(48, 8, 4, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: tasks
@@ -146,24 +118,24 @@ class _PlanTile extends StatelessWidget {
           ),
         if (completed.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(left: 44, right: 4, bottom: 8),
+            padding: const EdgeInsets.fromLTRB(48, 0, 4, 10),
             child: _MilestoneBadgeWrap(milestones: completed),
           ),
         if (achievementTargets.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(left: 44, right: 4, bottom: 8),
+            padding: const EdgeInsets.fromLTRB(48, 0, 4, 10),
             child: _UpcomingTargets(milestones: achievementTargets),
           ),
         if (milestones.length >= 8)
           const Padding(
-            padding: EdgeInsets.only(left: 44, right: 4, bottom: 8),
+            padding: EdgeInsets.fromLTRB(48, 0, 4, 10),
             child: _InlineWarning(text: 'This plan has many open milestones.'),
           ),
         if (milestones.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(left: 44, right: 4, bottom: 8),
-            child: _InternalMemoryTile(
-              title: 'Open milestones',
+            padding: const EdgeInsets.fromLTRB(48, 0, 4, 10),
+            child: _NestedGoalGroup(
+              title: 'Milestones',
               children: milestones
                   .map(
                     (milestone) => _InternalMilestoneRow(milestone: milestone),
@@ -183,6 +155,8 @@ class _PlanActions extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       tooltip: 'Plan actions',
+      color: RexUiTokens.surfaceRaised,
+      iconColor: RexUiTokens.textMuted,
       itemBuilder: (context) => const [
         PopupMenuItem(value: 'edit', child: Text('Edit')),
         PopupMenuItem(value: 'archive', child: Text('Archive')),
@@ -214,6 +188,7 @@ class _UpcomingTargets extends StatelessWidget {
           'Next targets',
           style: theme.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w700,
+            color: RexUiTokens.text,
           ),
         ),
         const SizedBox(height: 7),
@@ -271,22 +246,35 @@ class _MilestoneBadgeWrap extends StatelessWidget {
   }
 }
 
-class _InternalMemoryTile extends StatelessWidget {
-  const _InternalMemoryTile({required this.title, required this.children});
+class _NestedGoalGroup extends StatelessWidget {
+  const _NestedGoalGroup({required this.title, required this.children});
 
   final String title;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return ExpansionTile(
-      tilePadding: EdgeInsets.zero,
-      childrenPadding: const EdgeInsets.only(bottom: 8),
-      title: Text(title),
-      subtitle: Text(
-        '${children.length} item${children.length == 1 ? '' : 's'}',
+    final theme = Theme.of(context);
+
+    return RexSurface(
+      color: RexUiTokens.surfaceSoft.withValues(alpha: 0.66),
+      borderColor: RexUiTokens.border.withValues(alpha: 0.62),
+      radius: RexUiTokens.radiusSmall,
+      padding: const EdgeInsets.all(RexUiTokens.space12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$title · ${children.length}',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: RexUiTokens.text,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: RexUiTokens.space4),
+          ...children,
+        ],
       ),
-      children: children,
     );
   }
 }
@@ -299,7 +287,6 @@ class _InternalMilestoneRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Padding(
       padding: const EdgeInsets.only(top: 6),
@@ -309,7 +296,7 @@ class _InternalMilestoneRow extends StatelessWidget {
           Icon(
             Icons.subdirectory_arrow_right_rounded,
             size: 18,
-            color: scheme.primary,
+            color: RexUiTokens.accent,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -319,6 +306,7 @@ class _InternalMilestoneRow extends StatelessWidget {
                 Text(
                   milestone.title,
                   style: theme.textTheme.bodyMedium?.copyWith(
+                    color: RexUiTokens.text,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -364,7 +352,6 @@ class _ChecklistRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Padding(
       padding: const EdgeInsets.only(top: 7),
@@ -374,7 +361,7 @@ class _ChecklistRow extends StatelessWidget {
           Icon(
             Icons.check_circle_outline_rounded,
             size: 17,
-            color: scheme.primary,
+            color: RexUiTokens.accent,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -383,7 +370,7 @@ class _ChecklistRow extends StatelessWidget {
                   ? commitment.title
                   : commitment.commitmentText,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
+                color: RexUiTokens.textMuted,
               ),
             ),
           ),
@@ -400,9 +387,8 @@ class _DuplicateWarningTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
-      leading: const _TileIcon(icon: Icons.merge_type_rounded),
+    return _GoalTileShell(
+      icon: Icons.merge_type_rounded,
       title: Text(warning.title),
       subtitle: _RecordSubtitle(
         text:

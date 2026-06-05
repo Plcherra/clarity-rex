@@ -320,7 +320,7 @@ Verify the redesigned Rex UI on device before release.
 
 ## Current Cursor
 
-Status: Phase 6 complete. Current cursor: Phase 7.
+Status: Phase 10 automated QA complete. Manual device validation and release run pending.
 
 ## Phase Ledger
 
@@ -330,3 +330,7 @@ Status: Phase 6 complete. Current cursor: Phase 7.
 - Phase 4 complete on 2026-06-04. Extracted the chat transcript and inline voice strip from `chat_page.dart`, reduced the chat page from 624 to 297 lines, and redesigned message bubbles around the Rex dark token system with quieter surfaces, no heavy avatar/tail, and better long-message width.
 - Phase 5 complete on 2026-06-04. Restyled the composer as a compact Rex dark surface, made attachment and voice controls subtle, clarified send/loading states, expanded draft capacity to seven lines, and added focused coverage to keep obsolete mode controls out.
 - Phase 6 complete on 2026-06-04. Aligned Voice with the Rex dark UI system, simplified status copy to `Listening`, `Thinking`, and `Speaking`, removed duplicate failed-state actions from the main voice body, restyled bottom controls, and eliminated the Flutter Swift Package Manager warnings by removing unused `flutter_tts`, replacing `permission_handler` with `record` plus the existing native channel, and cleaning generated iOS SPM project references.
+- Phase 7 complete on 2026-06-05. Redesigned What Rex Knows around the Rex dark surfaces, removed the remaining pending/review vocabulary from the memory UI, simplified saved-memory chips and group labels, fixed compact empty states, and updated focused memory tests for the new clean editable-list model.
+- Phase 8 complete on 2026-06-05. Restyled Goals and accountability around the Rex dark scaffold, replaced divider-heavy Material list rows with compact Rex surfaces, softened section labels and empty/error states, and kept all accountability presentation files under 500 lines.
+- Phase 9 complete on 2026-06-05. Restyled Chats as a dark Rex conversation history, extracted the conversation row/date helpers from the page, removed default Material list rows and floating action button treatment, updated stale navigation assertions, and kept the new files under 500 lines.
+- Phase 10 automated QA complete on 2026-06-05. Ran analyzer, focused Assistant tests, the full mobile test suite, and stale UI terminology scans; replaced the last generic Assistant surface-token usages, softened inline voice failure copy to `Voice paused`, and left manual device checks plus `./scripts/mobile_release_run.sh` for the final release pass.

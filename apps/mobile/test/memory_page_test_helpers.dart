@@ -19,7 +19,10 @@ Future<void> pumpMemoryPage(
 }
 
 Finder listTileText(String text) {
-  return find.descendant(of: find.byType(ListTile), matching: find.text(text));
+  return find.byWidgetPredicate(
+    (widget) => widget is Text && widget.data == text,
+    description: 'visible memory text "$text"',
+  );
 }
 
 Future<void> openFirstMemoryActions(WidgetTester tester) async {

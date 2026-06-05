@@ -140,7 +140,7 @@ class _AssistantTabNavigation extends StatelessWidget {
           indicatorSize: TabBarIndicatorSize.tab,
           indicatorPadding: const EdgeInsets.all(3),
           indicator: BoxDecoration(
-            color: scheme.surfaceContainerHighest.withValues(alpha: 0.74),
+            color: RexUiTokens.surfaceRaised.withValues(alpha: 0.74),
             borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
             border: Border.all(
               color: RexUiTokens.accent.withValues(alpha: 0.18),

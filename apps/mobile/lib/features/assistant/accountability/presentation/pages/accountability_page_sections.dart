@@ -8,8 +8,8 @@ class _OverviewSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 10,
-      runSpacing: 10,
+      spacing: RexUiTokens.space8,
+      runSpacing: RexUiTokens.space8,
       children: [
         _SummaryPill(
           icon: Icons.warning_amber_rounded,
@@ -23,7 +23,7 @@ class _OverviewSummary extends StatelessWidget {
         ),
         _SummaryPill(
           icon: Icons.check_circle_outline_rounded,
-          label: 'Tasks',
+          label: 'To do',
           value: overview.openTaskCount,
         ),
         _SummaryPill(
@@ -61,29 +61,25 @@ class _SummaryPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.58),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 17, color: scheme.primary),
-            const SizedBox(width: 7),
-            Text(
-              '$value $label',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: scheme.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
+    return RexSurface(
+      color: RexUiTokens.surfaceSoft,
+      borderColor: RexUiTokens.border.withValues(alpha: 0.72),
+      radius: RexUiTokens.radiusPill,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: RexUiTokens.accent),
+          const SizedBox(width: 7),
+          Text(
+            '$value $label',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: RexUiTokens.text,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -97,8 +93,8 @@ class _SignalSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Section(
-      title: 'Current Signals',
-      emptyText: 'No active accountability signals right now.',
+      title: 'Needs attention',
+      emptyText: 'Nothing needs attention right now.',
       children: signals.map((signal) => _SignalTile(signal: signal)).toList(),
     );
   }
@@ -112,8 +108,8 @@ class _RuleSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Section(
-      title: 'Active Rules',
-      emptyText: 'No active personal rules yet.',
+      title: 'Rules',
+      emptyText: 'No personal rules saved yet.',
       children: rules.map((rule) => _RuleTile(rule: rule)).toList(),
     );
   }
@@ -127,7 +123,7 @@ class _CommitmentSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Section(
-      title: 'Open Commitments',
+      title: 'Commitments',
       emptyText: 'No open commitments right now.',
       children: commitments
           .map((commitment) => _CommitmentTile(commitment: commitment))
@@ -178,12 +174,12 @@ class _PlanSection extends StatelessWidget {
         .toList(growable: false);
 
     return _Section(
-      title: 'Plan Progress',
+      title: 'Plans',
       emptyText: 'No active plans or open milestones yet.',
       children: [
         ...planTiles,
         if (orphanMilestones.isNotEmpty)
-          _InternalMemoryTile(
+          _NestedGoalGroup(
             title: 'Unlinked milestones',
             children: orphanMilestones,
           ),
@@ -200,8 +196,8 @@ class _DuplicateWarningSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Section(
-      title: 'Duplicate Risks',
-      emptyText: 'No duplicate risks detected.',
+      title: 'Possible overlap',
+      emptyText: 'No overlapping goals detected.',
       children: warnings
           .map((warning) => _DuplicateWarningTile(warning: warning))
           .toList(growable: false),

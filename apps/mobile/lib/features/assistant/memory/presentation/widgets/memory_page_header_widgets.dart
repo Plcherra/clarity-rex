@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:clarity/features/assistant/memory/presentation/widgets/memory_quick_filter.dart';
+import 'package:clarity/features/assistant/presentation/rex_surfaces.dart';
+import 'package:clarity/features/assistant/presentation/rex_ui_tokens.dart';
 
 class MemorySearchAndFilters extends StatelessWidget {
   const MemorySearchAndFilters({
@@ -17,44 +19,58 @@ class MemorySearchAndFilters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
           controller: controller,
+          style: theme.textTheme.bodyLarge?.copyWith(color: RexUiTokens.text),
           textInputAction: TextInputAction.search,
+          cursorColor: RexUiTokens.accent,
           decoration: InputDecoration(
             hintText: 'Search what Rex knows',
-            prefixIcon: const Icon(Icons.search_rounded),
+            hintStyle: theme.textTheme.bodyLarge?.copyWith(
+              color: RexUiTokens.textSubtle,
+            ),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              color: RexUiTokens.textMuted,
+            ),
             suffixIcon: controller.text.isEmpty
                 ? null
                 : IconButton(
                     onPressed: controller.clear,
-                    icon: const Icon(Icons.close_rounded),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: RexUiTokens.textMuted,
+                    ),
                     tooltip: 'Clear search',
                   ),
             filled: true,
-            fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
+            fillColor: RexUiTokens.surface,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: scheme.outlineVariant),
+              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+              borderSide: const BorderSide(color: RexUiTokens.border),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: scheme.outlineVariant),
+              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+              borderSide: const BorderSide(color: RexUiTokens.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+              borderSide: const BorderSide(color: RexUiTokens.accent),
             ),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
+              horizontal: RexUiTokens.space16,
+              vertical: RexUiTokens.space16,
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: RexUiTokens.space12),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: RexUiTokens.space8,
+          runSpacing: RexUiTokens.space8,
           children: [
             for (final filter in MemoryQuickFilter.values)
               ChoiceChip(
@@ -63,7 +79,24 @@ class MemorySearchAndFilters extends StatelessWidget {
                 onSelected: onFilterSelected == null
                     ? null
                     : (_) => onFilterSelected!(filter),
-                labelStyle: theme.textTheme.labelLarge,
+                backgroundColor: RexUiTokens.surface,
+                selectedColor: RexUiTokens.accent,
+                disabledColor: RexUiTokens.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+                  side: BorderSide(
+                    color: selectedFilter == filter
+                        ? RexUiTokens.accent
+                        : RexUiTokens.border,
+                  ),
+                ),
+                showCheckmark: false,
+                labelStyle: theme.textTheme.labelLarge?.copyWith(
+                  color: selectedFilter == filter
+                      ? RexUiTokens.background
+                      : RexUiTokens.textMuted,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
           ],
         ),
@@ -78,42 +111,178 @@ class SavedMemoryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: scheme.outlineVariant),
+    return RexSurface(
+      color: RexUiTokens.surface,
+      borderColor: RexUiTokens.border,
+      radius: RexUiTokens.radiusMedium,
+      padding: const EdgeInsets.all(RexUiTokens.space16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.psychology_alt_outlined, color: RexUiTokens.accent),
+          const SizedBox(width: RexUiTokens.space12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'What Rex knows',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: RexUiTokens.text,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: RexUiTokens.space4),
+                Text(
+                  'Saved details Rex can use later. Edit anything that changes.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: RexUiTokens.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.psychology_alt_outlined, color: scheme.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'What Rex knows',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'These are saved facts, preferences, people, plans, and rules Rex can use in future conversations.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+    );
+  }
+}
+
+class ActiveMemoryToggle extends StatelessWidget {
+  const ActiveMemoryToggle({
+    required this.value,
+    required this.onChanged,
+    super.key,
+  });
+
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: RexUiTokens.space8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Active information only',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: RexUiTokens.text,
+                fontWeight: FontWeight.w800,
               ),
             ),
-          ],
+          ),
+          Switch.adaptive(
+            value: value,
+            activeThumbColor: RexUiTokens.background,
+            activeTrackColor: RexUiTokens.accent,
+            inactiveThumbColor: RexUiTokens.textMuted,
+            inactiveTrackColor: RexUiTokens.surfaceRaised,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MemoryErrorBanner extends StatelessWidget {
+  const MemoryErrorBanner({required this.message, super.key});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return RexSurface(
+      color: RexUiTokens.danger.withValues(alpha: 0.1),
+      borderColor: RexUiTokens.danger.withValues(alpha: 0.38),
+      radius: RexUiTokens.radiusMedium,
+      padding: const EdgeInsets.all(RexUiTokens.space12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: RexUiTokens.danger,
+            size: 20,
+          ),
+          const SizedBox(width: RexUiTokens.space8),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: RexUiTokens.danger,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MemoryLoadingState extends StatelessWidget {
+  const MemoryLoadingState({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(
+        color: RexUiTokens.accent,
+        strokeWidth: 2.5,
+      ),
+    );
+  }
+}
+
+class _EmptyMemoryShell extends StatelessWidget {
+  const _EmptyMemoryShell({
+    required this.icon,
+    required this.title,
+    required this.body,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(RexUiTokens.space16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: RexUiTokens.textMuted, size: 28),
+              const SizedBox(height: RexUiTokens.space8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleSmall,
+              ),
+              const SizedBox(height: RexUiTokens.space4),
+              Text(
+                body,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: RexUiTokens.textMuted,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -125,44 +294,21 @@ class MemoryEmptyState extends StatelessWidget {
 
   final bool activeOnly;
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.psychology_alt_outlined,
-              color: scheme.onSurfaceVariant,
-              size: 40,
-            ),
-            const SizedBox(height: 16),
-            Text(_emptyTitle, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              _emptyBody,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   String get _emptyTitle {
-    return activeOnly ? 'Rex does not know much yet' : 'No saved memory found';
+    return activeOnly ? 'Rex is still learning' : 'No saved information yet';
   }
 
   String get _emptyBody {
-    return 'When Rex saves something from chat or voice, it will appear here.';
+    return 'Facts saved from chat or voice will appear here.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _EmptyMemoryShell(
+      icon: Icons.psychology_alt_outlined,
+      title: _emptyTitle,
+      body: _emptyBody,
+    );
   }
 }
 
@@ -171,29 +317,10 @@ class MemoryFilteredEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.search_off_rounded, color: scheme.onSurfaceVariant),
-            const SizedBox(height: 12),
-            Text('No matching information', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              'Try another search or filter.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return const _EmptyMemoryShell(
+      icon: Icons.search_off_rounded,
+      title: 'No matching information',
+      body: 'Try another search or filter.',
     );
   }
 }
