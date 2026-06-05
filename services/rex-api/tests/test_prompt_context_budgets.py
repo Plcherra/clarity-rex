@@ -2,6 +2,7 @@ from app.services.prompt_service import (
     CONVERSATION_CONTEXT_PREFIX,
     FILE_CONTEXT_PREFIX,
     LONG_TERM_MEMORY_PREFIX,
+    MAX_DEFAULT_REX_PROMPT_CHARACTERS,
     PERSONALITY_CONTEXT_PREFIX,
     PromptService,
     REX_PERSONALITY_PROMPT,
@@ -11,6 +12,44 @@ from app.services.prompt_service import (
 from app.services.time_context_service import TimeContextService
 
 BASE_SYSTEM_PROMPT = f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}"
+
+
+def test_prompt_service_casual_voice_prompt_is_tiny_by_default():
+    service = PromptService()
+
+    messages = service.build_messages(user_message="Hey Rex")
+
+    assert messages == [
+        {
+            "role": "system",
+            "content": BASE_SYSTEM_PROMPT,
+        },
+        {"role": "user", "content": "Hey Rex"},
+    ]
+    assert len(messages[0]["content"]) <= MAX_DEFAULT_REX_PROMPT_CHARACTERS
+    assert LONG_TERM_MEMORY_PREFIX not in messages[0]["content"]
+    assert STRUCTURED_MEMORY_PREFIX not in messages[0]["content"]
+
+
+def test_prompt_service_memory_recall_context_stays_bounded():
+    service = PromptService()
+
+    messages = service.build_messages(
+        user_message="Where am I located?",
+        relevant_memories=[
+            {
+                "memory_type": "fact",
+                "content": "User lives in Somerville, Massachusetts. " * 80,
+                "importance": 4,
+            }
+        ],
+    )
+
+    prompt_text = "\n".join(message["content"] for message in messages)
+    assert LONG_TERM_MEMORY_PREFIX in prompt_text
+    assert STRUCTURED_MEMORY_PREFIX not in prompt_text
+    assert len(prompt_text) < 4000
+    assert "[truncated]" in prompt_text
 
 
 def test_prompt_service_limits_structured_memory_context_budget():

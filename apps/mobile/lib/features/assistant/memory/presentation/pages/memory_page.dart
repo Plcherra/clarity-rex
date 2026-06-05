@@ -9,6 +9,7 @@ import 'package:clarity/features/assistant/memory/presentation/widgets/memory_pa
 import 'package:clarity/features/assistant/memory/presentation/widgets/memory_page_header_widgets.dart';
 import 'package:clarity/features/assistant/memory/presentation/widgets/memory_quick_filter.dart';
 import 'package:clarity/features/assistant/memory/presentation/widgets/saved_memory_group_list.dart';
+import 'package:clarity/features/assistant/presentation/rex_surfaces.dart';
 
 class MemoryPage extends ConsumerStatefulWidget {
   const MemoryPage({super.key, this.showAppBar = true});
@@ -290,7 +291,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       query: _searchQuery,
       quickFilter: _quickFilter,
     );
-    return Scaffold(
+    return RexScaffold(
       appBar: widget.showAppBar
           ? AppBar(
               title: const Text('What Rex Knows'),

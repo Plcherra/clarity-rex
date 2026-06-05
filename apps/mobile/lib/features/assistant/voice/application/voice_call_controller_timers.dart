@@ -103,13 +103,6 @@ extension VoiceCallControllerTimers on VoiceCallController {
       _startListeningCycle(generation);
       return;
     }
-    _emptyVoiceTurnCount++;
-    if (_emptyVoiceTurnCount >= ref.read(voiceCallEmptyTurnLimitProvider)) {
-      fail(
-        'I did not catch any audio. Tap Try again and speak after the tone.',
-      );
-      return;
-    }
     final generation = ++_callGeneration;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
@@ -127,7 +120,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
       phase: VoiceCallPhase.listening,
       isCapturingSpeech: false,
       clearCurrentTranscript: true,
-      errorMessage: message,
+      clearError: true,
     );
     _clearVisibleTranscript();
     _startListeningCycle(generation);

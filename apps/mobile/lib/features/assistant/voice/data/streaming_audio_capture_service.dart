@@ -140,7 +140,7 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
 class PackageStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
   static const _minimumStreamingSilenceAfterSpeech = Duration(
-    milliseconds: 1600,
+    milliseconds: 3200,
   );
   static const _minimumStreamingSpeechDuration = Duration(milliseconds: 260);
   static const _streamingSpeechStartThresholdDb = -50.0;

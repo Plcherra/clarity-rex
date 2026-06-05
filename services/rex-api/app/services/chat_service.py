@@ -31,6 +31,7 @@ from app.services.rex_model_router import RexModelRouter
 from app.services.rex_observability import RexBrainObserver
 from app.services.time_context_service import TimeContextService
 
+
 class ChatService(ChatVoiceMetadataMixin):
     def __init__(
         self,
@@ -227,6 +228,7 @@ class ChatService(ChatVoiceMetadataMixin):
         financial_context: Optional[dict] = None,
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
+        include_turn_trace: bool = False,
     ) -> AsyncIterator[dict]:
         intent_decision = self.rex_intent_router.classify(
             message,
@@ -249,6 +251,8 @@ class ChatService(ChatVoiceMetadataMixin):
         accountability_signals = turn_context.accountability_signals
         user_message = turn_context.user_message
         yield {"event": "conversation", "conversation_id": conversation_id}
+        if include_turn_trace:
+            yield self._turn_trace_event(intent_decision, channel)
         simple_memory_turn = await self.memory_turn_service.handle_turn(
             message,
             conversation_id=conversation_id,
@@ -375,4 +379,20 @@ class ChatService(ChatVoiceMetadataMixin):
                 conversation_id
             ),
             "memory_changes": memory_changes,
+        }
+
+    def _turn_trace_event(self, intent_decision, channel: RexBrainChannel) -> dict:
+        return {
+            "event": "turn.trace",
+            "intent": intent_decision.intent.value,
+            "intent_reasons": list(intent_decision.reasons),
+            "channel": channel.value,
+            "loaded_context": {
+                "long_term_memory": intent_decision.should_load_long_term_memory,
+                "profile_memory": intent_decision.should_load_profile_memory,
+                "structured_memory": intent_decision.should_load_structured_memory,
+                "goal_context": intent_decision.should_load_goal_context,
+                "accountability": intent_decision.should_load_accountability,
+                "financial_context": intent_decision.should_use_financial_context,
+            },
         }

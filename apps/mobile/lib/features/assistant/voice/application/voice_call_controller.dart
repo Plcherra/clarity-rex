@@ -59,7 +59,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _isAppInForeground = true;
   var _isUsingNativeVoice = false;
   var _warnedLegacyNativeVoiceFlag = false;
-  var _emptyVoiceTurnCount = 0;
   var _isAwaitingFollowUpSpeech = false;
   Timer? _thinkingTimeoutTimer;
   Timer? _listeningEndpointTimer;
@@ -168,7 +167,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _isStartingCall = true;
-    _emptyVoiceTurnCount = 0;
     _isAwaitingFollowUpSpeech = false;
     _warnIfLegacyNativeVoiceFlagRequested();
     final generation = ++_callGeneration;
@@ -235,7 +233,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
-    _emptyVoiceTurnCount = 0;
     _isAwaitingFollowUpSpeech = false;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();
@@ -339,7 +336,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
   void fail(String message) {
     _callGeneration++;
-    _emptyVoiceTurnCount = 0;
     _isAwaitingFollowUpSpeech = false;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
@@ -373,7 +369,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _callGeneration++;
-    _emptyVoiceTurnCount = 0;
     _isAwaitingFollowUpSpeech = false;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();

@@ -268,7 +268,43 @@ async def test_voice_stream_directly_saves_personal_movie_plan():
     assert ai_service.messages == []
     assert memory_service.long_term_memory[0]["memory_type"] == "event"
     assert memory_service.long_term_memory[0]["content"] == (
-        "User plans to watch Masters of the Universe movie today."
+        "User plans to watch Masters of the Universe today."
+    )
+
+
+@pytest.mark.asyncio
+async def test_personal_plan_updates_keep_exact_title_and_single_memory():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    planned = await chat_service.send_message(
+        "They just released Masters of the Universe, and I'm gonna watch it tonight."
+    )
+    tickets = await chat_service.send_message(
+        "I already bought the tickets.",
+        planned["conversation_id"],
+    )
+    canceled = await chat_service.send_message(
+        "I gotta cancel that because my money is tight.",
+        planned["conversation_id"],
+    )
+
+    assert planned["memory_changes"]["created"] == 1
+    assert tickets["memory_changes"]["updated"] == 1
+    assert canceled["memory_changes"]["updated"] == 1
+    assert ai_service.messages == []
+    assert len(memory_service.long_term_memory) == 1
+    assert memory_service.long_term_memory[0]["content"] == (
+        "User canceled the plan to watch Masters of the Universe tonight because money is tight."
+    )
+    assert memory_service.long_term_memory[0]["metadata"]["topic_fingerprint"] == (
+        "event:personal_plan:watch:masters_of_the_universe"
     )
 
 

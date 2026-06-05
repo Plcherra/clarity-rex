@@ -14,8 +14,12 @@ _MEMORY_TOPIC_STOP_WORDS = {
     "for",
     "have",
     "movie",
+    "bought",
+    "canceled",
+    "cancelled",
     "plan",
     "plans",
+    "tickets",
     "today",
     "tomorrow",
     "tonight",
@@ -163,10 +167,15 @@ class MemoryTurnDirectHelpers:
         normalized_content: str,
         intent: SimpleMemoryIntent,
     ) -> bool:
-        if "watch" not in normalized_content:
+        normalized_intent = self._normalize_memory_text(intent.content)
+        if "watch" not in normalized_content or "watch" not in normalized_intent:
             return False
-        if "watch" not in self._normalize_memory_text(intent.content):
-            return False
+
+        intent_title = self._normalize_memory_text(
+            str(intent.metadata.get("plan_title") or "")
+        )
+        if intent_title and intent_title in normalized_content:
+            return True
 
         content_words = self._memory_topic_words(normalized_content)
         intent_words = self._memory_topic_words(intent.content)
@@ -177,17 +186,13 @@ class MemoryTurnDirectHelpers:
         if len(shared) >= 2:
             return True
 
-        title_words = {"masters", "messes", "universe"}
-        has_title_overlap = bool(shared & title_words) or (
-            bool(content_words & title_words) and bool(intent_words & title_words)
-        )
         has_time_overlap = bool(
             {"today", "tonight", "tomorrow"} & set(normalized_content.split())
         ) and bool(
             {"today", "tonight", "tomorrow"}
-            & set(self._normalize_memory_text(intent.content).split())
+            & set(normalized_intent.split())
         )
-        return has_title_overlap and has_time_overlap
+        return len(shared) >= 1 and has_time_overlap
 
     def _memory_topic_words(self, text: str) -> set[str]:
         normalized = self._normalize_memory_text(text)
@@ -301,7 +306,44 @@ class MemoryTurnDirectHelpers:
                 "messages": await self.recent_public_messages(conversation_id),
             }
 
-        updated_record = updated or {**record, "content": intent.content}
+        if updated is None:
+            failure_metadata = memory_degraded_metadata(
+                intent.metadata,
+                operation="update_long_term_memory",
+                failure_reason="durable_memory_update_missing",
+                user_visible=True,
+            )
+            log_memory_failure(
+                "direct_update_missing",
+                operation="update_long_term_memory",
+                error=RuntimeError("memory update returned no record"),
+                conversation_id=conversation_id,
+                memory_type=intent.memory_type,
+                metadata=failure_metadata,
+            )
+            response = (
+                "I understood that correction, but I couldn't update memory just now. "
+                "Please try again in a moment."
+            )
+            assistant_message = await self.memory_service.save_message(
+                conversation_id,
+                "assistant",
+                response,
+            )
+            return {
+                "conversation_id": conversation_id,
+                "response": response,
+                "user_message": user_message,
+                "assistant_message": self.public_message(assistant_message),
+                "memory_correction": None,
+                "memory_changes": self._simple_memory_failed_summary(
+                    intent,
+                    metadata=failure_metadata,
+                ),
+                "messages": await self.recent_public_messages(conversation_id),
+            }
+
+        updated_record = updated
         response = (
             "Got it, I updated that: "
             f"{self.memory_intent_service.memory_sentence(intent.content)}"

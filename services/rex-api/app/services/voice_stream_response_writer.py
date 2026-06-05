@@ -8,6 +8,9 @@ from app.services.voice_stream_config import (
     voice_response_max_tokens,
 )
 
+_MIN_SPEAKABLE_CHUNK_CHARS = 80
+_MAX_SPEAKABLE_CHUNK_CHARS = 220
+
 
 class VoiceStreamResponseWriterMixin:
     async def _stream_chat_and_audio(
@@ -25,6 +28,7 @@ class VoiceStreamResponseWriterMixin:
         messages: list[dict[str, Any]] = []
         memory_changes: Optional[dict[str, Any]] = None
         self._last_memory_changes = None
+        self._last_turn_trace = {}
         chat_started_at = time.perf_counter()
 
         async for event in self.chat_service.stream_message(
@@ -34,6 +38,7 @@ class VoiceStreamResponseWriterMixin:
             max_response_tokens=voice_response_max_tokens(transcript),
             financial_context=self.financial_context,
             channel=RexBrainChannel.VOICE,
+            include_turn_trace=True,
         ):
             event_name = event.get("event")
             if event_name == "conversation":
@@ -42,6 +47,8 @@ class VoiceStreamResponseWriterMixin:
                     "conversation.updated",
                     conversation_id=self.conversation_id,
                 )
+            elif event_name == "turn.trace":
+                self._last_turn_trace = self._safe_turn_trace(event)
             elif event_name == "token":
                 token = str(event.get("token") or "")
                 if not token:
@@ -94,6 +101,11 @@ class VoiceStreamResponseWriterMixin:
             voice_metadata={"record": metadata_record} if metadata_record else {},
         )
         self._last_memory_changes = memory_changes
+        self._last_turn_trace = {
+            **self._last_turn_trace,
+            "memory_action": self._memory_action(memory_changes),
+            "tts_chunk_count": timings.get("tts_chunk_count", 0),
+        }
         return response_text
 
     async def _synthesize_and_send_audio_chunk(
@@ -104,6 +116,10 @@ class VoiceStreamResponseWriterMixin:
     ) -> Optional[float]:
         synthesis_started_at = time.perf_counter()
         synthesis = await self.google_tts_service.synthesize_speech(text)
+        timings["tts_chunk_count"] = timings.get("tts_chunk_count", 0) + 1
+        timings["tts_total_ms"] = timings.get("tts_total_ms", 0) + self._elapsed_ms(
+            synthesis_started_at
+        )
         if first_audio_at is None:
             first_audio_at = time.perf_counter()
             timings["tts_first_audio_ms"] = self._elapsed_ms(synthesis_started_at)
@@ -119,6 +135,24 @@ class VoiceStreamResponseWriterMixin:
             metadata=synthesis.get("metadata") or {},
         )
         return first_audio_at
+
+    def _safe_turn_trace(self, event: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "intent": event.get("intent") or "unknown",
+            "channel": event.get("channel") or "voice",
+            "loaded_context": event.get("loaded_context") or {},
+        }
+
+    def _memory_action(self, memory_changes: Optional[dict[str, Any]]) -> str:
+        if not memory_changes:
+            return "none"
+        if memory_changes.get("updated"):
+            return "direct_updated"
+        if memory_changes.get("created"):
+            return "direct_saved"
+        if memory_changes.get("skipped"):
+            return "skipped"
+        return "none"
 
     async def _send_transcript_event(self, event: dict[str, Any]) -> None:
         if event.get("event") == "transcript.partial":
@@ -143,15 +177,15 @@ class VoiceStreamResponseWriterMixin:
             return None, ""
 
         for index, character in enumerate(text):
-            if character in ".!?;\n" and index >= 28:
+            if character in ".!?;\n" and index >= _MIN_SPEAKABLE_CHUNK_CHARS:
                 chunk = text[: index + 1].strip()
                 rest = text[index + 1 :]
                 return chunk, rest
 
-        if len(stripped) >= 140:
-            split_at = text.rfind(" ", 0, 140)
-            if split_at < 45:
-                split_at = 140
+        if len(stripped) >= _MAX_SPEAKABLE_CHUNK_CHARS:
+            split_at = text.rfind(" ", 0, _MAX_SPEAKABLE_CHUNK_CHARS)
+            if split_at < _MIN_SPEAKABLE_CHUNK_CHARS:
+                split_at = _MAX_SPEAKABLE_CHUNK_CHARS
             return text[:split_at].strip(), text[split_at:]
 
         return None, text

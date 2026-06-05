@@ -25,7 +25,7 @@ void main() {
     'voice endpoint detector keeps short pauses inside long speech open',
     () {
       const config = VoiceCaptureConfig();
-      expect(config.silenceAfterSpeech, const Duration(milliseconds: 2100));
+      expect(config.silenceAfterSpeech, const Duration(milliseconds: 3200));
       expect(config.maxUtteranceDuration, const Duration(seconds: 120));
 
       final startedAt = DateTime(2026);
@@ -40,29 +40,76 @@ void main() {
 
       final shortPause = detector.addAmplitude(
         currentDb: -80,
-        now: startedAt.add(const Duration(milliseconds: 1800)),
+        now: startedAt.add(const Duration(milliseconds: 2500)),
       );
       expect(shortPause.endpointReached, isFalse);
 
       final resumedSpeech = detector.addAmplitude(
         currentDb: -43,
-        now: startedAt.add(const Duration(milliseconds: 1900)),
+        now: startedAt.add(const Duration(milliseconds: 2600)),
       );
       expect(resumedSpeech.endpointReached, isFalse);
 
       final secondShortPause = detector.addAmplitude(
         currentDb: -80,
-        now: startedAt.add(const Duration(milliseconds: 3700)),
+        now: startedAt.add(const Duration(milliseconds: 5100)),
       );
       expect(secondShortPause.endpointReached, isFalse);
 
       final realEndpoint = detector.addAmplitude(
         currentDb: -80,
-        now: startedAt.add(const Duration(milliseconds: 4100)),
+        now: startedAt.add(const Duration(milliseconds: 5700)),
       );
-      expect(realEndpoint.endpointReached, isTrue);
+      expect(realEndpoint.endpointReached, isFalse);
+
+      final longerPauseEndpoint = detector.addAmplitude(
+        currentDb: -80,
+        now: startedAt.add(const Duration(milliseconds: 5900)),
+      );
+      expect(longerPauseEndpoint.endpointReached, isTrue);
     },
   );
+
+  test('voice endpoint detector allows long speech with natural pauses', () {
+    const config = VoiceCaptureConfig();
+    final startedAt = DateTime(2026);
+    final detector = VoiceEndpointDetector(
+      config: config,
+      startedAt: startedAt,
+    );
+
+    expect(
+      detector.addAmplitude(currentDb: -42, now: startedAt).endpointReached,
+      isFalse,
+    );
+
+    for (var second = 2; second <= 36; second += 4) {
+      expect(
+        detector
+            .addAmplitude(
+              currentDb: -80,
+              now: startedAt.add(Duration(seconds: second)),
+            )
+            .endpointReached,
+        isFalse,
+      );
+      expect(
+        detector
+            .addAmplitude(
+              currentDb: -43,
+              now: startedAt.add(Duration(seconds: second, milliseconds: 2500)),
+            )
+            .endpointReached,
+        isFalse,
+      );
+    }
+
+    final endpoint = detector.addAmplitude(
+      currentDb: -80,
+      now: startedAt.add(const Duration(seconds: 42)),
+    );
+    expect(endpoint.endpointReached, isTrue);
+  });
 
   test('voice audio session asks native iOS to prefer loud speaker', () async {
     const channel = MethodChannel('clarity/voice_audio');
@@ -132,9 +179,9 @@ void main() {
   );
 
   test(
-    'streaming voice fails instead of hanging when no speech arrives',
+    'streaming voice keeps listening quietly when no speech arrives',
     () async {
-      final captureService = _SilentStreamingAudioCaptureService();
+      final captureService = _ReusableSilentStreamingAudioCaptureService();
       final container = ProviderContainer(
         overrides: [
           microphonePermissionProvider.overrideWithValue(
@@ -161,7 +208,6 @@ void main() {
           voiceCallNoSpeechTimeoutProvider.overrideWithValue(
             const Duration(milliseconds: 10),
           ),
-          voiceCallEmptyTurnLimitProvider.overrideWithValue(1),
         ],
       );
       addTearDown(container.dispose);
@@ -169,14 +215,13 @@ void main() {
       final controller = container.read(voiceCallProvider.notifier);
 
       expect(await controller.startCall(), isTrue);
-      await captureService.ready.future;
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+      await captureService.readyAt(0);
+      await captureService.readyAt(1);
 
       final state = container.read(voiceCallProvider);
-      expect(state.phase, VoiceCallPhase.failed);
-      expect(state.errorMessage, contains('did not catch any audio'));
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(state.errorMessage, isNull);
       expect(state.currentTranscript, isEmpty);
-      expect(captureService.cancelled, isTrue);
     },
   );
 
@@ -210,7 +255,6 @@ void main() {
           voiceCallNoSpeechTimeoutProvider.overrideWithValue(
             const Duration(milliseconds: 10),
           ),
-          voiceCallEmptyTurnLimitProvider.overrideWithValue(1),
         ],
       );
       addTearDown(container.dispose);
@@ -383,7 +427,7 @@ void main() {
   test(
     'inactive lifecycle keeps audio route stable and suppresses no-speech fail',
     () async {
-      final captureService = _SilentStreamingAudioCaptureService();
+      final captureService = _ReusableSilentStreamingAudioCaptureService();
       final audioSessionService = _CountingVoiceAudioSessionService();
       final backgroundVoiceService = _CountingBackgroundVoiceService();
       final container = ProviderContainer(
@@ -412,7 +456,6 @@ void main() {
           voiceCallNoSpeechTimeoutProvider.overrideWithValue(
             const Duration(milliseconds: 10),
           ),
-          voiceCallEmptyTurnLimitProvider.overrideWithValue(1),
         ],
       );
       addTearDown(container.dispose);
@@ -420,7 +463,7 @@ void main() {
       final controller = container.read(voiceCallProvider.notifier);
 
       expect(await controller.startCall(), isTrue);
-      await captureService.ready.future;
+      await captureService.readyAt(0);
       expect(audioSessionService.configureCount, 1);
 
       controller.didChangeAppLifecycleState(AppLifecycleState.inactive);

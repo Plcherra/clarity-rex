@@ -98,6 +98,7 @@ class FakeChatService:
         max_response_tokens=None,
         financial_context=None,
         channel=None,
+        include_turn_trace=False,
     ):
         self.stream_calls.append(
             {
@@ -108,12 +109,27 @@ class FakeChatService:
                 "max_response_tokens": max_response_tokens,
                 "financial_context": financial_context,
                 "channel": channel,
+                "include_turn_trace": include_turn_trace,
             }
         )
         if self.error is not None:
             raise self.error
         resolved_conversation_id = conversation_id or "conversation-stream"
         yield {"event": "conversation", "conversation_id": resolved_conversation_id}
+        if include_turn_trace:
+            yield {
+                "event": "turn.trace",
+                "intent": "casual",
+                "channel": "voice",
+                "loaded_context": {
+                    "long_term_memory": False,
+                    "profile_memory": False,
+                    "structured_memory": False,
+                    "goal_context": False,
+                    "accountability": False,
+                    "financial_context": False,
+                },
+            }
         yield {"event": "token", "token": "Rex "}
         yield {"event": "token", "token": "streaming "}
         yield {"event": "token", "token": "response."}

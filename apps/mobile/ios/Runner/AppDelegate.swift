@@ -28,6 +28,8 @@ import AVFoundation
       switch call.method {
       case "preferLoudSpeaker":
         self.preferLoudSpeaker(result: result)
+      case "openAppSettings":
+        self.openAppSettings(result: result)
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -68,6 +70,23 @@ import AVFoundation
       default:
         return false
       }
+    }
+  }
+
+  private func openAppSettings(result: FlutterResult) {
+    guard let url = URL(string: UIApplication.openSettingsURLString) else {
+      result(
+        FlutterError(
+          code: "APP_SETTINGS_URL_UNAVAILABLE",
+          message: "Could not build the app settings URL.",
+          details: nil
+        )
+      )
+      return
+    }
+
+    UIApplication.shared.open(url, options: [:]) { _ in
+      result(nil)
     }
   }
 }

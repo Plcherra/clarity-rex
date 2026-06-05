@@ -272,7 +272,7 @@ void main() {
 
       expect(voiceController.startCount, 1);
       expect(voiceController.lastConversationId, 'conversation-1');
-      expect(find.text('Listening...'), findsOneWidget);
+      expect(find.text('Listening'), findsOneWidget);
     },
   );
 }

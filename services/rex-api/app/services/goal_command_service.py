@@ -56,6 +56,18 @@ class GoalCommandService:
             re.IGNORECASE,
         ),
         re.compile(
+            r"\b(?:set|create|add)\s+(?:a\s+)?reminder\s+to\s+(?P<commitment>.+)",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"\bi\s+(?:need|have)\s+to\s+(?P<commitment>.+?\b(?:on|by)\b.+)",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"\bi\s+gotta\s+(?P<commitment>.+?\b(?:on|by)\b.+)",
+            re.IGNORECASE,
+        ),
+        re.compile(
             r"\b(?:track|save|add)\s+(?P<commitment>.+?)\s+as\s+(?:a\s+)?commitment\b",
             re.IGNORECASE,
         ),
@@ -185,19 +197,32 @@ class GoalCommandService:
         conversation_id: str,
         user_message: dict,
     ) -> dict:
-        record = await self.plan_service.create_plan(
-            PlanCreateRequest(
-                plan_type=command.record_type,
-                title=command.title,
-                description=command.body,
-                desired_outcome=command.body,
-                source_conversation_id=conversation_id,
-                source_message_id=str(user_message.get("id") or "") or None,
-                target_date=command.target_text,
-                priority=4,
-                metadata={"source": "explicit_goal_command"},
+        try:
+            record = await self.plan_service.create_plan(
+                PlanCreateRequest(
+                    plan_type=command.record_type,
+                    title=command.title,
+                    description=command.body,
+                    desired_outcome=command.body,
+                    source_conversation_id=conversation_id,
+                    source_message_id=str(user_message.get("id") or "") or None,
+                    target_date=command.target_text,
+                    priority=4,
+                    metadata={"source": "explicit_goal_command"},
+                )
             )
-        )
+        except Exception:
+            return await self._failed_command_result(
+                conversation_id=conversation_id,
+                user_message=user_message,
+                response=(
+                    "I understood that goal, but I couldn't save it just now. "
+                    "Please try again in a moment."
+                ),
+                kind="plan",
+                record_type=command.record_type,
+                title=command.title,
+            )
         response = f"Got it, I added this as a goal: {command.title}."
         return await self._command_result(
             conversation_id=conversation_id,
@@ -216,18 +241,31 @@ class GoalCommandService:
         conversation_id: str,
         user_message: dict,
     ) -> dict:
-        record = await self.commitment_service.create_commitment(
-            CommitmentCreateRequest(
-                commitment_type=command.record_type,
-                title=command.title,
-                commitment_text=command.body,
-                source_conversation_id=conversation_id,
-                source_message_id=str(user_message.get("id") or "") or None,
-                due_at=command.due_text,
-                priority=4,
-                metadata={"source": "explicit_commitment_command"},
+        try:
+            record = await self.commitment_service.create_commitment(
+                CommitmentCreateRequest(
+                    commitment_type=command.record_type,
+                    title=command.title,
+                    commitment_text=command.body,
+                    source_conversation_id=conversation_id,
+                    source_message_id=str(user_message.get("id") or "") or None,
+                    due_at=command.due_text,
+                    priority=4,
+                    metadata={"source": "explicit_commitment_command"},
+                )
             )
-        )
+        except Exception:
+            return await self._failed_command_result(
+                conversation_id=conversation_id,
+                user_message=user_message,
+                response=(
+                    "I understood that commitment, but I couldn't save it just now. "
+                    "Please try again in a moment."
+                ),
+                kind="commitment",
+                record_type=command.record_type,
+                title=command.title,
+            )
         response = f"Got it, I saved that commitment: {command.title}."
         return await self._command_result(
             conversation_id=conversation_id,
@@ -273,6 +311,38 @@ class GoalCommandService:
             ),
         }
 
+    async def _failed_command_result(
+        self,
+        *,
+        conversation_id: str,
+        user_message: dict,
+        response: str,
+        kind: str,
+        record_type: str,
+        title: str,
+    ) -> dict:
+        assistant_message = await self.memory_service.save_message(
+            conversation_id,
+            "assistant",
+            response,
+        )
+        return {
+            "conversation_id": conversation_id,
+            "response": response,
+            "user_message": user_message,
+            "assistant_message": assistant_message,
+            "memory_correction": None,
+            "memory_changes": self._failed_summary(
+                kind=kind,
+                record_type=record_type,
+                title=title,
+            ),
+            "messages": await self.memory_service.get_recent_messages(
+                conversation_id,
+                limit=20,
+            ),
+        }
+
     def _summary(
         self,
         *,
@@ -305,6 +375,31 @@ class GoalCommandService:
             ],
         }
 
+    def _failed_summary(
+        self,
+        *,
+        kind: str,
+        record_type: str,
+        title: str,
+    ) -> dict:
+        return {
+            "created": 0,
+            "updated": 0,
+            "archived": 0,
+            "merged": 0,
+            "skipped": 1,
+            "confirmation_required": 0,
+            "records": [
+                {
+                    "kind": kind,
+                    "type": record_type,
+                    "action": "save_failed",
+                    "title": title,
+                    "metadata": {"source": "explicit_command", "degraded": True},
+                }
+            ],
+        }
+
     def _recent_user_content(self, conversation_history: list[dict]) -> Optional[str]:
         for message in reversed(conversation_history):
             if message.get("role") == "user":
@@ -332,7 +427,7 @@ class GoalCommandService:
 
     def _commitment_type(self, text: str) -> str:
         lowered = text.casefold()
-        if "$" in lowered or "send money" in lowered or "pay" in lowered:
+        if any(term in lowered for term in ("$", "send money", "pay", "money", "rent")):
             return "money"
         if any(term in lowered for term in ("work", "job", "email")):
             return "work"

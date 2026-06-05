@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:clarity/features/assistant/presentation/rex_ui_tokens.dart';
 import 'package:clarity/features/assistant/voice/domain/voice_call_state.dart';
 
 class VoiceCallControls extends StatelessWidget {
@@ -35,6 +36,7 @@ class VoiceCallControls extends StatelessWidget {
             tooltip: 'Try again',
             icon: Icons.refresh_rounded,
             label: 'Try again',
+            prominent: true,
             onPressed: onRetry,
           ),
           _QuietControlButton(
@@ -124,13 +126,22 @@ class _QuietControlButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final enabled = onPressed != null;
     final foreground = destructive
-        ? scheme.error
+        ? RexUiTokens.danger
         : prominent
-        ? scheme.primary
-        : scheme.onSurfaceVariant;
+        ? RexUiTokens.background
+        : RexUiTokens.textMuted;
+    final background = destructive
+        ? RexUiTokens.danger.withValues(alpha: 0.12)
+        : prominent
+        ? RexUiTokens.accent
+        : RexUiTokens.surfaceRaised;
+    final border = destructive
+        ? RexUiTokens.danger.withValues(alpha: 0.28)
+        : prominent
+        ? RexUiTokens.accent
+        : RexUiTokens.border.withValues(alpha: 0.75);
 
     return Tooltip(
       message: tooltip,
@@ -139,16 +150,23 @@ class _QuietControlButton extends StatelessWidget {
         icon: Icon(icon, size: 18),
         label: Text(label),
         style: TextButton.styleFrom(
+          backgroundColor: enabled
+              ? background
+              : RexUiTokens.surfaceRaised.withValues(alpha: 0.5),
           foregroundColor: enabled
               ? foreground
-              : scheme.onSurfaceVariant.withValues(alpha: 0.42),
+              : RexUiTokens.textSubtle.withValues(alpha: 0.42),
           textStyle: theme.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w700,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          minimumSize: const Size(0, 38),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+          minimumSize: const Size(0, 40),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+            side: BorderSide(color: enabled ? border : Colors.transparent),
+          ),
         ),
       ),
     );

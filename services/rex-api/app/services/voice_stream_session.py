@@ -304,10 +304,13 @@ class VoiceStreamSession(
         return len(self._audio_chunks)
 
     def _log_turn_timings(self, timings: dict[str, int], *, mode: str) -> None:
+        turn_trace = getattr(self, "_last_turn_trace", {}) or {}
         LOGGER.info(
             "voice_turn_timing session_id=%s conversation_id=%s client=%s "
             "mode=%s capture_ms=%s stt_ms=%s grok_first_token_ms=%s "
-            "tts_first_audio_ms=%s turn_ms=%s audio_bytes=%s audio_chunks=%s",
+            "tts_first_audio_ms=%s tts_chunk_count=%s tts_total_ms=%s "
+            "turn_ms=%s audio_bytes=%s audio_chunks=%s intent=%s "
+            "context_flags=%s memory_action=%s",
             self._session_id,
             self.conversation_id,
             self.client,
@@ -316,9 +319,14 @@ class VoiceStreamSession(
             timings.get("stt_ms"),
             timings.get("grok_first_token_ms"),
             timings.get("tts_first_audio_ms"),
+            timings.get("tts_chunk_count", 0),
+            timings.get("tts_total_ms"),
             timings.get("turn_ms"),
             self._turn_audio_bytes,
             self._turn_audio_chunks,
+            turn_trace.get("intent", "unknown"),
+            turn_trace.get("loaded_context", {}),
+            turn_trace.get("memory_action", "unknown"),
         )
 
     async def _cancel_active_turn(self) -> None:

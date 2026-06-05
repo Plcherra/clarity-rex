@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 
 enum MicrophonePermissionDecision {
   granted,
@@ -16,62 +16,41 @@ abstract class MicrophonePermissionService {
   Future<void> openSettings();
 }
 
-class PermissionHandlerMicrophonePermissionService
-    implements MicrophonePermissionService {
+class RecordMicrophonePermissionService implements MicrophonePermissionService {
+  RecordMicrophonePermissionService({
+    AudioRecorder? recorder,
+    MethodChannel? settingsChannel,
+  }) : _recorder = recorder ?? AudioRecorder(),
+       _settingsChannel =
+           settingsChannel ?? const MethodChannel('clarity/voice_audio');
+
+  final AudioRecorder _recorder;
+  final MethodChannel _settingsChannel;
+
   @override
   Future<MicrophonePermissionDecision> requestMicrophonePermission({
     bool includeSpeechRecognition = true,
   }) async {
-    final microphoneStatus = await _requestPermission(Permission.microphone);
-    if (microphoneStatus.isPermanentlyDenied) {
-      return MicrophonePermissionDecision.permanentlyDenied;
-    }
-    if (microphoneStatus.isRestricted) {
-      return MicrophonePermissionDecision.restricted;
-    }
-    if (!microphoneStatus.isGranted) {
+    try {
+      final granted = await _recorder.hasPermission();
+      return granted
+          ? MicrophonePermissionDecision.granted
+          : MicrophonePermissionDecision.denied;
+    } on MissingPluginException {
+      return MicrophonePermissionDecision.granted;
+    } on PlatformException {
       return MicrophonePermissionDecision.denied;
     }
-
-    if (includeSpeechRecognition) {
-      final speechStatus = await _requestPermission(Permission.speech);
-      if (speechStatus.isPermanentlyDenied) {
-        return MicrophonePermissionDecision.permanentlyDenied;
-      }
-      if (speechStatus.isRestricted) {
-        return MicrophonePermissionDecision.restricted;
-      }
-      if (!speechStatus.isGranted) {
-        return MicrophonePermissionDecision.denied;
-      }
-    }
-
-    return MicrophonePermissionDecision.granted;
   }
 
   @override
   Future<void> openSettings() async {
     try {
-      await openAppSettings();
+      await _settingsChannel.invokeMethod<void>('openAppSettings');
     } on MissingPluginException {
-      // Desktop test/runtime targets may not provide permission_handler.
-    }
-  }
-
-  Future<PermissionStatus> _requestPermission(Permission permission) async {
-    try {
-      final currentStatus = await permission.status;
-      if (currentStatus.isGranted) {
-        return currentStatus;
-      }
-      return permission.request();
-    } on MissingPluginException {
-      return PermissionStatus.granted;
-    } on PlatformException catch (error) {
-      if (error.code == 'ERROR_ALREADY_REQUESTING_PERMISSIONS') {
-        return PermissionStatus.denied;
-      }
-      rethrow;
+      // Tests and unsupported platforms can run without native settings.
+    } on Object {
+      // Opening settings is helpful, but should never block voice recovery.
     }
   }
 }

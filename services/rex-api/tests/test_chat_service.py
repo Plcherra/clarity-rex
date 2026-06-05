@@ -242,7 +242,7 @@ async def test_chat_service_normal_memory_statement_uses_single_llm_path():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_does_not_extract_memory_when_ai_fails():
+async def test_chat_service_does_not_save_memory_when_ai_fails():
     memory_service = FakeMemoryService()
     chat_service = ChatService(
         FailingAIService(),

@@ -1,3 +1,5 @@
+import pytest
+
 from app.services.rex_intent_router import RexIntent, RexIntentRouter
 
 
@@ -34,6 +36,27 @@ def test_router_classifies_memory_recall_with_memory_context():
 
     assert decision.intent == RexIntent.MEMORY_RECALL
     assert decision.should_load_long_term_memory
+    assert decision.should_load_structured_memory
+    assert not decision.should_load_goal_context
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Where am I located?",
+        "Do you know where I'm located?",
+        "What city do I live in?",
+        "Do you know anything about me?",
+        "What are my plans tonight?",
+        "Do you know my mom's birthday?",
+    ],
+)
+def test_router_classifies_voice_memory_recall_phrases(message):
+    decision = RexIntentRouter().classify(message)
+
+    assert decision.intent == RexIntent.MEMORY_RECALL
+    assert decision.should_load_long_term_memory
+    assert decision.should_load_profile_memory
     assert decision.should_load_structured_memory
     assert not decision.should_load_goal_context
 

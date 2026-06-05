@@ -15,7 +15,7 @@ import 'package:clarity/features/assistant/voice/data/streaming_voice_api.dart';
 import 'package:clarity/features/assistant/voice/application/voice_permission_service.dart';
 
 final microphonePermissionProvider = Provider<MicrophonePermissionService>(
-  (ref) => PermissionHandlerMicrophonePermissionService(),
+  (ref) => RecordMicrophonePermissionService(),
 );
 
 final speechToTextServiceProvider = Provider<SpeechToTextService>(
@@ -102,11 +102,9 @@ final voiceCallTranscriptIdleTimeoutProvider = Provider<Duration>(
 );
 
 final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(
-  (ref) => const Duration(seconds: 8),
+  (ref) => const Duration(seconds: 90),
 );
 
 final voiceCallNoSpeechTimeoutProvider = Provider<Duration>(
   (ref) => const Duration(seconds: 12),
 );
-
-final voiceCallEmptyTurnLimitProvider = Provider<int>((ref) => 2);

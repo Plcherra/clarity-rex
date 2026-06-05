@@ -8,7 +8,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
       return;
     }
 
-    _emptyVoiceTurnCount = 0;
     _isAwaitingFollowUpSpeech = false;
     _cancelNoSpeechTimeout();
     state = state.copyWith(
@@ -25,7 +24,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
       return;
     }
 
-    _emptyVoiceTurnCount = 0;
     _isAwaitingFollowUpSpeech = false;
     _cancelNoSpeechTimeout();
     if (isFinal) {
@@ -156,7 +154,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
 
   void reset() {
     _callGeneration++;
-    _emptyVoiceTurnCount = 0;
     _isAwaitingFollowUpSpeech = false;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();

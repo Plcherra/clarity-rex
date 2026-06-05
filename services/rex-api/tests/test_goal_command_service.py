@@ -1,0 +1,149 @@
+import pytest
+
+from app.services.goal_command_service import GoalCommandService
+from chat_service_fakes import FakeMemoryService
+
+
+class FailingCommitmentService:
+    async def create_commitment(self, _request):
+        raise RuntimeError("commitment write failed")
+
+
+class FailingPlanService:
+    async def create_plan(self, _request):
+        raise RuntimeError("plan write failed")
+
+
+def _time_context():
+    return {
+        "date": "2026-06-04",
+        "timezone": "America/New_York",
+    }
+
+
+async def _user_message(memory_service, conversation_id, content):
+    return await memory_service.save_message(conversation_id, "user", content)
+
+
+@pytest.mark.asyncio
+async def test_remind_me_command_creates_commitment_without_llm():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    message = "Remind me to send her $200 on the 10th"
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert result["response"] == (
+        "Got it, I saved that commitment: Send her $200 on the 10th."
+    )
+    assert result["memory_changes"]["created"] == 1
+    commitment = memory_service.created_commitments[0]
+    assert commitment["commitment_type"] == "money"
+    assert commitment["commitment_text"] == "send her $200 on the 10th"
+    assert commitment["due_at"] == "June 10"
+
+
+@pytest.mark.asyncio
+async def test_set_reminder_command_creates_commitment():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    message = "Set a reminder to call mom on June 18"
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["created"] == 1
+    commitment = memory_service.created_commitments[0]
+    assert commitment["commitment_type"] == "relationship"
+    assert commitment["commitment_text"] == "call mom on June 18"
+    assert commitment["due_at"] == "June 18"
+
+
+@pytest.mark.asyncio
+async def test_need_to_with_due_date_creates_commitment():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    message = "I need to send the rent money by the 12th"
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["created"] == 1
+    commitment = memory_service.created_commitments[0]
+    assert commitment["commitment_type"] == "money"
+    assert commitment["commitment_text"] == "send the rent money by the 12th"
+    assert commitment["due_at"] == "June 12"
+
+
+@pytest.mark.asyncio
+async def test_commitment_write_failure_is_truthful():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    message = "Remind me to send her $200 on the 10th"
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(
+        memory_service,
+        commitment_service=FailingCommitmentService(),
+    ).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert "couldn't save it" in result["response"]
+    assert result["memory_changes"]["created"] == 0
+    assert result["memory_changes"]["skipped"] == 1
+    assert result["memory_changes"]["records"][0]["action"] == "save_failed"
+    assert memory_service.created_commitments == []
+
+
+@pytest.mark.asyncio
+async def test_goal_write_failure_is_truthful():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    message = "My goal is save $500 by the 20th"
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(
+        memory_service,
+        plan_service=FailingPlanService(),
+    ).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert "couldn't save it" in result["response"]
+    assert result["memory_changes"]["created"] == 0
+    assert result["memory_changes"]["skipped"] == 1
+    assert result["memory_changes"]["records"][0]["action"] == "save_failed"
+    assert memory_service.created_plans == []

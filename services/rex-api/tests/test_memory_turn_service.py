@@ -102,6 +102,40 @@ async def test_memory_turn_service_updates_same_topic_instead_of_duplicating():
 
 
 @pytest.mark.asyncio
+async def test_memory_turn_service_updates_birthday_without_my_prefix():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User's mom's birthday is June 18.",
+            "importance": 5,
+            "metadata": {"topic_fingerprint": "fact:birthday:mom"},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "No, mom's birthday is June 28",
+        conversation_id="conversation-1",
+        user_message={
+            "id": "message-update",
+            "content": "No, mom's birthday is June 28",
+        },
+        conversation_history=[],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["updated"] == 1
+    assert len(store.long_term_memory) == 1
+    assert store.long_term_memory[0]["content"] == (
+        "User's mom's birthday is June 28."
+    )
+
+
+@pytest.mark.asyncio
 async def test_memory_turn_service_updates_legacy_location_from_voice_correction():
     store = FakeMemoryTurnStore()
     store.long_term_memory.append(
@@ -137,6 +171,71 @@ async def test_memory_turn_service_updates_legacy_location_from_voice_correction
     assert store.long_term_memory[0]["metadata"]["topic_fingerprint"] == (
         "fact:identity:location"
     )
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_updates_negative_location_correction():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Summerville.",
+            "importance": 4,
+            "metadata": {},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "I don't live in Summerville. It's Somerville with one o and one m.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-update", "content": "location correction"},
+        conversation_history=[],
+        time_context={"date": "2026-06-04"},
+    )
+
+    assert result is not None
+    assert result["response"] == "Got it, I updated that: you live in Somerville."
+    assert result["memory_changes"]["updated"] == 1
+    assert len(store.long_term_memory) == 1
+    assert store.long_term_memory[0]["content"] == "User lives in Somerville."
+    assert store.long_term_memory[0]["metadata"]["topic_fingerprint"] == (
+        "fact:identity:location"
+    )
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_does_not_claim_failed_update_succeeded():
+    store = FakeMemoryTurnStore(fail_update_memory=True)
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Summerville.",
+            "importance": 4,
+            "metadata": {},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "I don't live in Summerville. It's Somerville with one o and one m.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-update", "content": "location correction"},
+        conversation_history=[],
+        time_context={"date": "2026-06-04"},
+    )
+
+    assert result is not None
+    assert result["response"] == (
+        "I understood that correction, but I couldn't update memory just now. "
+        "Please try again in a moment."
+    )
+    assert result["memory_changes"]["records"][0]["action"] == "save_failed"
+    assert store.long_term_memory[0]["content"] == "User lives in Summerville."
 
 
 @pytest.mark.asyncio
@@ -230,12 +329,12 @@ async def test_memory_turn_service_updates_legacy_movie_plan_without_fingerprint
     assert result is not None
     assert result["response"] == (
         "Got it, I updated that: "
-        "you plan to watch Masters of the Universe movie today."
+        "you plan to watch Masters of the Universe today."
     )
     assert result["memory_changes"]["updated"] == 1
     assert len(store.long_term_memory) == 1
     assert store.long_term_memory[0]["content"] == (
-        "User plans to watch Masters of the Universe movie today."
+        "User plans to watch Masters of the Universe today."
     )
 
 
@@ -254,12 +353,12 @@ async def test_memory_turn_service_saves_personal_movie_plan_directly():
 
     assert result is not None
     assert result["response"] == (
-        "Got it, you plan to watch Masters of the Universe movie today."
+        "Got it, you plan to watch Masters of the Universe today."
     )
     assert result["memory_changes"]["created"] == 1
     assert store.long_term_memory[0]["memory_type"] == "event"
     assert store.long_term_memory[0]["content"] == (
-        "User plans to watch Masters of the Universe movie today."
+        "User plans to watch Masters of the Universe today."
     )
 
 

@@ -167,36 +167,6 @@ class _HangingStreamingAudioCaptureService
   }
 }
 
-class _SilentStreamingAudioCaptureService
-    implements StreamingAudioCaptureService {
-  final ready = Completer<void>();
-  final _capture = Completer<bool>();
-  var cancelled = false;
-
-  @override
-  Future<void> cancel() async {
-    cancelled = true;
-    if (!_capture.isCompleted) {
-      _capture.complete(false);
-    }
-  }
-
-  @override
-  Future<bool> streamUtterance({
-    required VoiceCaptureConfig config,
-    required CaptureReadyCallback onReady,
-    required SpeechStartCallback onSpeechStart,
-    required SpeechEndCallback onSpeechEnded,
-    required AudioChunkCallback onAudioChunk,
-  }) {
-    onReady();
-    if (!ready.isCompleted) {
-      ready.complete();
-    }
-    return _capture.future;
-  }
-}
-
 class _ReusableSilentStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
   final _ready = <Completer<void>>[];

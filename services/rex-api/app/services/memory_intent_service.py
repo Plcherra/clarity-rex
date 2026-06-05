@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from app.services.memory_date_normalizer import MemoryDateNormalizer
+from app.services.personal_plan_intent_parser import PersonalPlanIntentParser
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,12 @@ class MemoryIntentService:
         r"(?P<date>[^,.!?]{2,60})",
         re.IGNORECASE,
     )
+    _birthday_correction_pattern = re.compile(
+        r"\b(?:no[,\s]+)?(?P<person>mom|mother|mum|mama|dad|father|papa)"
+        r"\s*(?:'s)?\s+birthday\s+(?:is|was|will be)\s+"
+        r"(?P<date>[^,.!?]{2,60})",
+        re.IGNORECASE,
+    )
     _remember_that_pattern = re.compile(
         r"\bremember\s+that\s+(?P<fact>[^.!?]+)",
         re.IGNORECASE,
@@ -40,21 +47,11 @@ class MemoryIntentService:
         r"(?:\bit(?:'s| is)\b|\bto\b)\s+(?P<place>[A-Za-z][A-Za-z\s,.'-]{1,120})",
         re.IGNORECASE,
     )
-    _personal_movie_plan_pattern = re.compile(
-        r"\b(?P<time>today|tonight|tomorrow)\b.*?"
-        r"(?:(?P<title>[A-Za-z][A-Za-z\s:'-]{2,80})\s+movie\b)?.*?"
-        r"\b(?:i(?:'m| am)\s+(?:gonna|going to)|i\s+will|i\s+plan\s+to)\s+watch\b",
-        re.IGNORECASE,
-    )
-    _released_movie_plan_pattern = re.compile(
-        r"\b(?P<time>today|tonight|tomorrow)\b.*?\breleased\s+(?:the\s+)?"
-        r"(?P<title>[A-Za-z][A-Za-z\s:'-]{2,80})\s+movie\b.*?"
-        r"\b(?:i(?:'m| am)\s+(?:gonna|going to)|i\s+will|i\s+plan\s+to)\s+watch\b",
-        re.IGNORECASE,
-    )
-    _personal_watch_plan_pattern = re.compile(
-        r"\b(?:i(?:'m| am)\s+(?:gonna|going to)|i\s+will|i\s+plan\s+to)\s+"
-        r"watch\s+(?P<object>[^.!?]{2,100})",
+    _negative_location_correction_pattern = re.compile(
+        r"\bi\s+(?:do\s+not|don't|dont)\s+live\s+in\s+"
+        r"(?P<old_place>[A-Za-z][A-Za-z\s,.'-]{1,80})\b.*?"
+        r"(?:\bit(?:'s| is)\b|\bi\s+live\s+in\b)\s+"
+        r"(?P<place>[A-Za-z][A-Za-z\s,.'-]{1,120})",
         re.IGNORECASE,
     )
     _preference_pattern = re.compile(
@@ -84,6 +81,7 @@ class MemoryIntentService:
         re.IGNORECASE,
     )
     _date_normalizer = MemoryDateNormalizer()
+    _personal_plan_parser = PersonalPlanIntentParser()
     def detect_simple_memory(
         self,
         message: str,
@@ -124,6 +122,13 @@ class MemoryIntentService:
         )
         if contextual_birthday is not None:
             return contextual_birthday
+
+        personal_plan = self._detect_personal_plan(
+            message,
+            conversation_history=conversation_history,
+        )
+        if personal_plan is not None:
+            return personal_plan
 
         cleaned_message = self._clean_fact(message)
         date_correction = self._date_correction_pattern.match(cleaned_message)
@@ -177,6 +182,8 @@ class MemoryIntentService:
     ) -> Optional[SimpleMemoryIntent]:
         match = self._birthday_pattern.search(message)
         if match is None:
+            match = self._birthday_correction_pattern.search(message)
+        if match is None:
             return None
 
         person = self._clean_person(match.group("person"))
@@ -228,6 +235,17 @@ class MemoryIntentService:
         )
 
     def _detect_identity_fact(self, message: str) -> Optional[SimpleMemoryIntent]:
+        negative_location_correction = (
+            self._negative_location_correction_pattern.search(message)
+        )
+        if negative_location_correction is not None:
+            place = self._clean_place(
+                negative_location_correction.group("place"),
+                message,
+            )
+            if len(place) >= 2:
+                return self._location_intent(place)
+
         location_correction = self._location_correction_pattern.search(message)
         if location_correction is not None:
             place = self._clean_place(location_correction.group("place"), message)
@@ -267,41 +285,23 @@ class MemoryIntentService:
             },
         )
 
-    def _detect_personal_plan(self, message: str) -> Optional[SimpleMemoryIntent]:
-        movie_plan = self._released_movie_plan_pattern.search(message)
-        if movie_plan is None:
-            movie_plan = self._personal_movie_plan_pattern.search(message)
-        if movie_plan is not None:
-            time_text = movie_plan.group("time").lower()
-            title = self._clean_movie_title(movie_plan.group("title") or "")
-            if title:
-                content = f"User plans to watch {title} movie {time_text}."
-            else:
-                content = f"User plans to watch a movie {time_text}."
-            return self._personal_plan_intent(content)
-
-        watch_plan = self._personal_watch_plan_pattern.search(message)
-        if watch_plan is None:
-            return None
-        normalized = self._normalize_reply(message)
-        if not any(token in normalized for token in {"today", "tonight", "tomorrow"}):
-            return None
-        watch_object = self._clean_fact(watch_plan.group("object"))
-        if len(watch_object) < 3:
-            return None
-        return self._personal_plan_intent(
-            f"User plans to watch {watch_object}.",
+    def _detect_personal_plan(
+        self,
+        message: str,
+        *,
+        conversation_history: Optional[list[dict]] = None,
+    ) -> Optional[SimpleMemoryIntent]:
+        draft = self._personal_plan_parser.detect(
+            message,
+            conversation_history=conversation_history,
         )
-
-    def _personal_plan_intent(self, content: str) -> SimpleMemoryIntent:
+        if draft is None:
+            return None
         return SimpleMemoryIntent(
             memory_type="event",
-            content=content,
-            importance=3,
-            metadata={
-                "fact_kind": "personal_plan",
-                "topic_fingerprint": f"event:personal_plan:{self._fingerprint(content)}",
-            },
+            content=draft.content,
+            importance=draft.importance,
+            metadata=draft.metadata,
         )
 
     def _detect_preference(self, message: str) -> Optional[SimpleMemoryIntent]:
@@ -437,26 +437,6 @@ class MemoryIntentService:
                 return "Somerville, Massachusetts"
             return "Somerville"
         return cleaned
-
-    def _clean_movie_title(self, title: str) -> str:
-        cleaned = self._clean_fact(title)
-        cleaned = re.sub(r"^(?:the\s+)?released\s+", "", cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r"^they\s+released\s+", "", cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r"^the\s+", "", cleaned, flags=re.IGNORECASE)
-        cleaned = cleaned.strip()
-        if len(cleaned) < 3:
-            return ""
-        normalized = re.sub(r"[^a-z0-9]+", " ", cleaned.lower()).strip()
-        known_titles = {
-            "masters of the universe": "Masters of the Universe",
-            "masters universe": "Masters of the Universe",
-            "messes of the universe": "Masters of the Universe",
-            "mess of the universe": "Masters of the Universe",
-            "master of the universe": "Masters of the Universe",
-        }
-        if normalized in known_titles:
-            return known_titles[normalized]
-        return " ".join(word.capitalize() for word in cleaned.split())
 
     def _sentence_body(self, content: str) -> str:
         body = content.strip().rstrip(".")

@@ -47,7 +47,6 @@ class ChatApi {
     String? conversationId,
     XFile? attachment,
     Map<String, dynamic>? financialContext,
-    bool deepThink = false,
   }) async {
     final uri = _apiClient.uri('/chat');
     try {
@@ -57,7 +56,6 @@ class ChatApi {
               message: message,
               conversationId: conversationId,
               financialContext: financialContext,
-              deepThink: deepThink,
             )
           : await _sendMultipartMessage(
               uri,
@@ -65,7 +63,6 @@ class ChatApi {
               conversationId: conversationId,
               attachment: attachment,
               financialContext: financialContext,
-              deepThink: deepThink,
             );
 
       return _chatResponseFromHttpResponse(response);
@@ -102,7 +99,6 @@ class ChatApi {
     String? conversationId,
     XFile? attachment,
     Map<String, dynamic>? financialContext,
-    bool deepThink = false,
   }) async* {
     final uri = _apiClient.uri('/chat');
     try {
@@ -112,7 +108,6 @@ class ChatApi {
               message: message,
               conversationId: conversationId,
               financialContext: financialContext,
-              deepThink: deepThink,
             )
           : await _multipartStreamRequest(
               uri,
@@ -120,7 +115,6 @@ class ChatApi {
               conversationId: conversationId,
               attachment: attachment,
               financialContext: financialContext,
-              deepThink: deepThink,
             );
       final response = await _apiClient.send(request);
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -172,7 +166,6 @@ class ChatApi {
     required String message,
     String? conversationId,
     Map<String, dynamic>? financialContext,
-    bool deepThink = false,
   }) async {
     final payload = <String, dynamic>{'message': message};
     if (conversationId != null) {
@@ -180,9 +173,6 @@ class ChatApi {
     }
     if (financialContext != null) {
       payload['financial_context'] = financialContext;
-    }
-    if (deepThink) {
-      payload['deep_think'] = true;
     }
 
     return _apiClient.postJson('/chat', payload);
@@ -194,7 +184,6 @@ class ChatApi {
     String? conversationId,
     required XFile attachment,
     Map<String, dynamic>? financialContext,
-    bool deepThink = false,
   }) async {
     final request = http.MultipartRequest('POST', uri)
       ..fields['message'] = message;
@@ -203,9 +192,6 @@ class ChatApi {
     }
     if (financialContext != null) {
       request.fields['financial_context'] = jsonEncode(financialContext);
-    }
-    if (deepThink) {
-      request.fields['deep_think'] = 'true';
     }
 
     final fileName = attachment.name.trim().isNotEmpty
@@ -228,7 +214,6 @@ class ChatApi {
     required String message,
     String? conversationId,
     Map<String, dynamic>? financialContext,
-    bool deepThink = false,
   }) {
     final payload = <String, Object>{'message': message, 'stream': true};
     if (conversationId != null) {
@@ -236,9 +221,6 @@ class ChatApi {
     }
     if (financialContext != null) {
       payload['financial_context'] = financialContext;
-    }
-    if (deepThink) {
-      payload['deep_think'] = true;
     }
 
     return http.Request('POST', uri)
@@ -252,7 +234,6 @@ class ChatApi {
     String? conversationId,
     required XFile attachment,
     Map<String, dynamic>? financialContext,
-    bool deepThink = false,
   }) async {
     final request = http.MultipartRequest('POST', uri)
       ..fields['message'] = message
@@ -262,9 +243,6 @@ class ChatApi {
     }
     if (financialContext != null) {
       request.fields['financial_context'] = jsonEncode(financialContext);
-    }
-    if (deepThink) {
-      request.fields['deep_think'] = 'true';
     }
 
     final fileName = attachment.name.trim().isNotEmpty

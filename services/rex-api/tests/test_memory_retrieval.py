@@ -333,6 +333,128 @@ async def test_get_relevant_memories_retrieves_location_when_user_asks_where_the
     assert "location" in memories[0]["relevance_reason"]
 
 
+@pytest.mark.parametrize(
+    ("query", "memory", "expected_id"),
+    [
+        (
+            "Do you know where I'm located?",
+            {
+                "id": "memory-location",
+                "memory_type": "fact",
+                "content": "User lives in Somerville, Massachusetts.",
+                "importance": 4,
+                "active": True,
+                "metadata": {"topic_fingerprint": "fact:identity:location"},
+                "created_at": "2026-06-04T08:00:00Z",
+                "last_accessed_at": "2026-06-04T08:00:00Z",
+            },
+            "memory-location",
+        ),
+        (
+            "What city do I live in?",
+            {
+                "id": "memory-city",
+                "memory_type": "fact",
+                "content": "User lives in Somerville, Massachusetts.",
+                "importance": 4,
+                "active": True,
+                "metadata": {"fact_kind": "location"},
+                "created_at": "2026-06-04T08:00:00Z",
+                "last_accessed_at": "2026-06-04T08:00:00Z",
+            },
+            "memory-city",
+        ),
+        (
+            "What are my plans tonight?",
+            {
+                "id": "memory-plan-tonight",
+                "memory_type": "event",
+                "content": "User plans to watch Masters of the Universe tonight.",
+                "importance": 3,
+                "active": True,
+                "metadata": {"fact_kind": "plan"},
+                "created_at": "2026-06-04T08:00:00Z",
+                "last_accessed_at": "2026-06-04T08:00:00Z",
+            },
+            "memory-plan-tonight",
+        ),
+        (
+            "Do you know my mom's birthday?",
+            {
+                "id": "memory-mom-birthday",
+                "memory_type": "fact",
+                "content": "User's mom's birthday is June 18.",
+                "importance": 4,
+                "active": True,
+                "metadata": {"entity_label": "mom", "fact_kind": "birthday"},
+                "created_at": "2026-06-04T08:00:00Z",
+                "last_accessed_at": "2026-06-04T08:00:00Z",
+            },
+            "memory-mom-birthday",
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_get_relevant_memories_handles_voice_recall_phrases(
+    query,
+    memory,
+    expected_id,
+):
+    service = InMemoryRetrievalService(
+        [
+            {
+                "id": "memory-irrelevant",
+                "memory_type": "fact",
+                "content": "User likes short replies.",
+                "importance": 2,
+                "active": True,
+                "created_at": "2026-06-04T07:00:00Z",
+                "last_accessed_at": "2026-06-04T07:00:00Z",
+            },
+            memory,
+        ]
+    )
+
+    memories = await service.get_relevant_memories(query, limit=2)
+
+    assert memories
+    assert memories[0]["id"] == expected_id
+
+
+@pytest.mark.asyncio
+async def test_get_relevant_memories_handles_anything_about_me_as_profile_recall():
+    service = InMemoryRetrievalService(
+        [
+            {
+                "id": "memory-profile",
+                "memory_type": "fact",
+                "content": "User lives in Somerville and works at Bom Dough.",
+                "importance": 5,
+                "active": True,
+                "created_at": "2026-06-04T08:00:00Z",
+                "last_accessed_at": "2026-06-04T08:00:00Z",
+            },
+            {
+                "id": "memory-low-priority",
+                "memory_type": "fact",
+                "content": "User mentioned a random movie trailer.",
+                "importance": 2,
+                "active": True,
+                "created_at": "2026-06-04T07:00:00Z",
+                "last_accessed_at": "2026-06-04T07:00:00Z",
+            },
+        ]
+    )
+
+    memories = await service.get_relevant_memories(
+        "Do you know anything about me?",
+        limit=4,
+    )
+
+    assert [memory["id"] for memory in memories] == ["memory-profile"]
+    assert memories[0]["relevance_reason"] == "Included high-priority profile fact."
+
+
 @pytest.mark.asyncio
 async def test_get_relevant_memories_retrieves_timezone_context_from_state_question():
     service = InMemoryRetrievalService(

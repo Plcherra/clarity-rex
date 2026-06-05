@@ -7,9 +7,11 @@ import '../chat/presentation/pages/conversation_list_page.dart';
 import '../memory/presentation/pages/memory_page.dart';
 import '../voice/presentation/pages/voice_chat_page.dart';
 import 'assistant_tab.dart';
+import 'rex_surfaces.dart';
+import 'rex_ui_tokens.dart';
 
 const _assistantCompactWidth = 360.0;
-const _assistantTabHeight = 74.0;
+const _assistantTabHeight = 50.0;
 
 class AssistantScreen extends ConsumerStatefulWidget {
   const AssistantScreen({super.key});
@@ -44,54 +46,62 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final isCompactWidth =
         MediaQuery.sizeOf(context).width < _assistantCompactWidth;
 
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        top: true,
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                isCompactWidth ? 20 : 24,
-                10,
-                isCompactWidth ? 20 : 24,
-                0,
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Assistant',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: scheme.onSurface,
-                  ),
-                ),
-              ),
-            ),
-            _AssistantTabNavigation(
-              controller: _tabController,
-              isCompactWidth: isCompactWidth,
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
+    return RexTheme(
+      child: Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+          final scheme = theme.colorScheme;
+
+          return Scaffold(
+            resizeToAvoidBottomInset: true,
+            body: SafeArea(
+              top: true,
+              bottom: false,
+              child: Column(
                 children: [
-                  for (final tab in AssistantTab.values)
-                    _AssistantTabContent(
-                      tab: tab,
-                      onConversationSelected: _openChatTab,
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      isCompactWidth ? 18 : 22,
+                      8,
+                      isCompactWidth ? 18 : 22,
+                      0,
                     ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Assistant',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: scheme.onSurface,
+                          height: 1.05,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _AssistantTabNavigation(
+                    controller: _tabController,
+                    isCompactWidth: isCompactWidth,
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        for (final tab in AssistantTab.values)
+                          _AssistantTabContent(
+                            tab: tab,
+                            onConversationSelected: _openChatTab,
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -113,40 +123,47 @@ class _AssistantTabNavigation extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        isCompactWidth ? 8 : 12,
-        4,
-        isCompactWidth ? 8 : 12,
-        10,
+        isCompactWidth ? 10 : 14,
+        12,
+        isCompactWidth ? 10 : 14,
+        8,
       ),
-      child: TabBar(
-        controller: controller,
-        dividerColor: Colors.transparent,
-        indicatorSize: TabBarIndicatorSize.tab,
-        indicatorPadding: const EdgeInsets.symmetric(
-          horizontal: 3,
-          vertical: 3,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: RexUiTokens.surface.withValues(alpha: 0.72),
+          borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+          border: Border.all(color: RexUiTokens.border.withValues(alpha: 0.65)),
         ),
-        indicator: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        labelColor: scheme.onSurface,
-        unselectedLabelColor: scheme.onSurfaceVariant,
-        labelStyle: theme.textTheme.labelMedium?.copyWith(
-          fontWeight: FontWeight.w800,
-        ),
-        unselectedLabelStyle: theme.textTheme.labelMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
-        labelPadding: EdgeInsets.zero,
-        tabs: [
-          for (final tab in AssistantTab.values)
-            Tab(
-              key: tab.key,
-              height: _assistantTabHeight,
-              child: _AssistantTabItem(tab: tab),
+        child: TabBar(
+          controller: controller,
+          dividerColor: Colors.transparent,
+          indicatorSize: TabBarIndicatorSize.tab,
+          indicatorPadding: const EdgeInsets.all(3),
+          indicator: BoxDecoration(
+            color: scheme.surfaceContainerHighest.withValues(alpha: 0.74),
+            borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+            border: Border.all(
+              color: RexUiTokens.accent.withValues(alpha: 0.18),
             ),
-        ],
+          ),
+          labelColor: scheme.onSurface,
+          unselectedLabelColor: RexUiTokens.textSubtle,
+          labelStyle: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+          unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+          labelPadding: EdgeInsets.zero,
+          tabs: [
+            for (final tab in AssistantTab.values)
+              Tab(
+                key: tab.key,
+                height: _assistantTabHeight,
+                child: _AssistantTabItem(tab: tab),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -165,12 +182,12 @@ class _AssistantTabItem extends StatelessWidget {
       label: tab.semanticLabel,
       button: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 3),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(tab.icon, size: 27),
-            const SizedBox(height: 4),
+            Icon(tab.icon, size: 20),
+            const SizedBox(height: 2),
             Flexible(
               child: FittedBox(
                 fit: BoxFit.scaleDown,

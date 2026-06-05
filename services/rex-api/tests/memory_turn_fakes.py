@@ -3,8 +3,10 @@ class FakeMemoryTurnStore:
         self,
         *,
         fail_save_memory=False,
+        fail_update_memory=False,
     ):
         self.fail_save_memory = fail_save_memory
+        self.fail_update_memory = fail_update_memory
         self.messages = []
         self.long_term_memory = []
         self.next_message_id = 1
@@ -82,6 +84,8 @@ class FakeMemoryTurnStore:
         correction_group=None,
         metadata=None,
     ):
+        if self.fail_update_memory:
+            return None
         for memory in self.long_term_memory:
             if memory["id"] != memory_id:
                 continue

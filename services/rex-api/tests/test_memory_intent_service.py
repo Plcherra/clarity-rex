@@ -114,6 +114,45 @@ def test_detects_birthday_with_explicit_month():
     )
 
 
+def test_detects_family_birthday_correction_without_my_prefix():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory(
+        "No, mom's birthday is June 28.",
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert intent == SimpleMemoryIntent(
+        memory_type="fact",
+        content="User's mom's birthday is June 28.",
+        importance=5,
+        metadata={
+            "fact_kind": "birthday",
+            "entity_label": "mom",
+            "normalized_date": "June 28",
+            "topic_fingerprint": "fact:birthday:mom",
+        },
+    )
+
+
+def test_detects_negative_location_correction_phrase():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory(
+        "I don't live in Summerville. It's Somerville with one o and one m.",
+    )
+
+    assert intent == SimpleMemoryIntent(
+        memory_type="fact",
+        content="User lives in Somerville.",
+        importance=4,
+        metadata={
+            "fact_kind": "location",
+            "topic_fingerprint": "fact:identity:location",
+        },
+    )
+
+
 def test_detects_explicit_remember_that_fact():
     service = MemoryIntentService()
 
@@ -141,14 +180,15 @@ def test_detects_precise_movie_plan_with_speech_title_normalization():
 
     assert intent == SimpleMemoryIntent(
         memory_type="event",
-        content="User plans to watch Masters of the Universe movie today.",
+        content="User plans to watch Masters of the Universe today.",
         importance=3,
         metadata={
             "fact_kind": "personal_plan",
-            "topic_fingerprint": (
-                "event:personal_plan:"
-                "user_plans_to_watch_masters_of_the_universe_movie_today"
-            ),
+            "plan_action": "watch",
+            "plan_title": "Masters of the Universe",
+            "plan_time": "today",
+            "plan_status": "planned",
+            "topic_fingerprint": "event:personal_plan:watch:masters_of_the_universe",
         },
     )
 
@@ -161,8 +201,62 @@ def test_detects_precise_movie_plan_with_exact_title():
     )
 
     assert intent is not None
-    assert intent.content == "User plans to watch Masters of the Universe movie tonight."
+    assert intent.content == "User plans to watch Masters of the Universe tonight."
     assert intent.metadata["fact_kind"] == "personal_plan"
+
+
+def test_detects_released_title_when_watch_uses_it_later():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory(
+        "They just released Masters of the Universe, and I'm gonna watch it tonight."
+    )
+
+    assert intent is not None
+    assert intent.content == "User plans to watch Masters of the Universe tonight."
+    assert intent.metadata["topic_fingerprint"] == (
+        "event:personal_plan:watch:masters_of_the_universe"
+    )
+
+
+def test_detects_ticket_update_from_recent_plan_context():
+    service = MemoryIntentService()
+
+    intent = service.detect_contextual_memory(
+        "I already bought the tickets.",
+        conversation_history=[
+            {
+                "role": "assistant",
+                "content": "Got it, you plan to watch Masters of the Universe tonight.",
+            }
+        ],
+    )
+
+    assert intent is not None
+    assert intent.content == (
+        "User plans to watch Masters of the Universe tonight and already bought tickets."
+    )
+    assert intent.metadata["plan_status"] == "tickets_bought"
+
+
+def test_detects_canceled_plan_from_recent_plan_context():
+    service = MemoryIntentService()
+
+    intent = service.detect_contextual_memory(
+        "I gotta cancel that because my money is tight.",
+        conversation_history=[
+            {
+                "role": "assistant",
+                "content": "Got it, you plan to watch Masters of the Universe tonight.",
+            }
+        ],
+    )
+
+    assert intent is not None
+    assert intent.content == (
+        "User canceled the plan to watch Masters of the Universe tonight because money is tight."
+    )
+    assert intent.metadata["plan_status"] == "canceled"
 
 
 def test_detects_preference_comparison():

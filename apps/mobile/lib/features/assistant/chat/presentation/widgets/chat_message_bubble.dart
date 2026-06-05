@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:clarity/features/assistant/chat/domain/chat_message.dart';
-import 'package:clarity/features/assistant/chat/presentation/widgets/chat_bubble_effects.dart';
+import 'package:clarity/features/assistant/chat/presentation/widgets/chat_bubble_effects.dart'
+    show ChatStreamingCursor, ChatTypingDots;
+import 'package:clarity/features/assistant/presentation/rex_ui_tokens.dart';
 
 /// A single chat line: assistant (left) or user (right).
 class ChatMessageBubble extends StatelessWidget {
@@ -27,95 +29,96 @@ class ChatMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final width = MediaQuery.sizeOf(context).width;
-    final maxWidth = width >= 700 ? 560.0 : width * 0.82;
+    final maxWidth = width >= 700 ? 600.0 : width * 0.86;
 
-    final background = isUser ? scheme.primary : scheme.surfaceContainerHigh;
-    final foreground = isUser ? scheme.onPrimary : scheme.onSurface;
+    final background = isUser
+        ? RexUiTokens.userBubble
+        : RexUiTokens.surfaceSoft.withValues(alpha: 0.72);
+    final foreground = isUser ? Colors.white : RexUiTokens.text;
+    final borderColor = isUser
+        ? RexUiTokens.accent.withValues(alpha: 0.18)
+        : RexUiTokens.border.withValues(alpha: 0.72);
 
     return Padding(
       padding: EdgeInsets.only(
-        left: isUser ? 48 : 0,
-        right: isUser ? 0 : 48,
-        bottom: 2,
+        left: isUser ? 42 : 0,
+        right: isUser ? 0 : 42,
+        bottom: 1,
       ),
       child: Row(
         mainAxisAlignment: isUser
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!isUser) _AssistantAvatar(color: scheme.primary),
-          if (!isUser) const SizedBox(width: 8),
           Flexible(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
-              child: CustomPaint(
-                painter: ChatBubbleTailPainter(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
                   color: background,
-                  isUser: isUser,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(RexUiTokens.radiusLarge),
+                    topRight: const Radius.circular(RexUiTokens.radiusLarge),
+                    bottomLeft: Radius.circular(
+                      isUser
+                          ? RexUiTokens.radiusLarge
+                          : RexUiTokens.radiusSmall,
+                    ),
+                    bottomRight: Radius.circular(
+                      isUser
+                          ? RexUiTokens.radiusSmall
+                          : RexUiTokens.radiusLarge,
+                    ),
+                  ),
+                  border: Border.all(color: borderColor),
                 ),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: background,
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(18),
-                      topRight: const Radius.circular(18),
-                      bottomLeft: Radius.circular(isUser ? 18 : 6),
-                      bottomRight: Radius.circular(isUser ? 6 : 18),
-                    ),
-                    border: Border.all(
-                      color: isUser
-                          ? Colors.transparent
-                          : scheme.outlineVariant.withValues(alpha: 0.38),
-                    ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isUser ? 16 : 15,
+                    vertical: isUser ? 12 : 11,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: isLoading && text.isEmpty
-                        ? ChatTypingDots(color: foreground)
-                        : Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SelectableText.rich(
-                                TextSpan(
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: foreground,
-                                    height: 1.42,
+                  child: isLoading && text.isEmpty
+                      ? ChatTypingDots(color: foreground)
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SelectableText.rich(
+                              TextSpan(
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: foreground,
+                                  height: 1.45,
+                                  letterSpacing: 0,
+                                ),
+                                children: [
+                                  ..._inlineMarkdownSpans(
+                                    text,
+                                    theme,
+                                    foreground,
+                                    isUser,
                                   ),
-                                  children: [
-                                    ..._inlineMarkdownSpans(
-                                      text,
-                                      theme,
-                                      foreground,
-                                      isUser,
-                                    ),
-                                    if (isStreaming)
-                                      WidgetSpan(
-                                        alignment: PlaceholderAlignment.middle,
-                                        child: ChatStreamingCursor(
-                                          color: foreground,
-                                        ),
+                                  if (isStreaming)
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.middle,
+                                      child: ChatStreamingCursor(
+                                        color: foreground,
                                       ),
-                                  ],
-                                ),
+                                    ),
+                                ],
                               ),
-                              if (!isUser && clarityActions.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                _ClarityActionCards(
-                                  actions: clarityActions,
-                                  onConfirm: onConfirmClarityAction,
-                                  onDismiss: onDismissClarityAction,
-                                ),
-                              ],
+                            ),
+                            if (!isUser && clarityActions.isNotEmpty) ...[
+                              const SizedBox(height: RexUiTokens.space12),
+                              _ClarityActionCards(
+                                actions: clarityActions,
+                                onConfirm: onConfirmClarityAction,
+                                onDismiss: onDismissClarityAction,
+                              ),
                             ],
-                          ),
-                  ),
+                          ],
+                        ),
                 ),
               ),
             ),
@@ -155,8 +158,8 @@ class ChatMessageBubble extends StatelessWidget {
             style: theme.textTheme.bodyMedium?.copyWith(
               color: foreground,
               fontFamily: 'monospace',
-              backgroundColor: (isUser ? Colors.white : Colors.black)
-                  .withValues(alpha: isUser ? 0.16 : 0.06),
+              backgroundColor: (isUser ? Colors.white : RexUiTokens.background)
+                  .withValues(alpha: isUser ? 0.16 : 0.42),
             ),
           ),
         );
@@ -358,24 +361,6 @@ class _MemoryChip extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _AssistantAvatar extends StatelessWidget {
-  const _AssistantAvatar({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return CircleAvatar(
-      radius: 14,
-      backgroundColor: color.withValues(alpha: 0.14),
-      foregroundColor: scheme.primary,
-      child: const Icon(Icons.auto_awesome_rounded, size: 15),
     );
   }
 }
