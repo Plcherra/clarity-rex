@@ -73,7 +73,7 @@ import AVFoundation
     }
   }
 
-  private func openAppSettings(result: FlutterResult) {
+  private func openAppSettings(result: @escaping FlutterResult) {
     guard let url = URL(string: UIApplication.openSettingsURLString) else {
       result(
         FlutterError(
