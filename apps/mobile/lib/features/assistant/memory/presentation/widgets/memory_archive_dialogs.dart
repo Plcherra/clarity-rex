@@ -6,7 +6,7 @@ Future<bool> confirmArchiveMemory(BuildContext context) async {
     builder: (context) => AlertDialog(
       title: const Text('Archive memory?'),
       content: const Text(
-        'Rex will stop using this memory in future conversations. It will remain in memory history.',
+        'This memory will stop being used in future conversations. It will remain in information history.',
       ),
       actions: [
         TextButton(
@@ -33,7 +33,7 @@ Future<bool> confirmArchiveStructuredMemory(
     builder: (context) => AlertDialog(
       title: Text('Archive $label?'),
       content: Text(
-        'Rex will stop using this $label as active context. It will remain in memory history.',
+        'This $label will stop being used as active context. It will remain in information history.',
       ),
       actions: [
         TextButton(

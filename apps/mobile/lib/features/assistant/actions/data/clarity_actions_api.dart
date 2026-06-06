@@ -72,7 +72,7 @@ final class ClarityActionsApi {
       final decoded = jsonDecode(response.body);
       if (decoded is! Map<String, dynamic>) {
         throw const ClarityActionsApiException(
-          'Rex returned an unreadable action result.',
+          'Assistant returned an unreadable action result.',
         );
       }
       return ClarityActionResult.fromJson(decoded);

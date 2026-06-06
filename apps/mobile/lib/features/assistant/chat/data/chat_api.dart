@@ -76,7 +76,7 @@ class ChatApi {
     } on http.ClientException {
       throw ChatApiException(
         attachment == null
-            ? 'Could not reach Rex. Check your connection and try again.'
+            ? 'Could not reach Assistant. Check your connection and try again.'
             : 'Could not upload the file. Check your connection and try again.',
         type: attachment == null
             ? ChatApiErrorType.network
@@ -138,7 +138,7 @@ class ChatApi {
     } on http.ClientException {
       throw ChatApiException(
         attachment == null
-            ? 'Could not reach Rex. Check your connection and try again.'
+            ? 'Could not reach Assistant. Check your connection and try again.'
             : 'Could not upload the file. Check your connection and try again.',
         type: attachment == null
             ? ChatApiErrorType.network
@@ -146,7 +146,7 @@ class ChatApi {
       );
     } on FormatException {
       throw const ChatApiException(
-        'Rex returned an unreadable streaming response.',
+        'Assistant returned an unreadable streaming response.',
         type: ChatApiErrorType.invalidResponse,
       );
     } on Object {
@@ -297,7 +297,7 @@ class ChatApi {
           throw ChatApiException(
             detail is String && detail.trim().isNotEmpty
                 ? detail
-                : 'Rex streaming failed.',
+                : 'Assistant streaming failed.',
             type: ChatApiErrorType.unknown,
           );
         default:
@@ -341,13 +341,13 @@ class ChatApi {
       data = jsonDecode(response.body);
     } on FormatException {
       throw const ChatApiException(
-        'Rex returned an unreadable response.',
+        'Assistant returned an unreadable response.',
         type: ChatApiErrorType.invalidResponse,
       );
     }
     if (data is! Map<String, dynamic>) {
       throw const ChatApiException(
-        'Rex returned an invalid response.',
+        'Assistant returned an invalid response.',
         type: ChatApiErrorType.invalidResponse,
       );
     }
@@ -395,7 +395,7 @@ class ChatApi {
       return 'Backend returned an unreadable error.';
     }
 
-    return 'Rex backend returned an error.';
+    return 'Clarity API returned an error.';
   }
 }
 

@@ -106,7 +106,7 @@ class _EmptyChatState extends StatelessWidget {
   static const _prompts = [
     'What should I remember?',
     'Help me think through tonight.',
-    'Check what Rex knows.',
+    'Check what Clarity knows.',
   ];
 
   @override

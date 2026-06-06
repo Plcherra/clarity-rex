@@ -293,12 +293,12 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     return RexScaffold(
       appBar: widget.showAppBar
           ? AppBar(
-              title: const Text('What Rex Knows'),
+              title: const Text('What Clarity Knows'),
               actions: [
                 IconButton(
                   onPressed: state.isLoading ? null : _refresh,
                   icon: const Icon(Icons.refresh_rounded),
-                  tooltip: 'Refresh memory',
+                  tooltip: 'Refresh information',
                 ),
               ],
             )

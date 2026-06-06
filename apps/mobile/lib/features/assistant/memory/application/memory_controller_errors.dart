@@ -5,7 +5,7 @@ enum _MemoryOperation { load, edit, archive }
 String _memoryErrorMessage(Object error, _MemoryOperation operation) {
   final statusCode = error is MemoryApiException ? error.statusCode : null;
   if (statusCode == 401 || statusCode == 403) {
-    return 'Please sign in again to manage Rex Memory.';
+    return 'Please sign in again to manage saved information.';
   }
   if (statusCode == 404) {
     return 'That memory is no longer available.';
@@ -17,13 +17,13 @@ String _memoryErrorMessage(Object error, _MemoryOperation operation) {
       case _MemoryOperation.archive:
         return 'That memory could not be archived. Refresh Memory and try again.';
       case _MemoryOperation.load:
-        return 'Could not load Rex Memory. Refresh and try again.';
+        return 'Could not load saved information. Refresh and try again.';
     }
   }
 
   switch (operation) {
     case _MemoryOperation.load:
-      return 'Could not load Rex Memory. Check your connection and try again.';
+      return 'Could not load saved information. Check your connection and try again.';
     case _MemoryOperation.edit:
       return 'Could not update this memory. Please try again.';
     case _MemoryOperation.archive:

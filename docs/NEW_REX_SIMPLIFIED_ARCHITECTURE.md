@@ -1,5 +1,11 @@
 # New Rex Simplified Architecture
 
+Status: Superseded by the Clarity subsystem plan set in `docs/clarity/product/CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md`.
+
+This file is retained as historical Rex simplification context only. Rex is now
+treated as the Assistant personality inside Clarity, not as a standalone product
+architecture plan.
+
 ## Executive Summary
 
 This document replaces `docs/FULL_PROJECT_11_10_POLISH_MASTER_PLAN.md` as the official Rex architecture plan.

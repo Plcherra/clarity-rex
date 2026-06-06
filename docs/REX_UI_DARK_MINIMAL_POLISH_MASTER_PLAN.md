@@ -1,5 +1,12 @@
 # Rex UI Dark Minimal Polish Master Plan
 
+Status: Superseded by `docs/clarity/product/CLARITY_DESIGN_SYSTEM_MASTER_PLAN.md`,
+`docs/clarity/product/CLARITY_UNIFIED_PRODUCT_SHELL_MASTER_PLAN.md`, and
+`docs/clarity/product/CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md`.
+
+This file is retained as historical Assistant UI polish context only. Current
+UI work is app-wide Clarity design work, not Rex-only UI work.
+
 ## Executive Summary
 
 Rex should feel calm, modern, fast, and human. The current Assistant UI still feels too heavy and inconsistent: the chat bubbles are bulky, the composer looks crowded, the Deep Think button is obsolete, voice and chat do not feel like one product, and the light theme makes the assistant feel more like an admin panel than a natural conversational space.

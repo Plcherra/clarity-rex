@@ -1,6 +1,6 @@
 # File Size Exception Ledger
 
-Last updated: June 3, 2026
+Last updated: June 6, 2026
 
 ## Purpose
 
@@ -27,18 +27,17 @@ rg --files apps/mobile/lib services/rex-api/app apps/web/src supabase/functions 
 
 | Priority | File | Lines | Follow-up phase | Notes |
 | --- | --- | ---: | --- | --- |
-| P1 | `apps/mobile/lib/features/transactions/presentation/widgets/transaction_category_dropdown.dart` | 773 | Phase 17 | Split UI from search/data behavior |
-| P1 | `apps/mobile/lib/app/ui_dependencies.dart` | 757 | Follow-up after Phase 18 | App-level dependency registry needs review before splitting |
-| P1 | `supabase/functions/categorize-transactions/index.ts` | 756 | Follow-up after Phase 17 | Edge function should split parser/prompt/client logic |
-| P1 | `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart` | 690 | Phase 18 | Separate DTOs and presentation helpers where practical |
-| P1 | `services/rex-api/app/services/entity_service.py` | 668 | Phase 15 | Split repository, normalization, and route-facing service |
-| P1 | `apps/mobile/lib/features/dashboard/presentation/transaction_review_screen.dart` | 663 | Phase 17 | Extract review sections/widgets |
-| P1 | `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart` | 658 | Follow-up after Phase 19 | Chat UI still large and memory-state sensitive |
-| P1 | `services/rex-api/app/services/plan_service.py` | 606 | Phase 15 | Split plan CRUD/policy/formatting |
-| P2 | `apps/mobile/lib/features/accounts/presentation/account_selection_screen.dart` | 590 | Follow-up after finance cleanup | Account flow is stable but oversized |
-| P2 | `apps/mobile/lib/features/accounts/presentation/accounts_screen.dart` | 588 | Follow-up after finance cleanup | Split account sections/widgets |
-| P1 | `apps/mobile/lib/features/transactions/application/category_workflow_service.dart` | 553 | Phase 17 | Split workflow policy from persistence calls |
-| P2 | `apps/mobile/lib/features/auth/presentation/mfa_enrollment_screen.dart` | 504 | Follow-up after launch-critical cleanup | Barely over limit; stable enough to defer |
+| P1 | `apps/mobile/lib/features/transactions/presentation/widgets/transaction_category_dropdown.dart` | 773 | `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md` | Split UI from search/data behavior before transaction redesign work |
+| P1 | `apps/mobile/lib/app/ui_dependencies.dart` | 757 | `CLARITY_UNIFIED_PRODUCT_SHELL_MASTER_PLAN.md` | App-level dependency registry needs review before shell-level changes |
+| P1 | `supabase/functions/categorize-transactions/index.ts` | 756 | `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md` | Edge function should split parser/prompt/client logic before category import expansion |
+| P1 | `services/rex-api/app/services/entity_service.py` | 668 | `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md` | Split repository, normalization, and route-facing service before Assistant truth work |
+| P1 | `apps/mobile/lib/features/dashboard/presentation/transaction_review_screen.dart` | 663 | `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md` | Extract review sections/widgets before dashboard/transaction redesign |
+| P1 | `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart` | 642 | `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md` | Separate DTOs and presentation helpers where practical |
+| P1 | `services/rex-api/app/services/plan_service.py` | 606 | `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md` | Split plan CRUD/policy/formatting before goals and commitments alignment |
+| P2 | `apps/mobile/lib/features/accounts/presentation/account_selection_screen.dart` | 590 | `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md` | Account flow is stable but must be split before adding Plaid selection states |
+| P2 | `apps/mobile/lib/features/accounts/presentation/accounts_screen.dart` | 588 | `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md` | Split account sections/widgets during connected institution redesign |
+| P1 | `apps/mobile/lib/features/transactions/application/category_workflow_service.dart` | 553 | `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md` | Split workflow policy from persistence calls before Plaid/CSV dedupe work |
+| P2 | `apps/mobile/lib/features/auth/presentation/mfa_enrollment_screen.dart` | 504 | `CLARITY_RELEASE_VALIDATION_MASTER_PLAN.md` | Barely over limit; stable enough to defer unless auth work touches it |
 
 ## Current Rule
 

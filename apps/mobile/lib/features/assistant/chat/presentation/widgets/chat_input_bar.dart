@@ -103,7 +103,7 @@ class ChatInputBar extends StatelessWidget {
                             }
                           },
                           decoration: InputDecoration(
-                            hintText: 'Message Rex…',
+                            hintText: 'Message Assistant…',
                             border: InputBorder.none,
                             focusedBorder: InputBorder.none,
                             enabledBorder: InputBorder.none,

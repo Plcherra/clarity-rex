@@ -73,7 +73,7 @@ class AccountabilityApi {
       return 'Backend returned an unreadable accountability error.';
     }
 
-    return 'Rex backend returned an accountability error.';
+    return 'Clarity API returned an accountability error.';
   }
 }
 

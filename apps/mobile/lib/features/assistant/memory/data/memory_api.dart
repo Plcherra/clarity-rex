@@ -125,7 +125,7 @@ class MemoryApi extends _MemoryApiTransport
       return 'Backend returned an unreadable error.';
     }
 
-    return 'Rex backend returned an error.';
+    return 'Clarity API returned an error.';
   }
 
   @override

@@ -105,7 +105,7 @@ class StreamingVoiceSession {
   VoiceStreamEvent _parseEvent(dynamic rawEvent) {
     if (rawEvent is! String) {
       throw const StreamingVoiceApiException(
-        'Rex voice stream returned an unreadable event.',
+        'Assistant voice stream returned an unreadable event.',
       );
     }
 
@@ -114,13 +114,13 @@ class StreamingVoiceSession {
       decoded = jsonDecode(rawEvent);
     } on FormatException {
       throw const StreamingVoiceApiException(
-        'Rex voice stream returned invalid JSON.',
+        'Assistant voice stream returned invalid JSON.',
       );
     }
 
     if (decoded is! Map<String, dynamic>) {
       throw const StreamingVoiceApiException(
-        'Rex voice stream returned an invalid event.',
+        'Assistant voice stream returned an invalid event.',
       );
     }
 
@@ -130,7 +130,7 @@ class StreamingVoiceSession {
         return event;
       }
       throw StreamingVoiceApiException(
-        event.detail ?? 'Rex voice stream failed.',
+        event.detail ?? 'Assistant voice stream failed.',
       );
     }
     return event;
@@ -180,7 +180,7 @@ class StreamingVoiceApi {
       throw StreamingVoiceApiException(error.message);
     } on Object {
       throw const StreamingVoiceApiException(
-        'Rex backend URL must use http, https, ws, or wss.',
+        'Clarity API URL must use http, https, ws, or wss.',
       );
     }
   }
@@ -198,7 +198,7 @@ class StreamingVoiceApi {
       );
     } on Object {
       throw const StreamingVoiceApiException(
-        'Could not open Rex voice stream. Check your connection and try again.',
+        'Could not open Assistant voice stream. Check your connection and try again.',
       );
     }
   }

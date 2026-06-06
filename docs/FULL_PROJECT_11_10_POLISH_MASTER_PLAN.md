@@ -1,5 +1,11 @@
 # Master Plan: Full Project 11/10 Polish
 
+Status: Superseded by the Clarity subsystem plan set in `docs/clarity/product/CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md`.
+
+This file is retained as historical execution context only. New product, Plaid,
+usage tracking, UI, Assistant, and release work must use the current Clarity
+plans under `docs/clarity/product/` and `docs/clarity/plaid/`.
+
 Status: In progress - automated cleanup phases active; manual device testing deferred to final phase
 
 Last updated: June 3, 2026

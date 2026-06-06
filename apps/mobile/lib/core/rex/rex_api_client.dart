@@ -36,7 +36,7 @@ final class RexApiClient {
       'http' => 'ws',
       'wss' || 'ws' => baseUri.scheme,
       _ => throw const RexAuthException(
-        'Rex backend URL must use http, https, ws, or wss.',
+        'Clarity API URL must use http, https, ws, or wss.',
       ),
     };
 

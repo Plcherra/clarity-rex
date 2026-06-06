@@ -1,5 +1,11 @@
 # Rex Voice Memory Speed Optimization Master Plan
 
+Status: Superseded by `docs/clarity/product/CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md`.
+
+This file is retained as historical voice and memory optimization context only.
+Current Assistant, memory, voice, and truth-parity work must use the Clarity
+Assistant Intelligence plan.
+
 Status: In Progress
 
 Last updated: June 4, 2026

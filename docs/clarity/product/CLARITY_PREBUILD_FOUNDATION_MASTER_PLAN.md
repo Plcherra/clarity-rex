@@ -1,6 +1,6 @@
 # Clarity Prebuild Foundation Master Plan
 
-Status: Draft
+Status: Complete
 
 Last updated: June 6, 2026
 
@@ -80,9 +80,9 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Snapshot lists mobile surfaces, backend routes, Supabase tables, and major service owners.
-- [ ] Snapshot marks Plaid, CSV, Assistant, usage, and design-system boundaries.
-- [ ] No implementation changes are made in this phase.
+- [x] Snapshot lists mobile surfaces, backend routes, Supabase tables, and major service owners.
+- [x] Snapshot marks Plaid, CSV, Assistant, usage, and design-system boundaries.
+- [x] No implementation changes are made in this phase.
 
 ## Phase 2 - One-App Naming Rules
 
@@ -106,9 +106,9 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Vocabulary doc exists.
-- [ ] Rex is explicitly limited to assistant personality/voice context.
-- [ ] The doc includes a search checklist for banned terms.
+- [x] Vocabulary doc exists.
+- [x] Rex is explicitly limited to assistant personality/voice context.
+- [x] The doc includes a search checklist for banned terms.
 
 ## Phase 3 - Aggressively Remove Remaining Rex/Product Split Assumptions
 
@@ -136,11 +136,11 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Ledger lists all active product-shell violations.
-- [ ] Allowed Rex conversational usage is documented.
-- [ ] Each violation has an owning plan file and phase.
-- [ ] No active user-facing copy uses Rex as an app/product label.
-- [ ] No active user-facing copy uses pending/review/candidate memory terminology.
+- [x] Ledger lists all active product-shell violations.
+- [x] Allowed Rex conversational usage is documented.
+- [x] Each violation has an owning plan file and phase.
+- [x] No active user-facing copy uses Rex as an app/product label.
+- [x] No active user-facing copy uses pending/review/candidate memory terminology.
 
 ## Phase 4 - Define Shared Clarity Read Models
 
@@ -164,9 +164,9 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Read model doc includes ownership, fields, freshness expectations, and privacy boundaries.
-- [ ] Assistant context is explicitly derived from shared read models.
-- [ ] No read model contains Plaid access tokens or private telemetry content.
+- [x] Read model doc includes ownership, fields, freshness expectations, and privacy boundaries.
+- [x] Assistant context is explicitly derived from shared read models.
+- [x] No read model contains Plaid access tokens or private telemetry content.
 
 ## Phase 5 - Define App-Wide Design Token Contract
 
@@ -190,9 +190,9 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Contract includes token names and usage rules.
-- [ ] Contract explicitly bans separate Rex-only app theming.
-- [ ] Contract includes accessibility contrast targets.
+- [x] Contract includes token names and usage rules.
+- [x] Contract explicitly bans separate Rex-only app theming.
+- [x] Contract includes accessibility contrast targets.
 
 ## Phase 6 - Define Multi-User Data Boundaries
 
@@ -216,9 +216,9 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Boundary doc covers Plaid, accounts, transactions, budgets, Assistant data, usage tracking, and profile data.
-- [ ] Cross-user test scenarios are listed.
-- [ ] Service-role-only operations are identified.
+- [x] Boundary doc covers Plaid, accounts, transactions, budgets, Assistant data, usage tracking, and profile data.
+- [x] Cross-user test scenarios are listed.
+- [x] Service-role-only operations are identified.
 
 ## Phase 7 - Define Test And Line-Count Gates
 
@@ -242,9 +242,9 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Execution gate doc exists.
-- [ ] Gate includes backend, Flutter, screenshot, privacy, and RLS requirements.
-- [ ] Existing exception ledger is referenced instead of duplicated.
+- [x] Execution gate doc exists.
+- [x] Gate includes backend, Flutter, screenshot, privacy, and RLS requirements.
+- [x] Existing exception ledger is referenced instead of duplicated.
 
 ## Phase 8 - Prebuild Readiness Audit
 
@@ -267,9 +267,9 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Audit lists ready/not-ready status for each subsystem.
-- [ ] No unowned critical gap remains.
-- [ ] The next executable plan is identified.
+- [x] Audit lists ready/not-ready status for each subsystem.
+- [x] No unowned critical gap remains.
+- [x] The next executable plan is identified.
 
 ## Verification Commands
 
@@ -292,3 +292,16 @@ find docs/clarity/product docs/clarity/plaid -name '*MASTER_PLAN.md' -maxdepth 2
 ## Release Gate
 
 This plan is complete only when all later subsystem plans have clear ownership, shared contracts, and no unresolved product identity ambiguity.
+
+## Completion Ledger
+
+- Phase 1 complete: current architecture and screen/data ownership are documented in `CLARITY_ARCHITECTURE_SNAPSHOT.md` and `docs/clarity/screen_data_map.md`.
+- Phase 2 complete: one-app vocabulary is documented in `CLARITY_PRODUCT_VOCABULARY.md`.
+- Phase 3 complete: Rex/product split cleanup rules and remaining allowed implementation names are documented in `CLARITY_REX_LABEL_CLEANUP_LEDGER.md`.
+- Phase 4 complete: shared Clarity read models now define the truth source for screens and Assistant.
+- Phase 5 complete: app-wide dark/minimal design token rules are defined before the UI rebuild.
+- Phase 6 complete: multi-user data boundaries, service-role rules, and cross-user tests are documented.
+- Phase 7 complete: execution gates and file-size exception rules are defined for later subsystem work.
+- Phase 8 complete: prebuild readiness audit marks the next executable plan as `CLARITY_USAGE_TRACKING_MASTER_PLAN.md`.
+
+Final active-code banned-term scan completed on June 6, 2026. No active product code matches were found for legacy pending-memory or Rex-as-product terminology.

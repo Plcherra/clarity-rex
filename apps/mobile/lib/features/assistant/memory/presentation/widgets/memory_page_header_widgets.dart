@@ -29,7 +29,7 @@ class MemorySearchAndFilters extends StatelessWidget {
           textInputAction: TextInputAction.search,
           cursorColor: RexUiTokens.accent,
           decoration: InputDecoration(
-            hintText: 'Search what Rex knows',
+            hintText: 'Search what Clarity knows',
             hintStyle: theme.textTheme.bodyLarge?.copyWith(
               color: RexUiTokens.textSubtle,
             ),
@@ -127,7 +127,7 @@ class SavedMemoryHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'What Rex knows',
+                  'What Clarity knows',
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: RexUiTokens.text,
                     fontWeight: FontWeight.w800,
@@ -135,7 +135,7 @@ class SavedMemoryHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: RexUiTokens.space4),
                 Text(
-                  'Saved details Rex can use later. Edit anything that changes.',
+                  'Saved details Clarity can use later. Edit anything that changes.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: RexUiTokens.textMuted,
                   ),
@@ -295,7 +295,7 @@ class MemoryEmptyState extends StatelessWidget {
   final bool activeOnly;
 
   String get _emptyTitle {
-    return activeOnly ? 'Rex is still learning' : 'No saved information yet';
+    return activeOnly ? 'Clarity is still learning' : 'No saved information yet';
   }
 
   String get _emptyBody {

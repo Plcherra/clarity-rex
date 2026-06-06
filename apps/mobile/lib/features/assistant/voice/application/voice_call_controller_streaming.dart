@@ -51,7 +51,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
       if (_isCurrentCall(generation)) {
         await _fallbackToCloudVoiceCapture(
           generation,
-          'Could not open Rex voice stream.',
+          'Could not open Assistant voice stream.',
         );
       }
       return;
@@ -151,7 +151,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       errorMessage:
-          'Rex could not restart the microphone in the background. Open Rex to continue.',
+          'Assistant could not restart the microphone in the background. Open Assistant to continue.',
     );
   }
 
@@ -414,7 +414,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
               _handleTurnInProgressEvent();
               break;
             }
-            fail(event.detail ?? 'Rex voice stream failed.');
+            fail(event.detail ?? 'Assistant voice stream failed.');
             return;
         }
       }
@@ -424,7 +424,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
       }
     } on Object {
       if (_isCurrentCall(generation)) {
-        fail('Rex voice stream failed.');
+        fail('Assistant voice stream failed.');
       }
     } finally {
       if (identical(_activeStreamingSession, session)) {

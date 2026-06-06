@@ -79,7 +79,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
           style: TextStyle(color: RexUiTokens.text),
         ),
         content: const Text(
-          'This removes the conversation and its messages from Rex.',
+          'This removes the conversation and its messages from Clarity.',
           style: TextStyle(color: RexUiTokens.textMuted),
         ),
         actions: [

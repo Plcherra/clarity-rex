@@ -36,11 +36,11 @@ class PackageAudioPlaybackService implements AudioPlaybackService {
     try {
       audioBytes = base64Decode(audioBase64);
     } on FormatException {
-      onError('Rex returned invalid voice audio.');
+      onError('Assistant returned invalid voice audio.');
       return;
     }
     if (audioBytes.isEmpty) {
-      onError('Rex returned empty voice audio.');
+      onError('Assistant returned empty voice audio.');
       return;
     }
 

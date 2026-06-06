@@ -92,7 +92,7 @@ class CloudVoiceApi {
       throw CloudVoiceApiException(error.message);
     } on http.ClientException {
       throw const CloudVoiceApiException(
-        'Could not reach Rex voice. Check your connection and try again.',
+        'Could not reach Assistant voice. Check your connection and try again.',
       );
     } on Object {
       throw const CloudVoiceApiException('Voice upload failed.');
@@ -109,12 +109,12 @@ class CloudVoiceApi {
       data = jsonDecode(response.body);
     } on FormatException {
       throw const CloudVoiceApiException(
-        'Rex voice returned an unreadable response.',
+        'Assistant voice returned an unreadable response.',
       );
     }
     if (data is! Map<String, dynamic>) {
       throw const CloudVoiceApiException(
-        'Rex voice returned an invalid response.',
+        'Assistant voice returned an invalid response.',
       );
     }
     return data;
@@ -130,9 +130,9 @@ class CloudVoiceApi {
         }
       }
     } on FormatException {
-      return 'Rex voice returned an unreadable error.';
+      return 'Assistant voice returned an unreadable error.';
     }
-    return 'Rex voice returned an error.';
+    return 'Assistant voice returned an error.';
   }
 }
 

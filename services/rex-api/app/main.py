@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
         await shutdown_http_client()
 
 
-app = FastAPI(title="Rex Backend", lifespan=lifespan)
+app = FastAPI(title="Clarity API", lifespan=lifespan)
 settings = get_settings()
 
 if settings.cors_origins:

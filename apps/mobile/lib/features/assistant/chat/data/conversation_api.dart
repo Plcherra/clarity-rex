@@ -109,6 +109,6 @@ class ConversationApi {
       return 'Backend returned an unreadable error.';
     }
 
-    return 'Rex backend returned an error.';
+    return 'Clarity API returned an error.';
   }
 }
