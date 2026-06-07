@@ -256,7 +256,7 @@ These events must invalidate or refresh affected read models:
 
 | Work | Owning plan |
 | --- | --- |
-| Usage metadata and safe telemetry fields | `CLARITY_USAGE_TRACKING_MASTER_PLAN.md` |
+| Usage metadata and safe telemetry fields | `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md` |
 | Plaid tables, tokens, sync, webhook, RLS | `PLAID_BACKEND_CORE_MASTER_PLAN.md` |
 | Connect-bank UI and CSV fallback | `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md` |
 | Product shell copy and screen placement | `CLARITY_UNIFIED_PRODUCT_SHELL_MASTER_PLAN.md` |

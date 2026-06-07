@@ -1,6 +1,6 @@
-# Plaid Backend Core Master Plan
+#3 Plaid Backend Core
 
-Status: Draft
+Status: In Progress
 
 Last updated: June 6, 2026
 
@@ -48,7 +48,7 @@ Goal: Define Plaid backend configuration and fail-closed behavior.
 Files to change:
 
 - `services/rex-api/app/services/plaid_config.py`
-- `services/rex-api/app/settings.py`
+- `services/rex-api/app/config.py`
 - `services/rex-api/tests/test_plaid_config.py`
 
 Steps:
@@ -64,9 +64,9 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] `/ready` reports Plaid readiness without secrets.
-- [ ] Missing config fails closed.
-- [ ] Config file remains under 250 lines.
+- [x] `/ready` reports Plaid readiness without secrets.
+- [x] Missing config fails closed.
+- [x] Config file remains under 250 lines.
 
 ## Phase 2 - Plaid Tables And RLS
 
@@ -91,9 +91,9 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Cross-user reads are blocked.
-- [ ] Access tokens are not available to mobile/Supabase client reads.
-- [ ] Existing CSV/manual data remains compatible.
+- [x] Cross-user reads are blocked.
+- [x] Access tokens are not available to mobile/Supabase client reads.
+- [x] Existing CSV/manual data remains compatible.
 
 ## Phase 3 - Plaid Client Wrapper
 
@@ -320,17 +320,21 @@ rg -n "access_token|PLAID_SECRET|public_token" services/rex-api/app/routes apps/
 
 ## Execution Order
 
-1. Phase 1 - Plaid Config And Secret Policy
-2. Phase 2 - Plaid Tables And RLS
-3. Phase 3 - Plaid Client Wrapper
-4. Phase 4 - Link Token Route
-5. Phase 5 - Public Token Exchange Route
-6. Phase 6 - Item Persistence
-7. Phase 7 - Account Persistence
-8. Phase 8 - Transaction Sync With Cursor
-9. Phase 9 - Webhook Handling
-10. Phase 10 - Backend Plaid Test Suite
+1. `CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md`
+2. `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`
+3. `PLAID_BACKEND_CORE_MASTER_PLAN.md`
+4. `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md`
+5. `CLARITY_DESIGN_SYSTEM_MASTER_PLAN.md`
+6. `CLARITY_UNIFIED_PRODUCT_SHELL_MASTER_PLAN.md`
+7. `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md`
+8. `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md`
+9. `CLARITY_RELEASE_VALIDATION_MASTER_PLAN.md`
 
 ## Release Gate
 
 Mobile Plaid work starts only after backend sandbox link/exchange/sync/disconnect paths are safe and tested.
+
+## Completion Ledger
+
+- Phase 1 completed on June 7, 2026: added backend Plaid settings, a secret-safe readiness helper, optional `/ready` Plaid reporting, missing-config fail-closed behavior, `.env.example` Plaid placeholders, and focused config/readiness tests.
+- Phase 2 completed on June 7, 2026: added Plaid item/account tables, a backend-only token reference table, select-only user RLS, source-aware account/transaction columns, CSV backfill compatibility, and schema tests proving no raw access-token column is exposed.

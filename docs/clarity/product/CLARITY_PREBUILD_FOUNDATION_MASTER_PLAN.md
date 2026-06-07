@@ -1,4 +1,4 @@
-# Clarity Prebuild Foundation Master Plan
+#1 Prebuild Foundation
 
 Status: Complete
 
@@ -46,7 +46,7 @@ By the end of this plan:
 This plan set should be executed in this order:
 
 1. `CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md`
-2. `CLARITY_USAGE_TRACKING_MASTER_PLAN.md`
+2. `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`
 3. `PLAID_BACKEND_CORE_MASTER_PLAN.md`
 4. `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md`
 5. `CLARITY_DESIGN_SYSTEM_MASTER_PLAN.md`
@@ -55,7 +55,7 @@ This plan set should be executed in this order:
 8. `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md`
 9. `CLARITY_RELEASE_VALIDATION_MASTER_PLAN.md`
 
-Usage tracking stays early because later Plaid, voice, Assistant, and UI work need latency, errors, and feature-use visibility. Release validation stays last and should only verify completed subsystem work, not absorb unfinished cleanup.
+Usage tracking stays early because later Plaid, voice, Assistant, and UI work need provider usage and voice-minute visibility. The active usage plan is the simplified four-phase plan: simple events, real provider tracking, daily voice summary, and user/owner views. Release validation stays last and should only verify completed subsystem work, not absorb unfinished cleanup.
 
 ## Phase 1 - Current Architecture Snapshot
 
@@ -280,14 +280,15 @@ find docs/clarity/product docs/clarity/plaid -name '*MASTER_PLAN.md' -maxdepth 2
 
 ## Execution Order
 
-1. Phase 1 - Current Architecture Snapshot
-2. Phase 2 - One-App Naming Rules
-3. Phase 3 - Aggressively Remove Remaining Rex/Product Split Assumptions
-4. Phase 4 - Define Shared Clarity Read Models
-5. Phase 5 - Define App-Wide Design Token Contract
-6. Phase 6 - Define Multi-User Data Boundaries
-7. Phase 7 - Define Test And Line-Count Gates
-8. Phase 8 - Prebuild Readiness Audit
+1. `CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md`
+2. `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`
+3. `PLAID_BACKEND_CORE_MASTER_PLAN.md`
+4. `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md`
+5. `CLARITY_DESIGN_SYSTEM_MASTER_PLAN.md`
+6. `CLARITY_UNIFIED_PRODUCT_SHELL_MASTER_PLAN.md`
+7. `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md`
+8. `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md`
+9. `CLARITY_RELEASE_VALIDATION_MASTER_PLAN.md`
 
 ## Release Gate
 
@@ -302,6 +303,6 @@ This plan is complete only when all later subsystem plans have clear ownership, 
 - Phase 5 complete: app-wide dark/minimal design token rules are defined before the UI rebuild.
 - Phase 6 complete: multi-user data boundaries, service-role rules, and cross-user tests are documented.
 - Phase 7 complete: execution gates and file-size exception rules are defined for later subsystem work.
-- Phase 8 complete: prebuild readiness audit marks the next executable plan as `CLARITY_USAGE_TRACKING_MASTER_PLAN.md`.
+- Phase 8 complete: prebuild readiness audit marks the next executable plan as `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`.
 
 Final active-code banned-term scan completed on June 6, 2026. No active product code matches were found for legacy pending-memory or Rex-as-product terminology.

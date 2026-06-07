@@ -1,4 +1,4 @@
-# Clarity Unified Product Shell Master Plan
+#6 Clarity Unified Product Shell
 
 Status: Draft
 
@@ -287,15 +287,15 @@ cd apps/mobile && flutter test test
 
 ## Execution Order
 
-1. Phase 1 - Rename Product-Level Surfaces
-2. Phase 2 - Rework Bottom Navigation
-3. Phase 3 - Reframe Assistant As Clarity Intelligence
-4. Phase 4 - Reframe Accounts Around Institutions
-5. Phase 5 - Reframe Dashboard Around Daily Clarity
-6. Phase 6 - Reframe Budgets Around Guidance
-7. Phase 7 - Reframe Profile, Data, And Privacy
-8. Phase 8 - Remove Competing Rex Labels
-9. Phase 9 - Product Shell Regression Audit
+1. `CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md`
+2. `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`
+3. `PLAID_BACKEND_CORE_MASTER_PLAN.md`
+4. `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md`
+5. `CLARITY_DESIGN_SYSTEM_MASTER_PLAN.md`
+6. `CLARITY_UNIFIED_PRODUCT_SHELL_MASTER_PLAN.md`
+7. `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md`
+8. `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md`
+9. `CLARITY_RELEASE_VALIDATION_MASTER_PLAN.md`
 
 ## Release Gate
 

@@ -1,4 +1,4 @@
-# Plaid Mobile And Account Connection Master Plan
+#4 Plaid Mobile And Account Connection
 
 Status: Draft
 
@@ -292,15 +292,15 @@ cd apps/mobile && flutter test test
 
 ## Execution Order
 
-1. Phase 1 - Connect Bank Entry Points
-2. Phase 2 - Native Plaid Link Integration
-3. Phase 3 - Link Success And Error Handling
-4. Phase 4 - Connected Institution UI
-5. Phase 5 - Account Status And Resync UI
-6. Phase 6 - Disconnect Flow
-7. Phase 7 - CSV Import As Fallback
-8. Phase 8 - Plaid/CSV Deduplication UI
-9. Phase 9 - Sandbox Device QA
+1. `CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md`
+2. `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`
+3. `PLAID_BACKEND_CORE_MASTER_PLAN.md`
+4. `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md`
+5. `CLARITY_DESIGN_SYSTEM_MASTER_PLAN.md`
+6. `CLARITY_UNIFIED_PRODUCT_SHELL_MASTER_PLAN.md`
+7. `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md`
+8. `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md`
+9. `CLARITY_RELEASE_VALIDATION_MASTER_PLAN.md`
 
 ## Release Gate
 

@@ -1,4 +1,4 @@
-# Clarity Release Validation Master Plan
+#9 Clarity Release Validation
 
 Status: Draft
 
@@ -266,14 +266,15 @@ cd apps/mobile && flutter test
 
 ## Execution Order
 
-1. Phase 1 - Migration Verification
-2. Phase 2 - RLS Verification
-3. Phase 3 - Full Backend Test Pass
-4. Phase 4 - Full Flutter Analyze/Test Pass
-5. Phase 5 - Plaid Sandbox Final Smoke
-6. Phase 6 - CSV Fallback Final Smoke
-7. Phase 7 - Assistant Voice Final Smoke
-8. Phase 8 - Manual Device Release Checklist
+1. `CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md`
+2. `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`
+3. `PLAID_BACKEND_CORE_MASTER_PLAN.md`
+4. `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md`
+5. `CLARITY_DESIGN_SYSTEM_MASTER_PLAN.md`
+6. `CLARITY_UNIFIED_PRODUCT_SHELL_MASTER_PLAN.md`
+7. `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md`
+8. `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md`
+9. `CLARITY_RELEASE_VALIDATION_MASTER_PLAN.md`
 
 ## Release Gate
 

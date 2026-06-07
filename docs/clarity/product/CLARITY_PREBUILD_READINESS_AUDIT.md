@@ -8,7 +8,7 @@ The prebuild foundation now has enough shared contracts to begin implementation 
 
 The next executable plan is:
 
-1. `docs/clarity/product/CLARITY_USAGE_TRACKING_MASTER_PLAN.md`
+1. `docs/clarity/product/CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`
 2. Phase 1 - Usage Event Schema And RLS
 
 ## Foundation Documents
@@ -29,7 +29,7 @@ The next executable plan is:
 | Order | Plan | Status | Readiness |
 | ---: | --- | --- | --- |
 | 0 | `CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md` | Ready | Completes with this audit. |
-| 1 | `CLARITY_USAGE_TRACKING_MASTER_PLAN.md` | Ready | First implementation plan; safe event schema and RLS come before telemetry capture. |
+| 1 | `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md` | Ready | First implementation plan; safe event schema and RLS come before telemetry capture. |
 | 2 | `PLAID_BACKEND_CORE_MASTER_PLAN.md` | Ready | Backend-owned secret/token/sync foundation is phased. |
 | 3 | `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md` | Ready | Native Link and CSV fallback are separated from backend core. |
 | 4 | `CLARITY_DESIGN_SYSTEM_MASTER_PLAN.md` | Ready | Starts with color audit before global theme changes. |
@@ -66,7 +66,7 @@ Older nested docs may still mention legacy memory candidates or Rex-specific pol
 
 | Gap | Owner plan |
 | --- | --- |
-| Per-user usage/cost/latency visibility | `CLARITY_USAGE_TRACKING_MASTER_PLAN.md` |
+| Per-user usage/cost/latency visibility | `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md` |
 | Plaid secret handling and token exchange | `PLAID_BACKEND_CORE_MASTER_PLAN.md` |
 | Plaid native Link and connected account UI | `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md` |
 | CSV demotion from primary path to fallback | `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md`, `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md` |
@@ -91,5 +91,5 @@ Result: no matches in active product code.
 
 The project is ready to leave prebuild foundation and begin subsystem implementation.
 
-Next step: start `CLARITY_USAGE_TRACKING_MASTER_PLAN.md`, Phase 1 - Usage Event Schema And RLS.
+Next step: start `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`, Phase 1 - Usage Event Schema And RLS.
 

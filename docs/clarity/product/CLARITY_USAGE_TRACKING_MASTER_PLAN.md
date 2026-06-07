@@ -1,6 +1,6 @@
-# Clarity Usage Tracking Master Plan
+# Superseded Usage Tracking Master Plan
 
-Status: In progress
+Status: Superseded by `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`
 
 Last updated: June 6, 2026
 
@@ -125,6 +125,18 @@ Acceptance criteria:
 - [x] Owner route does not depend on client-side flags or mobile secrets.
 - [x] Non-owner access to all-user usage returns 403.
 - [x] Normal users never query other users’ usage directly.
+
+## Execution Order
+
+1. `CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md`
+2. `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`
+3. `PLAID_BACKEND_CORE_MASTER_PLAN.md`
+4. `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md`
+5. `CLARITY_DESIGN_SYSTEM_MASTER_PLAN.md`
+6. `CLARITY_UNIFIED_PRODUCT_SHELL_MASTER_PLAN.md`
+7. `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md`
+8. `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md`
+9. `CLARITY_RELEASE_VALIDATION_MASTER_PLAN.md`
 
 ## Completion Ledger
 

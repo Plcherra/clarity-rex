@@ -31,6 +31,15 @@ class Settings(BaseSettings):
     supabase_voice_turns_table: str = "voice_turns"
     usage_owner_user_id: Optional[str] = None
 
+    plaid_client_id: Optional[str] = None
+    plaid_secret: Optional[str] = None
+    plaid_environment: str = "sandbox"
+    plaid_products: str = "transactions"
+    plaid_country_codes: str = "US"
+    plaid_redirect_uri: Optional[str] = None
+    plaid_ios_bundle_id: Optional[str] = None
+    plaid_android_package_name: Optional[str] = None
+
     deepgram_api_key: Optional[str] = None
     deepgram_model: str = "nova-3"
     deepgram_language: str = "en-US"

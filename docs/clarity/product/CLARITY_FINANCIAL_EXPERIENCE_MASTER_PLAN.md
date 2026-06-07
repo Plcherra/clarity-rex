@@ -1,4 +1,4 @@
-# Clarity Financial Experience Master Plan
+#7 Clarity Financial Experience
 
 Status: Draft
 
@@ -286,15 +286,15 @@ cd services/rex-api && pytest tests/test_financial_user_isolation.py
 
 ## Execution Order
 
-1. Phase 1 - Dashboard Data Contract
-2. Phase 2 - Dashboard Redesign
-3. Phase 3 - Accounts Redesign
-4. Phase 4 - Transactions Redesign
-5. Phase 5 - Budgets Redesign
-6. Phase 6 - Import/CSV Fallback Redesign
-7. Phase 7 - Empty, Error, And Loading States
-8. Phase 8 - Multi-User Data Isolation Tests
-9. Phase 9 - Financial UX QA
+1. `CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md`
+2. `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`
+3. `PLAID_BACKEND_CORE_MASTER_PLAN.md`
+4. `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md`
+5. `CLARITY_DESIGN_SYSTEM_MASTER_PLAN.md`
+6. `CLARITY_UNIFIED_PRODUCT_SHELL_MASTER_PLAN.md`
+7. `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md`
+8. `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md`
+9. `CLARITY_RELEASE_VALIDATION_MASTER_PLAN.md`
 
 ## Release Gate
 

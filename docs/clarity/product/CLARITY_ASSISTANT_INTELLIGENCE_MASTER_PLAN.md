@@ -1,4 +1,4 @@
-# Clarity Assistant Intelligence Master Plan
+#8 Clarity Assistant Intelligence
 
 Status: Draft
 
@@ -303,15 +303,15 @@ rg -n "memory candidate|pending memory|review session|I don't know your" service
 
 ## Execution Order
 
-1. Phase 1 - Voice Uses Same Brain Path As Chat
-2. Phase 2 - Memory Corrections Update Existing Records
-3. Phase 3 - Assistant Truth Contract
-4. Phase 4 - Shared User Information Context Source
-5. Phase 5 - Shared Financial Context Source
-6. Phase 6 - Goals Align With Budgets And Commitments
-7. Phase 7 - Assistant Privacy And Trust Copy
-8. Phase 8 - Voice Latency And Reliability QA
-9. Phase 9 - End-To-End Assistant Truth Tests
+1. `CLARITY_PREBUILD_FOUNDATION_MASTER_PLAN.md`
+2. `CLARITY_USAGE_TRACKING_SIMPLIFIED_PLAN.md`
+3. `PLAID_BACKEND_CORE_MASTER_PLAN.md`
+4. `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md`
+5. `CLARITY_DESIGN_SYSTEM_MASTER_PLAN.md`
+6. `CLARITY_UNIFIED_PRODUCT_SHELL_MASTER_PLAN.md`
+7. `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md`
+8. `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md`
+9. `CLARITY_RELEASE_VALIDATION_MASTER_PLAN.md`
 
 ## Release Gate
 

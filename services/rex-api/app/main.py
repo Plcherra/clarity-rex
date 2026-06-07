@@ -18,6 +18,7 @@ from app.routes.usage import router as usage_router
 from app.routes.voice import router as voice_router
 from app.routes.voice_stream import router as voice_stream_router
 from app.services.http_client import shutdown_http_client, startup_http_client
+from app.services.plaid_config import get_plaid_config_status
 
 
 @asynccontextmanager
@@ -49,6 +50,7 @@ def health_check() -> dict[str, str]:
 
 @app.get("/ready")
 def readiness_check() -> dict:
+    plaid_status = get_plaid_config_status(settings)
     checks = {
         "grok": {
             "configured": bool(settings.grok_api_key and settings.grok_model),
@@ -100,15 +102,21 @@ def readiness_check() -> dict:
             "language_code": settings.google_tts_language_code,
             "audio_encoding": settings.google_tts_audio_encoding,
         },
+        "plaid": plaid_status.to_readiness(),
         "time": {
             "configured": bool(settings.app_timezone),
             "timezone": settings.app_timezone,
         },
     }
+    required_checks = [
+        check
+        for check in checks.values()
+        if check.get("required_for_ready", True)
+    ]
     return {
         "status": (
             "ready"
-            if all(check["configured"] for check in checks.values())
+            if all(check["configured"] for check in required_checks)
             else "degraded"
         ),
         "service": "clarity-rex",
