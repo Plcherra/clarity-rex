@@ -218,7 +218,7 @@ final class TransactionRecord {
     'category_id': categoryId,
     'amount': amount,
     'type': type,
-    'financial_role': ?financialRole,
+    if (financialRole != null) 'financial_role': financialRole,
     'description': description,
     'date': date.toIso8601String().split('T').first,
     'merchant': merchant,
@@ -231,7 +231,7 @@ final class TransactionRecord {
     'category_id': categoryId,
     'amount': amount,
     'type': type,
-    'financial_role': ?financialRole,
+    if (financialRole != null) 'financial_role': financialRole,
     'description': description,
     'date': date.toIso8601String().split('T').first,
     'merchant': merchant,
@@ -240,135 +240,31 @@ final class TransactionRecord {
   };
 }
 
-final class UserUsageDailyRollupRecord {
-  const UserUsageDailyRollupRecord({
+final class UserVoiceSummaryRecord {
+  const UserVoiceSummaryRecord({
     required this.userId,
     required this.usageDate,
-    required this.surface,
-    required this.feature,
-    required this.channel,
-    required this.provider,
-    required this.model,
-    required this.eventType,
-    required this.eventCount,
-    required this.successCount,
-    required this.failureCount,
-    required this.totalDurationMs,
-    required this.totalLatencyMs,
-    this.avgLatencyMs,
-    required this.totalUnitCount,
-    required this.estimatedCostCents,
-    required this.voiceMinutes,
-    required this.updatedAt,
+    required this.voiceSeconds,
+    required this.llmCalls,
+    required this.sttSeconds,
+    required this.ttsSeconds,
   });
 
   final String userId;
   final DateTime usageDate;
-  final String surface;
-  final String feature;
-  final String channel;
-  final String provider;
-  final String model;
-  final String eventType;
-  final int eventCount;
-  final int successCount;
-  final int failureCount;
-  final int totalDurationMs;
-  final int totalLatencyMs;
-  final double? avgLatencyMs;
-  final double totalUnitCount;
-  final double estimatedCostCents;
-  final double voiceMinutes;
-  final DateTime updatedAt;
+  final double voiceSeconds;
+  final int llmCalls;
+  final double sttSeconds;
+  final double ttsSeconds;
 
-  factory UserUsageDailyRollupRecord.fromJson(Map<String, dynamic> json) {
-    return UserUsageDailyRollupRecord(
+  factory UserVoiceSummaryRecord.fromJson(Map<String, dynamic> json) {
+    return UserVoiceSummaryRecord(
       userId: _string(json, 'user_id'),
       usageDate: _date(json, 'usage_date'),
-      surface: _string(json, 'surface'),
-      feature: _string(json, 'feature'),
-      channel: _string(json, 'channel'),
-      provider: _string(json, 'provider'),
-      model: _string(json, 'model'),
-      eventType: _string(json, 'event_type'),
-      eventCount: _int(json, 'event_count'),
-      successCount: _int(json, 'success_count'),
-      failureCount: _int(json, 'failure_count'),
-      totalDurationMs: _int(json, 'total_duration_ms'),
-      totalLatencyMs: _int(json, 'total_latency_ms'),
-      avgLatencyMs: _nullableDouble(json, 'avg_latency_ms'),
-      totalUnitCount: _double(json, 'total_unit_count'),
-      estimatedCostCents: _double(json, 'estimated_cost_cents'),
-      voiceMinutes: _double(json, 'voice_minutes'),
-      updatedAt: _dateTime(json, 'updated_at'),
-    );
-  }
-}
-
-final class UserUsagePeriodRollupRecord {
-  const UserUsagePeriodRollupRecord({
-    required this.userId,
-    required this.periodType,
-    required this.periodStart,
-    required this.periodEnd,
-    required this.surface,
-    required this.feature,
-    required this.channel,
-    required this.provider,
-    required this.model,
-    required this.eventType,
-    required this.eventCount,
-    required this.successCount,
-    required this.failureCount,
-    required this.totalDurationMs,
-    required this.totalLatencyMs,
-    this.avgLatencyMs,
-    required this.totalUnitCount,
-    required this.estimatedCostCents,
-    required this.voiceMinutes,
-  });
-
-  final String userId;
-  final String periodType;
-  final DateTime periodStart;
-  final DateTime periodEnd;
-  final String surface;
-  final String feature;
-  final String channel;
-  final String provider;
-  final String model;
-  final String eventType;
-  final int eventCount;
-  final int successCount;
-  final int failureCount;
-  final int totalDurationMs;
-  final int totalLatencyMs;
-  final double? avgLatencyMs;
-  final double totalUnitCount;
-  final double estimatedCostCents;
-  final double voiceMinutes;
-
-  factory UserUsagePeriodRollupRecord.fromJson(Map<String, dynamic> json) {
-    return UserUsagePeriodRollupRecord(
-      userId: _string(json, 'user_id'),
-      periodType: _string(json, 'period_type'),
-      periodStart: _date(json, 'period_start'),
-      periodEnd: _date(json, 'period_end'),
-      surface: _string(json, 'surface'),
-      feature: _string(json, 'feature'),
-      channel: _string(json, 'channel'),
-      provider: _string(json, 'provider'),
-      model: _string(json, 'model'),
-      eventType: _string(json, 'event_type'),
-      eventCount: _int(json, 'event_count'),
-      successCount: _int(json, 'success_count'),
-      failureCount: _int(json, 'failure_count'),
-      totalDurationMs: _int(json, 'total_duration_ms'),
-      totalLatencyMs: _int(json, 'total_latency_ms'),
-      avgLatencyMs: _nullableDouble(json, 'avg_latency_ms'),
-      totalUnitCount: _double(json, 'total_unit_count'),
-      estimatedCostCents: _double(json, 'estimated_cost_cents'),
-      voiceMinutes: _double(json, 'voice_minutes'),
+      voiceSeconds: _double(json, 'voice_seconds'),
+      llmCalls: _int(json, 'llm_calls'),
+      sttSeconds: _double(json, 'stt_seconds'),
+      ttsSeconds: _double(json, 'tts_seconds'),
     );
   }
 }
@@ -418,14 +314,6 @@ double _double(Map<String, dynamic> json, String key) {
     if (parsed != null) return parsed;
   }
   throw FormatException('Missing or invalid "$key".');
-}
-
-double? _nullableDouble(Map<String, dynamic> json, String key) {
-  final value = json[key];
-  if (value == null) return null;
-  if (value is num) return value.toDouble();
-  if (value is String) return double.tryParse(value);
-  throw FormatException('Invalid "$key".');
 }
 
 double _money(Map<String, dynamic> json, String key) {

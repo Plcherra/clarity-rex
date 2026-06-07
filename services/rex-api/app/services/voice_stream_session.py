@@ -12,6 +12,7 @@ from app.services.deepgram_service import DeepgramServiceError
 from app.services.deepgram_streaming_service import DeepgramStreamingService
 from app.services.google_tts_service import GoogleTTSService, GoogleTTSServiceError
 from app.services.memory_service import MemoryServiceError
+from app.services.usage_tracking_service import UsageTrackingService
 from app.services.voice_stream_config import (
     VOICE_DEEP_RESPONSE_MAX_TOKENS,
     VOICE_RESPONSE_INSTRUCTIONS,
@@ -22,12 +23,14 @@ from app.services.voice_stream_live_transcription import (
     VoiceStreamLiveTranscriptionMixin,
 )
 from app.services.voice_stream_response_writer import VoiceStreamResponseWriterMixin
+from app.services.voice_stream_usage_tracking import VoiceStreamUsageTrackingMixin
 
 
 LOGGER = logging.getLogger("rex.voice_stream")
 
 
 class VoiceStreamSession(
+    VoiceStreamUsageTrackingMixin,
     VoiceStreamResponseWriterMixin,
     VoiceStreamLiveTranscriptionMixin,
 ):
@@ -37,11 +40,15 @@ class VoiceStreamSession(
         deepgram_streaming_service: DeepgramStreamingService,
         chat_service: ChatService,
         google_tts_service: GoogleTTSService,
+        usage_tracking_service: Optional[UsageTrackingService] = None,
+        user_id: Optional[str] = None,
     ) -> None:
         self.websocket = websocket
         self.deepgram_streaming_service = deepgram_streaming_service
         self.chat_service = chat_service
         self.google_tts_service = google_tts_service
+        self.usage_tracking_service = usage_tracking_service
+        self.user_id = user_id
         self.conversation_id: Optional[str] = None
         self.financial_context: Optional[dict[str, Any]] = None
         self.input_mime_type = "audio/linear16"
@@ -61,6 +68,8 @@ class VoiceStreamSession(
 
     async def run(self) -> None:
         await self.websocket.accept()
+        session_started_at = time.perf_counter()
+        session_status = "completed"
 
         try:
             while True:
@@ -81,9 +90,16 @@ class VoiceStreamSession(
                     break
         except WebSocketDisconnect:
             return
+        except Exception:
+            session_status = "failure"
+            raise
         finally:
             await self._cancel_live_endpoint_check()
             await self._cancel_active_turn()
+            await self._record_voice_session_usage(
+                self._elapsed_ms(session_started_at),
+                status=session_status,
+            )
 
     async def _receive_audio_chunk(self, chunk: bytes) -> None:
         if not chunk:
@@ -196,6 +212,10 @@ class VoiceStreamSession(
                 on_transcript=self._send_transcript_event,
             )
             timings["stt_ms"] = self._elapsed_ms(started_at)
+            await self._record_stt_usage(
+                transcription,
+                latency_ms=timings["stt_ms"],
+            )
 
             await self._send_event(
                 "transcript.final",
@@ -226,6 +246,13 @@ class VoiceStreamSession(
             MemoryServiceError,
             GoogleTTSServiceError,
         ) as error:
+            if isinstance(error, DeepgramServiceError):
+                await self._record_stt_usage(
+                    None,
+                    latency_ms=self._elapsed_ms(started_at),
+                    status="failure",
+                    error_class=error.__class__.__name__,
+                )
             await self._send_turn_error(error)
         except asyncio.CancelledError:
             raise
@@ -260,6 +287,10 @@ class VoiceStreamSession(
         try:
             transcription = await live_transcription.finish()
             timings["stt_ms"] = self._elapsed_ms(started_at)
+            await self._record_stt_usage(
+                transcription,
+                latency_ms=timings["stt_ms"],
+            )
             await self._send_event("assistant.started")
             response_text = await self._stream_chat_and_audio(
                 transcription["transcript"],
@@ -282,6 +313,13 @@ class VoiceStreamSession(
             MemoryServiceError,
             GoogleTTSServiceError,
         ) as error:
+            if isinstance(error, DeepgramServiceError):
+                await self._record_stt_usage(
+                    None,
+                    latency_ms=self._elapsed_ms(started_at),
+                    status="failure",
+                    error_class=error.__class__.__name__,
+                )
             await self._send_turn_error(error)
         except asyncio.CancelledError:
             raise

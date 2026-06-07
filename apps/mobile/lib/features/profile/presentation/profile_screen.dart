@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/presentation/mfa_enrollment_screen.dart';
 import '../application/profile_controller.dart';
+import 'usage_summary_screen.dart';
 
 final class ProfileScreen extends StatelessWidget {
   const ProfileScreen({
@@ -21,6 +22,12 @@ final class ProfileScreen extends StatelessWidget {
       MaterialPageRoute<void>(
         builder: (context) => MfaEnrollmentScreen(controller: authController),
       ),
+    );
+  }
+
+  Future<void> _openUsage(BuildContext context) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (context) => const UsageSummaryScreen()),
     );
   }
 
@@ -137,6 +144,13 @@ final class ProfileScreen extends StatelessWidget {
                 title: 'Multi-factor authentication',
                 subtitle: 'Authenticator app setup and security options',
                 onTap: () => _openMfaSettings(context),
+              ),
+              const SizedBox(height: 10),
+              _ProfileActionTile(
+                icon: Icons.graphic_eq_rounded,
+                title: 'Voice usage',
+                subtitle: 'Minutes today, this week, and this month',
+                onTap: () => _openUsage(context),
               ),
               const SizedBox(height: 10),
               if (signOut != null)
@@ -264,4 +278,3 @@ final class _ProfileActionTile extends StatelessWidget {
     );
   }
 }
-

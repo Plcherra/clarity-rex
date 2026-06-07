@@ -11,12 +11,22 @@ import httpx
 from app.config import Settings, get_settings
 from app.services.http_client import request_with_retries
 
+TTS_ESTIMATED_CHARS_PER_SECOND = 15
+
 
 class GoogleTTSServiceError(Exception):
     def __init__(self, detail: str, status_code: int = 503) -> None:
         super().__init__(detail)
         self.detail = detail
         self.status_code = status_code
+
+
+def estimate_tts_duration_ms(text: str) -> int:
+    normalized_text = (text or "").strip()
+    return max(
+        0,
+        round((len(normalized_text) / TTS_ESTIMATED_CHARS_PER_SECOND) * 1000),
+    )
 
 
 class GoogleTTSService:

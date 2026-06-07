@@ -1,7 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.dependencies import get_chat_service, get_deepgram_service, get_google_tts_service
+from app.dependencies import (
+    get_chat_service,
+    get_deepgram_service,
+    get_google_tts_service,
+    get_usage_tracking_service,
+)
 from app.main import app
 from app.services.ai_service import AIServiceError
 from app.services.chat_service import ConversationNotFoundError
@@ -15,9 +20,30 @@ from app.services.google_tts_service import GoogleTTSServiceError
 from app.services.memory_service import MemoryServiceError
 
 
+class FakeUsageTrackingService:
+    def __init__(self):
+        self.events = []
+
+    async def record_stt_turn(self, **kwargs):
+        kwargs.setdefault("status", "success")
+        self.events.append({"event_type": "stt", **kwargs})
+        return True
+
+    async def record_tts_turn(self, **kwargs):
+        kwargs.setdefault("status", "success")
+        self.events.append({"event_type": "tts", **kwargs})
+        return True
+
+    async def record_voice_session(self, **kwargs):
+        kwargs.setdefault("status", "completed")
+        self.events.append({"event_type": "voice_session", **kwargs})
+        return True
+
+
 @pytest.fixture
 def client():
     app.dependency_overrides.clear()
+    app.dependency_overrides[get_usage_tracking_service] = FakeUsageTrackingService
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
@@ -163,6 +189,12 @@ def override_google_tts_service(fake_google_tts_service):
 
 def override_chat_service(fake_chat_service):
     app.dependency_overrides[get_chat_service] = lambda: fake_chat_service
+
+
+def override_usage_tracking_service(fake_usage_tracking_service):
+    app.dependency_overrides[get_usage_tracking_service] = (
+        lambda: fake_usage_tracking_service
+    )
 
 
 def test_transcribe_voice_upload_success(client):
@@ -339,9 +371,11 @@ def test_voice_turn_completes_full_non_streaming_pipeline(client):
     fake_deepgram_service = FakeDeepgramService()
     fake_chat_service = FakeChatService()
     fake_google_tts_service = FakeGoogleTTSService()
+    fake_usage_tracking_service = FakeUsageTrackingService()
     override_deepgram_service(fake_deepgram_service)
     override_chat_service(fake_chat_service)
     override_google_tts_service(fake_google_tts_service)
+    override_usage_tracking_service(fake_usage_tracking_service)
 
     response = client.post(
         "/voice/turn",
@@ -386,6 +420,16 @@ def test_voice_turn_completes_full_non_streaming_pipeline(client):
     )
     assert fake_chat_service.voice_metadata_calls[0]["input_mime_type"] == "audio/mp4"
     assert fake_chat_service.voice_metadata_calls[0]["output_audio_encoding"] == "MP3"
+    assert [event["event_type"] for event in fake_usage_tracking_service.events] == [
+        "stt",
+        "tts",
+        "voice_session",
+    ]
+    assert fake_usage_tracking_service.events[0]["duration_ms"] == 1200
+    assert fake_usage_tracking_service.events[0]["status"] == "success"
+    assert fake_usage_tracking_service.events[1]["model"] == "en-US-Neural2-J"
+    assert fake_usage_tracking_service.events[1]["duration_ms"] == 1200
+    assert fake_usage_tracking_service.events[2]["duration_ms"] == 1200
 
 
 def test_voice_turn_creates_new_conversation_when_missing_id(client):

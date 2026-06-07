@@ -138,6 +138,8 @@ void main() {
 
     expect(find.byType(ProfileScreen), findsOneWidget);
     expect(find.text('Multi-factor authentication'), findsOneWidget);
+    expect(find.text('Voice usage'), findsOneWidget);
+    expect(find.text('Minutes today, this week, and this month'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
   });
 

@@ -14,6 +14,7 @@ from app.routes.entities import router as entities_router
 from app.routes.memory import router as memory_router
 from app.routes.plans import router as plans_router
 from app.routes.rules import router as rules_router
+from app.routes.usage import router as usage_router
 from app.routes.voice import router as voice_router
 from app.routes.voice_stream import router as voice_stream_router
 from app.services.http_client import shutdown_http_client, startup_http_client
@@ -127,5 +128,6 @@ app.include_router(rules_router, dependencies=auth_dependencies)
 app.include_router(plans_router, dependencies=auth_dependencies)
 app.include_router(commitments_router, dependencies=auth_dependencies)
 app.include_router(accountability_router, dependencies=auth_dependencies)
+app.include_router(usage_router, dependencies=auth_dependencies)
 app.include_router(voice_router, dependencies=auth_dependencies)
 app.include_router(voice_stream_router)

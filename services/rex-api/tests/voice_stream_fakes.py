@@ -6,6 +6,7 @@ from app.dependencies import (
     get_chat_service,
     get_deepgram_streaming_service,
     get_google_tts_service,
+    get_usage_tracking_service,
 )
 from app.main import app
 
@@ -179,6 +180,26 @@ class FakeGoogleTTSService:
         }
 
 
+class FakeUsageTrackingService:
+    def __init__(self):
+        self.events = []
+
+    async def record_stt_turn(self, **kwargs):
+        kwargs.setdefault("status", "success")
+        self.events.append({"event_type": "stt", **kwargs})
+        return True
+
+    async def record_tts_turn(self, **kwargs):
+        kwargs.setdefault("status", "success")
+        self.events.append({"event_type": "tts", **kwargs})
+        return True
+
+    async def record_voice_session(self, **kwargs):
+        kwargs.setdefault("status", "completed")
+        self.events.append({"event_type": "voice_session", **kwargs})
+        return True
+
+
 class FakeWebSocket:
     def __init__(self):
         self.events = []
@@ -214,6 +235,7 @@ def override_services(
     deepgram_streaming_service=None,
     chat_service=None,
     google_tts_service=None,
+    usage_tracking_service=None,
 ):
     app.dependency_overrides[get_deepgram_streaming_service] = (
         lambda: deepgram_streaming_service or FakeDeepgramStreamingService()
@@ -223,6 +245,9 @@ def override_services(
     )
     app.dependency_overrides[get_google_tts_service] = (
         lambda: google_tts_service or FakeGoogleTTSService()
+    )
+    app.dependency_overrides[get_usage_tracking_service] = (
+        lambda: usage_tracking_service or FakeUsageTrackingService()
     )
 
 

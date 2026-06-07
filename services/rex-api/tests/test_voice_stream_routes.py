@@ -25,6 +25,7 @@ from voice_stream_fakes import (
     FakeChatService,
     FakeDeepgramStreamingService,
     FakeGoogleTTSService,
+    FakeUsageTrackingService,
     FakeLiveDeepgramStreamingService,
     FakeLiveTranscription,
     FakeWebSocket,
@@ -70,7 +71,8 @@ def test_voice_stream_completes_streaming_turn(client, caplog):
     deepgram = FakeDeepgramStreamingService()
     chat = FakeChatService()
     tts = FakeGoogleTTSService()
-    override_services(deepgram, chat, tts)
+    usage = FakeUsageTrackingService()
+    override_services(deepgram, chat, tts, usage)
 
     with client.websocket_connect("/voice/stream") as websocket:
         websocket.send_json(
@@ -155,6 +157,15 @@ def test_voice_stream_completes_streaming_turn(client, caplog):
     assert chat.metadata_calls[0]["conversation_id"] == "conversation-existing"
     assert chat.metadata_calls[0]["user_message_id"] == "user-message-1"
     assert chat.metadata_calls[0]["assistant_message_id"] == "assistant-message-1"
+    assert [event["event_type"] for event in usage.events] == [
+        "stt",
+        "tts",
+        "voice_session",
+    ]
+    assert usage.events[0]["duration_ms"] == 1400
+    assert usage.events[1]["status"] == "success"
+    assert usage.events[1]["duration_ms"] == 1533
+    assert usage.events[2]["status"] == "completed"
 
 
 def test_voice_stream_saves_direct_memory_through_real_chat_service(client, caplog):

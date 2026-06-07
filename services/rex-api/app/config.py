@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     supabase_long_term_memory_table: str = "long_term_memory"
     supabase_memory_corrections_table: str = "memory_corrections"
     supabase_voice_turns_table: str = "voice_turns"
+    usage_owner_user_id: Optional[str] = None
 
     deepgram_api_key: Optional[str] = None
     deepgram_model: str = "nova-3"

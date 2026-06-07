@@ -16,6 +16,7 @@ from app.services.memory_service import SupabaseMemoryService
 from app.services.plan_service import PlanService
 from app.services.rule_service import RuleService
 from app.services.time_context_service import TimeContextService
+from app.services.usage_tracking_service import UsageTrackingService
 
 
 def get_ai_service() -> AIService:
@@ -80,9 +81,14 @@ def get_google_tts_service() -> GoogleTTSService:
     return GoogleTTSService()
 
 
+def get_usage_tracking_service() -> UsageTrackingService:
+    return UsageTrackingService()
+
+
 def get_chat_service(
     ai_service: AIService = Depends(get_ai_service),
     memory_service: SupabaseMemoryService = Depends(get_memory_service),
+    usage_tracking_service: UsageTrackingService = Depends(get_usage_tracking_service),
 ) -> ChatService:
     settings = get_settings()
     return ChatService(
@@ -91,4 +97,5 @@ def get_chat_service(
         memory_service,
         time_context_service=TimeContextService(timezone_name=settings.app_timezone),
         accountability_service=get_accountability_service(),
+        usage_tracking_service=usage_tracking_service,
     )

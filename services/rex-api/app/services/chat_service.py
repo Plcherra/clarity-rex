@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+import time
 from typing import Optional
 
 from fastapi import UploadFile
@@ -30,6 +31,7 @@ from app.services.rex_intent_router import RexIntentRouter
 from app.services.rex_model_router import RexModelRouter
 from app.services.rex_observability import RexBrainObserver
 from app.services.time_context_service import TimeContextService
+from app.services.usage_tracking_service import UsageTrackingService
 
 
 class ChatService(ChatVoiceMetadataMixin):
@@ -51,6 +53,7 @@ class ChatService(ChatVoiceMetadataMixin):
         rex_model_router: Optional[RexModelRouter] = None,
         rex_brain_observer: Optional[RexBrainObserver] = None,
         rex_intent_router: Optional[RexIntentRouter] = None,
+        usage_tracking_service: Optional[UsageTrackingService] = None,
     ) -> None:
         self.ai_service = ai_service
         self.memory_service = memory_service
@@ -66,6 +69,7 @@ class ChatService(ChatVoiceMetadataMixin):
         )
         self.clarity_action_parser = clarity_action_parser or ClarityActionParser()
         self.rex_intent_router = rex_intent_router or RexIntentRouter()
+        self.usage_tracking_service = usage_tracking_service or UsageTrackingService()
         self.rex_brain_chat_service = rex_brain_chat_service or RexBrainChatService(
             rex_brain=rex_brain,
             rex_model_router=rex_model_router,
@@ -182,9 +186,25 @@ class ChatService(ChatVoiceMetadataMixin):
         ai_kwargs = self.rex_brain_chat_service.ai_kwargs(rex_brain_plan)
         if max_response_tokens is not None:
             ai_kwargs["max_tokens"] = max_response_tokens
-        rex_response = await self.ai_service.generate_response(
-            ai_messages,
-            **ai_kwargs,
+        llm_started_at = time.perf_counter()
+        try:
+            rex_response = await self.ai_service.generate_response(
+                ai_messages,
+                **ai_kwargs,
+            )
+        except Exception as error:
+            await self._record_llm_usage(
+                channel=channel,
+                ai_kwargs=ai_kwargs,
+                latency_ms=self._elapsed_ms(llm_started_at),
+                status="failure",
+                error_class=error.__class__.__name__,
+            )
+            raise
+        await self._record_llm_usage(
+            channel=channel,
+            ai_kwargs=ai_kwargs,
+            latency_ms=self._elapsed_ms(llm_started_at),
         )
         assistant_response, clarity_action_proposals = (
             self.clarity_action_parser.extract_proposals(rex_response)
@@ -341,11 +361,27 @@ class ChatService(ChatVoiceMetadataMixin):
         if max_response_tokens is not None:
             ai_kwargs["max_tokens"] = max_response_tokens
         token_stream = self.ai_service.stream_response(ai_messages, **ai_kwargs)
-        async for token in token_stream:
-            response_parts.append(token)
-            for visible_token in stream_filter.feed(token):
-                if visible_token:
-                    yield {"event": "token", "token": visible_token}
+        llm_started_at = time.perf_counter()
+        try:
+            async for token in token_stream:
+                response_parts.append(token)
+                for visible_token in stream_filter.feed(token):
+                    if visible_token:
+                        yield {"event": "token", "token": visible_token}
+        except Exception as error:
+            await self._record_llm_usage(
+                channel=channel,
+                ai_kwargs=ai_kwargs,
+                latency_ms=self._elapsed_ms(llm_started_at),
+                status="failure",
+                error_class=error.__class__.__name__,
+            )
+            raise
+        await self._record_llm_usage(
+            channel=channel,
+            ai_kwargs=ai_kwargs,
+            latency_ms=self._elapsed_ms(llm_started_at),
+        )
         for visible_token in stream_filter.finish():
             if visible_token:
                 yield {"event": "token", "token": visible_token}
@@ -396,3 +432,36 @@ class ChatService(ChatVoiceMetadataMixin):
                 "financial_context": intent_decision.should_use_financial_context,
             },
         }
+
+    async def _record_llm_usage(
+        self,
+        *,
+        channel: RexBrainChannel,
+        ai_kwargs: dict,
+        latency_ms: int,
+        status: str = "success",
+        error_class: Optional[str] = None,
+    ) -> None:
+        user_id = getattr(self.memory_service, "user_id", None)
+        if not user_id:
+            return
+        await self.usage_tracking_service.record_llm_turn(
+            user_id=user_id,
+            surface="assistant",
+            channel=channel.value,
+            model=self._usage_model(ai_kwargs),
+            latency_ms=latency_ms,
+            status=status,
+            error_class=error_class,
+        )
+
+    def _usage_model(self, ai_kwargs: dict) -> str:
+        model_override = ai_kwargs.get("model_override")
+        if isinstance(model_override, str) and model_override.strip():
+            return model_override
+        settings = getattr(self.ai_service, "settings", None)
+        model = getattr(settings, "grok_model", None)
+        return model if isinstance(model, str) and model.strip() else "unknown"
+
+    def _elapsed_ms(self, started_at: float) -> int:
+        return max(0, round((time.perf_counter() - started_at) * 1000))

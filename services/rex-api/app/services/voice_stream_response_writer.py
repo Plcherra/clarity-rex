@@ -2,6 +2,7 @@ import time
 from collections.abc import AsyncIterator
 from typing import Any, Optional
 
+from app.services.google_tts_service import estimate_tts_duration_ms
 from app.services.rex_brain_contracts import RexBrainChannel
 from app.services.voice_stream_config import (
     VOICE_RESPONSE_INSTRUCTIONS,
@@ -115,10 +116,23 @@ class VoiceStreamResponseWriterMixin:
         first_audio_at: Optional[float],
     ) -> Optional[float]:
         synthesis_started_at = time.perf_counter()
-        synthesis = await self.google_tts_service.synthesize_speech(text)
+        try:
+            synthesis = await self.google_tts_service.synthesize_speech(text)
+        except Exception as error:
+            await self._record_tts_usage(
+                latency_ms=self._elapsed_ms(synthesis_started_at),
+                status="failure",
+                error_class=error.__class__.__name__,
+            )
+            raise
         timings["tts_chunk_count"] = timings.get("tts_chunk_count", 0) + 1
         timings["tts_total_ms"] = timings.get("tts_total_ms", 0) + self._elapsed_ms(
             synthesis_started_at
+        )
+        await self._record_tts_usage(
+            duration_ms=estimate_tts_duration_ms(text),
+            latency_ms=self._elapsed_ms(synthesis_started_at),
+            model=synthesis.get("voice_name"),
         )
         if first_audio_at is None:
             first_audio_at = time.perf_counter()
@@ -203,3 +217,30 @@ class VoiceStreamResponseWriterMixin:
     async def _chunk_iterator(self, chunks: list[bytes]) -> AsyncIterator[bytes]:
         for chunk in chunks:
             yield chunk
+
+    async def _record_tts_usage(
+        self,
+        *,
+        duration_ms: Optional[int] = None,
+        latency_ms: int,
+        model: Optional[str] = None,
+        status: str = "success",
+        error_class: Optional[str] = None,
+    ) -> None:
+        usage_tracking_service = getattr(self, "usage_tracking_service", None)
+        user_id = getattr(self, "user_id", None)
+        if not usage_tracking_service or not user_id:
+            return
+        await usage_tracking_service.record_tts_turn(
+            user_id=user_id,
+            duration_ms=duration_ms,
+            latency_ms=latency_ms,
+            model=model or self._google_tts_model(),
+            status=status,
+            error_class=error_class,
+        )
+
+    def _google_tts_model(self) -> str:
+        settings = getattr(self.google_tts_service, "settings", None)
+        model = getattr(settings, "google_tts_voice_name", None)
+        return model if isinstance(model, str) and model.strip() else "unknown"

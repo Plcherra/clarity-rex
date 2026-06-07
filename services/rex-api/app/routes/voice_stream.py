@@ -6,10 +6,12 @@ from app.dependencies import (
     get_chat_service,
     get_deepgram_streaming_service,
     get_google_tts_service,
+    get_usage_tracking_service,
 )
 from app.services.chat_service import ChatService
 from app.services.deepgram_streaming_service import DeepgramStreamingService
 from app.services.google_tts_service import GoogleTTSService
+from app.services.usage_tracking_service import UsageTrackingService
 from app.services.voice_stream_session import VoiceStreamSession
 
 
@@ -24,9 +26,10 @@ async def stream_voice(
     ),
     chat_service: ChatService = Depends(get_chat_service),
     google_tts_service: GoogleTTSService = Depends(get_google_tts_service),
+    usage_tracking_service: UsageTrackingService = Depends(get_usage_tracking_service),
 ) -> None:
     try:
-        await authenticate_websocket(websocket)
+        current_user = await authenticate_websocket(websocket)
     except Exception:
         await websocket.accept()
         if websocket.client_state == WebSocketState.CONNECTED:
@@ -38,5 +41,7 @@ async def stream_voice(
         deepgram_streaming_service=deepgram_streaming_service,
         chat_service=chat_service,
         google_tts_service=google_tts_service,
+        usage_tracking_service=usage_tracking_service,
+        user_id=current_user.id,
     )
     await session.run()
