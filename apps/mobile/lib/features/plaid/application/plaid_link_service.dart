@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:plaid_flutter/plaid_flutter.dart';
 
 import '../../../core/rex/rex_api_client.dart';
@@ -154,6 +155,11 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
 
     successSubscription = PlaidLink.onSuccess.listen((event) {
       final institution = event.metadata.institution;
+      _debugPlaidLink(
+        'success institution=${institution?.name ?? 'unknown'} '
+        'accounts=${event.metadata.accounts.length} '
+        'public_token_present=${event.publicToken.trim().isNotEmpty}',
+      );
       complete(
         PlaidLinkLaunchSuccess(
           publicToken: event.publicToken,
@@ -164,6 +170,12 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
       );
     });
     exitSubscription = PlaidLink.onExit.listen((event) {
+      _debugPlaidLink(
+        'exit status=${event.metadata.status ?? 'unknown'} '
+        'error_code=${event.error?.code ?? 'none'} '
+        'error_type=${event.error?.type ?? 'none'} '
+        'request_id=${event.metadata.requestId ?? 'none'}',
+      );
       complete(
         PlaidLinkLaunchExit(
           status: event.metadata.status,
@@ -181,7 +193,10 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
       await PlaidLink.open();
       return completer.future.timeout(
         const Duration(minutes: 5),
-        onTimeout: () => const PlaidLinkLaunchExit(status: 'timeout'),
+        onTimeout: () {
+          _debugPlaidLink('timeout waiting for Link success/exit callback');
+          return const PlaidLinkLaunchExit(status: 'timeout');
+        },
       );
     } on PlaidLinkServiceException {
       rethrow;
@@ -194,5 +209,9 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
       await successSubscription.cancel();
       await exitSubscription.cancel();
     }
+  }
+
+  void _debugPlaidLink(String message) {
+    debugPrint('PlaidLink: $message');
   }
 }

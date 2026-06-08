@@ -179,7 +179,9 @@ Account _accountFromJson(Map<String, dynamic> json) {
     institution: _nullableString(json, 'institution'),
     currentBalance: _money(json, 'balance'),
     source: _nullableString(json, 'source'),
-    plaidItemId: _nullableString(json, 'plaid_item_id'),
+    plaidItemId:
+        _nullableString(json, 'plaid_item_record_id') ??
+        _nullableString(json, 'plaid_item_id'),
     plaidAccountId: _nullableString(json, 'plaid_account_id'),
     syncStatus: _nullableString(json, 'sync_status'),
     lastSyncedAt: _nullableDateTime(json, 'last_synced_at'),

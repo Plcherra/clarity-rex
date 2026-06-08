@@ -74,6 +74,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               '${accountsSynced > 0 ? ' and synced $accountsSynced account${accountsSynced == 1 ? '' : 's'}' : ''}.',
         PlaidConnectionExit(:final errorCode) when errorCode != null =>
           'Bank connection stopped before it finished. You can try again. ($errorCode)',
+        PlaidConnectionExit(:final status) when status != null =>
+          'Bank connection stopped before it finished. Plaid status: $status.',
         PlaidConnectionExit() =>
           'Bank connection cancelled. No account was added.',
       };
