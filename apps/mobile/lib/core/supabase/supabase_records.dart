@@ -174,6 +174,8 @@ final class TransactionRecord {
     this.merchant,
     required this.importedFromCsv,
     this.importId,
+    this.source = 'manual',
+    this.removedAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -190,10 +192,13 @@ final class TransactionRecord {
   final String? merchant;
   final bool importedFromCsv;
   final String? importId;
+  final String source;
+  final DateTime? removedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   factory TransactionRecord.fromJson(Map<String, dynamic> json) {
+    final importedFromCsv = _bool(json, 'imported_from_csv');
     return TransactionRecord(
       id: _string(json, 'id'),
       userId: _string(json, 'user_id'),
@@ -205,8 +210,12 @@ final class TransactionRecord {
       description: _nullableString(json, 'description'),
       date: _date(json, 'date'),
       merchant: _nullableString(json, 'merchant'),
-      importedFromCsv: _bool(json, 'imported_from_csv'),
+      importedFromCsv: importedFromCsv,
       importId: _nullableString(json, 'import_id'),
+      source:
+          _nullableString(json, 'source') ??
+          (importedFromCsv ? 'csv' : 'manual'),
+      removedAt: _nullableDate(json, 'removed_at'),
       createdAt: _dateTime(json, 'created_at'),
       updatedAt: _dateTime(json, 'updated_at'),
     );
@@ -224,6 +233,7 @@ final class TransactionRecord {
     'merchant': merchant,
     'imported_from_csv': importedFromCsv,
     'import_id': importId,
+    'source': source,
   };
 
   Map<String, dynamic> toUpdateJson() => {
@@ -237,6 +247,7 @@ final class TransactionRecord {
     'merchant': merchant,
     'imported_from_csv': importedFromCsv,
     'import_id': importId,
+    'source': source,
   };
 }
 

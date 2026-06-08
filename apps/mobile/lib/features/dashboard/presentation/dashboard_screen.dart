@@ -12,6 +12,8 @@ class DashboardScreen extends StatelessWidget {
     required this.budgetController,
     required this.importJobStatusController,
     this.isRoot = false,
+    this.onConnectBank,
+    this.onImportCsvInstead,
   });
 
   final DashboardUiController controller;
@@ -19,6 +21,8 @@ class DashboardScreen extends StatelessWidget {
   final BudgetUiController budgetController;
   final ImportJobStatusController importJobStatusController;
   final bool isRoot;
+  final VoidCallback? onConnectBank;
+  final VoidCallback? onImportCsvInstead;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +34,8 @@ class DashboardScreen extends StatelessWidget {
       scope: const GlobalDashboardScope(),
       showBackButton: !isRoot,
       title: 'Overview',
+      onConnectBank: onConnectBank,
+      onImportCsvInstead: onImportCsvInstead,
     );
   }
 }

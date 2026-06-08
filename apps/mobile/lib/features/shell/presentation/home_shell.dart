@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../../../app/ui_dependencies.dart';
 import '../../auth/application/auth_controller.dart';
 import 'import_job_progress_banner.dart';
+import '../../accounts/data/connect_bank_entry_point_tracker.dart';
 import '../../accounts/presentation/accounts_screen.dart';
 import '../../assistant/presentation/assistant_screen.dart';
 import '../../budgets/presentation/budgets_screen.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
+import '../../plaid/application/plaid_link_service.dart';
 import '../../profile/application/profile_controller.dart';
 import '../../profile/presentation/profile_screen.dart';
 
@@ -58,6 +60,57 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     });
   }
 
+  Future<void> _connectBank(String surface) async {
+    trackConnectBankEntryPoint(
+      surface: surface,
+      action: ConnectBankEntryAction.connectBank,
+    );
+    try {
+      final result = await widget.ui.accounts.connectBank();
+      if (!mounted) return;
+      final message = switch (result) {
+        PlaidConnectionSuccess(:final institutionName, :final accountsSynced) =>
+          'Bank connected successfully: ${institutionName ?? 'your bank'}'
+              '${accountsSynced > 0 ? ' and synced $accountsSynced account${accountsSynced == 1 ? '' : 's'}' : ''}.',
+        PlaidConnectionExit(:final errorCode) when errorCode != null =>
+          'Bank connection stopped before it finished. You can try again. ($errorCode)',
+        PlaidConnectionExit() =>
+          'Bank connection cancelled. No account was added.',
+      };
+      if (result is PlaidConnectionSuccess) {
+        widget.ui.notifyDataChanged();
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } on PlaidLinkServiceException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } on Object {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open bank connection.')),
+      );
+    }
+  }
+
+  void _openAccountsForCsvFallback() {
+    trackConnectBankEntryPoint(
+      surface: 'dashboard_empty',
+      action: ConnectBankEntryAction.importCsvInstead,
+    );
+    setState(() => _idx = 1);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'CSV is a manual fallback. Create a manual account, then import CSV instead.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -70,6 +123,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         budgetController: widget.ui.budgets,
         importJobStatusController: widget.ui.importJobStatus,
         isRoot: true,
+        onConnectBank: () => _connectBank('dashboard_empty'),
+        onImportCsvInstead: _openAccountsForCsvFallback,
       ),
       AccountsScreen(
         controller: widget.ui.accounts,

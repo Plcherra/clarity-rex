@@ -20,6 +20,7 @@ final class TransactionCreateInput {
     this.merchant,
     this.importedFromCsv = false,
     this.importId,
+    this.source,
   });
 
   final String accountId;
@@ -32,6 +33,7 @@ final class TransactionCreateInput {
   final String? merchant;
   final bool importedFromCsv;
   final String? importId;
+  final String? source;
 }
 
 final class TransactionService {
@@ -127,6 +129,7 @@ final class TransactionService {
             'merchant': merchant,
             'imported_from_csv': importedFromCsv,
             'import_id': importId,
+            'source': importedFromCsv ? 'csv' : 'manual',
           })
           .select()
           .single();
@@ -173,6 +176,9 @@ final class TransactionService {
               'merchant': transaction.merchant,
               'imported_from_csv': transaction.importedFromCsv,
               'import_id': transaction.importId,
+              'source':
+                  transaction.source ??
+                  (transaction.importedFromCsv ? 'csv' : 'manual'),
             },
         ]).select();
         out.addAll(rows.map<TransactionRecord>(TransactionRecord.fromJson));
@@ -203,6 +209,7 @@ final class TransactionService {
     String? merchant,
     bool? importedFromCsv,
     String? importId,
+    String? source,
   }) async {
     final user = _currentUser;
     final payload = <String, dynamic>{};
@@ -220,8 +227,10 @@ final class TransactionService {
     if (merchant != null) payload['merchant'] = merchant;
     if (importedFromCsv != null) {
       payload['imported_from_csv'] = importedFromCsv;
+      payload['source'] = importedFromCsv ? 'csv' : 'manual';
     }
     if (importId != null) payload['import_id'] = importId;
+    if (source != null) payload['source'] = source;
     if (payload.isEmpty) {
       throw const SupabaseDataException(
         table: 'transactions',

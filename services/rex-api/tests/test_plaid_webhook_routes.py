@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.auth.supabase_auth import AuthenticatedUser, get_current_user
-from app.dependencies import get_plaid_sync_service, get_usage_tracking_service
+from app.dependencies import get_plaid_sync_service
 from app.main import app
 from app.services.plaid_sync_service import (
     PlaidItemStatus,
@@ -37,14 +37,6 @@ class FakePlaidSyncService:
 class MissingPlaidItemService(FakePlaidSyncService):
     async def get_item_status(self, *, user_id, item_id):
         raise PlaidSyncServiceError("Plaid item was not found.", status_code=404)
-
-
-class FakeUsageOwnerService:
-    def __init__(self, authorized=True):
-        self.authorized = authorized
-
-    async def is_usage_owner(self, user_id):
-        return self.authorized
 
 
 class FakePlaidManualSyncService(FakePlaidSyncService):
@@ -193,28 +185,20 @@ def test_item_status_route_requires_authentication():
     assert response.json()["detail"] == "Missing Supabase access token."
 
 
-def test_manual_sync_route_requires_owner_access():
+def test_manual_sync_route_requires_current_user_item_access():
     app.dependency_overrides[get_current_user] = fake_current_user
-    app.dependency_overrides[get_usage_tracking_service] = (
-        lambda: FakeUsageOwnerService(authorized=False)
-    )
-    app.dependency_overrides[get_plaid_sync_service] = (
-        lambda: FakePlaidManualSyncService()
-    )
+    app.dependency_overrides[get_plaid_sync_service] = lambda: MissingPlaidItemService()
 
     with TestClient(app) as client:
         response = client.post("/plaid/sync-item/item-record-1")
 
-    assert response.status_code == 403
-    assert response.json()["detail"] == "Owner Plaid sync access required."
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Plaid item was not found."
 
 
-def test_manual_sync_route_returns_safe_counts_for_owner():
+def test_manual_sync_route_returns_safe_counts_for_current_user_item():
     service = FakePlaidManualSyncService()
     app.dependency_overrides[get_current_user] = fake_current_user
-    app.dependency_overrides[get_usage_tracking_service] = (
-        lambda: FakeUsageOwnerService(authorized=True)
-    )
     app.dependency_overrides[get_plaid_sync_service] = lambda: service
 
     with TestClient(app) as client:
@@ -229,15 +213,13 @@ def test_manual_sync_route_returns_safe_counts_for_owner():
         "transactions_removed": 1,
         "next_cursor": "cursor-next",
     }
+    assert service.status_call == {"user_id": "user-1", "item_id": "item-record-1"}
     assert service.sync_item_id == "item-record-1"
     assert "access_token" not in response.text
 
 
 def test_manual_sync_route_returns_safe_sync_error():
     app.dependency_overrides[get_current_user] = fake_current_user
-    app.dependency_overrides[get_usage_tracking_service] = (
-        lambda: FakeUsageOwnerService(authorized=True)
-    )
     app.dependency_overrides[get_plaid_sync_service] = (
         lambda: FailingPlaidManualSyncService()
     )

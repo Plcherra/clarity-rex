@@ -14,6 +14,7 @@ Transaction transactionFromRecord(
     importId: record.importId ?? (record.importedFromCsv ? 'csv' : null),
     fingerprint: record.id,
     financialRole: financialRoleFromStorageValue(record.financialRole),
+    source: record.source,
   );
 }
 

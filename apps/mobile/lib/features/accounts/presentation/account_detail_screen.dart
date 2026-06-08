@@ -9,6 +9,7 @@ import '../../../core/models/models.dart';
 import '../../transactions/data/csv_import_service.dart';
 import '../../dashboard/domain/dashboard_snapshot.dart';
 import '../../dashboard/presentation/financial_dashboard_view.dart';
+import 'csv_plaid_duplicate_warning.dart';
 
 class AccountDetailScreen extends StatefulWidget {
   const AccountDetailScreen({
@@ -235,8 +236,16 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     Navigator.of(context).pop();
   }
 
-  Future<void> _importCsvForThisAccount(BuildContext context) async {
+  Future<void> _importCsvForThisAccount(
+    BuildContext context,
+    Account account,
+  ) async {
     try {
+      if (account.isPlaidConnected) {
+        final proceed = await confirmCsvImportForPlaidAccount(context, account);
+        if (proceed != true) return;
+        if (!context.mounted) return;
+      }
       final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['csv'],
@@ -248,6 +257,11 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
       final file = result.files.single;
       final text = await readPickedFileContents(file);
       if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Importing CSV as a manual fallback for this account.'),
+        ),
+      );
       await widget.controller.loadFromCsv(text, accountId: widget.accountId);
     } on FormatException catch (e) {
       if (!context.mounted) return;
@@ -298,7 +312,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
           scope: AccountDashboardScope(widget.accountId),
           showBackButton: true,
           title: title,
-          onUploadTransactions: () => _importCsvForThisAccount(context),
+          onUploadTransactions: account == null
+              ? null
+              : () => _importCsvForThisAccount(context, account),
           onDeleteCsvImportBatch: _deletingCsvUpload
               ? null
               : () => _deleteCsvUploadBatch(context),

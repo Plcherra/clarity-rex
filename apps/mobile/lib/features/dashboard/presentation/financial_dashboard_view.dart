@@ -7,6 +7,7 @@ import '../domain/dashboard_transaction_groups.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
 import '../../budgets/presentation/budgets_screen.dart';
+import '../../accounts/presentation/widgets/connect_bank_setup_card.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../transactions/domain/spend_categories.dart';
@@ -161,6 +162,8 @@ class FinancialDashboardView extends StatefulWidget {
     this.onUploadTransactions,
     this.onDeleteCsvImportBatch,
     this.onDeleteAccount,
+    this.onConnectBank,
+    this.onImportCsvInstead,
   });
 
   final DashboardUiController controller;
@@ -179,6 +182,9 @@ class FinancialDashboardView extends StatefulWidget {
 
   /// Optional account-level delete action (shown as a red trash icon in app bar).
   final Future<void> Function()? onDeleteAccount;
+
+  final VoidCallback? onConnectBank;
+  final VoidCallback? onImportCsvInstead;
 
   @override
   State<FinancialDashboardView> createState() => _FinancialDashboardViewState();
@@ -284,6 +290,16 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
           }
           if (data.isResolvingImportedTransactions && !data.isTrulyEmpty) {
             return const _DashboardResolvingDataBody();
+          }
+          if (data.isTrulyEmpty &&
+              widget.scope is GlobalDashboardScope &&
+              widget.onConnectBank != null &&
+              widget.onImportCsvInstead != null) {
+            return _DashboardEmptySetupBody(
+              title: widget.title,
+              onConnectBank: widget.onConnectBank!,
+              onImportCsvInstead: widget.onImportCsvInstead!,
+            );
           }
           final scrollBody = _DashboardScrollBody(
             title: widget.title,

@@ -44,6 +44,7 @@ class Transaction {
     this.importId,
     this.fingerprint,
     this.financialRole,
+    this.source,
   });
 
   /// Parsed calendar date in local terms (time set to noon to avoid DST edge cases).
@@ -70,5 +71,18 @@ class Transaction {
   /// Optional stored role; when null, role is derived from heuristics + matcher.
   final FinancialRole? financialRole;
 
+  /// Persistence source such as `plaid`, `csv`, or `manual`.
+  final String? source;
+
   bool get isOutflow => amount < 0;
+
+  bool get isPlaid => source?.trim().toLowerCase() == 'plaid';
+
+  bool get isManualCsv {
+    final normalized = source?.trim().toLowerCase();
+    return normalized == 'csv' ||
+        importId != null && importId!.trim().isNotEmpty;
+  }
+
+  String get sourceLabel => isPlaid ? 'Plaid' : 'Manual/CSV';
 }

@@ -132,7 +132,7 @@ class _UploadScreenState extends State<UploadScreen> {
                                 children: [
                                   Icon(Icons.upload_file_rounded, size: 22),
                                   SizedBox(width: 10),
-                                  Text('Import bank statement (CSV)'),
+                                  Text('Import CSV instead'),
                                 ],
                               ),
                       ),

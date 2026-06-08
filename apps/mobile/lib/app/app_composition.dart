@@ -4,6 +4,7 @@ import '../core/supabase/supabase_service.dart';
 import '../features/accounts/application/account_workflow_service.dart';
 import '../features/accounts/data/account_service.dart';
 import '../features/accounts/data/account_statement_import_service.dart';
+import '../features/accounts/data/plaid_account_service.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/application/auth_service.dart';
 import '../features/budgets/application/budget_workflow_service.dart';
@@ -13,6 +14,7 @@ import '../features/categories/data/category_service.dart';
 import '../features/dashboard/application/dashboard_service.dart';
 import '../features/finance/application/financial_read_model_service.dart';
 import '../features/finance/data/financial_audit_service.dart';
+import '../features/plaid/application/plaid_link_service.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/profile/application/profile_service.dart';
 import '../features/transactions/application/category_workflow_service.dart';
@@ -62,6 +64,8 @@ final class AppComposition {
   late final AccountService accountService = supabaseRepository.accounts;
   late final AccountStatementImportService accountStatementImportService =
       supabaseRepository.accountStatementImports;
+  late final PlaidLinkService plaidLinkService = PlaidLinkService();
+  late final PlaidAccountService plaidAccountService = PlaidAccountService();
   final DashboardService dashboardService = DashboardService();
   late final FinancialReadModelService financialReadModelService =
       FinancialReadModelService(
@@ -183,6 +187,8 @@ final class AppComposition {
       budgetWorkflowService: budgetWorkflowService,
       importJobStatusService: importJobStatusService,
       accountWorkflowService: accountWorkflowService,
+      plaidLinkService: plaidLinkService,
+      plaidAccountService: plaidAccountService,
       notifyImportJobStatusChanged: () =>
           notifications.importJobStatusChanged(),
     ),

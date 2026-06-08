@@ -4,6 +4,7 @@ import '../core/models/models.dart';
 import '../core/supabase/supabase_records.dart';
 import '../features/accounts/application/account_workflow_service.dart';
 import '../features/accounts/data/account_service.dart';
+import '../features/accounts/data/plaid_account_service.dart';
 import '../features/budgets/application/budget_workflow_service.dart';
 import '../features/budgets/data/budget_service.dart';
 import '../features/budgets/domain/budget_models.dart';
@@ -14,6 +15,7 @@ import '../features/dashboard/application/dashboard_service.dart';
 import '../features/dashboard/domain/dashboard_snapshot.dart';
 import '../features/finance/application/financial_read_model_service.dart';
 import '../features/finance/data/financial_audit_service.dart';
+import '../features/plaid/application/plaid_link_service.dart';
 import '../features/transactions/application/category_workflow_service.dart';
 import '../features/transactions/application/import_job_status_service.dart';
 import '../features/transactions/application/transaction_record_mapper.dart';
@@ -39,6 +41,8 @@ final class AppUiControllerBindings {
     required this.budgetWorkflowService,
     required this.importJobStatusService,
     required this.accountWorkflowService,
+    required this.plaidLinkService,
+    required this.plaidAccountService,
     required this.notifyImportJobStatusChanged,
   });
 
@@ -55,6 +59,8 @@ final class AppUiControllerBindings {
   final BudgetWorkflowService budgetWorkflowService;
   final ImportJobStatusService importJobStatusService;
   final AccountWorkflowService accountWorkflowService;
+  final PlaidLinkService plaidLinkService;
+  final PlaidAccountService plaidAccountService;
   final VoidCallback notifyImportJobStatusChanged;
 }
 
@@ -165,6 +171,7 @@ final class AccountOverviewItem {
     required this.spentThisMonth,
     required this.statementBalance,
     required this.netCashFlow,
+    this.recentTransactions = const [],
   });
 
   final Account account;
@@ -173,6 +180,7 @@ final class AccountOverviewItem {
   final double spentThisMonth;
   final double? statementBalance;
   final double netCashFlow;
+  final List<Transaction> recentTransactions;
 
   double get cashFlowThisMonth => availableThisMonth;
 }
@@ -411,6 +419,7 @@ final class AccountUiController extends _UiController {
   Future<List<AccountOverviewItem>> get accountOverviewItems async {
     final model = await loadFinancialReadModel();
     final requested = bindings.dashboardService.spendReference;
+    final transactionsByAccount = model.transactionsByAccount;
     return [
       for (final account in model.accounts)
         () {
@@ -418,6 +427,9 @@ final class AccountUiController extends _UiController {
             account: account,
             requested: requested,
           );
+          final recentTransactions = [
+            ...(transactionsByAccount[account.id] ?? const <Transaction>[]),
+          ]..sort((a, b) => b.date.compareTo(a.date));
           return AccountOverviewItem(
             account: account,
             availableThisMonth: display.availableThisMonth,
@@ -425,6 +437,7 @@ final class AccountUiController extends _UiController {
             spentThisMonth: display.spentThisMonth,
             statementBalance: display.statementBalance,
             netCashFlow: display.netCashFlow,
+            recentTransactions: recentTransactions.take(5).toList(),
           );
         }(),
     ];
@@ -432,6 +445,18 @@ final class AccountUiController extends _UiController {
 
   Future<bool> addAccount(Account account) async {
     return bindings.accountWorkflowService.addAccount(account);
+  }
+
+  Future<PlaidConnectionResult> connectBank() {
+    return bindings.plaidLinkService.connectBank();
+  }
+
+  Future<PlaidItemStatus> plaidItemStatus(String itemId) {
+    return bindings.plaidAccountService.fetchItemStatus(itemId);
+  }
+
+  Future<PlaidSyncSummary> refreshPlaidItem(String itemId) {
+    return bindings.plaidAccountService.syncItem(itemId);
   }
 
   Future<bool> deleteAccount(String accountId) async {

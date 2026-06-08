@@ -9,7 +9,6 @@ from app.auth.supabase_auth import AuthenticatedUser, get_current_user
 from app.dependencies import (
     get_plaid_api_client,
     get_plaid_sync_service,
-    get_usage_tracking_service,
 )
 from app.services.plaid_api_client import (
     PlaidApiClient,
@@ -18,7 +17,6 @@ from app.services.plaid_api_client import (
 )
 from app.services.plaid_config import PlaidConfigurationError
 from app.services.plaid_sync_service import PlaidSyncService, PlaidSyncServiceError
-from app.services.usage_tracking_service import UsageTrackingService
 
 router = APIRouter(prefix="/plaid", tags=["plaid"])
 
@@ -44,6 +42,10 @@ class PlaidExchangeTokenResponse(BaseModel):
     status: str
     institution_name: Optional[str] = None
     accounts: list[dict[str, str]] = Field(default_factory=list)
+    accounts_synced: int = 0
+    transactions_added: int = 0
+    transactions_modified: int = 0
+    transactions_removed: int = 0
 
 
 class PlaidItemStatusResponse(BaseModel):
@@ -130,11 +132,28 @@ async def exchange_public_token(
             detail=error.detail,
         ) from error
 
+    try:
+        sync_result = await plaid_sync_service.sync_item(result.plaid_item_record_id)
+    except PlaidApiClientError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail=error.detail,
+        ) from error
+    except PlaidSyncServiceError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail=error.detail,
+        ) from error
+
     return PlaidExchangeTokenResponse(
         plaid_item_record_id=result.plaid_item_record_id,
         status=result.status,
         institution_name=result.institution_name,
         accounts=[],
+        accounts_synced=sync_result.accounts_synced,
+        transactions_added=sync_result.transactions_added,
+        transactions_modified=sync_result.transactions_modified,
+        transactions_removed=sync_result.transactions_removed,
     )
 
 
@@ -169,15 +188,12 @@ async def sync_item(
     item_id: str,
     current_user: AuthenticatedUser = Depends(get_current_user),
     plaid_sync_service: PlaidSyncService = Depends(get_plaid_sync_service),
-    usage_tracking_service: UsageTrackingService = Depends(get_usage_tracking_service),
 ) -> PlaidSyncItemResponse:
-    if not await usage_tracking_service.is_usage_owner(current_user.id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Owner Plaid sync access required.",
-        )
-
     try:
+        await plaid_sync_service.get_item_status(
+            user_id=current_user.id,
+            item_id=item_id,
+        )
         result = await plaid_sync_service.sync_item(item_id)
     except PlaidApiClientError as error:
         raise HTTPException(

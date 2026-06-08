@@ -6,8 +6,11 @@ import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
 import '../../transactions/data/csv_import_service.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
+import 'csv_plaid_duplicate_warning.dart';
+import 'widgets/source_label_chip.dart';
 
-/// Shown after the user picks a CSV; they must pick or create an account before import runs.
+/// Shown after the user picks a CSV; they must pick or create a manual account
+/// before the fallback import runs.
 class AccountSelectionScreen extends StatefulWidget {
   const AccountSelectionScreen({
     super.key,
@@ -98,6 +101,11 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
 
   Future<void> _importForAccount(BuildContext context, Account account) async {
     if (_importingAccountId != null) return;
+    if (account.isPlaidConnected) {
+      final proceed = await confirmCsvImportForPlaidAccount(context, account);
+      if (proceed != true) return;
+      if (!context.mounted) return;
+    }
     setState(() => _importingAccountId = account.id);
     try {
       widget.controller.showImportPreparationProgress('Previewing CSV...');
@@ -145,7 +153,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Choose account'),
+        title: const Text('Import CSV instead'),
         backgroundColor: theme.colorScheme.surface,
         surfaceTintColor: Colors.transparent,
       ),
@@ -182,7 +190,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Add an account for this statement',
+                          'Add a manual account for this CSV',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
@@ -194,7 +202,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                         FilledButton.icon(
                           onPressed: () => _showAddAccountDialog(context),
                           icon: const Icon(Icons.add_rounded, size: 22),
-                          label: const Text('Add account'),
+                          label: const Text('Add manual account'),
                         ),
                       ],
                     ),
@@ -207,7 +215,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
                     child: Text(
-                      'Which account is this CSV for?',
+                      'CSV import is manual. Choose the account this file belongs to; connected bank accounts update automatically.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.6,
@@ -266,7 +274,23 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            subtitle: Text(a.type.displayLabel),
+                            subtitle: Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                SourceLabelChip(label: a.sourceLabel),
+                                Text(a.type.displayLabel),
+                                if (a.isPlaidConnected)
+                                  Text(
+                                    'CSV may duplicate synced rows',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.52),
+                                    ),
+                                  ),
+                              ],
+                            ),
                             trailing: importingThisAccount
                                 ? const SizedBox(
                                     width: 22,
@@ -296,7 +320,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => _showAddAccountDialog(context),
                       icon: const Icon(Icons.add_rounded),
-                      label: const Text('Add account'),
+                      label: const Text('Add manual account'),
                     ),
                   ),
                 ],
@@ -320,7 +344,7 @@ class _CsvImportPreviewDialog extends StatelessWidget {
     final theme = Theme.of(context);
     final dateRange = _dateRangeLabel(preview.startDate, preview.endDate);
     return AlertDialog(
-      title: const Text('Import preview'),
+      title: const Text('CSV import preview'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -329,6 +353,15 @@ class _CsvImportPreviewDialog extends StatelessWidget {
             account.name,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            account.isPlaidConnected
+                ? 'This connected account already syncs through Plaid. Import only if this CSV covers rows Clarity does not have yet.'
+                : 'This is a manual fallback import. You may need to upload newer CSV files later to keep this account current.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.58),
             ),
           ),
           const SizedBox(height: 12),

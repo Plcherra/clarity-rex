@@ -24,7 +24,8 @@ final class AccountService {
           .select()
           .eq('user_id', user.id)
           .order('created_at');
-      return rows.map<Account>(_accountFromJson).toList();
+      final accounts = rows.map<Account>(_accountFromJson).toList();
+      return await _mergePlaidMetadata(user.id, accounts);
     } on SupabaseDataException {
       rethrow;
     } on Object catch (e) {
@@ -124,6 +125,50 @@ final class AccountService {
       );
     }
   }
+
+  Future<List<Account>> _mergePlaidMetadata(
+    String userId,
+    List<Account> accounts,
+  ) async {
+    final plaidAccountIds = [
+      for (final account in accounts)
+        if (account.isPlaidConnected) account.id,
+    ];
+    if (plaidAccountIds.isEmpty) return accounts;
+
+    final rows = await _supabaseService.client
+        .from('plaid_accounts')
+        .select(
+          'linked_account_id,name,official_name,mask,current_balance,available_balance,status',
+        )
+        .eq('user_id', userId)
+        .inFilter('linked_account_id', plaidAccountIds);
+    final metadataByAccountId = {
+      for (final row in rows)
+        if (_nullableString(row, 'linked_account_id') != null)
+          _nullableString(row, 'linked_account_id')!: row,
+    };
+    return [
+      for (final account in accounts)
+        if (metadataByAccountId[account.id] case final metadata?)
+          account.copyWith(
+            plaidInstitutionName: _nullableString(metadata, 'name'),
+            plaidOfficialName: _nullableString(metadata, 'official_name'),
+            plaidAccountMask: _nullableString(metadata, 'mask'),
+            plaidAvailableBalance: _nullableMoney(
+              metadata,
+              'available_balance',
+            ),
+            currentBalance:
+                _nullableMoney(metadata, 'current_balance') ??
+                account.currentBalance,
+            syncStatus:
+                _nullableString(metadata, 'status') ?? account.syncStatus,
+          )
+        else
+          account,
+    ];
+  }
 }
 
 Account _accountFromJson(Map<String, dynamic> json) {
@@ -133,6 +178,11 @@ Account _accountFromJson(Map<String, dynamic> json) {
     type: _accountTypeFromDatabaseValue(_string(json, 'type')),
     institution: _nullableString(json, 'institution'),
     currentBalance: _money(json, 'balance'),
+    source: _nullableString(json, 'source'),
+    plaidItemId: _nullableString(json, 'plaid_item_id'),
+    plaidAccountId: _nullableString(json, 'plaid_account_id'),
+    syncStatus: _nullableString(json, 'sync_status'),
+    lastSyncedAt: _nullableDateTime(json, 'last_synced_at'),
   );
 }
 
@@ -177,4 +227,19 @@ double _money(Map<String, dynamic> json, String key) {
   if (value is num) return value.toDouble();
   if (value is String) return double.tryParse(value) ?? 0;
   return 0;
+}
+
+double? _nullableMoney(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value);
+  return null;
+}
+
+DateTime? _nullableDateTime(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  final string = value is String ? value : value.toString();
+  return DateTime.tryParse(string)?.toLocal();
 }

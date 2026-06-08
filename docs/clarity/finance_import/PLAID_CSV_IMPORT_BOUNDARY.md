@@ -54,6 +54,21 @@ description match.
 This contract is covered by
 `apps/mobile/test/financial_integration_contracts_test.dart`.
 
+## UI Boundary
+
+- Account tiles should show quiet source labels: `Plaid` for connected accounts
+  and `Manual/CSV` for manually maintained accounts.
+- Transaction rows shown inside connected account summaries should also show
+  quiet source labels so mixed Plaid and CSV rows are understandable without
+  looking like an error state.
+- If a user imports CSV into an already Plaid-connected account, Clarity should
+  calmly warn that overlapping CSV rows can create duplicates. The UI should not
+  block the path because CSV can still be useful for historical gaps, but the
+  user should make that choice intentionally.
+- Deduplication remains a persistence/import concern. Presentation components
+  should explain source and risk; they should not invent their own duplicate
+  rules.
+
 ## Non-Goals
 
 - Do not add Plaid SDK or API logic inside dashboard presentation files.

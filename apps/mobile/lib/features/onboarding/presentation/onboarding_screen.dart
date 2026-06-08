@@ -79,7 +79,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Give your dashboard a name.',
+                      'Name your Clarity space. Next, you can connect your bank or use CSV as a manual fallback.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: cs.onSurface.withValues(alpha: 0.6),
                       ),

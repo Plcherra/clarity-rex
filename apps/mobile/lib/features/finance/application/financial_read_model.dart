@@ -78,14 +78,15 @@ final class FinancialReadModel {
       transactionRecords: List.unmodifiable(transactionRecords),
       transactions: List.unmodifiable([
         for (final record in transactionRecords)
-          transactionFromRecord(
-            record,
-            categoryNameForId: (id) {
-              final key = id?.trim();
-              if (key == null || key.isEmpty) return null;
-              return effectiveCategoryNameById[key];
-            },
-          ),
+          if (record.removedAt == null)
+            transactionFromRecord(
+              record,
+              categoryNameForId: (id) {
+                final key = id?.trim();
+                if (key == null || key.isEmpty) return null;
+                return effectiveCategoryNameById[key];
+              },
+            ),
       ]),
       budgets: List.unmodifiable(budgets),
       categories: List.unmodifiable(categories),

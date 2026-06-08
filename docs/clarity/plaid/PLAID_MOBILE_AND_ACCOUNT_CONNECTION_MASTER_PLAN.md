@@ -43,6 +43,8 @@ By the end of this plan:
 
 ## Phase 1 - Connect Bank Entry Points
 
+Status: Complete
+
 Goal: Make Connect Bank the primary financial data CTA.
 
 Files to change:
@@ -64,11 +66,25 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Connect Bank is primary.
-- [ ] CSV import is secondary and still reachable.
-- [ ] UI copy uses Clarity vocabulary.
+- [x] Connect Bank is primary.
+- [x] CSV import is secondary and still reachable.
+- [x] UI copy uses Clarity vocabulary.
+
+Completion note: Dashboard and Accounts empty states now present Connect Bank
+as the primary setup path, keep "Import CSV instead" as the fallback, and use
+Clarity-first copy. Entry-point taps emit sanitized debug events only; real
+Plaid Link launch remains Phase 2.
+
+Verification:
+
+```bash
+cd apps/mobile
+flutter analyze
+```
 
 ## Phase 2 - Native Plaid Link Integration
+
+Status: Complete
 
 Goal: Launch Plaid Link from Flutter using native iOS/Android integration.
 
@@ -77,7 +93,7 @@ Files to change:
 - `apps/mobile/pubspec.yaml`
 - `apps/mobile/ios/Runner/*`
 - `apps/mobile/android/app/src/main/*`
-- `apps/mobile/lib/features/accounts/data/plaid_link_service.dart`
+- `apps/mobile/lib/features/plaid/application/plaid_link_service.dart`
 
 Steps:
 
@@ -93,17 +109,42 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Link launches on iOS.
-- [ ] Link launch does not require Plaid secrets in mobile.
-- [ ] Mobile service remains under 300 lines.
+- [x] Link launches on iOS.
+- [x] Link launch does not require Plaid secrets in mobile.
+- [x] Mobile service remains under 300 lines.
+
+Completion note: Added `plaid_flutter` plus `PlaidLinkService`, and wired
+Dashboard/Accounts Connect Bank actions to request a backend link token and
+open native Plaid Link. Public tokens are held only in memory for Phase 3
+exchange. Platform requirements are explicit: iOS minimum target is 14.0,
+Android minimum SDK is 21, and both app identifiers are currently
+`com.clarity.clarity` for Plaid dashboard registration. Before device QA, set
+`PLAID_IOS_BUNDLE_ID=com.clarity.clarity` and
+`PLAID_ANDROID_PACKAGE_NAME=com.clarity.clarity` on the backend; add
+`PLAID_REDIRECT_URI` only when OAuth institutions require it.
+
+Known caveat: `plaid_flutter` currently warns that it does not support Swift
+Package Manager for iOS. CocoaPods still works, and this warning is acceptable
+for now because using the plugin keeps the mobile integration simpler and
+lower-maintenance than owning custom native bridge code.
+
+Verification:
+
+```bash
+cd apps/mobile
+flutter test test/plaid_link_service_test.dart
+flutter analyze
+```
 
 ## Phase 3 - Link Success And Error Handling
+
+Status: Complete
 
 Goal: Handle Link success, cancellation, and errors clearly.
 
 Files to change:
 
-- `apps/mobile/lib/features/accounts/data/plaid_link_service.dart`
+- `apps/mobile/lib/features/plaid/application/plaid_link_service.dart`
 - `apps/mobile/lib/features/accounts/presentation/*`
 
 Steps:
@@ -119,38 +160,85 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Success exchanges token through backend.
-- [ ] Cancellation does not create broken records.
-- [ ] Error UI is clear and non-technical.
+- [x] Success exchanges token through backend.
+- [x] Cancellation does not create broken records.
+- [x] Error UI is clear and non-technical.
 
-## Phase 4 - Connected Institution UI
+Completion note: Plaid Link success now sends the public token to
+`POST /plaid/exchange-token`, and the backend route performs the initial
+`sync_item` automatically so accounts and transactions begin persisting before
+mobile refreshes Dashboard/Accounts state. Mobile keeps Plaid secrets off-device,
+never logs the public token, and only surfaces safe connection/sync summaries.
 
-Goal: Show connected banks as institutions with accounts underneath.
+Verification:
+
+```bash
+cd apps/mobile
+flutter analyze
+flutter test test/plaid_link_service_test.dart
+cd ../../services/rex-api
+./.venv/bin/python -m pytest -q tests/test_plaid_exchange_route.py
+```
+
+## Phase 4 - Post-Connection Experience And Error Handling
+
+Status: Complete
+
+Goal: Make Plaid connection completion, cancellation, failures, and manual
+refresh clear to the user.
 
 Files to change:
 
+- `apps/mobile/lib/features/plaid/application/plaid_link_service.dart`
 - `apps/mobile/lib/features/accounts/presentation/accounts_screen.dart`
-- `apps/mobile/lib/features/accounts/presentation/widgets/*`
+- `apps/mobile/lib/features/shell/presentation/home_shell.dart`
 - `apps/mobile/lib/features/accounts/data/account_service.dart`
+- `apps/mobile/lib/core/models/account.dart`
+- `services/rex-api/app/routes/plaid.py`
 
 Steps:
 
-1. Group Plaid accounts by institution.
-2. Show institution name, connection status, last sync time, and account count.
-3. Show account rows with type/subtype/mask only where useful.
-4. Keep manual/CSV accounts in a secondary section.
+1. Show clear connection success feedback with institution/account summary.
+2. Show user-friendly cancellation, Link failure, exchange failure, and initial
+   sync failure messages.
+3. Refresh Dashboard and Accounts after a successful connection.
+4. Add manual Refresh Accounts action for connected Plaid items.
+5. Keep `plaid_flutter` Swift Package Manager warning documented as known and
+   acceptable for now.
 
 Done looks like:
 
-- Accounts feels like connected finance, not a CSV ledger.
+- Users know whether connection worked, failed, or was cancelled, and can
+  manually refresh connected accounts.
 
 Acceptance criteria:
 
-- [ ] Institutions render from persisted data.
-- [ ] Manual and CSV accounts remain visible.
-- [ ] No Plaid token or sensitive data appears.
+- [x] Success feedback includes institution/account context.
+- [x] Link exit/cancellation does not create broken records.
+- [x] Exchange and initial sync failures show safe user-facing messages.
+- [x] Manual Refresh Accounts syncs only the current user's Plaid items.
+- [x] No Plaid token or sensitive data appears.
+
+Completion note: Connection success now shows "Bank connected successfully"
+feedback on Dashboard/Accounts, Accounts keeps a dismissible success notice,
+and a Refresh Accounts toolbar action syncs every connected Plaid item visible
+to the current user. The backend `/plaid/sync-item/{item_id}` route now verifies
+item ownership before syncing, so normal users can refresh their own bank data
+without owner/admin access.
+
+Verification:
+
+```bash
+cd apps/mobile
+flutter analyze
+flutter test test/plaid_link_service_test.dart
+cd ../../services/rex-api
+./.venv/bin/python -m pytest -q tests/test_plaid_*.py
+```
 
 ## Phase 5 - Account Status And Resync UI
+
+Status: Complete
 
 Goal: Give users visibility and control over sync state.
 
@@ -158,6 +246,8 @@ Files to change:
 
 - `apps/mobile/lib/features/accounts/presentation/*`
 - `apps/mobile/lib/features/accounts/data/plaid_account_service.dart`
+- `apps/mobile/lib/core/models/account.dart`
+- `services/rex-api/app/routes/plaid.py`
 
 Steps:
 
@@ -172,37 +262,75 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Resync calls backend route.
-- [ ] Degraded status is visible but calm.
-- [ ] Failed resync does not block app usage.
+- [x] Resync calls backend route.
+- [x] Degraded status is visible but calm.
+- [x] Failed resync does not block app usage.
 
-## Phase 6 - Disconnect Flow
+Completion note: Accounts now loads Plaid item status through
+`PlaidAccountService`, shows calm status pills for Connected, Syncing,
+Degraded, and Disconnected, displays last synced timestamps when available, and
+adds per-account Resync actions. Failed status fetches degrade gracefully instead
+of blocking the account list. Manual resync still uses the current-user-owned
+`/plaid/sync-item/{item_id}` route.
 
-Goal: Let users disconnect a bank safely.
+Pre-Phase 6 refactor note: `accounts_screen.dart` was split from 1000+ lines
+into a 296-line coordinator plus focused files for the app bar, body, header,
+empty state, account notice, manual account tile, Plaid account tile, add-account
+dialog, navigation actions, and Plaid status helpers. Behavior and UI were kept
+the same so Phase 6 can add features without extending a god file.
+
+Verification:
+
+```bash
+cd apps/mobile
+flutter analyze
+flutter test test/plaid*
+cd ../../services/rex-api
+./.venv/bin/python -m pytest -q tests/test_plaid_*.py
+```
+
+## Phase 6 - Transaction Display And Basic Account Management
+
+Status: Complete
+
+Goal: Show Plaid-connected transactions and basic account visibility.
 
 Files to change:
 
 - `apps/mobile/lib/features/accounts/presentation/*`
 - `apps/mobile/lib/features/accounts/data/plaid_account_service.dart`
+- `apps/mobile/lib/features/accounts/data/account_service.dart`
+- `apps/mobile/lib/core/models/account.dart`
+- `apps/mobile/lib/app/ui_dependencies.dart`
 
 Steps:
 
-1. Add disconnect action behind confirmation.
-2. Explain what remains: historical transactions may remain unless user deletes data.
-3. Call backend disconnect route.
-4. Refresh account status after disconnect.
+1. Add recent transaction display under Plaid account tiles.
+2. Show institution, mask, balances, and last synced when available.
+3. Add pull-to-refresh that triggers existing Plaid resync.
+4. Keep empty transaction states graceful.
 
 Done looks like:
 
-- Users can revoke connection without data confusion.
+- Plaid accounts show synced activity without adding categorization, search, or
+  a full transaction screen.
 
 Acceptance criteria:
 
-- [ ] Disconnect requires confirmation.
-- [ ] Disconnect does not delete unrelated CSV/manual history.
-- [ ] UI reflects disconnected status.
+- [x] Plaid tiles show recent synced transactions.
+- [x] Plaid tiles show basic account details from synced backend data.
+- [x] Pull-to-refresh uses the existing resync flow.
+- [x] Empty transaction states do not look broken.
+
+Completion note: Account overview rows now include the latest five transactions
+from the shared financial read model. Plaid account tiles render those recent
+transactions, account mask, balances, institution/subtitle data, and existing
+last-synced status. The Accounts list is wrapped in pull-to-refresh using the
+same current-user resync path as the refresh button.
 
 ## Phase 7 - CSV Import As Fallback
+
+Status: Complete
 
 Goal: Preserve CSV import as an intentional secondary path.
 
@@ -224,11 +352,30 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] CSV import still works.
-- [ ] Connect Bank remains primary.
-- [ ] Copy clearly distinguishes connected vs imported data.
+- [x] CSV import still works.
+- [x] Connect Bank remains primary.
+- [x] Copy clearly distinguishes connected vs imported data.
+
+Completion note:
+
+- CSV remains available as "Import CSV instead" and is framed as a manual fallback, not the main product path. The account selection, preview, account detail, onboarding, shell, and dashboard copy now explain that imported CSV data is manual and may need future uploads, while Connect Bank stays primary.
+
+Verification:
+
+```bash
+cd apps/mobile
+flutter analyze
+flutter test test/plaid_link_service_test.dart test/plaid_account_service_test.dart test/plaid_account_tile_test.dart
+flutter test test/csv_import_service_test.dart test/csv_parser_test.dart test/import_job_status_service_test.dart
+```
+
+Known note:
+
+- `plaid_flutter` still emits the accepted Swift Package Manager warning for iOS. CocoaPods remains the current path.
 
 ## Phase 8 - Plaid/CSV Deduplication UI
+
+Status: Complete
 
 Goal: Prevent duplicate confusion when users have both Plaid and CSV data.
 
@@ -251,36 +398,61 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Mixed Plaid/CSV accounts render without duplicate UI noise.
-- [ ] CSV import warns when a connected account may already cover the same data.
-- [ ] Dedupe copy is short and clear.
+- [x] Mixed Plaid/CSV accounts render without duplicate UI noise.
+- [x] CSV import warns when a connected account may already cover the same data.
+- [x] Dedupe copy is short and clear.
 
-## Phase 9 - Sandbox Device QA
+Completion note:
 
-Goal: Validate full mobile Plaid connection lifecycle on device.
+- Account tiles and recent connected-account transaction rows now show quiet `Plaid` or `Manual/CSV` source labels. CSV imports into Plaid-connected accounts show a calm duplicate-risk confirmation, while the import preview gives connected-account-specific guidance. Future CSV writes explicitly persist `source = csv`, and the Plaid/CSV boundary doc now makes source labels and duplicate-warning behavior part of the UI contract.
+
+Verification:
+
+```bash
+cd apps/mobile
+flutter analyze
+flutter test test/plaid*
+flutter test test/csv_import_service_test.dart test/csv_parser_test.dart test/import_job_status_service_test.dart
+git diff --check
+```
+
+Known note:
+
+- `plaid_flutter` still emits the accepted Swift Package Manager warning for iOS. CocoaPods remains the current path.
+
+## Phase 9 - Real Account Device QA And Final Validation
+
+Status: Pending physical-device real-account validation
+
+Goal: Validate full mobile Plaid connection lifecycle on a physical device using
+real Plaid production data.
 
 Files to change:
 
-- `docs/clarity/plaid/PLAID_MOBILE_SANDBOX_QA_REPORT.md`
+- `docs/clarity/plaid/PLAID_MOBILE_REAL_ACCOUNT_QA_REPORT.md`
 
 Steps:
 
-1. Connect sandbox institution.
-2. Verify accounts appear.
-3. Verify transactions sync.
-4. Verify resync.
-5. Verify disconnect.
-6. Verify CSV fallback still works.
+1. Connect a real bank account through Plaid Link.
+2. Verify token exchange and account creation.
+3. Verify initial transaction sync.
+4. Verify manual resync.
+5. Verify connection status display.
+6. Verify CSV fallback still works alongside Plaid.
 
 Done looks like:
 
-- Plaid mobile is ready for broader product integration.
+- Plaid mobile is validated with real data and ready for broader product integration.
 
 Acceptance criteria:
 
-- [ ] Sandbox connect/sync/disconnect passes on device.
-- [ ] CSV fallback passes.
-- [ ] QA report records latency, failures, and remaining risks.
+- [ ] Real account connect/sync/resync passes on physical device.
+- [ ] CSV fallback passes alongside Plaid data.
+- [x] QA report records automated readiness, manual test steps, latency fields, failures, and remaining risks.
+
+Preflight note:
+
+- Automated readiness passed on 2026-06-08. Real account validation cannot be marked complete until Pedro runs the physical-device flow and records results in the QA report.
 
 ## Verification Commands
 

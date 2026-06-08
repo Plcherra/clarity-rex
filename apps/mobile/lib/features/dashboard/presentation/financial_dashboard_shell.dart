@@ -148,6 +148,54 @@ class _DashboardLoadingBody extends StatelessWidget {
   }
 }
 
+class _DashboardEmptySetupBody extends StatelessWidget {
+  const _DashboardEmptySetupBody({
+    required this.title,
+    required this.onConnectBank,
+    required this.onImportCsvInstead,
+  });
+
+  final String title;
+  final VoidCallback onConnectBank;
+  final VoidCallback onImportCsvInstead;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return DecoratedBox(
+      decoration: const BoxDecoration(color: Color(0xFFF8F7F4)),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  letterSpacing: 3.2,
+                  color: cs.onSurface.withValues(alpha: 0.38),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              ConnectBankSetupCard(
+                title: 'Connect your first bank',
+                body:
+                    'Clarity works best with connected accounts, so balances and transactions stay current automatically.',
+                onConnectBank: onConnectBank,
+                onImportCsvInstead: onImportCsvInstead,
+              ),
+              const Spacer(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _DashboardResolvingDataBody extends StatelessWidget {
   const _DashboardResolvingDataBody();
 
@@ -278,22 +326,25 @@ class _CompactUploadButtonState extends State<_CompactUploadButton> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return FilledButton.icon(
-      onPressed: _busy ? null : _handleTap,
-      icon: _busy
-          ? SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: cs.onPrimary,
-              ),
-            )
-          : const Icon(Icons.upload_file_rounded, size: 18),
-      label: Text(_busy ? 'Uploading...' : 'Upload CSV'),
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(0, 44),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+    return Tooltip(
+      message: 'Manual fallback for files from your bank.',
+      child: FilledButton.icon(
+        onPressed: _busy ? null : _handleTap,
+        icon: _busy
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: cs.onPrimary,
+                ),
+              )
+            : const Icon(Icons.upload_file_rounded, size: 18),
+        label: Text(_busy ? 'Importing...' : 'Import CSV instead'),
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+        ),
       ),
     );
   }
