@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     plaid_redirect_uri: Optional[str] = None
     plaid_ios_bundle_id: Optional[str] = None
     plaid_android_package_name: Optional[str] = None
+    plaid_timeout_seconds: int = 30
+    plaid_token_encryption_secret: Optional[str] = None
 
     deepgram_api_key: Optional[str] = None
     deepgram_model: str = "nova-3"
@@ -89,6 +91,15 @@ class Settings(BaseSettings):
     @property
     def google_tts_synthesize_url(self) -> str:
         return f"{self.google_tts_base_url.rstrip('/')}/text:synthesize"
+
+    @property
+    def plaid_base_url(self) -> str:
+        environment = self.plaid_environment.strip().lower()
+        if environment == "production":
+            return "https://production.plaid.com"
+        if environment == "development":
+            return "https://development.plaid.com"
+        return "https://sandbox.plaid.com"
 
     @property
     def cloud_voice_is_configured(self) -> bool:

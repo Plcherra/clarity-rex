@@ -47,7 +47,7 @@ By the end of this plan:
 
 ## Phase 1 - Migration Verification
 
-Goal: Confirm Supabase migrations are ordered, applied, and safe.
+Goal: Confirm Supabase migrations are ordered, applied, safe, and matched by required deployment keys.
 
 Files to change:
 
@@ -58,7 +58,8 @@ Steps:
 1. Run migration status checks.
 2. Verify old pending-memory tables are archived/dropped according to final migration policy.
 3. Verify Plaid and usage tables exist.
-4. Verify existing user data remains intact.
+4. Verify required VPS/app keys are present before final smoke tests: Supabase, Plaid credentials, `PLAID_TOKEN_ENCRYPTION_SECRET`, Deepgram, Grok, Google TTS, and mobile callback/native Plaid settings.
+5. Verify existing user data remains intact.
 
 Done looks like:
 
@@ -67,6 +68,7 @@ Done looks like:
 Acceptance criteria:
 
 - [ ] `supabase db push` reports expected state.
+- [ ] Required deployment keys are reviewed without printing secret values.
 - [ ] No unexpected legacy table is active.
 - [ ] Migration notes are updated.
 
@@ -278,4 +280,4 @@ cd apps/mobile && flutter test
 
 ## Release Gate
 
-Ship only when every automated gate passes and manual device validation confirms Plaid, CSV fallback, Assistant, voice, usage tracking, and the unified dark Clarity UI are working together.
+Ship only when every automated gate passes, required deployment keys are reviewed without exposing values, and manual device validation confirms Plaid, CSV fallback, Assistant, voice, usage tracking, and the unified dark Clarity UI are working together.

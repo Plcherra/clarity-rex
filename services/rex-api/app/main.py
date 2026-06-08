@@ -12,6 +12,8 @@ from app.routes.commitments import router as commitments_router
 from app.routes.conversations import router as conversations_router
 from app.routes.entities import router as entities_router
 from app.routes.memory import router as memory_router
+from app.routes.plaid import router as plaid_router
+from app.routes.plaid_webhooks import router as plaid_webhook_router
 from app.routes.plans import router as plans_router
 from app.routes.rules import router as rules_router
 from app.routes.usage import router as usage_router
@@ -137,5 +139,7 @@ app.include_router(plans_router, dependencies=auth_dependencies)
 app.include_router(commitments_router, dependencies=auth_dependencies)
 app.include_router(accountability_router, dependencies=auth_dependencies)
 app.include_router(usage_router, dependencies=auth_dependencies)
+app.include_router(plaid_router)
+app.include_router(plaid_webhook_router)
 app.include_router(voice_router, dependencies=auth_dependencies)
 app.include_router(voice_stream_router)

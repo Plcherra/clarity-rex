@@ -117,9 +117,9 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] No Plaid SDK/API calls exist outside wrapper/service boundary.
-- [ ] Wrapper logs no secrets.
-- [ ] Wrapper remains under 300 lines.
+- [x] No Plaid SDK/API calls exist outside wrapper/service boundary.
+- [x] Wrapper logs no secrets.
+- [x] Wrapper remains under 300 lines.
 
 ## Phase 4 - Link Token Route
 
@@ -136,7 +136,7 @@ Steps:
 1. Add `POST /plaid/link-token`.
 2. Require authenticated Supabase user.
 3. Return link token and safe expiration/status metadata only.
-4. Track sanitized usage event.
+4. Fail closed on missing config and return safe normalized Plaid errors.
 
 Done looks like:
 
@@ -144,9 +144,9 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Unauthenticated requests fail.
-- [ ] Response contains no access token or secret.
-- [ ] Route file remains under 250 lines.
+- [x] Unauthenticated requests fail.
+- [x] Response contains no access token or secret.
+- [x] Route file remains under 250 lines.
 
 ## Phase 5 - Public Token Exchange Route
 
@@ -164,7 +164,7 @@ Steps:
 2. Exchange public token backend-side.
 3. Store access token only through encrypted/backend-owned path.
 4. Return safe item/account summaries.
-5. Track sanitized usage event.
+5. Do not record broad feature analytics under simplified usage v1.
 
 Done looks like:
 
@@ -172,107 +172,160 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Access token never appears in route response.
-- [ ] Item is scoped to authenticated user.
-- [ ] Exchange failure returns safe error.
+- [x] Access token never appears in route response.
+- [x] Item is scoped to authenticated user.
+- [x] Exchange failure returns safe error.
 
-## Phase 6 - Item Persistence
+## Phase 6 - Plaid Webhook And Item Status Route
 
-Goal: Create and update Plaid item records reliably.
-
-Files to change:
-
-- `services/rex-api/app/services/plaid_item_repository.py`
-- `services/rex-api/tests/test_plaid_item_repository.py`
-
-Steps:
-
-1. Add repository methods for create, update status, update cursor, disconnect, and lookup by user.
-2. Guard every write by user id.
-3. Store institution metadata and sync status.
-4. Keep item removal separate from historical transaction deletion.
-
-Done looks like:
-
-- Backend can manage item lifecycle safely.
-
-Acceptance criteria:
-
-- [ ] Repository refuses cross-user item updates.
-- [ ] Disconnect marks item inactive/degraded without deleting unrelated history.
-- [ ] Repository remains under 300 lines.
-
-## Phase 7 - Account Persistence
-
-Goal: Map Plaid accounts into Clarity accounts.
+Goal: Add a lightweight Plaid webhook receiver and authenticated item status route.
 
 Files to change:
 
-- `services/rex-api/app/services/plaid_account_mapper.py`
-- `services/rex-api/app/services/plaid_account_repository.py`
-- `services/rex-api/tests/test_plaid_account_mapper.py`
+- `services/rex-api/app/routes/plaid.py`
+- `services/rex-api/app/services/plaid_sync_service.py`
+- `services/rex-api/tests/test_plaid_webhook_routes.py`
+- `services/rex-api/tests/test_plaid_sync_service.py`
 
 Steps:
 
-1. Fetch Plaid accounts after exchange/sync.
-2. Create or update linked Clarity accounts.
-3. Preserve manual/CSV accounts.
-4. Store account status, type, subtype, mask, and source quietly.
+1. Add `POST /plaid/webhook` with basic Plaid verification header checks.
+2. Add authenticated `GET /plaid/item-status/{item_id}` scoped to the current user.
+3. Handle `ITEM_LOGIN_REPAIRED`, `SYNC_UPDATES_AVAILABLE`, and `ITEMS:REMOVE` events.
+4. Return from webhooks quickly and defer item updates through background handling.
+5. Do not implement full transaction sync in this phase.
 
 Done looks like:
 
-- Connected bank accounts show up as Clarity accounts.
+- Plaid can notify Clarity about item status changes without exposing secrets.
 
 Acceptance criteria:
 
-- [ ] Same Plaid account updates existing linked account.
-- [ ] Manual accounts are not overwritten.
-- [ ] Cross-user account mutation is blocked.
+- [x] Webhook rejects missing or invalid verification headers.
+- [x] Item status route is authenticated and user scoped.
+- [x] Webhook updates item status metadata without exposing tokens.
+- [x] Full transaction sync remains out of scope.
 
-## Phase 8 - Transaction Sync With Cursor
+## Phase 7 - Plaid Account And Transaction Sync
 
-Goal: Sync Plaid transactions incrementally into Clarity.
+Goal: Manually sync a connected Plaid item into Clarity accounts and transactions.
+
+Files to change:
+
+- `services/rex-api/app/routes/plaid.py`
+- `services/rex-api/app/services/plaid_sync_service.py`
+- `services/rex-api/tests/test_plaid_sync_service.py`
+- `services/rex-api/tests/test_plaid_webhook_routes.py`
+
+Steps:
+
+1. Decrypt the backend-only Plaid access token reference.
+2. Fetch Plaid accounts and upsert linked Clarity/Plaid account rows.
+3. Run cursor-based Plaid transaction sync manually.
+4. Upsert added/modified Plaid transactions with `source = 'plaid'`.
+5. Mark removed Plaid transactions without deleting history.
+6. Update the item cursor only after sync work completes.
+7. Expose owner-only `POST /plaid/sync-item/{item_id}`.
+
+Done looks like:
+
+- Owner can manually sync one Plaid item into persisted Clarity financial data.
+
+Acceptance criteria:
+
+- [x] Same Plaid account updates existing linked account rows.
+- [x] Transactions use `source = 'plaid'`.
+- [x] Cursor advances only after sync completes.
+- [x] Sync route is authenticated and owner-only.
+- [x] Access token never appears in route responses.
+
+## Phase 7.5 - Refactor PlaidSyncService
+
+Goal: Split the large Plaid sync service into focused units without changing external behavior.
+
+Files to change:
+
+- `services/rex-api/app/services/plaid_sync_service.py`
+- `services/rex-api/app/services/plaid_token_service.py`
+- `services/rex-api/app/services/plaid_account_service.py`
+- `services/rex-api/app/services/plaid_transaction_service.py`
+- `services/rex-api/app/services/plaid_cursor_service.py`
+- `services/rex-api/app/dependencies.py`
+- `services/rex-api/tests/test_plaid_sync_service.py`
+
+Steps:
+
+1. Move token encryption/decryption into a token service.
+2. Move item/cursor/Supabase storage calls into a cursor service.
+3. Move account fetch/upsert behavior into an account service.
+4. Move transaction sync/upsert/removed behavior into a transaction service.
+5. Keep `PlaidSyncService.sync_item()` as the same public orchestration API.
+6. Update tests without changing expected behavior.
+
+Done looks like:
+
+- `PlaidSyncService` is a thin orchestrator and each focused service remains small.
+
+Acceptance criteria:
+
+- [x] `PlaidSyncService.sync_item()` public API is unchanged.
+- [x] Each focused service is under 300 lines.
+- [x] Existing Plaid tests pass.
+- [x] No external route behavior changes.
+
+## Phase 8 - Transaction Sync Hardening And Cursor Safety
+
+Goal: Harden the existing Plaid transaction sync path for idempotency, pending rows, removed rows, and cursor safety.
 
 Files to change:
 
 - `services/rex-api/app/services/plaid_transaction_sync.py`
 - `services/rex-api/app/services/plaid_transaction_mapper.py`
+- `services/rex-api/app/services/plaid_transaction_service.py`
 - `services/rex-api/tests/test_plaid_transaction_sync.py`
 
 Steps:
 
-1. Use Plaid cursor-based sync.
-2. Upsert added/modified transactions.
-3. Mark removed transactions without breaking history.
-4. Store Plaid transaction id and pending status.
-5. Update cursor only after successful sync.
+1. Move transaction payload mapping into a dedicated mapper.
+2. Move transaction sync orchestration into a dedicated sync service.
+3. Preserve idempotency with `user_id,plaid_transaction_id` upserts.
+4. Preserve pending transaction fields.
+5. Mark removed transactions with `removed_at` without deleting history.
+6. Update the cursor only after all transaction writes complete.
+7. Add tests for cursor-update failures and retry-safe upsert behavior.
 
 Done looks like:
 
-- Transactions sync reliably without duplicates.
+- Transaction sync is ready for repeated/manual syncs without duplicate rows or unsafe cursor advancement.
 
 Acceptance criteria:
 
-- [ ] Added, modified, removed, and pending transactions are handled.
-- [ ] Cursor advances only after success.
-- [ ] Existing CSV/manual transactions remain intact.
+- [x] Added, modified, removed, and pending transactions are handled.
+- [x] Cursor advances only after transaction writes complete.
+- [x] Existing CSV/manual transactions remain intact.
+- [x] Transaction sync and mapper files remain under 300 lines.
 
 ## Phase 9 - Webhook Handling
 
-Goal: Add backend webhook handling for Plaid sync updates.
+Goal: Harden backend webhook handling for Plaid sync updates.
 
 Files to change:
 
+- `services/rex-api/app/routes/plaid.py`
 - `services/rex-api/app/routes/plaid_webhooks.py`
 - `services/rex-api/app/services/plaid_webhook_service.py`
-- `services/rex-api/tests/test_plaid_webhooks.py`
+- `services/rex-api/app/services/plaid_sync_service.py`
+- `services/rex-api/app/main.py`
+- `services/rex-api/tests/test_plaid_webhook_routes.py`
 
 Steps:
 
-1. Add webhook route.
-2. Verify webhook payload/source according to Plaid requirements.
-3. Queue or trigger safe sync for the owning item.
-4. Track sanitized webhook usage/failure events.
+1. Move `POST /plaid/webhook` into a dedicated webhook route file.
+2. Verify Plaid verification header and reject malformed webhook payloads.
+3. Require `item_id` for item-scoped webhook events.
+4. Queue safe background item handling through the existing sync service.
+5. Mark sync-needed events as item metadata instead of running full sync inline.
+6. Do not record broad Plaid analytics under simplified usage v1.
 
 Done looks like:
 
@@ -280,9 +333,10 @@ Done looks like:
 
 Acceptance criteria:
 
-- [ ] Invalid webhook payloads are rejected.
-- [ ] Webhook never exposes tokens in logs.
-- [ ] Sync is user/item scoped.
+- [x] Invalid webhook payloads are rejected.
+- [x] Webhook never exposes tokens in responses.
+- [x] Sync-needed webhook handling is item scoped.
+- [x] Webhook route returns quickly and defers item handling.
 
 ## Phase 10 - Backend Plaid Test Suite
 
@@ -338,3 +392,11 @@ Mobile Plaid work starts only after backend sandbox link/exchange/sync/disconnec
 
 - Phase 1 completed on June 7, 2026: added backend Plaid settings, a secret-safe readiness helper, optional `/ready` Plaid reporting, missing-config fail-closed behavior, `.env.example` Plaid placeholders, and focused config/readiness tests.
 - Phase 2 completed on June 7, 2026: added Plaid item/account tables, a backend-only token reference table, select-only user RLS, source-aware account/transaction columns, CSV backfill compatibility, and schema tests proving no raw access-token column is exposed.
+- Phase 3 completed on June 7, 2026: added a small Plaid REST wrapper for Link token creation, public token exchange, accounts, transaction sync, and item removal, with safe error normalization and mocked endpoint tests.
+- Phase 4 completed on June 7, 2026: added authenticated `POST /plaid/link-token`, safe Link-token-only response shaping, cross-user request rejection, missing-config 503 behavior, normalized Plaid error responses, route wiring, and focused route tests.
+- Phase 5 completed on June 7, 2026: added authenticated `POST /plaid/exchange-token`, public-token exchange through the Plaid client wrapper, service-role item persistence, encrypted backend-only Plaid token references, safe item summary responses, and focused route/service tests.
+- Phase 6 completed on June 7, 2026: added `POST /plaid/webhook` with basic Plaid verification header gating, authenticated user-scoped `GET /plaid/item-status/{item_id}`, background webhook handling for login repair, sync update, and item remove events, and focused route/service tests without implementing full transaction sync.
+- Phase 7 completed on June 7, 2026: added manual owner-only `POST /plaid/sync-item/{item_id}`, decrypted backend token use, Plaid account fetch, linked Clarity/Plaid account upserts, cursor-based transaction sync for added/modified/removed rows, final cursor update, rate-limit handling, and focused route/service tests.
+- Phase 7.5 completed on June 7, 2026: split the 730-line Plaid sync service into token, cursor, account, and transaction services while keeping `PlaidSyncService.sync_item()` as the same external orchestration API and preserving the existing Plaid route/test behavior.
+- Phase 8 completed on June 7, 2026: moved Plaid transaction payload mapping into `plaid_transaction_mapper.py`, moved sync orchestration into `plaid_transaction_sync.py`, kept `PlaidTransactionService` as a compatibility adapter, and added focused tests for idempotent upserts, pending rows, removed rows, and cursor-update failure behavior.
+- Phase 9 completed on June 7, 2026: moved `POST /plaid/webhook` into a dedicated webhook route, added a Plaid webhook service for signature and payload validation, rejected malformed or unscoped item events, kept webhook responses secret-free, and continued item-scoped background handling for sync-needed metadata.

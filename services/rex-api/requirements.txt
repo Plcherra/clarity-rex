@@ -1,6 +1,7 @@
 fastapi
 google-auth
 httpx
+cryptography
 pydantic-settings
 python-multipart
 requests

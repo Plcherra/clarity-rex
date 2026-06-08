@@ -14,6 +14,13 @@ from app.services.file_service import FileService
 from app.services.google_tts_service import GoogleTTSService
 from app.services.memory_service import SupabaseMemoryService
 from app.services.plan_service import PlanService
+from app.services.plaid_account_service import PlaidAccountService
+from app.services.plaid_api_client import PlaidApiClient
+from app.services.plaid_cursor_service import PlaidCursorService
+from app.services.plaid_sync_service import PlaidSyncService
+from app.services.plaid_token_service import PlaidTokenService
+from app.services.plaid_transaction_service import PlaidTransactionService
+from app.services.plaid_webhook_service import PlaidWebhookService
 from app.services.rule_service import RuleService
 from app.services.time_context_service import TimeContextService
 from app.services.usage_tracking_service import UsageTrackingService
@@ -83,6 +90,62 @@ def get_google_tts_service() -> GoogleTTSService:
 
 def get_usage_tracking_service() -> UsageTrackingService:
     return UsageTrackingService()
+
+
+def get_plaid_api_client() -> PlaidApiClient:
+    return PlaidApiClient()
+
+
+def get_plaid_token_service() -> PlaidTokenService:
+    return PlaidTokenService()
+
+
+def get_plaid_cursor_service() -> PlaidCursorService:
+    return PlaidCursorService()
+
+
+def get_plaid_account_service(
+    plaid_api_client: PlaidApiClient = Depends(get_plaid_api_client),
+    plaid_cursor_service: PlaidCursorService = Depends(get_plaid_cursor_service),
+) -> PlaidAccountService:
+    return PlaidAccountService(
+        plaid_client=plaid_api_client,
+        cursor_service=plaid_cursor_service,
+    )
+
+
+def get_plaid_transaction_service(
+    plaid_api_client: PlaidApiClient = Depends(get_plaid_api_client),
+    plaid_cursor_service: PlaidCursorService = Depends(get_plaid_cursor_service),
+) -> PlaidTransactionService:
+    return PlaidTransactionService(
+        plaid_client=plaid_api_client,
+        cursor_service=plaid_cursor_service,
+    )
+
+
+def get_plaid_sync_service(
+    plaid_api_client: PlaidApiClient = Depends(get_plaid_api_client),
+    plaid_token_service: PlaidTokenService = Depends(get_plaid_token_service),
+    plaid_cursor_service: PlaidCursorService = Depends(get_plaid_cursor_service),
+    plaid_account_service: PlaidAccountService = Depends(get_plaid_account_service),
+    plaid_transaction_service: PlaidTransactionService = Depends(
+        get_plaid_transaction_service,
+    ),
+) -> PlaidSyncService:
+    return PlaidSyncService(
+        plaid_client=plaid_api_client,
+        token_service=plaid_token_service,
+        cursor_service=plaid_cursor_service,
+        account_service=plaid_account_service,
+        transaction_service=plaid_transaction_service,
+    )
+
+
+def get_plaid_webhook_service(
+    plaid_sync_service: PlaidSyncService = Depends(get_plaid_sync_service),
+) -> PlaidWebhookService:
+    return PlaidWebhookService(plaid_sync_service)
 
 
 def get_chat_service(
