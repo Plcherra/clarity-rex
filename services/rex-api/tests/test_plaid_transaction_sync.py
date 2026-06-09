@@ -41,6 +41,18 @@ class FakeCursorService:
         self.calls = []
         self.transaction_ids = set()
         self.fail_cursor_update = fail_cursor_update
+        self.categories = [
+            {
+                "id": "category-coffee",
+                "name": "Coffee / Quick Food",
+                "normalized_name": "coffee quick food",
+            },
+            {
+                "id": "category-grocery",
+                "name": "Grocery / Supermarket",
+                "normalized_name": "grocery and supermarket",
+            },
+        ]
 
     async def supabase_request(
         self,
@@ -63,6 +75,17 @@ class FakeCursorService:
         if method == "POST" and table == "transactions":
             assert query == {"on_conflict": "user_id,plaid_transaction_id"}
             self.transaction_ids.add(body["plaid_transaction_id"])
+        if method == "GET" and table == "categories":
+            return self.categories
+        if method == "POST" and table == "categories":
+            category_id = f"category-created-{len(self.categories) + 1}"
+            row = {
+                "id": category_id,
+                "name": body["name"],
+                "normalized_name": body["normalized_name"],
+            }
+            self.categories.append(row)
+            return [row]
         return []
 
     async def update_item_after_sync(self, item_id, next_cursor):
@@ -129,12 +152,21 @@ async def test_transaction_sync_upserts_removes_and_updates_cursor_last():
         "next_cursor": "cursor-next",
     }
 
-    upsert_call = cursor_service.calls[0]
+    upsert_call = next(
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "POST" and call.get("table") == "transactions"
+    )
     assert upsert_call["method"] == "POST"
     assert upsert_call["body"]["pending"] is True
+    assert upsert_call["body"]["category_id"] == "category-coffee"
     assert upsert_call["prefer"] == "resolution=merge-duplicates,return=minimal"
 
-    remove_call = cursor_service.calls[1]
+    remove_call = next(
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "PATCH" and call.get("table") == "transactions"
+    )
     assert remove_call["method"] == "PATCH"
     assert remove_call["body"]["removed_at"] is not None
     assert remove_call["query"]["source"] == "eq.plaid"
@@ -190,3 +222,59 @@ async def test_transaction_sync_does_not_advance_cursor_before_storage_success()
 
     assert cursor_service.calls[-1]["method"] == "PATCH_CURSOR"
     assert cursor_service.calls[-2]["method"] == "PATCH"
+
+
+@pytest.mark.asyncio
+async def test_transaction_sync_creates_missing_clarity_category_from_plaid_pfc():
+    class GroceryPlaidClient(SinglePagePlaidClient):
+        async def sync_transactions(self, access_token, *, cursor=None, count=100):
+            return {
+                "added": [
+                    {
+                        "transaction_id": "txn-grocery-1",
+                        "account_id": "plaid-account-1",
+                        "amount": 42.5,
+                        "date": "2026-06-01",
+                        "name": "Market Purchase",
+                        "pending": False,
+                        "personal_finance_category": {
+                            "primary": "FOOD_AND_DRINK",
+                            "detailed": "FOOD_AND_DRINK_GROCERIES",
+                        },
+                    }
+                ],
+                "modified": [],
+                "removed": [],
+                "next_cursor": "cursor-next",
+                "has_more": False,
+            }
+
+    cursor_service = FakeCursorService()
+    cursor_service.categories = []
+    sync = PlaidTransactionSync(
+        plaid_client=GroceryPlaidClient(),
+        cursor_service=cursor_service,
+    )
+
+    await sync.sync_transactions(
+        user_id="user-1",
+        item_id="item-record-1",
+        access_token="access-token-secret",
+        cursor=None,
+        account_map={"plaid-account-1": "linked-account-1"},
+    )
+
+    category_call = next(
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "POST" and call.get("table") == "categories"
+    )
+    assert category_call["body"]["name"] == "Grocery / Supermarket"
+    assert category_call["body"]["type"] == "expense"
+
+    upsert_call = next(
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "POST" and call.get("table") == "transactions"
+    )
+    assert upsert_call["body"]["category_id"] == "category-created-1"

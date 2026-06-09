@@ -60,22 +60,6 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
       );
     }
 
-    for (final label in controller.allowedCategoryPickerLabels) {
-      final trimmed = label.trim();
-      if (trimmed.isEmpty || isUnresolvedCategoryLabel(trimmed)) continue;
-      final key = normalizedCategoryKey(trimmed);
-      if (key.isEmpty) continue;
-      final category = categoryByKey[key];
-      putRow(
-        displayLabel: category?.name ?? trimmed,
-        categoryId: category?.id,
-        categoryKey: categoryRecordKey(
-          name: category?.name ?? trimmed,
-          normalizedName: category?.normalizedName,
-        ),
-      );
-    }
-
     for (final entry in spentByDisplay.entries) {
       final label = entry.key.trim();
       if (label.isEmpty ||

@@ -16,11 +16,12 @@ def map_plaid_transaction(
     item_id: str,
     linked_account_id: str,
     transaction: dict[str, Any],
+    category_id: Optional[str] = None,
 ) -> dict[str, Any]:
     amount = number_or_zero(transaction.get("amount"))
     plaid_account_id = required_string(transaction, "account_id")
     plaid_transaction_id = required_string(transaction, "transaction_id")
-    return {
+    payload = {
         "user_id": user_id,
         "account_id": linked_account_id,
         "amount": abs(amount),
@@ -41,6 +42,9 @@ def map_plaid_transaction(
         "removed_at": None,
         "last_synced_at": utc_now_iso(),
     }
+    if category_id:
+        payload["category_id"] = category_id
+    return payload
 
 
 def removed_transaction_id(transaction: dict[str, Any]) -> Optional[str]:
