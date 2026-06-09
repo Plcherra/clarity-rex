@@ -11,5 +11,5 @@ def test_apple_app_site_association_serves_clarity_plaid_oauth_link():
     assert response.headers["content-type"].startswith("application/json")
     payload = response.json()
     details = payload["applinks"]["details"]
-    assert details[0]["appIDs"] == ["7N42NS8B9B.com.clarity.clarity"]
+    assert details[0]["appIDs"] == ["7N42NS8B9B.app.goclarity.clarity"]
     assert details[0]["components"][0]["/"] == "/plaid/oauth"

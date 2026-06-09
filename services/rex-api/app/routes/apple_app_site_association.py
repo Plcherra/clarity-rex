@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 APPLE_TEAM_ID = "7N42NS8B9B"
-IOS_BUNDLE_ID = "com.clarity.clarity"
+IOS_BUNDLE_ID = "app.goclarity.clarity"
 PLAID_OAUTH_PATH = "/plaid/oauth"
 
 router = APIRouter(tags=["mobile-links"])

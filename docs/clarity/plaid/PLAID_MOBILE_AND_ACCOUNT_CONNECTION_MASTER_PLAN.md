@@ -118,8 +118,8 @@ Dashboard/Accounts Connect Bank actions to request a backend link token and
 open native Plaid Link. Public tokens are held only in memory for Phase 3
 exchange. Platform requirements are explicit: iOS minimum target is 14.0,
 Android minimum SDK is 21, and both app identifiers are currently
-`com.clarity.clarity` for Plaid dashboard registration. Before device QA, set
-`PLAID_IOS_BUNDLE_ID=com.clarity.clarity` and
+`app.goclarity.clarity` for Plaid dashboard registration. Before device QA, set
+`PLAID_IOS_BUNDLE_ID=app.goclarity.clarity` and
 `PLAID_ANDROID_PACKAGE_NAME=com.clarity.clarity` on the backend; add
 `PLAID_REDIRECT_URI` only when OAuth institutions require it.
 

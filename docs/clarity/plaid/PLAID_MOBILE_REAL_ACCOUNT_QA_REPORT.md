@@ -44,14 +44,14 @@ Fix applied in code:
   `account_filters`.
 - Link token creation is now platform-aware: iOS receives `redirect_uri`, while
   Android receives `android_package_name`.
-- Backend defaults the app identifiers to `com.clarity.clarity`.
+- Backend defaults the iOS app identifier to `app.goclarity.clarity`.
 - Backend logs safe link-token and public-token exchange milestones without
   logging tokens.
 - Mobile logs sanitized `onEvent`, `onSuccess`, `onExit`, and timeout details.
 - Mobile account parsing now reads the actual `plaid_item_record_id` account
   column used by the schema.
 - Backend now serves the Apple App Site Association document for
-  `7N42NS8B9B.com.clarity.clarity` at
+  `7N42NS8B9B.app.goclarity.clarity` at
   `/.well-known/apple-app-site-association`.
 - iOS Runner now has the `applinks:api.goclarity.app` Associated Domains
   entitlement.
