@@ -5,6 +5,7 @@ import '../features/accounts/application/account_workflow_service.dart';
 import '../features/accounts/data/account_service.dart';
 import '../features/accounts/data/account_statement_import_service.dart';
 import '../features/accounts/data/plaid_account_service.dart';
+import '../features/budgets/application/budget_cleanup_service.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/application/auth_service.dart';
 import '../features/budgets/application/budget_workflow_service.dart';
@@ -61,6 +62,11 @@ final class AppComposition {
   );
   late final ProfileService profileService = supabaseRepository.profiles;
   late final BudgetService budgetService = supabaseRepository.budgets;
+  late final BudgetCleanupService budgetCleanupService = BudgetCleanupService(
+    budgetService: budgetService,
+    categoryService: categoryService,
+    transactionService: transactionService,
+  );
   late final AccountService accountService = supabaseRepository.accounts;
   late final AccountStatementImportService accountStatementImportService =
       supabaseRepository.accountStatementImports;
@@ -105,6 +111,7 @@ final class AppComposition {
       AccountWorkflowService(
         accountService: accountService,
         transactionService: transactionService,
+        budgetCleanupService: budgetCleanupService,
         refreshAllState: dashboardRefreshCoordinator.refreshAllState,
         notifyAccountsChanged: () => notifications.accountsChanged(),
       );

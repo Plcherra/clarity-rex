@@ -459,8 +459,15 @@ final class AccountUiController extends _UiController {
     return bindings.plaidAccountService.syncItem(itemId);
   }
 
-  Future<bool> deleteAccount(String accountId) async {
+  Future<AccountDeletionResult> deleteAccount(String accountId) async {
     return bindings.accountWorkflowService.deleteAccount(accountId);
+  }
+
+  Future<void> deleteUnusedCustomCategory(String categoryId) async {
+    await bindings.accountWorkflowService.deleteUnusedCustomCategory(
+      categoryId,
+    );
+    notifyChanged();
   }
 
   Future<CsvImportPreview> previewCsvImport(

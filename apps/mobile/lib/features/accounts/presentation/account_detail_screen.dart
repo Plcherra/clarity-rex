@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../app/ui_dependencies.dart';
 import '../../../core/io/file_reader.dart';
 import '../../../core/models/models.dart';
+import '../../budgets/application/budget_cleanup_service.dart';
 import '../../transactions/data/csv_import_service.dart';
 import '../../dashboard/domain/dashboard_snapshot.dart';
 import '../../dashboard/presentation/financial_dashboard_view.dart';
@@ -221,19 +222,67 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     );
     if (confirm != true) return;
 
-    final ok = await widget.controller.deleteAccount(widget.accountId);
+    final result = await widget.controller.deleteAccount(widget.accountId);
     if (!context.mounted) return;
-    if (!ok) {
+    if (!result.deleted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not delete account.')),
       );
       return;
     }
 
-    ScaffoldMessenger.of(
+    await _confirmUnusedCustomCategoryCleanup(
       context,
-    ).showSnackBar(SnackBar(content: Text('$accountName deleted.')));
+      result.customCategoryCandidates,
+    );
+    if (!context.mounted) return;
+
+    final cleanupNote = result.deletedBudgetCount > 0
+        ? ' Removed ${result.deletedBudgetCount} unused budget${result.deletedBudgetCount == 1 ? '' : 's'}.'
+        : '';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$accountName deleted.$cleanupNote')),
+    );
     Navigator.of(context).pop();
+  }
+
+  Future<void> _confirmUnusedCustomCategoryCleanup(
+    BuildContext context,
+    List<BudgetCleanupCategoryCandidate> candidates,
+  ) async {
+    if (candidates.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final names = candidates.map((candidate) => candidate.name).join(', ');
+        final plural = candidates.length == 1 ? 'category' : 'categories';
+        return AlertDialog(
+          title: Text('Delete unused custom $plural?'),
+          content: Text(
+            candidates.length == 1
+                ? '"$names" no longer has active transactions after deleting this account. Delete this custom category too?'
+                : 'These custom categories no longer have active transactions after deleting this account: $names. Delete them too?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Keep'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+    for (final candidate in candidates) {
+      await widget.controller.deleteUnusedCustomCategory(candidate.categoryId);
+    }
   }
 
   Future<void> _importCsvForThisAccount(
