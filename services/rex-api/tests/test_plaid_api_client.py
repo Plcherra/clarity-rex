@@ -30,7 +30,7 @@ def make_response(status_code=200, json_data=None, text=None):
 
 
 @pytest.mark.asyncio
-async def test_create_link_token_posts_safe_payload(monkeypatch):
+async def test_create_link_token_posts_ios_oauth_payload(monkeypatch):
     calls = []
 
     async def fake_request(method, url, **kwargs):
@@ -53,7 +53,9 @@ async def test_create_link_token_posts_safe_payload(monkeypatch):
         )
     )
 
-    result = await client.create_link_token(PlaidLinkTokenPayload(user_id="user-1"))
+    result = await client.create_link_token(
+        PlaidLinkTokenPayload(user_id="user-1", platform="ios")
+    )
 
     assert result["link_token"] == "link-sandbox"
     call = calls[0]
@@ -66,13 +68,40 @@ async def test_create_link_token_posts_safe_payload(monkeypatch):
     assert call["json"]["products"] == ["transactions"]
     assert call["json"]["country_codes"] == ["US"]
     assert call["json"]["user"] == {"client_user_id": "user-1"}
-    assert call["json"]["android_package_name"] == "com.app"
     assert call["json"]["redirect_uri"] == "https://app.example.com/plaid/oauth"
     assert call["json"]["webhook"] == "https://api.example.com/plaid/webhook"
     assert call["json"]["account_filters"] == {
         "depository": {"account_subtypes": ["checking", "savings"]}
     }
+    assert "android_package_name" not in call["json"]
     assert "ios_bundle_id" not in call["json"]
+
+
+@pytest.mark.asyncio
+async def test_create_link_token_posts_android_package_payload(monkeypatch):
+    calls = []
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return make_response(json_data={"link_token": "link-sandbox"})
+
+    monkeypatch.setattr(
+        "app.services.plaid_api_client.request_with_retries",
+        fake_request,
+    )
+    client = PlaidApiClient(
+        configured_settings(
+            plaid_android_package_name="com.app",
+            plaid_redirect_uri="https://app.example.com/plaid/oauth",
+        )
+    )
+
+    await client.create_link_token(
+        PlaidLinkTokenPayload(user_id="user-1", platform="android")
+    )
+
+    assert calls[0]["json"]["android_package_name"] == "com.app"
+    assert "redirect_uri" not in calls[0]["json"]
 
 
 @pytest.mark.asyncio

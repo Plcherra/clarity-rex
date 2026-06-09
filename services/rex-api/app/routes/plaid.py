@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 class PlaidLinkTokenRequest(BaseModel):
     account_id: Optional[str] = None
     user_id: Optional[str] = None
+    platform: Optional[str] = None
 
 
 class PlaidLinkTokenResponse(BaseModel):
@@ -87,7 +88,7 @@ async def create_link_token(
             bool(request.account_id),
         )
         data = await plaid_client.create_link_token(
-            PlaidLinkTokenPayload(user_id=current_user.id),
+            PlaidLinkTokenPayload(user_id=current_user.id, platform=request.platform),
         )
     except PlaidConfigurationError as error:
         raise HTTPException(

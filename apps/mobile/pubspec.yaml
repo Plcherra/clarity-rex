@@ -49,6 +49,7 @@ dependencies:
   supabase_flutter: ^2.12.4
   qr_flutter: ^4.1.0
   plaid_flutter: ^5.1.1
+  app_links: ^7.1.1
 
 dev_dependencies:
   flutter_test:

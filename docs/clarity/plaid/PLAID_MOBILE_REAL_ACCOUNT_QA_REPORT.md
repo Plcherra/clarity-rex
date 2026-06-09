@@ -42,12 +42,22 @@ Fix applied in code:
 - Backend Link token creation now sends documented mobile/OAuth fields when
   configured: `android_package_name`, `redirect_uri`, `webhook`, and optional
   `account_filters`.
+- Link token creation is now platform-aware: iOS receives `redirect_uri`, while
+  Android receives `android_package_name`.
 - Backend defaults the app identifiers to `com.clarity.clarity`.
 - Backend logs safe link-token and public-token exchange milestones without
   logging tokens.
 - Mobile logs sanitized `onEvent`, `onSuccess`, `onExit`, and timeout details.
 - Mobile account parsing now reads the actual `plaid_item_record_id` account
   column used by the schema.
+- Backend now serves the Apple App Site Association document for
+  `7N42NS8B9B.com.clarity.clarity` at
+  `/.well-known/apple-app-site-association`.
+- iOS Runner now has the `applinks:api.goclarity.app` Associated Domains
+  entitlement.
+- Mobile now listens for `https://api.goclarity.app/plaid/oauth` Universal Links
+  while Plaid Link is open and passes them to
+  `PlaidLink.resumeAfterTermination`.
 
 Important Plaid API note:
 
@@ -136,6 +146,8 @@ Record sanitized counts only:
 - Production iOS OAuth flows require `PLAID_REDIRECT_URI` to match a Plaid
   dashboard Allowed redirect URI and an iOS Universal Link associated with the
   app.
+- The Universal Link fix must be deployed to the VPS and installed on the test
+  iPhone before retesting Bank of America.
 - `PLAID_WEBHOOK_URL` should be set to the public backend webhook endpoint before
   launch so Plaid can notify Clarity about item updates.
 - Android package name and Android physical-device Link flow still need their

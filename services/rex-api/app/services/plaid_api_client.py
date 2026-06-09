@@ -30,6 +30,7 @@ class PlaidApiClientError(Exception):
 @dataclass(frozen=True)
 class PlaidLinkTokenPayload:
     user_id: str
+    platform: str | None = None
     client_name: str = "Clarity"
     language: str = "en"
     products: tuple[str, ...] = ()
@@ -46,6 +47,7 @@ class PlaidApiClient:
             raise PlaidApiClientError("user_id is required", status_code=400)
 
         config = require_plaid_configured(self.settings)
+        platform = (payload.platform or "").strip().lower()
         body: dict[str, Any] = {
             "client_name": payload.client_name,
             "language": payload.language,
@@ -53,9 +55,9 @@ class PlaidApiClient:
             "products": list(payload.products or config.products),
             "user": {"client_user_id": user_id},
         }
-        if self.settings.plaid_redirect_uri:
+        if self.settings.plaid_redirect_uri and platform != "android":
             body["redirect_uri"] = self.settings.plaid_redirect_uri
-        if self.settings.plaid_android_package_name:
+        if self.settings.plaid_android_package_name and platform == "android":
             body["android_package_name"] = self.settings.plaid_android_package_name
         if self.settings.plaid_webhook_url:
             body["webhook"] = self.settings.plaid_webhook_url

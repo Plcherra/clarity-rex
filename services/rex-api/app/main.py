@@ -6,6 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.auth.supabase_auth import get_current_user
 from app.config import get_settings
 from app.routes.accountability import router as accountability_router
+from app.routes.apple_app_site_association import (
+    router as apple_app_site_association_router,
+)
 from app.routes.chat import router as chat_router
 from app.routes.clarity import router as clarity_router
 from app.routes.commitments import router as commitments_router
@@ -139,6 +142,7 @@ app.include_router(plans_router, dependencies=auth_dependencies)
 app.include_router(commitments_router, dependencies=auth_dependencies)
 app.include_router(accountability_router, dependencies=auth_dependencies)
 app.include_router(usage_router, dependencies=auth_dependencies)
+app.include_router(apple_app_site_association_router)
 app.include_router(plaid_router)
 app.include_router(plaid_webhook_router)
 app.include_router(voice_router, dependencies=auth_dependencies)

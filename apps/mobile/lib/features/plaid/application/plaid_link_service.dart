@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:plaid_flutter/plaid_flutter.dart';
 
@@ -53,7 +54,7 @@ final class RexPlaidApi
   Future<PlaidLinkToken> createLinkToken() async {
     final response = await _apiClient.postJson(
       '/plaid/link-token',
-      const <String, dynamic>{},
+      <String, dynamic>{'platform': _plaidLinkPlatform()},
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw PlaidLinkServiceException(_safeErrorMessage(response.body));
@@ -138,10 +139,22 @@ final class RexPlaidApi
   int _intOrZero(Object? value) {
     return value is int ? value : 0;
   }
+
+  String _plaidLinkPlatform() {
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android => 'android',
+      TargetPlatform.iOS => 'ios',
+      _ => 'unknown',
+    };
+  }
 }
 
 final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
   const PlaidFlutterLinkLauncher();
+
+  static final Uri _plaidOauthBaseUri = Uri.parse(
+    'https://api.goclarity.app/plaid/oauth',
+  );
 
   @override
   Future<PlaidLinkLaunchResult> open(PlaidLinkToken token) async {
@@ -149,6 +162,7 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
     late final StreamSubscription<LinkSuccess> successSubscription;
     late final StreamSubscription<LinkExit> exitSubscription;
     late final StreamSubscription<LinkEvent> eventSubscription;
+    late final StreamSubscription<Uri> oauthRedirectSubscription;
 
     void complete(PlaidLinkLaunchResult result) {
       if (!completer.isCompleted) completer.complete(result);
@@ -197,6 +211,19 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
         'request_id=${metadata.requestId ?? 'none'}',
       );
     });
+    oauthRedirectSubscription = AppLinks().uriLinkStream.listen((uri) {
+      if (!_isPlaidOauthRedirect(uri)) return;
+      _debugPlaidLink('oauth redirect received host=${uri.host} path=${uri.path}');
+      unawaited(
+        PlaidLink.resumeAfterTermination(uri.toString()).catchError((
+          Object error,
+        ) {
+          _debugPlaidLink('oauth redirect resume failed=$error');
+        }),
+      );
+    }, onError: (Object error) {
+      _debugPlaidLink('oauth redirect listener error=$error');
+    });
 
     try {
       await PlaidLink.create(
@@ -221,10 +248,18 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
       await successSubscription.cancel();
       await exitSubscription.cancel();
       await eventSubscription.cancel();
+      await oauthRedirectSubscription.cancel();
     }
   }
 
   void _debugPlaidLink(String message) {
     debugPrint('PlaidLink: $message');
+  }
+
+  bool _isPlaidOauthRedirect(Uri uri) {
+    return uri.scheme == _plaidOauthBaseUri.scheme &&
+        uri.host == _plaidOauthBaseUri.host &&
+        (uri.path == _plaidOauthBaseUri.path ||
+            uri.path.startsWith('${_plaidOauthBaseUri.path}/'));
   }
 }

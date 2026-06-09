@@ -50,7 +50,10 @@ def test_link_token_route_returns_only_safe_metadata():
     app.dependency_overrides[get_plaid_api_client] = lambda: plaid_client
 
     with TestClient(app) as client:
-        response = client.post("/plaid/link-token", json={"account_id": "account-1"})
+        response = client.post(
+            "/plaid/link-token",
+            json={"account_id": "account-1", "platform": "ios"},
+        )
 
     assert response.status_code == 200
     assert response.json() == {
@@ -58,6 +61,7 @@ def test_link_token_route_returns_only_safe_metadata():
         "expiration": "2026-06-07T23:59:59Z",
     }
     assert plaid_client.payload.user_id == "user-1"
+    assert plaid_client.payload.platform == "ios"
     assert "access_token" not in response.text
     assert "item_id" not in response.text
 
