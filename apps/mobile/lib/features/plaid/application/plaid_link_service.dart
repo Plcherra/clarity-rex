@@ -159,16 +159,29 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
   @override
   Future<PlaidLinkLaunchResult> open(PlaidLinkToken token) async {
     final completer = Completer<PlaidLinkLaunchResult>();
+    final appLinks = AppLinks();
     late final StreamSubscription<LinkSuccess> successSubscription;
     late final StreamSubscription<LinkExit> exitSubscription;
     late final StreamSubscription<LinkEvent> eventSubscription;
     late final StreamSubscription<Uri> oauthRedirectSubscription;
+    Timer? pendingExitTimer;
 
     void complete(PlaidLinkLaunchResult result) {
       if (!completer.isCompleted) completer.complete(result);
     }
 
+    Future<void> resumePlaidOauth(Uri uri) async {
+      if (!_isPlaidOauthRedirect(uri)) return;
+      _debugPlaidLink('oauth redirect received host=${uri.host} path=${uri.path}');
+      try {
+        await PlaidLink.resumeAfterTermination(uri.toString());
+      } on Object catch (error) {
+        _debugPlaidLink('oauth redirect resume failed=$error');
+      }
+    }
+
     successSubscription = PlaidLink.onSuccess.listen((event) {
+      pendingExitTimer?.cancel();
       final institution = event.metadata.institution;
       _debugPlaidLink(
         'success institution=${institution?.name ?? 'unknown'} '
@@ -191,14 +204,16 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
         'error_type=${event.error?.type ?? 'none'} '
         'request_id=${event.metadata.requestId ?? 'none'}',
       );
-      complete(
-        PlaidLinkLaunchExit(
-          status: event.metadata.status,
-          errorCode: event.error?.code,
-          errorType: event.error?.type,
-          requestId: event.metadata.requestId,
-        ),
+      final exit = PlaidLinkLaunchExit(
+        status: event.metadata.status,
+        errorCode: event.error?.code,
+        errorType: event.error?.type,
+        requestId: event.metadata.requestId,
       );
+      pendingExitTimer?.cancel();
+      pendingExitTimer = Timer(const Duration(seconds: 4), () {
+        complete(exit);
+      });
     });
     eventSubscription = PlaidLink.onEvent.listen((event) {
       final metadata = event.metadata;
@@ -211,16 +226,8 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
         'request_id=${metadata.requestId ?? 'none'}',
       );
     });
-    oauthRedirectSubscription = AppLinks().uriLinkStream.listen((uri) {
-      if (!_isPlaidOauthRedirect(uri)) return;
-      _debugPlaidLink('oauth redirect received host=${uri.host} path=${uri.path}');
-      unawaited(
-        PlaidLink.resumeAfterTermination(uri.toString()).catchError((
-          Object error,
-        ) {
-          _debugPlaidLink('oauth redirect resume failed=$error');
-        }),
-      );
+    oauthRedirectSubscription = appLinks.uriLinkStream.listen((uri) {
+      unawaited(resumePlaidOauth(uri));
     }, onError: (Object error) {
       _debugPlaidLink('oauth redirect listener error=$error');
     });
@@ -229,6 +236,10 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
       await PlaidLink.create(
         configuration: LinkTokenConfiguration(token: token.value),
       );
+      final latestUri = await appLinks.getLatestLink();
+      if (latestUri != null) {
+        unawaited(resumePlaidOauth(latestUri));
+      }
       await PlaidLink.open();
       return completer.future.timeout(
         const Duration(minutes: 5),
@@ -245,6 +256,7 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
         cause: error,
       );
     } finally {
+      pendingExitTimer?.cancel();
       await successSubscription.cancel();
       await exitSubscription.cancel();
       await eventSubscription.cancel();
