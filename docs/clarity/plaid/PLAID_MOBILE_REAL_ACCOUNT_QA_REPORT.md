@@ -7,12 +7,54 @@ Mobile target: physical iOS device through `scripts/mobile_release_run.sh`
 
 ## Status
 
-Overall status: Pending manual physical-device validation
+Overall status: Blocked by real-bank Link timeout
 
 This report replaces the earlier sandbox-device assumption for the mobile Plaid
 plan. Phase 9 requires a real Plaid production connection with a real bank
 account. Codex cannot perform the bank login or inspect private financial data,
 so the physical-device results must be recorded by Pedro after running the app.
+
+## 2026-06-08 Real Bank Timeout Finding
+
+Pedro tested Plaid production Link on a physical iPhone with a real bank. Plaid
+opened and showed real institutions, but Clarity returned to the Accounts empty
+state with:
+
+```text
+Bank connection stopped before it finished. Plaid status: timeout.
+```
+
+VPS logs from the previous test window showed successful `/plaid/link-token`
+requests, but no `/plaid/exchange-token` request. That means the backend can
+create Link tokens, but mobile did not receive a Plaid success callback with a
+public token.
+
+Likely causes to validate:
+
+- iOS OAuth redirect/Universal Link is not configured yet for production bank
+  flows.
+- The app may be losing Plaid's success/exit callback after the bank handoff.
+- Android package name is irrelevant for the iPhone test, but must be configured
+  before Android launch.
+
+Fix applied in code:
+
+- Backend Link token creation now sends documented mobile/OAuth fields when
+  configured: `android_package_name`, `redirect_uri`, `webhook`, and optional
+  `account_filters`.
+- Backend defaults the app identifiers to `com.clarity.clarity`.
+- Backend logs safe link-token and public-token exchange milestones without
+  logging tokens.
+- Mobile logs sanitized `onEvent`, `onSuccess`, `onExit`, and timeout details.
+- Mobile account parsing now reads the actual `plaid_item_record_id` account
+  column used by the schema.
+
+Important Plaid API note:
+
+- `ios_bundle_id` is retained as dashboard/readiness configuration, but it is
+  not sent to `/link/token/create` because Plaid's documented iOS production
+  mobile flow requires `redirect_uri` for OAuth return, not an
+  `ios_bundle_id` JSON field.
 
 ## Automated Preflight
 
@@ -58,7 +100,7 @@ latency, and sanitized notes.
 | Step | Expected result | Result | Latency | Notes |
 | --- | --- | --- | --- | --- |
 | 1. Open Accounts or Dashboard and tap Connect Bank | Plaid Link opens | Pending | Pending |  |
-| 2. Complete real bank login in Plaid Link | Link returns success to Clarity | Pending | Pending |  |
+| 2. Complete real bank login in Plaid Link | Link returns success to Clarity | Failed | ~5m | Plaid status timeout; no exchange-token request reached backend. |
 | 3. Token exchange | Backend stores item securely and creates accounts | Pending | Pending |  |
 | 4. Initial sync | Accounts and recent transactions appear | Pending | Pending |  |
 | 5. Status display | Account shows Connected and last synced timestamp | Pending | Pending |  |
@@ -90,7 +132,12 @@ Record sanitized counts only:
 ## Remaining Risks
 
 - Real OAuth institution behavior is unverified until physical-device testing is
-  completed.
+  completed with a configured redirect URI / Universal Link.
+- Production iOS OAuth flows require `PLAID_REDIRECT_URI` to match a Plaid
+  dashboard Allowed redirect URI and an iOS Universal Link associated with the
+  app.
+- `PLAID_WEBHOOK_URL` should be set to the public backend webhook endpoint before
+  launch so Plaid can notify Clarity about item updates.
 - Android package name and Android physical-device Link flow still need their
   own QA before Android launch.
 - iOS `plaid_flutter` Swift Package Manager warning is accepted for now, but may

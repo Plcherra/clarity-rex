@@ -148,6 +148,7 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
     final completer = Completer<PlaidLinkLaunchResult>();
     late final StreamSubscription<LinkSuccess> successSubscription;
     late final StreamSubscription<LinkExit> exitSubscription;
+    late final StreamSubscription<LinkEvent> eventSubscription;
 
     void complete(PlaidLinkLaunchResult result) {
       if (!completer.isCompleted) completer.complete(result);
@@ -185,6 +186,17 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
         ),
       );
     });
+    eventSubscription = PlaidLink.onEvent.listen((event) {
+      final metadata = event.metadata;
+      _debugPlaidLink(
+        'event name=${event.name} '
+        'view=${metadata.viewName ?? 'unknown'} '
+        'exit_status=${metadata.exitStatus ?? 'none'} '
+        'error_code=${metadata.errorCode ?? 'none'} '
+        'institution=${metadata.institutionName ?? 'none'} '
+        'request_id=${metadata.requestId ?? 'none'}',
+      );
+    });
 
     try {
       await PlaidLink.create(
@@ -208,6 +220,7 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
     } finally {
       await successSubscription.cancel();
       await exitSubscription.cancel();
+      await eventSubscription.cancel();
     }
   }
 

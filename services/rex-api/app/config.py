@@ -37,8 +37,10 @@ class Settings(BaseSettings):
     plaid_products: str = "transactions"
     plaid_country_codes: str = "US"
     plaid_redirect_uri: Optional[str] = None
-    plaid_ios_bundle_id: Optional[str] = None
-    plaid_android_package_name: Optional[str] = None
+    plaid_webhook_url: Optional[str] = None
+    plaid_ios_bundle_id: Optional[str] = "com.clarity.clarity"
+    plaid_android_package_name: Optional[str] = "com.clarity.clarity"
+    plaid_account_filters_json: Optional[str] = None
     plaid_timeout_seconds: int = 30
     plaid_token_encryption_secret: Optional[str] = None
 

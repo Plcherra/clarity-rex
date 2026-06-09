@@ -35,13 +35,23 @@ async def test_create_link_token_posts_safe_payload(monkeypatch):
 
     async def fake_request(method, url, **kwargs):
         calls.append({"method": method, "url": url, **kwargs})
-        return make_response(json_data={"link_token": "link-sandbox", "expiration": "soon"})
+        return make_response(
+            json_data={"link_token": "link-sandbox", "expiration": "soon"}
+        )
 
     monkeypatch.setattr(
         "app.services.plaid_api_client.request_with_retries",
         fake_request,
     )
-    client = PlaidApiClient(configured_settings(plaid_android_package_name="com.app"))
+    client = PlaidApiClient(
+        configured_settings(
+            plaid_android_package_name="com.app",
+            plaid_ios_bundle_id="com.ios.app",
+            plaid_redirect_uri="https://app.example.com/plaid/oauth",
+            plaid_webhook_url="https://api.example.com/plaid/webhook",
+            plaid_account_filters_json='{"depository":{"account_subtypes":["checking","savings"]}}',
+        )
+    )
 
     result = await client.create_link_token(PlaidLinkTokenPayload(user_id="user-1"))
 
@@ -57,6 +67,12 @@ async def test_create_link_token_posts_safe_payload(monkeypatch):
     assert call["json"]["country_codes"] == ["US"]
     assert call["json"]["user"] == {"client_user_id": "user-1"}
     assert call["json"]["android_package_name"] == "com.app"
+    assert call["json"]["redirect_uri"] == "https://app.example.com/plaid/oauth"
+    assert call["json"]["webhook"] == "https://api.example.com/plaid/webhook"
+    assert call["json"]["account_filters"] == {
+        "depository": {"account_subtypes": ["checking", "savings"]}
+    }
+    assert "ios_bundle_id" not in call["json"]
 
 
 @pytest.mark.asyncio
@@ -143,3 +159,18 @@ async def test_required_tokens_are_validated_before_http(monkeypatch):
 
     with pytest.raises(PlaidApiClientError, match="access_token is required"):
         await client.get_accounts(" ")
+
+
+@pytest.mark.asyncio
+async def test_invalid_account_filters_json_fails_before_http(monkeypatch):
+    async def fake_request(method, url, **kwargs):
+        raise AssertionError("HTTP should not be called")
+
+    monkeypatch.setattr(
+        "app.services.plaid_api_client.request_with_retries",
+        fake_request,
+    )
+    client = PlaidApiClient(configured_settings(plaid_account_filters_json="not-json"))
+
+    with pytest.raises(PlaidApiClientError, match="valid JSON"):
+        await client.create_link_token(PlaidLinkTokenPayload(user_id="user-1"))

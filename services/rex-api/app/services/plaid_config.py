@@ -29,6 +29,7 @@ class PlaidConfigStatus:
     missing: tuple[str, ...]
     invalid: tuple[str, ...]
     redirect_configured: bool
+    webhook_configured: bool
     ios_bundle_id_configured: bool
     android_package_name_configured: bool
 
@@ -43,6 +44,7 @@ class PlaidConfigStatus:
             "missing": list(self.missing),
             "invalid": list(self.invalid),
             "redirect_configured": self.redirect_configured,
+            "webhook_configured": self.webhook_configured,
             "native": {
                 "ios_bundle_id_configured": self.ios_bundle_id_configured,
                 "android_package_name_configured": self.android_package_name_configured,
@@ -80,6 +82,7 @@ def get_plaid_config_status(settings: Settings | None = None) -> PlaidConfigStat
         missing=tuple(missing),
         invalid=tuple(invalid),
         redirect_configured=_has_value(active_settings.plaid_redirect_uri),
+        webhook_configured=_has_value(active_settings.plaid_webhook_url),
         ios_bundle_id_configured=_has_value(active_settings.plaid_ios_bundle_id),
         android_package_name_configured=_has_value(
             active_settings.plaid_android_package_name

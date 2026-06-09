@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -56,6 +57,10 @@ class PlaidApiClient:
             body["redirect_uri"] = self.settings.plaid_redirect_uri
         if self.settings.plaid_android_package_name:
             body["android_package_name"] = self.settings.plaid_android_package_name
+        if self.settings.plaid_webhook_url:
+            body["webhook"] = self.settings.plaid_webhook_url
+        if self.settings.plaid_account_filters_json:
+            body["account_filters"] = self._account_filters()
 
         return await self._post("/link/token/create", body)
 
@@ -152,6 +157,24 @@ class PlaidApiClient:
         except ValueError:
             return {}
         return data if isinstance(data, dict) else {}
+
+    def _account_filters(self) -> dict[str, Any]:
+        raw_filters = (self.settings.plaid_account_filters_json or "").strip()
+        if not raw_filters:
+            return {}
+        try:
+            filters = json.loads(raw_filters)
+        except json.JSONDecodeError as error:
+            raise PlaidApiClientError(
+                "PLAID_ACCOUNT_FILTERS_JSON must be valid JSON.",
+                status_code=500,
+            ) from error
+        if not isinstance(filters, dict):
+            raise PlaidApiClientError(
+                "PLAID_ACCOUNT_FILTERS_JSON must be a JSON object.",
+                status_code=500,
+            )
+        return filters
 
     @staticmethod
     def _required_access_token(access_token: str) -> str:

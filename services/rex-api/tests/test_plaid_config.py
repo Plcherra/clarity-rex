@@ -33,6 +33,8 @@ def test_sandbox_plaid_config_reports_ready_without_exposing_credentials():
         plaid_products="transactions,auth",
         plaid_country_codes="us,ca",
         plaid_ios_bundle_id="com.clarity.app",
+        plaid_android_package_name="com.clarity.app",
+        plaid_webhook_url="https://api.example.com/plaid/webhook",
     )
 
     status = get_plaid_config_status(settings)
@@ -43,7 +45,9 @@ def test_sandbox_plaid_config_reports_ready_without_exposing_credentials():
     assert readiness["environment"] == "sandbox"
     assert readiness["products"] == ["transactions", "auth"]
     assert readiness["country_codes"] == ["US", "CA"]
+    assert readiness["webhook_configured"] is True
     assert readiness["native"]["ios_bundle_id_configured"] is True
+    assert readiness["native"]["android_package_name_configured"] is True
     assert "secret-value" not in str(readiness)
     assert "client-id-value" not in str(readiness)
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -19,6 +20,7 @@ from app.services.plaid_config import PlaidConfigurationError
 from app.services.plaid_sync_service import PlaidSyncService, PlaidSyncServiceError
 
 router = APIRouter(prefix="/plaid", tags=["plaid"])
+logger = logging.getLogger(__name__)
 
 
 class PlaidLinkTokenRequest(BaseModel):
@@ -79,6 +81,11 @@ async def create_link_token(
         )
 
     try:
+        logger.info(
+            "Plaid link token requested user=%s account_id_present=%s",
+            _safe_user_label(current_user.id),
+            bool(request.account_id),
+        )
         data = await plaid_client.create_link_token(
             PlaidLinkTokenPayload(user_id=current_user.id),
         )
@@ -93,7 +100,13 @@ async def create_link_token(
             detail=error.detail,
         ) from error
 
-    return _safe_link_token_response(data)
+    response = _safe_link_token_response(data)
+    logger.info(
+        "Plaid link token created user=%s expiration_present=%s",
+        _safe_user_label(current_user.id),
+        bool(response.expiration),
+    )
+    return response
 
 
 @router.post("/exchange-token", response_model=PlaidExchangeTokenResponse)
@@ -110,6 +123,13 @@ async def exchange_public_token(
         )
 
     try:
+        logger.info(
+            "Plaid public token exchange received user=%s public_token_present=%s institution_id=%s institution_name=%s",
+            _safe_user_label(current_user.id),
+            bool(public_token),
+            _safe_log_value(request.institution_id),
+            _safe_log_value(request.institution_name),
+        )
         result = await plaid_sync_service.exchange_public_token(
             user_id=current_user.id,
             public_token=public_token,
@@ -145,7 +165,7 @@ async def exchange_public_token(
             detail=error.detail,
         ) from error
 
-    return PlaidExchangeTokenResponse(
+    response = PlaidExchangeTokenResponse(
         plaid_item_record_id=result.plaid_item_record_id,
         status=result.status,
         institution_name=result.institution_name,
@@ -155,6 +175,16 @@ async def exchange_public_token(
         transactions_modified=sync_result.transactions_modified,
         transactions_removed=sync_result.transactions_removed,
     )
+    logger.info(
+        "Plaid public token exchange completed user=%s item=%s accounts=%s transactions_added=%s transactions_modified=%s transactions_removed=%s",
+        _safe_user_label(current_user.id),
+        _safe_item_label(result.plaid_item_record_id),
+        response.accounts_synced,
+        response.transactions_added,
+        response.transactions_modified,
+        response.transactions_removed,
+    )
+    return response
 
 
 @router.get("/item-status/{item_id}", response_model=PlaidItemStatusResponse)
@@ -229,3 +259,24 @@ def _safe_link_token_response(data: dict[str, Any]) -> PlaidLinkTokenResponse:
         link_token=link_token,
         expiration=expiration if isinstance(expiration, str) else None,
     )
+
+
+def _safe_user_label(user_id: str) -> str:
+    normalized = user_id.strip()
+    if len(normalized) <= 8:
+        return normalized or "unknown"
+    return f"...{normalized[-8:]}"
+
+
+def _safe_item_label(item_id: str) -> str:
+    normalized = item_id.strip()
+    if len(normalized) <= 8:
+        return normalized or "unknown"
+    return f"...{normalized[-8:]}"
+
+
+def _safe_log_value(value: str | None) -> str:
+    normalized = (value or "").strip()
+    if not normalized:
+        return "none"
+    return normalized[:80]
