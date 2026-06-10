@@ -17,7 +17,11 @@ from app.services.plaid_api_client import (
     PlaidLinkTokenPayload,
 )
 from app.services.plaid_config import PlaidConfigurationError
-from app.services.plaid_sync_service import PlaidSyncService, PlaidSyncServiceError
+from app.services.plaid_sync_service import (
+    PlaidSyncResult,
+    PlaidSyncService,
+    PlaidSyncServiceError,
+)
 
 router = APIRouter(prefix="/plaid", tags=["plaid"])
 logger = logging.getLogger(__name__)
@@ -153,28 +157,38 @@ async def exchange_public_token(
             detail=error.detail,
         ) from error
 
+    sync_status = result.status
+    sync_result: PlaidSyncResult | None = None
     try:
         sync_result = await plaid_sync_service.sync_item(result.plaid_item_record_id)
-    except PlaidApiClientError as error:
-        raise HTTPException(
-            status_code=error.status_code,
-            detail=error.detail,
-        ) from error
-    except PlaidSyncServiceError as error:
-        raise HTTPException(
-            status_code=error.status_code,
-            detail=error.detail,
-        ) from error
+    except (PlaidApiClientError, PlaidSyncServiceError) as error:
+        sync_status = "degraded"
+        logger.warning(
+            "Plaid initial sync deferred user=%s item=%s error_type=%s",
+            _safe_user_label(current_user.id),
+            _safe_item_label(result.plaid_item_record_id),
+            error.__class__.__name__,
+        )
+        try:
+            await plaid_sync_service.mark_item_sync_degraded(
+                result.plaid_item_record_id,
+            )
+        except PlaidSyncServiceError:
+            logger.warning(
+                "Plaid item degraded status update failed user=%s item=%s",
+                _safe_user_label(current_user.id),
+                _safe_item_label(result.plaid_item_record_id),
+            )
 
     response = PlaidExchangeTokenResponse(
         plaid_item_record_id=result.plaid_item_record_id,
-        status=result.status,
+        status=sync_status,
         institution_name=result.institution_name,
         accounts=[],
-        accounts_synced=sync_result.accounts_synced,
-        transactions_added=sync_result.transactions_added,
-        transactions_modified=sync_result.transactions_modified,
-        transactions_removed=sync_result.transactions_removed,
+        accounts_synced=sync_result.accounts_synced if sync_result else 0,
+        transactions_added=sync_result.transactions_added if sync_result else 0,
+        transactions_modified=sync_result.transactions_modified if sync_result else 0,
+        transactions_removed=sync_result.transactions_removed if sync_result else 0,
     )
     logger.info(
         "Plaid public token exchange completed user=%s item=%s accounts=%s transactions_added=%s transactions_modified=%s transactions_removed=%s",

@@ -278,3 +278,57 @@ async def test_transaction_sync_creates_missing_clarity_category_from_plaid_pfc(
         if call.get("method") == "POST" and call.get("table") == "transactions"
     )
     assert upsert_call["body"]["category_id"] == "category-created-1"
+
+
+@pytest.mark.asyncio
+async def test_transaction_sync_reuses_existing_normalized_category_from_plaid_pfc():
+    class GroceryPlaidClient(SinglePagePlaidClient):
+        async def sync_transactions(self, access_token, *, cursor=None, count=100):
+            return {
+                "added": [
+                    {
+                        "transaction_id": "txn-grocery-existing",
+                        "account_id": "plaid-account-1",
+                        "amount": 32.75,
+                        "date": "2026-06-01",
+                        "name": "Grocery Purchase",
+                        "pending": False,
+                        "personal_finance_category": {
+                            "primary": "FOOD_AND_DRINK",
+                            "detailed": "FOOD_AND_DRINK_GROCERIES",
+                        },
+                    }
+                ],
+                "modified": [],
+                "removed": [],
+                "next_cursor": "cursor-next",
+                "has_more": False,
+            }
+
+    cursor_service = FakeCursorService()
+    sync = PlaidTransactionSync(
+        plaid_client=GroceryPlaidClient(),
+        cursor_service=cursor_service,
+    )
+
+    await sync.sync_transactions(
+        user_id="user-1",
+        item_id="item-record-1",
+        access_token="access-token-secret",
+        cursor=None,
+        account_map={"plaid-account-1": "linked-account-1"},
+    )
+
+    category_create_calls = [
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "POST" and call.get("table") == "categories"
+    ]
+    assert category_create_calls == []
+
+    upsert_call = next(
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "POST" and call.get("table") == "transactions"
+    )
+    assert upsert_call["body"]["category_id"] == "category-grocery"

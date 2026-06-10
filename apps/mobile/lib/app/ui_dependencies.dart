@@ -209,8 +209,7 @@ final class DashboardViewData {
   }
 
   bool get isTrulyEmpty {
-    return accountCount == 0 ||
-        (totalTransactionCount == 0 && totalStatementImportCount == 0);
+    return accountCount == 0;
   }
 }
 

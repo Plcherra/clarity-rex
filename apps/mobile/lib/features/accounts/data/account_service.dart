@@ -44,7 +44,12 @@ final class AccountService {
         .from('accounts')
         .stream(primaryKey: ['id'])
         .eq('user_id', user.id)
-        .map((rows) => rows.map<Account>(_accountFromJson).toList());
+        .asyncMap(
+          (rows) => _mergePlaidMetadata(
+            user.id,
+            rows.map<Account>(_accountFromJson).toList(),
+          ),
+        );
   }
 
   Future<Account> createAccount(Account account) async {
@@ -139,7 +144,7 @@ final class AccountService {
     final rows = await _supabaseService.client
         .from('plaid_accounts')
         .select(
-          'linked_account_id,name,official_name,mask,current_balance,available_balance,status',
+          'linked_account_id,institution_name,name,official_name,mask,current_balance,available_balance,status',
         )
         .eq('user_id', userId)
         .inFilter('linked_account_id', plaidAccountIds);
@@ -152,7 +157,10 @@ final class AccountService {
       for (final account in accounts)
         if (metadataByAccountId[account.id] case final metadata?)
           account.copyWith(
-            plaidInstitutionName: _nullableString(metadata, 'name'),
+            plaidInstitutionName:
+                _nullableString(metadata, 'institution_name') ??
+                account.institution ??
+                _nullableString(metadata, 'name'),
             plaidOfficialName: _nullableString(metadata, 'official_name'),
             plaidAccountMask: _nullableString(metadata, 'mask'),
             plaidAvailableBalance: _nullableMoney(

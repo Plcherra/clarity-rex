@@ -73,6 +73,41 @@ void main() {
       expect(result, isA<PlaidConnectionExit>());
       expect(exchangeApi.exchangedPublicToken, isNull);
     });
+
+    test(
+      'fails clearly when Link success does not include public token',
+      () async {
+        final tokenApi = _FakePlaidLinkTokenApi(
+          token: const PlaidLinkToken(value: 'link-production-test'),
+        );
+        final launcher = _FakePlaidLinkLauncher(
+          result: const PlaidLinkLaunchSuccess(
+            publicToken: '   ',
+            institutionName: 'Bank of Test',
+            accountCount: 2,
+          ),
+        );
+        final exchangeApi = _FakePlaidExchangeApi();
+        final service = PlaidLinkService(
+          tokenApi: tokenApi,
+          exchangeApi: exchangeApi,
+          launcher: launcher,
+        );
+
+        await expectLater(
+          service.connectBank(),
+          throwsA(
+            isA<PlaidLinkServiceException>().having(
+              (error) => error.message,
+              'message',
+              contains('Plaid did not return the token'),
+            ),
+          ),
+        );
+
+        expect(exchangeApi.exchangedPublicToken, isNull);
+      },
+    );
   });
 }
 

@@ -118,9 +118,34 @@ void main() {
 
     expect(plan.budgetsToDelete.map((budget) => budget.id), ['budget-dining']);
   });
+
+  test('custom category deletion excludes built-in and hidden categories', () {
+    expect(
+      isManualCustomCategory(
+        _category(id: 'cat-grocery', name: 'Grocery / Supermarket'),
+      ),
+      isFalse,
+    );
+    expect(
+      isManualCustomCategory(
+        _category(id: 'cat-hidden', name: 'Weekend Plans', hidden: true),
+      ),
+      isFalse,
+    );
+    expect(
+      isManualCustomCategory(
+        _category(id: 'cat-custom', name: 'Weekend Plans'),
+      ),
+      isTrue,
+    );
+  });
 }
 
-CategoryRecord _category({required String id, required String name}) {
+CategoryRecord _category({
+  required String id,
+  required String name,
+  bool hidden = false,
+}) {
   final now = DateTime.utc(2026, 6, 8);
   return CategoryRecord(
     id: id,
@@ -128,6 +153,7 @@ CategoryRecord _category({required String id, required String name}) {
     name: name,
     normalizedName: null,
     type: 'expense',
+    hidden: hidden,
     createdAt: now,
     updatedAt: now,
   );

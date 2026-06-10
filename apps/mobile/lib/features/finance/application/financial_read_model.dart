@@ -240,6 +240,7 @@ final class FinancialReadModel {
     final resolved = resolvedTransactionsForScope(scope);
     final hasRequestedMonthCashFlow = resolved.any((resolvedTransaction) {
       final transaction = resolvedTransaction.transaction;
+      if (transaction.pending) return false;
       return transaction.date.year == requested.year &&
           transaction.date.month == requested.month &&
           (resolvedTransaction.countsAsSpend ||
@@ -257,6 +258,7 @@ final class FinancialReadModel {
       if (latestActivityDate == null || date.isAfter(latestActivityDate)) {
         latestActivityDate = date;
       }
+      if (resolvedTransaction.transaction.pending) continue;
       if ((resolvedTransaction.countsAsSpend ||
               resolvedTransaction.countsAsIncome) &&
           (latestCashFlowDate == null || date.isAfter(latestCashFlowDate))) {
@@ -357,6 +359,7 @@ final class FinancialReadModel {
     final out = <String, double>{};
     for (final resolved in resolvedTransactionsForScope(scope)) {
       final transaction = resolved.transaction;
+      if (transaction.pending) continue;
       if (!_inRangeInclusive(transaction.date, start, end)) continue;
       if (!resolved.countsAsSpend) continue;
       final display = resolved.displayCategory;
@@ -377,6 +380,7 @@ final class FinancialReadModel {
     final recordsById = transactionRecordsById;
     for (final resolved in resolvedTransactionsForScope(scope)) {
       final transaction = resolved.transaction;
+      if (transaction.pending) continue;
       if (!_inRangeInclusive(transaction.date, start, end)) continue;
       if (!resolved.countsAsSpend) continue;
       final recordId = transaction.fingerprint;
@@ -461,6 +465,7 @@ final class FinancialReadModel {
           .length,
       totalOverspent: totalOverspent,
       topOverspendingCategories: List.unmodifiable(topOverspending),
+      categories: List.unmodifiable(categoryPerformance),
     );
   }
 }

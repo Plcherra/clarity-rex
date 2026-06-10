@@ -12,7 +12,10 @@ class DashboardCategoryTransactionGroup {
   int get transactionCount => transactions.length;
 
   double get spending => transactions
-      .where((transaction) => transaction.countsAsSpend)
+      .where(
+        (transaction) =>
+            transaction.countsAsSpend && !transaction.transaction.pending,
+      )
       .fold<double>(
         0,
         (sum, transaction) => sum + transaction.transaction.amount.abs(),
@@ -30,7 +33,8 @@ spendingCategoryGroupsForResolvedTransactions(
         isUnresolvedCategoryLabel(category) ||
         isIncomeCategoryLabel(category) ||
         isIgnoredCategoryLabel(category) ||
-        !transaction.countsAsSpend) {
+        !transaction.countsAsSpend ||
+        transaction.transaction.pending) {
       continue;
     }
     byCategory.putIfAbsent(category, () => []).add(transaction);

@@ -188,6 +188,7 @@ double _spentThisMonth(
   for (final r in resolved) {
     final t = r.transaction;
     final d = t.date;
+    if (t.pending) continue;
     if (d.year != y || d.month != m || !t.isOutflow) continue;
     if (!r.countsAsSpend) continue;
     sum += -t.amount;
@@ -219,6 +220,7 @@ List<CategorySpend> _topCategoriesThisMonth(
   final map = <String, double>{};
   for (final r in resolved) {
     final t = r.transaction;
+    if (t.pending) continue;
     if (!_inMonth(t.date, reference)) continue;
     if (!r.countsAsSpend) continue;
     final name = r.displayCategory;

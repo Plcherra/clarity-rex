@@ -34,6 +34,7 @@ class PlaidAccountService:
         user_id: str,
         item_id: str,
         access_token: str,
+        institution_name: str | None = None,
     ) -> dict[str, str]:
         accounts_response = await self.plaid_client.get_accounts(access_token)
         account_map: dict[str, str] = {}
@@ -43,6 +44,7 @@ class PlaidAccountService:
                 user_id=user_id,
                 item_id=item_id,
                 plaid_account_id=plaid_account_id,
+                institution_name=institution_name,
                 account=account,
             )
             linked_account_id = required_string(linked_account, "id")
@@ -51,6 +53,7 @@ class PlaidAccountService:
                 item_id=item_id,
                 plaid_account_id=plaid_account_id,
                 linked_account_id=linked_account_id,
+                institution_name=institution_name,
                 account=account,
             )
             account_map[plaid_account_id] = linked_account_id
@@ -62,6 +65,7 @@ class PlaidAccountService:
         user_id: str,
         item_id: str,
         plaid_account_id: str,
+        institution_name: str | None,
         account: dict[str, Any],
     ) -> dict[str, Any]:
         balances = dict_or_empty(account.get("balances"))
@@ -74,6 +78,7 @@ class PlaidAccountService:
                 "type": string_or_none(account.get("subtype"))
                 or string_or_none(account.get("type"))
                 or "account",
+                "institution": institution_name,
                 "balance": number_or_zero(balances.get("current")),
                 "currency": string_or_none(balances.get("iso_currency_code"))
                 or "USD",
@@ -99,6 +104,7 @@ class PlaidAccountService:
         item_id: str,
         plaid_account_id: str,
         linked_account_id: str,
+        institution_name: str | None,
         account: dict[str, Any],
     ) -> None:
         balances = dict_or_empty(account.get("balances"))
@@ -110,6 +116,7 @@ class PlaidAccountService:
                 "item_id": item_id,
                 "plaid_account_id": plaid_account_id,
                 "linked_account_id": linked_account_id,
+                "institution_name": institution_name,
                 "name": _account_name(account),
                 "official_name": string_or_none(account.get("official_name")),
                 "mask": string_or_none(account.get("mask")),

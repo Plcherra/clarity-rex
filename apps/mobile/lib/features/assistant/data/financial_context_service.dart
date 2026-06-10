@@ -51,7 +51,9 @@ final class AssistantFinancialContextService {
     final accounts = model.accounts;
     final categories = model.categories;
     final budgets = model.budgets;
-    final transactions = model.transactionRecords;
+    final transactions = model.transactionRecords
+        .where((transaction) => transaction.removedAt == null)
+        .toList(growable: false);
     final resolvedTransactions = model.transactions;
     final resolvedViews = model.resolvedTransactionsForScope(scope);
     final selectedTransactions = _selectTransactionContextRows(
@@ -141,6 +143,10 @@ final class AssistantFinancialContextService {
         'available_this_month': _money(snapshot.availableThisMonth),
         'burn_runway_days': snapshot.burnRunwayDays,
       },
+      'financial_data_sources': _financialDataSources(
+        accounts: accounts,
+        transactions: transactions,
+      ),
       'accounts': [for (final account in accounts) _accountContext(account)],
       'categories': [
         for (final category in categories) _categoryContext(category),
@@ -221,13 +227,26 @@ final class AssistantFinancialContextService {
   }
 
   Map<String, dynamic> _accountContext(Account account) {
+    final institution = account.plaidInstitutionName ?? account.institution;
     return {
       'id': account.id,
       'name': account.name,
       'type': account.type.name,
-      if (account.institution != null) 'institution': account.institution,
+      'source':
+          account.source ?? (account.isPlaidConnected ? 'plaid' : 'manual'),
+      'source_label': account.sourceLabel,
+      'plaid_connected': account.isPlaidConnected,
+      'institution': ?institution,
+      if (account.plaidOfficialName != null)
+        'official_name': account.plaidOfficialName,
+      if (account.plaidAccountMask != null) 'mask': account.plaidAccountMask,
+      if (account.syncStatus != null) 'sync_status': account.syncStatus,
+      if (account.lastSyncedAt != null)
+        'last_synced_at': account.lastSyncedAt!.toUtc().toIso8601String(),
       if (account.currentBalance != null)
         'current_balance': _money(account.currentBalance!),
+      if (account.plaidAvailableBalance != null)
+        'available_balance': _money(account.plaidAvailableBalance!),
     };
   }
 
@@ -285,6 +304,9 @@ final class AssistantFinancialContextService {
       if (resolvedTransaction != null)
         'signed_amount': _money(resolvedTransaction.amount),
       'type': transaction.type,
+      'source': transaction.source,
+      'source_label': transaction.source == 'plaid' ? 'Plaid' : 'Manual/CSV',
+      'pending': transaction.pending,
       if (transaction.description != null)
         'description': transaction.description,
       if (transaction.merchant != null) 'merchant': transaction.merchant,
@@ -314,6 +336,50 @@ final class AssistantFinancialContextService {
             'overspent': _money(category.overspent),
           },
       ],
+      'categories': [
+        for (final category in budget.categories)
+          {
+            'category': category.displayLabel,
+            'budgeted': _money(category.budgeted),
+            'spent': _money(category.spent),
+            'remaining': _money(category.remaining),
+            'overspent': _money(category.overspent),
+            'on_track': category.onTrack,
+          },
+      ],
+    };
+  }
+
+  Map<String, dynamic> _financialDataSources({
+    required List<Account> accounts,
+    required List<TransactionRecord> transactions,
+  }) {
+    final plaidAccounts = accounts
+        .where((account) => account.isPlaidConnected)
+        .length;
+    final csvAccounts = accounts.length - plaidAccounts;
+    final plaidTransactions = transactions
+        .where((transaction) => transaction.source == 'plaid')
+        .length;
+    final csvTransactions = transactions
+        .where((transaction) => transaction.source == 'csv')
+        .length;
+    final manualTransactions = transactions
+        .where((transaction) => transaction.source == 'manual')
+        .length;
+    final pendingPlaidTransactions = transactions
+        .where(
+          (transaction) => transaction.source == 'plaid' && transaction.pending,
+        )
+        .length;
+    return {
+      'plaid_accounts': plaidAccounts,
+      'manual_csv_accounts': csvAccounts,
+      'plaid_transactions': plaidTransactions,
+      'csv_transactions': csvTransactions,
+      'manual_transactions': manualTransactions,
+      'pending_plaid_transactions': pendingPlaidTransactions,
+      'primary_source': plaidAccounts > 0 ? 'plaid' : 'manual_csv',
     };
   }
 

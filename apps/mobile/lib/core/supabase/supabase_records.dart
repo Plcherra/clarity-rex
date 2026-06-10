@@ -175,6 +175,7 @@ final class TransactionRecord {
     required this.importedFromCsv,
     this.importId,
     this.source = 'manual',
+    this.pending = false,
     this.removedAt,
     required this.createdAt,
     required this.updatedAt,
@@ -193,6 +194,7 @@ final class TransactionRecord {
   final bool importedFromCsv;
   final String? importId;
   final String source;
+  final bool pending;
   final DateTime? removedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -215,6 +217,7 @@ final class TransactionRecord {
       source:
           _nullableString(json, 'source') ??
           (importedFromCsv ? 'csv' : 'manual'),
+      pending: _optionalBool(json, 'pending'),
       removedAt: _nullableDate(json, 'removed_at'),
       createdAt: _dateTime(json, 'created_at'),
       updatedAt: _dateTime(json, 'updated_at'),
@@ -234,6 +237,7 @@ final class TransactionRecord {
     'imported_from_csv': importedFromCsv,
     'import_id': importId,
     'source': source,
+    'pending': pending,
   };
 
   Map<String, dynamic> toUpdateJson() => {
@@ -248,6 +252,7 @@ final class TransactionRecord {
     'imported_from_csv': importedFromCsv,
     'import_id': importId,
     'source': source,
+    'pending': pending,
   };
 }
 

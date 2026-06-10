@@ -7,12 +7,17 @@ Mobile target: physical iOS device through `scripts/mobile_release_run.sh`
 
 ## Status
 
-Overall status: Blocked by real-bank Link timeout
+Overall status: Ready for real-device retest, not complete
 
 This report replaces the earlier sandbox-device assumption for the mobile Plaid
 plan. Phase 9 requires a real Plaid production connection with a real bank
 account. Codex cannot perform the bank login or inspect private financial data,
 so the physical-device results must be recorded by Pedro after running the app.
+
+The previous timeout blocker has been addressed in code and configuration, but
+the complete production lifecycle still needs one fresh physical-device pass:
+Link success, `/plaid/exchange-token`, account creation, sync, UI refresh, CSV
+fallback, and Assistant truth checks.
 
 ## 2026-06-08 Real Bank Timeout Finding
 
@@ -74,6 +79,22 @@ Completed on 2026-06-08:
 - `flutter test test/plaid*`: Passed
 - `VPS_SSH_TARGET=clarity ./scripts/mobile_release_run.sh --print`: Passed
 
+Completed on 2026-06-09 after the real-bank fix phases:
+
+- `cd services/rex-api && ./.venv/bin/python -m pytest -q tests/test_plaid_*.py`: Passed, 55 tests
+- `cd apps/mobile && flutter analyze`: Passed
+- `cd apps/mobile && flutter test test/plaid* test/budget_cleanup_service_test.dart test/assistant_financial_context_service_test.dart test/financial_integration_contracts_test.dart`: Passed, 26 tests
+- `VPS_SSH_TARGET=clarity ./scripts/mobile_release_run.sh --print`: Passed and resolved the release run command from the VPS public mobile config
+
+Scope covered by the 2026-06-09 preflight:
+
+- Mobile Plaid success callback and public-token exchange path.
+- Backend exchange route, item/account persistence, sync degradation behavior,
+  cursor safety, and webhook tests.
+- Dashboard/account/budget/assistant read-model alignment for Plaid-backed
+  accounts and transactions.
+- Budget cleanup and inactive category hiding before real-bank testing.
+
 Known warning:
 
 - `plaid_flutter` emits the accepted iOS Swift Package Manager warning. CocoaPods
@@ -109,14 +130,15 @@ latency, and sanitized notes.
 
 | Step | Expected result | Result | Latency | Notes |
 | --- | --- | --- | --- | --- |
-| 1. Open Accounts or Dashboard and tap Connect Bank | Plaid Link opens | Pending | Pending |  |
-| 2. Complete real bank login in Plaid Link | Link returns success to Clarity | Failed | ~5m | Plaid status timeout; no exchange-token request reached backend. |
-| 3. Token exchange | Backend stores item securely and creates accounts | Pending | Pending |  |
-| 4. Initial sync | Accounts and recent transactions appear | Pending | Pending |  |
-| 5. Status display | Account shows Connected and last synced timestamp | Pending | Pending |  |
-| 6. Manual resync | Resync completes without duplicate UI noise | Pending | Pending |  |
-| 7. CSV fallback | Import CSV instead still works for a manual account | Pending | Pending |  |
-| 8. CSV into Plaid-connected account | Calm duplicate-risk warning appears | Pending | Pending |  |
+| 1. Open Accounts or Dashboard and tap Connect Bank | Plaid Link opens | Ready to retest | Pending | Release command resolves successfully. |
+| 2. Complete real bank login in Plaid Link | Link returns success to Clarity | Ready to retest | Pending | Previous timeout fixed in code; needs a fresh app install/run. |
+| 3. Token exchange | Backend stores item securely and creates accounts | Ready to retest | Pending | Watch for `POST /plaid/exchange-token` in VPS logs. |
+| 4. Initial sync | Accounts and recent transactions appear | Ready to retest | Pending | Verify checking and credit accounts separately. |
+| 5. Status display | Account shows Connected and last synced timestamp | Ready to retest | Pending | Degraded/syncing is acceptable if first transaction sync is delayed. |
+| 6. Manual resync | Resync completes without duplicate UI noise | Ready to retest | Pending | Use Accounts refresh/resync after initial connect. |
+| 7. CSV fallback | Import CSV instead still works for a manual account | Ready to retest | Pending | Keep CSV as fallback only. |
+| 8. CSV into Plaid-connected account | Calm duplicate-risk warning appears | Ready to retest | Pending | Do not import private CSV during this Plaid-only pass unless needed. |
+| 9. Assistant financial truth | Assistant answers from connected accounts, transactions, and budgets | Ready to retest | Pending | Ask sanitized questions only; do not paste private balances into this report. |
 
 ## Data Checks
 
@@ -125,29 +147,31 @@ Record sanitized counts only:
 - Connected institutions: Pending
 - Connected accounts created: Pending
 - Plaid transactions synced: Pending
+- Plaid pending transactions shown or excluded according to UI rule: Pending
+- Assistant can answer from Plaid-backed account/transaction/budget context:
+  Pending
 - Manual/CSV transactions imported during fallback check: Pending
 - Duplicate warnings shown: Pending
 
 ## Security Checks
 
-- Link token is short-lived and never persisted on mobile: Pending manual
-  confirmation
-- Public token is sent to backend only once for exchange: Pending manual
-  confirmation
+- Link token is short-lived and never persisted on mobile: Covered by code and
+  tests; pending final production log review
+- Public token is sent to backend only once for exchange: Covered by code and
+  tests; pending final production log review
 - Access token is never exposed to mobile/UI/logs: Covered by backend design,
   pending final production log review
 - Plaid production keys are stored only in VPS environment: Passed readiness
   check before this report
+- Apple App Site Association is served for `7N42NS8B9B.app.goclarity.clarity`:
+  Passed prior VPS check
 
 ## Remaining Risks
 
-- Real OAuth institution behavior is unverified until physical-device testing is
-  completed with a configured redirect URI / Universal Link.
-- Production iOS OAuth flows require `PLAID_REDIRECT_URI` to match a Plaid
-  dashboard Allowed redirect URI and an iOS Universal Link associated with the
-  app.
-- The Universal Link fix must be deployed to the VPS and installed on the test
-  iPhone before retesting Bank of America.
+- Real OAuth institution behavior remains unverified after the fix until the
+  fresh physical-device pass is completed.
+- The latest app build must be installed on the test iPhone before retesting
+  Bank of America.
 - `PLAID_WEBHOOK_URL` should be set to the public backend webhook endpoint before
   launch so Plaid can notify Clarity about item updates.
 - Android package name and Android physical-device Link flow still need their

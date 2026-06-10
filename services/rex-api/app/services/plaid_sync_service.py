@@ -102,6 +102,7 @@ class PlaidSyncService:
                 user_id=user_id,
                 item_id=normalized_item_id,
                 access_token=access_token,
+                institution_name=string_or_none(item.get("institution_name")),
             )
             sync_counts = await self.transaction_service.sync_transactions(
                 user_id=user_id,
@@ -125,6 +126,16 @@ class PlaidSyncService:
             transactions_modified=sync_counts["modified"],
             transactions_removed=sync_counts["removed"],
             next_cursor=sync_counts["next_cursor"],
+        )
+
+    async def mark_item_sync_degraded(self, item_id: str) -> None:
+        normalized_item_id = item_id.strip()
+        if not normalized_item_id:
+            raise PlaidSyncServiceError("item_id is required.", status_code=400)
+        await self.cursor_service.update_item_status(
+            normalized_item_id,
+            status="degraded",
+            metadata={"last_sync_error": "initial_sync_failed"},
         )
 
     def verify_webhook_signature(self, plaid_verification: Optional[str]) -> bool:

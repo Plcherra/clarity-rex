@@ -15,6 +15,7 @@ from app.services.plaid_sync_service import (
 class FakePlaidSyncService:
     exchange_call = None
     sync_call = None
+    degraded_call = None
 
     async def exchange_public_token(self, **kwargs):
         self.exchange_call = kwargs
@@ -35,6 +36,9 @@ class FakePlaidSyncService:
             next_cursor="cursor-1",
         )
 
+    async def mark_item_sync_degraded(self, item_id):
+        self.degraded_call = item_id
+
 
 class PlaidExchangeFailureService:
     async def exchange_public_token(self, **kwargs):
@@ -49,6 +53,11 @@ class PlaidStorageFailureService:
 class PlaidInitialSyncFailureService(FakePlaidSyncService):
     async def sync_item(self, item_id):
         raise PlaidSyncServiceError("Could not sync Plaid accounts right now.")
+
+
+class PlaidInitialSyncPlaidFailureService(FakePlaidSyncService):
+    async def sync_item(self, item_id):
+        raise PlaidApiClientError("Plaid sync failed safely.", status_code=503)
 
 
 async def fake_current_user():
@@ -141,10 +150,9 @@ def test_exchange_token_route_returns_safe_storage_error():
 
 
 def test_exchange_token_route_returns_safe_initial_sync_error():
+    sync_service = PlaidInitialSyncFailureService()
     app.dependency_overrides[get_current_user] = fake_current_user
-    app.dependency_overrides[get_plaid_sync_service] = (
-        lambda: PlaidInitialSyncFailureService()
-    )
+    app.dependency_overrides[get_plaid_sync_service] = lambda: sync_service
 
     with TestClient(app) as client:
         response = client.post(
@@ -152,8 +160,36 @@ def test_exchange_token_route_returns_safe_initial_sync_error():
             json={"public_token": "public-token"},
         )
 
-    assert response.status_code == 503
-    assert response.json()["detail"] == "Could not sync Plaid accounts right now."
+    assert response.status_code == 200
+    assert response.json() == {
+        "plaid_item_record_id": "item-record-1",
+        "status": "degraded",
+        "institution_name": "Sandbox Bank",
+        "accounts": [],
+        "accounts_synced": 0,
+        "transactions_added": 0,
+        "transactions_modified": 0,
+        "transactions_removed": 0,
+    }
+    assert sync_service.degraded_call == "item-record-1"
+    assert "public-token" not in response.text
+
+
+def test_exchange_token_route_defers_plaid_initial_sync_failure():
+    sync_service = PlaidInitialSyncPlaidFailureService()
+    app.dependency_overrides[get_current_user] = fake_current_user
+    app.dependency_overrides[get_plaid_sync_service] = lambda: sync_service
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/plaid/exchange-token",
+            json={"public_token": "public-token"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "degraded"
+    assert response.json()["plaid_item_record_id"] == "item-record-1"
+    assert sync_service.degraded_call == "item-record-1"
     assert "public-token" not in response.text
 
 

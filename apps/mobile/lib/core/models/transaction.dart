@@ -45,6 +45,7 @@ class Transaction {
     this.fingerprint,
     this.financialRole,
     this.source,
+    this.pending = false,
   });
 
   /// Parsed calendar date in local terms (time set to noon to avoid DST edge cases).
@@ -73,6 +74,9 @@ class Transaction {
 
   /// Persistence source such as `plaid`, `csv`, or `manual`.
   final String? source;
+
+  /// True while Plaid has not posted the transaction as final.
+  final bool pending;
 
   bool get isOutflow => amount < 0;
 

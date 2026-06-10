@@ -770,6 +770,98 @@ void main() {
       'message': 'Could not fetch budgets.',
     });
   });
+
+  test('Plaid multi-account totals use signs and exclude pending rollups', () {
+    final model = FinancialReadModel.fromRecords(
+      accounts: const [
+        Account(
+          id: 'checking',
+          name: 'Adv Plus Banking',
+          type: AccountType.checking,
+          currentBalance: 1000,
+          source: 'plaid',
+          plaidItemId: 'item-bank-of-america',
+          plaidAccountId: 'plaid-checking',
+        ),
+        Account(
+          id: 'credit',
+          name: 'Credit',
+          type: AccountType.creditCard,
+          currentBalance: 200,
+          source: 'plaid',
+          plaidItemId: 'item-bank-of-america',
+          plaidAccountId: 'plaid-credit',
+        ),
+      ],
+      categories: [
+        _category(id: 'cat-payroll', name: 'Income / Payroll'),
+        _category(id: 'cat-coffee', name: 'Coffee / Quick Food'),
+      ],
+      transactionRecords: [
+        _record(
+          id: 'payroll',
+          amount: 3000,
+          type: 'income',
+          description: 'PAYROLL',
+          categoryId: 'cat-payroll',
+          source: 'plaid',
+          date: DateTime(2026, 6, 3),
+        ),
+        _record(
+          id: 'coffee',
+          amount: 25,
+          type: 'expense',
+          description: 'COFFEE SHOP',
+          categoryId: 'cat-coffee',
+          source: 'plaid',
+          date: DateTime(2026, 6, 4),
+        ),
+        _record(
+          id: 'card-posted',
+          accountId: 'credit',
+          amount: 100,
+          type: 'expense',
+          description: 'RESTAURANT',
+          categoryId: 'cat-coffee',
+          source: 'plaid',
+          date: DateTime(2026, 6, 5),
+        ),
+        _record(
+          id: 'card-pending',
+          accountId: 'credit',
+          amount: 10,
+          type: 'expense',
+          description: 'PENDING COFFEE',
+          categoryId: 'cat-coffee',
+          source: 'plaid',
+          pending: true,
+          date: DateTime(2026, 6, 6),
+        ),
+      ],
+      budgets: const [],
+    );
+
+    final snapshot = model.dashboardSnapshot(
+      scope: const GlobalDashboardScope(),
+      reference: DateTime(2026, 6, 9),
+    );
+
+    expect(snapshot.totalBalance, 800);
+    expect(snapshot.incomeThisMonth, 3000);
+    expect(snapshot.spentThisMonth, 125);
+    expect(snapshot.availableThisMonth, 2875);
+    expect(model.transactionsByAccount['checking'], hasLength(2));
+    expect(model.transactionsByAccount['credit'], hasLength(2));
+    expect(model.transactionsByAccount['credit']!.last.pending, isTrue);
+    expect(
+      model.spentByDisplayCategoryForScopeInRange(
+        const GlobalDashboardScope(),
+        start: DateTime(2026, 6),
+        end: DateTime(2026, 6, 30),
+      ),
+      {'Coffee / Quick Food': 125},
+    );
+  });
 }
 
 Transaction _transaction({
@@ -778,6 +870,7 @@ Transaction _transaction({
   required double amount,
   required String category,
   DateTime? date,
+  bool pending = false,
 }) {
   return Transaction(
     date: date ?? DateTime(2026, 3, 2),
@@ -785,6 +878,7 @@ Transaction _transaction({
     amount: amount,
     accountId: accountId,
     categoryLabel: category,
+    pending: pending,
   );
 }
 
@@ -816,6 +910,10 @@ TransactionRecord _record({
   required String description,
   String? categoryId,
   String? financialRole,
+  String source = 'manual',
+  bool pending = false,
+  DateTime? date,
+  bool importedFromCsv = false,
 }) {
   final now = DateTime(2026, 3);
   return TransactionRecord(
@@ -827,8 +925,10 @@ TransactionRecord _record({
     type: type,
     financialRole: financialRole,
     description: description,
-    date: DateTime(2026, 3, 2),
-    importedFromCsv: true,
+    date: date ?? DateTime(2026, 3, 2),
+    importedFromCsv: importedFromCsv,
+    source: source,
+    pending: pending,
     createdAt: now,
     updatedAt: now,
   );

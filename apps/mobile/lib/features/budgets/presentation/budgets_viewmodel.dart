@@ -49,6 +49,25 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
       if (key.isEmpty) return;
       final id = categoryId?.trim();
       final canonical = id != null && id.isNotEmpty ? 'id:$id' : 'key:$key';
+      final identityKeys = {
+        canonical,
+        'key:$key',
+        if (id != null && id.isNotEmpty) 'id:$id',
+      };
+      String? existingCanonical;
+      for (final entry in rowsByCanonical.entries) {
+        if (identityKeys.any(entry.value.matchesIdentity)) {
+          existingCanonical = entry.key;
+          break;
+        }
+      }
+      if (existingCanonical != null) {
+        final existing = rowsByCanonical[existingCanonical]!;
+        rowsByCanonical[existingCanonical] = existing.withIdentityKeys(
+          identityKeys,
+        );
+        return;
+      }
       rowsByCanonical.putIfAbsent(
         canonical,
         () => BudgetCategoryRow(
@@ -56,6 +75,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
           categoryId: id != null && id.isNotEmpty ? id : null,
           categoryKey: key,
           displayLabel: label,
+          identityKeys: identityKeys,
         ),
       );
     }
@@ -161,30 +181,12 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
     required Map<String, double> spentByIdentity,
   }) async {
     final budgets = await _fetchBudgetsForPeriod(periodType, periodKey);
-    final items = <BudgetCategoryListItemData>[];
-    for (final row in rows) {
-      final spent = spentByIdentity[row.canonical] ?? 0;
-      final budget = hasSelectedPeriod
-          ? _budgetForCanonical(row.canonical, budgets)
-          : null;
-      final overspent = budget != null && spent > budget;
-      final remaining = budget == null ? null : budget - spent;
-      final statusText = budget == null
-          ? 'Spent ${formatMoney(spent)} · No budget'
-          : overspent
-          ? 'Spent ${formatMoney(spent)} · Over ${formatMoney(-remaining!)}'
-          : 'Spent ${formatMoney(spent)} · Left ${formatMoney(remaining!)}';
-      items.add(
-        BudgetCategoryListItemData(
-          canonical: row.canonical,
-          displayLabel: row.displayLabel,
-          statusText: statusText,
-          hasBudget: budget != null,
-          isOverspent: overspent,
-        ),
-      );
-    }
-    return items;
+    return buildBudgetCategoryListItemsForRows(
+      rows: rows,
+      hasSelectedPeriod: hasSelectedPeriod,
+      budgets: budgets,
+      spentByIdentity: spentByIdentity,
+    );
   }
 
   Future<void> updateUnsavedChanges({
@@ -212,7 +214,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
     for (final row in rows) {
       final raw = controllers[row.canonical]?.text.trim() ?? '';
       final draftValue = _parseBudgetRaw(raw);
-      final currentValue = _budgetForCanonical(row.canonical, budgets);
+      final currentValue = _budgetForBudgetRow(row, budgets);
       if (!_sameNullableDouble(draftValue, currentValue)) {
         return true;
       }
@@ -236,7 +238,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
       final focus = focusNodes[row.canonical];
       final controller = controllers[row.canonical];
       if (focus == null || controller == null || focus.hasFocus) continue;
-      final budget = _budgetForCanonical(row.canonical, budgets);
+      final budget = _budgetForBudgetRow(row, budgets);
       final nextText = budget == null ? '' : formatBudgetSeed(budget);
       if (controller.text != nextText) {
         controller.text = nextText;
@@ -300,20 +302,6 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
     }).toList();
   }
 
-  double? _budgetForCanonical(String canonical, List<BudgetRecord> budgets) {
-    for (final budget in budgets) {
-      if (_budgetCanonical(budget) == canonical) return budget.amount;
-    }
-    return null;
-  }
-
-  String _budgetCanonical(BudgetRecord budget) {
-    final id = budget.categoryId?.trim();
-    if (id != null && id.isNotEmpty) return 'id:$id';
-    final key = _budgetCategoryKey(budget);
-    return key.isEmpty ? '' : 'key:$key';
-  }
-
   String _budgetCategoryKey(BudgetRecord budget, {CategoryRecord? category}) {
     if (category != null) {
       return categoryRecordKey(
@@ -329,4 +317,69 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
   void dispose() {
     hasUnsavedChanges.dispose();
   }
+}
+
+List<BudgetCategoryListItemData> buildBudgetCategoryListItemsForRows({
+  required List<BudgetCategoryRow> rows,
+  required bool hasSelectedPeriod,
+  required List<BudgetRecord> budgets,
+  required Map<String, double> spentByIdentity,
+}) {
+  final items = <BudgetCategoryListItemData>[];
+  for (final row in rows) {
+    final spent = _spentForBudgetRow(row, spentByIdentity);
+    final budget = hasSelectedPeriod ? _budgetForBudgetRow(row, budgets) : null;
+    if (spent.abs() < 1e-9 && budget == null) continue;
+    final overspent = budget != null && spent > budget;
+    final remaining = budget == null ? null : budget - spent;
+    final statusText = budget == null
+        ? 'Spent ${formatMoney(spent)} · No budget'
+        : overspent
+        ? 'Spent ${formatMoney(spent)} · Over ${formatMoney(-remaining!)}'
+        : 'Spent ${formatMoney(spent)} · Left ${formatMoney(remaining!)}';
+    items.add(
+      BudgetCategoryListItemData(
+        canonical: row.canonical,
+        displayLabel: row.displayLabel,
+        statusText: statusText,
+        hasBudget: budget != null,
+        isOverspent: overspent,
+      ),
+    );
+  }
+  return items;
+}
+
+double _spentForBudgetRow(
+  BudgetCategoryRow row,
+  Map<String, double> spentByIdentity,
+) {
+  var total = 0.0;
+  final seenKeys = <String>{};
+  for (final key in {row.canonical, ...row.identityKeys}) {
+    if (seenKeys.add(key)) {
+      total += spentByIdentity[key] ?? 0;
+    }
+  }
+  return total;
+}
+
+double? _budgetForBudgetRow(BudgetCategoryRow row, List<BudgetRecord> budgets) {
+  for (final budget in budgets) {
+    if (row.matchesIdentity(_budgetCanonical(budget))) return budget.amount;
+  }
+  return null;
+}
+
+String _budgetCanonical(BudgetRecord budget) {
+  final id = budget.categoryId?.trim();
+  if (id != null && id.isNotEmpty) return 'id:$id';
+  final key = _budgetCategoryKeyForRecord(budget);
+  return key.isEmpty ? '' : 'key:$key';
+}
+
+String _budgetCategoryKeyForRecord(BudgetRecord budget) {
+  final stored = budget.categoryKey?.trim();
+  if (stored != null && stored.isNotEmpty) return stored;
+  return normalizedCategoryKey(budget.name);
 }

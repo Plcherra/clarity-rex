@@ -55,6 +55,7 @@ String _displayCategory(ResolvedTransaction transaction) {
 }
 
 bool _isSpendCategoryTransaction(ResolvedTransaction transaction) {
+  if (transaction.transaction.pending) return false;
   final category = _displayCategory(transaction);
   if (isUnresolvedCategoryLabel(category) ||
       isIncomeCategoryLabel(category) ||
@@ -62,6 +63,33 @@ bool _isSpendCategoryTransaction(ResolvedTransaction transaction) {
     return false;
   }
   return transaction.countsAsSpend;
+}
+
+class _TransactionMetaChip extends StatelessWidget {
+  const _TransactionMetaChip(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _dashboardOutline),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: cs.onSurface.withValues(alpha: 0.56),
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
 }
 
 DateTime? _latestTransactionDate(List<Transaction> transactions) {

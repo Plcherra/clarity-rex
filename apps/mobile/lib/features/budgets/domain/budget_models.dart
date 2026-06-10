@@ -25,6 +25,7 @@ class BudgetPerformanceSnapshot {
     required this.onTrackCategoryCount,
     required this.totalOverspent,
     required this.topOverspendingCategories,
+    this.categories = const [],
   });
 
   final BudgetPeriodType periodType;
@@ -36,6 +37,7 @@ class BudgetPerformanceSnapshot {
   final int onTrackCategoryCount;
   final double totalOverspent;
   final List<BudgetCategoryPerformance> topOverspendingCategories;
+  final List<BudgetCategoryPerformance> categories;
 }
 
 class BudgetDraftEntry {

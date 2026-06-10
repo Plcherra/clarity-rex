@@ -4,6 +4,12 @@ from pathlib import Path
 MIGRATION = Path(__file__).resolve().parents[3] / "supabase" / "migrations" / (
     "20260607000200_create_plaid_foundation.sql"
 )
+PLAID_ACCOUNT_INSTITUTION_MIGRATION = (
+    Path(__file__).resolve().parents[3]
+    / "supabase"
+    / "migrations"
+    / "20260609000100_add_plaid_account_institution_name.sql"
+)
 
 
 def test_plaid_foundation_migration_is_user_scoped_and_select_only():
@@ -43,3 +49,11 @@ def test_plaid_source_columns_preserve_csv_and_manual_paths():
     assert "where imported_from_csv = true" in sql
     assert "accounts_user_plaid_account_uidx" in sql
     assert "transactions_user_plaid_transaction_uidx" in sql
+
+
+def test_plaid_accounts_keep_institution_snapshot_for_mobile_display():
+    sql = PLAID_ACCOUNT_INSTITUTION_MIGRATION.read_text().lower()
+
+    assert "alter table public.plaid_accounts" in sql
+    assert "add column if not exists institution_name text" in sql
+    assert "plaid_accounts_user_institution_idx" in sql

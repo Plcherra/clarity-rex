@@ -67,7 +67,7 @@ class BudgetCategoryList extends StatelessWidget {
             child: items.isEmpty
                 ? Center(
                     child: Text(
-                      'No categories yet.',
+                      'No active budget categories yet.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: cs.onSurface.withValues(alpha: 0.56),
                       ),

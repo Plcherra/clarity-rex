@@ -42,6 +42,18 @@ class FullSyncPlaidClient:
                         "available": 90.0,
                         "iso_currency_code": "USD",
                     },
+                },
+                {
+                    "account_id": "plaid-account-2",
+                    "name": "Credit Card",
+                    "type": "credit",
+                    "subtype": "credit card",
+                    "mask": "9876",
+                    "balances": {
+                        "current": 321.98,
+                        "available": 1200.0,
+                        "iso_currency_code": "USD",
+                    },
                 }
             ]
         }
@@ -131,6 +143,7 @@ def sync_storage_response(url, body, token_ref):
                     "id": "item-record-1",
                     "user_id": "user-1",
                     "plaid_item_id": "plaid-item-id",
+                    "institution_name": "Bank of Test",
                     "sync_cursor": "cursor-old",
                     "status": "active",
                 }
@@ -139,7 +152,12 @@ def sync_storage_response(url, body, token_ref):
     if "/plaid_item_secrets?" in url:
         return response(json_data=[{"access_token_ref": token_ref}])
     if "/accounts?" in url:
-        return response(json_data=[{"id": "linked-account-1"}])
+        linked_id = (
+            "linked-account-2"
+            if body and body.get("plaid_account_id") == "plaid-account-2"
+            else "linked-account-1"
+        )
+        return response(json_data=[{"id": linked_id}])
     return response(status_code=204, text="")
 
 
@@ -228,6 +246,46 @@ async def test_exchange_public_token_requires_supabase_service_role(monkeypatch)
             user_id="user-1",
             public_token="public-token",
         )
+
+
+@pytest.mark.asyncio
+async def test_mark_item_sync_degraded_updates_item_status(monkeypatch):
+    calls = []
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return response(status_code=204, text="")
+
+    monkeypatch.setattr(
+        "app.services.plaid_cursor_service.request_with_retries",
+        fake_request,
+    )
+    service = PlaidSyncService(
+        plaid_client=FakePlaidClient(),
+        settings=settings(),
+    )
+
+    await service.mark_item_sync_degraded("item-record-1")
+
+    assert calls == [
+        {
+            "method": "PATCH",
+            "url": (
+                "https://example.supabase.co/rest/v1/plaid_items?"
+                "id=eq.item-record-1"
+            ),
+            "headers": {
+                "apikey": "service-role-key",
+                "Authorization": "Bearer service-role-key",
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal",
+            },
+            "json": {
+                "status": "degraded",
+                "metadata": {"last_sync_error": "initial_sync_failed"},
+            },
+        }
+    ]
 
 
 def test_webhook_signature_requires_plaid_config_and_header():
@@ -394,18 +452,38 @@ async def test_sync_item_persists_accounts_transactions_and_cursor(monkeypatch):
 
     result = await service.sync_item("item-record-1")
 
-    assert result.accounts_synced == 1
+    assert result.accounts_synced == 2
     assert result.transactions_added == 2
     assert result.transactions_modified == 1
     assert result.transactions_removed == 1
     assert result.next_cursor == "cursor-final"
     assert plaid_client.sync_cursors == ["cursor-old", "cursor-mid"]
 
-    account_call = next(
-        call for call in calls if "/accounts?" in call["url"] and call["method"] == "POST"
-    )
-    assert account_call["json"]["source"] == "plaid"
-    assert account_call["json"]["plaid_account_id"] == "plaid-account-1"
+    account_calls = [
+        call
+        for call in calls
+        if "/accounts?" in call["url"] and call["method"] == "POST"
+    ]
+    assert len(account_calls) == 2
+    assert account_calls[0]["json"]["source"] == "plaid"
+    assert account_calls[0]["json"]["institution"] == "Bank of Test"
+    assert account_calls[0]["json"]["plaid_account_id"] == "plaid-account-1"
+    assert account_calls[1]["json"]["plaid_account_id"] == "plaid-account-2"
+    assert account_calls[1]["json"]["type"] == "credit card"
+    assert account_calls[1]["json"]["balance"] == 321.98
+
+    plaid_account_calls = [
+        call
+        for call in calls
+        if "/plaid_accounts?" in call["url"] and call["method"] == "POST"
+    ]
+    assert len(plaid_account_calls) == 2
+    assert plaid_account_calls[0]["json"]["institution_name"] == "Bank of Test"
+    assert plaid_account_calls[0]["json"]["mask"] == "1234"
+    assert plaid_account_calls[0]["json"]["account_subtype"] == "checking"
+    assert plaid_account_calls[1]["json"]["institution_name"] == "Bank of Test"
+    assert plaid_account_calls[1]["json"]["mask"] == "9876"
+    assert plaid_account_calls[1]["json"]["account_subtype"] == "credit card"
 
     transaction_calls = [
         call

@@ -287,6 +287,10 @@ class _InlineTransactionCard extends StatelessWidget {
                   controller: controller,
                   transaction: rawTransaction,
                 ),
+                if (rawTransaction.pending) ...[
+                  const SizedBox(height: 8),
+                  const _TransactionMetaChip('Pending'),
+                ],
               ],
             ),
           ),

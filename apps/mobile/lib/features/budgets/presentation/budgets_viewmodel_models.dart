@@ -5,13 +5,30 @@ class BudgetCategoryRow {
     required this.canonical,
     required this.categoryKey,
     required this.displayLabel,
+    Set<String>? identityKeys,
     this.categoryId,
-  });
+  }) : identityKeys = identityKeys ?? const {};
 
   final String canonical;
   final String categoryKey;
   final String displayLabel;
+  final Set<String> identityKeys;
   final String? categoryId;
+
+  bool matchesIdentity(String identity) {
+    if (identity.isEmpty) return false;
+    return canonical == identity || identityKeys.contains(identity);
+  }
+
+  BudgetCategoryRow withIdentityKeys(Set<String> keys) {
+    return BudgetCategoryRow(
+      canonical: canonical,
+      categoryId: categoryId,
+      categoryKey: categoryKey,
+      displayLabel: displayLabel,
+      identityKeys: {...identityKeys, ...keys, canonical},
+    );
+  }
 }
 
 class BudgetPeriodChange {

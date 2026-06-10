@@ -84,6 +84,8 @@ class _PlaidTransactionRow extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   SourceLabelChip(label: transaction.sourceLabel),
+                  if (transaction.pending)
+                    const SourceLabelChip(label: 'Pending'),
                   Text(
                     _shortDate(transaction.date),
                     style: theme.textTheme.labelSmall?.copyWith(

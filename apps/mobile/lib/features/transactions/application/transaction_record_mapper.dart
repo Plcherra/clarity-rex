@@ -15,6 +15,7 @@ Transaction transactionFromRecord(
     fingerprint: record.id,
     financialRole: financialRoleFromStorageValue(record.financialRole),
     source: record.source,
+    pending: record.pending,
   );
 }
 

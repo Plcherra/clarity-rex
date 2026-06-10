@@ -34,6 +34,7 @@ double totalIncomeInMonth(
   var sum = 0.0;
   for (final r in resolved) {
     final t = r.transaction;
+    if (t.pending) continue;
     if (!_inMonth(t.date, reference)) continue;
     if (!r.countsAsIncome) continue;
     sum += t.amount;
@@ -62,6 +63,7 @@ Map<String, double> _spendByCategoryInMonth(
   final map = <String, double>{};
   for (final r in resolved) {
     final t = r.transaction;
+    if (t.pending) continue;
     if (!_inMonth(t.date, month)) continue;
     if (!r.countsAsSpend) continue;
     final name = r.displayCategory;

@@ -453,6 +453,11 @@ Acceptance criteria:
 Preflight note:
 
 - Automated readiness passed on 2026-06-08. Real account validation cannot be marked complete until Pedro runs the physical-device flow and records results in the QA report.
+- Real-bank fix readiness passed on 2026-06-09 after the Plaid OAuth callback,
+  exchange resilience, account persistence, dashboard, budget, and Assistant
+  truth fixes. The final gate is still Pedro's fresh physical-device production
+  connection test with sanitized results recorded in
+  `PLAID_MOBILE_REAL_ACCOUNT_QA_REPORT.md`.
 
 ## Verification Commands
 

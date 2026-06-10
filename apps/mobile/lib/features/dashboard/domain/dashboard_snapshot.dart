@@ -97,6 +97,7 @@ DashboardSnapshot buildDashboardSnapshot({
   var income = 0.0;
   for (final r in resolved) {
     final t = r.transaction;
+    if (t.pending) continue;
     if (t.date.year != y || t.date.month != m) continue;
     if (r.countsAsSpend) spent += -t.amount;
     if (r.countsAsIncome) income += t.amount;
@@ -108,6 +109,7 @@ DashboardSnapshot buildDashboardSnapshot({
   final topMap = <String, double>{};
   for (final r in resolved) {
     final t = r.transaction;
+    if (t.pending) continue;
     if (!r.countsAsSpend) continue;
     if (t.date.year != y || t.date.month != m) continue;
     final display = r.displayCategory;
@@ -127,7 +129,7 @@ DashboardSnapshot buildDashboardSnapshot({
   // for role resolution context. For v1, this is acceptable; the major correctness
   // issue (CC payment exclusion) is handled in spend/income above.
   final leaks = biggestCategoryLeaks(
-    scopedTransactions,
+    scopedTransactions.where((transaction) => !transaction.pending).toList(),
     accounts,
     reference,
     limit: 3,

@@ -78,7 +78,7 @@ class PlaidCursorService:
             "GET",
             PLAID_ITEMS_TABLE,
             query={
-                "select": "id,user_id,plaid_item_id,sync_cursor,status",
+                "select": "id,user_id,plaid_item_id,institution_name,sync_cursor,status",
                 "id": f"eq.{item_id}",
                 "limit": "1",
             },
@@ -147,6 +147,24 @@ class PlaidCursorService:
                 "sync_cursor": next_cursor,
                 "last_synced_at": utc_now_iso(),
                 "status": "active",
+            },
+            query={"id": f"eq.{item_id}"},
+            prefer="return=minimal",
+        )
+
+    async def update_item_status(
+        self,
+        item_id: str,
+        *,
+        status: str,
+        metadata: dict[str, Any],
+    ) -> None:
+        await self.supabase_request(
+            "PATCH",
+            PLAID_ITEMS_TABLE,
+            body={
+                "status": status,
+                "metadata": metadata,
             },
             query={"id": f"eq.{item_id}"},
             prefer="return=minimal",
