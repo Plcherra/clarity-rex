@@ -1,11 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
-import 'package:plaid_flutter/plaid_flutter.dart';
 
 import '../../../core/rex/rex_api_client.dart';
 export 'plaid_connection_models.dart';
@@ -18,7 +15,7 @@ final class PlaidLinkService {
     PlaidLinkLauncher? launcher,
   }) : _tokenApi = tokenApi ?? RexPlaidApi(),
        _exchangeApi = exchangeApi ?? RexPlaidApi(),
-       _launcher = launcher ?? const PlaidFlutterLinkLauncher();
+       _launcher = launcher ?? const NativePlaidLinkLauncher();
 
   final PlaidLinkTokenApi _tokenApi;
   final PlaidPublicTokenExchangeApi _exchangeApi;
@@ -171,198 +168,58 @@ final class RexPlaidApi
   }
 }
 
-final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
-  const PlaidFlutterLinkLauncher();
+final class NativePlaidLinkLauncher implements PlaidLinkLauncher {
+  const NativePlaidLinkLauncher({
+    MethodChannel channel = const MethodChannel('clarity/plaid_link'),
+  }) : _channel = channel;
 
-  static final Uri _plaidOauthBaseUri = Uri.parse(
-    'https://api.goclarity.app/plaid/oauth',
-  );
-  static const EventChannel _nativeOauthLinks = EventChannel(
-    'clarity/plaid_oauth_links',
-  );
-  static const EventChannel _nativeLinkSuccesses = EventChannel(
-    'clarity/plaid_link_success',
-  );
+  final MethodChannel _channel;
 
   @override
   Future<PlaidLinkLaunchResult> open(PlaidLinkToken token) async {
-    final completer = Completer<PlaidLinkLaunchResult>();
-    final appLinks = AppLinks();
-    final handoff = _PlaidLinkHandoffState();
-    final resumedOauthRedirects = <String>{};
-    late final StreamSubscription<LinkSuccess> successSubscription;
-    late final StreamSubscription<LinkExit> exitSubscription;
-    late final StreamSubscription<LinkEvent> eventSubscription;
-    late final StreamSubscription<Uri> oauthRedirectSubscription;
-    late final StreamSubscription<Uri> nativeOauthRedirectSubscription;
-    late final StreamSubscription<PlaidLinkLaunchSuccess>
-    nativeSuccessSubscription;
-    late final AppLifecycleListener lifecycleListener;
-    Timer? pendingExitTimer;
-
-    void complete(PlaidLinkLaunchResult result) {
-      if (!completer.isCompleted) completer.complete(result);
-    }
-
-    Future<void> resumePlaidOauth(Uri uri) async {
-      if (!_isPlaidOauthRedirect(uri)) return;
-      if (!resumedOauthRedirects.add(uri.toString())) {
-        _debugPlaidLink(
-          'oauth redirect duplicate ignored host=${uri.host} path=${uri.path}',
-        );
-        return;
-      }
-      _debugPlaidLink(
-        'oauth redirect received host=${uri.host} path=${uri.path}',
-      );
-      handoff.markOauthRedirectReceived();
-      pendingExitTimer?.cancel();
-      try {
-        _debugPlaidLink('oauth resume attempted');
-        await PlaidLink.resumeAfterTermination(uri.toString());
-        _debugPlaidLink('oauth resume completed');
-      } on Object catch (error) {
-        _debugPlaidLink('oauth redirect resume failed=$error');
-      }
-    }
-
-    Future<void> resumeLatestPlaidOauth(String source) async {
-      try {
-        final latestUri = await appLinks.getLatestLink();
-        if (latestUri == null) return;
-        _debugPlaidLink(
-          'latest link check source=$source uri=${latestUri.path}',
-        );
-        await resumePlaidOauth(latestUri);
-      } on Object catch (error) {
-        _debugPlaidLink('latest link check failed source=$source error=$error');
-      }
-    }
-
-    successSubscription = PlaidLink.onSuccess.listen((event) {
-      pendingExitTimer?.cancel();
-      final institution = event.metadata.institution;
-      _debugPlaidLink(
-        'success institution=${institution?.name ?? 'unknown'} '
-        'accounts=${event.metadata.accounts.length} '
-        'public_token_present=${event.publicToken.trim().isNotEmpty}',
-      );
-      complete(
-        PlaidLinkLaunchSuccess(
-          publicToken: event.publicToken,
-          institutionId: institution?.id,
-          institutionName: institution?.name,
-          accountCount: event.metadata.accounts.length,
-        ),
-      );
-    });
-    nativeSuccessSubscription = _nativeLinkSuccessesStream().listen(
-      (event) {
-        pendingExitTimer?.cancel();
-        _debugPlaidLink(
-          'native success institution=${event.institutionName ?? 'unknown'} '
-          'accounts=${event.accountCount} '
-          'public_token_present=${event.publicToken.trim().isNotEmpty}',
-        );
-        complete(event);
-      },
-      onError: (Object error) {
-        _debugPlaidLink('native success listener error=$error');
-      },
-    );
-    exitSubscription = PlaidLink.onExit.listen((event) {
-      _debugPlaidLink(
-        'exit status=${event.metadata.status ?? 'unknown'} '
-        'error_code=${event.error?.code ?? 'none'} '
-        'error_type=${event.error?.type ?? 'none'} '
-        'request_id=${event.metadata.requestId ?? 'none'}',
-      );
-      handoff.markExitSeen(event);
-      final exit = PlaidLinkLaunchExit(
-        status: event.metadata.status,
-        errorCode: event.error?.code,
-        errorType: event.error?.type,
-        requestId: event.metadata.requestId,
-      );
-      pendingExitTimer?.cancel();
-      final exitDelay = handoff.exitDelay;
-      _debugPlaidLink('exit completion delayed ${exitDelay.inSeconds}s');
-      pendingExitTimer = Timer(exitDelay, () {
-        complete(exit);
-      });
-    });
-    eventSubscription = PlaidLink.onEvent.listen((event) {
-      final metadata = event.metadata;
-      _debugPlaidLink(
-        'event name=${event.name} '
-        'view=${metadata.viewName ?? 'unknown'} '
-        'exit_status=${metadata.exitStatus ?? 'none'} '
-        'error_code=${metadata.errorCode ?? 'none'} '
-        'institution=${metadata.institutionName ?? 'none'} '
-        'request_id=${metadata.requestId ?? 'none'}',
-      );
-      if (handoff.markEventSeen(event.name)) {
-        pendingExitTimer?.cancel();
-        _debugPlaidLink('oauth/handoff pending from event=${event.name}');
-      }
-    });
-    oauthRedirectSubscription = appLinks.uriLinkStream.listen(
-      (uri) {
-        _debugPlaidLink('app_links redirect stream uri=${uri.host}${uri.path}');
-        unawaited(resumePlaidOauth(uri));
-      },
-      onError: (Object error) {
-        _debugPlaidLink('oauth redirect listener error=$error');
-      },
-    );
-    nativeOauthRedirectSubscription = _nativeOauthRedirects().listen(
-      (uri) {
-        _debugPlaidLink('native redirect stream uri=${uri.host}${uri.path}');
-        unawaited(resumePlaidOauth(uri));
-      },
-      onError: (Object error) {
-        _debugPlaidLink('native redirect listener error=$error');
-      },
-    );
-    lifecycleListener = AppLifecycleListener(
-      onResume: () {
-        unawaited(resumeLatestPlaidOauth('app_resume'));
-      },
-    );
-
     try {
       _debugPlaidLink(
-        'create link token_present=${token.value.trim().isNotEmpty}',
+        'native open token_present=${token.value.trim().isNotEmpty}',
       );
-      await PlaidLink.create(
-        configuration: LinkTokenConfiguration(token: token.value),
-      );
-      await resumeLatestPlaidOauth('after_create');
-      _debugPlaidLink('open started');
-      await PlaidLink.open();
-      return completer.future.timeout(
+      final event = await _channel.invokeMethod<Object?>(
+        'open',
+        <String, Object?>{'linkToken': token.value},
+      ).timeout(
         const Duration(minutes: 5),
         onTimeout: () {
-          _debugPlaidLink('timeout waiting for Link success/exit callback');
-          return const PlaidLinkLaunchExit(status: 'timeout');
+          _debugPlaidLink('timeout waiting for native Link callback');
+          return <String, Object?>{
+            'type': 'exit',
+            'linkStatus': 'timeout',
+          };
         },
       );
+      final result = launchResultFromNative(event);
+      if (result == null) {
+        throw const PlaidLinkServiceException(
+          'Received an invalid bank connection result.',
+        );
+      }
+      return result;
     } on PlaidLinkServiceException {
       rethrow;
+    } on PlatformException catch (error) {
+      throw PlaidLinkServiceException(
+        error.message?.trim().isNotEmpty == true
+            ? error.message!.trim()
+            : 'Could not open bank connection.',
+        cause: error,
+      );
+    } on MissingPluginException catch (error) {
+      throw PlaidLinkServiceException(
+        'Bank connection is not available in this app build.',
+        cause: error,
+      );
     } on Object catch (error) {
       throw PlaidLinkServiceException(
         'Could not open bank connection.',
         cause: error,
       );
-    } finally {
-      pendingExitTimer?.cancel();
-      lifecycleListener.dispose();
-      await successSubscription.cancel();
-      await nativeSuccessSubscription.cancel();
-      await exitSubscription.cancel();
-      await eventSubscription.cancel();
-      await oauthRedirectSubscription.cancel();
-      await nativeOauthRedirectSubscription.cancel();
     }
   }
 
@@ -370,69 +227,32 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
     debugPrint('PlaidLink: $message');
   }
 
-  bool _isPlaidOauthRedirect(Uri uri) {
-    return uri.scheme == _plaidOauthBaseUri.scheme &&
-        uri.host == _plaidOauthBaseUri.host &&
-        (uri.path == _plaidOauthBaseUri.path ||
-            uri.path.startsWith('${_plaidOauthBaseUri.path}/'));
-  }
-
-  Stream<Uri> _nativeOauthRedirects() {
-    return _nativeOauthLinks.receiveBroadcastStream().map((event) {
-      final raw = event?.toString().trim() ?? '';
-      if (raw.isEmpty) {
-        throw const PlaidLinkServiceException(
-          'Received an empty bank redirect.',
-        );
-      }
-      return Uri.parse(raw);
-    });
-  }
-
-  Stream<PlaidLinkLaunchSuccess> _nativeLinkSuccessesStream() {
-    return _nativeLinkSuccesses.receiveBroadcastStream().map((event) {
-      final success = nativeLinkSuccessFromEvent(event);
-      if (success == null) {
-        throw const PlaidLinkServiceException(
-          'Received an invalid bank connection success event.',
-        );
-      }
-      return success;
-    });
-  }
-
   @visibleForTesting
-  static PlaidLinkLaunchSuccess? nativeLinkSuccessFromEvent(Object? event) {
+  static PlaidLinkLaunchResult? launchResultFromNative(Object? event) {
     if (event is! Map) return null;
+
+    final type = _stringFromNativeMap(event['type']);
+    if (type == 'exit') {
+      return PlaidLinkLaunchExit(
+        status: _stringFromNativeMap(event['linkStatus']),
+        errorCode: _stringFromNativeMap(event['errorCode']),
+        errorType: _stringFromNativeMap(event['errorType']),
+        requestId: _stringFromNativeMap(event['requestId']),
+      );
+    }
+
+    if (type != 'success') return null;
 
     final rawPublicToken = event['publicToken'];
     if (rawPublicToken is! String || rawPublicToken.trim().isEmpty) {
       return null;
     }
 
-    final metadata = event['metadata'];
-    String? institutionId;
-    String? institutionName;
-    var accountCount = 0;
-
-    if (metadata is Map) {
-      final institution = metadata['institution'];
-      if (institution is Map) {
-        institutionId = _stringFromNativeMap(institution['id']);
-        institutionName = _stringFromNativeMap(institution['name']);
-      }
-
-      final accounts = metadata['accounts'];
-      if (accounts is List) {
-        accountCount = accounts.length;
-      }
-    }
-
     return PlaidLinkLaunchSuccess(
       publicToken: rawPublicToken.trim(),
-      institutionId: institutionId,
-      institutionName: institutionName,
-      accountCount: accountCount,
+      institutionId: _stringFromNativeMap(event['institutionId']),
+      institutionName: _stringFromNativeMap(event['institutionName']),
+      accountCount: _intFromNativeMap(event['accountCount']),
     );
   }
 
@@ -440,42 +260,8 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
     if (value is! String || value.trim().isEmpty) return null;
     return value.trim();
   }
-}
 
-final class _PlaidLinkHandoffState {
-  static const _normalExitDelay = Duration(seconds: 4);
-  static const _handoffExitDelay = Duration(seconds: 90);
-
-  bool _handoffPending = false;
-
-  Duration get exitDelay =>
-      _handoffPending ? _handoffExitDelay : _normalExitDelay;
-
-  bool markEventSeen(String rawName) {
-    final name = _normalize(rawName);
-    final isOauthOrHandoff =
-        name.contains('oauth') || name == 'handoff' || name == 'openoauth';
-    if (isOauthOrHandoff) {
-      _handoffPending = true;
-    }
-    return isOauthOrHandoff;
-  }
-
-  void markOauthRedirectReceived() {
-    _handoffPending = true;
-  }
-
-  void markExitSeen(LinkExit event) {
-    final status = _normalize(event.metadata.status ?? '');
-    final errorCode = _normalize(event.error?.code ?? '');
-    if (status.contains('oauth') ||
-        errorCode.contains('oauth') ||
-        event.metadata.institution != null) {
-      _handoffPending = true;
-    }
-  }
-
-  String _normalize(String value) {
-    return value.trim().toLowerCase().replaceAll('_', '').replaceAll('-', '');
+  static int _intFromNativeMap(Object? value) {
+    return value is int ? value : 0;
   }
 }

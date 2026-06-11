@@ -48,9 +48,6 @@ dependencies:
   speech_to_text: ^7.3.0
   supabase_flutter: ^2.12.4
   qr_flutter: ^4.1.0
-  plaid_flutter:
-    path: vendor/plaid_flutter
-  app_links: ^7.1.1
 
 dev_dependencies:
   flutter_test:
