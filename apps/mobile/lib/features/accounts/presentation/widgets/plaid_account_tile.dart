@@ -5,7 +5,6 @@ import '../../../../core/formatting/formatting.dart';
 import '../../data/plaid_account_service.dart';
 import 'plaid_account_detail_chip.dart';
 import 'plaid_account_header.dart';
-import 'plaid_recent_transactions.dart';
 
 class PlaidAccountTile extends StatelessWidget {
   const PlaidAccountTile({
@@ -67,7 +66,6 @@ class PlaidAccountTile extends StatelessWidget {
                   ),
                 ),
               ],
-              PlaidRecentTransactions(transactions: item.recentTransactions),
             ],
           ),
         ),

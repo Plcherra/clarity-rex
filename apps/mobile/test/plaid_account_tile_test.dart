@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets(
-    'PlaidAccountTile shows synced account details and transactions',
+    'PlaidAccountTile shows synced account overview without transaction previews',
     (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -60,15 +60,15 @@ void main() {
       expect(find.textContaining('**** 1234'), findsOneWidget);
       expect(find.text('Balance \$1,200.50'), findsOneWidget);
       expect(find.text('Available \$1,000.25'), findsOneWidget);
-      expect(find.text('Recent transactions'), findsOneWidget);
-      expect(find.text('Coffee Shop'), findsOneWidget);
-      expect(find.text('Payroll'), findsOneWidget);
-      expect(find.text('Plaid'), findsAtLeastNWidgets(3));
+      expect(find.text('Recent transactions'), findsNothing);
+      expect(find.text('Coffee Shop'), findsNothing);
+      expect(find.text('Payroll'), findsNothing);
+      expect(find.text('Plaid'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'PlaidAccountTile renders mixed Plaid and CSV transaction labels',
+    'PlaidAccountTile keeps mixed-source transactions out of the account overview',
     (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -114,10 +114,12 @@ void main() {
         ),
       );
 
-      expect(find.text('Synced Coffee'), findsOneWidget);
-      expect(find.text('CSV Grocery'), findsOneWidget);
-      expect(find.text('Plaid'), findsAtLeastNWidgets(2));
-      expect(find.text('Manual/CSV'), findsOneWidget);
+      expect(find.text('Everyday Checking'), findsOneWidget);
+      expect(find.text('Synced Coffee'), findsNothing);
+      expect(find.text('CSV Grocery'), findsNothing);
+      expect(find.text('Recent transactions'), findsNothing);
+      expect(find.text('Manual/CSV'), findsNothing);
+      expect(find.text('Plaid'), findsOneWidget);
     },
   );
 
@@ -151,6 +153,7 @@ void main() {
       ),
     );
 
-    expect(find.text('No synced transactions yet.'), findsOneWidget);
+    expect(find.text('Everyday Checking'), findsOneWidget);
+    expect(find.text('No synced transactions yet.'), findsNothing);
   });
 }
