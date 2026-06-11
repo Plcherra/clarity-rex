@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Optional
 
 from app.config import Settings, get_settings
@@ -17,6 +18,8 @@ from app.services.plaid_sync_models import (
 )
 from app.services.plaid_token_service import PlaidTokenService
 from app.services.plaid_transaction_service import PlaidTransactionService
+
+logger = logging.getLogger(__name__)
 
 
 class PlaidSyncService:
@@ -91,18 +94,29 @@ class PlaidSyncService:
         if not normalized_item_id:
             raise PlaidSyncServiceError("item_id is required.", status_code=400)
 
+        phase = "load_item"
+        user_id = "unknown"
         try:
             item, access_token_ref = await self.cursor_service.load_item_and_token_ref(
                 normalized_item_id
             )
+            phase = "decrypt_access_token"
             access_token = self._decrypt_access_token_ref(access_token_ref)
             user_id = required_string(item, "user_id")
+            phase = "sync_accounts"
             account_map = await self.account_service.sync_accounts(
                 user_id=user_id,
                 item_id=normalized_item_id,
                 access_token=access_token,
                 institution_name=string_or_none(item.get("institution_name")),
             )
+            logger.info(
+                "Plaid account sync completed user=%s item=%s accounts=%s",
+                _safe_user_label(user_id),
+                _safe_item_label(normalized_item_id),
+                len(account_map),
+            )
+            phase = "sync_transactions"
             sync_counts = await self.transaction_service.sync_transactions(
                 user_id=user_id,
                 item_id=normalized_item_id,
@@ -110,12 +124,40 @@ class PlaidSyncService:
                 cursor=string_or_none(item.get("sync_cursor")),
                 account_map=account_map,
             )
+            logger.info(
+                "Plaid transaction sync completed user=%s item=%s added=%s modified=%s removed=%s",
+                _safe_user_label(user_id),
+                _safe_item_label(normalized_item_id),
+                sync_counts["added"],
+                sync_counts["modified"],
+                sync_counts["removed"],
+            )
         except PlaidApiClientError as error:
+            logger.warning(
+                "Plaid sync API failed phase=%s user=%s item=%s status=%s code=%s request_id=%s detail=%s",
+                phase,
+                _safe_user_label(user_id),
+                _safe_item_label(normalized_item_id),
+                error.status_code,
+                _safe_error_detail(error.plaid_error_code),
+                _safe_error_detail(error.request_id),
+                _safe_error_detail(error.detail),
+            )
             if error.plaid_error_code == "RATE_LIMIT_EXCEEDED":
                 raise PlaidSyncServiceError(
                     "Plaid sync is rate limited. Try again later.",
                     status_code=429,
                 ) from error
+            raise
+        except PlaidSyncServiceError as error:
+            logger.warning(
+                "Plaid sync failed phase=%s user=%s item=%s status=%s detail=%s",
+                phase,
+                _safe_user_label(user_id),
+                _safe_item_label(normalized_item_id),
+                error.status_code,
+                _safe_error_detail(error.detail),
+            )
             raise
 
         return PlaidSyncResult(
@@ -199,3 +241,24 @@ def _webhook_event(payload: dict[str, Any]) -> str:
     if webhook_type == "ITEM" and webhook_code == "REMOVE":
         return "ITEM:REMOVE"
     return webhook_code
+
+
+def _safe_user_label(user_id: str) -> str:
+    normalized = user_id.strip()
+    if len(normalized) <= 8:
+        return normalized or "unknown"
+    return f"...{normalized[-8:]}"
+
+
+def _safe_item_label(item_id: str) -> str:
+    normalized = item_id.strip()
+    if len(normalized) <= 8:
+        return normalized or "unknown"
+    return f"...{normalized[-8:]}"
+
+
+def _safe_error_detail(value: object) -> str:
+    normalized = str(value or "").strip()
+    if not normalized:
+        return "none"
+    return normalized[:300]

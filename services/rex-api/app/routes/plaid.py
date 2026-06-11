@@ -188,20 +188,24 @@ async def exchange_public_token(
     except (PlaidApiClientError, PlaidSyncServiceError) as error:
         sync_status = "degraded"
         logger.warning(
-            "Plaid initial sync deferred user=%s item=%s error_type=%s",
+            "Plaid initial sync deferred user=%s item=%s error_type=%s status=%s detail=%s",
             _safe_user_label(current_user.id),
             _safe_item_label(result.plaid_item_record_id),
             error.__class__.__name__,
+            getattr(error, "status_code", "unknown"),
+            _safe_error_detail(getattr(error, "detail", str(error))),
         )
         try:
             await plaid_sync_service.mark_item_sync_degraded(
                 result.plaid_item_record_id,
             )
-        except PlaidSyncServiceError:
+        except PlaidSyncServiceError as degrade_error:
             logger.warning(
-                "Plaid item degraded status update failed user=%s item=%s",
+                "Plaid item degraded status update failed user=%s item=%s status=%s detail=%s",
                 _safe_user_label(current_user.id),
                 _safe_item_label(result.plaid_item_record_id),
+                degrade_error.status_code,
+                _safe_error_detail(degrade_error.detail),
             )
 
     response = PlaidExchangeTokenResponse(
@@ -338,3 +342,10 @@ def _safe_log_value(value: str | None) -> str:
     if not normalized:
         return "none"
     return normalized[:80]
+
+
+def _safe_error_detail(value: object) -> str:
+    normalized = str(value or "").strip()
+    if not normalized:
+        return "none"
+    return normalized[:240]

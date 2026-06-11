@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any, Optional
 from urllib.parse import quote, urlencode
 
@@ -19,6 +20,7 @@ from app.services.plaid_sync_models import (
 
 PLAID_ITEMS_TABLE = "plaid_items"
 PLAID_ITEM_SECRETS_TABLE = "plaid_item_secrets"
+logger = logging.getLogger(__name__)
 
 
 class PlaidCursorService:
@@ -219,8 +221,17 @@ class PlaidCursorService:
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as error:
+            logger.warning(
+                "Supabase Plaid storage request failed method=%s table=%s status=%s query_keys=%s error=%s",
+                method.upper(),
+                table,
+                response.status_code,
+                sorted((query or {}).keys()),
+                _safe_supabase_error(response),
+            )
             raise PlaidSyncServiceError(
                 "Cannot save Plaid connection right now.",
+                status_code=502,
             ) from error
 
         if not response.text:
@@ -240,3 +251,22 @@ class PlaidCursorService:
             "Supabase Plaid storage returned an unexpected response.",
             status_code=502,
         )
+
+
+def _safe_supabase_error(response: httpx.Response) -> str:
+    text = response.text.strip()
+    if not text:
+        return "empty"
+    try:
+        decoded = response.json()
+    except json.JSONDecodeError:
+        return text[:500]
+    if not isinstance(decoded, dict):
+        return text[:500]
+
+    parts: list[str] = []
+    for key in ("code", "message", "details", "hint"):
+        value = decoded.get(key)
+        if isinstance(value, str) and value.strip():
+            parts.append(f"{key}={value.strip()[:240]}")
+    return "; ".join(parts) if parts else "json_error"
