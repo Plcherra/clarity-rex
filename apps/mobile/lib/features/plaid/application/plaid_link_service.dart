@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:plaid_flutter/plaid_flutter.dart';
 
@@ -176,16 +177,21 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
   static final Uri _plaidOauthBaseUri = Uri.parse(
     'https://api.goclarity.app/plaid/oauth',
   );
+  static const EventChannel _nativeOauthLinks = EventChannel(
+    'clarity/plaid_oauth_links',
+  );
 
   @override
   Future<PlaidLinkLaunchResult> open(PlaidLinkToken token) async {
     final completer = Completer<PlaidLinkLaunchResult>();
     final appLinks = AppLinks();
     final handoff = _PlaidLinkHandoffState();
+    final resumedOauthRedirects = <String>{};
     late final StreamSubscription<LinkSuccess> successSubscription;
     late final StreamSubscription<LinkExit> exitSubscription;
     late final StreamSubscription<LinkEvent> eventSubscription;
     late final StreamSubscription<Uri> oauthRedirectSubscription;
+    late final StreamSubscription<Uri> nativeOauthRedirectSubscription;
     late final AppLifecycleListener lifecycleListener;
     Timer? pendingExitTimer;
 
@@ -195,6 +201,12 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
 
     Future<void> resumePlaidOauth(Uri uri) async {
       if (!_isPlaidOauthRedirect(uri)) return;
+      if (!resumedOauthRedirects.add(uri.toString())) {
+        _debugPlaidLink(
+          'oauth redirect duplicate ignored host=${uri.host} path=${uri.path}',
+        );
+        return;
+      }
       _debugPlaidLink(
         'oauth redirect received host=${uri.host} path=${uri.path}',
       );
@@ -277,10 +289,20 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
     });
     oauthRedirectSubscription = appLinks.uriLinkStream.listen(
       (uri) {
+        _debugPlaidLink('app_links redirect stream uri=${uri.host}${uri.path}');
         unawaited(resumePlaidOauth(uri));
       },
       onError: (Object error) {
         _debugPlaidLink('oauth redirect listener error=$error');
+      },
+    );
+    nativeOauthRedirectSubscription = _nativeOauthRedirects().listen(
+      (uri) {
+        _debugPlaidLink('native redirect stream uri=${uri.host}${uri.path}');
+        unawaited(resumePlaidOauth(uri));
+      },
+      onError: (Object error) {
+        _debugPlaidLink('native redirect listener error=$error');
       },
     );
     lifecycleListener = AppLifecycleListener(
@@ -320,6 +342,7 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
       await exitSubscription.cancel();
       await eventSubscription.cancel();
       await oauthRedirectSubscription.cancel();
+      await nativeOauthRedirectSubscription.cancel();
     }
   }
 
@@ -332,6 +355,18 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
         uri.host == _plaidOauthBaseUri.host &&
         (uri.path == _plaidOauthBaseUri.path ||
             uri.path.startsWith('${_plaidOauthBaseUri.path}/'));
+  }
+
+  Stream<Uri> _nativeOauthRedirects() {
+    return _nativeOauthLinks.receiveBroadcastStream().map((event) {
+      final raw = event?.toString().trim() ?? '';
+      if (raw.isEmpty) {
+        throw const PlaidLinkServiceException(
+          'Received an empty bank redirect.',
+        );
+      }
+      return Uri.parse(raw);
+    });
   }
 }
 
