@@ -196,7 +196,7 @@ class _InlineFilterBar extends StatelessWidget {
   String? _accountLabel(String? id) {
     if (id == null) return null;
     for (final account in accounts) {
-      if (account.id == id) return account.name;
+      if (account.id == id) return account.displayName;
     }
     return null;
   }

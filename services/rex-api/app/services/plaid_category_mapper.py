@@ -5,6 +5,8 @@ from typing import Any, Optional
 
 
 _CATEGORY_BY_PFC = {
+    "BANK_FEES": "Fees & Interest",
+    "ENTERTAINMENT": "Entertainment",
     "FOOD_AND_DRINK": "Food & Drink",
     "GENERAL_MERCHANDISE": "Shopping",
     "HOME_IMPROVEMENT": "Housing",
@@ -12,11 +14,18 @@ _CATEGORY_BY_PFC = {
     "MEDICAL": "Pharmacy / Health",
     "RENT_AND_UTILITIES": "Housing",
     "SHOPS": "Shopping",
+    "TRANSFER_IN": "Transfer In",
+    "TRANSFER_OUT": "Transfer Out",
     "TRANSPORTATION": "Transportation",
     "TRAVEL": "Transportation",
 }
 
 _CATEGORY_BY_DETAILED_PFC = {
+    "BANK_FEES_OVERDRAFT_FEES": "Fees & Interest",
+    "BANK_FEES_OTHER_BANK_FEES": "Fees & Interest",
+    "ENTERTAINMENT_MUSIC_AND_AUDIO": "Entertainment",
+    "ENTERTAINMENT_SPORTING_EVENTS_AMUSEMENT_PARKS_AND_MUSEUMS": "Entertainment",
+    "ENTERTAINMENT_TV_AND_MOVIES": "Entertainment",
     "FOOD_AND_DRINK_COFFEE": "Coffee / Quick Food",
     "FOOD_AND_DRINK_FAST_FOOD": "Coffee / Quick Food",
     "FOOD_AND_DRINK_GROCERIES": "Grocery / Supermarket",
@@ -31,6 +40,10 @@ _CATEGORY_BY_DETAILED_PFC = {
     "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT": "Credit Card Payment",
     "MEDICAL_PHARMACIES_AND_SUPPLEMENTS": "Pharmacy / Health",
     "RENT_AND_UTILITIES_RENT": "Housing",
+    "TRANSFER_IN_ACCOUNT_TRANSFER": "Transfer In",
+    "TRANSFER_IN_CASH_ADVANCES_AND_LOANS": "Transfer In",
+    "TRANSFER_IN_DEPOSIT": "Transfer In",
+    "TRANSFER_IN_INVESTMENT_AND_RETIREMENT_FUNDS": "Transfer In",
     "TRANSFER_OUT_ACCOUNT_TRANSFER": "Transfer Out",
     "TRANSFER_OUT_INVESTMENT_AND_RETIREMENT_FUNDS": "Transfer Out",
     "TRANSFER_OUT_SAVINGS": "Transfer Out",
@@ -75,20 +88,40 @@ def clarity_category_for_plaid_transaction(
 
 
 def _category_for_keywords(description_lower: str, *, amount: float) -> Optional[str]:
+    if "interest" in description_lower:
+        if amount < 0:
+            return "Income / Interest"
+        return "Fees & Interest"
     if any(token in description_lower for token in ("payroll", "direct dep", "salary")):
         return "Income / Payroll"
     if "zelle" in description_lower and amount < 0:
         return "Income / Zelle Received"
     if any(token in description_lower for token in ("credit card payment", "cc payment")):
         return "Credit Card Payment"
+    if any(token in description_lower for token in ("overdraft protection", "account transfer")):
+        return "Transfer Out" if amount >= 0 else "Transfer In"
     if any(token in description_lower for token in ("uber", "lyft", "mbta", "gas", "parking")):
         return "Transportation"
     if any(token in description_lower for token in ("cvs", "walgreens", "pharmacy")):
         return "Pharmacy / Health"
     if any(token in description_lower for token in ("market", "grocery", "supermarket")):
         return "Grocery / Supermarket"
-    if any(token in description_lower for token in ("dunkin", "starbucks", "coffee")):
+    if any(
+        token in description_lower
+        for token in ("dunkin", "starbucks", "coffee", "bom dough", "tst*")
+    ):
         return "Coffee / Quick Food"
+    if any(
+        token in description_lower
+        for token in ("cursor", "11labs", "11 labs", "hetzner", "hasner")
+    ):
+        return "Subscriptions"
+    if any(token in description_lower for token in ("apple.com/bill", "google *", "youtube")):
+        return "Subscriptions"
+    if any(token in description_lower for token in ("gog.com", "gog ")):
+        return "Shopping"
+    if any(token in description_lower for token in ("amc ", "amc theatre", "amc online")):
+        return "Entertainment"
     if any(token in description_lower for token in ("rent", "mortgage")):
         return "Housing"
     return None

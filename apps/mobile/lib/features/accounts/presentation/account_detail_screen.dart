@@ -352,7 +352,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
             .where((a) => a.id == widget.accountId)
             .cast<Account?>()
             .firstWhere((a) => a != null, orElse: () => null);
-        final title = account?.name ?? 'Account';
+        final title = account?.displayName ?? 'Account';
         return FinancialDashboardView(
           controller: widget.dashboardController,
           transactionController: widget.transactionController,

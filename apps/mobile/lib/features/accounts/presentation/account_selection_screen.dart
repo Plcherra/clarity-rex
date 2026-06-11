@@ -269,7 +269,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                               ),
                             ),
                             title: Text(
-                              a.name,
+                              a.displayName,
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
@@ -350,7 +350,7 @@ class _CsvImportPreviewDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            account.name,
+            account.displayName,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),

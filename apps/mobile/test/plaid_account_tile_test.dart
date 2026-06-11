@@ -51,6 +51,51 @@ void main() {
   );
 
   testWidgets(
+    'PlaidAccountTile composes clear names for generic Plaid account labels',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PlaidAccountTile(
+              item: const AccountOverviewItem(
+                account: Account(
+                  id: 'account-1',
+                  name: 'depository Account 3279',
+                  type: AccountType.checking,
+                  institution: 'Capital One',
+                  currentBalance: 764.50,
+                  source: 'plaid',
+                  plaidItemId: 'item-1',
+                  plaidInstitutionName: 'Capital One',
+                  plaidAccountMask: '3279',
+                  plaidAvailableBalance: 764.50,
+                ),
+                availableThisMonth: 0,
+                incomeThisMonth: 0,
+                spentThisMonth: 0,
+                statementBalance: 764.50,
+                netCashFlow: 0,
+              ),
+              status: PlaidAccountConnectionStatus.connected,
+              lastSyncedAt: null,
+              onResync: () {},
+              onDisconnect: () {},
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Capital One Checking 3279'), findsOneWidget);
+      expect(
+        find.textContaining('Checking · Capital One · **** 3279'),
+        findsOneWidget,
+      );
+      expect(find.text('depository Account 3279'), findsNothing);
+    },
+  );
+
+  testWidgets(
     'PlaidAccountTile keeps mixed-source transactions out of the account overview',
     (tester) async {
       await tester.pumpWidget(

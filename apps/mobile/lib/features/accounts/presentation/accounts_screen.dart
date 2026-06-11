@@ -339,7 +339,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Disconnect bank?'),
         content: Text(
-          'Disconnect ${account.name}? This stops future Plaid sync for this bank. Existing history stays in Clarity.',
+          'Disconnect ${account.displayName}? This stops future Plaid sync for this bank. Existing history stays in Clarity.',
         ),
         actions: [
           TextButton(
@@ -369,7 +369,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
           ),
         };
         _accountNotice =
-            '${result.institutionName ?? account.name} disconnected. Future Plaid sync is stopped.';
+            '${result.institutionName ?? account.displayName} disconnected. Future Plaid sync is stopped.';
       });
       _refreshAfterPlaidConnection();
       ScaffoldMessenger.of(

@@ -248,7 +248,7 @@ class _DashboardTransactionsSectionState
       _yearMonthLabel(transaction.date),
       _shortDate(transaction.date),
       formatMoney(transaction.amount),
-      if (account != null) account.name,
+      if (account != null) account.displayName,
       if (account?.institution?.trim().isNotEmpty == true)
         account!.institution!,
     ].map(_normalizeSearchText).join(' ');

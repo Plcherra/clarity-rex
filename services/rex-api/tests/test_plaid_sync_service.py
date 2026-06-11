@@ -34,7 +34,7 @@ class FullSyncPlaidClient:
             "accounts": [
                 {
                     "account_id": "plaid-account-1",
-                    "name": "Checking",
+                    "name": "depository Account 1234",
                     "type": "depository",
                     "subtype": "checking",
                     "mask": "1234",
@@ -46,7 +46,7 @@ class FullSyncPlaidClient:
                 },
                 {
                     "account_id": "plaid-account-2",
-                    "name": "Credit Card",
+                    "name": "credit Account 9876",
                     "type": "credit",
                     "subtype": "credit card",
                     "mask": "9876",
@@ -443,9 +443,14 @@ async def test_webhook_sync_updates_runs_item_sync(monkeypatch):
     assert any(
         call["method"] == "POST" and "/transactions?" in call["url"] for call in calls
     )
-    assert calls[-1]["method"] == "PATCH"
-    assert "id=eq.item-record-1" in calls[-1]["url"]
-    assert calls[-1]["json"]["sync_cursor"] == "cursor-final"
+    cursor_call = next(
+        call
+        for call in calls
+        if call["method"] == "PATCH"
+        and "/plaid_items?" in call["url"]
+        and "id=eq.item-record-1" in call["url"]
+    )
+    assert cursor_call["json"]["sync_cursor"] == "cursor-final"
 
 
 @pytest.mark.asyncio
@@ -623,8 +628,10 @@ async def test_sync_item_persists_accounts_transactions_and_cursor(monkeypatch):
     ]
     assert len(account_calls) == 2
     assert account_calls[0]["json"]["source"] == "plaid"
+    assert account_calls[0]["json"]["name"] == "Bank of Test Checking 1234"
     assert account_calls[0]["json"]["institution"] == "Bank of Test"
     assert account_calls[0]["json"]["plaid_account_id"] == "plaid-account-1"
+    assert account_calls[1]["json"]["name"] == "Bank of Test Credit Card 9876"
     assert account_calls[1]["json"]["plaid_account_id"] == "plaid-account-2"
     assert account_calls[1]["json"]["type"] == "credit card"
     assert account_calls[1]["json"]["balance"] == 321.98
@@ -636,9 +643,13 @@ async def test_sync_item_persists_accounts_transactions_and_cursor(monkeypatch):
     ]
     assert len(plaid_account_calls) == 2
     assert plaid_account_calls[0]["json"]["institution_name"] == "Bank of Test"
+    assert plaid_account_calls[0]["json"]["name"] == "Bank of Test Checking 1234"
     assert plaid_account_calls[0]["json"]["mask"] == "1234"
     assert plaid_account_calls[0]["json"]["account_subtype"] == "checking"
     assert plaid_account_calls[1]["json"]["institution_name"] == "Bank of Test"
+    assert (
+        plaid_account_calls[1]["json"]["name"] == "Bank of Test Credit Card 9876"
+    )
     assert plaid_account_calls[1]["json"]["mask"] == "9876"
     assert plaid_account_calls[1]["json"]["account_subtype"] == "credit card"
 
@@ -659,9 +670,13 @@ async def test_sync_item_persists_accounts_transactions_and_cursor(monkeypatch):
     assert "plaid_transaction_id=eq.txn-removed-1" in removed_call["url"]
     assert removed_call["json"]["removed_at"] is not None
 
-    cursor_call = calls[-1]
-    assert cursor_call["method"] == "PATCH"
-    assert "/plaid_items?" in cursor_call["url"]
+    cursor_call = next(
+        call
+        for call in calls
+        if call["method"] == "PATCH"
+        and "/plaid_items?" in call["url"]
+        and "id=eq.item-record-1" in call["url"]
+    )
     assert cursor_call["json"]["sync_cursor"] == "cursor-final"
     assert "access-token-secret" not in str(calls)
 

@@ -36,11 +36,23 @@ class FailingCursorUpdatePlaidClient(SinglePagePlaidClient):
     pass
 
 
+class EmptyPlaidClient(SinglePagePlaidClient):
+    async def sync_transactions(self, access_token, *, cursor=None, count=100):
+        return {
+            "added": [],
+            "modified": [],
+            "removed": [],
+            "next_cursor": "cursor-next",
+            "has_more": False,
+        }
+
+
 class FakeCursorService:
     def __init__(self, *, fail_cursor_update=False):
         self.calls = []
         self.transaction_ids = set()
         self.fail_cursor_update = fail_cursor_update
+        self.uncategorized_transactions = []
         self.categories = [
             {
                 "id": "category-coffee",
@@ -77,6 +89,8 @@ class FakeCursorService:
             self.transaction_ids.add(body["plaid_transaction_id"])
         if method == "GET" and table == "categories":
             return self.categories
+        if method == "GET" and table == "transactions":
+            return self.uncategorized_transactions
         if method == "POST" and table == "categories":
             category_id = f"category-created-{len(self.categories) + 1}"
             row = {
@@ -146,11 +160,11 @@ async def test_transaction_sync_upserts_removes_and_updates_cursor_last():
         "next_cursor": "cursor-next",
     }
     assert plaid_client.cursors == ["cursor-old"]
-    assert cursor_service.calls[-1] == {
+    assert {
         "method": "PATCH_CURSOR",
         "item_id": "item-record-1",
         "next_cursor": "cursor-next",
-    }
+    } in cursor_service.calls
 
     upsert_call = next(
         call
@@ -332,3 +346,47 @@ async def test_transaction_sync_reuses_existing_normalized_category_from_plaid_p
         if call.get("method") == "POST" and call.get("table") == "transactions"
     )
     assert upsert_call["body"]["category_id"] == "category-grocery"
+
+
+@pytest.mark.asyncio
+async def test_transaction_sync_backfills_existing_uncategorized_plaid_rows():
+    cursor_service = FakeCursorService()
+    cursor_service.categories = []
+    cursor_service.uncategorized_transactions = [
+        {
+            "id": "transaction-existing",
+            "description": "CURSOR AI-POWERED IDE",
+            "merchant": "CURSOR AI-POWERED IDE",
+            "amount": 20.0,
+            "type": "expense",
+        }
+    ]
+    sync = PlaidTransactionSync(
+        plaid_client=EmptyPlaidClient(),
+        cursor_service=cursor_service,
+    )
+
+    await sync.sync_transactions(
+        user_id="user-1",
+        item_id="item-record-1",
+        access_token="access-token-secret",
+        cursor=None,
+        account_map={"plaid-account-1": "linked-account-1"},
+    )
+
+    category_call = next(
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "POST" and call.get("table") == "categories"
+    )
+    assert category_call["body"]["name"] == "Subscriptions"
+
+    backfill_call = next(
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "PATCH"
+        and call.get("table") == "transactions"
+        and call.get("query", {}).get("id") == "eq.transaction-existing"
+    )
+    assert backfill_call["body"]["category_id"] == "category-created-1"
+    assert backfill_call["query"]["category_id"] == "is.null"

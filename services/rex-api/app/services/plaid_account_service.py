@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from app.services.plaid_api_client import PlaidApiClient
@@ -83,10 +84,9 @@ class PlaidAccountService:
             linked_account_id = string_or_none(row.get("linked_account_id"))
             if not linked_account_id:
                 continue
-            name = (
-                string_or_none(row.get("name"))
-                or string_or_none(row.get("official_name"))
-                or "Plaid account"
+            name = _account_name(
+                row,
+                institution_name=string_or_none(row.get("institution_name")),
             )
             summaries.append(
                 {
@@ -132,7 +132,7 @@ class PlaidAccountService:
             ACCOUNTS_TABLE,
             body={
                 "user_id": user_id,
-                "name": _account_name(account),
+                "name": _account_name(account, institution_name=institution_name),
                 "type": string_or_none(account.get("subtype"))
                 or string_or_none(account.get("type"))
                 or "account",
@@ -175,7 +175,7 @@ class PlaidAccountService:
                 "plaid_account_id": plaid_account_id,
                 "linked_account_id": linked_account_id,
                 "institution_name": institution_name,
-                "name": _account_name(account),
+                "name": _account_name(account, institution_name=institution_name),
                 "official_name": string_or_none(account.get("official_name")),
                 "mask": string_or_none(account.get("mask")),
                 "account_type": string_or_none(account.get("type")),
@@ -194,12 +194,106 @@ class PlaidAccountService:
         )
 
 
-def _account_name(account: dict[str, Any]) -> str:
-    return (
-        string_or_none(account.get("name"))
-        or string_or_none(account.get("official_name"))
-        or "Plaid account"
+def _account_name(
+    account: dict[str, Any],
+    *,
+    institution_name: str | None = None,
+) -> str:
+    mask = string_or_none(account.get("mask"))
+    candidates = [
+        string_or_none(account.get("official_name")),
+        string_or_none(account.get("name")),
+    ]
+    for candidate in candidates:
+        if candidate and not _is_generic_account_name(candidate, account=account, mask=mask):
+            return candidate
+    return _composed_account_name(
+        account=account,
+        institution_name=institution_name,
+        mask=mask,
     )
+
+
+def _composed_account_name(
+    *,
+    account: dict[str, Any],
+    institution_name: str | None,
+    mask: str | None,
+) -> str:
+    label = _account_type_label(account)
+    parts = [
+        part
+        for part in (
+            string_or_none(institution_name),
+            label,
+            mask,
+        )
+        if part
+    ]
+    return " ".join(parts) or "Plaid account"
+
+
+def _account_type_label(account: dict[str, Any]) -> str:
+    subtype = (
+        string_or_none(account.get("subtype"))
+        or string_or_none(account.get("account_subtype"))
+        or ""
+    ).lower()
+    account_type = (
+        string_or_none(account.get("type"))
+        or string_or_none(account.get("account_type"))
+        or ""
+    ).lower()
+    labels = {
+        "checking": "Checking",
+        "savings": "Savings",
+        "credit card": "Credit Card",
+        "credit_card": "Credit Card",
+    }
+    if subtype in labels:
+        return labels[subtype]
+    if account_type == "credit":
+        return "Credit Card"
+    if account_type == "depository":
+        return "Depository"
+    return (subtype or account_type or "Account").replace("_", " ").title()
+
+
+def _is_generic_account_name(
+    value: str,
+    *,
+    account: dict[str, Any],
+    mask: str | None,
+) -> bool:
+    normalized = re.sub(r"[^a-z0-9]+", " ", value.lower())
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    if not normalized:
+        return True
+    label = _account_type_label(account).lower()
+    generic_names = {
+        "account",
+        "plaid account",
+        "depository",
+        "depository account",
+        "credit",
+        "credit account",
+        "checking",
+        "checking account",
+        "savings",
+        "savings account",
+        "credit card",
+        "credit card account",
+        label,
+        f"{label} account",
+    }
+    if normalized in generic_names:
+        return True
+    if normalized.startswith(("depository account", "credit account")):
+        return True
+    if mask and normalized.endswith(f" {mask}"):
+        without_mask = normalized[: -len(mask)].strip()
+        return without_mask in generic_names
+    return False
 
 
 def _account_list(value: Any) -> list[dict[str, Any]]:

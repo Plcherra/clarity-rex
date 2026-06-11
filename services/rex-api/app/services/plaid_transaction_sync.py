@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Optional
 
 from app.services.plaid_api_client import PlaidApiClient
 from app.services.plaid_cursor_service import PlaidCursorService
 from app.services.plaid_sync_models import (
     list_of_dicts,
+    number_or_zero,
     required_string,
     string_or_none,
     utc_now_iso,
@@ -21,6 +23,7 @@ from app.services.plaid_transaction_mapper import (
 
 TRANSACTIONS_TABLE = "transactions"
 CATEGORIES_TABLE = "categories"
+logger = logging.getLogger(__name__)
 
 
 class PlaidTransactionSync:
@@ -43,6 +46,9 @@ class PlaidTransactionSync:
         account_map: dict[str, str],
     ) -> dict[str, Any]:
         added = modified = removed = 0
+        pages = 0
+        pending_seen = 0
+        dates_seen: list[str] = []
         next_cursor = cursor
         has_more = True
         category_cache = await self._load_category_cache(user_id)
@@ -51,7 +57,17 @@ class PlaidTransactionSync:
                 access_token,
                 cursor=next_cursor,
             )
-            for transaction in list_of_dicts(response.get("added")):
+            pages += 1
+            added_rows = list_of_dicts(response.get("added"))
+            modified_rows = list_of_dicts(response.get("modified"))
+            removed_rows = list_of_dicts(response.get("removed"))
+            for transaction in [*added_rows, *modified_rows]:
+                if transaction.get("pending") is True:
+                    pending_seen += 1
+                date = string_or_none(transaction.get("date"))
+                if date:
+                    dates_seen.append(date)
+            for transaction in added_rows:
                 if await self._upsert_transaction(
                     user_id=user_id,
                     item_id=item_id,
@@ -60,7 +76,7 @@ class PlaidTransactionSync:
                     category_cache=category_cache,
                 ):
                     added += 1
-            for transaction in list_of_dicts(response.get("modified")):
+            for transaction in modified_rows:
                 if await self._upsert_transaction(
                     user_id=user_id,
                     item_id=item_id,
@@ -69,7 +85,7 @@ class PlaidTransactionSync:
                     category_cache=category_cache,
                 ):
                     modified += 1
-            for transaction in list_of_dicts(response.get("removed")):
+            for transaction in removed_rows:
                 if await self._mark_transaction_removed(
                     user_id=user_id,
                     transaction=transaction,
@@ -79,6 +95,25 @@ class PlaidTransactionSync:
             has_more = bool(response.get("has_more"))
 
         await self.cursor_service.update_item_after_sync(item_id, next_cursor)
+        backfilled = await self._backfill_uncategorized_plaid_transactions(
+            user_id=user_id,
+            category_cache=category_cache,
+        )
+        logger.info(
+            "plaid_transaction_sync_complete user_id=%s item_id=%s pages=%s "
+            "added=%s modified=%s removed=%s pending_seen=%s date_min=%s "
+            "date_max=%s category_backfilled=%s",
+            user_id,
+            item_id,
+            pages,
+            added,
+            modified,
+            removed,
+            pending_seen,
+            min(dates_seen) if dates_seen else None,
+            max(dates_seen) if dates_seen else None,
+            backfilled,
+        )
         return {
             "added": added,
             "modified": modified,
@@ -180,6 +215,60 @@ class PlaidTransactionSync:
         if category_id:
             category_cache[key] = category_id
         return category_id
+
+    async def _backfill_uncategorized_plaid_transactions(
+        self,
+        *,
+        user_id: str,
+        category_cache: dict[str, str],
+    ) -> int:
+        rows = await self.cursor_service.supabase_request(
+            "GET",
+            TRANSACTIONS_TABLE,
+            query={
+                "select": "id,description,merchant,amount,type",
+                "user_id": f"eq.{user_id}",
+                "source": "eq.plaid",
+                "category_id": "is.null",
+                "removed_at": "is.null",
+            },
+        )
+        updated = 0
+        for row in list_of_dicts(rows):
+            transaction_id = string_or_none(row.get("id"))
+            if not transaction_id:
+                continue
+            amount = number_or_zero(row.get("amount"))
+            if string_or_none(row.get("type")) == "income":
+                amount = -amount
+            category_id = await self._category_id_for_transaction(
+                user_id=user_id,
+                transaction={
+                    "name": string_or_none(row.get("description")),
+                    "merchant_name": string_or_none(row.get("merchant")),
+                    "amount": amount,
+                },
+                category_cache=category_cache,
+            )
+            if not category_id:
+                continue
+            await self.cursor_service.supabase_request(
+                "PATCH",
+                TRANSACTIONS_TABLE,
+                body={
+                    "category_id": category_id,
+                    "last_synced_at": utc_now_iso(),
+                },
+                query={
+                    "id": f"eq.{transaction_id}",
+                    "user_id": f"eq.{user_id}",
+                    "source": "eq.plaid",
+                    "category_id": "is.null",
+                },
+                prefer="return=minimal",
+            )
+            updated += 1
+        return updated
 
     async def _mark_transaction_removed(
         self,

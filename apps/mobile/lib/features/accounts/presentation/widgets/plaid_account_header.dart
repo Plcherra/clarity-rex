@@ -81,14 +81,14 @@ class _PlaidAccountTitleBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          account.name,
-          maxLines: 1,
+          account.displayName,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 5),
         Wrap(
           spacing: 8,
           runSpacing: 4,
@@ -96,39 +96,31 @@ class _PlaidAccountTitleBlock extends StatelessWidget {
           children: [
             SourceLabelChip(label: account.sourceLabel),
             PlaidAccountStatusPill(status: status),
-            Text(
-              _lastSyncedLabel(lastSyncedAt),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurface.withValues(alpha: 0.52),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (_subtitle(account).isNotEmpty)
-              Text(
-                _subtitle(account),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: cs.onSurface.withValues(alpha: 0.48),
-                ),
-              ),
           ],
         ),
+        const SizedBox(height: 5),
+        Text(
+          _lastSyncedLabel(lastSyncedAt),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurface.withValues(alpha: 0.52),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (account.displaySubtitle.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            account.displaySubtitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurface.withValues(alpha: 0.48),
+            ),
+          ),
+        ],
       ],
     );
-  }
-
-  String _subtitle(Account account) {
-    final institution = account.plaidInstitutionName?.trim();
-    final inst = account.institution?.trim();
-    final mask = account.plaidAccountMask?.trim();
-    return [
-      account.type.displayLabel,
-      if (institution != null && institution.isNotEmpty) institution,
-      if ((institution == null || institution.isEmpty) &&
-          inst != null &&
-          inst.isNotEmpty)
-        inst,
-      if (mask != null && mask.isNotEmpty) '**** $mask',
-    ].join(' · ');
   }
 
   String _lastSyncedLabel(DateTime? value) {

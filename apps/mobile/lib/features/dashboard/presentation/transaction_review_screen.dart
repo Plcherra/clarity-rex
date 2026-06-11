@@ -146,7 +146,7 @@ class _TransactionReviewScreenState extends State<TransactionReviewScreen> {
       _financialRoleLabel(transaction.financialRole),
       _shortDate(raw.date),
       formatMoney(raw.amount),
-      if (account != null) account.name,
+      if (account != null) account.displayName,
       if (account?.institution?.trim().isNotEmpty == true)
         account!.institution!,
       for (final reason in transactionReviewReasons(transaction))
@@ -471,7 +471,7 @@ class _ReviewTransactionCard extends StatelessWidget {
                 Text(
                   [
                     _shortDate(raw.date),
-                    if (showAccount && account != null) account!.name,
+                    if (showAccount && account != null) account!.displayName,
                   ].join(' · '),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.48),

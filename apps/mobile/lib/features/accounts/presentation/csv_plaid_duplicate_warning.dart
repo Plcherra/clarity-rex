@@ -11,7 +11,7 @@ Future<bool?> confirmCsvImportForPlaidAccount(
     builder: (context) => AlertDialog(
       title: const Text('Import CSV into connected account?'),
       content: Text(
-        '${account.name} already syncs through Plaid. Importing a CSV here can add duplicate rows if the file overlaps with synced transactions.',
+        '${account.displayName} already syncs through Plaid. Importing a CSV here can add duplicate rows if the file overlaps with synced transactions.',
       ),
       actions: [
         TextButton(

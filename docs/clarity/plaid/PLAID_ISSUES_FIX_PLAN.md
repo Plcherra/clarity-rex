@@ -2,7 +2,7 @@
 
 Status: In Progress
 
-Current cursor: Phase 9 - Physical Device Plaid QA
+Current cursor: Phase 12 - Physical Device Plaid QA
 
 This plan captures the remaining Plaid integration findings from the latest review. It is the active Plaid cleanup queue before returning to the broader product launch plan. Work should be completed phase by phase, with focused tests and completion notes added before moving to the next phase.
 
@@ -20,7 +20,10 @@ Reference: Plaid's official webhook verification docs describe `Plaid-Verificati
 | Disconnect/offboarding route and UI are missing. | Yes, existing issue. | Phase 6 |
 | Verified `SYNC_UPDATES_AVAILABLE` webhook does not run or enqueue sync. | Yes, existing issue. | Phase 7 |
 | Mobile OAuth redirect is hard-coded to production. | Resolved as stale plan wording after source scan. | Phase 8 |
-| Physical production iPhone QA is still pending. | Yes, existing issue, moved to final gate. | Phase 9 |
+| Real-device account cards show generic/truncated names such as `credit Account ...` and `depository Acco...`. | New issue added from physical screenshots. | Phase 9 |
+| Manual sync returns 200 but date coverage/freshness is unclear, including same-day rows such as Jun 11. | New issue added from physical screenshots/logs. | Phase 10 |
+| Plaid rows such as interest, Cursor, Hetzner, 11labs, GOG, AMC, and overdraft protection remain Uncategorized. | New issue added from physical screenshots. | Phase 11 |
+| Physical production iPhone QA is still pending. | Yes, existing issue, moved to final gate after new real-device blockers. | Phase 12 |
 
 ## Phase 1 - Official Plaid Webhook Verification Flow
 
@@ -198,9 +201,67 @@ Reference: Plaid's official webhook verification docs describe `Plaid-Verificati
   - [x] Docs describe LinkKit/native callback ownership instead of stale Dart incoming-link matching.
 - **Completion Note:** Re-scanned the mobile Plaid source and confirmed there is no Dart incoming-link redirect matcher or `resumeAfterTermination` path. Current iOS code uses a native `PlaidLinkBridge` with LinkKit, while App/Scene delegate Universal Link hooks call into the bridge and defer continuation to LinkKit. Backend configuration remains the source of truth for Plaid `redirect_uri` during iOS Link token creation, with tests proving iOS receives the configured redirect URI and Android does not. Updated the active issue plan and related QA docs to remove the stale hard-coded mobile matcher requirement. Verified with mobile Plaid tests, Flutter analyze, backend Plaid tests, and `git diff --check`.
 
-## Phase 9 - Physical Device Plaid QA
+## Phase 9 - Real Device Account Identity And Account Card UX
 
-- **Status:** Ready for Pedro physical-device validation after Phases 2-8
+- **Status:** Complete
+- **Severity:** High
+- **Current Problem:** Real-device account cards and detail headers can show generic Plaid labels such as `credit Account ...`, `depository Acco...`, or `depository Account 3279`, making it hard to identify the bank, account type, and account mask. The screenshots also showed old account-card transaction previews, which local Phase 5 code has already removed but needs to be confirmed in a fresh build.
+- **Why it matters:** Plaid accounts are the primary navigation surface. Users must be able to quickly identify Capital One Checking vs Savings vs Credit Card before trusting transactions, budgets, or Assistant answers.
+- **Proposed Solution:** Compose safe display names from institution, account subtype/type, and mask whenever Plaid's `name` or `official_name` is generic. Apply the repair in backend persistence and mobile display so old stored rows and future syncs both render clearly. Keep account cards compact and account-only; transaction browsing remains in detail/dashboard surfaces.
+- **Files Involved:**
+  - `services/rex-api/app/services/plaid_account_service.py`
+  - `services/rex-api/tests/test_plaid_sync_service.py`
+  - `apps/mobile/lib/core/models/account.dart`
+  - `apps/mobile/lib/features/accounts/presentation/widgets/plaid_account_header.dart`
+  - `apps/mobile/test/plaid_account_tile_test.dart`
+- **Acceptance Criteria:**
+  - [x] Generic Plaid labels are replaced with names such as `Capital One Checking 3279` or `Capital One Credit Card 8711`.
+  - [x] Account cards show institution, type, mask, status, balance/available balance, and last synced metadata without requiring transaction previews.
+  - [x] Older stored generic rows are repaired by mobile display logic before the next backend sync.
+  - [x] Account card tests cover generic Plaid label repair and no transaction previews.
+- **Completion Note:** Backend account sync now composes safe names from institution, subtype/type, and mask when Plaid gives generic names like `depository Account 3279` or `credit Account 9876`. Mobile account models repair existing stored generic rows through `displayName`/`displaySubtitle`, and account cards/detail titles/filters/prompts use those repaired labels. Account-card tests cover generic-name repair and keep transaction previews hidden.
+
+## Phase 10 - Plaid Sync Coverage And Freshness Contract
+
+- **Status:** Complete
+- **Severity:** High
+- **Current Problem:** Physical logs show manual `/plaid/sync-item/{item}` calls returning 200, but the UI may still show a history range like Mar 19, 2026 - Jun 10, 2026 for one account while today is Jun 11, 2026. It is unclear whether Plaid has not returned current-day/pending rows yet, whether Clarity stored them but filters them, or whether the user expects a longer history window than the Item currently provides.
+- **Why it matters:** A finance app cannot feel launch-ready if users cannot tell whether Plaid sync is fresh or whether months/transactions are missing.
+- **Proposed Solution:** Treat `/transactions/sync` as the source of truth for the Plaid-provided historical window and do not impose a local 4-month cap. Record sync page counts, added/modified/removed counts, pending counts, and min/max returned dates in backend logs so device QA can distinguish Plaid availability from Clarity filtering. Product target remains the maximum Plaid-permitted history for the connected Item; any 24-month expectation must be verified against Plaid product configuration and institution support.
+- **Files Involved:**
+  - `services/rex-api/app/services/plaid_transaction_sync.py`
+  - `docs/clarity/plaid/PLAID_MOBILE_REAL_ACCOUNT_QA_REPORT.md`
+  - `docs/clarity/plaid/PLAID_REAL_BANK_TESTING_FIX_PLAN.md`
+- **Acceptance Criteria:**
+  - [x] Backend logs each sync completion with pages, stored counts, pending count, min date, and max date.
+  - [x] QA can compare backend returned date coverage against mobile visible date coverage.
+  - [x] The app documents that Clarity stores all Plaid-synced history returned by `/transactions/sync`, with no local month cap.
+  - [ ] The QA report records whether same-day rows are pending, posted, unavailable from Plaid, or filtered by Clarity.
+- **Completion Note:** Added a backend sync completion log with page count, added/modified/removed counts, pending count, and returned min/max transaction dates. The current device log already showed manual sync route success, so the remaining Jun 11 question is now a Phase 12 device QA check: compare the new backend date-range log against the visible mobile history range.
+
+## Phase 11 - Plaid Merchant Categorization Coverage
+
+- **Status:** Complete
+- **Severity:** High
+- **Current Problem:** Real-device transactions include obvious uncategorized rows: interest, Cursor AI, Hetzner/Hasner, 11labs, GOG.com, AMC, overdraft protection, and common restaurant rows. The AI assistant exists, but Plaid sync currently relies on deterministic Plaid/PFC and keyword mapping before any AI fallback.
+- **Why it matters:** Budgets and category views are only useful if routine Plaid transactions land in sensible categories by default.
+- **Proposed Solution:** Expand deterministic Plaid category mapping for common Plaid Personal Finance Categories and high-confidence merchant keywords first. Run a small post-sync backfill for existing Plaid rows that still have `category_id` null, because cursor sync may not resend already-stored transactions. Keep ambiguous rows uncategorized until user rules or an AI-assisted categorization queue exists, but remove the obvious misses called out by real-device QA.
+- **Files Involved:**
+  - `services/rex-api/app/services/plaid_category_mapper.py`
+  - `services/rex-api/tests/test_plaid_category_mapper.py`
+  - `services/rex-api/tests/test_plaid_transaction_sync.py`
+- **Acceptance Criteria:**
+  - [x] Interest income and credit-card interest charges map to income/fee categories.
+  - [x] Cursor, Hetzner/Hasner, 11labs, and common digital bills map to Subscriptions.
+  - [x] GOG and AMC map to Shopping/Entertainment.
+  - [x] Overdraft protection/account transfers map to transfer categories.
+  - [x] Existing uncategorized Plaid rows are backfilled after sync when the deterministic mapper can classify them.
+  - [x] Tests cover the exact real-device uncategorized examples.
+- **Completion Note:** Expanded deterministic Plaid categorization for additional Plaid Personal Finance Categories and real-device merchant examples: interest, Cursor, Hetzner/Hasner, 11labs, GOG, AMC, overdraft/account transfers, and TST/Bom Dough rows. Added a post-sync backfill for existing Plaid rows without categories, plus focused mapper/backfill tests for the exact screenshot examples.
+
+## Phase 12 - Physical Device Plaid QA
+
+- **Status:** Ready after Phases 9-11 pass focused verification
 - **Severity:** High
 - **Current Problem:** The Plaid mobile plan cannot be closed until the real iOS flow proves account creation, sync, UI refresh, fallback behavior, Assistant truth, and disconnect/offboarding on device.
 - **Why it matters:** Mocked tests and automated preflight cannot prove a real bank OAuth lifecycle, production callback behavior, or private-account UI behavior.
@@ -219,7 +280,7 @@ Reference: Plaid's official webhook verification docs describe `Plaid-Verificati
   - [ ] CSV fallback remains available and warns about duplicate risk.
   - [ ] Assistant answers from the same Plaid-backed data visible in Clarity.
   - [ ] QA report records sanitized counts and any ship/no-ship decision.
-- **Next Step:** After Phases 2-8 pass, re-test Bank of America connection while watching VPS logs for `/plaid/exchange-token`, account persistence, sync results, webhook behavior, and disconnect behavior.
+- **Next Step:** After Phases 9-11 pass, install a fresh build and re-test Bank of America/Capital One connections while watching VPS logs for `/plaid/exchange-token`, account persistence, sync date coverage, webhook behavior, categorization, and disconnect behavior.
 
 ## Verification Commands
 
