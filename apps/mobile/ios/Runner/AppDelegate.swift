@@ -110,13 +110,20 @@ final class PlaidOAuthLinkStream: NSObject, FlutterStreamHandler {
 
   private var eventSink: FlutterEventSink?
   private var pendingLinks: [String] = []
+  private var channel: FlutterEventChannel?
+  private var isInstalled = false
 
   func install(binaryMessenger: FlutterBinaryMessenger) {
+    if isInstalled {
+      return
+    }
     let channel = FlutterEventChannel(
       name: "clarity/plaid_oauth_links",
       binaryMessenger: binaryMessenger
     )
     channel.setStreamHandler(self)
+    self.channel = channel
+    isInstalled = true
   }
 
   func emit(userActivity: NSUserActivity) {
