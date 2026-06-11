@@ -41,8 +41,11 @@ void main() {
         ),
       );
 
-      expect(find.text('Everyday Checking'), findsOneWidget);
-      expect(find.textContaining('**** 1234'), findsOneWidget);
+      expect(find.text('Bank of Test Checking'), findsOneWidget);
+      expect(
+        find.textContaining('Everyday Checking · **** 1234'),
+        findsOneWidget,
+      );
       expect(find.text('Balance \$1,200.50'), findsOneWidget);
       expect(find.text('Available \$1,000.25'), findsOneWidget);
       expect(find.text('Recent transactions'), findsNothing);
@@ -86,12 +89,52 @@ void main() {
         ),
       );
 
-      expect(find.text('Capital One Checking 3279'), findsOneWidget);
+      expect(find.text('Capital One Checking'), findsOneWidget);
+      expect(find.textContaining('**** 3279'), findsOneWidget);
+      expect(find.text('depository Account 3279'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'PlaidAccountTile moves Plaid product names into supporting detail',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PlaidAccountTile(
+              item: const AccountOverviewItem(
+                account: Account(
+                  id: 'account-1',
+                  name: 'Customized Cash Rewards',
+                  type: AccountType.creditCard,
+                  institution: 'Bank of America',
+                  source: 'plaid',
+                  plaidItemId: 'item-1',
+                  plaidInstitutionName: 'Bank of America',
+                  plaidAccountMask: '5050',
+                ),
+                availableThisMonth: 0,
+                incomeThisMonth: 0,
+                spentThisMonth: 0,
+                statementBalance: null,
+                netCashFlow: 0,
+              ),
+              status: PlaidAccountConnectionStatus.connected,
+              lastSyncedAt: null,
+              onResync: () {},
+              onDisconnect: () {},
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Bank of America Credit Card'), findsOneWidget);
       expect(
-        find.textContaining('Checking · Capital One · **** 3279'),
+        find.textContaining('Customized Cash Rewards · **** 5050'),
         findsOneWidget,
       );
-      expect(find.text('depository Account 3279'), findsNothing);
+      expect(find.text('Customized Cash Rewards'), findsNothing);
     },
   );
 

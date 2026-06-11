@@ -31,7 +31,7 @@ By the end of this plan:
 | Dashboard | CSV/manual assumptions still shape the experience. | Product does not feel connected. |
 | Accounts | Account setup and status are not institution-centered. | Plaid will feel bolted on. |
 | Transactions | Source/sync state is not a core concept. | Plaid/CSV duplicates can confuse users. |
-| Budgets | Budget guidance is not tightly connected to synced activity. | Assistant and budgets can drift. |
+| Budgets | Budget guidance is not tightly connected to synced activity; category rows can differ sharply by selected month. | Assistant and budgets can drift. |
 
 ## Target State
 
@@ -108,6 +108,7 @@ Steps:
 2. Show sync health and last sync.
 3. Keep manual/CSV accounts secondary.
 4. Add actions for connect, resync, disconnect, and CSV fallback.
+5. Use a stable account identity hierarchy: title is institution + account type, while product/card/program name and mask sit in supporting detail.
 
 Done looks like:
 
@@ -118,6 +119,7 @@ Acceptance criteria:
 - [ ] Institution state renders.
 - [ ] Source labels are quiet but available.
 - [ ] Account actions are clear.
+- [ ] Account cards do not rely on truncated Plaid product names as the primary identifier.
 
 ## Phase 4 - Transactions Redesign
 
@@ -160,6 +162,7 @@ Steps:
 2. Highlight meaningful pressure, not noise.
 3. Add Assistant explanation/action entry.
 4. Use synced transactions as default input.
+5. Keep saved budget categories visible across comparable months; show activity-only categories only when they have spend in the selected period.
 
 Done looks like:
 
@@ -170,6 +173,8 @@ Acceptance criteria:
 - [ ] Budget state is readable at a glance.
 - [ ] Assistant can explain budget state from same data.
 - [ ] Empty budget state is useful.
+- [ ] A category with a saved budget does not disappear just because the selected month has no spend.
+- [ ] A category with no budget and no selected-period spend stays hidden to avoid category-directory noise.
 
 ## Phase 6 - Import/CSV Fallback Redesign
 

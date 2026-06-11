@@ -51,6 +51,25 @@ class Account {
 
   String get displayName {
     if (!isPlaidConnected) return name;
+    final institutionName =
+        _cleanPlaidText(plaidInstitutionName) ?? _cleanPlaidText(institution);
+    if (institutionName != null) return '$institutionName ${type.displayLabel}';
+    final productName = _plaidProductName;
+    if (productName != null) return productName;
+    return type.displayLabel;
+  }
+
+  String get displaySubtitle {
+    if (!isPlaidConnected) return _cleanPlaidText(institution) ?? '';
+    final institutionName =
+        _cleanPlaidText(plaidInstitutionName) ?? _cleanPlaidText(institution);
+    final mask = _cleanPlaidText(plaidAccountMask);
+    final productName = institutionName == null ? null : _plaidProductName;
+    return [?productName, if (mask != null) '**** $mask'].join(' · ');
+  }
+
+  String? get _plaidProductName {
+    if (!isPlaidConnected) return _cleanPlaidText(name);
     final mask = _cleanPlaidText(plaidAccountMask);
     final candidates = [
       _cleanPlaidText(plaidOfficialName),
@@ -62,22 +81,7 @@ class Account {
         return candidate;
       }
     }
-    return _composedPlaidAccountName(
-      institution: plaidInstitutionName ?? institution,
-      type: type,
-      mask: mask,
-    );
-  }
-
-  String get displaySubtitle {
-    final institutionName =
-        _cleanPlaidText(plaidInstitutionName) ?? _cleanPlaidText(institution);
-    final mask = _cleanPlaidText(plaidAccountMask);
-    return [
-      type.displayLabel,
-      ?institutionName,
-      if (mask != null) '**** $mask',
-    ].join(' · ');
+    return null;
   }
 
   Account copyWith({
@@ -120,15 +124,6 @@ String? _cleanPlaidText(String? value) {
   final trimmed = value?.trim();
   if (trimmed == null || trimmed.isEmpty) return null;
   return trimmed.replaceAll(RegExp(r'\s+'), ' ');
-}
-
-String _composedPlaidAccountName({
-  required String? institution,
-  required AccountType type,
-  required String? mask,
-}) {
-  final institutionName = _cleanPlaidText(institution);
-  return [?institutionName, type.displayLabel, ?mask].join(' ');
 }
 
 bool _isGenericPlaidAccountName(

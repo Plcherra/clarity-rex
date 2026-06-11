@@ -30,6 +30,7 @@ By the end of this plan:
 | Navigation | Assistant has a nested mini-app feeling. | Product feels fragmented. |
 | Naming | Clarity/Rex/Assistant labels compete. | Users may misunderstand product identity. |
 | Entry points | Financial and Assistant flows are separated. | Assistant misses product context. |
+| Visual shell | Assistant uses a distinct dark experience while financial screens remain light. | Users experience Clarity as separate apps stitched together. |
 | Profile/privacy | Data ownership language is scattered. | Multi-user trust is weaker. |
 
 ## Target State
@@ -110,6 +111,7 @@ Steps:
 2. Use screen context for starter prompts.
 3. Remove copy that suggests Assistant has separate truth.
 4. Keep full Assistant tab for voice/chat.
+5. Align with the design-system plan so Assistant personality remains in copy/interaction, not a separate visual mode.
 
 Done looks like:
 
@@ -120,6 +122,7 @@ Acceptance criteria:
 - [ ] Assistant entry points exist on relevant financial surfaces.
 - [ ] Starter prompts reference current context.
 - [ ] Assistant copy follows product vocabulary.
+- [ ] Assistant no longer feels visually detached from Dashboard, Accounts, and Budgets after the shared theme phase.
 
 ## Phase 4 - Reframe Accounts Around Institutions
 

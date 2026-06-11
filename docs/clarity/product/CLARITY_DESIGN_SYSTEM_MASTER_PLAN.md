@@ -30,6 +30,7 @@ By the end of this plan:
 | Theme | Global app is light; Assistant has separate dark tokens. | App feels inconsistent. |
 | Visual weight | Borders, pills, cards, and typography are heavy. | UI feels primitive and crowded. |
 | Color | Olive/yellow dominates Assistant. | Brand does not match logo direction. |
+| Product split | Assistant already feels dark/minimal while financial screens remain light and card-heavy. | The app feels like two products. |
 | QA | No app-wide screenshot gate. | Regressions slip through. |
 
 ## Target State
@@ -274,6 +275,7 @@ Steps:
 2. Remove local light-theme assumptions.
 3. Ensure bottom navigation is dark/minimal.
 4. Fix status bar/system UI colors.
+5. Bring Dashboard, Accounts, Budgets, Assistant, and Profile onto one visual system instead of leaving Assistant as the only dark area.
 
 Done looks like:
 
@@ -283,6 +285,7 @@ Acceptance criteria:
 
 - [ ] No major surface falls back to light theme.
 - [ ] Bottom navigation matches app theme.
+- [ ] Financial and Assistant areas look like one Clarity app, not a light finance app plus a dark Assistant mini-app.
 - [ ] Flutter analyze passes.
 
 ## Phase 10 - Visual QA, Accessibility, And Screenshot Pass

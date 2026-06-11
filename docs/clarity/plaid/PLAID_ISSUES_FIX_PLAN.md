@@ -215,11 +215,11 @@ Reference: Plaid's official webhook verification docs describe `Plaid-Verificati
   - `apps/mobile/lib/features/accounts/presentation/widgets/plaid_account_header.dart`
   - `apps/mobile/test/plaid_account_tile_test.dart`
 - **Acceptance Criteria:**
-  - [x] Generic Plaid labels are replaced with names such as `Capital One Checking 3279` or `Capital One Credit Card 8711`.
+  - [x] Generic Plaid labels are replaced with institution/type titles such as `Capital One Checking`, `Capital One Savings`, or `Bank of America Credit Card`.
   - [x] Account cards show institution, type, mask, status, balance/available balance, and last synced metadata without requiring transaction previews.
   - [x] Older stored generic rows are repaired by mobile display logic before the next backend sync.
   - [x] Account card tests cover generic Plaid label repair and no transaction previews.
-- **Completion Note:** Backend account sync now composes safe names from institution, subtype/type, and mask when Plaid gives generic names like `depository Account 3279` or `credit Account 9876`. Mobile account models repair existing stored generic rows through `displayName`/`displaySubtitle`, and account cards/detail titles/filters/prompts use those repaired labels. Account-card tests cover generic-name repair and keep transaction previews hidden.
+- **Completion Note:** Backend account sync now composes safe names from institution, subtype/type, and mask when Plaid gives generic names like `depository Account 3279` or `credit Account 9876`. Mobile account models repair existing stored generic rows through `displayName`/`displaySubtitle`, and account cards/detail titles/filters/prompts use those repaired labels. A follow-up real-device pass refined the hierarchy so the title is institution plus account type while Plaid product names such as `360 Performance Savings`, `Adv Plus Banking`, or `Customized Cash Rewards` move to supporting detail with the mask. Account-card tests cover generic-name repair, product-name hierarchy, and hidden transaction previews.
 
 ## Phase 10 - Plaid Sync Coverage And Freshness Contract
 
