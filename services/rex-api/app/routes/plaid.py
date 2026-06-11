@@ -3,7 +3,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from app.auth.supabase_auth import AuthenticatedUser, get_current_user
@@ -72,6 +73,28 @@ class PlaidSyncItemResponse(BaseModel):
     next_cursor: Optional[str] = None
 
 
+@router.get("/oauth", include_in_schema=False)
+async def plaid_oauth_redirect(request: Request) -> HTMLResponse:
+    logger.warning(
+        "Plaid OAuth redirect reached method=GET path=%s query_present=%s",
+        request.url.path,
+        bool(request.url.query),
+    )
+    return _plaid_oauth_fallback_response()
+
+
+@router.post("/oauth", include_in_schema=False)
+async def plaid_oauth_redirect_post(request: Request) -> HTMLResponse:
+    body = await request.body()
+    logger.warning(
+        "Plaid OAuth redirect reached method=POST path=%s body_bytes=%s query_present=%s",
+        request.url.path,
+        len(body),
+        bool(request.url.query),
+    )
+    return _plaid_oauth_fallback_response()
+
+
 @router.post("/link-token", response_model=PlaidLinkTokenResponse)
 async def create_link_token(
     request: Optional[PlaidLinkTokenRequest] = None,
@@ -87,9 +110,10 @@ async def create_link_token(
 
     try:
         logger.info(
-            "Plaid link token requested user=%s account_id_present=%s",
+            "Plaid link token requested user=%s account_id_present=%s platform=%s",
             _safe_user_label(current_user.id),
             bool(request.account_id),
+            _safe_log_value(request.platform),
         )
         data = await plaid_client.create_link_token(
             PlaidLinkTokenPayload(user_id=current_user.id, platform=request.platform),
@@ -273,6 +297,25 @@ def _safe_link_token_response(data: dict[str, Any]) -> PlaidLinkTokenResponse:
     return PlaidLinkTokenResponse(
         link_token=link_token,
         expiration=expiration if isinstance(expiration, str) else None,
+    )
+
+
+def _plaid_oauth_fallback_response() -> HTMLResponse:
+    return HTMLResponse(
+        """
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Return to Clarity</title>
+  </head>
+  <body style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 24px;">
+    <h1>Return to Clarity</h1>
+    <p>Your bank sent you back to Clarity. You can return to the app to continue.</p>
+  </body>
+</html>
+        """.strip()
     )
 
 

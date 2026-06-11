@@ -130,3 +130,19 @@ def test_link_token_route_requires_authentication():
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Missing Supabase access token."
+
+
+def test_plaid_oauth_fallback_get_is_available():
+    with TestClient(app) as client:
+        response = client.get("/plaid/oauth?oauth_state_id=state")
+
+    assert response.status_code == 200
+    assert "Return to Clarity" in response.text
+
+
+def test_plaid_oauth_fallback_post_is_available():
+    with TestClient(app) as client:
+        response = client.post("/plaid/oauth", content="opaque-bank-payload")
+
+    assert response.status_code == 200
+    assert "Return to Clarity" in response.text

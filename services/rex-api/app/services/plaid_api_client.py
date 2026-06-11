@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from typing import Any
 
@@ -9,6 +10,8 @@ import httpx
 from app.config import Settings, get_settings
 from app.services.http_client import request_with_retries
 from app.services.plaid_config import require_plaid_configured
+
+logger = logging.getLogger(__name__)
 
 
 class PlaidApiClientError(Exception):
@@ -64,6 +67,14 @@ class PlaidApiClient:
         if self.settings.plaid_account_filters_json:
             body["account_filters"] = self._account_filters()
 
+        logger.info(
+            "Plaid link token payload prepared platform=%s redirect_uri=%s webhook=%s android_package_name_present=%s account_filters_present=%s",
+            platform or "unknown",
+            _safe_url(body.get("redirect_uri")),
+            _safe_url(body.get("webhook")),
+            "android_package_name" in body,
+            "account_filters" in body,
+        )
         return await self._post("/link/token/create", body)
 
     async def exchange_public_token(self, public_token: str) -> dict[str, Any]:
@@ -198,3 +209,9 @@ class PlaidApiClient:
 
 def _string_or_none(value: Any) -> str | None:
     return value if isinstance(value, str) and value else None
+
+
+def _safe_url(value: Any) -> str:
+    if not isinstance(value, str) or not value.strip():
+        return "none"
+    return value.strip()[:160]
