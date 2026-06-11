@@ -63,9 +63,12 @@ class AccountsNavigationActions {
     );
   }
 
-  Future<void> importCsvInstead(BuildContext context) async {
+  Future<void> importCsvInstead(
+    BuildContext context, {
+    String surface = 'accounts_empty',
+  }) async {
     trackConnectBankEntryPoint(
-      surface: 'accounts_empty',
+      surface: surface,
       action: ConnectBankEntryAction.importCsvInstead,
     );
     final account = await showAddAccountDialog(context);
@@ -80,9 +83,12 @@ class AccountsNavigationActions {
     await openAccountDetail(context, account);
   }
 
-  Future<void> addManualAccount(BuildContext context) async {
+  Future<void> addManualAccount(
+    BuildContext context, {
+    String surface = 'accounts_empty',
+  }) async {
     trackConnectBankEntryPoint(
-      surface: 'accounts_empty',
+      surface: surface,
       action: ConnectBankEntryAction.addManualAccount,
     );
     await showAddAccountDialog(context);

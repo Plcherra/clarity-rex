@@ -11,6 +11,8 @@ import 'widgets/accounts_app_bar.dart';
 import 'widgets/accounts_body.dart';
 import 'widgets/accounts_data_notifier.dart';
 
+enum _AddAccountAction { connectBank, importCsv, manual }
+
 class AccountsScreen extends StatefulWidget {
   const AccountsScreen({
     super.key,
@@ -128,6 +130,79 @@ class _AccountsScreenState extends State<AccountsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not open bank connection.')),
       );
+    }
+  }
+
+  Future<void> _showAddAccountOptions(BuildContext context) async {
+    final action = await showModalBottomSheet<_AddAccountAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        final colorScheme = theme.colorScheme;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Add account',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Connect another bank with Plaid, or use manual tools when you need a fallback.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Icon(Icons.account_balance_rounded),
+                  title: const Text('Connect bank'),
+                  subtitle: const Text('Use Plaid to add another bank.'),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_AddAccountAction.connectBank),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.upload_file_rounded),
+                  title: const Text('Import CSV instead'),
+                  subtitle: const Text('Create a manual account for bank files.'),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(_AddAccountAction.importCsv),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.add_rounded),
+                  title: const Text('Add manual account'),
+                  subtitle: const Text('Track an account without Plaid.'),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(_AddAccountAction.manual),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!context.mounted || action == null) return;
+
+    final navigation = _navigation;
+    switch (action) {
+      case _AddAccountAction.connectBank:
+        await _connectBank(context, surface: 'accounts_add');
+        return;
+      case _AddAccountAction.importCsv:
+        await navigation.importCsvInstead(context, surface: 'accounts_add');
+        return;
+      case _AddAccountAction.manual:
+        await navigation.addManualAccount(context, surface: 'accounts_add');
+        return;
     }
   }
 
@@ -278,15 +353,17 @@ class _AccountsScreenState extends State<AccountsScreen> {
       appBar: AccountsAppBar(
         refreshingAccounts: _refreshingAccounts,
         onRefreshAccounts: () => _refreshConnectedAccounts(context),
-        onAddAccount: () => navigation.showAddAccountDialog(context),
+        onAddAccount: () => _showAddAccountOptions(context),
       ),
       body: AccountsBody(
         dataNotifier: _dataNotifier,
         accountNotice: _accountNotice,
         onDismissNotice: () => setState(() => _accountNotice = null),
         onConnectBank: () => _connectBank(context, surface: 'accounts_empty'),
-        onImportCsvInstead: () => navigation.importCsvInstead(context),
-        onAddManualAccount: () => navigation.addManualAccount(context),
+        onImportCsvInstead: () =>
+            navigation.importCsvInstead(context, surface: 'accounts_empty'),
+        onAddManualAccount: () =>
+            navigation.addManualAccount(context, surface: 'accounts_empty'),
         onRefreshAccounts: () => _refreshConnectedAccounts(context),
         onOpenAccountDetail: (account) =>
             navigation.openAccountDetail(context, account),
