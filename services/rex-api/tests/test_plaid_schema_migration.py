@@ -10,6 +10,12 @@ PLAID_ACCOUNT_INSTITUTION_MIGRATION = (
     / "migrations"
     / "20260609000100_add_plaid_account_institution_name.sql"
 )
+PLAID_ACCOUNT_CONFLICT_MIGRATION = (
+    Path(__file__).resolve().parents[3]
+    / "supabase"
+    / "migrations"
+    / "20260611000100_add_accounts_plaid_account_conflict_index.sql"
+)
 
 
 def test_plaid_foundation_migration_is_user_scoped_and_select_only():
@@ -57,3 +63,11 @@ def test_plaid_accounts_keep_institution_snapshot_for_mobile_display():
     assert "alter table public.plaid_accounts" in sql
     assert "add column if not exists institution_name text" in sql
     assert "plaid_accounts_user_institution_idx" in sql
+
+
+def test_plaid_account_upsert_has_postgrest_conflict_index():
+    sql = PLAID_ACCOUNT_CONFLICT_MIGRATION.read_text().lower()
+
+    assert "create unique index if not exists accounts_user_plaid_account_conflict_uidx" in sql
+    assert "on public.accounts(user_id, plaid_account_id)" in sql
+    assert "where plaid_account_id is not null" not in sql
