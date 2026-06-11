@@ -21,6 +21,33 @@ static NSString* const kRequestAuthorizationIfNeeded = @"requestAuthorizationIfN
 static NSString* const kShowGradientBackground = @"showGradientBackground";
 static NSString* const kSimulatedBehavior = @"simulatedBehavior";
 
+@interface ClarityPlaidSuccessStream : NSObject <FlutterStreamHandler>
+- (void)sendEventWithArguments:(id _Nullable)arguments;
+@end
+
+@implementation ClarityPlaidSuccessStream {
+    FlutterEventSink _eventSink;
+}
+
+- (FlutterError *)onListenWithArguments:(id)arguments
+                              eventSink:(FlutterEventSink)eventSink {
+    _eventSink = eventSink;
+    return nil;
+}
+
+- (FlutterError *)onCancelWithArguments:(id)arguments {
+    _eventSink = nil;
+    return nil;
+}
+
+- (void)sendEventWithArguments:(id _Nullable)arguments {
+    if (!_eventSink)
+        return;
+
+    _eventSink(arguments);
+}
+@end
+
 @interface PlaidFlutterPlugin () <FlutterStreamHandler, PLKEventEmitter>
 @end
 
@@ -30,6 +57,8 @@ static NSString* const kSimulatedBehavior = @"simulatedBehavior";
     NSError *_creationError;
     UIViewController *_presentedViewController;
 }
+
+static ClarityPlaidSuccessStream *_claritySuccessStream;
 
 + (NSString *)sdkVersion {
   return @"5.1.1"; // Update this version with every SDK release.
@@ -43,9 +72,14 @@ static NSString* const kSimulatedBehavior = @"simulatedBehavior";
     FlutterEventChannel *eventChannel = [FlutterEventChannel eventChannelWithName:@"plugins.flutter.io/plaid_flutter/events"
                                                                   binaryMessenger:[registrar messenger]];
 
+    FlutterEventChannel *claritySuccessChannel = [FlutterEventChannel eventChannelWithName:@"clarity/plaid_link_success"
+                                                                          binaryMessenger:[registrar messenger]];
+
     PlaidFlutterPlugin *instance = [[PlaidFlutterPlugin alloc] init];
+    _claritySuccessStream = [[ClarityPlaidSuccessStream alloc] init];
     [registrar addMethodCallDelegate:instance channel:methodChannel];
     [eventChannel setStreamHandler:instance];
+    [claritySuccessChannel setStreamHandler:_claritySuccessStream];
     
     PLKEmbeddedViewFactory* factory = [[PLKEmbeddedViewFactory alloc] initWithMessenger:registrar.messenger emitter:instance];
     [registrar registerViewFactory:factory withId:@"plaid/embedded-view"];
@@ -105,9 +139,11 @@ static NSString* const kSimulatedBehavior = @"simulatedBehavior";
     PLKOnSuccessHandler successHandler = ^(PLKLinkSuccess *success) {
         __strong typeof(self) strongSelf = weakSelf;
         [strongSelf close];
-        [strongSelf sendEventWithArguments: @{kTypeKey: kOnSuccessType,
-                                              kPublicTokenKey: success.publicToken ?: @"",
-                                              kMetadataKey : [PlaidFlutterPlugin dictionaryFromSuccessMetadata:success.metadata]}];
+        NSDictionary *arguments = @{kTypeKey: kOnSuccessType,
+                                    kPublicTokenKey: success.publicToken ?: @"",
+                                    kMetadataKey : [PlaidFlutterPlugin dictionaryFromSuccessMetadata:success.metadata]};
+        [strongSelf sendEventWithArguments:arguments];
+        [_claritySuccessStream sendEventWithArguments:arguments];
     };
 
     PLKOnExitHandler exitHandler = ^(PLKLinkExit *exit) {

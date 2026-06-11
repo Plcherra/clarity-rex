@@ -180,6 +180,9 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
   static const EventChannel _nativeOauthLinks = EventChannel(
     'clarity/plaid_oauth_links',
   );
+  static const EventChannel _nativeLinkSuccesses = EventChannel(
+    'clarity/plaid_link_success',
+  );
 
   @override
   Future<PlaidLinkLaunchResult> open(PlaidLinkToken token) async {
@@ -192,6 +195,8 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
     late final StreamSubscription<LinkEvent> eventSubscription;
     late final StreamSubscription<Uri> oauthRedirectSubscription;
     late final StreamSubscription<Uri> nativeOauthRedirectSubscription;
+    late final StreamSubscription<PlaidLinkLaunchSuccess>
+    nativeSuccessSubscription;
     late final AppLifecycleListener lifecycleListener;
     Timer? pendingExitTimer;
 
@@ -251,6 +256,20 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
         ),
       );
     });
+    nativeSuccessSubscription = _nativeLinkSuccessesStream().listen(
+      (event) {
+        pendingExitTimer?.cancel();
+        _debugPlaidLink(
+          'native success institution=${event.institutionName ?? 'unknown'} '
+          'accounts=${event.accountCount} '
+          'public_token_present=${event.publicToken.trim().isNotEmpty}',
+        );
+        complete(event);
+      },
+      onError: (Object error) {
+        _debugPlaidLink('native success listener error=$error');
+      },
+    );
     exitSubscription = PlaidLink.onExit.listen((event) {
       _debugPlaidLink(
         'exit status=${event.metadata.status ?? 'unknown'} '
@@ -339,6 +358,7 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
       pendingExitTimer?.cancel();
       lifecycleListener.dispose();
       await successSubscription.cancel();
+      await nativeSuccessSubscription.cancel();
       await exitSubscription.cancel();
       await eventSubscription.cancel();
       await oauthRedirectSubscription.cancel();
@@ -367,6 +387,58 @@ final class PlaidFlutterLinkLauncher implements PlaidLinkLauncher {
       }
       return Uri.parse(raw);
     });
+  }
+
+  Stream<PlaidLinkLaunchSuccess> _nativeLinkSuccessesStream() {
+    return _nativeLinkSuccesses.receiveBroadcastStream().map((event) {
+      final success = nativeLinkSuccessFromEvent(event);
+      if (success == null) {
+        throw const PlaidLinkServiceException(
+          'Received an invalid bank connection success event.',
+        );
+      }
+      return success;
+    });
+  }
+
+  @visibleForTesting
+  static PlaidLinkLaunchSuccess? nativeLinkSuccessFromEvent(Object? event) {
+    if (event is! Map) return null;
+
+    final rawPublicToken = event['publicToken'];
+    if (rawPublicToken is! String || rawPublicToken.trim().isEmpty) {
+      return null;
+    }
+
+    final metadata = event['metadata'];
+    String? institutionId;
+    String? institutionName;
+    var accountCount = 0;
+
+    if (metadata is Map) {
+      final institution = metadata['institution'];
+      if (institution is Map) {
+        institutionId = _stringFromNativeMap(institution['id']);
+        institutionName = _stringFromNativeMap(institution['name']);
+      }
+
+      final accounts = metadata['accounts'];
+      if (accounts is List) {
+        accountCount = accounts.length;
+      }
+    }
+
+    return PlaidLinkLaunchSuccess(
+      publicToken: rawPublicToken.trim(),
+      institutionId: institutionId,
+      institutionName: institutionName,
+      accountCount: accountCount,
+    );
+  }
+
+  static String? _stringFromNativeMap(Object? value) {
+    if (value is! String || value.trim().isEmpty) return null;
+    return value.trim();
   }
 }
 

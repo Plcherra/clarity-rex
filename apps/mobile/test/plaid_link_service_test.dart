@@ -108,6 +108,38 @@ void main() {
         expect(exchangeApi.exchangedPublicToken, isNull);
       },
     );
+
+    test('parses native iOS success payload into launch success', () {
+      final result = PlaidFlutterLinkLauncher.nativeLinkSuccessFromEvent({
+        'type': 'success',
+        'publicToken': ' public-production-native ',
+        'metadata': {
+          'institution': {'id': 'ins_127989', 'name': 'Bank of America'},
+          'accounts': [
+            {'id': 'account-1'},
+            {'id': 'account-2'},
+          ],
+        },
+      });
+
+      expect(result, isNotNull);
+      expect(result!.publicToken, 'public-production-native');
+      expect(result.institutionId, 'ins_127989');
+      expect(result.institutionName, 'Bank of America');
+      expect(result.accountCount, 2);
+    });
+
+    test('ignores native iOS success payload without public token', () {
+      final result = PlaidFlutterLinkLauncher.nativeLinkSuccessFromEvent({
+        'type': 'success',
+        'publicToken': ' ',
+        'metadata': {
+          'institution': {'id': 'ins_127989', 'name': 'Bank of America'},
+        },
+      });
+
+      expect(result, isNull);
+    });
   });
 }
 
