@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.github.jorgefspereira.plaid_flutter">
+
+  <uses-permission android:name="android.permission.INTERNET" />
+
+  <application>
+        <meta-data
+            android:name="com.github.jorgefspereira.plaid_flutter.version"
+            android:value="5.1.1" />
+    </application>
+  
+</manifest>
