@@ -2,23 +2,30 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.auth.supabase_auth import AuthenticatedUser, get_current_user
-from app.dependencies import get_plaid_sync_service
+from app.dependencies import get_plaid_sync_service, get_plaid_webhook_verifier
 from app.main import app
 from app.services.plaid_sync_service import (
     PlaidItemStatus,
     PlaidSyncResult,
     PlaidSyncServiceError,
 )
+from app.services.plaid_webhook_verifier import PlaidWebhookVerificationError
+
+
+class FakePlaidWebhookVerifier:
+    plaid_verification = None
+    raw_body = None
+
+    async def verify(self, *, plaid_verification, raw_body):
+        self.plaid_verification = plaid_verification
+        self.raw_body = raw_body
+        if plaid_verification != "valid-signature":
+            raise PlaidWebhookVerificationError("invalid")
 
 
 class FakePlaidSyncService:
-    signature = None
     status_call = None
     webhook_payloads = []
-
-    def verify_webhook_signature(self, plaid_verification):
-        self.signature = plaid_verification
-        return plaid_verification == "valid-signature"
 
     async def handle_webhook_event(self, *, payload):
         self.webhook_payloads.append(payload)
@@ -69,23 +76,26 @@ async def fake_current_user():
 
 def test_webhook_accepts_verified_payload_and_runs_background_handler():
     service = FakePlaidSyncService()
+    verifier = FakePlaidWebhookVerifier()
     service.webhook_payloads = []
     app.dependency_overrides[get_plaid_sync_service] = lambda: service
+    app.dependency_overrides[get_plaid_webhook_verifier] = lambda: verifier
+    raw_body = (
+        b'{"webhook_type":"TRANSACTIONS","webhook_code":"SYNC_UPDATES_AVAILABLE",'
+        b'"item_id":"plaid-item-id"}'
+    )
 
     with TestClient(app) as client:
         response = client.post(
             "/plaid/webhook",
             headers={"Plaid-Verification": "valid-signature"},
-            json={
-                "webhook_type": "TRANSACTIONS",
-                "webhook_code": "SYNC_UPDATES_AVAILABLE",
-                "item_id": "plaid-item-id",
-            },
+            content=raw_body,
         )
 
     assert response.status_code == 200
     assert response.json() == {"received": True}
-    assert service.signature == "valid-signature"
+    assert verifier.plaid_verification == "valid-signature"
+    assert verifier.raw_body == raw_body
     assert service.webhook_payloads == [
         {
             "webhook_type": "TRANSACTIONS",
@@ -98,6 +108,9 @@ def test_webhook_accepts_verified_payload_and_runs_background_handler():
 
 def test_webhook_rejects_missing_or_invalid_signature():
     app.dependency_overrides[get_plaid_sync_service] = lambda: FakePlaidSyncService()
+    app.dependency_overrides[get_plaid_webhook_verifier] = (
+        lambda: FakePlaidWebhookVerifier()
+    )
 
     with TestClient(app) as client:
         response = client.post(
@@ -106,11 +119,14 @@ def test_webhook_rejects_missing_or_invalid_signature():
         )
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid Plaid webhook signature."
+    assert response.json()["detail"] == "Invalid Plaid webhook verification."
 
 
 def test_webhook_rejects_invalid_payload_even_with_valid_signature():
     app.dependency_overrides[get_plaid_sync_service] = lambda: FakePlaidSyncService()
+    app.dependency_overrides[get_plaid_webhook_verifier] = (
+        lambda: FakePlaidWebhookVerifier()
+    )
 
     with TestClient(app) as client:
         response = client.post(
@@ -125,6 +141,9 @@ def test_webhook_rejects_invalid_payload_even_with_valid_signature():
 
 def test_webhook_rejects_item_event_without_item_id():
     app.dependency_overrides[get_plaid_sync_service] = lambda: FakePlaidSyncService()
+    app.dependency_overrides[get_plaid_webhook_verifier] = (
+        lambda: FakePlaidWebhookVerifier()
+    )
 
     with TestClient(app) as client:
         response = client.post(

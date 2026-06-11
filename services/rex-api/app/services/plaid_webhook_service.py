@@ -3,6 +3,10 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from app.services.plaid_sync_service import PlaidSyncService
+from app.services.plaid_webhook_verifier import (
+    PlaidWebhookVerificationError,
+    PlaidWebhookVerifier,
+)
 
 ITEM_EVENTS_REQUIRING_ITEM = {
     "ITEM_LOGIN_REPAIRED",
@@ -22,20 +26,31 @@ class PlaidWebhookValidationError(Exception):
 
 
 class PlaidWebhookService:
-    def __init__(self, plaid_sync_service: PlaidSyncService) -> None:
+    def __init__(
+        self,
+        plaid_sync_service: PlaidSyncService,
+        webhook_verifier: PlaidWebhookVerifier,
+    ) -> None:
         self.plaid_sync_service = plaid_sync_service
+        self.webhook_verifier = webhook_verifier
 
-    def verify_webhook_request(
+    async def verify_webhook_request(
         self,
         *,
         payload: dict[str, Any],
         plaid_verification: Optional[str],
+        raw_body: bytes,
     ) -> None:
-        if not self.plaid_sync_service.verify_webhook_signature(plaid_verification):
-            raise PlaidWebhookValidationError(
-                "Invalid Plaid webhook signature.",
-                status_code=401,
+        try:
+            await self.webhook_verifier.verify(
+                plaid_verification=plaid_verification,
+                raw_body=raw_body,
             )
+        except PlaidWebhookVerificationError as error:
+            raise PlaidWebhookValidationError(
+                "Invalid Plaid webhook verification.",
+                status_code=401,
+            ) from error
         self.validate_payload(payload)
 
     def validate_payload(self, payload: dict[str, Any]) -> None:

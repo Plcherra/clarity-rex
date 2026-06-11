@@ -21,6 +21,7 @@ from app.services.plaid_sync_service import PlaidSyncService
 from app.services.plaid_token_service import PlaidTokenService
 from app.services.plaid_transaction_service import PlaidTransactionService
 from app.services.plaid_webhook_service import PlaidWebhookService
+from app.services.plaid_webhook_verifier import PlaidWebhookVerifier
 from app.services.rule_service import RuleService
 from app.services.time_context_service import TimeContextService
 from app.services.usage_tracking_service import UsageTrackingService
@@ -142,10 +143,17 @@ def get_plaid_sync_service(
     )
 
 
+def get_plaid_webhook_verifier(
+    plaid_api_client: PlaidApiClient = Depends(get_plaid_api_client),
+) -> PlaidWebhookVerifier:
+    return PlaidWebhookVerifier(plaid_client=plaid_api_client)
+
+
 def get_plaid_webhook_service(
     plaid_sync_service: PlaidSyncService = Depends(get_plaid_sync_service),
+    plaid_webhook_verifier: PlaidWebhookVerifier = Depends(get_plaid_webhook_verifier),
 ) -> PlaidWebhookService:
-    return PlaidWebhookService(plaid_sync_service)
+    return PlaidWebhookService(plaid_sync_service, plaid_webhook_verifier)
 
 
 def get_chat_service(

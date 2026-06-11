@@ -122,18 +122,21 @@ async def test_plaid_methods_use_expected_endpoints(monkeypatch):
     await client.get_accounts("access-token")
     await client.sync_transactions("access-token", cursor="next", count=42)
     await client.remove_item("access-token")
+    await client.get_webhook_verification_key("key-1")
 
     assert [url for url, _payload in endpoints] == [
         "https://sandbox.plaid.com/item/public_token/exchange",
         "https://sandbox.plaid.com/accounts/get",
         "https://sandbox.plaid.com/transactions/sync",
         "https://sandbox.plaid.com/item/remove",
+        "https://sandbox.plaid.com/webhook_verification_key/get",
     ]
     assert endpoints[0][1]["public_token"] == "public-token"
     assert endpoints[1][1]["access_token"] == "access-token"
     assert endpoints[2][1]["cursor"] == "next"
     assert endpoints[2][1]["count"] == 42
     assert endpoints[3][1]["access_token"] == "access-token"
+    assert endpoints[4][1]["key_id"] == "key-1"
 
 
 @pytest.mark.asyncio
@@ -188,6 +191,9 @@ async def test_required_tokens_are_validated_before_http(monkeypatch):
 
     with pytest.raises(PlaidApiClientError, match="access_token is required"):
         await client.get_accounts(" ")
+
+    with pytest.raises(PlaidApiClientError, match="key_id is required"):
+        await client.get_webhook_verification_key(" ")
 
 
 @pytest.mark.asyncio

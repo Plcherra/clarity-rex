@@ -5,7 +5,6 @@ from typing import Any, Optional
 from app.config import Settings, get_settings
 from app.services.plaid_account_service import PlaidAccountService
 from app.services.plaid_api_client import PlaidApiClient, PlaidApiClientError
-from app.services.plaid_config import get_plaid_config_status
 from app.services.plaid_cursor_service import PlaidCursorService
 from app.services.plaid_sync_models import (
     PlaidExchangeResult,
@@ -137,11 +136,6 @@ class PlaidSyncService:
             status="degraded",
             metadata={"last_sync_error": "initial_sync_failed"},
         )
-
-    def verify_webhook_signature(self, plaid_verification: Optional[str]) -> bool:
-        if not get_plaid_config_status(self.settings).configured:
-            return False
-        return bool(plaid_verification and plaid_verification.strip())
 
     async def get_item_status(
         self,

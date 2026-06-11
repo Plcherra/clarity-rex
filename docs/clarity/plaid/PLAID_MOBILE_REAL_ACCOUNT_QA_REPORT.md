@@ -86,6 +86,13 @@ Completed on 2026-06-09 after the real-bank fix phases:
 - `cd apps/mobile && flutter test test/plaid* test/budget_cleanup_service_test.dart test/assistant_financial_context_service_test.dart test/financial_integration_contracts_test.dart`: Passed, 26 tests
 - `VPS_SSH_TARGET=clarity ./scripts/mobile_release_run.sh --print`: Passed and resolved the release run command from the VPS public mobile config
 
+Completed on 2026-06-10 after official Plaid webhook verification hardening:
+
+- `cd services/rex-api && ./.venv/bin/python -m pytest -q tests/test_plaid_*.py`: Passed, 59 tests
+- `cd apps/mobile && flutter analyze`: Passed
+- `cd apps/mobile && flutter test test/plaid* test/budget_cleanup_service_test.dart test/assistant_financial_context_service_test.dart test/financial_integration_contracts_test.dart`: Passed, 26 tests
+- `VPS_SSH_TARGET=clarity ./scripts/mobile_release_run.sh --print`: Passed and resolved the physical-device release command
+
 Scope covered by the 2026-06-09 preflight:
 
 - Mobile Plaid success callback and public-token exchange path.
@@ -122,6 +129,28 @@ If you only want to inspect the generated command first:
 VPS_SSH_TARGET=clarity ./scripts/mobile_release_run.sh --print
 ```
 
+## VPS Log Watch Command
+
+Run this in a separate VPS terminal before starting the Bank of America flow:
+
+```bash
+ssh clarity
+sudo journalctl -u clarity-rex -f
+```
+
+For a successful connection, the log should show this sequence:
+
+```text
+POST /plaid/link-token
+POST /plaid/exchange-token
+Plaid public token exchange completed ... accounts=...
+```
+
+If `/plaid/link-token` appears but `/plaid/exchange-token` does not, the issue
+is still in the mobile Plaid success/OAuth callback path. If
+`/plaid/exchange-token` appears but the app stays empty, the issue is in
+account persistence, sync, or mobile refresh.
+
 ## Real Account QA Checklist
 
 Use one real bank account. Do not paste private account numbers, balances, or
@@ -152,6 +181,23 @@ Record sanitized counts only:
   Pending
 - Manual/CSV transactions imported during fallback check: Pending
 - Duplicate warnings shown: Pending
+
+## Phase 2 Physical QA Evidence To Capture
+
+Record only sanitized evidence:
+
+- Timestamp of the test run.
+- Whether Plaid shows `HANDOFF - onSuccess`.
+- Whether VPS logs show `POST /plaid/exchange-token`.
+- Connected institutions count.
+- Connected accounts count.
+- Synced transaction count.
+- Whether Dashboard leaves the "Connect your first bank" empty state.
+- Whether Accounts shows both selected accounts with status and last synced
+  state.
+- Whether manual resync changes counts without creating visible duplicates.
+- Whether Assistant can answer from the same connected account/transaction/budget
+  data shown in Clarity.
 
 ## Security Checks
 

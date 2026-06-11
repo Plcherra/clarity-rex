@@ -330,6 +330,10 @@ Preflight note:
 - Automated Phase 7 readiness passed on June 9, 2026: backend Plaid tests,
   Flutter analyze, focused Plaid/budget/assistant truth tests, and release
   command generation all passed.
+- Automated Phase 7 readiness was rechecked on June 10, 2026 after official
+  Plaid webhook verification hardening: backend Plaid tests passed, Flutter
+  analyze passed, focused Plaid/budget/assistant truth tests passed, and release
+  command generation passed.
 - The QA report is updated for a fresh Bank of America retest, but the phase
   remains pending final physical-device confirmation because Codex cannot
   perform private bank login or inspect private financial data.

@@ -288,22 +288,6 @@ async def test_mark_item_sync_degraded_updates_item_status(monkeypatch):
     ]
 
 
-def test_webhook_signature_requires_plaid_config_and_header():
-    service = PlaidSyncService(
-        plaid_client=FakePlaidClient(),
-        settings=settings(),
-    )
-
-    assert service.verify_webhook_signature("signature") is True
-    assert service.verify_webhook_signature(" ") is False
-
-    missing_config_service = PlaidSyncService(
-        plaid_client=FakePlaidClient(),
-        settings=settings(plaid_client_id=None),
-    )
-    assert missing_config_service.verify_webhook_signature("signature") is False
-
-
 @pytest.mark.asyncio
 async def test_get_item_status_queries_current_user_item(monkeypatch):
     calls = []

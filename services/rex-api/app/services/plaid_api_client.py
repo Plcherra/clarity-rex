@@ -104,6 +104,16 @@ class PlaidApiClient:
             {"access_token": self._required_access_token(access_token)},
         )
 
+    async def get_webhook_verification_key(self, key_id: str) -> dict[str, Any]:
+        normalized_key_id = key_id.strip()
+        if not normalized_key_id:
+            raise PlaidApiClientError("key_id is required", status_code=400)
+
+        return await self._post(
+            "/webhook_verification_key/get",
+            {"key_id": normalized_key_id},
+        )
+
     async def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         require_plaid_configured(self.settings)
         request_payload = {
