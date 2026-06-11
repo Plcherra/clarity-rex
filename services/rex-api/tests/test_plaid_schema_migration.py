@@ -16,6 +16,12 @@ PLAID_ACCOUNT_CONFLICT_MIGRATION = (
     / "migrations"
     / "20260611000100_add_accounts_plaid_account_conflict_index.sql"
 )
+PLAID_TRANSACTION_CONFLICT_MIGRATION = (
+    Path(__file__).resolve().parents[3]
+    / "supabase"
+    / "migrations"
+    / "20260611000200_add_transactions_plaid_transaction_conflict_index.sql"
+)
 
 
 def test_plaid_foundation_migration_is_user_scoped_and_select_only():
@@ -71,3 +77,14 @@ def test_plaid_account_upsert_has_postgrest_conflict_index():
     assert "create unique index if not exists accounts_user_plaid_account_conflict_uidx" in sql
     assert "on public.accounts(user_id, plaid_account_id)" in sql
     assert "where plaid_account_id is not null" not in sql
+
+
+def test_plaid_transaction_upsert_has_postgrest_conflict_index():
+    sql = PLAID_TRANSACTION_CONFLICT_MIGRATION.read_text().lower()
+
+    assert (
+        "create unique index if not exists "
+        "transactions_user_plaid_transaction_conflict_uidx"
+    ) in sql
+    assert "on public.transactions(user_id, plaid_transaction_id)" in sql
+    assert "where plaid_transaction_id is not null" not in sql
