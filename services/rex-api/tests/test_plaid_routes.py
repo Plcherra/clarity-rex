@@ -2,10 +2,11 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.auth.supabase_auth import AuthenticatedUser, get_current_user
-from app.dependencies import get_plaid_api_client
+from app.dependencies import get_plaid_api_client, get_plaid_sync_service
 from app.main import app
 from app.services.plaid_api_client import PlaidApiClientError
 from app.services.plaid_config import PlaidConfigurationError
+from app.services.plaid_sync_models import PlaidItemStatus, PlaidSyncServiceError
 
 
 class FakePlaidApiClient:
@@ -34,6 +35,28 @@ class PlaidErrorApiClient:
             plaid_error_code="INVALID_REQUEST",
             request_id="request-1",
         )
+
+
+class FakePlaidDisconnectService:
+    disconnect_call = None
+
+    async def disconnect_item(self, **kwargs):
+        self.disconnect_call = kwargs
+        return PlaidItemStatus(
+            plaid_item_record_id=kwargs["item_id"],
+            status="disconnected",
+            institution_name="Sandbox Bank",
+        )
+
+
+class MissingPlaidDisconnectService:
+    async def disconnect_item(self, **kwargs):
+        raise PlaidSyncServiceError("Plaid item was not found.", status_code=404)
+
+
+class FailingPlaidDisconnectService:
+    async def disconnect_item(self, **kwargs):
+        raise PlaidApiClientError("Plaid could not remove this bank.", status_code=503)
 
 
 async def fake_current_user():
@@ -130,6 +153,54 @@ def test_link_token_route_requires_authentication():
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Missing Supabase access token."
+
+
+def test_disconnect_item_route_returns_safe_disconnected_status():
+    sync_service = FakePlaidDisconnectService()
+    app.dependency_overrides[get_current_user] = fake_current_user
+    app.dependency_overrides[get_plaid_sync_service] = lambda: sync_service
+
+    with TestClient(app) as client:
+        response = client.post("/plaid/disconnect-item/item-record-1")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "plaid_item_record_id": "item-record-1",
+        "status": "disconnected",
+        "institution_name": "Sandbox Bank",
+    }
+    assert sync_service.disconnect_call == {
+        "user_id": "user-1",
+        "item_id": "item-record-1",
+    }
+    assert "access_token" not in response.text
+
+
+def test_disconnect_item_route_returns_not_found_for_unowned_item():
+    app.dependency_overrides[get_current_user] = fake_current_user
+    app.dependency_overrides[get_plaid_sync_service] = (
+        lambda: MissingPlaidDisconnectService()
+    )
+
+    with TestClient(app) as client:
+        response = client.post("/plaid/disconnect-item/item-record-other")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Plaid item was not found."
+
+
+def test_disconnect_item_route_returns_safe_plaid_failure():
+    app.dependency_overrides[get_current_user] = fake_current_user
+    app.dependency_overrides[get_plaid_sync_service] = (
+        lambda: FailingPlaidDisconnectService()
+    )
+
+    with TestClient(app) as client:
+        response = client.post("/plaid/disconnect-item/item-record-1")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Plaid could not remove this bank."
+    assert "access_token" not in response.text
 
 
 def test_plaid_oauth_fallback_get_is_available():

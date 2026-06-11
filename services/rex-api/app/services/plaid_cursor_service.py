@@ -103,6 +103,41 @@ class PlaidCursorService:
             )
         return item_rows[0], required_string(secret_rows[0], "access_token_ref")
 
+    async def load_user_item_and_token_ref(
+        self,
+        *,
+        user_id: str,
+        item_id: str,
+    ) -> tuple[dict[str, Any], str]:
+        item_rows = await self.supabase_request(
+            "GET",
+            PLAID_ITEMS_TABLE,
+            query={
+                "select": "id,user_id,plaid_item_id,institution_name,sync_cursor,status",
+                "user_id": f"eq.{user_id}",
+                "id": f"eq.{item_id}",
+                "limit": "1",
+            },
+        )
+        if not item_rows:
+            raise PlaidSyncServiceError("Plaid item was not found.", status_code=404)
+        secret_rows = await self.supabase_request(
+            "GET",
+            PLAID_ITEM_SECRETS_TABLE,
+            query={
+                "select": "access_token_ref",
+                "user_id": f"eq.{user_id}",
+                "item_id": f"eq.{item_id}",
+                "limit": "1",
+            },
+        )
+        if not secret_rows:
+            raise PlaidSyncServiceError(
+                "Plaid item credentials were not found.",
+                status_code=404,
+            )
+        return item_rows[0], required_string(secret_rows[0], "access_token_ref")
+
     async def get_item_status(self, *, user_id: str, item_id: str) -> PlaidItemStatus:
         normalized_user_id = user_id.strip()
         normalized_item_id = item_id.strip()
@@ -172,13 +207,65 @@ class PlaidCursorService:
             prefer="return=minimal",
         )
 
+    async def list_syncable_items_by_plaid_id(
+        self,
+        plaid_item_id: str,
+    ) -> list[dict[str, Any]]:
+        return await self.supabase_request(
+            "GET",
+            PLAID_ITEMS_TABLE,
+            query={
+                "select": "id,user_id,status",
+                "plaid_item_id": f"eq.{plaid_item_id}",
+                "status": "neq.disconnected",
+            },
+        )
+
+    async def mark_item_disconnected(self, *, user_id: str, item_id: str) -> None:
+        disconnected_at = utc_now_iso()
+        await self.supabase_request(
+            "PATCH",
+            PLAID_ITEMS_TABLE,
+            body={
+                "status": "disconnected",
+                "metadata": {"disconnected_at": disconnected_at},
+            },
+            query={"user_id": f"eq.{user_id}", "id": f"eq.{item_id}"},
+            prefer="return=minimal",
+        )
+        await self.supabase_request(
+            "PATCH",
+            "plaid_accounts",
+            body={
+                "status": "disconnected",
+                "last_synced_at": disconnected_at,
+            },
+            query={"user_id": f"eq.{user_id}", "item_id": f"eq.{item_id}"},
+            prefer="return=minimal",
+        )
+        await self.supabase_request(
+            "PATCH",
+            "accounts",
+            body={"sync_status": "disconnected"},
+            query={
+                "user_id": f"eq.{user_id}",
+                "plaid_item_record_id": f"eq.{item_id}",
+                "source": "eq.plaid",
+            },
+            prefer="return=minimal",
+        )
+
     async def update_items_by_plaid_id(
         self,
         plaid_item_id: str,
         *,
         status: str,
         metadata: dict[str, Any],
+        include_disconnected: bool = False,
     ) -> None:
+        query = {"plaid_item_id": f"eq.{plaid_item_id}"}
+        if not include_disconnected:
+            query["status"] = "neq.disconnected"
         await self.supabase_request(
             "PATCH",
             PLAID_ITEMS_TABLE,
@@ -187,7 +274,7 @@ class PlaidCursorService:
                 "webhook_last_received_at": utc_now_iso(),
                 "metadata": metadata,
             },
-            query={"plaid_item_id": f"eq.{plaid_item_id}"},
+            query=query,
             prefer="return=minimal",
         )
 

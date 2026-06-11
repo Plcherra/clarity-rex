@@ -113,20 +113,20 @@ Acceptance criteria:
 - [x] Link launch does not require Plaid secrets in mobile.
 - [x] Mobile service remains under 300 lines.
 
-Completion note: Added `plaid_flutter` plus `PlaidLinkService`, and wired
-Dashboard/Accounts Connect Bank actions to request a backend link token and
-open native Plaid Link. Public tokens are held only in memory for Phase 3
-exchange. Platform requirements are explicit: iOS minimum target is 14.0,
-Android minimum SDK is 21, and both app identifiers are currently
+Completion note: Added `PlaidLinkService` plus the native iOS
+`PlaidLinkBridge`, and wired Dashboard/Accounts Connect Bank actions to request
+a backend link token and open LinkKit. Public tokens are held only in memory for
+Phase 3 exchange. Platform requirements are explicit: iOS minimum target is
+14.0, Android minimum SDK is 21, and both app identifiers are currently
 `app.goclarity.clarity` for Plaid dashboard registration. Before device QA, set
 `PLAID_IOS_BUNDLE_ID=app.goclarity.clarity` and
-`PLAID_ANDROID_PACKAGE_NAME=com.clarity.clarity` on the backend; add
-`PLAID_REDIRECT_URI` only when OAuth institutions require it.
+`PLAID_ANDROID_PACKAGE_NAME=com.clarity.clarity` on the backend; set
+`PLAID_REDIRECT_URI=https://api.goclarity.app/plaid/oauth` for production iOS
+OAuth institutions.
 
-Known caveat: `plaid_flutter` currently warns that it does not support Swift
-Package Manager for iOS. CocoaPods still works, and this warning is acceptable
-for now because using the plugin keeps the mobile integration simpler and
-lower-maintenance than owning custom native bridge code.
+Known caveat: iOS Plaid Link is currently owned by the custom native LinkKit
+bridge. Keep the LinkKit package, app bundle id, Associated Domains entitlement,
+and backend `PLAID_REDIRECT_URI` aligned for production QA.
 
 Verification:
 
@@ -203,8 +203,8 @@ Steps:
    sync failure messages.
 3. Refresh Dashboard and Accounts after a successful connection.
 4. Add manual Refresh Accounts action for connected Plaid items.
-5. Keep `plaid_flutter` Swift Package Manager warning documented as known and
-   acceptable for now.
+5. Keep the native LinkKit bridge and backend redirect configuration documented
+   as the source of truth for iOS Plaid OAuth behavior.
 
 Done looks like:
 
@@ -305,28 +305,31 @@ Files to change:
 
 Steps:
 
-1. Add recent transaction display under Plaid account tiles.
-2. Show institution, mask, balances, and last synced when available.
+1. Keep Plaid account tiles focused on account status, institution, mask,
+   balances, and last synced when available.
+2. Route transaction browsing to account detail and dashboard transaction
+   surfaces instead of account tile previews.
 3. Add pull-to-refresh that triggers existing Plaid resync.
-4. Keep empty transaction states graceful.
+4. Keep empty account states graceful.
 
 Done looks like:
 
-- Plaid accounts show synced activity without adding categorization, search, or
-  a full transaction screen.
+- Plaid accounts show synced account state without duplicating transaction
+  previews on the account tile.
 
 Acceptance criteria:
 
-- [x] Plaid tiles show recent synced transactions.
+- [x] Plaid tiles intentionally do not show recent transaction previews.
 - [x] Plaid tiles show basic account details from synced backend data.
 - [x] Pull-to-refresh uses the existing resync flow.
-- [x] Empty transaction states do not look broken.
+- [x] Empty account states do not look broken.
 
-Completion note: Account overview rows now include the latest five transactions
-from the shared financial read model. Plaid account tiles render those recent
-transactions, account mask, balances, institution/subtitle data, and existing
-last-synced status. The Accounts list is wrapped in pull-to-refresh using the
-same current-user resync path as the refresh button.
+Completion note: Plaid account tiles render account mask, balances,
+institution/subtitle data, and existing last-synced status. Transaction browsing
+lives in account detail and dashboard transaction surfaces, keeping the account
+tile compact and avoiding mixed-source preview ambiguity. The Accounts list is
+wrapped in pull-to-refresh using the same current-user resync path as the refresh
+button.
 
 ## Phase 7 - CSV Import As Fallback
 
@@ -371,7 +374,7 @@ flutter test test/csv_import_service_test.dart test/csv_parser_test.dart test/im
 
 Known note:
 
-- `plaid_flutter` still emits the accepted Swift Package Manager warning for iOS. CocoaPods remains the current path.
+- iOS Plaid Link uses the custom native LinkKit bridge. Keep the LinkKit package and Associated Domains configuration aligned with the backend Plaid redirect URI.
 
 ## Phase 8 - Plaid/CSV Deduplication UI
 
@@ -404,7 +407,7 @@ Acceptance criteria:
 
 Completion note:
 
-- Account tiles and recent connected-account transaction rows now show quiet `Plaid` or `Manual/CSV` source labels. CSV imports into Plaid-connected accounts show a calm duplicate-risk confirmation, while the import preview gives connected-account-specific guidance. Future CSV writes explicitly persist `source = csv`, and the Plaid/CSV boundary doc now makes source labels and duplicate-warning behavior part of the UI contract.
+- Account tiles show quiet `Plaid` or `Manual/CSV` source labels. CSV imports into Plaid-connected accounts show a calm duplicate-risk confirmation, while the import preview gives connected-account-specific guidance. Future CSV writes explicitly persist `source = csv`, and the Plaid/CSV boundary doc now makes source labels and duplicate-warning behavior part of the UI contract.
 
 Verification:
 
@@ -418,7 +421,7 @@ git diff --check
 
 Known note:
 
-- `plaid_flutter` still emits the accepted Swift Package Manager warning for iOS. CocoaPods remains the current path.
+- iOS Plaid Link uses the custom native LinkKit bridge. Keep the LinkKit package and Associated Domains configuration aligned with the backend Plaid redirect URI.
 
 ## Phase 9 - Real Account Device QA And Final Validation
 

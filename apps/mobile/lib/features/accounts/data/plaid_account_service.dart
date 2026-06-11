@@ -38,6 +38,18 @@ final class PlaidItemStatus {
   final DateTime? lastSyncedAt;
 }
 
+final class PlaidDisconnectSummary {
+  const PlaidDisconnectSummary({
+    required this.itemId,
+    required this.status,
+    this.institutionName,
+  });
+
+  final String itemId;
+  final PlaidAccountConnectionStatus status;
+  final String? institutionName;
+}
+
 final class PlaidAccountService {
   PlaidAccountService({RexApiClient? apiClient})
     : _apiClient = apiClient ?? RexApiClient();
@@ -90,6 +102,31 @@ final class PlaidAccountService {
       transactionsAdded: _intOrZero(decoded['transactions_added']),
       transactionsModified: _intOrZero(decoded['transactions_modified']),
       transactionsRemoved: _intOrZero(decoded['transactions_removed']),
+    );
+  }
+
+  Future<PlaidDisconnectSummary> disconnectItem(String itemId) async {
+    final normalizedItemId = itemId.trim();
+    if (normalizedItemId.isEmpty) {
+      throw const PlaidAccountServiceException(
+        'No connected bank to disconnect.',
+      );
+    }
+    final response = await _apiClient.post(
+      '/plaid/disconnect-item/$normalizedItemId',
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw PlaidAccountServiceException(_safeErrorMessage(response.body));
+    }
+
+    final decoded = _safeJsonMap(response.body);
+    final responseItemId = decoded['plaid_item_record_id'];
+    return PlaidDisconnectSummary(
+      itemId: responseItemId is String && responseItemId.trim().isNotEmpty
+          ? responseItemId.trim()
+          : normalizedItemId,
+      status: _statusFromBackend(decoded['status']),
+      institutionName: _stringOrNull(decoded['institution_name']),
     );
   }
 

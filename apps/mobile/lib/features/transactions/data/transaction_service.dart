@@ -376,22 +376,26 @@ final class TransactionService {
     try {
       final rows = await _supabaseService.client
           .from('transactions')
-          .select('id')
+          .select('id,source')
           .eq('user_id', user.id)
           .eq('account_id', id)
           .gte('date', startDate)
           .lte('date', endDate);
-      final count = rows.length;
-      if (count == 0) return 0;
+      final ids = [
+        for (final row in rows)
+          if (_canDeleteLocalTransactionRow(row) && _nullableId(row) != null)
+            _nullableId(row)!,
+      ];
+      if (ids.isEmpty) return 0;
 
-      await _supabaseService.client
-          .from('transactions')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('account_id', id)
-          .gte('date', startDate)
-          .lte('date', endDate);
-      return count;
+      for (final transactionId in ids) {
+        await _supabaseService.client
+            .from('transactions')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('id', transactionId);
+      }
+      return ids.length;
     } on SupabaseDataException {
       rethrow;
     } on Object catch (e) {
@@ -420,3 +424,14 @@ final class TransactionService {
 }
 
 String _dateOnly(DateTime date) => date.toIso8601String().split('T').first;
+
+bool _canDeleteLocalTransactionRow(Map<String, dynamic> row) {
+  final source = row['source'];
+  if (source is! String) return true;
+  return source.trim().toLowerCase() != 'plaid';
+}
+
+String? _nullableId(Map<String, dynamic> row) {
+  final id = row['id'];
+  return id is String && id.trim().isNotEmpty ? id.trim() : null;
+}

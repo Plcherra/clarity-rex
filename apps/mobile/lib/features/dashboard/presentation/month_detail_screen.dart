@@ -4,6 +4,7 @@ import '../../../app/ui_dependencies.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../transactions/presentation/widgets/transaction_category_dropdown.dart';
+import '../domain/month_deletion_policy.dart';
 
 class MonthDetailScreen extends StatefulWidget {
   const MonthDetailScreen({
@@ -84,12 +85,10 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
       builder: (context, _) {
         final title = formatYearMonthLabel(widget.group.yearMonth);
         final lines = _dataNotifier.data;
-        final accountIds =
-            lines?.map((e) => e.transaction.accountId).toSet() ??
-            const <String>{};
-        final monthDeleteAccountId = accountIds.length == 1
-            ? accountIds.first
-            : null;
+        final monthDeletePolicy = lines == null
+            ? null
+            : monthDeletionPolicyForLines(lines);
+        final monthDeleteAccountId = monthDeletePolicy?.accountId;
 
         return Scaffold(
           backgroundColor: const Color(0xFFF7F5F2),
@@ -165,6 +164,8 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                     : const Center(child: CircularProgressIndicator())
               : _MonthDetailBody(
                   lines: lines,
+                  monthDeleteProtectionMessage:
+                      monthDeletePolicy?.protectionMessage,
                   controller: widget.controller,
                   transactionController: widget.transactionController,
                   theme: theme,
@@ -208,6 +209,7 @@ class _MonthDetailDataNotifier extends ChangeNotifier {
 class _MonthDetailBody extends StatelessWidget {
   const _MonthDetailBody({
     required this.lines,
+    required this.monthDeleteProtectionMessage,
     required this.controller,
     required this.transactionController,
     required this.theme,
@@ -215,6 +217,7 @@ class _MonthDetailBody extends StatelessWidget {
   });
 
   final List<BankStatementLine> lines;
+  final String? monthDeleteProtectionMessage;
   final DashboardUiController controller;
   final TransactionUiController transactionController;
   final ThemeData theme;
@@ -275,6 +278,10 @@ class _MonthDetailBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
+        if (monthDeleteProtectionMessage case final message?) ...[
+          _PlaidDeleteProtectionNotice(message: message),
+          const SizedBox(height: 18),
+        ],
         Text(
           'Transactions',
           style: theme.textTheme.titleMedium?.copyWith(
@@ -397,52 +404,94 @@ class _LineTile extends StatelessWidget {
                       color: amountColor,
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'Delete transaction',
-                    icon: const Icon(Icons.delete_outline_rounded),
-                    color: Colors.red.shade700,
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Delete this transaction?'),
-                          content: const Text(
-                            'This transaction will be permanently deleted.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(ctx).pop(false),
-                              child: const Text('Cancel'),
+                  if (!tx.isPlaid)
+                    IconButton(
+                      tooltip: 'Delete transaction',
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      color: Colors.red.shade700,
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete this transaction?'),
+                            content: const Text(
+                              'This transaction will be permanently deleted.',
                             ),
-                            FilledButton(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: Colors.red.shade700,
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text('Cancel'),
                               ),
-                              onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirm != true) return;
-                      final deleted = await transactionController
-                          .deleteTransaction(tx);
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            deleted
-                                ? 'Transaction deleted.'
-                                : 'Could not delete transaction.',
+                              FilledButton(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.red.shade700,
+                                ),
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text('Delete'),
+                              ),
+                            ],
                           ),
-                        ),
-                      );
-                    },
-                    visualDensity: VisualDensity.compact,
-                  ),
+                        );
+                        if (confirm != true) return;
+                        final deleted = await transactionController
+                            .deleteTransaction(tx);
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              deleted
+                                  ? 'Transaction deleted.'
+                                  : 'Could not delete transaction.',
+                            ),
+                          ),
+                        );
+                      },
+                      visualDensity: VisualDensity.compact,
+                    ),
                 ],
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlaidDeleteProtectionNotice extends StatelessWidget {
+  const _PlaidDeleteProtectionNotice({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE4E0D8)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.lock_outline_rounded,
+            size: 18,
+            color: cs.onSurface.withValues(alpha: 0.52),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurface.withValues(alpha: 0.62),
+                height: 1.35,
+              ),
+            ),
           ),
         ],
       ),

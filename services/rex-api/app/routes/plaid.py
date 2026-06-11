@@ -45,11 +45,26 @@ class PlaidExchangeTokenRequest(BaseModel):
     institution_name: Optional[str] = None
 
 
+class PlaidExchangeAccountSummary(BaseModel):
+    linked_account_id: str
+    plaid_item_record_id: str
+    institution_name: Optional[str] = None
+    name: str
+    official_name: Optional[str] = None
+    mask: Optional[str] = None
+    account_type: Optional[str] = None
+    account_subtype: Optional[str] = None
+    status: str
+    current_balance: Optional[float] = None
+    available_balance: Optional[float] = None
+    iso_currency_code: Optional[str] = None
+
+
 class PlaidExchangeTokenResponse(BaseModel):
     plaid_item_record_id: str
     status: str
     institution_name: Optional[str] = None
-    accounts: list[dict[str, str]] = Field(default_factory=list)
+    accounts: list[PlaidExchangeAccountSummary] = Field(default_factory=list)
     accounts_synced: int = 0
     transactions_added: int = 0
     transactions_modified: int = 0
@@ -62,6 +77,12 @@ class PlaidItemStatusResponse(BaseModel):
     institution_name: Optional[str] = None
     last_synced_at: Optional[str] = None
     webhook_last_received_at: Optional[str] = None
+
+
+class PlaidDisconnectItemResponse(BaseModel):
+    plaid_item_record_id: str
+    status: str
+    institution_name: Optional[str] = None
 
 
 class PlaidSyncItemResponse(BaseModel):
@@ -183,6 +204,7 @@ async def exchange_public_token(
 
     sync_status = result.status
     sync_result: PlaidSyncResult | None = None
+    accounts: list[dict[str, Any]] = []
     try:
         sync_result = await plaid_sync_service.sync_item(result.plaid_item_record_id)
     except (PlaidApiClientError, PlaidSyncServiceError) as error:
@@ -208,11 +230,26 @@ async def exchange_public_token(
                 _safe_error_detail(degrade_error.detail),
             )
 
+    if sync_result:
+        try:
+            accounts = await plaid_sync_service.sanitized_accounts_for_item(
+                user_id=current_user.id,
+                item_id=result.plaid_item_record_id,
+            )
+        except PlaidSyncServiceError as error:
+            logger.warning(
+                "Plaid account summary fetch failed user=%s item=%s status=%s detail=%s",
+                _safe_user_label(current_user.id),
+                _safe_item_label(result.plaid_item_record_id),
+                error.status_code,
+                _safe_error_detail(error.detail),
+            )
+
     response = PlaidExchangeTokenResponse(
         plaid_item_record_id=result.plaid_item_record_id,
         status=sync_status,
         institution_name=result.institution_name,
-        accounts=[],
+        accounts=accounts,
         accounts_synced=sync_result.accounts_synced if sync_result else 0,
         transactions_added=sync_result.transactions_added if sync_result else 0,
         transactions_modified=sync_result.transactions_modified if sync_result else 0,
@@ -253,6 +290,38 @@ async def get_item_status(
         institution_name=item.institution_name,
         last_synced_at=item.last_synced_at,
         webhook_last_received_at=item.webhook_last_received_at,
+    )
+
+
+@router.post(
+    "/disconnect-item/{item_id}",
+    response_model=PlaidDisconnectItemResponse,
+)
+async def disconnect_item(
+    item_id: str,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    plaid_sync_service: PlaidSyncService = Depends(get_plaid_sync_service),
+) -> PlaidDisconnectItemResponse:
+    try:
+        item = await plaid_sync_service.disconnect_item(
+            user_id=current_user.id,
+            item_id=item_id,
+        )
+    except PlaidApiClientError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail=error.detail,
+        ) from error
+    except PlaidSyncServiceError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail=error.detail,
+        ) from error
+
+    return PlaidDisconnectItemResponse(
+        plaid_item_record_id=item.plaid_item_record_id,
+        status=item.status,
+        institution_name=item.institution_name,
     )
 
 

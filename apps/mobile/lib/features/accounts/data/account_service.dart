@@ -157,6 +157,7 @@ final class AccountService {
       for (final account in accounts)
         if (metadataByAccountId[account.id] case final metadata?)
           account.copyWith(
+            name: _nullableString(metadata, 'name') ?? account.name,
             plaidInstitutionName:
                 _nullableString(metadata, 'institution_name') ??
                 account.institution ??

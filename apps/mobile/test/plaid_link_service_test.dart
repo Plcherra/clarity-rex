@@ -1,5 +1,11 @@
+import 'dart:convert';
+
+import 'package:clarity/core/rex/rex_api_client.dart';
+import 'package:clarity/core/rex/rex_auth_headers.dart';
 import 'package:clarity/features/plaid/application/plaid_link_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 void main() {
   group('PlaidLinkService', () {
@@ -137,8 +143,80 @@ void main() {
 
       expect(result, isNull);
     });
+
+    test('parses sanitized exchange account summaries', () async {
+      final api = RexPlaidApi(
+        apiClient: RexApiClient(
+          baseUrl: 'https://api.example.test',
+          authHeaders: RexAuthHeaders(accessTokenProvider: _testAccessToken),
+          httpClient: MockClient((request) async {
+            expect(request.method, 'POST');
+            expect(
+              request.url.toString(),
+              'https://api.example.test/plaid/exchange-token',
+            );
+            expect(request.headers['Authorization'], 'Bearer test-token');
+            expect(jsonDecode(request.body), {
+              'public_token': 'public-production-test',
+              'institution_id': 'ins_1',
+              'institution_name': 'Bank of Test',
+            });
+            return http.Response(
+              jsonEncode({
+                'plaid_item_record_id': 'item-record-1',
+                'status': 'active',
+                'institution_name': 'Bank of Test',
+                'accounts': [
+                  {
+                    'linked_account_id': 'account-1',
+                    'plaid_item_record_id': 'item-record-1',
+                    'institution_name': 'Bank of Test',
+                    'name': 'Adv Plus Banking',
+                    'official_name': 'Advantage Plus Banking',
+                    'mask': '1234',
+                    'account_type': 'depository',
+                    'account_subtype': 'checking',
+                    'status': 'active',
+                    'current_balance': 1250.25,
+                    'available_balance': 1200,
+                    'iso_currency_code': 'USD',
+                  },
+                ],
+                'accounts_synced': 1,
+                'transactions_added': 3,
+                'transactions_modified': 1,
+                'transactions_removed': 0,
+              }),
+              200,
+            );
+          }),
+        ),
+      );
+
+      final result = await api.exchangePublicToken(
+        const PlaidLinkLaunchSuccess(
+          publicToken: 'public-production-test',
+          institutionId: 'ins_1',
+          institutionName: 'Bank of Test',
+          accountCount: 1,
+        ),
+      );
+
+      expect(result.itemId, 'item-record-1');
+      expect(result.accountsSynced, 1);
+      expect(result.accounts, hasLength(1));
+      expect(result.accounts.single.linkedAccountId, 'account-1');
+      expect(result.accounts.single.name, 'Adv Plus Banking');
+      expect(result.accounts.single.officialName, 'Advantage Plus Banking');
+      expect(result.accounts.single.mask, '1234');
+      expect(result.accounts.single.currentBalance, 1250.25);
+      expect(result.accounts.single.availableBalance, 1200);
+      expect(result.accounts.single.isoCurrencyCode, 'USD');
+    });
   });
 }
+
+String? _testAccessToken() => 'test-token';
 
 final class _FakePlaidLinkTokenApi implements PlaidLinkTokenApi {
   _FakePlaidLinkTokenApi({required this.token});

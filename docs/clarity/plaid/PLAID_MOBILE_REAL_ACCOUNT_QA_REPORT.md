@@ -60,9 +60,9 @@ Fix applied in code:
   `/.well-known/apple-app-site-association`.
 - iOS Runner now has the `applinks:api.goclarity.app` Associated Domains
   entitlement.
-- Mobile now listens for `https://api.goclarity.app/plaid/oauth` Universal Links
-  while Plaid Link is open and passes them to
-  `PlaidLink.resumeAfterTermination`.
+- Mobile now uses the native iOS `PlaidLinkBridge` with LinkKit for Link
+  success, exit, event, and OAuth continuation behavior. There is no Dart-side
+  hard-coded redirect URL matcher in the current mobile source.
 
 Important Plaid API note:
 
@@ -104,8 +104,9 @@ Scope covered by the 2026-06-09 preflight:
 
 Known warning:
 
-- `plaid_flutter` emits the accepted iOS Swift Package Manager warning. CocoaPods
-  remains the current supported path for this plan.
+- The current iOS Plaid path uses LinkKit directly through the custom native
+  bridge. Keep the LinkKit Swift Package and Associated Domains configuration
+  intact for physical-device QA.
 
 Release helper note:
 
@@ -222,10 +223,10 @@ Record only sanitized evidence:
   launch so Plaid can notify Clarity about item updates.
 - Android package name and Android physical-device Link flow still need their
   own QA before Android launch.
-- iOS `plaid_flutter` Swift Package Manager warning is accepted for now, but may
-  become a future Flutter tooling blocker.
-- Disconnect behavior is backend-supported, but mobile disconnect UI is not part
-  of this validation path unless explicitly tested later.
+- iOS LinkKit and Associated Domains still need a fresh physical-device OAuth
+  pass before the production callback path can be called complete.
+- Disconnect behavior is now backend-supported and exposed in mobile; include it
+  in the final manual validation path.
 
 ## Completion Gate
 

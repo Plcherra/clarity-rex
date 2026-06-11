@@ -22,7 +22,8 @@ class MissingAccessTokenPlaidClient:
 
 
 class FullSyncPlaidClient:
-    sync_cursors = []
+    def __init__(self):
+        self.sync_cursors = []
 
     async def exchange_public_token(self, public_token):
         raise AssertionError("exchange should not be called during sync")
@@ -114,6 +115,24 @@ class RateLimitedPlaidClient(FullSyncPlaidClient):
             status_code=503,
             plaid_error_code="RATE_LIMIT_EXCEEDED",
         )
+
+
+class FailingAccountsPlaidClient(FullSyncPlaidClient):
+    async def get_accounts(self, access_token):
+        raise PlaidApiClientError(
+            "plaid unavailable",
+            status_code=503,
+            plaid_error_code="INSTITUTION_ERROR",
+        )
+
+
+class DisconnectPlaidClient(FakePlaidClient):
+    def __init__(self):
+        self.removed_tokens = []
+
+    async def remove_item(self, access_token):
+        self.removed_tokens.append(access_token)
+        return {"request_id": "remove-request-1"}
 
 
 def settings(**overrides):
@@ -326,20 +345,84 @@ async def test_get_item_status_queries_current_user_item(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_webhook_sync_updates_marks_sync_requested(monkeypatch):
+async def test_disconnect_item_removes_plaid_item_and_marks_local_records(monkeypatch):
     calls = []
+    plaid_client = DisconnectPlaidClient()
+    service = PlaidSyncService(
+        plaid_client=plaid_client,
+        settings=settings(),
+    )
+    token_ref = service._encrypted_access_token_ref("access-token-secret")
 
     async def fake_request(method, url, **kwargs):
         calls.append({"method": method, "url": url, **kwargs})
+        if "/plaid_items?" in url and method == "GET":
+            return response(
+                json_data=[
+                    {
+                        "id": "item-record-1",
+                        "user_id": "user-1",
+                        "plaid_item_id": "plaid-item-id",
+                        "institution_name": "Bank of Test",
+                        "sync_cursor": "cursor-old",
+                        "status": "active",
+                    }
+                ]
+            )
+        if "/plaid_item_secrets?" in url and method == "GET":
+            return response(json_data=[{"access_token_ref": token_ref}])
         return response(status_code=204, text="")
 
     monkeypatch.setattr(
         "app.services.plaid_cursor_service.request_with_retries",
         fake_request,
     )
+
+    result = await service.disconnect_item(
+        user_id="user-1",
+        item_id="item-record-1",
+    )
+
+    assert result.plaid_item_record_id == "item-record-1"
+    assert result.status == "disconnected"
+    assert result.institution_name == "Bank of Test"
+    assert plaid_client.removed_tokens == ["access-token-secret"]
+    patch_calls = [call for call in calls if call["method"] == "PATCH"]
+    assert [call["json"]["status"] for call in patch_calls[:2]] == [
+        "disconnected",
+        "disconnected",
+    ]
+    assert patch_calls[0]["url"].startswith(
+        "https://example.supabase.co/rest/v1/plaid_items?"
+    )
+    assert "user_id=eq.user-1" in patch_calls[0]["url"]
+    assert "id=eq.item-record-1" in patch_calls[0]["url"]
+    assert patch_calls[1]["url"].startswith(
+        "https://example.supabase.co/rest/v1/plaid_accounts?"
+    )
+    assert patch_calls[2]["url"].startswith(
+        "https://example.supabase.co/rest/v1/accounts?"
+    )
+    assert patch_calls[2]["json"] == {"sync_status": "disconnected"}
+
+
+@pytest.mark.asyncio
+async def test_webhook_sync_updates_runs_item_sync(monkeypatch):
+    calls = []
+    plaid_client = FullSyncPlaidClient()
     service = PlaidSyncService(
-        plaid_client=FakePlaidClient(),
+        plaid_client=plaid_client,
         settings=settings(),
+    )
+    token_ref = service._encrypted_access_token_ref("access-token-secret")
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return sync_storage_response(url, kwargs.get("json"), token_ref)
+
+    monkeypatch.setattr(
+        "app.services.plaid_cursor_service.request_with_retries",
+        fake_request,
     )
 
     result = await service.handle_webhook_event(
@@ -350,11 +433,101 @@ async def test_webhook_sync_updates_marks_sync_requested(monkeypatch):
         }
     )
 
-    assert result.action == "sync_requested"
+    assert result.action == "sync_completed"
+    assert plaid_client.sync_cursors == ["cursor-old", "cursor-mid"]
     assert calls[0]["method"] == "PATCH"
     assert "plaid_item_id=eq.plaid-item-id" in calls[0]["url"]
+    assert "status=neq.disconnected" in calls[0]["url"]
     assert calls[0]["json"]["status"] == "active"
     assert calls[0]["json"]["metadata"]["sync_requested"] is True
+    assert any(
+        call["method"] == "POST" and "/transactions?" in call["url"] for call in calls
+    )
+    assert calls[-1]["method"] == "PATCH"
+    assert "id=eq.item-record-1" in calls[-1]["url"]
+    assert calls[-1]["json"]["sync_cursor"] == "cursor-final"
+
+
+@pytest.mark.asyncio
+async def test_webhook_sync_rate_limit_marks_retryable_degraded(monkeypatch):
+    calls = []
+    service = PlaidSyncService(
+        plaid_client=RateLimitedPlaidClient(),
+        settings=settings(),
+    )
+    token_ref = service._encrypted_access_token_ref("access-token-secret")
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return sync_storage_response(url, kwargs.get("json"), token_ref)
+
+    monkeypatch.setattr(
+        "app.services.plaid_cursor_service.request_with_retries",
+        fake_request,
+    )
+
+    result = await service.handle_webhook_event(
+        payload={
+            "webhook_type": "TRANSACTIONS",
+            "webhook_code": "SYNC_UPDATES_AVAILABLE",
+            "item_id": "plaid-item-id",
+        }
+    )
+
+    assert result.action == "sync_retryable"
+    degraded_call = calls[-1]
+    assert degraded_call["method"] == "PATCH"
+    assert "id=eq.item-record-1" in degraded_call["url"]
+    assert degraded_call["json"] == {
+        "status": "degraded",
+        "metadata": {
+            "last_webhook_event": "SYNC_UPDATES_AVAILABLE",
+            "sync_requested": True,
+            "last_sync_error": "rate_limited",
+            "retryable": True,
+        },
+    }
+
+
+@pytest.mark.asyncio
+async def test_webhook_sync_failure_marks_non_retryable_degraded(monkeypatch):
+    calls = []
+    service = PlaidSyncService(
+        plaid_client=FailingAccountsPlaidClient(),
+        settings=settings(),
+    )
+    token_ref = service._encrypted_access_token_ref("access-token-secret")
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return sync_storage_response(url, kwargs.get("json"), token_ref)
+
+    monkeypatch.setattr(
+        "app.services.plaid_cursor_service.request_with_retries",
+        fake_request,
+    )
+
+    result = await service.handle_webhook_event(
+        payload={
+            "webhook_type": "TRANSACTIONS",
+            "webhook_code": "SYNC_UPDATES_AVAILABLE",
+            "item_id": "plaid-item-id",
+        }
+    )
+
+    assert result.action == "sync_degraded"
+    degraded_call = calls[-1]
+    assert degraded_call["method"] == "PATCH"
+    assert "id=eq.item-record-1" in degraded_call["url"]
+    assert degraded_call["json"] == {
+        "status": "degraded",
+        "metadata": {
+            "last_webhook_event": "SYNC_UPDATES_AVAILABLE",
+            "sync_requested": True,
+            "last_sync_error": "plaid_api_failed",
+            "retryable": False,
+        },
+    }
 
 
 @pytest.mark.asyncio

@@ -36,6 +36,39 @@ class FakePlaidSyncService:
             next_cursor="cursor-1",
         )
 
+    async def sanitized_accounts_for_item(self, **kwargs):
+        self.account_summary_call = kwargs
+        return [
+            {
+                "linked_account_id": "account-1",
+                "plaid_item_record_id": kwargs["item_id"],
+                "institution_name": "Sandbox Bank",
+                "name": "Adv Plus Banking",
+                "official_name": "Advantage Plus Banking",
+                "mask": "1234",
+                "account_type": "depository",
+                "account_subtype": "checking",
+                "status": "active",
+                "current_balance": 1250.25,
+                "available_balance": 1200.0,
+                "iso_currency_code": "USD",
+            },
+            {
+                "linked_account_id": "account-2",
+                "plaid_item_record_id": kwargs["item_id"],
+                "institution_name": "Sandbox Bank",
+                "name": "Travel Rewards",
+                "official_name": None,
+                "mask": "9876",
+                "account_type": "credit",
+                "account_subtype": "credit card",
+                "status": "active",
+                "current_balance": -432.1,
+                "available_balance": None,
+                "iso_currency_code": "USD",
+            },
+        ]
+
     async def mark_item_sync_degraded(self, item_id):
         self.degraded_call = item_id
 
@@ -88,7 +121,36 @@ def test_exchange_token_route_returns_safe_item_summary():
         "plaid_item_record_id": "item-record-1",
         "status": "active",
         "institution_name": "Sandbox Bank",
-        "accounts": [],
+        "accounts": [
+            {
+                "linked_account_id": "account-1",
+                "plaid_item_record_id": "item-record-1",
+                "institution_name": "Sandbox Bank",
+                "name": "Adv Plus Banking",
+                "official_name": "Advantage Plus Banking",
+                "mask": "1234",
+                "account_type": "depository",
+                "account_subtype": "checking",
+                "status": "active",
+                "current_balance": 1250.25,
+                "available_balance": 1200.0,
+                "iso_currency_code": "USD",
+            },
+            {
+                "linked_account_id": "account-2",
+                "plaid_item_record_id": "item-record-1",
+                "institution_name": "Sandbox Bank",
+                "name": "Travel Rewards",
+                "official_name": None,
+                "mask": "9876",
+                "account_type": "credit",
+                "account_subtype": "credit card",
+                "status": "active",
+                "current_balance": -432.1,
+                "available_balance": None,
+                "iso_currency_code": "USD",
+            },
+        ],
         "accounts_synced": 2,
         "transactions_added": 3,
         "transactions_modified": 1,
@@ -101,9 +163,14 @@ def test_exchange_token_route_returns_safe_item_summary():
         "institution_name": "Sandbox Bank",
     }
     assert sync_service.sync_call == "item-record-1"
+    assert sync_service.account_summary_call == {
+        "user_id": "user-1",
+        "item_id": "item-record-1",
+    }
     assert "access_token" not in response.text
     assert "public-sandbox-token" not in response.text
     assert "plaid-item-id" not in response.text
+    assert "plaid_account_id" not in response.text
 
 
 def test_exchange_token_route_requires_public_token():

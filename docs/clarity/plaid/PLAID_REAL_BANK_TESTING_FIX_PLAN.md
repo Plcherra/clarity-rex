@@ -53,13 +53,13 @@ Files to change:
 
 Steps:
 
-1. Keep Plaid success, exit, event, and OAuth redirect listeners alive through
-   the full OAuth return flow.
+1. Keep Plaid success, exit, and event callbacks alive through the full OAuth
+   return flow.
 2. Do not complete the flow as an exit while an OAuth handoff is still pending.
 3. Increase or replace the short exit grace timer with explicit handoff-aware
    state.
-4. Log sanitized callback transitions: Link open, OAuth redirect received,
-   resume attempted, success received, public token present, exchange started.
+4. Log sanitized callback transitions: Link open, native Link event, success
+   received, public token present, exchange started.
 5. Confirm the iOS associated domain and redirect URI match
    `app.goclarity.clarity` and `https://api.goclarity.app/plaid/oauth`.
 
@@ -72,9 +72,10 @@ Done looks like:
 
 Completion note:
 
-- Added handoff-aware Plaid Link state so OAuth exits do not complete the flow
-  before Link success has a chance to arrive.
-- Added app-resume OAuth recovery using the latest incoming link.
+- Moved the iOS flow to the native `PlaidLinkBridge` backed by LinkKit so Link
+  success, exit, and event callbacks remain attached to the active session.
+- Confirmed there is no Dart-side hard-coded redirect matcher in the current
+  mobile source; backend `PLAID_REDIRECT_URI` owns the Link token redirect value.
 - Added sanitized callback and exchange logs without exposing tokens.
 - Added a guard/test for Link success callbacks that do not include a public
   token.
@@ -197,7 +198,7 @@ Done looks like:
 - Dashboard no longer shows "Connect your first bank" after a successful
   connection.
 - Cash flow, income, spending, and account count reflect Plaid data.
-- Account detail tiles show recent synced transactions.
+- Account detail and dashboard transaction views show recent synced transactions.
 
 Completion note:
 

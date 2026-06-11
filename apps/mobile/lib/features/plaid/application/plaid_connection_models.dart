@@ -56,6 +56,7 @@ final class PlaidConnectionSuccess extends PlaidConnectionResult {
     required this.itemId,
     required this.status,
     this.institutionName,
+    this.accounts = const [],
     required this.accountsSynced,
     required this.transactionsAdded,
     required this.transactionsModified,
@@ -65,10 +66,41 @@ final class PlaidConnectionSuccess extends PlaidConnectionResult {
   final String itemId;
   final String status;
   final String? institutionName;
+  final List<PlaidConnectedAccountSummary> accounts;
   final int accountsSynced;
   final int transactionsAdded;
   final int transactionsModified;
   final int transactionsRemoved;
+}
+
+final class PlaidConnectedAccountSummary {
+  const PlaidConnectedAccountSummary({
+    required this.linkedAccountId,
+    required this.itemId,
+    this.institutionName,
+    required this.name,
+    this.officialName,
+    this.mask,
+    this.accountType,
+    this.accountSubtype,
+    required this.status,
+    this.currentBalance,
+    this.availableBalance,
+    this.isoCurrencyCode,
+  });
+
+  final String linkedAccountId;
+  final String itemId;
+  final String? institutionName;
+  final String name;
+  final String? officialName;
+  final String? mask;
+  final String? accountType;
+  final String? accountSubtype;
+  final String status;
+  final double? currentBalance;
+  final double? availableBalance;
+  final String? isoCurrencyCode;
 }
 
 final class PlaidConnectionExit extends PlaidConnectionResult {

@@ -59,6 +59,64 @@ class PlaidAccountService:
             account_map[plaid_account_id] = linked_account_id
         return account_map
 
+    async def sanitized_accounts_for_item(
+        self,
+        *,
+        user_id: str,
+        item_id: str,
+    ) -> list[dict[str, Any]]:
+        rows = await self.cursor_service.supabase_request(
+            "GET",
+            PLAID_ACCOUNTS_TABLE,
+            query={
+                "select": (
+                    "item_id,linked_account_id,institution_name,name,"
+                    "official_name,mask,account_type,account_subtype,status,"
+                    "current_balance,available_balance,iso_currency_code"
+                ),
+                "user_id": f"eq.{user_id}",
+                "item_id": f"eq.{item_id}",
+            },
+        )
+        summaries: list[dict[str, Any]] = []
+        for row in rows:
+            linked_account_id = string_or_none(row.get("linked_account_id"))
+            if not linked_account_id:
+                continue
+            name = (
+                string_or_none(row.get("name"))
+                or string_or_none(row.get("official_name"))
+                or "Plaid account"
+            )
+            summaries.append(
+                {
+                    "linked_account_id": linked_account_id,
+                    "plaid_item_record_id": string_or_none(row.get("item_id"))
+                    or item_id,
+                    "institution_name": string_or_none(
+                        row.get("institution_name")
+                    ),
+                    "name": name,
+                    "official_name": string_or_none(row.get("official_name")),
+                    "mask": string_or_none(row.get("mask")),
+                    "account_type": string_or_none(row.get("account_type")),
+                    "account_subtype": string_or_none(
+                        row.get("account_subtype")
+                    ),
+                    "status": string_or_none(row.get("status")) or "active",
+                    "current_balance": number_or_none(
+                        row.get("current_balance")
+                    ),
+                    "available_balance": number_or_none(
+                        row.get("available_balance")
+                    ),
+                    "iso_currency_code": string_or_none(
+                        row.get("iso_currency_code")
+                    ),
+                }
+            )
+        return summaries
+
     async def _upsert_clarity_account(
         self,
         *,

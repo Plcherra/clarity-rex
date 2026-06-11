@@ -14,12 +14,14 @@ class PlaidAccountHeader extends StatelessWidget {
     required this.status,
     required this.lastSyncedAt,
     required this.onResync,
+    required this.onDisconnect,
   });
 
   final AccountOverviewItem item;
   final PlaidAccountConnectionStatus status;
   final DateTime? lastSyncedAt;
   final VoidCallback onResync;
+  final VoidCallback onDisconnect;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,7 @@ class PlaidAccountHeader extends StatelessWidget {
           netCashFlow: item.netCashFlow,
           status: status,
           onResync: onResync,
+          onDisconnect: onDisconnect,
         ),
       ],
     );
@@ -144,11 +147,13 @@ class _PlaidAccountNetAndSync extends StatelessWidget {
     required this.netCashFlow,
     required this.status,
     required this.onResync,
+    required this.onDisconnect,
   });
 
   final double netCashFlow;
   final PlaidAccountConnectionStatus status;
   final VoidCallback onResync;
+  final VoidCallback onDisconnect;
 
   @override
   Widget build(BuildContext context) {
@@ -173,10 +178,14 @@ class _PlaidAccountNetAndSync extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             IconButton(
-              tooltip: status == PlaidAccountConnectionStatus.syncing
-                  ? 'Syncing'
-                  : 'Resync',
-              onPressed: status == PlaidAccountConnectionStatus.syncing
+              tooltip: switch (status) {
+                PlaidAccountConnectionStatus.syncing => 'Syncing',
+                PlaidAccountConnectionStatus.disconnected => 'Disconnected',
+                _ => 'Resync',
+              },
+              onPressed:
+                  status == PlaidAccountConnectionStatus.syncing ||
+                      status == PlaidAccountConnectionStatus.disconnected
                   ? null
                   : onResync,
               icon: status == PlaidAccountConnectionStatus.syncing
@@ -186,6 +195,14 @@ class _PlaidAccountNetAndSync extends StatelessWidget {
                     )
                   : const Icon(Icons.sync_rounded, size: 19),
             ),
+            if (status != PlaidAccountConnectionStatus.disconnected)
+              IconButton(
+                tooltip: 'Disconnect bank',
+                onPressed: status == PlaidAccountConnectionStatus.syncing
+                    ? null
+                    : onDisconnect,
+                icon: const Icon(Icons.link_off_rounded, size: 19),
+              ),
           ],
         ),
         const SizedBox(height: 3),

@@ -13,6 +13,7 @@ class PlaidAccountTile extends StatelessWidget {
     required this.status,
     required this.lastSyncedAt,
     required this.onResync,
+    required this.onDisconnect,
     required this.onTap,
   });
 
@@ -20,6 +21,7 @@ class PlaidAccountTile extends StatelessWidget {
   final PlaidAccountConnectionStatus status;
   final DateTime? lastSyncedAt;
   final VoidCallback onResync;
+  final VoidCallback onDisconnect;
   final VoidCallback onTap;
 
   @override
@@ -43,6 +45,7 @@ class PlaidAccountTile extends StatelessWidget {
                 status: status,
                 lastSyncedAt: lastSyncedAt,
                 onResync: onResync,
+                onDisconnect: onDisconnect,
               ),
               if (balance != null || availableBalance != null) ...[
                 const SizedBox(height: 12),

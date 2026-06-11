@@ -172,9 +172,12 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 ListTile(
                   leading: const Icon(Icons.upload_file_rounded),
                   title: const Text('Import CSV instead'),
-                  subtitle: const Text('Create a manual account for bank files.'),
-                  onTap: () =>
-                      Navigator.of(sheetContext).pop(_AddAccountAction.importCsv),
+                  subtitle: const Text(
+                    'Create a manual account for bank files.',
+                  ),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_AddAccountAction.importCsv),
                 ),
                 ListTile(
                   leading: const Icon(Icons.add_rounded),
@@ -207,10 +210,10 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   Future<void> _refreshConnectedAccounts(BuildContext context) async {
-    final itemIds = _connectedPlaidItemIds();
+    final itemIds = _refreshablePlaidItemIds();
     if (itemIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connect a bank before refreshing.')),
+        const SnackBar(content: Text('No active bank connection to refresh.')),
       );
       return;
     }
@@ -262,6 +265,13 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   Future<void> _resyncPlaidItem(BuildContext context, String itemId) async {
+    final current = _plaidStatuses[itemId]?.status;
+    if (current == PlaidAccountConnectionStatus.disconnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This bank connection is disconnected.')),
+      );
+      return;
+    }
     setState(() => _syncingPlaidItemIds = {..._syncingPlaidItemIds, itemId});
     try {
       final summary = await _resyncItem(itemId);
@@ -318,6 +328,66 @@ class _AccountsScreenState extends State<AccountsScreen> {
     return summary;
   }
 
+  Future<void> _disconnectPlaidItem(
+    BuildContext context,
+    Account account,
+  ) async {
+    final itemId = account.plaidItemId;
+    if (itemId == null || itemId.trim().isEmpty) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Disconnect bank?'),
+        content: Text(
+          'Disconnect ${account.name}? This stops future Plaid sync for this bank. Existing history stays in Clarity.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Disconnect bank'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      final result = await widget.controller.disconnectPlaidItem(itemId);
+      if (!context.mounted) return;
+      setState(() {
+        _plaidStatuses = {
+          ..._plaidStatuses,
+          result.itemId: PlaidItemStatus(
+            itemId: result.itemId,
+            status: result.status,
+            institutionName: result.institutionName,
+          ),
+        };
+        _accountNotice =
+            '${result.institutionName ?? account.name} disconnected. Future Plaid sync is stopped.';
+      });
+      _refreshAfterPlaidConnection();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Bank disconnected.')));
+    } on PlaidAccountServiceException catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } on Object {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not disconnect this bank.')),
+      );
+    }
+  }
+
   void _refreshAfterPlaidConnection() {
     widget.controller.notifyChanged();
     widget.dashboardController.notifyChanged();
@@ -325,10 +395,17 @@ class _AccountsScreenState extends State<AccountsScreen> {
     widget.budgetController.notifyChanged();
   }
 
-  Set<String> _connectedPlaidItemIds() {
+  Set<String> _refreshablePlaidItemIds() {
     final accounts = _dataNotifier.data;
     if (accounts == null) return const <String>{};
-    return connectedPlaidItemIdsFrom(accounts);
+    return {
+      for (final item in accounts)
+        if (item.account.isPlaidConnected &&
+            item.account.plaidItemId != null &&
+            _statusFor(item.account) !=
+                PlaidAccountConnectionStatus.disconnected)
+          item.account.plaidItemId!,
+    };
   }
 
   PlaidAccountConnectionStatus _statusFor(Account account) {
@@ -368,6 +445,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
         onOpenAccountDetail: (account) =>
             navigation.openAccountDetail(context, account),
         onResyncPlaidItem: (itemId) => _resyncPlaidItem(context, itemId),
+        onDisconnectPlaidItem: (account) =>
+            _disconnectPlaidItem(context, account),
         statusFor: _statusFor,
         lastSyncedAtFor: _lastSyncedAtFor,
       ),

@@ -107,7 +107,9 @@ def test_webhook_accepts_verified_payload_and_runs_background_handler():
 
 
 def test_webhook_rejects_missing_or_invalid_signature():
-    app.dependency_overrides[get_plaid_sync_service] = lambda: FakePlaidSyncService()
+    service = FakePlaidSyncService()
+    service.webhook_payloads = []
+    app.dependency_overrides[get_plaid_sync_service] = lambda: service
     app.dependency_overrides[get_plaid_webhook_verifier] = (
         lambda: FakePlaidWebhookVerifier()
     )
@@ -120,6 +122,7 @@ def test_webhook_rejects_missing_or_invalid_signature():
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid Plaid webhook verification."
+    assert service.webhook_payloads == []
 
 
 def test_webhook_rejects_invalid_payload_even_with_valid_signature():

@@ -119,6 +119,7 @@ final class RexPlaidApi
           ? status.trim()
           : 'active',
       institutionName: _stringOrNull(decoded['institution_name']),
+      accounts: _accountSummaries(decoded['accounts']),
       accountsSynced: _intOrZero(decoded['accounts_synced']),
       transactionsAdded: _intOrZero(decoded['transactions_added']),
       transactionsModified: _intOrZero(decoded['transactions_modified']),
@@ -159,6 +160,42 @@ final class RexPlaidApi
     return value is int ? value : 0;
   }
 
+  List<PlaidConnectedAccountSummary> _accountSummaries(Object? value) {
+    if (value is! List) return const [];
+    return [
+      for (final account in value)
+        if (account is Map<String, dynamic>) ?_accountSummary(account),
+    ];
+  }
+
+  PlaidConnectedAccountSummary? _accountSummary(Map<String, dynamic> json) {
+    final linkedAccountId = _stringOrNull(json['linked_account_id']);
+    final itemId = _stringOrNull(json['plaid_item_record_id']);
+    if (linkedAccountId == null || itemId == null) return null;
+
+    final officialName = _stringOrNull(json['official_name']);
+    final name = _stringOrNull(json['name']) ?? officialName ?? 'Plaid account';
+    return PlaidConnectedAccountSummary(
+      linkedAccountId: linkedAccountId,
+      itemId: itemId,
+      institutionName: _stringOrNull(json['institution_name']),
+      name: name,
+      officialName: officialName,
+      mask: _stringOrNull(json['mask']),
+      accountType: _stringOrNull(json['account_type']),
+      accountSubtype: _stringOrNull(json['account_subtype']),
+      status: _stringOrNull(json['status']) ?? 'active',
+      currentBalance: _doubleOrNull(json['current_balance']),
+      availableBalance: _doubleOrNull(json['available_balance']),
+      isoCurrencyCode: _stringOrNull(json['iso_currency_code']),
+    );
+  }
+
+  double? _doubleOrNull(Object? value) {
+    if (value is num) return value.toDouble();
+    return null;
+  }
+
   String _plaidLinkPlatform() {
     return switch (defaultTargetPlatform) {
       TargetPlatform.android => 'android',
@@ -181,19 +218,17 @@ final class NativePlaidLinkLauncher implements PlaidLinkLauncher {
       _debugPlaidLink(
         'native open token_present=${token.value.trim().isNotEmpty}',
       );
-      final event = await _channel.invokeMethod<Object?>(
-        'open',
-        <String, Object?>{'linkToken': token.value},
-      ).timeout(
-        const Duration(minutes: 5),
-        onTimeout: () {
-          _debugPlaidLink('timeout waiting for native Link callback');
-          return <String, Object?>{
-            'type': 'exit',
-            'linkStatus': 'timeout',
-          };
-        },
-      );
+      final event = await _channel
+          .invokeMethod<Object?>('open', <String, Object?>{
+            'linkToken': token.value,
+          })
+          .timeout(
+            const Duration(minutes: 5),
+            onTimeout: () {
+              _debugPlaidLink('timeout waiting for native Link callback');
+              return <String, Object?>{'type': 'exit', 'linkStatus': 'timeout'};
+            },
+          );
       final result = launchResultFromNative(event);
       if (result == null) {
         throw const PlaidLinkServiceException(

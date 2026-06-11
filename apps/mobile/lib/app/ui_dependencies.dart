@@ -171,7 +171,6 @@ final class AccountOverviewItem {
     required this.spentThisMonth,
     required this.statementBalance,
     required this.netCashFlow,
-    this.recentTransactions = const [],
   });
 
   final Account account;
@@ -180,7 +179,6 @@ final class AccountOverviewItem {
   final double spentThisMonth;
   final double? statementBalance;
   final double netCashFlow;
-  final List<Transaction> recentTransactions;
 
   double get cashFlowThisMonth => availableThisMonth;
 }
@@ -418,7 +416,6 @@ final class AccountUiController extends _UiController {
   Future<List<AccountOverviewItem>> get accountOverviewItems async {
     final model = await loadFinancialReadModel();
     final requested = bindings.dashboardService.spendReference;
-    final transactionsByAccount = model.transactionsByAccount;
     return [
       for (final account in model.accounts)
         () {
@@ -426,9 +423,6 @@ final class AccountUiController extends _UiController {
             account: account,
             requested: requested,
           );
-          final recentTransactions = [
-            ...(transactionsByAccount[account.id] ?? const <Transaction>[]),
-          ]..sort((a, b) => b.date.compareTo(a.date));
           return AccountOverviewItem(
             account: account,
             availableThisMonth: display.availableThisMonth,
@@ -436,7 +430,6 @@ final class AccountUiController extends _UiController {
             spentThisMonth: display.spentThisMonth,
             statementBalance: display.statementBalance,
             netCashFlow: display.netCashFlow,
-            recentTransactions: recentTransactions.take(5).toList(),
           );
         }(),
     ];
@@ -456,6 +449,10 @@ final class AccountUiController extends _UiController {
 
   Future<PlaidSyncSummary> refreshPlaidItem(String itemId) {
     return bindings.plaidAccountService.syncItem(itemId);
+  }
+
+  Future<PlaidDisconnectSummary> disconnectPlaidItem(String itemId) {
+    return bindings.plaidAccountService.disconnectItem(itemId);
   }
 
   Future<AccountDeletionResult> deleteAccount(String accountId) async {

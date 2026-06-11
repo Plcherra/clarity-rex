@@ -42,7 +42,7 @@ bool _shouldSkipDescription(String description) {
 bool isBankStatementDataRow(Transaction t) {
   if (t.description.trim().isEmpty) return false;
   if (t.amount.isNaN) return false;
-  if (_shouldSkipDescription(t.description)) return false;
+  if (!t.isPlaid && _shouldSkipDescription(t.description)) return false;
   return true;
 }
 

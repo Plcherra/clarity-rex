@@ -30,26 +30,11 @@ void main() {
                 spentThisMonth: 100,
                 statementBalance: 1200.50,
                 netCashFlow: 900,
-                recentTransactions: [
-                  Transaction(
-                    date: DateTime(2026, 6, 8),
-                    description: 'Coffee Shop',
-                    amount: -5.25,
-                    accountId: 'account-1',
-                    source: 'plaid',
-                  ),
-                  Transaction(
-                    date: DateTime(2026, 6, 7),
-                    description: 'Payroll',
-                    amount: 500,
-                    accountId: 'account-1',
-                    source: 'plaid',
-                  ),
-                ],
               ),
               status: PlaidAccountConnectionStatus.connected,
               lastSyncedAt: DateTime.now(),
               onResync: () {},
+              onDisconnect: () {},
               onTap: () {},
             ),
           ),
@@ -61,8 +46,6 @@ void main() {
       expect(find.text('Balance \$1,200.50'), findsOneWidget);
       expect(find.text('Available \$1,000.25'), findsOneWidget);
       expect(find.text('Recent transactions'), findsNothing);
-      expect(find.text('Coffee Shop'), findsNothing);
-      expect(find.text('Payroll'), findsNothing);
       expect(find.text('Plaid'), findsOneWidget);
     },
   );
@@ -87,27 +70,11 @@ void main() {
                 spentThisMonth: 0,
                 statementBalance: null,
                 netCashFlow: 0,
-                recentTransactions: [
-                  Transaction(
-                    date: DateTime(2026, 6, 8),
-                    description: 'Synced Coffee',
-                    amount: -5.25,
-                    accountId: 'account-1',
-                    source: 'plaid',
-                  ),
-                  Transaction(
-                    date: DateTime(2026, 6, 7),
-                    description: 'CSV Grocery',
-                    amount: -44.10,
-                    accountId: 'account-1',
-                    source: 'csv',
-                    importId: 'csv-20260607',
-                  ),
-                ],
               ),
               status: PlaidAccountConnectionStatus.connected,
               lastSyncedAt: null,
               onResync: () {},
+              onDisconnect: () {},
               onTap: () {},
             ),
           ),
@@ -147,6 +114,7 @@ void main() {
             status: PlaidAccountConnectionStatus.connected,
             lastSyncedAt: null,
             onResync: () {},
+            onDisconnect: () {},
             onTap: () {},
           ),
         ),
@@ -155,5 +123,78 @@ void main() {
 
     expect(find.text('Everyday Checking'), findsOneWidget);
     expect(find.text('No synced transactions yet.'), findsNothing);
+  });
+
+  testWidgets('PlaidAccountTile exposes disconnect for active connections', (
+    tester,
+  ) async {
+    var disconnected = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlaidAccountTile(
+            item: const AccountOverviewItem(
+              account: Account(
+                id: 'account-1',
+                name: 'Everyday Checking',
+                type: AccountType.checking,
+                source: 'plaid',
+                plaidItemId: 'item-1',
+              ),
+              availableThisMonth: 0,
+              incomeThisMonth: 0,
+              spentThisMonth: 0,
+              statementBalance: null,
+              netCashFlow: 0,
+            ),
+            status: PlaidAccountConnectionStatus.connected,
+            lastSyncedAt: null,
+            onResync: () {},
+            onDisconnect: () => disconnected = true,
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byTooltip('Disconnect bank'));
+
+    expect(disconnected, isTrue);
+  });
+
+  testWidgets('PlaidAccountTile hides disconnect for disconnected accounts', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlaidAccountTile(
+            item: const AccountOverviewItem(
+              account: Account(
+                id: 'account-1',
+                name: 'Everyday Checking',
+                type: AccountType.checking,
+                source: 'plaid',
+                plaidItemId: 'item-1',
+              ),
+              availableThisMonth: 0,
+              incomeThisMonth: 0,
+              spentThisMonth: 0,
+              statementBalance: null,
+              netCashFlow: 0,
+            ),
+            status: PlaidAccountConnectionStatus.disconnected,
+            lastSyncedAt: null,
+            onResync: () {},
+            onDisconnect: () {},
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Disconnected'), findsOneWidget);
+    expect(find.byTooltip('Disconnect bank'), findsNothing);
+    expect(find.byTooltip('Disconnected'), findsOneWidget);
   });
 }

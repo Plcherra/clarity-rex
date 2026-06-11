@@ -21,6 +21,7 @@ class AccountsBody extends StatelessWidget {
     required this.onRefreshAccounts,
     required this.onOpenAccountDetail,
     required this.onResyncPlaidItem,
+    required this.onDisconnectPlaidItem,
     required this.statusFor,
     required this.lastSyncedAtFor,
   });
@@ -34,6 +35,7 @@ class AccountsBody extends StatelessWidget {
   final Future<void> Function() onRefreshAccounts;
   final void Function(Account account) onOpenAccountDetail;
   final void Function(String itemId) onResyncPlaidItem;
+  final void Function(Account account) onDisconnectPlaidItem;
   final PlaidAccountConnectionStatus Function(Account account) statusFor;
   final DateTime? Function(Account account) lastSyncedAtFor;
 
@@ -91,6 +93,7 @@ class AccountsBody extends StatelessWidget {
                     lastSyncedAt: lastSyncedAtFor(item.account),
                     onResync: () =>
                         onResyncPlaidItem(item.account.plaidItemId!),
+                    onDisconnect: () => onDisconnectPlaidItem(item.account),
                     onTap: () => onOpenAccountDetail(item.account),
                   )
                 else

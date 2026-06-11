@@ -67,6 +67,26 @@ void main() {
       expect(summary.transactionsModified, 1);
     });
 
+    test('disconnects item and returns disconnected status', () async {
+      final service = _serviceWith((request) async {
+        expect(request.method, 'POST');
+        expect(request.url.path, '/plaid/disconnect-item/item-record-1');
+        return http.Response('''
+          {
+            "plaid_item_record_id": "item-record-1",
+            "status": "disconnected",
+            "institution_name": "Bank of Test"
+          }
+          ''', 200);
+      });
+
+      final summary = await service.disconnectItem('item-record-1');
+
+      expect(summary.itemId, 'item-record-1');
+      expect(summary.status, PlaidAccountConnectionStatus.disconnected);
+      expect(summary.institutionName, 'Bank of Test');
+    });
+
     test('returns safe backend error detail', () async {
       final service = _serviceWith((request) async {
         return http.Response('{"detail":"Plaid item was not found."}', 404);

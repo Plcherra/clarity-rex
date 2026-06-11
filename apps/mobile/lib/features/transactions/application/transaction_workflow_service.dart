@@ -133,6 +133,7 @@ class TransactionWorkflowService {
   }
 
   Future<bool> deleteTransaction(Transaction transaction) async {
+    if (transaction.isPlaid) return false;
     final record = await _findRecordForTransaction(transaction);
     if (record == null) return false;
     await transactionService.deleteTransaction(record.id);
