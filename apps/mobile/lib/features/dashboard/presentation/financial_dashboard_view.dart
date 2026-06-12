@@ -6,7 +6,6 @@ import '../domain/dashboard_snapshot.dart';
 import '../domain/dashboard_transaction_groups.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
-import '../../budgets/presentation/budgets_screen.dart';
 import '../../accounts/presentation/widgets/connect_bank_setup_card.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
@@ -22,7 +21,7 @@ part 'financial_dashboard_shell.dart';
 part 'financial_dashboard_summary_sections.dart';
 part 'financial_dashboard_cards.dart';
 
-const double _sectionGap = 28.0;
+const double _sectionGap = 24.0;
 const double _cardRadius = 18.0;
 const List<String> _monthAbbreviations = [
   'Jan',
@@ -346,7 +345,6 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             title: widget.title,
             controller: widget.controller,
             transactionController: widget.transactionController,
-            budgetController: widget.budgetController,
             scope: widget.scope,
             snapshot: data.snapshot,
             budgetPerformance: data.budgetPerformance,

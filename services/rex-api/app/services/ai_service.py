@@ -156,12 +156,45 @@ class AIService:
 
     def _prompt_messages(self, messages: list[dict]) -> list[dict]:
         return [
-            {"role": message["role"], "content": message["content"]}
+            {"role": message["role"], "content": self._prompt_content(message)}
             for message in messages
         ]
 
     def _prompt_length(self, messages: list[dict]) -> int:
-        return sum(len(message["content"]) for message in messages)
+        return sum(self._content_length(message.get("content")) for message in messages)
+
+    def _prompt_content(self, message: dict):
+        content = message.get("content")
+        if isinstance(content, list):
+            return [self._content_part(part) for part in content]
+        return str(content)
+
+    def _content_part(self, part):
+        if not isinstance(part, dict):
+            return {"type": "text", "text": str(part)}
+        part_type = part.get("type")
+        if part_type == "image_url":
+            image_url = part.get("image_url")
+            if isinstance(image_url, dict):
+                return {"type": "image_url", "image_url": dict(image_url)}
+            return {"type": "image_url", "image_url": {"url": str(image_url)}}
+        if part_type == "text":
+            return {"type": "text", "text": str(part.get("text", ""))}
+        return {"type": "text", "text": str(part)}
+
+    def _content_length(self, content) -> int:
+        if isinstance(content, list):
+            return sum(self._content_part_length(part) for part in content)
+        return len(str(content))
+
+    def _content_part_length(self, part) -> int:
+        if not isinstance(part, dict):
+            return len(str(part))
+        if part.get("type") == "image_url":
+            return 512
+        if part.get("type") == "text":
+            return len(str(part.get("text", "")))
+        return len(str(part))
 
     def _parse_grok_response(self, raw_response: str) -> str:
         data = json.loads(raw_response)

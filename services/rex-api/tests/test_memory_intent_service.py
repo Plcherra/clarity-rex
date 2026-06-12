@@ -46,6 +46,27 @@ def test_detects_birthday_with_spelled_out_ordinal():
     )
 
 
+def test_detects_inverted_birthday_phrase_with_spelled_out_ordinal():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory(
+        "It's not next week, but on the eighteenth, it's my mom's birthday.",
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert intent == SimpleMemoryIntent(
+        memory_type="fact",
+        content="User's mom's birthday is June 18.",
+        importance=5,
+        metadata={
+            "fact_kind": "birthday",
+            "entity_label": "mom",
+            "normalized_date": "June 18",
+            "topic_fingerprint": "fact:birthday:mom",
+        },
+    )
+
+
 def test_detects_contextual_birthday_date_answer():
     service = MemoryIntentService()
 

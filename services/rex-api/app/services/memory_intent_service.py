@@ -30,6 +30,13 @@ class MemoryIntentService:
         r"(?P<date>[^,.!?]{2,60})",
         re.IGNORECASE,
     )
+    _inverted_birthday_pattern = re.compile(
+        r"\b(?:on\s+)?(?:the\s+)?"
+        r"(?P<date>[A-Za-z]+(?:\s+\d{1,2}(?:st|nd|rd|th)?)?|\d{1,2}(?:st|nd|rd|th)?)"
+        r"\s*,?\s*(?:it(?:'s| is)\s+)?(?:my\s+)?"
+        r"(?P<person>mom|mother|mum|mama|dad|father|papa)\s*(?:'s)?\s+birthday\b",
+        re.IGNORECASE,
+    )
     _remember_that_pattern = re.compile(
         r"\bremember\s+that\s+(?P<fact>[^.!?]+)",
         re.IGNORECASE,
@@ -82,6 +89,7 @@ class MemoryIntentService:
     )
     _date_normalizer = MemoryDateNormalizer()
     _personal_plan_parser = PersonalPlanIntentParser()
+
     def detect_simple_memory(
         self,
         message: str,
@@ -184,11 +192,20 @@ class MemoryIntentService:
         if match is None:
             match = self._birthday_correction_pattern.search(message)
         if match is None:
+            match = self._inverted_birthday_pattern.search(message)
+        if match is None:
+            return None
+
+        raw_date = match.group("date")
+        if match.re is self._inverted_birthday_pattern and not (
+            self._date_normalizer.is_day_only(raw_date)
+            or self._date_normalizer.month_from_text(raw_date)
+        ):
             return None
 
         person = self._clean_person(match.group("person"))
         date_text = self._normalize_date_phrase(
-            match.group("date"),
+            raw_date,
             time_context=time_context,
         )
         if not person or not date_text:

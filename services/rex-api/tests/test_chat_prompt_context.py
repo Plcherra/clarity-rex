@@ -146,6 +146,33 @@ async def test_chat_service_handles_file_upload():
 
 
 @pytest.mark.asyncio
+async def test_chat_service_sends_image_upload_as_multimodal_message():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+    upload = FakeUpload("receipt.png", b"image-bytes", content_type="image/png")
+
+    result = await chat_service.send_message("What is in this image?", file=upload)
+
+    assert result["response"] == "Rex response"
+    assert ai_service.messages[-2]["content"] == (
+        f"{FILE_CONTEXT_PREFIX}"
+        "Image attachment: receipt.png (image/png). "
+        "Use the attached image as visual context when answering."
+    )
+    assert ai_service.messages[-1]["content"] == [
+        {"type": "text", "text": "What is in this image?"},
+        {
+            "type": "image_url",
+            "image_url": {
+                "url": "data:image/png;base64,aW1hZ2UtYnl0ZXM=",
+                "detail": "auto",
+            },
+        },
+    ]
+
+
+@pytest.mark.asyncio
 async def test_chat_service_includes_long_term_memory():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

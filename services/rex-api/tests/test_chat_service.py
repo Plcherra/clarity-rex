@@ -27,6 +27,39 @@ async def test_file_upload_rejects_files_over_2mb():
 
 
 @pytest.mark.asyncio
+async def test_image_upload_rejects_images_over_5mb():
+    file_service = FileService()
+    upload = FakeUpload(
+        "receipt.png",
+        b"a" * (5 * 1024 * 1024 + 1),
+        content_type="image/png",
+    )
+
+    with pytest.raises(HTTPException) as error:
+        await file_service.read_attachment(upload)
+
+    assert error.value.status_code == 413
+    assert error.value.detail == "Uploaded image is too large. Maximum size is 5MB."
+
+
+@pytest.mark.asyncio
+async def test_image_upload_builds_data_url_context():
+    file_service = FileService()
+    upload = FakeUpload("receipt.png", b"image-bytes", content_type="image/png")
+
+    attachment = await file_service.read_attachment(upload)
+
+    assert attachment.kind == "image"
+    assert attachment.filename == "receipt.png"
+    assert attachment.content_type == "image/png"
+    assert attachment.data_url == "data:image/png;base64,aW1hZ2UtYnl0ZXM="
+    assert attachment.prompt_context == (
+        "Image attachment: receipt.png (image/png). "
+        "Use the attached image as visual context when answering."
+    )
+
+
+@pytest.mark.asyncio
 async def test_chat_service_handles_normal_chat():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

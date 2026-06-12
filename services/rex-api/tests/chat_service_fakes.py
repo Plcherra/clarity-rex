@@ -132,9 +132,7 @@ class FakeMemoryService:
             ]
         if active is not None:
             memories = [
-                memory
-                for memory in memories
-                if memory.get("active", True) is active
+                memory for memory in memories if memory.get("active", True) is active
             ]
         return memories[:limit]
 
@@ -345,9 +343,10 @@ class FakeMemoryCorrectionService:
 
 
 class FakeUpload:
-    def __init__(self, filename, content):
+    def __init__(self, filename, content, content_type="application/octet-stream"):
         self.filename = filename
         self._content = content
+        self.content_type = content_type
 
     async def read(self):
         return self._content

@@ -5,7 +5,6 @@ class _DashboardScrollBody extends StatelessWidget {
     required this.title,
     required this.controller,
     required this.transactionController,
-    required this.budgetController,
     required this.scope,
     required this.snapshot,
     required this.budgetPerformance,
@@ -16,7 +15,6 @@ class _DashboardScrollBody extends StatelessWidget {
   final String title;
   final DashboardUiController controller;
   final TransactionUiController transactionController;
-  final BudgetUiController budgetController;
   final DashboardScope scope;
   final DashboardSnapshot snapshot;
   final BudgetPerformanceSnapshot budgetPerformance;
@@ -34,7 +32,7 @@ class _DashboardScrollBody extends StatelessWidget {
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   Text(
@@ -45,19 +43,13 @@ class _DashboardScrollBody extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  _DashboardActionRow(
-                    onUploadTransactions: onUploadTransactions,
-                    onOpenBudgets: () {
-                      Navigator.of(context).push<void>(
-                        MaterialPageRoute<void>(
-                          builder: (context) =>
-                              BudgetsScreen(controller: budgetController),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 18),
+                  if (onUploadTransactions != null) ...[
+                    const SizedBox(height: 14),
+                    _DashboardActionRow(
+                      onUploadTransactions: onUploadTransactions!,
+                    ),
+                  ],
+                  const SizedBox(height: 14),
                   _CashFlowSummaryCard(snapshot: snapshot),
                   const SizedBox(height: _sectionGap),
                   _DashboardTransactionsSection(
@@ -272,32 +264,16 @@ class _DashboardLoadMessage extends StatelessWidget {
 }
 
 class _DashboardActionRow extends StatelessWidget {
-  const _DashboardActionRow({
-    required this.onUploadTransactions,
-    required this.onOpenBudgets,
-  });
+  const _DashboardActionRow({required this.onUploadTransactions});
 
-  final Future<void> Function()? onUploadTransactions;
-  final VoidCallback onOpenBudgets;
+  final Future<void> Function() onUploadTransactions;
 
   @override
   Widget build(BuildContext context) {
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: [
-        if (onUploadTransactions != null)
-          _CompactUploadButton(onPressed: onUploadTransactions!),
-        OutlinedButton.icon(
-          onPressed: onOpenBudgets,
-          icon: const Icon(Icons.savings_outlined, size: 18),
-          label: const Text('Budgets'),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(0, 44),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-          ),
-        ),
-      ],
+      children: [_CompactUploadButton(onPressed: onUploadTransactions)],
     );
   }
 }

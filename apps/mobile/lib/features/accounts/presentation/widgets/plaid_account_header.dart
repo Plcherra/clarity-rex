@@ -27,28 +27,33 @@ class PlaidAccountHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final account = item.account;
     final cs = Theme.of(context).colorScheme;
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        CircleAvatar(
-          radius: 21,
-          backgroundColor: cs.surfaceContainerHighest,
-          foregroundColor: cs.onSurface.withValues(alpha: 0.78),
-          child: Icon(_accountIcon(account.type), size: 21),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 21,
+              backgroundColor: cs.surfaceContainerHighest,
+              foregroundColor: cs.onSurface.withValues(alpha: 0.78),
+              child: Icon(_accountIcon(account.type), size: 21),
+            ),
+            const SizedBox(width: 14),
+            Expanded(child: _PlaidAccountTitleBlock(account: account)),
+          ],
         ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: _PlaidAccountTitleBlock(
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.only(left: 56),
+          child: _PlaidAccountMetaAndActions(
             account: account,
+            item: item,
             status: status,
             lastSyncedAt: lastSyncedAt,
+            onResync: onResync,
+            onDisconnect: onDisconnect,
           ),
-        ),
-        const SizedBox(width: 12),
-        _PlaidAccountNetAndSync(
-          netCashFlow: item.netCashFlow,
-          status: status,
-          onResync: onResync,
-          onDisconnect: onDisconnect,
         ),
       ],
     );
@@ -64,15 +69,9 @@ class PlaidAccountHeader extends StatelessWidget {
 }
 
 class _PlaidAccountTitleBlock extends StatelessWidget {
-  const _PlaidAccountTitleBlock({
-    required this.account,
-    required this.status,
-    required this.lastSyncedAt,
-  });
+  const _PlaidAccountTitleBlock({required this.account});
 
   final Account account;
-  final PlaidAccountConnectionStatus status;
-  final DateTime? lastSyncedAt;
 
   @override
   Widget build(BuildContext context) {
@@ -84,34 +83,14 @@ class _PlaidAccountTitleBlock extends StatelessWidget {
         Text(
           account.displayName,
           maxLines: 3,
-          overflow: TextOverflow.ellipsis,
+          overflow: TextOverflow.visible,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w800,
             height: 1.12,
           ),
         ),
-        const SizedBox(height: 5),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SourceLabelChip(label: account.sourceLabel),
-            PlaidAccountStatusPill(status: status),
-          ],
-        ),
-        const SizedBox(height: 5),
-        Text(
-          _lastSyncedLabel(lastSyncedAt),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurface.withValues(alpha: 0.52),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
         if (account.displaySubtitle.isNotEmpty) ...[
-          const SizedBox(height: 2),
+          const SizedBox(height: 5),
           Text(
             account.displaySubtitle,
             maxLines: 2,
@@ -121,6 +100,68 @@ class _PlaidAccountTitleBlock extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _PlaidAccountMetaAndActions extends StatelessWidget {
+  const _PlaidAccountMetaAndActions({
+    required this.account,
+    required this.item,
+    required this.status,
+    required this.lastSyncedAt,
+    required this.onResync,
+    required this.onDisconnect,
+  });
+
+  final Account account;
+  final AccountOverviewItem item;
+  final PlaidAccountConnectionStatus status;
+  final DateTime? lastSyncedAt;
+  final VoidCallback onResync;
+  final VoidCallback onDisconnect;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  SourceLabelChip(label: account.sourceLabel),
+                  PlaidAccountStatusPill(status: status),
+                ],
+              ),
+              const SizedBox(height: 5),
+              Text(
+                _lastSyncedLabel(lastSyncedAt),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.52),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        _PlaidAccountNetAndSync(
+          netCashFlow: item.netCashFlow,
+          status: status,
+          onResync: onResync,
+          onDisconnect: onDisconnect,
+        ),
       ],
     );
   }

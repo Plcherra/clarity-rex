@@ -4,7 +4,7 @@ from typing import Optional, Protocol
 from fastapi import UploadFile
 
 from app.services.chat_context_service import ChatContextService
-from app.services.file_service import FileService
+from app.services.file_service import AttachmentContext, FileService
 from app.services.rex_intent_router import RexIntentDecision
 
 
@@ -65,6 +65,7 @@ class MemoryService(Protocol):
 class ChatTurnContext:
     conversation_id: str
     file_text: Optional[str]
+    attachment_context: Optional[AttachmentContext]
     conversation_history: list[dict]
     long_term_memory: list[dict]
     structured_context: dict
@@ -94,7 +95,10 @@ class ChatTurnContextService:
         intent_decision: Optional[RexIntentDecision] = None,
     ) -> ChatTurnContext:
         conversation_id = await self.existing_conversation_id(conversation_id)
-        file_text = await self.file_service.read_text_file(file) if file else None
+        attachment_context = (
+            await self.file_service.read_attachment(file) if file else None
+        )
+        file_text = attachment_context.prompt_context if attachment_context else None
 
         (
             conversation_history,
@@ -131,6 +135,7 @@ class ChatTurnContextService:
         return ChatTurnContext(
             conversation_id=conversation_id,
             file_text=file_text,
+            attachment_context=attachment_context,
             conversation_history=conversation_history,
             long_term_memory=long_term_memory,
             structured_context=structured_context,

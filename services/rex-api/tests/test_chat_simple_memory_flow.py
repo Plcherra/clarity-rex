@@ -63,6 +63,30 @@ async def test_simple_memory_saves_durable_memory_directly():
 
 
 @pytest.mark.asyncio
+async def test_inverted_birthday_phrase_saves_durable_memory_directly():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    saved = await chat_service.send_message(
+        "It's not next week, but on the eighteenth, it's my mom's birthday."
+    )
+
+    assert saved["response"] == "Got it, your mom's birthday is June 18."
+    assert saved["memory_changes"]["created"] == 1
+    assert saved["memory_changes"]["confirmation_required"] == 0
+    assert memory_service.long_term_memory[0]["content"] == (
+        "User's mom's birthday is June 18."
+    )
+    assert ai_service.messages == []
+
+
+@pytest.mark.asyncio
 async def test_identity_and_location_facts_save_without_confirmation():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

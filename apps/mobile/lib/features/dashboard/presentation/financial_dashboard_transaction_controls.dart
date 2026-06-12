@@ -24,14 +24,10 @@ class _TransactionsModePicker extends StatelessWidget {
         _ModeChip(
           label: 'Categories',
           icon: Icons.category_outlined,
-          selected: selected == _TransactionsViewMode.categories,
+          selected:
+              selected == _TransactionsViewMode.categories ||
+              selected == _TransactionsViewMode.rows,
           onTap: () => onSelected(_TransactionsViewMode.categories),
-        ),
-        _ModeChip(
-          label: 'Rows',
-          icon: Icons.receipt_long_outlined,
-          selected: selected == _TransactionsViewMode.rows,
-          onTap: () => onSelected(_TransactionsViewMode.rows),
         ),
       ],
     );

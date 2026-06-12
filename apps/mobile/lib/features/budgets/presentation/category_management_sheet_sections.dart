@@ -73,7 +73,6 @@ class _CategoryManagementContent extends StatelessWidget {
           16 + MediaQuery.viewInsetsOf(context).bottom,
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _CategoryManagementHeader(onClose: onClose),
@@ -96,7 +95,7 @@ class _CategoryManagementContent extends StatelessWidget {
                 onAction: onRetry,
               )
             else
-              _buildSection(theme),
+              Expanded(child: _buildSection(theme)),
           ],
         ),
       ),

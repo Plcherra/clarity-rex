@@ -68,7 +68,7 @@ class ChatInputBar extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 4),
                         child: _ComposerIconButton(
                           icon: Icons.attach_file_rounded,
-                          tooltip: 'Attach file',
+                          tooltip: 'Attach file or image',
                           onPressed: isLoading ? null : onPickAttachment,
                         ),
                       ),
@@ -233,6 +233,7 @@ class _AttachmentPreview extends StatelessWidget {
     final theme = Theme.of(context);
     final hasError = errorMessage != null;
     final title = fileName ?? 'Attachment';
+    final isImage = fileName != null && isChatImageAttachmentName(fileName!);
     final subtitle = hasError
         ? errorMessage!
         : fileSize == null
@@ -260,6 +261,8 @@ class _AttachmentPreview extends StatelessWidget {
               Icon(
                 hasError
                     ? Icons.error_outline_rounded
+                    : isImage
+                    ? Icons.image_outlined
                     : Icons.description_outlined,
                 color: hasError ? RexUiTokens.danger : RexUiTokens.textMuted,
                 size: 19,

@@ -358,8 +358,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (context) =>
-          CategoryManagementSheet(controller: widget.controller),
+      builder: (context) => FractionallySizedBox(
+        heightFactor: 0.92,
+        child: CategoryManagementSheet(controller: widget.controller),
+      ),
     );
     if (!mounted) return;
     await _loadData();

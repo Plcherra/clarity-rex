@@ -5,7 +5,18 @@ import 'package:cross_file/cross_file.dart';
 import 'package:path/path.dart' as p;
 
 const int maxChatAttachmentBytes = 2 * 1024 * 1024;
-const Set<String> allowedChatAttachmentExtensions = {'txt', 'md', 'csv'};
+const int maxChatImageAttachmentBytes = 5 * 1024 * 1024;
+const Set<String> allowedTextChatAttachmentExtensions = {'txt', 'md', 'csv'};
+const Set<String> allowedImageChatAttachmentExtensions = {
+  'jpg',
+  'jpeg',
+  'png',
+  'webp',
+};
+const Set<String> allowedChatAttachmentExtensions = {
+  ...allowedTextChatAttachmentExtensions,
+  ...allowedImageChatAttachmentExtensions,
+};
 
 String chatAttachmentName(XFile attachment) {
   if (attachment.name.trim().isNotEmpty) {
@@ -26,20 +37,31 @@ String formatAttachmentSize(int bytes) {
   return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
+bool isChatImageAttachmentName(String fileName) {
+  final extension = p.extension(fileName).replaceFirst('.', '').toLowerCase();
+  return allowedImageChatAttachmentExtensions.contains(extension);
+}
+
 String? validateChatAttachment({
   required String fileName,
   required int fileSize,
 }) {
   final extension = p.extension(fileName).replaceFirst('.', '').toLowerCase();
-  if (!allowedChatAttachmentExtensions.contains(extension)) {
-    return 'Attach a .txt, .md, or .csv file.';
+  if (allowedTextChatAttachmentExtensions.contains(extension)) {
+    if (fileSize > maxChatAttachmentBytes) {
+      return 'Attachment is too large. Maximum size is 2MB.';
+    }
+    return null;
   }
 
-  if (fileSize > maxChatAttachmentBytes) {
-    return 'Attachment is too large. Maximum size is 2MB.';
+  if (allowedImageChatAttachmentExtensions.contains(extension)) {
+    if (fileSize > maxChatImageAttachmentBytes) {
+      return 'Image is too large. Maximum size is 5MB.';
+    }
+    return null;
   }
 
-  return null;
+  return 'Attach a .txt, .md, .csv, .jpg, .png, or .webp file.';
 }
 
 String? validateChatAttachmentBytes({
@@ -53,6 +75,11 @@ String? validateChatAttachmentBytes({
   );
   if (metadataError != null) {
     return metadataError;
+  }
+
+  final extension = p.extension(fileName).replaceFirst('.', '').toLowerCase();
+  if (allowedImageChatAttachmentExtensions.contains(extension)) {
+    return null;
   }
 
   try {
@@ -80,6 +107,11 @@ Future<String?> validateChatAttachmentFile(XFile attachment) async {
   );
   if (metadataError != null) {
     return metadataError;
+  }
+
+  final extension = p.extension(fileName).replaceFirst('.', '').toLowerCase();
+  if (allowedImageChatAttachmentExtensions.contains(extension)) {
+    return null;
   }
 
   try {

@@ -18,6 +18,7 @@ from app.services.clarity_action_parser import (
 )
 from app.services.chat_voice_metadata import ChatVoiceMetadataMixin
 from app.services.file_service import FileService
+from app.services.file_service import AttachmentContext
 from app.services.goal_command_service import GoalCommandService
 from app.services.memory_intent_service import MemoryIntentService
 from app.services.memory_turn_service import MemoryTurnService
@@ -113,6 +114,7 @@ class ChatService(ChatVoiceMetadataMixin):
         )
         conversation_id = turn_context.conversation_id
         file_text = turn_context.file_text
+        attachment_context = turn_context.attachment_context
         conversation_history = turn_context.conversation_history
         long_term_memory = turn_context.long_term_memory
         structured_context = turn_context.structured_context
@@ -144,6 +146,7 @@ class ChatService(ChatVoiceMetadataMixin):
             message=message,
             conversation_id=conversation_id,
             file_text=file_text,
+            has_attachment=attachment_context is not None,
             financial_context=financial_context,
             conversation_history=conversation_history,
             long_term_memory=long_term_memory,
@@ -178,6 +181,7 @@ class ChatService(ChatVoiceMetadataMixin):
         if response_instructions:
             ai_messages.append({"role": "system", "content": response_instructions})
 
+        ai_messages = self._messages_with_attachment(ai_messages, attachment_context)
         ai_messages = self.rex_brain_chat_service.apply_chat_contract(
             ai_messages,
             rex_brain_plan,
@@ -264,6 +268,7 @@ class ChatService(ChatVoiceMetadataMixin):
         )
         conversation_id = turn_context.conversation_id
         file_text = turn_context.file_text
+        attachment_context = turn_context.attachment_context
         conversation_history = turn_context.conversation_history
         long_term_memory = turn_context.long_term_memory
         structured_context = turn_context.structured_context
@@ -316,6 +321,7 @@ class ChatService(ChatVoiceMetadataMixin):
             message=message,
             conversation_id=conversation_id,
             file_text=file_text,
+            has_attachment=attachment_context is not None,
             financial_context=financial_context,
             conversation_history=conversation_history,
             long_term_memory=long_term_memory,
@@ -350,6 +356,7 @@ class ChatService(ChatVoiceMetadataMixin):
         if response_instructions:
             ai_messages.append({"role": "system", "content": response_instructions})
 
+        ai_messages = self._messages_with_attachment(ai_messages, attachment_context)
         ai_messages = self.rex_brain_chat_service.apply_chat_contract(
             ai_messages,
             rex_brain_plan,
@@ -432,6 +439,35 @@ class ChatService(ChatVoiceMetadataMixin):
                 "financial_context": intent_decision.should_use_financial_context,
             },
         }
+
+    def _messages_with_attachment(
+        self,
+        messages: list[dict],
+        attachment_context: Optional[AttachmentContext],
+    ) -> list[dict]:
+        if attachment_context is None or attachment_context.kind != "image":
+            return messages
+        if not attachment_context.data_url:
+            return messages
+
+        updated_messages = [dict(message) for message in messages]
+        for index in range(len(updated_messages) - 1, -1, -1):
+            if updated_messages[index].get("role") != "user":
+                continue
+            content = updated_messages[index].get("content", "")
+            text = content if isinstance(content, str) else str(content)
+            updated_messages[index]["content"] = [
+                {"type": "text", "text": text},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": attachment_context.data_url,
+                        "detail": "auto",
+                    },
+                },
+            ]
+            return updated_messages
+        return updated_messages
 
     async def _record_llm_usage(
         self,

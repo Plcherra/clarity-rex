@@ -79,6 +79,29 @@ def test_ai_service_payload_uses_default_model_without_override():
     }
 
 
+def test_ai_service_preserves_multimodal_content_parts():
+    service = AIService(Settings(grok_api_key="test-key", grok_model="grok-default"))
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "What is in this image?"},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "data:image/png;base64,aW1hZ2U=",
+                        "detail": "auto",
+                    },
+                },
+            ],
+        }
+    ]
+
+    prompt_messages = service._validated_prompt_messages(messages)
+
+    assert prompt_messages == messages
+
+
 def test_ai_service_payload_uses_model_override_and_max_tokens():
     service = AIService(Settings(grok_api_key="test-key", grok_model="grok-default"))
     messages = [{"role": "user", "content": "Hello"}]

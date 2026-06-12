@@ -80,12 +80,13 @@ class RexBrainChatService:
         accountability_signals: list,
         channel: RexBrainChannel,
         user_requested_deep_thinking: bool = False,
+        has_attachment: bool = False,
     ) -> dict:
         brain_input = RexBrainInput(
             message=message,
             channel=channel,
             conversation_id=conversation_id,
-            has_file=bool(file_text),
+            has_file=bool(file_text) or has_attachment,
             has_financial_context=financial_context is not None,
             has_structured_memory=bool(structured_context),
             has_goals=bool(
@@ -248,9 +249,7 @@ class RexBrainChatService:
                 "Keep it hidden unless debug exposure is enabled.\n"
             )
             if decision.expose_self_evaluation:
-                self_evaluation_guard += (
-                    "Debug exposure enabled: include only a concise diagnostic summary.\n"
-                )
+                self_evaluation_guard += "Debug exposure enabled: include only a concise diagnostic summary.\n"
         response_style_guard = ""
         if decision.response_style_profile != "default":
             response_style_guard = (
