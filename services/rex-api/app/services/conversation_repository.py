@@ -1,4 +1,7 @@
+import re
 from typing import Optional
+
+from app.services.memory_retrieval_terms import STOP_WORDS
 
 from app.services.memory_errors import MemoryServiceError
 
@@ -9,6 +12,24 @@ VOICE_TURN_SELECT = (
     "transcript_confidence,audio_duration_seconds,input_mime_type,"
     "output_audio_encoding,stt_vendor,tts_vendor,metadata,created_at"
 )
+FAMILY_TERM_ALIASES = {
+    "mom": ("mom", "mother", "mum", "mama"),
+    "mother": ("mom", "mother", "mum", "mama"),
+    "mum": ("mom", "mother", "mum", "mama"),
+    "mama": ("mom", "mother", "mum", "mama"),
+    "dad": ("dad", "father", "papa"),
+    "father": ("dad", "father", "papa"),
+    "papa": ("dad", "father", "papa"),
+}
+MESSAGE_SEARCH_STOP_WORDS = STOP_WORDS | {
+    "anything",
+    "know",
+    "knows",
+    "memories",
+    "memory",
+    "remember",
+    "rex",
+}
 
 
 class ConversationRepository:
@@ -109,6 +130,32 @@ class ConversationRepository:
 
         return await self.get_recent_messages(conversation_id, limit=limit)
 
+    async def search_messages(
+        self,
+        query: str,
+        limit: int = 8,
+        exclude_conversation_id: Optional[str] = None,
+    ) -> list[dict]:
+        terms = self._search_terms(query)
+        if not terms:
+            return []
+
+        filters = ",".join(f"content.ilike.*{term}*" for term in terms)
+        query_params = {
+            "select": MESSAGE_SELECT,
+            "or": f"({filters})",
+            "order": "timestamp.desc",
+            "limit": str(limit),
+        }
+        if exclude_conversation_id:
+            query_params["conversation_id"] = f"neq.{exclude_conversation_id}"
+        rows = await self.store._request(
+            "GET",
+            self.store.settings.supabase_messages_table,
+            query=query_params,
+        )
+        return rows
+
     async def delete_conversation(self, conversation_id: str) -> bool:
         if not await self.conversation_exists(conversation_id):
             return False
@@ -164,3 +211,26 @@ class ConversationRepository:
             "timestamp": row.get("timestamp"),
             "last_message": last_message,
         }
+
+    def _search_terms(self, query: str) -> list[str]:
+        raw_terms = [
+            self._normalize_search_term(term)
+            for term in re.findall(r"[a-z0-9']+", query.lower())
+        ]
+        expanded_terms = []
+        for term in raw_terms:
+            if len(term) < 3 or term in MESSAGE_SEARCH_STOP_WORDS:
+                continue
+            expanded_terms.extend(FAMILY_TERM_ALIASES.get(term, (term,)))
+
+        unique_terms = []
+        for term in expanded_terms:
+            if term not in unique_terms:
+                unique_terms.append(term)
+        return unique_terms[:8]
+
+    def _normalize_search_term(self, term: str) -> str:
+        normalized = term.strip("'")
+        if normalized.endswith("'s"):
+            normalized = normalized[:-2]
+        return normalized

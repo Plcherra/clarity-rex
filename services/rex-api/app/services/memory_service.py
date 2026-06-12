@@ -102,6 +102,18 @@ class SupabaseMemoryService(SupabaseMemoryTransport):
             limit=limit,
         )
 
+    async def search_messages(
+        self,
+        query: str,
+        limit: int = 8,
+        exclude_conversation_id: Optional[str] = None,
+    ) -> list[dict]:
+        return await self._get_conversation_repository().search_messages(
+            query,
+            limit=limit,
+            exclude_conversation_id=exclude_conversation_id,
+        )
+
     async def delete_conversation(self, conversation_id: str) -> bool:
         return await self._get_conversation_repository().delete_conversation(
             conversation_id,
@@ -223,8 +235,10 @@ class SupabaseMemoryService(SupabaseMemoryTransport):
         )
 
     async def deactivate_long_term_memory(self, memory_id: str) -> bool:
-        return await self._get_long_term_memory_repository().deactivate_long_term_memory(
-            memory_id,
+        return (
+            await self._get_long_term_memory_repository().deactivate_long_term_memory(
+                memory_id,
+            )
         )
 
     async def create_memory_correction(self, correction: dict) -> dict:
@@ -445,6 +459,7 @@ class SupabaseMemoryService(SupabaseMemoryTransport):
         return await self._get_structured_memory_repository().deactivate_commitment(
             commitment_id,
         )
+
 
 def is_active_memory(memory: dict) -> bool:
     return memory.get("active") is not False

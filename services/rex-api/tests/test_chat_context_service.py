@@ -1,4 +1,5 @@
 import logging
+import re
 
 import pytest
 
@@ -18,6 +19,7 @@ class FakeContextMemoryStore:
         self.fail_relevant_memories = fail_relevant_memories
         self.fail_structured_context = fail_structured_context
         self.relevant_memory_queries = []
+        self.search_message_queries = []
         self.structured_context_queries = []
         self.plan_calls = []
         self.milestone_calls = []
@@ -29,6 +31,20 @@ class FakeContextMemoryStore:
                 "content": "hello",
                 "timestamp": "2026-06-01T12:00:00Z",
             }
+        ]
+        self.past_messages = [
+            {
+                "id": "past-message-1",
+                "role": "user",
+                "content": "My preferences are concise answers.",
+                "timestamp": "2026-06-01T12:00:00Z",
+            },
+            {
+                "id": "past-message-2",
+                "role": "user",
+                "content": "My mom's birthday is June 18.",
+                "timestamp": "2026-06-01T12:00:00Z",
+            },
         ]
         self.plans = [
             {
@@ -80,6 +96,35 @@ class FakeContextMemoryStore:
             raise RuntimeError("recent messages failed")
         return self.messages[-limit:]
 
+    async def search_messages(self, query, limit=8, exclude_conversation_id=None):
+        self.search_message_queries.append(
+            {
+                "query": query,
+                "limit": limit,
+                "exclude_conversation_id": exclude_conversation_id,
+            }
+        )
+        terms = {
+            term.strip("'").removesuffix("'s")
+            for term in re.findall(r"[a-z0-9']+", query.lower())
+            if len(term.strip("'")) >= 3
+        }
+        if terms & {"mom", "mother", "mum", "mama"}:
+            terms.update({"mom", "mother", "mum", "mama"})
+        matches = []
+        for message in reversed(self.past_messages):
+            if (
+                exclude_conversation_id
+                and message.get("conversation_id") == exclude_conversation_id
+            ):
+                continue
+            content = str(message.get("content") or "").lower()
+            if any(term in content for term in terms):
+                matches.append(message)
+            if len(matches) >= limit:
+                break
+        return matches
+
     async def get_structured_memory_context(self, query):
         self.structured_context_queries.append(query)
         if self.fail_structured_context:
@@ -126,10 +171,18 @@ async def test_chat_context_fetches_and_deduplicates_prompt_context():
         "shared-1",
         "memory-1",
         "profile-1",
+        "chat-past-message-1",
     ]
     assert store.relevant_memory_queries == [
         {"query": "remember my preferences", "limit": 8},
         {"query": PROFILE_MEMORY_QUERY, "limit": 4},
+    ]
+    assert store.search_message_queries == [
+        {
+            "query": "remember my preferences",
+            "limit": 4,
+            "exclude_conversation_id": "conversation-1",
+        }
     ]
 
 
@@ -167,6 +220,7 @@ async def test_chat_context_loads_memory_only_for_memory_recall_intent():
         "shared-1",
         "memory-1",
         "profile-1",
+        "chat-past-message-2",
     ]
     assert structured_context["profile_facts"][0]["fact"] == (
         "timezone is America/New_York"
@@ -174,6 +228,13 @@ async def test_chat_context_loads_memory_only_for_memory_recall_intent():
     assert store.relevant_memory_queries == [
         {"query": "Do you remember my mom's birthday?", "limit": 8},
         {"query": PROFILE_MEMORY_QUERY, "limit": 4},
+    ]
+    assert store.search_message_queries == [
+        {
+            "query": "Do you remember my mom's birthday?",
+            "limit": 4,
+            "exclude_conversation_id": None,
+        }
     ]
     assert store.plan_calls == []
 
@@ -193,6 +254,7 @@ async def test_chat_context_loads_goals_without_long_term_memory_for_goal_intent
     assert "profile_facts" not in structured_context
     assert structured_context["plans"][0]["title"] == "Build emergency fund"
     assert store.relevant_memory_queries == []
+    assert store.search_message_queries == []
     assert store.structured_context_queries == []
     assert store.plan_calls
 
@@ -212,6 +274,7 @@ async def test_chat_context_skips_memory_and_goals_for_finance_intent():
     assert memories == []
     assert structured_context == {}
     assert store.relevant_memory_queries == []
+    assert store.search_message_queries == []
     assert store.structured_context_queries == []
     assert store.plan_calls == []
 
@@ -238,9 +301,7 @@ async def test_chat_context_logs_context_fetch_timings(caplog):
 
 @pytest.mark.asyncio
 async def test_chat_context_structured_context_failure_is_best_effort():
-    service = ChatContextService(
-        FakeContextMemoryStore(fail_structured_context=True)
-    )
+    service = ChatContextService(FakeContextMemoryStore(fail_structured_context=True))
 
     _, _, structured_context = await service.fetch_prompt_context(
         message="hello",
@@ -273,9 +334,7 @@ async def test_chat_context_adds_active_goal_context_for_goal_progress_questions
         "related_milestone_count": 1,
         "related_commitment_count": 1,
     }
-    assert store.plan_calls == [
-        {"active": True, "status": "active", "limit": 12}
-    ]
+    assert store.plan_calls == [{"active": True, "status": "active", "limit": 12}]
     assert store.milestone_calls == [{"active": True, "limit": 40}]
     assert store.commitment_calls == [{"active": True, "limit": 40}]
 
@@ -312,9 +371,7 @@ async def test_chat_context_goal_context_detects_goal_punctuation():
 
 @pytest.mark.asyncio
 async def test_chat_context_relevant_memory_failure_is_best_effort():
-    service = ChatContextService(
-        FakeContextMemoryStore(fail_relevant_memories=True)
-    )
+    service = ChatContextService(FakeContextMemoryStore(fail_relevant_memories=True))
 
     history, memories, structured_context = await service.fetch_prompt_context(
         message="hello",
@@ -330,9 +387,7 @@ async def test_chat_context_relevant_memory_failure_is_best_effort():
 
 @pytest.mark.asyncio
 async def test_chat_context_recent_message_failure_is_best_effort():
-    service = ChatContextService(
-        FakeContextMemoryStore(fail_recent_messages=True)
-    )
+    service = ChatContextService(FakeContextMemoryStore(fail_recent_messages=True))
 
     history, memories, structured_context = await service.fetch_prompt_context(
         message="hello",
@@ -366,9 +421,7 @@ async def test_chat_context_accountability_signal_errors_are_best_effort():
     )
 
     assert signals == [{"kind": "commitment", "status": "open"}]
-    assert accountability_service.calls[0]["commitments"] == [
-        {"title": "Call mom"}
-    ]
+    assert accountability_service.calls[0]["commitments"] == [{"title": "Call mom"}]
 
 
 @pytest.mark.asyncio

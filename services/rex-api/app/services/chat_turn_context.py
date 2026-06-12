@@ -29,6 +29,13 @@ class MemoryService(Protocol):
     ) -> list[dict]:
         pass
 
+    async def get_conversation_messages(
+        self,
+        conversation_id: str,
+        limit: int = 100,
+    ) -> Optional[list[dict]]:
+        pass
+
     async def save_long_term_memory(
         self,
         memory_type: str,
@@ -40,6 +47,14 @@ class MemoryService(Protocol):
         pass
 
     async def get_relevant_memories(self, query: str, limit: int = 8) -> list[dict]:
+        pass
+
+    async def search_messages(
+        self,
+        query: str,
+        limit: int = 8,
+        exclude_conversation_id: Optional[str] = None,
+    ) -> list[dict]:
         pass
 
     async def get_structured_memory_context(self, query: str) -> dict:

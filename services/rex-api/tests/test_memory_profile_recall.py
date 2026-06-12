@@ -68,6 +68,30 @@ async def test_retrieves_mom_birthday_when_user_asks_directly():
 
 
 @pytest.mark.asyncio
+async def test_retrieves_mom_memory_when_user_asks_anything_about_mom():
+    service = InMemoryProfileRecallService(
+        [
+            _mom_birthday_memory(),
+            {
+                "id": "memory-random",
+                "memory_type": "fact",
+                "content": "User once mentioned a random TV show.",
+                "importance": 2,
+                "active": True,
+            },
+        ]
+    )
+
+    memories = await service.get_relevant_memories(
+        "Do you know anything about my mom?",
+        limit=3,
+    )
+
+    assert [memory["id"] for memory in memories] == ["memory-mom-birthday"]
+    assert "mom" in memories[0]["relevance_reason"]
+
+
+@pytest.mark.asyncio
 async def test_profile_context_includes_high_importance_birthdays():
     service = InMemoryProfileRecallService([_mom_birthday_memory()])
 
@@ -80,9 +104,7 @@ async def test_profile_context_includes_high_importance_birthdays():
 
 @pytest.mark.asyncio
 async def test_profile_recall_does_not_include_archived_birthdays():
-    service = InMemoryProfileRecallService(
-        [_mom_birthday_memory(active=False)]
-    )
+    service = InMemoryProfileRecallService([_mom_birthday_memory(active=False)])
 
     memories = await service.get_relevant_memories(
         "Do you remember my mom's birthday?",
@@ -103,3 +125,68 @@ async def test_chat_prompt_includes_saved_mom_birthday_on_recall_question():
 
     system_content = ai_service.messages[0]["content"]
     assert "- fact: User's mom's birthday is June 18." in system_content
+
+
+@pytest.mark.asyncio
+async def test_chat_prompt_includes_past_chat_when_mom_fact_was_not_saved():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    await memory_service.save_message(
+        conversation_id,
+        "user",
+        "It's not next week, but on the eighteenth, it's my mom's birthday.",
+    )
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        "Got it, June 18th is your mom's birthday.",
+    )
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    await chat_service.send_message("Do you know anything about my mom?")
+
+    system_content = ai_service.messages[0]["content"]
+    assert "- chat_excerpt: Past chat" in system_content
+    assert "mom's birthday" in system_content
+    assert memory_service.search_message_queries == [
+        {
+            "query": "Do you know anything about my mom?",
+            "limit": 4,
+            "exclude_conversation_id": None,
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_chat_prompt_ignores_past_chat_fact_user_rejected():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    await memory_service.save_message(
+        conversation_id,
+        "user",
+        "My mom's birthday is June 18.",
+    )
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        "Want me to remember that?",
+    )
+    await memory_service.save_message(
+        conversation_id,
+        "user",
+        "No, don't save that.",
+    )
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        "No problem. I won't save that.",
+    )
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    await chat_service.send_message("Do you know anything about my mom?")
+
+    system_content = ai_service.messages[0]["content"]
+    assert "- chat_excerpt: Past chat" not in system_content
+    assert "mom's birthday" not in system_content

@@ -1,3 +1,5 @@
+import re
+
 from app.services.memory_correction_service import CorrectionIntentType
 
 
@@ -63,6 +65,7 @@ class FakeMemoryService:
         self.next_plan_id = 1
         self.next_commitment_id = 1
         self.relevant_memory_queries = []
+        self.search_message_queries = []
         self.structured_context_queries = []
         self.structured_context = {}
         self.plans = []
@@ -98,6 +101,11 @@ class FakeMemoryService:
             if message["conversation_id"] == conversation_id
         ]
         return messages[-limit:]
+
+    async def get_conversation_messages(self, conversation_id, limit=100):
+        if conversation_id not in self.conversations:
+            return None
+        return await self.get_recent_messages(conversation_id, limit=limit)
 
     async def save_long_term_memory(
         self,
@@ -173,6 +181,37 @@ class FakeMemoryService:
     async def get_relevant_memories(self, query, limit=8):
         self.relevant_memory_queries.append({"query": query, "limit": limit})
         return self.long_term_memory[-limit:]
+
+    async def search_messages(self, query, limit=8, exclude_conversation_id=None):
+        self.search_message_queries.append(
+            {
+                "query": query,
+                "limit": limit,
+                "exclude_conversation_id": exclude_conversation_id,
+            }
+        )
+        terms = {
+            term.lower()
+            for term in re.findall(r"[a-z0-9']+", query)
+            if len(term.strip("'")) >= 3
+        }
+        aliases = set()
+        if terms & {"mom", "mother", "mum", "mama"}:
+            aliases.update({"mom", "mother", "mum", "mama"})
+        terms.update(aliases)
+        matches = []
+        for message in reversed(self.messages):
+            if (
+                exclude_conversation_id
+                and message.get("conversation_id") == exclude_conversation_id
+            ):
+                continue
+            content = str(message.get("content") or "").lower()
+            if any(term in content for term in terms):
+                matches.append(message)
+            if len(matches) >= limit:
+                break
+        return matches
 
     async def get_structured_memory_context(self, query):
         self.structured_context_queries.append(query)

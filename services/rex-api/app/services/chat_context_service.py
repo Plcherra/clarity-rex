@@ -16,7 +16,20 @@ PROFILE_MEMORY_QUERY = (
     "important identity facts birthdays family important dates preferences"
 )
 PROFILE_MEMORY_LIMIT = 4
+PAST_CHAT_MEMORY_LIMIT = 4
 LOGGER = logging.getLogger("rex.context")
+MEMORY_REJECTION_MARKERS = (
+    "do not remember",
+    "do not save",
+    "don't remember",
+    "don't save",
+    "dont remember",
+    "dont save",
+    "no problem. i won't save that",
+    "no problem. i will not save that",
+    "won't save that",
+    "will not save that",
+)
 
 
 class ChatContextService:
@@ -35,9 +48,7 @@ class ChatContextService:
         self.time_context_service = time_context_service or TimeContextService()
         self.accountability_service = accountability_service or AccountabilityService()
         self.goal_context_service = goal_context_service or GoalContextService()
-        self.rex_brain_chat_service = (
-            rex_brain_chat_service or RexBrainChatService()
-        )
+        self.rex_brain_chat_service = rex_brain_chat_service or RexBrainChatService()
 
     async def fetch_prompt_context(
         self,
@@ -74,6 +85,19 @@ class ChatContextService:
             if load_profile_memory
             else self.empty_list()
         )
+        past_chat_memory_task = (
+            self.timed_fetch(
+                "past_chat_memory",
+                self.fetch_relevant_chat_excerpts(
+                    query=message,
+                    limit=PAST_CHAT_MEMORY_LIMIT,
+                    exclude_conversation_id=conversation_id,
+                ),
+                timings_ms,
+            )
+            if load_long_term_memory
+            else self.empty_list()
+        )
         structured_context_task = self.timed_fetch(
             "structured_context",
             self.fetch_structured_context(
@@ -87,13 +111,19 @@ class ChatContextService:
             (
                 long_term_memory,
                 profile_memory,
+                past_chat_memory,
                 structured_context,
             ) = await asyncio.gather(
                 long_term_memory_task,
                 profile_memory_task,
+                past_chat_memory_task,
                 structured_context_task,
             )
-            merged_memory = self.merge_memories(long_term_memory, profile_memory)
+            merged_memory = self.merge_memories(
+                long_term_memory,
+                profile_memory,
+                past_chat_memory,
+            )
             self.log_context_fetch(
                 intent_decision=intent_decision,
                 conversation_id=None,
@@ -101,6 +131,7 @@ class ChatContextService:
                     "recent_messages": False,
                     "long_term_memory": load_long_term_memory,
                     "profile_memory": load_profile_memory,
+                    "past_chat_memory": load_long_term_memory,
                     "structured_memory": load_structured_memory,
                     "goal_context": load_goal_context,
                 },
@@ -122,6 +153,7 @@ class ChatContextService:
             conversation_history,
             long_term_memory,
             profile_memory,
+            past_chat_memory,
             structured_context,
         ) = await asyncio.gather(
             self.timed_fetch(
@@ -131,9 +163,14 @@ class ChatContextService:
             ),
             long_term_memory_task,
             profile_memory_task,
+            past_chat_memory_task,
             structured_context_task,
         )
-        merged_memory = self.merge_memories(long_term_memory, profile_memory)
+        merged_memory = self.merge_memories(
+            long_term_memory,
+            profile_memory,
+            past_chat_memory,
+        )
         self.log_context_fetch(
             intent_decision=intent_decision,
             conversation_id=conversation_id,
@@ -141,6 +178,7 @@ class ChatContextService:
                 "recent_messages": True,
                 "long_term_memory": load_long_term_memory,
                 "profile_memory": load_profile_memory,
+                "past_chat_memory": load_long_term_memory,
                 "structured_memory": load_structured_memory,
                 "goal_context": load_goal_context,
             },
@@ -185,6 +223,89 @@ class ChatContextService:
             )
         except Exception:
             return []
+
+    async def fetch_relevant_chat_excerpts(
+        self,
+        *,
+        query: str,
+        limit: int,
+        exclude_conversation_id: Optional[str],
+    ) -> list[dict]:
+        search_messages = getattr(self.memory_service, "search_messages", None)
+        if search_messages is None:
+            return []
+        try:
+            messages = await search_messages(
+                query,
+                limit=limit,
+                exclude_conversation_id=exclude_conversation_id,
+            )
+        except Exception:
+            return []
+
+        excerpts = []
+        for message in messages:
+            content = str(message.get("content") or "").strip()
+            if not content:
+                continue
+            if await self.chat_excerpt_was_rejected(message):
+                continue
+            role = str(message.get("role") or "message")
+            excerpts.append(
+                {
+                    "id": f"chat-{message.get('id')}",
+                    "memory_type": "chat_excerpt",
+                    "content": f"Past chat {role}: {content}",
+                    "importance": 3,
+                    "created_at": message.get("timestamp"),
+                    "relevance_reason": "Matched relevant past conversation.",
+                }
+            )
+        return excerpts
+
+    async def chat_excerpt_was_rejected(self, message: dict) -> bool:
+        conversation_id = str(message.get("conversation_id") or "")
+        message_id = str(message.get("id") or "")
+        if not conversation_id or not message_id:
+            return False
+
+        get_messages = getattr(self.memory_service, "get_conversation_messages", None)
+        if get_messages is None:
+            return False
+
+        try:
+            conversation_messages = await get_messages(conversation_id, limit=40)
+        except Exception:
+            return False
+        if not conversation_messages:
+            return False
+
+        message_index = self.message_index(conversation_messages, message_id)
+        if message_index is None:
+            return False
+
+        following_messages = conversation_messages[
+            message_index + 1 : message_index + 7
+        ]
+        return any(
+            self.is_memory_rejection_message(item) for item in following_messages
+        )
+
+    def message_index(
+        self,
+        conversation_messages: list[dict],
+        message_id: str,
+    ) -> Optional[int]:
+        for index, item in enumerate(conversation_messages):
+            if str(item.get("id") or "") == message_id:
+                return index
+        return None
+
+    def is_memory_rejection_message(self, message: dict) -> bool:
+        content = str(message.get("content") or "").strip().lower()
+        if not content:
+            return False
+        return any(marker in content for marker in MEMORY_REJECTION_MARKERS)
 
     def merge_memories(self, *memory_groups: list[dict]) -> list[dict]:
         merged: list[dict] = []
@@ -361,7 +482,9 @@ class ChatContextService:
         payload = {
             "conversation_id": conversation_id,
             "intent": (
-                intent_decision.intent.value if intent_decision is not None else "legacy"
+                intent_decision.intent.value
+                if intent_decision is not None
+                else "legacy"
             ),
             "loaded": loaded,
             "counts": counts,
