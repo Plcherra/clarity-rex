@@ -8,12 +8,14 @@ from app.services.prompt_constants import (
 
 
 class PromptFinancialContextMixin:
-    def _financial_context_section(self, financial_context: Optional[dict]) -> Optional[str]:
+    def _financial_context_section(
+        self, financial_context: Optional[dict]
+    ) -> Optional[str]:
         if not financial_context:
             return None
 
         lines = [
-            "Rex is inside Clarity. Use this as first-party Clarity financial context. It may include specific accounts, account names, budgets, categories, merchants, descriptions, and transaction rows. You may reference specific records when they are present. If this context says data is unavailable, degraded, stale, partial, or incomplete, say that clearly before answering and do not guess missing accounts, balances, budgets, categories, or transactions. For create/update/delete requests, ask for confirmation and append a fenced ```clarity_action``` JSON object with action, payload, confirmation_text, and risk_level. Use only actions listed in available_controls. Never claim a financial record was changed unless an execution result says it succeeded."
+            "Rex is inside Clarity. Use this as first-party Clarity financial context. It may include specific accounts, account names, budgets, categories, merchants, descriptions, and transaction rows. You may reference specific records when they are present. Review queues are not user-facing categories; describe them as app review states, and use included transaction rows or sample_transactions to list names/descriptions when present. If this context says data is unavailable, degraded, stale, partial, or incomplete, say that clearly before answering and do not guess missing accounts, balances, budgets, categories, or transactions. For create/update/delete requests, ask for confirmation and append a fenced ```clarity_action``` JSON object with action, payload, confirmation_text, and risk_level. Use only actions listed in available_controls. Never claim a financial record was changed unless an execution result says it succeeded."
         ]
         used_characters = len(lines[0]) + 1
 
@@ -169,7 +171,11 @@ class PromptFinancialContextMixin:
 
     def _financial_status_summary(self, financial_context: dict) -> str:
         data_status = self._dict_value(financial_context, "data_status")
-        state = data_status.get("state") if data_status else financial_context.get("data_status")
+        state = (
+            data_status.get("state")
+            if data_status
+            else financial_context.get("data_status")
+        )
         complete = data_status.get("financial_context_complete")
         load_errors = data_status.get("load_errors")
         if load_errors is None:
@@ -192,7 +198,9 @@ class PromptFinancialContextMixin:
             if stale_accounts:
                 parts.append(f"stale_accounts={self._compact_json(stale_accounts)}")
             if unknown_accounts:
-                parts.append(f"unknown_sync_accounts={self._compact_json(unknown_accounts)}")
+                parts.append(
+                    f"unknown_sync_accounts={self._compact_json(unknown_accounts)}"
+                )
         if not parts:
             return ""
 
@@ -225,11 +233,15 @@ class PromptFinancialContextMixin:
         return lines
 
     def _financial_slice_summary(self, item: dict) -> str:
-        return (
+        summary = (
             f"{item.get('label')} count={item.get('transaction_count')} "
             f"spend={item.get('spend')} income={item.get('income')} "
             f"net={item.get('net')} latest={item.get('latest_date')}"
         )
+        samples = self._list_value(item, "sample_transactions")
+        if samples:
+            summary = f"{summary} samples={self._compact_json(samples[:5])}"
+        return summary
 
     def _financial_increase_summary(self, item: dict) -> str:
         summary = (
@@ -251,4 +263,3 @@ class PromptFinancialContextMixin:
 
     def _compact_json(self, value: Any) -> str:
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"), default=str)
-

@@ -64,11 +64,15 @@ class RexIntentDecision:
 
     @property
     def should_use_financial_context(self) -> bool:
-        return self.intent in {
-            RexIntent.FINANCE,
-            RexIntent.GOAL_OR_COMMITMENT,
-            RexIntent.DEEP_REASONING,
-        } or self.has_financial_context
+        return (
+            self.intent
+            in {
+                RexIntent.FINANCE,
+                RexIntent.GOAL_OR_COMMITMENT,
+                RexIntent.DEEP_REASONING,
+            }
+            or self.has_financial_context
+        )
 
 
 class RexIntentRouter:
@@ -115,20 +119,19 @@ class RexIntentRouter:
         "i hate",
     )
     MEMORY_RECALL_TERMS = (
-        "my mom",
-        "my mother",
-        "mom",
-        "mother",
-        "dad",
-        "father",
         "birthday",
-        "clara",
-        "my city",
-        "my location",
-        "my plans tonight",
-        "plans tonight",
-        "summerville",
-        "somerville",
+        "important date",
+        "important dates",
+        "location",
+        "preference",
+        "preferences",
+        "relationship",
+        "relationships",
+        "family",
+        "friend",
+        "friends",
+        "plan",
+        "plans",
     )
     MEMORY_RECALL_QUESTION_TERMS = (
         "anything about me",
@@ -136,6 +139,8 @@ class RexIntentRouter:
         "do you know my",
         "do you know where",
         "do you remember",
+        "what information do you have",
+        "what information",
         "what do you remember",
         "what do you know",
         "what are my plans",
@@ -147,6 +152,51 @@ class RexIntentRouter:
         "where i'm located",
         "where do i live",
         "where am i",
+    )
+    MEMORY_RECALL_ACTION_TERMS = (
+        "chat",
+        "chats",
+        "conversation",
+        "conversations",
+        "do you have",
+        "do you know",
+        "do you remember",
+        "have i told you",
+        "have we talked",
+        "remember",
+        "search",
+        "talked about",
+        "tell me what",
+        "what did i tell you",
+        "what do you have",
+        "what do you know",
+        "what do you remember",
+        "what have i told you",
+        "what have we talked",
+        "what information",
+    )
+    MEMORY_STORE_TERMS = (
+        "chat",
+        "chats",
+        "conversation",
+        "conversations",
+        "memory",
+        "memories",
+        "remember",
+        "saved",
+        "talked",
+        "told you",
+    )
+    USER_SCOPED_TERMS = (
+        " about me",
+        " about my ",
+        " i ",
+        " i'm ",
+        " me ",
+        " my ",
+        " our ",
+        " us ",
+        " we ",
     )
     GOAL_TERMS = (
         "accountability",
@@ -255,16 +305,6 @@ class RexIntentRouter:
                 user_requested_deep_thinking,
             )
 
-        if has_financial_context:
-            reasons.append("financial_context_supplied")
-            return self._decision(
-                RexIntent.FINANCE,
-                reasons,
-                has_file,
-                has_financial_context,
-                user_requested_deep_thinking,
-            )
-
         if self._contains(normalized, self.MEMORY_UPDATE_TERMS):
             reasons.append("memory_update_language")
             return self._decision(
@@ -275,20 +315,20 @@ class RexIntentRouter:
                 user_requested_deep_thinking,
             )
 
-        if self._contains(normalized, self.MEMORY_RECALL_QUESTION_TERMS):
-            reasons.append("memory_recall_question")
+        if self._looks_like_memory_save(normalized):
+            reasons.append("memory_save_language")
             return self._decision(
-                RexIntent.MEMORY_RECALL,
+                RexIntent.MEMORY_SAVE,
                 reasons,
                 has_file,
                 has_financial_context,
                 user_requested_deep_thinking,
             )
 
-        if self._contains(normalized, self.MEMORY_SAVE_TERMS):
-            reasons.append("memory_save_language")
+        if self._looks_like_memory_recall_question(normalized):
+            reasons.append("memory_recall_question")
             return self._decision(
-                RexIntent.MEMORY_SAVE,
+                RexIntent.MEMORY_RECALL,
                 reasons,
                 has_file,
                 has_financial_context,
@@ -319,6 +359,16 @@ class RexIntentRouter:
                 has_financial_context,
                 user_requested_deep_thinking,
                 load_structured_memory_override=load_structured_memory_override,
+            )
+
+        if has_financial_context:
+            reasons.append("financial_context_supplied")
+            return self._decision(
+                RexIntent.FINANCE,
+                reasons,
+                has_file,
+                has_financial_context,
+                user_requested_deep_thinking,
             )
 
         if self._contains(normalized, self.FINANCE_TERMS):
@@ -373,3 +423,57 @@ class RexIntentRouter:
 
     def _contains(self, normalized_message: str, terms: tuple[str, ...]) -> bool:
         return any(term in normalized_message for term in terms)
+
+    def _looks_like_memory_recall_question(self, normalized_message: str) -> bool:
+        if self._contains(normalized_message, self.MEMORY_RECALL_QUESTION_TERMS):
+            return not self._is_finance_first_query(normalized_message)
+
+        if not self._contains(normalized_message, self.MEMORY_RECALL_ACTION_TERMS):
+            return False
+
+        if self._is_finance_first_query(normalized_message):
+            return False
+
+        padded = f" {normalized_message} "
+        return (
+            self._contains(padded, self.USER_SCOPED_TERMS)
+            or "anything" in normalized_message
+            or "information" in normalized_message
+            or "chat" in normalized_message
+            or "conversation" in normalized_message
+            or "what do you know" in normalized_message
+            or "what do you remember" in normalized_message
+        )
+
+    def _is_finance_first_query(self, normalized_message: str) -> bool:
+        if not self._contains(normalized_message, self.FINANCE_TERMS):
+            return False
+        return not self._contains(normalized_message, self.MEMORY_STORE_TERMS)
+
+    def _looks_like_memory_save(self, normalized_message: str) -> bool:
+        if normalized_message.startswith(("do you remember", "what do you remember")):
+            return False
+        if normalized_message.startswith("remember what"):
+            return False
+        if normalized_message.startswith("remember "):
+            return True
+        if " please remember " in f" {normalized_message} ":
+            return True
+        if normalized_message.startswith(
+            (
+                "can ",
+                "could ",
+                "do ",
+                "does ",
+                "how ",
+                "what ",
+                "when ",
+                "where ",
+                "who ",
+            )
+        ):
+            return False
+        return self._contains(
+            normalized_message,
+            tuple(term for term in self.MEMORY_SAVE_TERMS if term != "remember"),
+        )

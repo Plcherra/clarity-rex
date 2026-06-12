@@ -185,6 +185,27 @@ def test_prompt_service_injects_unified_financial_context():
                     "percent_change": 80,
                 }
             ],
+            "transaction_slices": {
+                "review_queues": [
+                    {
+                        "key": "needsCategory",
+                        "label": "Uncategorized review",
+                        "transaction_count": 1,
+                        "spend": 24.5,
+                        "income": 0,
+                        "net": -24.5,
+                        "latest_date": "2026-05-21",
+                        "sample_transactions": [
+                            {
+                                "id": "transaction-1",
+                                "date": "2026-05-21",
+                                "description": "Coffee Shop",
+                                "amount": -24.5,
+                            }
+                        ],
+                    }
+                ]
+            },
             "accounts": [
                 {
                     "id": "account-1",
@@ -229,6 +250,7 @@ def test_prompt_service_injects_unified_financial_context():
     assert FINANCIAL_CONTEXT_PREFIX in system_content
     assert "Rex is inside Clarity" in system_content
     assert "specific accounts, account names, budgets" in system_content
+    assert "Review queues are not user-facing categories" in system_content
     assert "Data status: state=ready; complete=True; freshness=fresh" in system_content
     assert "reference_month=2026-05" in system_content
     assert "spent_this_month=3100.5" in system_content
@@ -236,6 +258,8 @@ def test_prompt_service_injects_unified_financial_context():
     assert "Food: 500 -> 900 (80%)" in system_content
     assert "Main Checking" in system_content
     assert "Coffee Shop" in system_content
+    assert "Uncategorized review count=1" in system_content
+    assert "sample_transactions" in system_content
     assert "create_transaction" in system_content
 
 
@@ -251,7 +275,10 @@ def test_prompt_service_warns_when_financial_context_is_degraded_or_stale():
                 "state": "degraded",
                 "financial_context_complete": False,
                 "load_errors": [
-                    {"source": "transactions", "message": "Could not fetch transactions."}
+                    {
+                        "source": "transactions",
+                        "message": "Could not fetch transactions.",
+                    }
                 ],
             },
             "freshness": {
@@ -271,7 +298,10 @@ def test_prompt_service_warns_when_financial_context_is_degraded_or_stale():
     system_content = messages[0]["content"]
     assert "state=degraded" in system_content
     assert "freshness=stale" in system_content
-    assert "Rex must explicitly tell the user this financial data is not fully reliable" in system_content
+    assert (
+        "Rex must explicitly tell the user this financial data is not fully reliable"
+        in system_content
+    )
     assert "Could not fetch transactions" in system_content
 
 

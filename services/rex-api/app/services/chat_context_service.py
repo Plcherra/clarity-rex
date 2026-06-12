@@ -15,6 +15,11 @@ PROFILE_MEMORY_QUERY = (
     "user profile location timezone where I live state city home current time "
     "important identity facts birthdays family important dates preferences"
 )
+MEMORY_INVENTORY_QUERY = (
+    f"{PROFILE_MEMORY_QUERY} people relationships parents mom mother dad father "
+    "sibling friend birthday plans goals commitments personal rules memories "
+    "chats conversations preferences"
+)
 PROFILE_MEMORY_LIMIT = 4
 PAST_CHAT_MEMORY_LIMIT = 4
 LOGGER = logging.getLogger("rex.context")
@@ -63,11 +68,16 @@ class ChatContextService:
         load_profile_memory = self._load_profile_memory(intent_decision)
         load_structured_memory = self._load_structured_memory(intent_decision)
         load_goal_context = self._load_goal_context(intent_decision)
+        memory_query = self.memory_retrieval_query(message)
+        load_profile_memory = load_profile_memory and memory_query not in {
+            PROFILE_MEMORY_QUERY,
+            MEMORY_INVENTORY_QUERY,
+        }
 
         long_term_memory_task = (
             self.timed_fetch(
                 "long_term_memory",
-                self.fetch_relevant_memories(query=message, limit=8),
+                self.fetch_relevant_memories(query=memory_query, limit=8),
                 timings_ms,
             )
             if load_long_term_memory
@@ -89,7 +99,7 @@ class ChatContextService:
             self.timed_fetch(
                 "past_chat_memory",
                 self.fetch_relevant_chat_excerpts(
-                    query=message,
+                    query=memory_query,
                     limit=PAST_CHAT_MEMORY_LIMIT,
                     exclude_conversation_id=conversation_id,
                 ),
@@ -322,6 +332,27 @@ class ChatContextService:
 
     async def empty_list(self) -> list[dict]:
         return []
+
+    def memory_retrieval_query(self, message: str) -> str:
+        normalized = " ".join(str(message or "").lower().split())
+        if self.is_memory_inventory_query(normalized):
+            return MEMORY_INVENTORY_QUERY
+        return message
+
+    def is_memory_inventory_query(self, normalized_message: str) -> bool:
+        broad_inventory_questions = {
+            "what do you know",
+            "what do you remember",
+            "what does clarity know",
+            "what information do you have",
+            "what have you saved",
+            "what do you have saved",
+            "what rex knows",
+        }
+        normalized = normalized_message.rstrip("?.! ")
+        if normalized not in broad_inventory_questions:
+            return False
+        return " about " not in f" {normalized} "
 
     async def timed_fetch(self, name: str, awaitable, timings_ms: dict[str, int]):
         started = time.perf_counter()

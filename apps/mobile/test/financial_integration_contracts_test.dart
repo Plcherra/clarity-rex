@@ -167,8 +167,14 @@ void main() {
       final needsCategory = reviewQueues.singleWhere(
         (queue) => queue['key'] == 'needsCategory',
       );
+      expect(needsCategory['label'], 'Uncategorized review');
       expect(needsCategory['transaction_count'], 1);
       expect(needsCategory['sample_transaction_ids'], contains('unknown'));
+      final samples = needsCategory['sample_transactions'] as List<dynamic>;
+      expect(
+        (samples.single as Map<String, dynamic>)['description'],
+        'UNCLASSIFIED MERCHANT',
+      );
 
       final categories = rexIndex['categories'] as List<Map<String, dynamic>>;
       final grocery = categories.singleWhere(

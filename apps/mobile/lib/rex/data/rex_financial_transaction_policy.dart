@@ -1,4 +1,5 @@
 import 'package:clarity/core/models/account.dart';
+import 'package:clarity/core/models/transaction.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/transactions/domain/spend_categories.dart';
 import 'package:clarity/features/transactions/domain/transaction_review.dart';
@@ -18,10 +19,9 @@ List<TransactionRecord> selectRexTransactionContextRows({
   }
   final reviewIds = <String>{};
   for (final resolved in resolvedTransactions) {
-    final id = resolved.transaction.fingerprint;
-    if (id == null || id.isEmpty) continue;
     if (transactionReviewReasons(resolved).isNotEmpty) {
-      reviewIds.add(id);
+      final id = _recordIdForResolvedTransaction(resolved, transactions);
+      if (id != null && id.isNotEmpty) reviewIds.add(id);
     }
   }
   final newest = [...transactions]
@@ -173,8 +173,47 @@ class _RexSliceAccumulator {
         for (final sample in _samples.take(kMaxRexDrilldownSampleIds))
           _transactionId(sample),
       ],
+      'sample_transactions': [
+        for (final sample in _samples.take(kMaxRexDrilldownSampleIds))
+          _sampleTransactionContext(sample),
+      ],
     };
   }
+}
+
+String? _recordIdForResolvedTransaction(
+  ResolvedTransaction resolved,
+  List<TransactionRecord> records,
+) {
+  final fingerprint = resolved.transaction.fingerprint;
+  if (fingerprint != null &&
+      fingerprint.isNotEmpty &&
+      records.any((record) => record.id == fingerprint)) {
+    return fingerprint;
+  }
+
+  final key = transactionCategoryKey(resolved.transaction);
+  for (final record in records) {
+    if (_recordIdentityKey(record) == key) {
+      return record.id;
+    }
+  }
+  return fingerprint;
+}
+
+String _recordIdentityKey(TransactionRecord record) {
+  return transactionCategoryKey(
+    Transaction(
+      date: record.date,
+      description: record.description ?? record.merchant ?? '',
+      amount: record.type == 'expense' ? -record.amount.abs() : record.amount,
+      accountId: record.accountId,
+      categoryLabel: record.categoryId,
+      fingerprint: record.id,
+      source: record.source,
+      pending: record.pending,
+    ),
+  );
 }
 
 String _transactionId(ResolvedTransaction resolved) {
@@ -182,9 +221,23 @@ String _transactionId(ResolvedTransaction resolved) {
       transactionCategoryKey(resolved.transaction);
 }
 
+Map<String, dynamic> _sampleTransactionContext(ResolvedTransaction resolved) {
+  final transaction = resolved.transaction;
+  return {
+    'id': _transactionId(resolved),
+    'date': _dateOnlyValue(transaction.date),
+    'description': transaction.description,
+    'amount': _moneyValue(transaction.amount),
+    'account_id': transaction.accountId,
+    'category': resolved.displayCategory,
+    'source': transaction.source,
+    'pending': transaction.pending,
+  };
+}
+
 String _reviewReasonLabel(TransactionReviewReason reason) {
   return switch (reason) {
-    TransactionReviewReason.needsCategory => 'Needs category',
+    TransactionReviewReason.needsCategory => 'Uncategorized review',
     TransactionReviewReason.internalPayment => 'Possible internal payment',
     TransactionReviewReason.manualRole => 'Manual role',
     TransactionReviewReason.ignored => 'Ignored',

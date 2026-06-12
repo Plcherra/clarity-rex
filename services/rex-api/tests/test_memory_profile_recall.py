@@ -128,6 +128,26 @@ async def test_chat_prompt_includes_saved_mom_birthday_on_recall_question():
 
 
 @pytest.mark.asyncio
+async def test_chat_prompt_includes_memory_when_financial_context_is_attached():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    memory_service.long_term_memory.append(_mom_birthday_memory())
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    await chat_service.send_message(
+        "Can you check if you have any chat talking about my mom or any information?",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "cash_flow": {"spent_this_month": 100},
+        },
+    )
+
+    system_content = ai_service.messages[0]["content"]
+    assert "- fact: User's mom's birthday is June 18." in system_content
+    assert "Clarity financial summary:" in system_content
+
+
+@pytest.mark.asyncio
 async def test_chat_prompt_includes_past_chat_when_mom_fact_was_not_saved():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

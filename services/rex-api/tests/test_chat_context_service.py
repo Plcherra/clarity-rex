@@ -3,7 +3,11 @@ import re
 
 import pytest
 
-from app.services.chat_context_service import ChatContextService, PROFILE_MEMORY_QUERY
+from app.services.chat_context_service import (
+    ChatContextService,
+    MEMORY_INVENTORY_QUERY,
+    PROFILE_MEMORY_QUERY,
+)
 from app.services.rex_intent_router import RexIntent, RexIntentDecision
 
 
@@ -81,7 +85,7 @@ class FakeContextMemoryStore:
         self.relevant_memory_queries.append({"query": query, "limit": limit})
         if self.fail_relevant_memories:
             raise RuntimeError("relevant memory failed")
-        if query == PROFILE_MEMORY_QUERY:
+        if query in {PROFILE_MEMORY_QUERY, MEMORY_INVENTORY_QUERY}:
             return [
                 {"id": "profile-1", "content": "Pedro lives in New York"},
                 {"id": "shared-1", "content": "Duplicate profile fact"},
@@ -237,6 +241,36 @@ async def test_chat_context_loads_memory_only_for_memory_recall_intent():
         }
     ]
     assert store.plan_calls == []
+
+
+@pytest.mark.asyncio
+async def test_chat_context_uses_inventory_query_for_broad_memory_recall():
+    store = FakeContextMemoryStore()
+    service = ChatContextService(store)
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message="What do you know?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert "profile_facts" in structured_context
+    assert [memory["id"] for memory in memories] == [
+        "profile-1",
+        "shared-1",
+        "chat-past-message-2",
+        "chat-past-message-1",
+    ]
+    assert store.relevant_memory_queries == [
+        {"query": MEMORY_INVENTORY_QUERY, "limit": 8},
+    ]
+    assert store.search_message_queries == [
+        {
+            "query": MEMORY_INVENTORY_QUERY,
+            "limit": 4,
+            "exclude_conversation_id": None,
+        }
+    ]
 
 
 @pytest.mark.asyncio

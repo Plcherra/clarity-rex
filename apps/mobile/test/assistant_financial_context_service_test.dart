@@ -118,8 +118,61 @@ void main() {
       final needsCategory = reviewQueues.singleWhere(
         (item) => item['key'] == 'needsCategory',
       );
+      expect(needsCategory['label'], 'Uncategorized review');
       expect(needsCategory['transaction_count'], 1);
       expect(needsCategory['sample_transaction_ids'], contains('unknown'));
+      final samples = needsCategory['sample_transactions'] as List<dynamic>;
+      expect(
+        (samples.single as Map<String, dynamic>)['description'],
+        'Unknown purchase',
+      );
+    },
+  );
+
+  test(
+    'Rex transaction context keeps review rows when fingerprint differs',
+    () {
+      final records = [
+        for (var i = 0; i < 150; i += 1)
+          _record(
+            id: 'db-$i',
+            date: DateTime(2026, 1, 1).add(Duration(days: i)),
+            categoryId: i == 0 ? kUnknownCategoryName : 'food',
+            description: i == 0 ? 'Uncategorized Plaid row' : 'Coffee $i',
+            source: 'plaid',
+            importedFromCsv: false,
+          ),
+      ];
+      final transactions = [
+        for (final record in records)
+          Transaction(
+            date: record.date,
+            description: record.description ?? '',
+            amount: -record.amount.abs(),
+            accountId: record.accountId,
+            categoryLabel: record.categoryId == kUnknownCategoryName
+                ? kUnknownCategoryName
+                : 'Food & Drink',
+            fingerprint: 'plaid-${record.id}',
+            source: record.source,
+          ),
+      ];
+      final resolved = resolveTransactions(
+        transactions,
+        categoryOverrides: const {},
+        categoryDisplayRenamesLower: const {},
+        accountsById: const {},
+        allTransactions: transactions,
+      );
+
+      final selected = selectRexTransactionContextRows(
+        transactions: records,
+        resolvedTransactions: resolved,
+        maxRows: 120,
+      );
+
+      expect(selected, hasLength(120));
+      expect(selected.map((record) => record.id), contains('db-0'));
     },
   );
 

@@ -40,6 +40,83 @@ def test_router_classifies_memory_recall_with_memory_context():
     assert not decision.should_load_goal_context
 
 
+def test_router_memory_recall_beats_attached_financial_context():
+    decision = RexIntentRouter().classify(
+        "Can you check if you have any chat talking about my mom?",
+        has_financial_context=True,
+    )
+
+    assert decision.intent == RexIntent.MEMORY_RECALL
+    assert decision.should_load_long_term_memory
+    assert decision.should_load_profile_memory
+    assert decision.should_load_structured_memory
+    assert decision.should_use_financial_context
+
+
+def test_router_memory_information_question_beats_attached_financial_context():
+    decision = RexIntentRouter().classify(
+        "What information do you have?",
+        has_financial_context=True,
+    )
+
+    assert decision.intent == RexIntent.MEMORY_RECALL
+    assert decision.should_load_long_term_memory
+    assert decision.should_load_structured_memory
+    assert decision.should_use_financial_context
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Do you know anything about my friend Lara?",
+        "Have we talked about my immigration plan?",
+        "What did I tell you about my sister?",
+        "Can you search our chats for my birthday?",
+        "What have I told you about my preferences?",
+    ],
+)
+def test_router_classifies_generic_memory_recall_questions(message):
+    decision = RexIntentRouter().classify(
+        message,
+        has_financial_context=True,
+    )
+
+    assert decision.intent == RexIntent.MEMORY_RECALL
+    assert decision.should_load_long_term_memory
+    assert decision.should_load_structured_memory
+    assert decision.should_use_financial_context
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Do you know my bank balance?",
+        "What do you know about my transactions?",
+        "Can you tell me my budget?",
+    ],
+)
+def test_router_keeps_financial_questions_on_finance_path(message):
+    decision = RexIntentRouter().classify(
+        message,
+        has_financial_context=True,
+    )
+
+    assert decision.intent == RexIntent.FINANCE
+    assert decision.should_use_financial_context
+    assert not decision.should_load_long_term_memory
+
+
+def test_router_memory_save_beats_attached_financial_context():
+    decision = RexIntentRouter().classify(
+        "Remember my mom's birthday is June 18",
+        has_financial_context=True,
+    )
+
+    assert decision.intent == RexIntent.MEMORY_SAVE
+    assert not decision.should_load_long_term_memory
+    assert decision.should_use_financial_context
+
+
 @pytest.mark.parametrize(
     "message",
     [
