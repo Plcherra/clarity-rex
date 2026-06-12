@@ -100,7 +100,7 @@ services/rex-api/tests/
 Mobile:
 
 ```text
-apps/mobile/lib/features/assistant/
+apps/mobile/lib/rex/
   chat/
   voice/
   brain/
@@ -440,10 +440,10 @@ Expose Rex Brain in the UI only where it improves trust and control.
 
 Files to create/modify:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart`
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
-- `apps/mobile/lib/features/assistant/brain/`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/brain/`
 - `apps/mobile/test/`
 
 Acceptance criteria:

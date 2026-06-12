@@ -99,7 +99,7 @@ Evidence:
 - `DashboardUiController.buildSnapshot` fetches accounts, all transactions, and scoped transactions separately in `apps/mobile/lib/app/ui_dependencies.dart:173-187`.
 - Dashboard transaction section fetches scoped transactions, optionally all transactions, and accounts again in `apps/mobile/lib/features/dashboard/presentation/financial_dashboard_view.dart:613-624`.
 - Budgets fetch all transactions, transactions by account, and accounts again in `apps/mobile/lib/app/ui_dependencies.dart:531-549`.
-- Rex fetches dashboard snapshot, budget performance, accounts, categories, budgets, raw transactions, and resolved transactions separately in `apps/mobile/lib/features/assistant/data/financial_context_service.dart:23-31`.
+- Rex fetches dashboard snapshot, budget performance, accounts, categories, budgets, raw transactions, and resolved transactions separately in `apps/mobile/lib/rex/data/financial_context_service.dart:23-31`.
 
 User impact:
 - Same screen can be assembled from slightly different data snapshots.
@@ -215,8 +215,8 @@ Required fix:
 Status: partially fixed. Rex now gets data from the shared financial read model, but the payload still includes broad transaction detail and needs a compact retrieval strategy before this is considered finished.
 
 Evidence:
-- `AssistantFinancialContextService.buildSummary` includes every transaction in `apps/mobile/lib/features/assistant/data/financial_context_service.dart:107-115`.
-- The transaction context includes raw description, account names, category IDs, category names, amounts, import IDs, timestamps in `apps/mobile/lib/features/assistant/data/financial_context_service.dart:232-267`.
+- `AssistantFinancialContextService.buildSummary` includes every transaction in `apps/mobile/lib/rex/data/financial_context_service.dart:107-115`.
+- The transaction context includes raw description, account names, category IDs, category names, amounts, import IDs, timestamps in `apps/mobile/lib/rex/data/financial_context_service.dart:232-267`.
 
 User impact:
 - Rex has access now, but the payload can become large and expensive.

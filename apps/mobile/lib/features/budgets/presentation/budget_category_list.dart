@@ -33,7 +33,7 @@ class BudgetCategoryList extends StatelessWidget {
         border: Border.all(color: cs.outline.withValues(alpha: 0.11)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.018),
+            color: Colors.black.withValues(alpha: 0.20),
             blurRadius: 12,
             offset: const Offset(0, 3),
           ),

@@ -10,26 +10,27 @@ class PlaidAccountStatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final colors = switch (status) {
       PlaidAccountConnectionStatus.connected => (
-        bg: const Color(0xFFEAF7EF),
+        bg: const Color(0xFF1B7A4C).withValues(alpha: 0.18),
         fg: const Color(0xFF1B7A4C),
-        border: const Color(0xFFB8DEC5),
+        border: const Color(0xFF1B7A4C).withValues(alpha: 0.42),
       ),
       PlaidAccountConnectionStatus.syncing => (
-        bg: const Color(0xFFECEFF5),
-        fg: const Color(0xFF46566F),
-        border: const Color(0xFFC7CFDC),
+        bg: cs.secondary.withValues(alpha: 0.16),
+        fg: cs.secondary,
+        border: cs.secondary.withValues(alpha: 0.38),
       ),
       PlaidAccountConnectionStatus.degraded => (
-        bg: const Color(0xFFF6F0E2),
-        fg: const Color(0xFF7B6234),
-        border: const Color(0xFFE1D3B5),
+        bg: cs.primary.withValues(alpha: 0.16),
+        fg: cs.primary,
+        border: cs.primary.withValues(alpha: 0.38),
       ),
       PlaidAccountConnectionStatus.disconnected => (
-        bg: const Color(0xFFEDEBE7),
-        fg: const Color(0xFF5E5A52),
-        border: const Color(0xFFD6D1C8),
+        bg: cs.surfaceContainerHighest,
+        fg: cs.onSurface.withValues(alpha: 0.64),
+        border: cs.outlineVariant.withValues(alpha: 0.78),
       ),
     };
     return DecoratedBox(

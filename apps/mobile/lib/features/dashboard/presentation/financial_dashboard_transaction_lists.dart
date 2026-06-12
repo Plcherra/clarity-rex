@@ -47,7 +47,7 @@ class _CategoryGroupCard extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(_cardRadius),
-            border: Border.all(color: _dashboardOutline),
+            border: Border.all(color: _dashboardOutline(context)),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -187,7 +187,7 @@ class _InlineTransactionsListState extends State<_InlineTransactionsList> {
               ),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
-                side: const BorderSide(color: Color(0xFFD8D1C5)),
+                side: BorderSide(color: _dashboardOutline(context)),
               ),
             ),
           ),
@@ -236,9 +236,9 @@ class _InlineTransactionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       decoration: BoxDecoration(
-        color: _dashboardPanel,
+        color: _dashboardPanel(context),
         borderRadius: BorderRadius.circular(_cardRadius),
-        border: Border.all(color: _dashboardOutline),
+        border: Border.all(color: _dashboardOutline(context)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +270,7 @@ class _InlineTransactionCard extends StatelessWidget {
                 if (showAccount && account != null) ...[
                   const SizedBox(height: 5),
                   Text(
-                    account!.name,
+                    account!.displayName,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.45),
                     ),
@@ -327,9 +327,9 @@ class _InlineEmptyState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
-        color: _dashboardPanel,
+        color: _dashboardPanel(context),
         borderRadius: BorderRadius.circular(_cardRadius),
-        border: Border.all(color: _dashboardOutline),
+        border: Border.all(color: _dashboardOutline(context)),
       ),
       child: Column(
         children: [

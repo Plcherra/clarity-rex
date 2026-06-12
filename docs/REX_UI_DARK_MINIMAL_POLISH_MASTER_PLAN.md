@@ -36,7 +36,7 @@ This plan creates a focused path to redesign Rex around a minimal dark-first exp
 
 | Area | Current Issue | Primary Files |
 | --- | --- | --- |
-| Assistant shell | Tab navigation is large, light, and visually noisy | `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`, `assistant_tab.dart` |
+| Assistant shell | Tab navigation is large, light, and visually noisy | `apps/mobile/lib/rex/presentation/assistant_screen.dart`, `assistant_tab.dart` |
 | Chat | Bubbles and composer feel primitive; obsolete Deep Think mode still visible | `chat_page.dart`, `chat_input_bar.dart`, `chat_message_bubble.dart` |
 | Voice | Better than before, but still visually separate from chat | `voice_chat_page.dart`, `voice_call_controls.dart` |
 | What Rex Knows | Cleaner than old Memory tab, but still information-dense and not dark-system aligned | `memory_page.dart`, `saved_memory_tiles.dart`, memory widgets |
@@ -51,10 +51,10 @@ Remove the visible Deep Think mode from the Assistant UI and simplify the chat c
 
 ### Files To Change
 
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
-- `apps/mobile/lib/features/assistant/brain/rex_deep_think_state.dart`
-- `apps/mobile/lib/features/assistant/chat/data/chat_api.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/brain/rex_deep_think_state.dart`
+- `apps/mobile/lib/rex/chat/data/chat_api.dart`
 - Relevant chat tests
 
 ### What Done Looks Like
@@ -66,7 +66,7 @@ Remove the visible Deep Think mode from the Assistant UI and simplify the chat c
 
 ### Acceptance Criteria
 
-- `rg "Deep Think|DeepThink|deepThink" apps/mobile/lib/features/assistant` shows no active user-facing UI labels.
+- `rg "Deep Think|DeepThink|deepThink" apps/mobile/lib/rex` shows no active user-facing UI labels.
 - Chat send still works.
 - Voice launch from chat still works.
 - Existing chat tests pass.
@@ -79,8 +79,8 @@ Create a small Rex-specific dark visual language without rewriting the entire ap
 
 ### Files To Change
 
-- Create `apps/mobile/lib/features/assistant/presentation/rex_ui_tokens.dart`
-- Create `apps/mobile/lib/features/assistant/presentation/rex_surfaces.dart`
+- Create `apps/mobile/lib/rex/presentation/rex_ui_tokens.dart`
+- Create `apps/mobile/lib/rex/presentation/rex_surfaces.dart`
 - Update assistant presentation imports as needed
 
 ### What Done Looks Like
@@ -103,8 +103,8 @@ Make the Assistant top-level screen feel like a premium dark workspace.
 
 ### Files To Change
 
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
-- `apps/mobile/lib/features/assistant/presentation/assistant_tab.dart`
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/presentation/assistant_tab.dart`
 
 ### What Done Looks Like
 
@@ -129,9 +129,9 @@ Make regular Rex chat feel modern, minimal, and conversational.
 
 ### Files To Change
 
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
-- Create focused widgets under `apps/mobile/lib/features/assistant/chat/presentation/widgets/`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
+- Create focused widgets under `apps/mobile/lib/rex/chat/presentation/widgets/`
 
 ### What Done Looks Like
 
@@ -157,7 +157,7 @@ Make the input area feel like a modern assistant composer instead of a utility f
 
 ### Files To Change
 
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
 - Any extracted composer widgets
 
 ### What Done Looks Like
@@ -184,8 +184,8 @@ Make voice feel like the natural extension of chat, not a separate experimental 
 
 ### Files To Change
 
-- `apps/mobile/lib/features/assistant/voice/presentation/pages/voice_chat_page.dart`
-- `apps/mobile/lib/features/assistant/voice/presentation/widgets/voice_call_controls.dart`
+- `apps/mobile/lib/rex/voice/presentation/pages/voice_chat_page.dart`
+- `apps/mobile/lib/rex/voice/presentation/widgets/voice_call_controls.dart`
 
 ### What Done Looks Like
 
@@ -209,10 +209,10 @@ Make the Knows tab feel like a clean personal profile Rex can reference, not a b
 
 ### Files To Change
 
-- `apps/mobile/lib/features/assistant/memory/presentation/pages/memory_page.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/widgets/saved_memory_tiles.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/widgets/saved_memory_group_list.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/widgets/memory_page_header_widgets.dart`
+- `apps/mobile/lib/rex/memory/presentation/pages/memory_page.dart`
+- `apps/mobile/lib/rex/memory/presentation/widgets/saved_memory_tiles.dart`
+- `apps/mobile/lib/rex/memory/presentation/widgets/saved_memory_group_list.dart`
+- `apps/mobile/lib/rex/memory/presentation/widgets/memory_page_header_widgets.dart`
 
 ### What Done Looks Like
 
@@ -224,7 +224,7 @@ Make the Knows tab feel like a clean personal profile Rex can reference, not a b
 
 ### Acceptance Criteria
 
-- `rg "pending|review before saving|Save this only after approval" apps/mobile/lib/features/assistant/memory` returns no active UI copy.
+- `rg "pending|review before saving|Save this only after approval" apps/mobile/lib/rex/memory` returns no active UI copy.
 - Knows tab remains editable.
 - Search and filters still work.
 - No memory tile feels like a compliance card.
@@ -237,7 +237,7 @@ Make Goals visually match Rex instead of feeling like a separate dashboard.
 
 ### Files To Change
 
-- `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
 - `accountability_page_sections.dart`
 - `accountability_page_tiles.dart`
 - `accountability_page_shared.dart`
@@ -263,7 +263,7 @@ Make the Chats tab feel like a modern conversation history.
 
 ### Files To Change
 
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/conversation_list_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/conversation_list_page.dart`
 - Related conversation widgets if extracted
 
 ### What Done Looks Like

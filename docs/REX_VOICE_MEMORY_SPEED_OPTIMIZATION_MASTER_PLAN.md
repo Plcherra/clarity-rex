@@ -374,9 +374,9 @@ Voice feels slow when silence detection, transcription finalization, context loa
 
 Files to change / delete:
 
-- `apps/mobile/lib/features/assistant/voice/data/streaming_audio_capture_service.dart`
-- `apps/mobile/lib/features/assistant/voice/data/audio_capture_service.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/data/streaming_audio_capture_service.dart`
+- `apps/mobile/lib/rex/voice/data/audio_capture_service.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
 - `services/rex-api/app/services/voice_stream_session.py`
 - `services/rex-api/app/services/voice_stream_config.py`
 - Voice tests in backend and mobile
@@ -421,8 +421,8 @@ Line-count ledger:
 | File | Before | After | Moved To |
 | --- | ---: | ---: | --- |
 | `services/rex-api/app/services/voice_stream_session.py` | 387 | 413 | N/A |
-| `apps/mobile/lib/features/assistant/voice/data/audio_capture_service.dart` | 238 | 238 | N/A |
-| `apps/mobile/lib/features/assistant/voice/data/streaming_audio_capture_service.dart` | 314 | 314 | N/A |
+| `apps/mobile/lib/rex/voice/data/audio_capture_service.dart` | 238 | 238 | N/A |
+| `apps/mobile/lib/rex/voice/data/streaming_audio_capture_service.dart` | 314 | 314 | N/A |
 | `services/rex-api/tests/test_voice_stream_routes.py` | 435 | 443 | N/A |
 | `apps/mobile/test/voice_call_controller_test.dart` | 418 | 461 | N/A |
 
@@ -438,9 +438,9 @@ If Rex sounds like a phone call through the top receiver, the voice experience f
 
 Files to change / delete:
 
-- `apps/mobile/lib/features/assistant/voice/data/audio_session_service.dart`
-- `apps/mobile/lib/features/assistant/voice/data/audio_playback_service.dart`
-- `apps/mobile/lib/features/assistant/voice/data/text_to_speech_service.dart`
+- `apps/mobile/lib/rex/voice/data/audio_session_service.dart`
+- `apps/mobile/lib/rex/voice/data/audio_playback_service.dart`
+- `apps/mobile/lib/rex/voice/data/text_to_speech_service.dart`
 - `apps/mobile/ios/Runner/AppDelegate.swift`
 - Optional small iOS platform channel if Dart-level audio session flags are insufficient
 
@@ -462,7 +462,7 @@ Acceptance criteria and test commands:
 
 - [ ] iPhone manual test confirms loud speaker output after release.
 - [ ] Earbuds/Bluetooth manual test confirms selected output is respected after release.
-- [x] `cd apps/mobile && flutter analyze lib/features/assistant/voice test/voice_call_controller_test.dart`
+- [x] `cd apps/mobile && flutter analyze lib/rex/voice test/voice_call_controller_test.dart`
 - [x] `cd apps/mobile && flutter test test/voice_call_controller_test.dart`
 
 Line count target:
@@ -485,9 +485,9 @@ Line-count ledger:
 
 | File | Before | After | Moved To |
 | --- | ---: | ---: | --- |
-| `apps/mobile/lib/features/assistant/voice/data/audio_session_service.dart` | 101 | 134 | N/A |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_lifecycle.dart` | 65 | 66 | N/A |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_streaming.dart` | 445 | 447 | N/A |
+| `apps/mobile/lib/rex/voice/data/audio_session_service.dart` | 101 | 134 | N/A |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller_lifecycle.dart` | 65 | 66 | N/A |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller_streaming.dart` | 445 | 447 | N/A |
 | `apps/mobile/ios/Runner/AppDelegate.swift` | 16 | 72 | N/A |
 | `apps/mobile/test/voice_call_controller_test.dart` | 461 | 486 | N/A |
 | `apps/mobile/test/voice_call_controller_test_fakes.dart` | 363 | 372 | N/A |
@@ -507,7 +507,7 @@ Files to change / delete:
 - Any unused `memory_candidate`, `memory_extraction`, `review`, `confirmation`, or old voice helper files
 - `services/rex-api/app/services/`
 - `services/rex-api/tests/`
-- `apps/mobile/lib/features/assistant/`
+- `apps/mobile/lib/rex/`
 - `docs/REX_SERVICES_ARCHITECTURE.md`
 
 Steps:
@@ -529,7 +529,7 @@ Acceptance criteria and test commands:
 - [x] `find services/rex-api/app apps/mobile/lib -type f | xargs wc -l | sort -nr | head -30` reviewed and documented in `docs/REX_SERVICES_ARCHITECTURE.md`.
 - [x] `cd services/rex-api && PYTHONPATH=. ./.venv/bin/pytest tests -q`
 - [x] `cd apps/mobile && flutter test`
-- [x] `cd apps/mobile && flutter analyze lib/features/assistant test/memory_label_test.dart test/voice_call_controller_test.dart`
+- [x] `cd apps/mobile && flutter analyze lib/rex test/memory_label_test.dart test/voice_call_controller_test.dart`
 - [x] `git diff --check`
 
 Line count target:
@@ -548,7 +548,7 @@ Line count ledger:
 - `services/rex-api/app/dependencies.py`: 99 -> 94.
 - `services/rex-api/tests/test_chat_service.py`: 361 -> 344.
 - `services/rex-api/tests/chat_service_fakes.py`: 357 -> 353.
-- `apps/mobile/lib/features/assistant/memory/data/memory_labels.dart`: 287 -> 197.
+- `apps/mobile/lib/rex/memory/data/memory_labels.dart`: 287 -> 197.
 - `docs/REX_SERVICES_ARCHITECTURE.md`: 67 -> 81.
 
 Verification:
@@ -557,7 +557,7 @@ Verification:
 - `flutter test test/memory_label_test.dart test/voice_call_controller_test.dart` -> 15 passed.
 - `PYTHONPATH=. ./.venv/bin/pytest tests -q` -> 565 passed.
 - `flutter test` -> 125 passed.
-- `flutter analyze lib/features/assistant test/memory_label_test.dart test/voice_call_controller_test.dart` -> no issues.
+- `flutter analyze lib/rex test/memory_label_test.dart test/voice_call_controller_test.dart` -> no issues.
 - `git diff --check` -> clean.
 
 ## Phase 9: Add Speed Guardrails And One-Call Tests

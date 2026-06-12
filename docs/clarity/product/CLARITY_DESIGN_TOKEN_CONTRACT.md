@@ -23,8 +23,8 @@ There must be no separate Rex-only theme. Rex is the Assistant personality, not 
 These are the known visual splits the later UI phases must collapse:
 
 - `apps/mobile/lib/app/app.dart` still defines a light beige global app theme.
-- `apps/mobile/lib/features/assistant/presentation/rex_ui_tokens.dart` defines Assistant-only tokens.
-- `apps/mobile/lib/features/assistant/presentation/rex_surfaces.dart` builds Assistant-only surfaces.
+- `apps/mobile/lib/rex/presentation/rex_ui_tokens.dart` defines Assistant-only tokens.
+- `apps/mobile/lib/rex/presentation/rex_surfaces.dart` builds Assistant-only surfaces.
 - Financial screens still use many hardcoded light colors, large radii, and repeated border rules.
 - Assistant screens already use dark UI, but it is heavier than the final Clarity target.
 

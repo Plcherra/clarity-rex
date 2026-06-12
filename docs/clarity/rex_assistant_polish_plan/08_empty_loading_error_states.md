@@ -10,12 +10,12 @@ Goal: document all empty, loading, error, permission, degraded, and retry states
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/presentation/`
-- `apps/mobile/lib/features/assistant/chat/presentation/`
-- `apps/mobile/lib/features/assistant/voice/presentation/`
-- `apps/mobile/lib/features/assistant/memory/presentation/`
-- `apps/mobile/lib/features/assistant/accountability/presentation/`
-- `apps/mobile/lib/features/assistant/conversations/presentation/`
+- `apps/mobile/lib/rex/presentation/`
+- `apps/mobile/lib/rex/chat/presentation/`
+- `apps/mobile/lib/rex/voice/presentation/`
+- `apps/mobile/lib/rex/memory/presentation/`
+- `apps/mobile/lib/rex/accountability/presentation/`
+- `apps/mobile/lib/rex/conversations/presentation/`
 - Optional: `docs/clarity/rex_assistant_polish_plan/08_empty_loading_error_states_notes.md`
 
 Acceptance criteria:
@@ -38,8 +38,8 @@ Goal: define a small reusable component set for Assistant state surfaces.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/presentation/widgets/assistant_state_view.dart`
-- `apps/mobile/lib/features/assistant/presentation/widgets/assistant_error_banner.dart`
+- `apps/mobile/lib/rex/presentation/widgets/assistant_state_view.dart`
+- `apps/mobile/lib/rex/presentation/widgets/assistant_error_banner.dart`
 - Widget tests
 
 Acceptance criteria:

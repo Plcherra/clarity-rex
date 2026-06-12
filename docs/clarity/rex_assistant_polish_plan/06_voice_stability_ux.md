@@ -10,9 +10,9 @@ Goal: document every voice state transition from permission request to listening
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
-- `apps/mobile/lib/features/assistant/voice/domain/voice_call_state.dart`
-- `apps/mobile/lib/features/assistant/voice/presentation/`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/domain/voice_call_state.dart`
+- `apps/mobile/lib/rex/voice/presentation/`
 - `services/rex-api/app/services/voice_stream_session.py`
 - Optional: `docs/clarity/rex_assistant_polish_plan/06_voice_stability_ux_notes.md`
 
@@ -36,9 +36,9 @@ Goal: ensure users see what Rex heard while they speak and after the turn comple
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
-- `apps/mobile/lib/features/assistant/voice/presentation/`
-- `apps/mobile/lib/features/assistant/voice/data/streaming_voice_api.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/presentation/`
+- `apps/mobile/lib/rex/voice/data/streaming_voice_api.dart`
 - Voice controller tests
 
 Acceptance criteria:
@@ -61,8 +61,8 @@ Goal: reduce delay after the user stops talking while avoiding premature cutoffs
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
-- `apps/mobile/lib/features/assistant/voice/data/streaming_audio_capture_service.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/data/streaming_audio_capture_service.dart`
 - `services/rex-api/app/services/voice_stream_session.py`
 - `services/rex-api/app/config.py`
 - Backend/mobile voice tests
@@ -87,8 +87,8 @@ Goal: make common failures recoverable without forcing the user to leave Assista
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
-- `apps/mobile/lib/features/assistant/voice/presentation/`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/presentation/`
 - `services/rex-api/app/services/voice_stream_session.py`
 - Voice tests
 
@@ -112,9 +112,9 @@ Goal: make voice playback respect earbuds/Bluetooth where platform APIs allow, a
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/voice/data/audio_session_service.dart`
-- `apps/mobile/lib/features/assistant/voice/data/audio_playback_service.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/data/audio_session_service.dart`
+- `apps/mobile/lib/rex/voice/data/audio_playback_service.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
 - iOS native audio session files if present
 - Manual test checklist
 
@@ -138,9 +138,9 @@ Goal: define how Rex handles the user speaking while Rex is talking.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
-- `apps/mobile/lib/features/assistant/voice/data/streaming_audio_playback_queue.dart`
-- `apps/mobile/lib/features/assistant/voice/data/streaming_audio_capture_service.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/data/streaming_audio_playback_queue.dart`
+- `apps/mobile/lib/rex/voice/data/streaming_audio_capture_service.dart`
 - Voice tests
 
 Acceptance criteria:
@@ -163,8 +163,8 @@ Goal: make Voice controls clear, calm, and consistent with Chat.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/voice/presentation/`
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/voice/presentation/`
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
 - Voice widget tests
 
 Acceptance criteria:

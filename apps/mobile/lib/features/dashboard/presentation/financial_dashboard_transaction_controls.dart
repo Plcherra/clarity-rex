@@ -63,11 +63,11 @@ class _ModeChip extends StatelessWidget {
       labelStyle: theme.textTheme.labelLarge?.copyWith(
         fontWeight: FontWeight.w700,
       ),
-      selectedColor: const Color(0xFFEFE4B8),
+      selectedColor: _dashboardSelected(context),
       backgroundColor: cs.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(999),
-        side: BorderSide(color: const Color(0xFFD8D1C5)),
+        side: BorderSide(color: _dashboardOutline(context)),
       ),
     );
   }
@@ -94,11 +94,11 @@ class _TransactionSearchField extends StatelessWidget {
         fillColor: cs.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: _dashboardOutline),
+          borderSide: BorderSide(color: _dashboardOutline(context)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: _dashboardOutline),
+          borderSide: BorderSide(color: _dashboardOutline(context)),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -232,9 +232,9 @@ class _PopupFilterChip<T> extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFFEFE4B8) : cs.surface,
+          color: active ? _dashboardSelected(context) : cs.surface,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: const Color(0xFFD8D1C5)),
+          border: Border.all(color: _dashboardOutline(context)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

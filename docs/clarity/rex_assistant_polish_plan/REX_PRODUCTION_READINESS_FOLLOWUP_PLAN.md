@@ -111,17 +111,17 @@ Status: Mobile/backend copy completed. Manual phone visual validation pending.
 
 Files changed:
 
-- `apps/mobile/lib/features/assistant/chat/domain/chat_message.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_bubble_effects.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_memory_candidate_cards.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
-- `apps/mobile/lib/features/assistant/memory/data/memory_labels.dart`
-- `apps/mobile/lib/features/assistant/memory/data/memory_models.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/pages/memory_page.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/widgets/memory_edit_dialogs.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/widgets/memory_page_header_widgets.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/widgets/memory_pending_review_widgets.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/widgets/saved_memory_tiles.dart`
+- `apps/mobile/lib/rex/chat/domain/chat_message.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_bubble_effects.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_memory_candidate_cards.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
+- `apps/mobile/lib/rex/memory/data/memory_labels.dart`
+- `apps/mobile/lib/rex/memory/data/memory_models.dart`
+- `apps/mobile/lib/rex/memory/presentation/pages/memory_page.dart`
+- `apps/mobile/lib/rex/memory/presentation/widgets/memory_edit_dialogs.dart`
+- `apps/mobile/lib/rex/memory/presentation/widgets/memory_page_header_widgets.dart`
+- `apps/mobile/lib/rex/memory/presentation/widgets/memory_pending_review_widgets.dart`
+- `apps/mobile/lib/rex/memory/presentation/widgets/saved_memory_tiles.dart`
 - `services/rex-api/app/services/memory_candidate_decision_formatter.py`
 - `apps/mobile/test/chat_memory_candidate_card_test.dart`
 - `apps/mobile/test/memory_api_test.dart`
@@ -183,12 +183,12 @@ Status: Mobile stability hardening completed. Manual phone validation pending.
 
 Files changed:
 
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_permission_service.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_transcript_buffer.dart`
-- `apps/mobile/lib/features/assistant/voice/data/audio_playback_service.dart`
-- `apps/mobile/lib/features/assistant/voice/data/audio_session_service.dart`
-- `apps/mobile/lib/features/assistant/voice/data/streaming_voice_api.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/application/voice_permission_service.dart`
+- `apps/mobile/lib/rex/voice/application/voice_transcript_buffer.dart`
+- `apps/mobile/lib/rex/voice/data/audio_playback_service.dart`
+- `apps/mobile/lib/rex/voice/data/audio_session_service.dart`
+- `apps/mobile/lib/rex/voice/data/streaming_voice_api.dart`
 - `apps/mobile/test/voice_call_controller_test.dart`
 - `apps/mobile/test/voice_call_controller_test_fakes.dart`
 

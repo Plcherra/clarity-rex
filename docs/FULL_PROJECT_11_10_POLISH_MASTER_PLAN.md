@@ -67,7 +67,7 @@ Files to change:
 - `services/rex-api/app/auth/supabase_auth.py`
 - `apps/mobile/lib/core/rex/rex_api_client.dart`
 - `apps/mobile/lib/core/rex/rex_auth_headers.dart`
-- `apps/mobile/lib/features/assistant/voice/data/streaming_voice_api.dart`
+- `apps/mobile/lib/rex/voice/data/streaming_voice_api.dart`
 - `apps/mobile/test/rex_api_client_test.dart`
 - `apps/mobile/test/streaming_voice_api_test.dart`
 - `services/rex-api/tests/test_supabase_auth.py`
@@ -111,7 +111,7 @@ Line-count ledger:
 | --- | ---: | ---: | --- |
 | `apps/mobile/lib/core/rex/rex_api_client.dart` | 92 | 88 | removed query-token WebSocket helper dependency |
 | `apps/mobile/lib/core/rex/rex_auth_headers.dart` | 54 | 42 | removed URL-token WebSocket helper |
-| `apps/mobile/lib/features/assistant/voice/data/streaming_voice_api.dart` | 197 | 205 | header-aware WebSocket connector added in place |
+| `apps/mobile/lib/rex/voice/data/streaming_voice_api.dart` | 197 | 205 | header-aware WebSocket connector added in place |
 | `apps/mobile/test/rex_api_client_test.dart` | 127 | 134 | WebSocket token assertion changed to no-query-token |
 | `apps/mobile/test/streaming_voice_api_test.dart` | 0 | 64 | new focused WebSocket header-auth test |
 | `services/rex-api/app/auth/supabase_auth.py` | 136 | 134 | removed WebSocket query-token fallback |
@@ -136,9 +136,9 @@ Files to change:
 - `services/rex-api/tests/test_chat_service.py`
 - `services/rex-api/tests/test_chat_simple_memory_flow.py`
 - `services/rex-api/tests/test_rex_brain_prompts.py`
-- `apps/mobile/lib/features/assistant/voice/data/audio_capture_service.dart`
-- `apps/mobile/lib/features/assistant/voice/data/streaming_audio_capture_service.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/data/audio_capture_service.dart`
+- `apps/mobile/lib/rex/voice/data/streaming_audio_capture_service.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
 
 Steps:
 
@@ -176,9 +176,9 @@ Line-count ledger:
 | `services/rex-api/app/services/prompt_service.py` | 864 | 865 | imports shared truth policy; full split remains future cleanup |
 | `services/rex-api/app/services/rex_brain_prompts.py` | 203 | 203 | imports shared truth policy; removed duplicate reminder rule |
 | `services/rex-api/tests/test_chat_simple_memory_flow.py` | 276 | 353 | added contextual memory save/reject regression tests |
-| `apps/mobile/lib/features/assistant/voice/data/audio_capture_service.dart` | 238 | 238 | longer default post-speech silence |
-| `apps/mobile/lib/features/assistant/voice/data/streaming_audio_capture_service.dart` | 314 | 314 | longer streaming post-speech silence |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart` | 1791 | 409 | transcript idle timeout increased; Phase 3 split completed |
+| `apps/mobile/lib/rex/voice/data/audio_capture_service.dart` | 238 | 238 | longer default post-speech silence |
+| `apps/mobile/lib/rex/voice/data/streaming_audio_capture_service.dart` | 314 | 314 | longer streaming post-speech silence |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller.dart` | 1791 | 409 | transcript idle timeout increased; Phase 3 split completed |
 
 ## Phase 3 - Split Mobile Voice Controller
 
@@ -189,14 +189,14 @@ Goal: Reduce `voice_call_controller.dart` from 1,791 lines into focused controll
 
 Files to change:
 
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_providers.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_commands.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_lifecycle.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_streaming.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_native.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_timers.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_dependencies.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller_providers.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller_commands.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller_lifecycle.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller_streaming.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller_native.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller_timers.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller_dependencies.dart`
 - `apps/mobile/test/voice_call_controller_test.dart`
 
 Steps:
@@ -229,14 +229,14 @@ Line-count ledger:
 
 | File | Before | After | Moved To |
 | --- | ---: | ---: | --- |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart` | 1791 | 409 | provider wiring and helper methods moved out |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_providers.dart` | 0 | 113 | provider wiring and voice timeout providers |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_commands.dart` | 0 | 180 | internal transcript/interrupt/reset commands |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_lifecycle.dart` | 0 | 65 | lifecycle resume and background restart handling |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_streaming.dart` | 0 | 445 | streaming WebSocket turns and cloud fallback path |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_native.dart` | 0 | 202 | native iOS voice session handling |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_timers.dart` | 0 | 337 | endpointing, no-speech, thinking timeout, barge-in helpers |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_dependencies.dart` | 0 | 95 | cached service dependency getters |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller.dart` | 1791 | 409 | provider wiring and helper methods moved out |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller_providers.dart` | 0 | 113 | provider wiring and voice timeout providers |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller_commands.dart` | 0 | 180 | internal transcript/interrupt/reset commands |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller_lifecycle.dart` | 0 | 65 | lifecycle resume and background restart handling |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller_streaming.dart` | 0 | 445 | streaming WebSocket turns and cloud fallback path |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller_native.dart` | 0 | 202 | native iOS voice session handling |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller_timers.dart` | 0 | 337 | endpointing, no-speech, thinking timeout, barge-in helpers |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller_dependencies.dart` | 0 | 95 | cached service dependency getters |
 
 ## Phase 4 - Harden Voice Backend Session
 
@@ -308,8 +308,8 @@ Files to change:
 - `services/rex-api/app/services/memory_candidate_decision_service.py`
 - `services/rex-api/app/services/memory_candidate_writer.py`
 - `services/rex-api/app/services/memory_candidate_decision_formatter.py`
-- `apps/mobile/lib/features/assistant/memory/presentation/pages/memory_page.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/widgets/*`
+- `apps/mobile/lib/rex/memory/presentation/pages/memory_page.dart`
+- `apps/mobile/lib/rex/memory/presentation/widgets/*`
 
 Steps:
 
@@ -949,8 +949,8 @@ Goal: Reduce the remaining accountability mobile files and keep Goals/Rex behavi
 
 Files to change:
 
-- `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart`
-- `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/rex/accountability/data/accountability_models.dart`
 - Related tests
 
 Steps:
@@ -1003,7 +1003,7 @@ Files to review/change:
 - `services/rex-api/app/services/memory_candidate_writer.py`
 - `services/rex-api/app/services/memory_post_turn_service.py`
 - `services/rex-api/app/services/memory_intent_service.py`
-- `apps/mobile/lib/features/assistant/memory/**`
+- `apps/mobile/lib/rex/memory/**`
 - Memory-related tests
 
 Steps:
@@ -1035,8 +1035,8 @@ Goal: Make voice better for long explanations, not just short commands.
 
 Files to review/change:
 
-- `apps/mobile/lib/features/assistant/voice/application/**`
-- `apps/mobile/lib/features/assistant/voice/data/**`
+- `apps/mobile/lib/rex/voice/application/**`
+- `apps/mobile/lib/rex/voice/data/**`
 - `services/rex-api/app/services/voice_stream_session.py`
 - `services/rex-api/app/routes/voice_stream.py`
 - Voice tests
@@ -1070,8 +1070,8 @@ Goal: Remove or clearly document old fallback paths and unused code.
 Files to review/change:
 
 - `apps/mobile/lib/core/rex/rex_config.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_native.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_providers.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller_native.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller_providers.dart`
 - Any unused routes, services, widgets, and docs discovered by static scans
 
 Steps:

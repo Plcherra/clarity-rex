@@ -10,9 +10,9 @@ Goal: document every place a user can trigger Deep Think or Rex Brain routing.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/brain/rex_deep_think_state.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart`
-- `apps/mobile/lib/features/assistant/chat/data/chat_api.dart`
+- `apps/mobile/lib/rex/brain/rex_deep_think_state.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/chat/data/chat_api.dart`
 - `services/rex-api/app/services/rex_brain.py`
 - `services/rex-api/app/services/rex_model_router.py`
 - Optional: `docs/clarity/rex_assistant_polish_plan/05_deep_think_brain_routing_notes.md`
@@ -37,8 +37,8 @@ Goal: define what Deep Think means to users without promising hidden chain-of-th
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
 - `services/rex-api/app/services/rex_brain_prompts.py`
 - Tests for copy/contract where practical
 
@@ -62,9 +62,9 @@ Goal: make the Deep Think toggle predictable in the chat composer.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/brain/rex_deep_think_state.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart`
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/brain/rex_deep_think_state.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
 - `apps/mobile/test/chat_input_bar_test.dart`
 
 Acceptance criteria:
@@ -163,9 +163,9 @@ Goal: give users subtle confirmation when Deep Think is active without making th
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
 - Widget tests
 
 Acceptance criteria:

@@ -34,8 +34,8 @@ class ManualAccountTile extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 21,
-                backgroundColor: const Color(0xFFEDE8DC),
-                foregroundColor: const Color(0xFF5A533E),
+                backgroundColor: cs.surfaceContainerHighest,
+                foregroundColor: cs.onSurface.withValues(alpha: 0.78),
                 child: Icon(_accountIcon(account.type), size: 21),
               ),
               const SizedBox(width: 14),
@@ -44,7 +44,7 @@ class ManualAccountTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      account.name,
+                      account.displayName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(

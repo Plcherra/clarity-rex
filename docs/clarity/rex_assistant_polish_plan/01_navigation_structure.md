@@ -12,9 +12,9 @@ Status: Complete. Audit notes are captured in `01_navigation_structure_notes.md`
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
 - `apps/mobile/test/app_routing_test.dart`
 - Optional: `docs/clarity/rex_assistant_polish_plan/01_navigation_structure_notes.md`
 
@@ -39,8 +39,8 @@ Status: Complete. `AssistantTab` now defines stable tab ids, labels, icons, sema
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
-- `apps/mobile/lib/features/assistant/presentation/assistant_tab.dart` if a new typed tab model is useful
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/presentation/assistant_tab.dart` if a new typed tab model is useful
 - `apps/mobile/test/app_routing_test.dart`
 
 Acceptance criteria:
@@ -65,7 +65,7 @@ Status: Complete. Assistant tabs now render through one fixed-width shared navig
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
 - Shared Assistant nav widget file if extraction is warranted
 - `apps/mobile/test/app_routing_test.dart`
 
@@ -92,7 +92,7 @@ Status: Complete. Chat's standalone app bar now keeps only the tab-local Call Re
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
 - Chat/voice/conversation action widgets if currently embedded in page bodies
 - `apps/mobile/test/app_routing_test.dart`
 
@@ -118,9 +118,9 @@ Status: Complete. Chat and Chats are kept alive across tab switches, draft text 
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
 - Relevant widget/controller tests
 
 Acceptance criteria:
@@ -147,9 +147,9 @@ Status: Complete. `AssistantScreen` now owns the Assistant tab controller, defau
 Files to modify / create:
 
 - `apps/mobile/lib/features/shell/presentation/home_shell.dart`
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
 
 Acceptance criteria:
 
@@ -199,7 +199,7 @@ Status: Complete. Assistant shell spacing now adapts on compact widths, tab labe
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
 - Shared layout constants if already present
 - Focused widget tests where practical
 

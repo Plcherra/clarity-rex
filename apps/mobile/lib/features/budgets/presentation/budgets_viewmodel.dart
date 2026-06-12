@@ -25,7 +25,8 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
     required Map<String, double> spentByDisplay,
   }) async {
     if (!hasSelectedPeriod) return const [];
-    final budgets = await _fetchBudgetsForPeriod(periodType, periodKey);
+    final allBudgets = await controller.fetchBudgets();
+    final budgets = _budgetsForPeriod(allBudgets, periodType, periodKey);
     final categories = await controller.fetchBudgetCategories();
     final categoryByKey = {
       for (final category in categories)
@@ -40,6 +41,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
       required String displayLabel,
       String? categoryId,
       String? categoryKey,
+      bool hasSavedBudgetHistory = false,
     }) {
       final label = displayLabel.trim();
       if (label.isEmpty || isUnresolvedCategoryLabel(label)) return;
@@ -65,6 +67,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
         final existing = rowsByCanonical[existingCanonical]!;
         rowsByCanonical[existingCanonical] = existing.withIdentityKeys(
           identityKeys,
+          hasSavedBudgetHistory: hasSavedBudgetHistory,
         );
         return;
       }
@@ -76,6 +79,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
           categoryKey: key,
           displayLabel: label,
           identityKeys: identityKeys,
+          hasSavedBudgetHistory: hasSavedBudgetHistory,
         ),
       );
     }
@@ -110,6 +114,23 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
         displayLabel: label,
         categoryId: budget.categoryId ?? category?.id,
         categoryKey: _budgetCategoryKey(budget, category: category),
+        hasSavedBudgetHistory: true,
+      );
+    }
+
+    for (final budget in allBudgets.where(
+      (budget) => budget.period == _periodToDatabaseValue(periodType),
+    )) {
+      final category = budget.categoryId == null
+          ? null
+          : categories.where((c) => c.id == budget.categoryId).firstOrNull;
+      final label = (category?.name ?? budget.name).trim();
+      if (label.isEmpty || isUnresolvedCategoryLabel(label)) continue;
+      putRow(
+        displayLabel: label,
+        categoryId: budget.categoryId ?? category?.id,
+        categoryKey: _budgetCategoryKey(budget, category: category),
+        hasSavedBudgetHistory: true,
       );
     }
 
@@ -293,6 +314,14 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
     String periodKey,
   ) async {
     final budgets = await controller.fetchBudgets();
+    return _budgetsForPeriod(budgets, periodType, periodKey);
+  }
+
+  List<BudgetRecord> _budgetsForPeriod(
+    List<BudgetRecord> budgets,
+    BudgetPeriodType periodType,
+    String periodKey,
+  ) {
     final period = _periodToDatabaseValue(periodType);
     final start = _periodStartDate(periodType, periodKey);
     return budgets.where((budget) {
@@ -329,7 +358,9 @@ List<BudgetCategoryListItemData> buildBudgetCategoryListItemsForRows({
   for (final row in rows) {
     final spent = _spentForBudgetRow(row, spentByIdentity);
     final budget = hasSelectedPeriod ? _budgetForBudgetRow(row, budgets) : null;
-    if (spent.abs() < 1e-9 && budget == null) continue;
+    if (spent.abs() < 1e-9 && budget == null && !row.hasSavedBudgetHistory) {
+      continue;
+    }
     final overspent = budget != null && spent > budget;
     final remaining = budget == null ? null : budget - spent;
     final statusText = budget == null

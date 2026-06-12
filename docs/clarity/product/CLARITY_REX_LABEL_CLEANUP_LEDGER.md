@@ -13,13 +13,13 @@ Phase 3 removed the obvious active product-shell copy that made Clarity read lik
 | Previous label | New label | File | Owning phase |
 | --- | --- | --- | --- |
 | `Rex Backend` | `Clarity API` | `services/rex-api/app/main.py` | Phase 3 |
-| `Message Rex...` | `Message Assistant...` | `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart` | Phase 3 |
-| `Search what Rex knows` | `Search what Clarity knows` | `apps/mobile/lib/features/assistant/memory/presentation/widgets/memory_page_header_widgets.dart` | Phase 3 |
-| `What Rex knows` | `What Clarity knows` | `apps/mobile/lib/features/assistant/memory/presentation/widgets/memory_page_header_widgets.dart` | Phase 3 |
-| `What Rex Knows` | `What Clarity Knows` | `apps/mobile/lib/features/assistant/memory/presentation/pages/memory_page.dart` | Phase 3 |
-| `Rex Memory` error copy | `saved information` | `apps/mobile/lib/features/assistant/memory/application/memory_controller_errors.dart` | Phase 3 |
+| `Message Rex...` | `Message Assistant...` | `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart` | Phase 3 |
+| `Search what Rex knows` | `Search what Clarity knows` | `apps/mobile/lib/rex/memory/presentation/widgets/memory_page_header_widgets.dart` | Phase 3 |
+| `What Rex knows` | `What Clarity knows` | `apps/mobile/lib/rex/memory/presentation/widgets/memory_page_header_widgets.dart` | Phase 3 |
+| `What Rex Knows` | `What Clarity Knows` | `apps/mobile/lib/rex/memory/presentation/pages/memory_page.dart` | Phase 3 |
+| `Rex Memory` error copy | `saved information` | `apps/mobile/lib/rex/memory/application/memory_controller_errors.dart` | Phase 3 |
 | `Rex backend returned...` | `Clarity API returned...` | assistant API client error files | Phase 3 |
-| `Rex will stop using...` | neutral saved-information copy | `apps/mobile/lib/features/assistant/memory/presentation/widgets/memory_archive_dialogs.dart` | Phase 3 |
+| `Rex will stop using...` | neutral saved-information copy | `apps/mobile/lib/rex/memory/presentation/widgets/memory_archive_dialogs.dart` | Phase 3 |
 
 ## Allowed Rex Conversational Usage
 

@@ -41,11 +41,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Bank of Test Checking'), findsOneWidget);
-      expect(
-        find.textContaining('Everyday Checking · **** 1234'),
-        findsOneWidget,
-      );
+      expect(find.text('Bank of Test Checking • 1234'), findsOneWidget);
+      expect(find.text('Everyday Checking'), findsOneWidget);
       expect(find.text('Balance \$1,200.50'), findsOneWidget);
       expect(find.text('Available \$1,000.25'), findsOneWidget);
       expect(find.text('Recent transactions'), findsNothing);
@@ -89,8 +86,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Capital One Checking'), findsOneWidget);
-      expect(find.textContaining('**** 3279'), findsOneWidget);
+      expect(find.text('Capital One Checking • 3279'), findsOneWidget);
       expect(find.text('depository Account 3279'), findsNothing);
     },
   );
@@ -129,12 +125,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Bank of America Credit Card'), findsOneWidget);
-      expect(
-        find.textContaining('Customized Cash Rewards · **** 5050'),
-        findsOneWidget,
-      );
-      expect(find.text('Customized Cash Rewards'), findsNothing);
+      expect(find.text('Bank of America Credit Card • 5050'), findsOneWidget);
+      expect(find.text('Customized Cash Rewards'), findsOneWidget);
     },
   );
 

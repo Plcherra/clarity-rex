@@ -76,7 +76,7 @@ Required fix:
 ### P0.4 Rex financial context silently collapses to empty data
 
 Evidence:
-- [apps/mobile/lib/features/assistant/data/financial_context_service.dart](/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/features/assistant/data/financial_context_service.dart:194) catches all financial read-model errors.
+- [apps/mobile/lib/rex/data/financial_context_service.dart](/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/rex/data/financial_context_service.dart:194) catches all financial read-model errors.
 - On any error, it returns `FinancialReadModel.empty()`.
 
 Why this matters:
@@ -117,7 +117,7 @@ Status after P1 pass:
 Original evidence:
 - Inline voice call used `VoiceCallController`.
 - Legacy `VoiceController`, `VoiceRecorderSheet`, and `VoiceCallPage` also existed.
-- [apps/mobile/lib/features/assistant/presentation/assistant_screen.dart](/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/features/assistant/presentation/assistant_screen.dart:71) mapped the Voice tab to `ChatPage`, while `VoiceCallPage` was separate and unused in the primary tab flow.
+- [apps/mobile/lib/rex/presentation/assistant_screen.dart](/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/rex/presentation/assistant_screen.dart:71) mapped the Voice tab to `ChatPage`, while `VoiceCallPage` was separate and unused in the primary tab flow.
 
 Why this matters:
 - Bugs can be fixed in one voice path while another dead/legacy path remains broken.

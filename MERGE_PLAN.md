@@ -200,7 +200,7 @@ The Rex backend should treat `user_id` as a required service argument for every 
 
 ### Phase 5: Flutter Integration
 
-- Merge Rex Flutter code into `apps/mobile/lib/features/assistant/`.
+- Merge Rex Flutter code into `apps/mobile/lib/rex/`.
 - Update imports from `package:rex/...` to `package:clarity/...`.
 - Merge Rex dependencies into Clarity's `pubspec.yaml`.
 - Add Riverpod setup if needed.
@@ -210,10 +210,10 @@ The Rex backend should treat `user_id` as a required service argument for every 
 Suggested mapping:
 
 ```text
-rex/lib/features/chat              -> apps/mobile/lib/features/assistant/chat
-rex/lib/features/voice             -> apps/mobile/lib/features/assistant/voice
-rex/lib/features/memory            -> apps/mobile/lib/features/assistant/memory
-rex/lib/features/accountability    -> apps/mobile/lib/features/assistant/accountability
+rex/lib/features/chat              -> apps/mobile/lib/rex/chat
+rex/lib/features/voice             -> apps/mobile/lib/rex/voice
+rex/lib/features/memory            -> apps/mobile/lib/rex/memory
+rex/lib/features/accountability    -> apps/mobile/lib/rex/accountability
 rex/lib/core/config                -> apps/mobile/lib/core/rex
 ```
 

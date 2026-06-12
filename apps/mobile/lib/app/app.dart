@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/presentation/auth_screen.dart';
 import '../features/auth/presentation/mfa_verification_screen.dart';
-import '../features/assistant/data/financial_context_service.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/shell/presentation/home_shell.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
+import '../rex/data/financial_context_service.dart';
 import 'ui_dependencies.dart';
 
 final class ClarityApp extends StatelessWidget {
@@ -23,35 +23,59 @@ final class ClarityApp extends StatelessWidget {
   final ProfileController profileController;
 
   static ThemeData buildTheme() {
-    const seed = Color(0xFF1C1B19);
-    final base = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: Brightness.light,
-      surface: const Color(0xFFFAFAF8),
-    );
-    const onPaper = Color(0xFFF7F5F2);
-    const paper = Color(0xFFF8F7F4);
-    const panel = Color(0xFFFFFEFC);
-    final outlineSoft = base.outline.withValues(alpha: 0.35);
+    const background = Color(0xFF10100D);
+    const surface = Color(0xFF191811);
+    const surfaceSoft = Color(0xFF222016);
+    const surfaceRaised = Color(0xFF2B281C);
+    const border = Color(0xFF3A3728);
+    const text = Color(0xFFF4F0E6);
+    const textMuted = Color(0xFFBEB7A7);
+    const accent = Color(0xFFE5CD6A);
+    const accentStrong = Color(0xFFFFE377);
+    const danger = Color(0xFFFF706A);
+    final base =
+        ColorScheme.fromSeed(
+          seedColor: accent,
+          brightness: Brightness.dark,
+        ).copyWith(
+          primary: accent,
+          onPrimary: background,
+          secondary: accentStrong,
+          surface: background,
+          onSurface: text,
+          surfaceContainerLowest: background,
+          surfaceContainerLow: surface,
+          surfaceContainer: surface,
+          surfaceContainerHigh: surfaceSoft,
+          surfaceContainerHighest: surfaceRaised,
+          onSurfaceVariant: textMuted,
+          outline: border,
+          outlineVariant: border,
+          error: danger,
+          shadow: Colors.black,
+        );
+    final outlineSoft = border.withValues(alpha: 0.72);
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: base,
-      scaffoldBackgroundColor: paper,
-      textTheme: const TextTheme().apply(
-        bodyColor: const Color(0xFF1C1B19),
-        displayColor: const Color(0xFF1C1B19),
-      ),
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: background,
+      canvasColor: background,
+      textTheme: const TextTheme().apply(bodyColor: text, displayColor: text),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         elevation: 2,
+        backgroundColor: surfaceRaised,
+        contentTextStyle: const TextStyle(color: text),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0.5,
-        backgroundColor: base.surface,
+        backgroundColor: background,
+        foregroundColor: text,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: TextStyle(
           fontSize: 18,
@@ -62,34 +86,39 @@ final class ClarityApp extends StatelessWidget {
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
-          foregroundColor: const Color(0xFF4D4A43),
+          foregroundColor: textMuted,
           minimumSize: const Size.square(44),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       ),
       listTileTheme: ListTileThemeData(
-        iconColor: const Color(0xFF5B574E),
-        textColor: const Color(0xFF1C1B19),
-        subtitleTextStyle: TextStyle(
-          color: base.onSurface.withValues(alpha: 0.56),
+        iconColor: textMuted,
+        textColor: text,
+        subtitleTextStyle: const TextStyle(
+          color: textMuted,
           fontSize: 14,
           height: 1.25,
         ),
         titleTextStyle: const TextStyle(
-          color: Color(0xFF1C1B19),
+          color: text,
           fontSize: 17,
           fontWeight: FontWeight.w700,
           height: 1.22,
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: panel,
-        indicatorColor: const Color(0xFFEDE8DC),
+        backgroundColor: surface,
+        indicatorColor: surfaceRaised,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          return IconThemeData(
+            color: states.contains(WidgetState.selected) ? accent : textMuted,
+          );
+        }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           return TextStyle(
-            color: states.contains(WidgetState.selected)
-                ? const Color(0xFF1C1B19)
-                : base.onSurface.withValues(alpha: 0.62),
+            color: states.contains(WidgetState.selected) ? text : textMuted,
             fontSize: 12,
             fontWeight: states.contains(WidgetState.selected)
                 ? FontWeight.w700
@@ -98,15 +127,15 @@ final class ClarityApp extends StatelessWidget {
         }),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: panel,
+        color: surfaceRaised,
         surfaceTintColor: Colors.transparent,
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          foregroundColor: onPaper,
-          backgroundColor: const Color(0xFF1C1B19),
+          foregroundColor: background,
+          backgroundColor: accent,
           minimumSize: const Size(64, 48),
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           textStyle: const TextStyle(
@@ -121,7 +150,7 @@ final class ClarityApp extends StatelessWidget {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF1C1B19),
+          foregroundColor: text,
           minimumSize: const Size(64, 48),
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           textStyle: const TextStyle(
@@ -137,8 +166,26 @@ final class ClarityApp extends StatelessWidget {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: const Color(0xFF1C1B19).withValues(alpha: 0.75),
+          foregroundColor: accent,
           textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: surface,
+        hintStyle: const TextStyle(color: textMuted),
+        labelStyle: const TextStyle(color: textMuted),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: outlineSoft),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: outlineSoft),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: accent),
         ),
       ),
       dividerTheme: DividerThemeData(
@@ -171,6 +218,8 @@ final class ClarityApp extends StatelessWidget {
                 title: 'Clarity',
                 debugShowCheckedModeBanner: false,
                 theme: buildTheme(),
+                darkTheme: buildTheme(),
+                themeMode: ThemeMode.dark,
                 home: _homeForCurrentState(),
               );
             },

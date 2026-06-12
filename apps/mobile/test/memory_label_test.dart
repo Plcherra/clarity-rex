@@ -1,5 +1,5 @@
-import 'package:clarity/features/assistant/accountability/data/accountability_models.dart';
-import 'package:clarity/features/assistant/memory/data/memory_models.dart';
+import 'package:clarity/rex/accountability/data/accountability_models.dart';
+import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

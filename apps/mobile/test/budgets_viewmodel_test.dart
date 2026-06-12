@@ -69,6 +69,29 @@ void main() {
     expect(items.single.hasBudget, isFalse);
     expect(items.single.statusText, 'Spent \$6.25 · No budget');
   });
+
+  test('keeps saved budget categories visible across comparable months', () {
+    final items = buildBudgetCategoryListItemsForRows(
+      rows: const [
+        BudgetCategoryRow(
+          canonical: 'id:cat-grocery',
+          categoryId: 'cat-grocery',
+          categoryKey: 'grocery supermarket',
+          displayLabel: 'Grocery / Supermarket',
+          identityKeys: {'id:cat-grocery', 'key:grocery supermarket'},
+          hasSavedBudgetHistory: true,
+        ),
+      ],
+      hasSelectedPeriod: true,
+      budgets: const [],
+      spentByIdentity: const {},
+    );
+
+    expect(items, hasLength(1));
+    expect(items.single.displayLabel, 'Grocery / Supermarket');
+    expect(items.single.hasBudget, isFalse);
+    expect(items.single.statusText, 'Spent \$0.00 · No budget');
+  });
 }
 
 BudgetRecord _budget({

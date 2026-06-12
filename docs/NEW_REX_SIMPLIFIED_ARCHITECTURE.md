@@ -296,10 +296,10 @@ Replace the Memory tab with a clean, editable "What Rex Knows" or "My Informatio
 
 ### Files To Change
 
-- `apps/mobile/lib/features/assistant/memory/presentation/pages/memory_page.dart`
-- `apps/mobile/lib/features/assistant/memory/application/memory_controller.dart`
-- `apps/mobile/lib/features/assistant/memory/data/memory_api.dart`
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/memory/presentation/pages/memory_page.dart`
+- `apps/mobile/lib/rex/memory/application/memory_controller.dart`
+- `apps/mobile/lib/rex/memory/data/memory_api.dart`
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
 - Mobile tests for memory page and assistant navigation
 
 ### What Done Looks Like

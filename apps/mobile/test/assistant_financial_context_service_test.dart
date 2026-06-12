@@ -1,6 +1,6 @@
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
-import 'package:clarity/features/assistant/data/financial_context_service.dart';
+import 'package:clarity/rex/data/financial_context_service.dart';
 import 'package:clarity/features/categories/domain/category_normalization.dart';
 import 'package:clarity/features/finance/application/financial_read_model_service.dart';
 import 'package:clarity/features/transactions/domain/transaction_resolution.dart';
@@ -155,6 +155,25 @@ void main() {
     },
   );
 
+  test('Rex financial context has explicit unavailable fallback truth', () {
+    final summary = AssistantFinancialContextService.unavailableSummary(
+      source: 'mobile_financial_context_service',
+      message: 'Financial context is not available.',
+    );
+    final dataStatus = summary['data_status'] as Map<String, dynamic>;
+    final integration = summary['integration'] as Map<String, dynamic>;
+    final controls = summary['available_controls'] as Map<String, dynamic>;
+
+    expect(dataStatus['state'], 'unavailable');
+    expect(dataStatus['financial_context_complete'], isFalse);
+    expect(integration['assistant_can_reference_specific_records'], isFalse);
+    expect(controls['categories'], isNot(contains('rename_category')));
+    expect(
+      controls['categories'],
+      isNot(contains('assign_transaction_category')),
+    );
+  });
+
   test(
     'What accounts do I have includes Plaid account truth from Clarity',
     () async {
@@ -167,7 +186,11 @@ void main() {
               )
               as Map<String, dynamic>;
 
-      expect(checking['name'], 'Adv Plus Banking');
+      expect(checking['name'], 'Bank of America Checking • 5080');
+      expect(checking['display_name'], 'Bank of America Checking • 5080');
+      expect(checking['display_detail'], 'Adv Plus Banking');
+      expect(checking, isNot(contains('raw_name')));
+      expect(checking, isNot(contains('official_name')));
       expect(checking['source'], 'plaid');
       expect(checking['source_label'], 'Plaid');
       expect(checking['plaid_connected'], isTrue);

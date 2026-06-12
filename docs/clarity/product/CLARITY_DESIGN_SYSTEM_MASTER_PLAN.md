@@ -126,8 +126,8 @@ Goal: Remove Assistant-only theme drift.
 
 Files to change:
 
-- `apps/mobile/lib/features/assistant/presentation/rex_ui_tokens.dart`
-- `apps/mobile/lib/features/assistant/**/*`
+- `apps/mobile/lib/rex/presentation/rex_ui_tokens.dart`
+- `apps/mobile/lib/rex/**/*`
 - `apps/mobile/lib/app/clarity_theme.dart`
 
 Steps:
@@ -209,7 +209,7 @@ Files to change:
 - `apps/mobile/lib/shared/widgets/*`
 - `apps/mobile/lib/features/dashboard/presentation/*`
 - `apps/mobile/lib/features/accounts/presentation/*`
-- `apps/mobile/lib/features/assistant/presentation/*`
+- `apps/mobile/lib/rex/presentation/*`
 
 Steps:
 
@@ -266,7 +266,7 @@ Files to change:
 - `apps/mobile/lib/features/dashboard/*`
 - `apps/mobile/lib/features/accounts/*`
 - `apps/mobile/lib/features/budgets/*`
-- `apps/mobile/lib/features/assistant/*`
+- `apps/mobile/lib/rex/*`
 - `apps/mobile/lib/features/profile/*`
 
 Steps:

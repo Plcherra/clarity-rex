@@ -21,7 +21,7 @@ rg --files apps/mobile/lib services/rex-api/app apps/web/src supabase/functions 
 
 | File | Lines | Reason | Cleanup trigger |
 | --- | ---: | --- | --- |
-| `apps/mobile/lib/features/assistant/chat/data/chat_models.freezed.dart` | 871 | Generated Freezed output | Regenerate only through source model changes |
+| `apps/mobile/lib/rex/chat/data/chat_models.freezed.dart` | 871 | Generated Freezed output | Regenerate only through source model changes |
 
 ## Production Cleanup Targets
 
@@ -32,7 +32,7 @@ rg --files apps/mobile/lib services/rex-api/app apps/web/src supabase/functions 
 | P1 | `supabase/functions/categorize-transactions/index.ts` | 756 | `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md` | Edge function should split parser/prompt/client logic before category import expansion |
 | P1 | `services/rex-api/app/services/entity_service.py` | 668 | `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md` | Split repository, normalization, and route-facing service before Assistant truth work |
 | P1 | `apps/mobile/lib/features/dashboard/presentation/transaction_review_screen.dart` | 663 | `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md` | Extract review sections/widgets before dashboard/transaction redesign |
-| P1 | `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart` | 642 | `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md` | Separate DTOs and presentation helpers where practical |
+| P1 | `apps/mobile/lib/rex/accountability/data/accountability_models.dart` | 642 | `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md` | Separate DTOs and presentation helpers where practical |
 | P1 | `services/rex-api/app/services/plan_service.py` | 606 | `CLARITY_ASSISTANT_INTELLIGENCE_MASTER_PLAN.md` | Split plan CRUD/policy/formatting before goals and commitments alignment |
 | P2 | `apps/mobile/lib/features/accounts/presentation/account_selection_screen.dart` | 590 | `PLAID_MOBILE_AND_ACCOUNT_CONNECTION_MASTER_PLAN.md` | Account flow is stable but must be split before adding Plaid selection states |
 | P2 | `apps/mobile/lib/features/accounts/presentation/accounts_screen.dart` | 588 | `CLARITY_FINANCIAL_EXPERIENCE_MASTER_PLAN.md` | Split account sections/widgets during connected institution redesign |

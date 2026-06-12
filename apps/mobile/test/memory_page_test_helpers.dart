@@ -1,6 +1,6 @@
-import 'package:clarity/features/assistant/memory/data/memory_api.dart';
-import 'package:clarity/features/assistant/memory/data/memory_models.dart';
-import 'package:clarity/features/assistant/memory/presentation/pages/memory_page.dart';
+import 'package:clarity/rex/memory/data/memory_api.dart';
+import 'package:clarity/rex/memory/data/memory_models.dart';
+import 'package:clarity/rex/memory/presentation/pages/memory_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

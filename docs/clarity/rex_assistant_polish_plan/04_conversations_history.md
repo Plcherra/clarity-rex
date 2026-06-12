@@ -10,9 +10,9 @@ Goal: document current conversation list data, resume behavior, message previews
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/conversations/`
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
-- `apps/mobile/lib/features/assistant/chat/data/chat_api.dart`
+- `apps/mobile/lib/rex/conversations/`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/chat/data/chat_api.dart`
 - `services/rex-api/app/routes/conversations.py`
 - `services/rex-api/app/services/chat_service.py`
 - Optional: `docs/clarity/rex_assistant_polish_plan/04_conversations_history_notes.md`
@@ -37,8 +37,8 @@ Goal: establish what each conversation row should communicate at a glance.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/conversations/presentation/`
-- `apps/mobile/lib/features/assistant/conversations/data/`
+- `apps/mobile/lib/rex/conversations/presentation/`
+- `apps/mobile/lib/rex/conversations/data/`
 - `apps/mobile/test/` conversation history tests
 
 Acceptance criteria:
@@ -61,8 +61,8 @@ Goal: let users find prior conversations quickly without turning history into a 
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/conversations/presentation/`
-- `apps/mobile/lib/features/assistant/conversations/data/`
+- `apps/mobile/lib/rex/conversations/presentation/`
+- `apps/mobile/lib/rex/conversations/data/`
 - Backend search route only if local search cannot support current data size
 - Widget tests
 
@@ -86,8 +86,8 @@ Goal: support conversation cleanup with clear archive semantics and safe confirm
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/conversations/presentation/`
-- `apps/mobile/lib/features/assistant/chat/data/chat_api.dart`
+- `apps/mobile/lib/rex/conversations/presentation/`
+- `apps/mobile/lib/rex/chat/data/chat_api.dart`
 - `services/rex-api/app/routes/conversations.py`
 - Backend/mobile tests if archive route exists or is added
 
@@ -111,9 +111,9 @@ Goal: ensure tapping a conversation always opens Chat with the selected conversa
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
-- `apps/mobile/lib/features/assistant/conversations/presentation/`
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/conversations/presentation/`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
 - `apps/mobile/test/assistant_navigation_test.dart`
 
 Acceptance criteria:
@@ -136,8 +136,8 @@ Goal: make timestamps and metadata feel polished and understandable.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/conversations/data/`
-- `apps/mobile/lib/features/assistant/conversations/presentation/`
+- `apps/mobile/lib/rex/conversations/data/`
+- `apps/mobile/lib/rex/conversations/presentation/`
 - Shared time formatting helper if one exists
 - Tests for formatting
 
@@ -161,8 +161,8 @@ Goal: make Chats resilient when history is empty, loading, offline, or degraded.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/conversations/presentation/`
-- `apps/mobile/lib/features/assistant/conversations/data/`
+- `apps/mobile/lib/rex/conversations/presentation/`
+- `apps/mobile/lib/rex/conversations/data/`
 - Widget tests
 
 Acceptance criteria:
@@ -185,7 +185,7 @@ Goal: make row taps, long press, overflow menus, and accessibility feel delibera
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/conversations/presentation/`
+- `apps/mobile/lib/rex/conversations/presentation/`
 - `apps/mobile/test/` interaction tests
 
 Acceptance criteria:

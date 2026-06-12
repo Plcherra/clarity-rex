@@ -4,12 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'memory_page_test_helpers.dart';
 
 void main() {
-  testWidgets('MemoryPage shows only what Rex knows', (tester) async {
+  testWidgets('MemoryPage shows only what Clarity knows', (tester) async {
     final api = MemoryPageFakeMemoryApi();
 
     await pumpMemoryPage(tester, api);
 
-    expect(find.text('What Rex Knows'), findsOneWidget);
+    expect(find.text('What Clarity Knows'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
     expect(find.text('People'), findsOneWidget);
     expect(find.text('Pending'), findsNothing);

@@ -41,9 +41,9 @@ This plan replaces patching-by-symptom with a focused recovery path. The goal is
 | "Do you know where I'm located?" returns no saved location. | Router does not treat "located", "city", "about me", or similar phrasing as memory recall. | `services/rex-api/app/services/rex_intent_router.py` |
 | "Masters of the Universe tonight" saved as "watch it tonight." | Direct memory patterns lose the title when the object appears before "watch it" or when transcript uses "it." | `services/rex-api/app/services/memory_intent_service.py` |
 | Location correction says it is fixed but memory remains old. | Correction/upsert matching depends on narrow topic fingerprints and old content matching. | `services/rex-api/app/services/memory_turn_direct_helpers.py` |
-| Voice cuts long thoughts. | Mobile endpoint detector sends `utterance.end` after silence and server requires explicit iOS utterance end. | `apps/mobile/lib/features/assistant/voice/data/streaming_audio_capture_service.dart`, `services/rex-api/app/services/voice_stream_live_transcription.py` |
+| Voice cuts long thoughts. | Mobile endpoint detector sends `utterance.end` after silence and server requires explicit iOS utterance end. | `apps/mobile/lib/rex/voice/data/streaming_audio_capture_service.dart`, `services/rex-api/app/services/voice_stream_live_transcription.py` |
 | Voice pauses while speaking. | TTS is synthesized chunk-by-chunk and each chunk blocks before audio is sent. | `services/rex-api/app/services/voice_stream_response_writer.py` |
-| Empty speech creates disruptive errors. | No-speech and endpoint timers complete as false and show an error instead of silently re-listening. | `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_streaming.dart` |
+| Empty speech creates disruptive errors. | No-speech and endpoint timers complete as false and show an error instead of silently re-listening. | `apps/mobile/lib/rex/voice/application/voice_call_controller_streaming.dart` |
 
 ## Phase 1: Build A Voice Failure Trace
 
@@ -281,9 +281,9 @@ Dream explanations, emotional context, financial explanations, and natural speec
 
 Files to change:
 
-- `apps/mobile/lib/features/assistant/voice/data/audio_capture_service.dart`
-- `apps/mobile/lib/features/assistant/voice/data/streaming_audio_capture_service.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller_streaming.dart`
+- `apps/mobile/lib/rex/voice/data/audio_capture_service.dart`
+- `apps/mobile/lib/rex/voice/data/streaming_audio_capture_service.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller_streaming.dart`
 - `apps/mobile/test/voice_endpoint_detector_test.dart`
 - `apps/mobile/test/voice_call_controller_test.dart`
 
@@ -330,8 +330,8 @@ Files to change:
 
 - `services/rex-api/app/services/voice_stream_response_writer.py`
 - `services/rex-api/app/services/google_tts_service.py`
-- `apps/mobile/lib/features/assistant/voice/data/audio_playback_service.dart`
-- `apps/mobile/lib/features/assistant/voice/data/streaming_audio_playback_queue.dart`
+- `apps/mobile/lib/rex/voice/data/audio_playback_service.dart`
+- `apps/mobile/lib/rex/voice/data/streaming_audio_playback_queue.dart`
 - `apps/mobile/test/voice_playback_service_test.dart`
 - `services/rex-api/tests/test_voice_stream_routes.py`
 - `services/rex-api/tests/test_voice_tts_chunking.py`

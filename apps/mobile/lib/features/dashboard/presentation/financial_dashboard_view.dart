@@ -24,9 +24,6 @@ part 'financial_dashboard_cards.dart';
 
 const double _sectionGap = 28.0;
 const double _cardRadius = 18.0;
-const Color _dashboardPanel = Color(0xFFFFFEFC);
-const Color _dashboardPanelMuted = Color(0xFFF7F5F0);
-const Color _dashboardOutline = Color(0xFFE9E3D8);
 const List<String> _monthAbbreviations = [
   'Jan',
   'Feb',
@@ -42,10 +39,26 @@ const List<String> _monthAbbreviations = [
   'Dec',
 ];
 
-Color _balanceColor(double v) {
+Color _dashboardPanel(BuildContext context) {
+  return Theme.of(context).colorScheme.surfaceContainerLow;
+}
+
+Color _dashboardPanelMuted(BuildContext context) {
+  return Theme.of(context).colorScheme.surfaceContainer;
+}
+
+Color _dashboardOutline(BuildContext context) {
+  return Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.78);
+}
+
+Color _dashboardSelected(BuildContext context) {
+  return Theme.of(context).colorScheme.primary.withValues(alpha: 0.18);
+}
+
+Color _balanceColor(BuildContext context, double v) {
   if (v > 0) return const Color(0xFF1B7A4C);
   if (v < 0) return const Color(0xFFC41E3A);
-  return const Color(0xFF3A3A38);
+  return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72);
 }
 
 String _displayCategory(ResolvedTransaction transaction) {
@@ -79,7 +92,7 @@ class _TransactionMetaChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _dashboardOutline),
+        border: Border.all(color: _dashboardOutline(context)),
       ),
       child: Text(
         label,
@@ -294,14 +307,14 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             IconButton(
               tooltip: 'Delete CSV upload',
               icon: const Icon(Icons.playlist_remove_rounded),
-              color: Colors.red.shade500,
+              color: cs.error,
               onPressed: widget.onDeleteCsvImportBatch,
             ),
           if (widget.onDeleteAccount != null)
             IconButton(
               tooltip: 'Delete account',
               icon: const Icon(Icons.delete_forever_rounded),
-              color: Colors.red.shade700,
+              color: cs.error,
               onPressed: widget.onDeleteAccount,
             ),
         ],

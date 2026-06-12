@@ -34,7 +34,7 @@ Goal: create or document a small set of Assistant layout/style constants.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/presentation/assistant_design.dart` if useful
+- `apps/mobile/lib/rex/presentation/assistant_design.dart` if useful
 - Existing theme files if constants already belong there
 - Widget tests where practical
 

@@ -265,10 +265,10 @@ Clarity.
 
 Files to change:
 
-- `apps/mobile/lib/features/assistant/data/financial_context_service.dart`
-- `apps/mobile/lib/features/assistant/chat/data/chat_api.dart`
-- `apps/mobile/lib/features/assistant/voice/data/cloud_voice_api.dart`
-- `apps/mobile/lib/features/assistant/voice/data/streaming_voice_api.dart`
+- `apps/mobile/lib/rex/data/financial_context_service.dart`
+- `apps/mobile/lib/rex/chat/data/chat_api.dart`
+- `apps/mobile/lib/rex/voice/data/cloud_voice_api.dart`
+- `apps/mobile/lib/rex/voice/data/streaming_voice_api.dart`
 - Assistant context tests
 
 Steps:

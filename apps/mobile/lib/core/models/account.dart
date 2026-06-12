@@ -53,19 +53,24 @@ class Account {
     if (!isPlaidConnected) return name;
     final institutionName =
         _cleanPlaidText(plaidInstitutionName) ?? _cleanPlaidText(institution);
-    if (institutionName != null) return '$institutionName ${type.displayLabel}';
-    final productName = _plaidProductName;
-    if (productName != null) return productName;
-    return type.displayLabel;
+    final baseName = institutionName != null
+        ? '$institutionName ${type.displayLabel}'
+        : _plaidProductName ?? type.displayLabel;
+    return _withPlaidMask(baseName);
   }
 
   String get displaySubtitle {
     if (!isPlaidConnected) return _cleanPlaidText(institution) ?? '';
     final institutionName =
         _cleanPlaidText(plaidInstitutionName) ?? _cleanPlaidText(institution);
-    final mask = _cleanPlaidText(plaidAccountMask);
     final productName = institutionName == null ? null : _plaidProductName;
-    return [?productName, if (mask != null) '**** $mask'].join(' · ');
+    return productName ?? '';
+  }
+
+  String _withPlaidMask(String value) {
+    final mask = _cleanPlaidText(plaidAccountMask);
+    if (mask == null) return value;
+    return '$value • $mask';
   }
 
   String? get _plaidProductName {

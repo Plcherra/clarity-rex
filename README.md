@@ -51,7 +51,7 @@ Phase 4 is complete:
 
 Phase 5 is complete:
 
-- Merged Rex Flutter chat, voice, memory, and accountability modules into `apps/mobile/lib/features/assistant/`.
+- Merged Rex Flutter chat, voice, memory, and accountability modules into `apps/mobile/lib/rex/`.
 - Added shared Rex configuration under `apps/mobile/lib/core/rex/`.
 - Added Riverpod to the Clarity Flutter app for the isolated Assistant feature.
 - Added an Assistant tab to the Clarity shell.

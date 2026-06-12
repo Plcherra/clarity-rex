@@ -135,6 +135,12 @@ def test_prompt_service_injects_unified_financial_context():
         financial_context={
             "schema": "clarity_unified_financial_context_v1",
             "generated_at": "2026-05-22T20:00:00Z",
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "freshness": {"state": "fresh"},
             "integration": {
                 "mode": "unified_clarity_rex",
                 "raw_transactions_included": True,
@@ -223,6 +229,7 @@ def test_prompt_service_injects_unified_financial_context():
     assert FINANCIAL_CONTEXT_PREFIX in system_content
     assert "Rex is inside Clarity" in system_content
     assert "specific accounts, account names, budgets" in system_content
+    assert "Data status: state=ready; complete=True; freshness=fresh" in system_content
     assert "reference_month=2026-05" in system_content
     assert "spent_this_month=3100.5" in system_content
     assert "Food=900" in system_content
@@ -230,6 +237,42 @@ def test_prompt_service_injects_unified_financial_context():
     assert "Main Checking" in system_content
     assert "Coffee Shop" in system_content
     assert "create_transaction" in system_content
+
+
+def test_prompt_service_warns_when_financial_context_is_degraded_or_stale():
+    service = PromptService()
+
+    messages = service.build_messages(
+        user_message="Can I spend more this week?",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "generated_at": "2026-05-22T20:00:00Z",
+            "data_status": {
+                "state": "degraded",
+                "financial_context_complete": False,
+                "load_errors": [
+                    {"source": "transactions", "message": "Could not fetch transactions."}
+                ],
+            },
+            "freshness": {
+                "state": "stale",
+                "stale_plaid_accounts": [
+                    {
+                        "account_id": "account-1",
+                        "account_name": "Bank Checking • 1234",
+                        "age_hours": 30,
+                    }
+                ],
+            },
+            "available_controls": {"transactions": ["update_transaction"]},
+        },
+    )
+
+    system_content = messages[0]["content"]
+    assert "state=degraded" in system_content
+    assert "freshness=stale" in system_content
+    assert "Rex must explicitly tell the user this financial data is not fully reliable" in system_content
+    assert "Could not fetch transactions" in system_content
 
 
 def test_prompt_service_injects_structured_memory_before_generic_memory():

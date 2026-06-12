@@ -26,9 +26,9 @@ class AccountsSummaryCard extends StatelessWidget {
     );
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: cs.surface,
+        color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE9E3D8)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.78)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),

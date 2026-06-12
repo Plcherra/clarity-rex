@@ -26,12 +26,13 @@ class PlaidAccountHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final account = item.account;
+    final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
         CircleAvatar(
           radius: 21,
-          backgroundColor: const Color(0xFFEDE8DC),
-          foregroundColor: const Color(0xFF5A533E),
+          backgroundColor: cs.surfaceContainerHighest,
+          foregroundColor: cs.onSurface.withValues(alpha: 0.78),
           child: Icon(_accountIcon(account.type), size: 21),
         ),
         const SizedBox(width: 14),
@@ -82,10 +83,11 @@ class _PlaidAccountTitleBlock extends StatelessWidget {
       children: [
         Text(
           account.displayName,
-          maxLines: 2,
+          maxLines: 3,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w800,
+            height: 1.12,
           ),
         ),
         const SizedBox(height: 5),

@@ -4,8 +4,8 @@ import 'package:http/testing.dart';
 
 import 'package:clarity/core/rex/rex_api_client.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
-import 'package:clarity/features/assistant/actions/data/clarity_actions_api.dart';
-import 'package:clarity/features/assistant/chat/data/chat_api.dart';
+import 'package:clarity/rex/actions/data/clarity_actions_api.dart';
+import 'package:clarity/rex/chat/data/chat_api.dart';
 
 void main() {
   test(

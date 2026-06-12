@@ -54,20 +54,42 @@ def _select_financial_context(
 
     safe_context = _sanitize_value(financial_context)
     if isinstance(safe_context, dict):
+        data_status = safe_context.get("data_status")
+        status_state = None
         load_errors = safe_context.get("load_errors")
+        if isinstance(data_status, dict):
+            status_state = data_status.get("state")
+            nested_load_errors = data_status.get("load_errors")
+            if nested_load_errors:
+                load_errors = nested_load_errors
+
         if isinstance(load_errors, list):
             for error in load_errors:
                 diagnostics.append(f"financial_context_degraded:{error}")
         elif load_errors:
             diagnostics.append("financial_context_degraded")
 
-        data_status = safe_context.get("data_status")
-        if isinstance(data_status, str) and data_status in {"degraded", "partial"}:
-            diagnostics.append(f"financial_context_{data_status}")
-        elif data_status is not None and not isinstance(
+        if isinstance(data_status, str):
+            status_state = data_status
+        if isinstance(status_state, str) and status_state in {
+            "unavailable",
+            "degraded",
+            "partial",
+            "stale",
+        }:
+            diagnostics.append(f"financial_context_{status_state}")
+        elif isinstance(data_status, dict) and status_state is None:
+            diagnostics.append("financial_context_data_status_invalid")
+        elif data_status is not None and not isinstance(data_status, dict) and not isinstance(
             data_status, (str, int, float, bool)
         ):
             diagnostics.append("financial_context_data_status_invalid")
+
+        freshness = safe_context.get("freshness")
+        if isinstance(freshness, dict):
+            freshness_state = freshness.get("state")
+            if isinstance(freshness_state, str) and freshness_state in {"stale", "unknown"}:
+                diagnostics.append(f"financial_context_freshness_{freshness_state}")
 
     if scope == RexFinancialContextScope.SUMMARY_ONLY:
         selected = _copy_keys(safe_context, FINANCIAL_SUMMARY_KEYS)
@@ -185,4 +207,3 @@ def _select_recent_messages(
         selected.append(safe_message)
         used_characters += message_size
     return list(reversed(selected))
-

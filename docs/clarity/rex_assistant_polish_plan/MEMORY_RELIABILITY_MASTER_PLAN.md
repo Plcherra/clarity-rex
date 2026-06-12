@@ -30,8 +30,8 @@ Primary files involved today:
 - `services/rex-api/app/services/memory_candidate_service.py`
 - `services/rex-api/app/services/memory_correction_service.py`
 - `services/rex-api/app/services/memory_discipline_service.py`
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
-- `apps/mobile/lib/features/assistant/memory/application/memory_controller.dart`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/memory/application/memory_controller.dart`
 
 ## Phase 1 Deliverable
 
@@ -335,7 +335,7 @@ Files to change:
 - `services/rex-api/app/services/memory_extraction_service.py`
 - `services/rex-api/app/services/memory_post_turn_service.py`
 - `services/rex-api/app/services/memory_candidate_decision_service.py`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
 - Tests for chat memory candidate cards and candidate decisions
 
 Steps:
@@ -382,8 +382,8 @@ Files to change:
 - `services/rex-api/app/services/memory_candidate_service.py`
 - `services/rex-api/app/services/memory_correction_service.py`
 - `services/rex-api/app/services/memory_discipline_service.py`
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
-- `apps/mobile/lib/features/assistant/memory/data/memory_models.dart`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/memory/data/memory_models.dart`
 
 Steps:
 

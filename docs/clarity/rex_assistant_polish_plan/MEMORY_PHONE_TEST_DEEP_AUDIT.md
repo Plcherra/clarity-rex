@@ -119,10 +119,10 @@ Relevant code:
 
 - `services/rex-api/app/services/voice_stream_session.py:149`
 - `services/rex-api/app/services/voice_stream_session.py:150`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart:965`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart:1010`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart:1021`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart:1058`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart:965`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart:1010`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart:1021`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart:1058`
 
 ## Standards Violations
 
@@ -140,9 +140,9 @@ Relevant code:
 
 | File | Lines | Status | Responsibility Concern |
 | --- | ---: | --- | --- |
-| `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart` | 1,908 | Critical god-file | Lifecycle, capture, playback, streaming, state, errors |
-| `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart` | 811 | Over limit | Rendering plus candidate/action UI complexity |
-| `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart` | 658 | Over limit | Page layout plus chat interactions |
+| `apps/mobile/lib/rex/voice/application/voice_call_controller.dart` | 1,908 | Critical god-file | Lifecycle, capture, playback, streaming, state, errors |
+| `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart` | 811 | Over limit | Rendering plus candidate/action UI complexity |
+| `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart` | 658 | Over limit | Page layout plus chat interactions |
 | `services/rex-api/app/services/voice_stream_session.py` | 612 | Over limit | WebSocket protocol, STT, chat, TTS, turn lifecycle |
 | `services/rex-api/app/services/chat_service.py` | 498 | At hard limit | Main chat orchestration with too many gates |
 | `services/rex-api/app/services/memory_service.py` | 496 | At hard limit | Facade still owns many repository mixins |

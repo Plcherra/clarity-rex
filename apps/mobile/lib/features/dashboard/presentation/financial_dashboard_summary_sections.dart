@@ -14,12 +14,12 @@ class _CashFlowSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
-        color: _dashboardPanel,
+        color: _dashboardPanel(context),
         borderRadius: BorderRadius.circular(_cardRadius),
-        border: Border.all(color: _dashboardOutline),
+        border: Border.all(color: _dashboardOutline(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.025),
+            color: Colors.black.withValues(alpha: 0.24),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -44,7 +44,7 @@ class _CashFlowSummaryCard extends StatelessWidget {
               style: theme.textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 height: 1.02,
-                color: _balanceColor(snapshot.availableThisMonth),
+                color: _balanceColor(context, snapshot.availableThisMonth),
               ),
             ),
           ),
@@ -99,7 +99,7 @@ class _CashFlowSummaryMetric extends StatelessWidget {
     final cs = theme.colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _dashboardPanelMuted,
+        color: _dashboardPanelMuted(context),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Padding(
@@ -154,9 +154,9 @@ class _MonthlyGroupsList extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         decoration: BoxDecoration(
-          color: _dashboardPanel,
+          color: _dashboardPanel(context),
           borderRadius: BorderRadius.circular(_cardRadius),
-          border: Border.all(color: _dashboardOutline),
+          border: Border.all(color: _dashboardOutline(context)),
         ),
         child: Text(
           'No months to show after filtering this file.',
@@ -224,7 +224,7 @@ class _MonthCard extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(_cardRadius),
-            border: Border.all(color: _dashboardOutline),
+            border: Border.all(color: _dashboardOutline(context)),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),

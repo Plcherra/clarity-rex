@@ -78,7 +78,7 @@ Primary current sources:
 - `services/rex-api/app/models/personal_rule.py`
 - `services/rex-api/app/models/plan.py`
 - `services/rex-api/app/models/commitment.py`
-- `apps/mobile/lib/features/assistant/memory/data/memory_models.dart`
+- `apps/mobile/lib/rex/memory/data/memory_models.dart`
 
 Fields:
 
@@ -144,7 +144,7 @@ Primary current sources:
 - `apps/mobile/lib/features/finance/application/financial_read_model_service.dart`
 - `apps/mobile/lib/features/finance/application/financial_read_model.dart`
 - `apps/mobile/lib/core/models/transaction.dart`
-- `apps/mobile/lib/features/assistant/data/financial_context_service.dart`
+- `apps/mobile/lib/rex/data/financial_context_service.dart`
 
 Fields:
 
@@ -183,7 +183,7 @@ Primary current sources:
 - `services/rex-api/app/routes/accountability.py`
 - `services/rex-api/app/models/plan.py`
 - `services/rex-api/app/models/commitment.py`
-- `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart`
+- `apps/mobile/lib/rex/accountability/data/accountability_models.dart`
 
 Fields:
 

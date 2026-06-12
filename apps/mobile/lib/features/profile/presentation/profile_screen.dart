@@ -193,8 +193,8 @@ final class _ProfileHeader extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: const Color(0xFFEDE8DC),
-              foregroundColor: const Color(0xFF3D392F),
+              backgroundColor: cs.surfaceContainerHighest,
+              foregroundColor: cs.onSurface.withValues(alpha: 0.82),
               child: Text(
                 initial,
                 style: theme.textTheme.titleLarge?.copyWith(

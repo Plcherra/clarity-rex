@@ -49,7 +49,7 @@ class BudgetsHeader extends StatelessWidget {
         border: Border.all(color: cs.outline.withValues(alpha: 0.12)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.012),
+            color: Colors.black.withValues(alpha: 0.18),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

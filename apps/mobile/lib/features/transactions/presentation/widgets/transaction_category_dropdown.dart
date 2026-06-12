@@ -71,7 +71,7 @@ class _TransactionCategoryFieldState extends State<TransactionCategoryField> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFFF0EDE8),
+            color: cs.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
@@ -169,7 +169,9 @@ class _TransactionRoleFieldState extends State<TransactionRoleField> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: role == null ? const Color(0xFFF0EDE8) : cs.secondaryContainer,
+          color: role == null
+              ? cs.surfaceContainerHighest
+              : cs.secondaryContainer,
           borderRadius: BorderRadius.circular(999),
         ),
         child: Row(
@@ -267,7 +269,9 @@ class _AnchoredCategoryPanel extends StatelessWidget {
           height: _kCategoryPickerPanelHeight,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE4E0D8)),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.78),
+            ),
           ),
           child: Padding(
             padding: EdgeInsets.only(
@@ -456,7 +460,7 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
                             decoration: InputDecoration(
                               isDense: true,
                               filled: true,
-                              fillColor: const Color(0xFFF0EDE8),
+                              fillColor: cs.surfaceContainerHighest,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide.none,
@@ -540,7 +544,9 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
                   constraints: BoxConstraints(maxHeight: maxHeight),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE4E0D8)),
+                    border: Border.all(
+                      color: cs.outlineVariant.withValues(alpha: 0.78),
+                    ),
                   ),
                   child: sheetBody,
                 ),
@@ -619,7 +625,7 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
                     hintText: 'New category',
                     isDense: true,
                     filled: true,
-                    fillColor: const Color(0xFFF0EDE8),
+                    fillColor: cs.surfaceContainerHighest,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,

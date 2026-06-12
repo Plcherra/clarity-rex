@@ -74,7 +74,9 @@ class _BudgetsScaffold extends StatelessWidget {
                 icon: Icon(
                   Icons.check_rounded,
                   size: 22,
-                  color: hasChanges ? cs.primary : Colors.grey,
+                  color: hasChanges
+                      ? cs.primary
+                      : cs.onSurface.withValues(alpha: 0.34),
                 ),
               );
             },

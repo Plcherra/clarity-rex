@@ -101,7 +101,7 @@ Goal: Make Assistant feel connected to the product, not separate.
 
 Files to change:
 
-- `apps/mobile/lib/features/assistant/*`
+- `apps/mobile/lib/rex/*`
 - `apps/mobile/lib/features/dashboard/presentation/*`
 - `apps/mobile/lib/features/budgets/presentation/*`
 
@@ -234,7 +234,7 @@ Goal: Clean up remaining user-facing Rex-as-product copy.
 
 Files to change:
 
-- `apps/mobile/lib/features/assistant/*`
+- `apps/mobile/lib/rex/*`
 - `apps/mobile/lib/features/shell/*`
 - `docs/clarity/product/CLARITY_REX_LABEL_CLEANUP_LEDGER.md`
 

@@ -45,7 +45,7 @@ flowchart TD
 | Accounts | `apps/mobile/lib/features/accounts/**` | `accounts`, `account_statement_imports`, transactions | Accounts are currently local/manual/import-oriented. Plaid connected institutions are not implemented. |
 | Transactions + CSV | `apps/mobile/lib/features/transactions/**` | `transactions`, categories, merchant rules, OpenAI edge categorization | CSV is active and should become fallback/import, not the primary connection story. |
 | Budgets | `apps/mobile/lib/features/budgets/**`, `features/categories/**` | `budgets`, `categories`, transactions | Budgets depend on the same financial read model and should align with assistant goals/commitments. |
-| Assistant | `apps/mobile/lib/features/assistant/**` | Rex API, Supabase assistant tables, mobile financial context | Assistant tabs still create a mini-app feeling: Chat, Voice, Knows, Goals, Chats. Rex tokens are isolated from app theme. |
+| Assistant | `apps/mobile/lib/rex/**` | Rex API, Supabase assistant tables, mobile financial context | Assistant tabs still create a mini-app feeling: Chat, Voice, Knows, Goals, Chats. Rex tokens are isolated from app theme. |
 | Profile | `apps/mobile/lib/features/profile/**` | `profiles`, Supabase Auth | Needs product-level data/privacy framing for multi-user Clarity. |
 
 ## Backend Routes And Service Owners
@@ -102,7 +102,7 @@ Target boundary: server-side events for LLM/STT/TTS/API/Plaid latency, counts, s
 
 ### Design System
 
-Current state: `ClarityApp` still defines a light neutral app theme. Assistant uses separate dark Rex tokens in `features/assistant/presentation/rex_ui_tokens.dart`.
+Current state: `ClarityApp` still defines a light neutral app theme. Assistant uses separate dark Rex tokens in `rex/presentation/rex_ui_tokens.dart`.
 
 Target boundary: one Clarity token system with near-black base, quiet teal/logo accent, off-white text, muted secondary text, and green/red only for financial values.
 

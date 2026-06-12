@@ -195,7 +195,7 @@ Files to change:
 - `services/rex-api/app/services/accountability_*`
 - `services/rex-api/app/services/budget_*`
 - `apps/mobile/lib/features/budgets/*`
-- `apps/mobile/lib/features/assistant/*`
+- `apps/mobile/lib/rex/*`
 
 Steps:
 
@@ -220,7 +220,7 @@ Goal: Make Assistant data behavior feel clear and trustworthy.
 
 Files to change:
 
-- `apps/mobile/lib/features/assistant/*`
+- `apps/mobile/lib/rex/*`
 - `apps/mobile/lib/features/profile/*`
 - `docs/clarity/product/CLARITY_ASSISTANT_TRUST_COPY.md`
 

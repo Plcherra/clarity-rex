@@ -35,11 +35,11 @@ This plan focuses on large files and high-risk coupling. Each phase should be co
 | `services/rex-api/app/services/memory_retrieval_ranker.py` | 471 | Extracted retrieval scoring, token expansion, structured ranking, related-record merge, recency scoring, and stale correction filtering. | Keep under 500 lines; split concept expansion or correction filtering if it grows. |
 | `services/rex-api/app/services/structured_memory_repository.py` | 300 | Extracted structured entities, events, rules, plans, milestones, and commitments CRUD. | Keep as structured table repository facade. |
 | `services/rex-api/app/services/memory_candidate_repository.py` | 212 | Extracted pending candidate and memory correction CRUD plus validation. | Keep candidate/correction persistence out of `memory_service.py`. |
-| `apps/mobile/lib/features/assistant/memory/presentation/pages/memory_page.dart` | 483 after Phase 8, down from 2,196 | Page shell plus state/action wiring; dialogs, archive prompts, filters, headers, pending review widgets, saved sections, tiles, and chips are extracted. | Mark complete unless action wiring needs its own coordinator. |
-| `apps/mobile/lib/features/assistant/memory/presentation/widgets/memory_edit_dialogs.dart` / `memory_pending_review_widgets.dart` | 436 / 351 | Extracted edit dialogs and pending review UI. | Keep both under 500 lines. |
-| `apps/mobile/lib/features/assistant/memory/presentation/widgets/saved_memory_tiles.dart` / `saved_memory_group_list.dart` | 349 / 161 | Extracted saved-memory tiles and group assembly. | Keep saved-memory presentation split by responsibility. |
-| `apps/mobile/lib/features/assistant/memory/application/memory_controller.dart` | 111 after Phase 9, down from 647 | Provider/state/controller shell remain; read, action, and error logic moved to focused part files at 164/344/40 lines. | Mark complete; largest controller part stays below 500. |
-| `apps/mobile/lib/features/assistant/memory/data/memory_api.dart` | 161 after Phase 9, down from 411 | Constructor, provider, and shared HTTP transport remain; saved, structured, and candidate endpoints moved to focused part files at 68/171/54 lines. | Mark complete; public `MemoryApi` and provider stayed stable. |
+| `apps/mobile/lib/rex/memory/presentation/pages/memory_page.dart` | 483 after Phase 8, down from 2,196 | Page shell plus state/action wiring; dialogs, archive prompts, filters, headers, pending review widgets, saved sections, tiles, and chips are extracted. | Mark complete unless action wiring needs its own coordinator. |
+| `apps/mobile/lib/rex/memory/presentation/widgets/memory_edit_dialogs.dart` / `memory_pending_review_widgets.dart` | 436 / 351 | Extracted edit dialogs and pending review UI. | Keep both under 500 lines. |
+| `apps/mobile/lib/rex/memory/presentation/widgets/saved_memory_tiles.dart` / `saved_memory_group_list.dart` | 349 / 161 | Extracted saved-memory tiles and group assembly. | Keep saved-memory presentation split by responsibility. |
+| `apps/mobile/lib/rex/memory/application/memory_controller.dart` | 111 after Phase 9, down from 647 | Provider/state/controller shell remain; read, action, and error logic moved to focused part files at 164/344/40 lines. | Mark complete; largest controller part stays below 500. |
+| `apps/mobile/lib/rex/memory/data/memory_api.dart` | 161 after Phase 9, down from 411 | Constructor, provider, and shared HTTP transport remain; saved, structured, and candidate endpoints moved to focused part files at 68/171/54 lines. | Mark complete; public `MemoryApi` and provider stayed stable. |
 | `services/rex-api/tests/test_chat_service.py` | 399 after Phase 10, down from 2,137 | Core smoke, action proposal, correction/extraction, streaming, AI failure, and Supabase config tests remain. | Mark complete unless we want tiny single-purpose files. |
 | `services/rex-api/tests/chat_service_fakes.py` / focused chat test files | 390 / 185-424 | Extracted shared fakes plus Rex Brain, candidate decision, simple memory, and prompt context suites. | Keep all below 500 lines. |
 | `services/rex-api/tests/test_memory_extraction.py` | 461 after Phase 10, down from 1,396 | Core parser/dedupe/filter tests remain; fakes, correction tests, and structured candidate tests moved to focused files at 307/390/248 lines. | Mark complete unless we want smaller edge-case suites. |
@@ -365,7 +365,7 @@ Status: Complete
 
 Primary files:
 
-- `apps/mobile/lib/features/assistant/memory/presentation/pages/memory_page.dart`
+- `apps/mobile/lib/rex/memory/presentation/pages/memory_page.dart`
 - New widgets/helpers: `memory_edit_dialogs.dart`, `memory_archive_dialogs.dart`, `memory_page_filters.dart`, `memory_page_header_widgets.dart`, `memory_quick_filter.dart`, `memory_pending_review_widgets.dart`, `memory_meta_chip.dart`, `saved_memory_results.dart`, `saved_memory_group_list.dart`, `saved_memory_tiles.dart`
 - `apps/mobile/test/memory_page_test.dart`
 
@@ -402,8 +402,8 @@ Status: Complete
 
 Primary files:
 
-- `apps/mobile/lib/features/assistant/memory/application/memory_controller.dart`
-- `apps/mobile/lib/features/assistant/memory/data/memory_api.dart`
+- `apps/mobile/lib/rex/memory/application/memory_controller.dart`
+- `apps/mobile/lib/rex/memory/data/memory_api.dart`
 - New: `memory_read_controller.dart`, `memory_action_controller.dart`, `memory_controller_errors.dart`
 - New: `memory_saved_api.dart`, `memory_structured_api.dart`, `memory_candidate_api.dart`
 

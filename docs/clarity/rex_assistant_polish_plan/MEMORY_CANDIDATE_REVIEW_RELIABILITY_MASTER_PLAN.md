@@ -219,7 +219,7 @@ Goal: Address voice overlap after memory review reliability is stable.
 
 Files to change:
 
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
 - Possible new voice coordinator modules
 - `services/rex-api/app/services/voice_stream_session.py`
 

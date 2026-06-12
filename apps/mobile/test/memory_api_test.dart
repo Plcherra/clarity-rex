@@ -4,7 +4,7 @@ import 'package:http/testing.dart';
 
 import 'package:clarity/core/rex/rex_api_client.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
-import 'package:clarity/features/assistant/memory/data/memory_api.dart';
+import 'package:clarity/rex/memory/data/memory_api.dart';
 
 void main() {
   test('MemoryApi archives memory through the safe deactivate route', () async {

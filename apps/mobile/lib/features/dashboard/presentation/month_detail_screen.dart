@@ -91,7 +91,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
         final monthDeleteAccountId = monthDeletePolicy?.accountId;
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF7F5F2),
+          backgroundColor: cs.surface,
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -111,7 +111,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                 IconButton(
                   tooltip: 'Delete this month',
                   icon: const Icon(Icons.delete_sweep_rounded),
-                  color: Colors.red.shade700,
+                  color: cs.error,
                   onPressed: () async {
                     final monthLabel = formatYearMonthLabel(
                       widget.group.yearMonth,
@@ -130,7 +130,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                           ),
                           FilledButton(
                             style: FilledButton.styleFrom(
-                              backgroundColor: Colors.red.shade700,
+                              backgroundColor: Theme.of(ctx).colorScheme.error,
                             ),
                             onPressed: () => Navigator.of(ctx).pop(true),
                             child: const Text('Delete month'),
@@ -242,9 +242,11 @@ class _MonthDetailBody extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
           decoration: BoxDecoration(
-            color: colorScheme.surface,
+            color: colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE0DCD4)),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.78),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,9 +294,11 @@ class _MonthDetailBody extends StatelessWidget {
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: colorScheme.surface,
+            color: colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE4E0D8)),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.78),
+            ),
           ),
           child: lines.isEmpty
               ? Padding(
@@ -408,7 +412,7 @@ class _LineTile extends StatelessWidget {
                     IconButton(
                       tooltip: 'Delete transaction',
                       icon: const Icon(Icons.delete_outline_rounded),
-                      color: Colors.red.shade700,
+                      color: cs.error,
                       onPressed: () async {
                         final confirm = await showDialog<bool>(
                           context: context,
@@ -424,7 +428,9 @@ class _LineTile extends StatelessWidget {
                               ),
                               FilledButton(
                                 style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.red.shade700,
+                                  backgroundColor: Theme.of(
+                                    ctx,
+                                  ).colorScheme.error,
                                 ),
                                 onPressed: () => Navigator.of(ctx).pop(true),
                                 child: const Text('Delete'),
@@ -471,9 +477,9 @@ class _PlaidDeleteProtectionNotice extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: cs.surface,
+        color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE4E0D8)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.78)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -12,10 +12,10 @@ Status: Complete. Audit notes are captured in `02_memory_system_notes.md`.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/memory/data/memory_api.dart`
-- `apps/mobile/lib/features/assistant/memory/data/memory_models.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/`
-- `apps/mobile/lib/features/assistant/chat/domain/chat_message.dart`
+- `apps/mobile/lib/rex/memory/data/memory_api.dart`
+- `apps/mobile/lib/rex/memory/data/memory_models.dart`
+- `apps/mobile/lib/rex/memory/presentation/`
+- `apps/mobile/lib/rex/chat/domain/chat_message.dart`
 - `services/rex-api/app/routes/memory.py`
 - `services/rex-api/app/routes/memory_candidates.py`
 - Optional: `docs/clarity/rex_assistant_polish_plan/02_memory_system_notes.md`
@@ -42,9 +42,9 @@ Status: Complete. Human memory labels are centralized in `memory_models.dart`, w
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/memory/data/memory_models.dart`
-- `apps/mobile/lib/features/assistant/chat/domain/chat_message.dart`
-- `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart`
+- `apps/mobile/lib/rex/memory/data/memory_models.dart`
+- `apps/mobile/lib/rex/chat/domain/chat_message.dart`
+- `apps/mobile/lib/rex/accountability/data/accountability_models.dart`
 - Focused label tests
 
 Acceptance criteria:
@@ -71,9 +71,9 @@ Status: Complete. Memory now has Saved and Pending review modes, with pending ca
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/memory/presentation/`
-- `apps/mobile/lib/features/assistant/memory/data/memory_api.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
+- `apps/mobile/lib/rex/memory/presentation/`
+- `apps/mobile/lib/rex/memory/data/memory_api.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
 - `apps/mobile/test/` memory-focused widget tests
 
 Acceptance criteria:
@@ -98,9 +98,9 @@ Status: Complete. Pending candidate cards now show proposal, reason, source cont
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/`
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
+- `apps/mobile/lib/rex/memory/presentation/`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
 - `apps/mobile/test/` focused candidate-card tests
 
 Acceptance criteria:
@@ -126,8 +126,8 @@ Status: Complete. Correction candidates now preview old/new replacement details,
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
 - `services/rex-api/app/services/memory_correction_service.py`
 - `services/rex-api/app/services/chat_service.py`
 - Relevant backend and mobile tests
@@ -154,8 +154,8 @@ Status: Complete. Saved Memory now loads all saved memory surfaces into a presen
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/memory/data/memory_models.dart`
-- `apps/mobile/lib/features/assistant/memory/presentation/`
+- `apps/mobile/lib/rex/memory/data/memory_models.dart`
+- `apps/mobile/lib/rex/memory/presentation/`
 - `services/rex-api/app/services/memory_service.py` only if API shape blocks grouping
 - Widget/model tests
 
@@ -181,8 +181,8 @@ Status: Complete. Memory now has local search and quick chips for Saved, Pending
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/memory/presentation/`
-- `apps/mobile/lib/features/assistant/memory/data/memory_api.dart`
+- `apps/mobile/lib/rex/memory/presentation/`
+- `apps/mobile/lib/rex/memory/data/memory_api.dart`
 - `apps/mobile/test/` memory UI tests
 
 Acceptance criteria:
@@ -207,8 +207,8 @@ Status: Complete. Saved memory actions now expose Edit and Archive from overflow
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/memory/presentation/`
-- `apps/mobile/lib/features/assistant/memory/data/memory_api.dart`
+- `apps/mobile/lib/rex/memory/presentation/`
+- `apps/mobile/lib/rex/memory/data/memory_api.dart`
 - `services/rex-api/app/routes/memory.py`
 - `services/rex-api/app/services/memory_service.py`
 - Backend and mobile tests where actions are wired
@@ -235,8 +235,8 @@ Status: Complete. Memory failures now use operation-specific user copy, mobile A
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/memory/presentation/`
-- `apps/mobile/lib/features/assistant/memory/data/memory_api.dart`
+- `apps/mobile/lib/rex/memory/presentation/`
+- `apps/mobile/lib/rex/memory/data/memory_api.dart`
 - `services/rex-api/app/routes/memory.py`
 - `services/rex-api/app/routes/memory_candidates.py`
 - `services/rex-api/app/services/rex_observability.py` if reused

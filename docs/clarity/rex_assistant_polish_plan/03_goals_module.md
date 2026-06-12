@@ -10,9 +10,9 @@ Goal: map every record type currently feeding the Goals tab and identify what be
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart`
-- `apps/mobile/lib/features/assistant/accountability/data/accountability_api.dart`
-- `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/rex/accountability/data/accountability_models.dart`
+- `apps/mobile/lib/rex/accountability/data/accountability_api.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
 - `services/rex-api/app/routes/accountability.py`
 - `services/rex-api/app/services/accountability_service.py`
 - Optional: `docs/clarity/rex_assistant_polish_plan/03_goals_module_notes.md`
@@ -37,8 +37,8 @@ Goal: establish the user-facing contract for what Goals is and what it is not.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart`
-- `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/rex/accountability/data/accountability_models.dart`
 - `docs/clarity/rex_assistant_polish_plan/03_goals_module.md`
 
 Acceptance criteria:
@@ -61,7 +61,7 @@ Goal: create a clean overview that immediately tells the user what they are work
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
 - Shared Assistant card/component files if extracted
 - `apps/mobile/test/` Goals widget tests
 
@@ -85,8 +85,8 @@ Goal: make each active goal card show outcome, next step, progress, due date, an
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart`
-- `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/rex/accountability/data/accountability_models.dart`
 - `apps/mobile/test/` focused goal card tests
 
 Acceptance criteria:
@@ -110,8 +110,8 @@ Goal: make commitments feel like actionable tasks, not raw memory records.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart`
-- `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/rex/accountability/data/accountability_models.dart`
 - Backend route/service only if the API lacks required fields
 - Widget/model tests
 
@@ -135,8 +135,8 @@ Goal: keep helpful accountability signals but present them as insights tied to g
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart`
-- `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/rex/accountability/data/accountability_models.dart`
 - `services/rex-api/app/services/accountability_service.py` if signal text needs backend cleanup
 - Tests for signal rendering
 
@@ -160,9 +160,9 @@ Goal: make it obvious how to start a new goal without adding unsafe mutation beh
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
 - Backend clarity action routes only if already safe
 
 Acceptance criteria:
@@ -185,7 +185,7 @@ Goal: give each goal a focused detail view or expandable detail that supports pr
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
 - Optional detail page/widget under accountability presentation
 - `apps/mobile/test/` detail widget tests
 
@@ -209,8 +209,8 @@ Goal: make Goals resilient when accountability data is loading, missing, partial
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart`
-- `apps/mobile/lib/features/assistant/assistant_providers.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/rex/assistant_providers.dart`
 - Shared Assistant state components if available from later plan files
 - Widget tests
 

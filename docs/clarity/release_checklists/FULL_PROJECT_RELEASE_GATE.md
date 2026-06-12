@@ -46,17 +46,17 @@ Generated files may exceed 500 lines only when documented. Production files over
 
 Known generated exception:
 
-- `apps/mobile/lib/features/assistant/chat/data/chat_models.freezed.dart`
+- `apps/mobile/lib/rex/chat/data/chat_models.freezed.dart`
 
 Known cleanup targets:
 
 - `apps/mobile/lib/features/transactions/presentation/widgets/transaction_category_dropdown.dart`
 - `apps/mobile/lib/app/ui_dependencies.dart`
 - `supabase/functions/categorize-transactions/index.ts`
-- `apps/mobile/lib/features/assistant/accountability/data/accountability_models.dart`
+- `apps/mobile/lib/rex/accountability/data/accountability_models.dart`
 - `services/rex-api/app/services/entity_service.py`
 - `apps/mobile/lib/features/dashboard/presentation/transaction_review_screen.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
 - `services/rex-api/app/services/plan_service.py`
 - `apps/mobile/lib/features/accounts/presentation/account_selection_screen.dart`
 - `apps/mobile/lib/features/accounts/presentation/accounts_screen.dart`

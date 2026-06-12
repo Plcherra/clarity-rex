@@ -1,7 +1,7 @@
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/accounts/data/account_statement_import_service.dart';
-import 'package:clarity/features/assistant/data/financial_context_service.dart';
+import 'package:clarity/rex/data/financial_context_service.dart';
 import 'package:clarity/features/budgets/domain/budget_models.dart';
 import 'package:clarity/features/categories/domain/category_normalization.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_snapshot.dart';

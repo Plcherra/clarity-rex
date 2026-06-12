@@ -349,11 +349,12 @@ class _BulkReviewBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD8D1C5)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.78)),
       ),
       child: Row(
         children: [
@@ -428,9 +429,9 @@ class _ReviewTransactionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 14, 14),
       decoration: BoxDecoration(
-        color: cs.surface,
+        color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE4E0D8)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.78)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -512,10 +513,11 @@ class _ReasonChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFE4B8),
+        color: cs.primary.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -536,6 +538,7 @@ class _ReviewSearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final outline = cs.outlineVariant.withValues(alpha: 0.78);
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -547,11 +550,11 @@ class _ReviewSearchField extends StatelessWidget {
         filled: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE4E0D8)),
+          borderSide: BorderSide(color: outline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE4E0D8)),
+          borderSide: BorderSide(color: outline),
         ),
       ),
     );
@@ -577,7 +580,7 @@ class _ReviewEmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE4E0D8)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.78)),
       ),
       child: Column(
         children: [

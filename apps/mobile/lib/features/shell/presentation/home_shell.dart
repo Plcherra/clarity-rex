@@ -5,12 +5,12 @@ import '../../auth/application/auth_controller.dart';
 import 'import_job_progress_banner.dart';
 import '../../accounts/data/connect_bank_entry_point_tracker.dart';
 import '../../accounts/presentation/accounts_screen.dart';
-import '../../assistant/presentation/assistant_screen.dart';
 import '../../budgets/presentation/budgets_screen.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
 import '../../plaid/application/plaid_link_service.dart';
 import '../../profile/application/profile_controller.dart';
 import '../../profile/presentation/profile_screen.dart';
+import '../../../rex/presentation/assistant_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({

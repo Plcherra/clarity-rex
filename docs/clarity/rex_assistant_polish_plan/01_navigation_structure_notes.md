@@ -17,7 +17,7 @@ Assistant shell:
 - `AssistantScreen` is currently a `StatelessWidget`.
 - It creates a local `DefaultTabController(length: 5)`.
 - It renders one title, one scrollable `TabBar`, and one `TabBarView`.
-- File reference: `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart:18`.
+- File reference: `apps/mobile/lib/rex/presentation/assistant_screen.dart:18`.
 
 Current tab order:
 
@@ -34,8 +34,8 @@ Current tab content:
 - Memory -> `MemoryPage(showAppBar: false)`.
 - Goals -> `AccountabilityPage(showAppBar: false)`.
 - Chats -> `ConversationListPage(showAppBar: false)`.
-- File reference: `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart:61`.
-- File reference: `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart:78`.
+- File reference: `apps/mobile/lib/rex/presentation/assistant_screen.dart:61`.
+- File reference: `apps/mobile/lib/rex/presentation/assistant_screen.dart:78`.
 
 Current selected-tab behavior:
 
@@ -43,7 +43,7 @@ Current selected-tab behavior:
 - No app-level provider or parent route currently stores the selected Assistant tab.
 - The `HomeShell` keeps `AssistantScreen` alive while switching bottom-nav destinations because the root pages are inside an `IndexedStack`.
 - A conversation selected in Chats calls `DefaultTabController.of(context).animateTo(0)`, returning the user to Chat.
-- File reference: `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart:84`.
+- File reference: `apps/mobile/lib/rex/presentation/assistant_screen.dart:84`.
 
 ## Header And Action Contract
 
@@ -51,14 +51,14 @@ Assistant root header:
 
 - `AssistantScreen` shows only the `Assistant` title and the tab row.
 - There are no global Assistant header actions at the shell level.
-- File reference: `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart:26`.
+- File reference: `apps/mobile/lib/rex/presentation/assistant_screen.dart:26`.
 
 Standalone Chat header:
 
 - `ChatPage(showAppBar: true)` has separate header actions for Call Rex, Memory, Accountability, and Conversations.
 - These push standalone pages rather than switching Assistant tabs.
 - The embedded Assistant version disables this app bar, so these actions are hidden inside `AssistantScreen`.
-- File reference: `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart:245`.
+- File reference: `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart:245`.
 
 Standalone page headers:
 
@@ -66,9 +66,9 @@ Standalone page headers:
 - `AccountabilityPage(showAppBar: true)` has a refresh action.
 - `ConversationListPage(showAppBar: true)` has a new-conversation action.
 - Embedded Assistant versions hide these app bars and use page-local body actions instead where available.
-- File reference: `apps/mobile/lib/features/assistant/memory/presentation/pages/memory_page.dart:303`.
-- File reference: `apps/mobile/lib/features/assistant/accountability/presentation/pages/accountability_page.dart:34`.
-- File reference: `apps/mobile/lib/features/assistant/chat/presentation/pages/conversation_list_page.dart:233`.
+- File reference: `apps/mobile/lib/rex/memory/presentation/pages/memory_page.dart:303`.
+- File reference: `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart:34`.
+- File reference: `apps/mobile/lib/rex/chat/presentation/pages/conversation_list_page.dart:233`.
 
 ## Composer And Voice Contract
 
@@ -76,26 +76,26 @@ Composer placement:
 
 - `ChatPage` owns the message controller, attachment picker, Deep Think toggle, voice entry, inline voice panel, and `ChatInputBar`.
 - The composer is not owned by `AssistantScreen`.
-- File reference: `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart:390`.
+- File reference: `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart:390`.
 
 Voice entry:
 
 - Starting voice from the composer calls `voiceCallProvider.notifier.startCall(conversationId: chat.conversationId)`.
 - If a voice call is active, tapping voice entry scrolls to the active inline voice panel.
-- File reference: `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart:195`.
+- File reference: `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart:195`.
 
 Voice tab behavior:
 
 - The Voice tab currently renders another `ChatPage(showAppBar: false)`.
 - Because Chat and Voice each instantiate `ChatPage`, they each own a separate `TextEditingController` and `ScrollController`, while sharing Riverpod chat and voice state.
 - This makes Voice feel like a duplicate Chat surface rather than a dedicated voice-first screen.
-- File reference: `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart:80`.
+- File reference: `apps/mobile/lib/rex/presentation/assistant_screen.dart:80`.
 
 Inline voice panel:
 
 - The active voice call panel appears inside `ChatPage` above the composer.
 - It shows listening/thinking/speaking/failed state and controls for retry, settings, mute, interrupt, and end.
-- File reference: `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart:379`.
+- File reference: `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart:379`.
 
 ## Per-Tab Responsibility Audit
 
@@ -133,32 +133,32 @@ Chats:
 
 - Current code now places Chats inside the same `TabBar`, which addresses the architectural source of the detached header icon.
 - Remaining risk: `isScrollable: true` with large tab labels can still make the row feel uneven or clipped on smaller safe-area widths.
-- File reference: `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart:43`.
+- File reference: `apps/mobile/lib/rex/presentation/assistant_screen.dart:43`.
 
 2. Voice tab is not a real voice tab.
 
 - The Voice tab is currently a second `ChatPage`, so the same chat composer appears in both Chat and Voice.
 - This can confuse users because voice call controls may appear as chat UI rather than a voice-owned surface.
-- File reference: `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart:81`.
+- File reference: `apps/mobile/lib/rex/presentation/assistant_screen.dart:81`.
 
 3. Header actions are split across embedded tabs and standalone pushed pages.
 
 - Standalone Chat has Memory / Accountability / Conversations header actions, while embedded Assistant uses tabs.
 - This creates two navigation models for the same modules.
-- File reference: `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart:249`.
+- File reference: `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart:249`.
 
 4. Conversations has duplicate creation entry points.
 
 - Embedded Chats has a top in-body new-conversation icon and a floating action button when conversations exist.
 - Later phases should decide whether a tab-local header action, primary empty-state button, or FAB is the canonical create entry.
-- File reference: `apps/mobile/lib/features/assistant/chat/presentation/pages/conversation_list_page.dart:131`.
-- File reference: `apps/mobile/lib/features/assistant/chat/presentation/pages/conversation_list_page.dart:247`.
+- File reference: `apps/mobile/lib/rex/chat/presentation/pages/conversation_list_page.dart:131`.
+- File reference: `apps/mobile/lib/rex/chat/presentation/pages/conversation_list_page.dart:247`.
 
 5. Assistant tab selection is local and implicit.
 
 - The current tab controller is not addressable from outside `AssistantScreen`.
 - Future entry points such as composer voice, conversation resume, or bottom-nav Assistant reopen will need a small explicit tab ownership model if they should select a specific tab.
-- File reference: `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart:18`.
+- File reference: `apps/mobile/lib/rex/presentation/assistant_screen.dart:18`.
 
 ## Existing Test Coverage
 

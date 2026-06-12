@@ -28,7 +28,7 @@ class _DashboardScrollBody extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return DecoratedBox(
-      decoration: BoxDecoration(color: const Color(0xFFF8F7F4)),
+      decoration: BoxDecoration(color: cs.surface),
       child: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
@@ -104,7 +104,7 @@ class _DashboardLoadingBody extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [const Color(0xFFF3F1ED), cs.surface],
+          colors: [cs.surfaceContainerLow, cs.surface],
         ),
       ),
       child: SafeArea(
@@ -164,7 +164,7 @@ class _DashboardEmptySetupBody extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return DecoratedBox(
-      decoration: const BoxDecoration(color: Color(0xFFF8F7F4)),
+      decoration: BoxDecoration(color: cs.surface),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
@@ -208,7 +208,7 @@ class _DashboardResolvingDataBody extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [const Color(0xFFF3F1ED), cs.surface],
+          colors: [cs.surfaceContainerLow, cs.surface],
         ),
       ),
       child: SafeArea(
@@ -217,9 +217,9 @@ class _DashboardResolvingDataBody extends StatelessWidget {
             padding: const EdgeInsets.all(28),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: cs.surface,
+                color: cs.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFE0DCD4)),
+                border: Border.all(color: _dashboardOutline(context)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(22),

@@ -13,7 +13,7 @@ class PromptFinancialContextMixin:
             return None
 
         lines = [
-            "Rex is inside Clarity. Use this as first-party Clarity financial context. It may include specific accounts, account names, budgets, categories, merchants, descriptions, and transaction rows. You may reference specific records when they are present. For create/update/delete requests, ask for confirmation and append a fenced ```clarity_action``` JSON object with action, payload, confirmation_text, and risk_level. Use only actions listed in available_controls. Never claim a financial record was changed unless an execution result says it succeeded."
+            "Rex is inside Clarity. Use this as first-party Clarity financial context. It may include specific accounts, account names, budgets, categories, merchants, descriptions, and transaction rows. You may reference specific records when they are present. If this context says data is unavailable, degraded, stale, partial, or incomplete, say that clearly before answering and do not guess missing accounts, balances, budgets, categories, or transactions. For create/update/delete requests, ask for confirmation and append a fenced ```clarity_action``` JSON object with action, payload, confirmation_text, and risk_level. Use only actions listed in available_controls. Never claim a financial record was changed unless an execution result says it succeeded."
         ]
         used_characters = len(lines[0]) + 1
 
@@ -40,6 +40,10 @@ class PromptFinancialContextMixin:
         generated_at = financial_context.get("generated_at")
         if schema or generated_at:
             lines.append(f"- Context: schema={schema}; generated_at={generated_at}")
+
+        status = self._financial_status_summary(financial_context)
+        if status:
+            lines.append(status)
 
         integration = self._dict_value(financial_context, "integration")
         if integration:
@@ -163,6 +167,42 @@ class PromptFinancialContextMixin:
 
         return lines
 
+    def _financial_status_summary(self, financial_context: dict) -> str:
+        data_status = self._dict_value(financial_context, "data_status")
+        state = data_status.get("state") if data_status else financial_context.get("data_status")
+        complete = data_status.get("financial_context_complete")
+        load_errors = data_status.get("load_errors")
+        if load_errors is None:
+            load_errors = financial_context.get("load_errors")
+        freshness = self._dict_value(financial_context, "freshness")
+        freshness_state = freshness.get("state")
+
+        parts = []
+        if state is not None:
+            parts.append(f"state={state}")
+        if complete is not None:
+            parts.append(f"complete={complete}")
+        if freshness_state is not None:
+            parts.append(f"freshness={freshness_state}")
+        if load_errors:
+            parts.append(f"load_errors={self._compact_json(load_errors)}")
+        if freshness:
+            stale_accounts = self._list_value(freshness, "stale_plaid_accounts")
+            unknown_accounts = self._list_value(freshness, "unknown_sync_accounts")
+            if stale_accounts:
+                parts.append(f"stale_accounts={self._compact_json(stale_accounts)}")
+            if unknown_accounts:
+                parts.append(f"unknown_sync_accounts={self._compact_json(unknown_accounts)}")
+        if not parts:
+            return ""
+
+        warning = ""
+        if str(state).lower() in {"unavailable", "degraded", "partial"}:
+            warning = " Rex must explicitly tell the user this financial data is not fully reliable."
+        elif str(freshness_state).lower() in {"stale", "unknown"}:
+            warning = " Rex must explicitly tell the user the financial sync freshness is stale or unknown."
+        return "- Data status: " + "; ".join(parts) + f".{warning}"
+
     def _financial_slice_lines(self, slices: dict) -> list[str]:
         lines: list[str] = []
         for key, label in (
@@ -211,5 +251,4 @@ class PromptFinancialContextMixin:
 
     def _compact_json(self, value: Any) -> str:
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"), default=str)
-
 

@@ -14,9 +14,9 @@ class _BiggestLeaksCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         decoration: BoxDecoration(
-          color: _dashboardPanel,
+          color: _dashboardPanel(context),
           borderRadius: BorderRadius.circular(_cardRadius),
-          border: Border.all(color: _dashboardOutline),
+          border: Border.all(color: _dashboardOutline(context)),
         ),
         child: Text(
           'No spending this month.',
@@ -31,9 +31,9 @@ class _BiggestLeaksCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
       decoration: BoxDecoration(
-        color: _dashboardPanel,
+        color: _dashboardPanel(context),
         borderRadius: BorderRadius.circular(_cardRadius),
-        border: Border.all(color: _dashboardOutline),
+        border: Border.all(color: _dashboardOutline(context)),
       ),
       child: Column(
         children: [
@@ -61,9 +61,9 @@ class _BudgetPerformanceCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
         decoration: BoxDecoration(
-          color: _dashboardPanel,
+          color: _dashboardPanel(context),
           borderRadius: BorderRadius.circular(_cardRadius),
-          border: Border.all(color: _dashboardOutline),
+          border: Border.all(color: _dashboardOutline(context)),
         ),
         child: Text(
           'No budgets set for ${performance.periodLabel} yet.',
@@ -78,9 +78,9 @@ class _BudgetPerformanceCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 18, 22, 20),
       decoration: BoxDecoration(
-        color: _dashboardPanel,
+        color: _dashboardPanel(context),
         borderRadius: BorderRadius.circular(_cardRadius),
-        border: Border.all(color: _dashboardOutline),
+        border: Border.all(color: _dashboardOutline(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,12 +300,12 @@ class _AccountHealthCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
-        color: _dashboardPanel,
+        color: _dashboardPanel(context),
         borderRadius: BorderRadius.circular(_cardRadius),
-        border: Border.all(color: _dashboardOutline),
+        border: Border.all(color: _dashboardOutline(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.025),
+            color: Colors.black.withValues(alpha: 0.24),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -344,7 +344,7 @@ class _AccountHealthCard extends StatelessWidget {
             value: formatMoney(snapshot.availableThisMonth),
             detail:
                 'Income ${formatMoney(snapshot.incomeThisMonth)} · Spending ${formatMoney(snapshot.spentThisMonth)}',
-            valueColor: _balanceColor(snapshot.availableThisMonth),
+            valueColor: _balanceColor(context, snapshot.availableThisMonth),
           ),
           const SizedBox(height: 14),
           _HealthMetricRow(

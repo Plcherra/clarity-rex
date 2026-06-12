@@ -14,17 +14,18 @@ class AccountNoticeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    const success = Color(0xFF1B7A4C);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF7EF),
+        color: success.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFB8DEC5)),
+        border: Border.all(color: success.withValues(alpha: 0.42)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
         child: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: Color(0xFF1B7A4C)),
+            const Icon(Icons.check_circle_rounded, color: success),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

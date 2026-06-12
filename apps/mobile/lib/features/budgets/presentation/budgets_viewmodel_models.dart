@@ -7,6 +7,7 @@ class BudgetCategoryRow {
     required this.displayLabel,
     Set<String>? identityKeys,
     this.categoryId,
+    this.hasSavedBudgetHistory = false,
   }) : identityKeys = identityKeys ?? const {};
 
   final String canonical;
@@ -14,19 +15,25 @@ class BudgetCategoryRow {
   final String displayLabel;
   final Set<String> identityKeys;
   final String? categoryId;
+  final bool hasSavedBudgetHistory;
 
   bool matchesIdentity(String identity) {
     if (identity.isEmpty) return false;
     return canonical == identity || identityKeys.contains(identity);
   }
 
-  BudgetCategoryRow withIdentityKeys(Set<String> keys) {
+  BudgetCategoryRow withIdentityKeys(
+    Set<String> keys, {
+    bool hasSavedBudgetHistory = false,
+  }) {
     return BudgetCategoryRow(
       canonical: canonical,
       categoryId: categoryId,
       categoryKey: categoryKey,
       displayLabel: displayLabel,
       identityKeys: {...identityKeys, ...keys, canonical},
+      hasSavedBudgetHistory:
+          this.hasSavedBudgetHistory || hasSavedBudgetHistory,
     );
   }
 }

@@ -1,4 +1,4 @@
-import 'package:clarity/features/assistant/memory/data/memory_api.dart';
+import 'package:clarity/rex/memory/data/memory_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -16,10 +16,10 @@ void main() {
     await tester.tap(find.text('Archive').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('Archive memory?'), findsOneWidget);
+    expect(find.text('Archive saved information?'), findsOneWidget);
     expect(
       find.text(
-        'Rex will stop using this memory in future conversations. It will remain in memory history.',
+        'This saved information will stop being used in future conversations. It will remain in information history.',
       ),
       findsOneWidget,
     );
@@ -61,7 +61,7 @@ void main() {
 
     expect(
       find.text(
-        'Could not load Rex Memory. Check your connection and try again.',
+        'Could not load saved information. Check your connection and try again.',
       ),
       findsOneWidget,
     );

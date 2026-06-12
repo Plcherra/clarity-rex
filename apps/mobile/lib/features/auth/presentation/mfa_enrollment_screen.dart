@@ -316,9 +316,11 @@ final class _EnrollmentCard extends StatelessWidget {
             Center(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE9E3D8)),
+                  border: Border.all(
+                    color: cs.outlineVariant.withValues(alpha: 0.78),
+                  ),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
@@ -326,7 +328,9 @@ final class _EnrollmentCard extends StatelessWidget {
                     data: enrollment.uri,
                     version: QrVersions.auto,
                     size: 220,
-                    backgroundColor: Colors.white,
+                    backgroundColor: cs.surfaceContainerHighest,
+                    eyeStyle: QrEyeStyle(color: cs.onSurface),
+                    dataModuleStyle: QrDataModuleStyle(color: cs.onSurface),
                   ),
                 ),
               ),

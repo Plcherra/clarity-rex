@@ -24,7 +24,7 @@ Design goals:
 
 Mobile Rex navigation:
 
-- `apps/mobile/lib/features/assistant/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
   - Chat tab opens `ChatPage`.
   - Voice tab now opens the dedicated `VoiceChatPage`.
   - Memory tab opens `MemoryPage`.
@@ -33,21 +33,21 @@ Mobile Rex navigation:
 
 Text chat:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
 
 Voice chat:
 
-- `apps/mobile/lib/features/assistant/voice/presentation/pages/voice_chat_page.dart`
-- `apps/mobile/lib/features/assistant/voice/presentation/widgets/voice_call_controls.dart`
-- `apps/mobile/lib/features/assistant/voice/application/voice_call_controller.dart`
+- `apps/mobile/lib/rex/voice/presentation/pages/voice_chat_page.dart`
+- `apps/mobile/lib/rex/voice/presentation/widgets/voice_call_controls.dart`
+- `apps/mobile/lib/rex/voice/application/voice_call_controller.dart`
 
 Memory UI and mobile state:
 
-- `apps/mobile/lib/features/assistant/memory/presentation/pages/memory_page.dart`
-- `apps/mobile/lib/features/assistant/memory/application/memory_controller.dart`
-- `apps/mobile/lib/features/assistant/memory/data/memory_api.dart`
+- `apps/mobile/lib/rex/memory/presentation/pages/memory_page.dart`
+- `apps/mobile/lib/rex/memory/application/memory_controller.dart`
+- `apps/mobile/lib/rex/memory/data/memory_api.dart`
 
 Backend memory and prompt path:
 

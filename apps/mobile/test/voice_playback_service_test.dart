@@ -1,5 +1,5 @@
-import 'package:clarity/features/assistant/voice/data/audio_playback_service.dart';
-import 'package:clarity/features/assistant/voice/data/streaming_audio_playback_queue.dart';
+import 'package:clarity/rex/voice/data/audio_playback_service.dart';
+import 'package:clarity/rex/voice/data/streaming_audio_playback_queue.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

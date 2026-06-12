@@ -228,7 +228,7 @@ class ClarityControlService:
         body = self._required_payload(
             payload,
             required=("name", "amount", "period"),
-            optional=("start_date",),
+            optional=("category_id", "category_key", "start_date"),
         )
         return await self._request(
             "POST",
@@ -244,7 +244,14 @@ class ClarityControlService:
         record_id = self._required_id(payload)
         body = self._write_payload(
             payload,
-            allowed=("name", "amount", "period", "start_date"),
+            allowed=(
+                "name",
+                "category_id",
+                "category_key",
+                "amount",
+                "period",
+                "start_date",
+            ),
         )
         return await self._patch_by_id("budgets", record_id, body)
 

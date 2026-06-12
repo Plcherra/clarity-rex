@@ -47,11 +47,11 @@ Generated files are exempt from the 500-line source limit. Existing oversized ha
 
 | File | Current status |
 | --- | --- |
-| `apps/mobile/lib/features/assistant/chat/data/chat_models.freezed.dart` | Generated; exempt. |
+| `apps/mobile/lib/rex/chat/data/chat_models.freezed.dart` | Generated; exempt. |
 | `apps/mobile/lib/app/ui_dependencies.dart` | Existing app bootstrap aggregate; split when the next dependency group changes. |
 | `services/rex-api/app/services/entity_service.py` | Existing structured-memory facade; split entity CRUD/lookup before adding behavior. |
 | `services/rex-api/app/services/plan_service.py` | Existing structured-plan facade; split plan, milestone, and commitment paths before adding behavior. |
-| `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart` | Existing chat UI shell; next cleanup should extract composer and scroll orchestration. |
+| `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart` | Existing chat UI shell; next cleanup should extract composer and scroll orchestration. |
 
 ## Known Follow-Up Areas
 

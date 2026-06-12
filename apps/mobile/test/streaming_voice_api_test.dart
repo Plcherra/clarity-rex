@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:clarity/core/rex/rex_api_client.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
-import 'package:clarity/features/assistant/voice/data/streaming_voice_api.dart';
+import 'package:clarity/rex/voice/data/streaming_voice_api.dart';
 
 void main() {
   test(

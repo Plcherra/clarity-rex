@@ -10,10 +10,10 @@ Goal: document the current Chat page, composer, message model, memory cards, cla
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart`
-- `apps/mobile/lib/features/assistant/chat/domain/chat_message.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/chat/domain/chat_message.dart`
 - `services/rex-api/app/models/chat.py`
 - Optional: `docs/clarity/rex_assistant_polish_plan/07_chat_experience_polish_notes.md`
 
@@ -37,7 +37,7 @@ Goal: make user and Rex messages easier to read and visually balanced.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
 - `apps/mobile/test/` chat bubble tests
 
 Acceptance criteria:
@@ -61,8 +61,8 @@ Goal: make the composer feel intentional with clear attachment, voice, Deep Thin
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_input_bar.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
 - `apps/mobile/test/chat_input_bar_test.dart`
 
 Acceptance criteria:
@@ -86,8 +86,8 @@ Goal: prevent keyboard, new messages, and streaming updates from making Chat fee
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
 - Widget tests where practical
 
 Acceptance criteria:
@@ -110,8 +110,8 @@ Goal: make memory candidates and clarity actions understandable inside conversat
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
 - Tests for card states
 
 Acceptance criteria:
@@ -134,7 +134,7 @@ Goal: make a new chat inviting without feeling like a landing page.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
 - Starter prompt data/widget if useful
 - Widget tests
 
@@ -158,9 +158,9 @@ Goal: make failed messages recoverable and understandable.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/application/chat_controller.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
-- `apps/mobile/lib/features/assistant/chat/presentation/widgets/chat_message_bubble.dart`
+- `apps/mobile/lib/rex/chat/application/chat_controller.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_message_bubble.dart`
 - Tests for failure/retry states
 
 Acceptance criteria:
@@ -183,8 +183,8 @@ Goal: make it clear which conversation the user is in without adding clutter.
 
 Files to modify / create:
 
-- `apps/mobile/lib/features/assistant/chat/presentation/pages/chat_page.dart`
-- `apps/mobile/lib/features/assistant/conversations/` if shared metadata is needed
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/conversations/` if shared metadata is needed
 - Widget tests
 
 Acceptance criteria:

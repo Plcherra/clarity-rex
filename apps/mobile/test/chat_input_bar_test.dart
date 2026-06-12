@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:clarity/features/assistant/chat/presentation/widgets/chat_input_bar.dart';
+import 'package:clarity/rex/chat/presentation/widgets/chat_input_bar.dart';
 
 void main() {
   testWidgets('ChatInputBar keeps the composer focused on message actions', (
