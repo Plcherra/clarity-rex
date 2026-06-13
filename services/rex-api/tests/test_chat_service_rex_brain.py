@@ -158,10 +158,7 @@ async def test_rex_brain_chat_requires_opt_in_for_current_external_research():
 
     system_prompt = ai_service.messages[0]["content"]
     assert "Research guard" in system_prompt
-    assert (
-        "ask before claiming live/current external facts"
-        in system_prompt
-    )
+    assert "ask before claiming live/current external facts" in system_prompt
 
 
 @pytest.mark.asyncio
@@ -271,6 +268,36 @@ async def test_rex_brain_chat_marks_planning_workspace_turns_as_resumable():
     assert "Planning: intent=create" in system_prompt
     assert "objective, constraints, milestones" in system_prompt
     assert "Do not claim saved without execution metadata" in system_prompt
+
+
+@pytest.mark.asyncio
+async def test_rex_brain_chat_preserves_memory_status_in_prompt_context():
+    ai_service = FakeAIService(response="Rex response")
+    memory_service = FakeMemoryService()
+    memory_service.structured_context = {
+        "memory_status": {
+            "state": "degraded",
+            "message": "Some memory sources could not be searched.",
+            "failures": [
+                {
+                    "source": "past_chat_memory",
+                    "message": "search failed",
+                }
+            ],
+        }
+    }
+    chat_service = _routed_chat_service(
+        ai_service,
+        memory_service,
+        grok_fast_model="grok-fast",
+    )
+
+    await chat_service.send_message("Do you know anything about my mom?")
+
+    system_prompt = ai_service.messages[0]["content"]
+    assert "memory_status/degraded" in system_prompt
+    assert "Failed sources: past_chat_memory" in system_prompt
+    assert "Do not say memory search found nothing" in system_prompt
 
 
 @pytest.mark.asyncio

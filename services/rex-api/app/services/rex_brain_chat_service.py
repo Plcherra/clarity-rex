@@ -349,10 +349,9 @@ class RexBrainChatService:
             "long_term_memory": [
                 dict(memory) for memory in brain_context.relevant_memories
             ],
-            "structured_context": {
-                key: [dict(record) for record in records]
-                for key, records in brain_context.structured_context.items()
-            },
+            "structured_context": self.prompt_structured_context(
+                brain_context.structured_context,
+            ),
             "accountability_signals": [
                 dict(signal) for signal in brain_context.accountability_signals
             ],
@@ -362,6 +361,20 @@ class RexBrainChatService:
                 else None
             ),
         }
+
+    def prompt_structured_context(self, structured_context: dict) -> dict:
+        safe_context = {}
+        for key, value in structured_context.items():
+            if isinstance(value, list):
+                safe_context[key] = [
+                    dict(record) if isinstance(record, dict) else record
+                    for record in value
+                ]
+            elif isinstance(value, dict):
+                safe_context[key] = dict(value)
+            else:
+                safe_context[key] = value
+        return safe_context
 
     def prompt_context_limit(
         self,

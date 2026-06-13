@@ -363,23 +363,64 @@ class ChatContextService:
 
         excerpts = []
         for message in messages:
-            content = str(message.get("content") or "").strip()
+            context_messages = await self.chat_excerpt_context(message)
+            content = self.chat_excerpt_content(context_messages)
             if not content:
                 continue
             if await self.chat_excerpt_was_rejected(message):
                 continue
-            role = str(message.get("role") or "message")
             excerpts.append(
                 {
                     "id": f"chat-{message.get('id')}",
                     "memory_type": "chat_excerpt",
-                    "content": f"Past chat {role}: {content}",
+                    "content": f"Past chat excerpt:\n{content}",
                     "importance": 3,
                     "created_at": message.get("timestamp"),
                     "relevance_reason": "Matched relevant past conversation.",
                 }
             )
         return excerpts
+
+    async def chat_excerpt_context(
+        self,
+        message: dict,
+        *,
+        before: int = 2,
+        after: int = 3,
+    ) -> list[dict]:
+        conversation_id = str(message.get("conversation_id") or "")
+        message_id = str(message.get("id") or "")
+        if not conversation_id or not message_id:
+            return [message]
+
+        get_messages = getattr(self.memory_service, "get_conversation_messages", None)
+        if get_messages is None:
+            return [message]
+
+        try:
+            conversation_messages = await get_messages(conversation_id, limit=80)
+        except Exception:
+            return [message]
+        if not conversation_messages:
+            return [message]
+
+        message_index = self.message_index(conversation_messages, message_id)
+        if message_index is None:
+            return [message]
+
+        start = max(0, message_index - before)
+        end = min(len(conversation_messages), message_index + after + 1)
+        return conversation_messages[start:end]
+
+    def chat_excerpt_content(self, messages: list[dict]) -> str:
+        lines = []
+        for message in messages:
+            content = str(message.get("content") or "").strip()
+            if not content:
+                continue
+            role = str(message.get("role") or "message")
+            lines.append(f"- {role}: {content}")
+        return "\n".join(lines)
 
     async def chat_excerpt_was_rejected(self, message: dict) -> bool:
         conversation_id = str(message.get("conversation_id") or "")

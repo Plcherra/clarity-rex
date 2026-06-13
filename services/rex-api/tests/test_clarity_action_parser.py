@@ -46,6 +46,15 @@ def test_clarity_action_parser_ignores_malformed_or_incomplete_blocks():
     assert proposals == []
 
 
+def test_clarity_action_parser_reports_unsupported_action_blocks():
+    parser = ClarityActionParser()
+    unsupported = parser.unsupported_actions(
+        'Done.\n```clarity_action\n{"action":"send_email","payload":{}}\n```'
+    )
+
+    assert unsupported == ["send_email"]
+
+
 def test_clarity_action_parser_merges_proposals_into_memory_changes():
     parser = ClarityActionParser()
     proposal = {

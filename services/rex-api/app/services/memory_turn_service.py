@@ -220,6 +220,43 @@ class MemoryTurnService(MemoryTurnDirectHelpers, MemoryTurnSummaries):
                 "messages": await self.recent_public_messages(conversation_id),
             }
 
+        if not isinstance(record, dict) or not record.get("id"):
+            failure_metadata = memory_degraded_metadata(
+                intent.metadata,
+                operation="save_long_term_memory",
+                failure_reason="durable_memory_save_missing",
+                user_visible=True,
+            )
+            log_memory_failure(
+                "direct_save_missing",
+                operation="save_long_term_memory",
+                error=RuntimeError("memory save returned no record"),
+                conversation_id=conversation_id,
+                memory_type=intent.memory_type,
+                metadata=failure_metadata,
+            )
+            response = (
+                "I understood that, but I couldn't save it just now. "
+                "Please try again in a moment."
+            )
+            assistant_message = await self.memory_service.save_message(
+                conversation_id,
+                "assistant",
+                response,
+            )
+            return {
+                "conversation_id": conversation_id,
+                "response": response,
+                "user_message": user_message,
+                "assistant_message": self.public_message(assistant_message),
+                "memory_correction": None,
+                "memory_changes": self._simple_memory_failed_summary(
+                    intent,
+                    metadata=failure_metadata,
+                ),
+                "messages": await self.recent_public_messages(conversation_id),
+            }
+
         response = self.memory_intent_service.saved_response(intent)
         assistant_message = await self.memory_service.save_message(
             conversation_id,

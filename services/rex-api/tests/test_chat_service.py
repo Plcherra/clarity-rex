@@ -114,6 +114,93 @@ async def test_chat_service_extracts_clarity_action_proposal():
 
 
 @pytest.mark.asyncio
+async def test_chat_service_replaces_pending_action_success_claim_with_confirmation():
+    ai_service = FakeAIService(
+        response=(
+            "Saved. I moved Starbucks to Coffee.\n\n"
+            "```clarity_action\n"
+            '{"action":"update_transaction",'
+            '"payload":{"id":"transaction-1","category_id":"category-coffee"},'
+            '"confirmation_text":"Move Starbucks to Coffee?",'
+            '"risk_level":"medium"}'
+            "\n```"
+        )
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Move Starbucks to Coffee")
+
+    assert result["response"] == "Move Starbucks to Coffee?"
+    assert result["messages"][-1]["content"] == result["response"]
+    assert result["memory_changes"]["clarity_action_proposals"][0]["status"] == (
+        "pending"
+    )
+
+
+@pytest.mark.asyncio
+async def test_chat_service_ignores_unsupported_clarity_action_proposal():
+    ai_service = FakeAIService(
+        response=(
+            "I can draft that.\n\n"
+            "```clarity_action\n"
+            '{"action":"send_email",'
+            '"payload":{"to":"mom@example.com"},'
+            '"confirmation_text":"Send email?",'
+            '"risk_level":"high"}'
+            "\n```"
+        )
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Send my mom an email")
+
+    assert result["response"] == "I can draft that."
+    assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
+async def test_chat_service_blocks_success_claim_for_unsupported_clarity_action():
+    ai_service = FakeAIService(
+        response=(
+            "Sent. I emailed your mom.\n\n"
+            "```clarity_action\n"
+            '{"action":"send_email",'
+            '"payload":{"to":"mom@example.com"},'
+            '"confirmation_text":"Send email?",'
+            '"risk_level":"high"}'
+            "\n```"
+        )
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Send my mom an email")
+
+    assert result["response"] == (
+        "I can't complete send email from Clarity yet. I can help you think it "
+        "through or draft it, but I won't claim it was done."
+    )
+    assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
+async def test_chat_service_blocks_memory_success_claim_without_backend_write():
+    ai_service = FakeAIService(response="Saved. I updated your city.")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Can you update that memory?")
+
+    assert result["response"] == (
+        "I can help with that, but I don't have a confirmed saved change from this "
+        "turn. Tell me the exact fact to save or try again."
+    )
+    assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
 async def test_chat_service_correction_uses_normal_single_llm_turn():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

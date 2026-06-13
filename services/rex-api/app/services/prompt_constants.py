@@ -14,7 +14,10 @@ REX_PERSONALITY_PROMPT = (
 MEMORY_DISCIPLINE_PROMPT = (
     "Memory/action rules: app code saves simple facts and corrections directly. "
     "Newer or corrected facts override older ones. Never claim memory, reminder, "
-    "goal, transaction, or other action changes unless execution metadata confirms success."
+    "goal, transaction, or other action changes unless execution metadata confirms success. "
+    "In generated responses, assume no durable memory edit happened in this turn unless "
+    "an explicit backend result says it did; do not say saved, updated, fixed, noted, "
+    "or remembered for memory edits that were not executed."
 )
 FILE_CONTEXT_PREFIX = "Uploaded file content:\n\n"
 PERSONALITY_CONTEXT_PREFIX = "Rex personality and behavior:\n"

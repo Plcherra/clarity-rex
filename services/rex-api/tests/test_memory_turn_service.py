@@ -467,6 +467,53 @@ async def test_memory_turn_service_updates_city_from_contextual_spelling_reply()
 
 
 @pytest.mark.asyncio
+async def test_memory_turn_service_updates_city_from_compressed_voice_spelling_reply():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Summerville, Massachusetts.",
+            "importance": 4,
+            "metadata": {"topic_fingerprint": "fact:identity:location"},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+    history = [
+        {
+            "id": "message-1",
+            "conversation_id": "conversation-1",
+            "role": "user",
+            "content": "Can you actually change the city name from Summerville?",
+        },
+        {
+            "id": "message-2",
+            "conversation_id": "conversation-1",
+            "role": "assistant",
+            "content": "Sure, what's the right city name? I'll update it.",
+        },
+    ]
+
+    result = await service.handle_turn(
+        "OInsteadOfU1M.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-3", "content": "OInsteadOfU1M."},
+        conversation_history=history,
+        time_context={"date": "2026-06-12"},
+    )
+
+    assert result is not None
+    assert result["response"] == (
+        "Got it, I updated that: you live in Somerville, Massachusetts."
+    )
+    assert result["memory_changes"]["updated"] == 1
+    assert store.long_term_memory[0]["content"] == (
+        "User lives in Somerville, Massachusetts."
+    )
+
+
+@pytest.mark.asyncio
 async def test_memory_turn_service_returns_none_for_normal_chat():
     store = FakeMemoryTurnStore()
     service = MemoryTurnService(store)
@@ -512,4 +559,36 @@ async def test_memory_turn_service_reports_save_failure_without_raising():
     metadata = result["memory_changes"]["records"][0]["metadata"]
     assert metadata["degraded"] is True
     assert metadata["failure_reason"] == "durable_memory_save_failed"
+    assert store.long_term_memory == []
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_does_not_claim_success_when_save_returns_no_record():
+    store = FakeMemoryTurnStore(return_empty_save_memory=True)
+    service = MemoryTurnService(store)
+    user_message = {
+        "id": "message-1",
+        "conversation_id": "conversation-1",
+        "role": "user",
+        "content": "My mom's birthday is June 18",
+    }
+
+    result = await service.handle_turn(
+        "My mom's birthday is June 18",
+        conversation_id="conversation-1",
+        user_message=user_message,
+        conversation_history=[],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert result is not None
+    assert result["response"] == (
+        "I understood that, but I couldn't save it just now. "
+        "Please try again in a moment."
+    )
+    assert result["memory_changes"]["created"] == 0
+    assert result["memory_changes"]["records"][0]["action"] == "save_failed"
+    metadata = result["memory_changes"]["records"][0]["metadata"]
+    assert metadata["degraded"] is True
+    assert metadata["failure_reason"] == "durable_memory_save_missing"
     assert store.long_term_memory == []

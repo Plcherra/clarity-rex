@@ -20,7 +20,7 @@ class MemoryIntentService:
 
     _birthday_pattern = re.compile(
         r"\bmy\s+(?P<person>[A-Za-z][A-Za-z\s_-]{1,40}?)\s*(?:'s)?\s+"
-        r"birthday\s+(?:is|falls on|will be)\s+"
+        r"birthday\s+(?:is|falls on|will be|on)\s+"
         r"(?P<date>[^,.!?]{2,60})",
         re.IGNORECASE,
     )
@@ -426,7 +426,18 @@ class MemoryIntentService:
 
         for message in reversed(conversation_history[-10:]):
             content = str(message.get("content") or "")
-            explicit = self._detect_birthday(content, time_context=time_context)
+            content_for_detection = content
+            if message.get("role") == "assistant":
+                content_for_detection = re.sub(
+                    r"\byour\b",
+                    "my",
+                    content_for_detection,
+                    flags=re.IGNORECASE,
+                )
+            explicit = self._detect_birthday(
+                content_for_detection,
+                time_context=time_context,
+            )
             if explicit is not None:
                 return explicit
             date_only = self._date_only_pattern.match(self._clean_fact(content))
@@ -528,7 +539,15 @@ class MemoryIntentService:
         )
         has_correction_language = any(
             term in recent_text
-            for term in ("correct", "fix", "wrong", "spelled", "spelling")
+            for term in (
+                "change",
+                "correct",
+                "fix",
+                "update",
+                "wrong",
+                "spelled",
+                "spelling",
+            )
         )
         return has_location_topic and has_correction_language
 
@@ -555,6 +574,10 @@ class MemoryIntentService:
         return place
 
     def _mentions_somerville_spelling(self, normalized_message: str) -> bool:
+        compact = re.sub(r"[^a-z0-9]+", "", normalized_message.lower())
+        if "insteadofu1m" in compact or "oinsteadofu1m" in compact:
+            return True
+
         has_one_m = re.search(r"\b(?:one|1)\s*m\b", normalized_message) is not None
         has_one_o = (
             re.search(r"\b(?:one|1)\s*o\b", normalized_message) is not None

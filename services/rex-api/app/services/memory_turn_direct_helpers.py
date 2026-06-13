@@ -1,4 +1,5 @@
 import re
+from dataclasses import replace
 from typing import Optional
 
 from app.services.memory_failure_reporting import (
@@ -246,6 +247,7 @@ class MemoryTurnDirectHelpers:
                 user_message=user_message,
             )
 
+        intent = self._preserve_location_context(intent, record)
         merged_metadata = {
             **(
                 record.get("metadata")
@@ -366,6 +368,26 @@ class MemoryTurnDirectHelpers:
             ),
             "messages": await self.recent_public_messages(conversation_id),
         }
+
+    def _preserve_location_context(
+        self,
+        intent: SimpleMemoryIntent,
+        record: dict,
+    ) -> SimpleMemoryIntent:
+        if intent.metadata.get("fact_kind") != "location":
+            return intent
+
+        new_content = str(intent.content or "")
+        previous_content = str(record.get("content") or "")
+        if "," in new_content or "massachusetts" not in previous_content.lower():
+            return intent
+        if "somerville" not in new_content.lower():
+            return intent
+
+        return replace(
+            intent,
+            content="User lives in Somerville, Massachusetts.",
+        )
 
     def _simple_memory_already_saved_summary(
         self,

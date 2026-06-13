@@ -80,29 +80,40 @@ def _select_financial_context(
             diagnostics.append(f"financial_context_{status_state}")
         elif isinstance(data_status, dict) and status_state is None:
             diagnostics.append("financial_context_data_status_invalid")
-        elif data_status is not None and not isinstance(data_status, dict) and not isinstance(
-            data_status, (str, int, float, bool)
+        elif (
+            data_status is not None
+            and not isinstance(data_status, dict)
+            and not isinstance(data_status, (str, int, float, bool))
         ):
             diagnostics.append("financial_context_data_status_invalid")
 
         freshness = safe_context.get("freshness")
         if isinstance(freshness, dict):
             freshness_state = freshness.get("state")
-            if isinstance(freshness_state, str) and freshness_state in {"stale", "unknown"}:
+            if isinstance(freshness_state, str) and freshness_state in {
+                "stale",
+                "unknown",
+            }:
                 diagnostics.append(f"financial_context_freshness_{freshness_state}")
 
     if scope == RexFinancialContextScope.SUMMARY_ONLY:
         selected = _copy_keys(safe_context, FINANCIAL_SUMMARY_KEYS)
     elif scope == RexFinancialContextScope.CURRENT_MONTH_ROLLUP:
-        selected = _copy_keys(safe_context, FINANCIAL_SUMMARY_KEYS + FINANCIAL_ROLLUP_KEYS)
+        selected = _copy_keys(
+            safe_context, FINANCIAL_SUMMARY_KEYS + FINANCIAL_ROLLUP_KEYS
+        )
         selected.pop("transactions", None)
     elif scope == RexFinancialContextScope.FULL_ROLLUP:
-        selected = _copy_keys(safe_context, FINANCIAL_SUMMARY_KEYS + FINANCIAL_ROLLUP_KEYS)
+        selected = _copy_keys(
+            safe_context, FINANCIAL_SUMMARY_KEYS + FINANCIAL_ROLLUP_KEYS
+        )
         selected.pop("transactions", None)
     else:
         selected = _copy_keys(
             safe_context,
-            FINANCIAL_SUMMARY_KEYS + FINANCIAL_ROLLUP_KEYS + tuple(RAW_FINANCIAL_RECORD_KEYS),
+            FINANCIAL_SUMMARY_KEYS
+            + FINANCIAL_ROLLUP_KEYS
+            + tuple(RAW_FINANCIAL_RECORD_KEYS),
         )
 
     return _fit_mapping_to_budget(
@@ -143,6 +154,9 @@ def _select_structured_context(
 
     selected: dict[str, tuple[dict[str, Any], ...]] = {}
     used_characters = 0
+    memory_status = structured_context.get("memory_status")
+    if isinstance(memory_status, dict):
+        selected["memory_status"] = _sanitize_value(memory_status)
     for key in STRUCTURED_CONTEXT_KEYS:
         records = structured_context.get(key) or []
         ranked_records = sorted(records, key=_structured_rank_key)

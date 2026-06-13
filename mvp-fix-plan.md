@@ -1,74 +1,55 @@
 # MVP Fix Plan
 
-## 1. All Transactions Must Be Categorized
+This plan is organized by launch priority groups. Work one full group at a time, starting with Group 1.
+
+Issue 1 is complete and removed from active MVP work. Active tracking now starts at Issue 2.
+
+## Group 1: Core Trust & Truth Issues (Highest Priority)
+
+### Issue 2: Memory Retrieval Can Silently Fail
 
 Issue:
-Plaid and imported transactions can still reach Clarity as `Unknown`, `Other`, `Uncategorized`, or `Needs category`. This is legacy review-queue behavior from the first version of the app. For the Plaid MVP, users should not have to review uncategorized transactions manually.
-
-Files:
-- `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/plaid_category_mapper.py`
-- `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/plaid_transaction_sync.py`
-- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/features/transactions/domain/spend_categories.dart`
-- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/features/transactions/domain/transaction_resolution.dart`
-- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/features/transactions/domain/transaction_review.dart`
-- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/features/transactions/application/category_workflow_service.dart`
-- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/rex/data/rex_financial_transaction_policy.dart`
-- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/rex/data/financial_context_service.dart`
-- `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/prompt_financial_context.py`
-
-Fix Needed:
-- Use Plaid category data when available, mapped into Clarity's category model.
-- Apply deterministic merchant/category rules before any transaction reaches the dashboard, budgets, or Rex.
-- Use AI categorization only as a controlled fallback when Plaid and deterministic rules are not enough.
-- Persist the final category so Dashboard, Accounts, Budgets, Transactions, and Rex all see the same result.
-- Remove `Unknown`, `Other`, `Uncategorized`, and `Needs category` from normal user-facing financial truth.
-- Keep a backend/internal degraded-state signal for any rows that still fail categorization, but do not present it as a normal category or user task.
-- Update Rex so unresolved rows are treated as a data-quality problem, not as something the user should manually review.
-- Add tests proving Plaid transactions, CSV transactions, and manual transactions resolve to a real category before they appear in financial read models.
-
-Goal After Fix:
-100% of visible financial transactions have a real category. Rex and the financial UI never disagree about category truth, and Rex does not mention uncategorized transactions unless categorization failed and the data is explicitly marked degraded.
-
-Priority:
-High
-
-## 2. Memory Retrieval Can Silently Fail
-
-Issue:
-Memory retrieval can silently fail and make Rex say it does not know something.
+Memory retrieval was recently improved, but Rex can still appear confident when memory/chat search is incomplete, unavailable, or not actually checked.
 
 Files:
 - `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/chat_context_service.py`
 - `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/memory_service.py`
 - `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/memory_retrieval_ranker.py`
+- `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/rex_brain_chat_service.py`
+- `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/rex_brain_context_selection.py`
 - `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/tests/test_chat_context_service.py`
+- `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/tests/test_memory_profile_recall.py`
 
 Fix Needed:
-- Replace silent empty-memory fallbacks with explicit degraded context when memory or chat search fails.
-- Make old-chat search reliable for people, family, places, events, goals, and preferences.
-- Add tests for questions like “Do you know anything about my mom?” and “What do you know about me?”
+- Keep memory and old-chat retrieval explicit for people, family, places, events, goals, and preferences.
+- Replace silent empty-memory fallbacks with degraded context when memory/chat search fails.
+- Make Rex distinguish between "I searched and found nothing" and "I could not access memory."
+- Keep validating questions like "Do you know anything about my mom?" and "What do you know about me?"
 
 Goal After Fix:
-Rex only says “I do not know” when memory search actually succeeded and found nothing. If search fails, Rex says memory is unavailable or degraded.
+Rex only says it does not know when memory search actually succeeded and found nothing. If search fails, Rex clearly says memory is unavailable or degraded.
 
 Priority:
 High
 
-## 3. Rex Can Claim Memory Updates Without Durable Confirmation
+### Issue 3: Rex Can Claim Memory Updates Without Durable Confirmation
 
 Issue:
-Rex can claim memory updates were saved even when the backend did not confirm the durable write.
+Rex can claim memory updates were saved, corrected, or deleted even when the backend did not confirm the durable write.
 
 Files:
 - `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/memory_intent_service.py`
 - `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/memory_correction_service.py`
 - `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/memory_discipline_service.py`
+- `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/rex_brain_chat_service.py`
 - `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/tests/test_memory_turn_service.py`
+- `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/tests/test_chat_simple_memory_flow.py`
 
 Fix Needed:
 - Require backend confirmation before Rex says a fact was saved, updated, corrected, or deleted.
-- Make corrections update the visible “What Clarity Knows” record.
-- Add tests for city correction, birthday memory, and reminder-style memory.
+- Make corrections update the visible "What Clarity Knows" record.
+- If a memory write fails, Rex must say it failed instead of pretending it worked.
+- Add/keep tests for city correction, birthday memory, and reminder-style memory.
 
 Goal After Fix:
 When Rex says it saved or fixed memory, the user can immediately see that change reflected in the app.
@@ -76,21 +57,23 @@ When Rex says it saved or fixed memory, the user can immediately see that change
 Priority:
 High
 
-## 4. Rex Action Truth Is Still Risky
+### Issue 4: Rex Action Truth Is Still Risky
 
 Issue:
-Rex action truth is still risky because advertised controls may not match backend support.
+Rex action truth is still risky because advertised actions may not match what the backend can actually execute.
 
 Files:
 - `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/rex/data/financial_context_service.dart`
 - `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/clarity_control_service.py`
 - `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/rex_intent_router.py`
 - `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/chat_service.py`
+- `/Users/pedromartins/Desktop/clarity-rex/services/rex-api/app/services/prompt_constants.py`
 
 Fix Needed:
-- Audit every action Rex can mention or route.
+- Audit every action Rex can mention, suggest, or route.
 - Remove unsupported actions from prompts and context.
-- Require confirmation for risky actions and backend confirmation before success language.
+- Require user confirmation before risky or durable actions.
+- Require backend confirmation before success language.
 
 Goal After Fix:
 Rex only offers actions the app can actually execute, and never fakes completion.
@@ -98,7 +81,9 @@ Rex only offers actions the app can actually execute, and never fakes completion
 Priority:
 High
 
-## 5. Manage Categories Scroll Bug
+## Group 2: UX Polish & Usability
+
+### Issue 5: Manage Categories Scroll Bug
 
 Issue:
 Manage Categories cannot reliably scroll to all saved categories on device.
@@ -119,7 +104,7 @@ Users can open Manage Categories and scroll through every saved category without
 Priority:
 High
 
-## 6. Account Cards Are Still Too Crowded
+### Issue 6: Account Cards Are Still Too Crowded
 
 Issue:
 Account cards still feel crowded and can make account identity hard to read.
@@ -142,7 +127,7 @@ Users can instantly recognize each account, and Rex uses the exact same account 
 Priority:
 High
 
-## 7. Dashboard Controls And Spacing Need Polish
+### Issue 7: Dashboard Controls And Spacing Need Polish
 
 Issue:
 Dashboard still has unnecessary controls and spacing that make the financial area feel unpolished.
@@ -165,7 +150,32 @@ The dashboard feels intentional, compact, and launch-ready.
 Priority:
 High
 
-## 8. Chats Tab Needs Search And Better Organization
+### Issue 11: Rex And Finance Use Separate Visual Token Systems
+
+Issue:
+Rex and finance screens still use separate visual token systems.
+
+Files:
+- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/app/app.dart`
+- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/rex/presentation/rex_ui_tokens.dart`
+- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/rex/presentation/rex_surfaces.dart`
+- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/features/dashboard/presentation/financial_dashboard_view.dart`
+- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/features/accounts/presentation/accounts_screen.dart`
+
+Fix Needed:
+- Make Rex surfaces and financial screens share one practical dark design system.
+- Keep spacing, card borders, typography, and accent colors consistent.
+- Avoid making Rex feel polished while finance feels separate.
+
+Goal After Fix:
+Clarity feels like one app, with Rex and finance using the same visual language.
+
+Priority:
+Medium
+
+## Group 3: Nice-to-Have
+
+### Issue 8: Chats Tab Needs Search And Better Organization
 
 Issue:
 Chats tab is hard to use for old conversations.
@@ -186,7 +196,7 @@ Users can find old Rex conversations quickly and trust that past context is acce
 Priority:
 Medium
 
-## 9. PDF Upload Is Not Supported
+### Issue 9: PDF Upload Is Not Supported
 
 Issue:
 PDF upload is not supported in Rex attachments.
@@ -208,7 +218,7 @@ Users can attach images and PDFs, or the app clearly communicates that PDFs are 
 Priority:
 Medium
 
-## 10. Voice Feels Slow And Robotic
+### Issue 10: Voice Feels Slow And Robotic
 
 Issue:
 Voice feels slow and robotic.
@@ -233,30 +243,9 @@ Voice feels responsive enough for daily use and does not sound painfully slow.
 Priority:
 Medium
 
-## 11. Rex And Finance Use Separate Visual Token Systems
+## Group 4: Technical Debt (Do Last)
 
-Issue:
-Rex and finance screens still use separate visual token systems.
-
-Files:
-- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/app/app.dart`
-- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/rex/presentation/rex_ui_tokens.dart`
-- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/rex/presentation/rex_surfaces.dart`
-- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/features/dashboard/presentation/financial_dashboard_view.dart`
-- `/Users/pedromartins/Desktop/clarity-rex/apps/mobile/lib/features/accounts/presentation/accounts_screen.dart`
-
-Fix Needed:
-- Make Rex surfaces and financial screens share one practical dark design system.
-- Keep spacing, card borders, typography, and accent colors consistent.
-- Avoid making Rex feel polished while finance feels separate.
-
-Goal After Fix:
-Clarity feels like one app, with Rex and finance using the same visual language.
-
-Priority:
-Medium
-
-## 12. Large App-Critical Files Increase Launch Risk
+### Issue 12: Large App-Critical Files Increase Launch Risk
 
 Issue:
 Large app-critical files make launch fixes risky.

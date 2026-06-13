@@ -6,6 +6,11 @@ from fastapi import UploadFile
 
 from app.services.ai_service import AIService
 from app.services.accountability_service import AccountabilityService
+from app.services.action_truth_policy import (
+    safe_pending_action_response,
+    safe_unexecuted_memory_response,
+    safe_unsupported_action_response,
+)
 from app.services.chat_context_service import ChatContextService
 from app.services.chat_turn_context import (
     ChatTurnContextService,
@@ -28,7 +33,7 @@ from app.services.rex_brain_chat_service import RexBrainChatService
 from app.services.rex_brain_contracts import (
     RexBrainChannel,
 )
-from app.services.rex_intent_router import RexIntentRouter
+from app.services.rex_intent_router import RexIntent, RexIntentRouter
 from app.services.rex_model_router import RexModelRouter
 from app.services.rex_observability import RexBrainObserver
 from app.services.time_context_service import TimeContextService
@@ -210,8 +215,17 @@ class ChatService(ChatVoiceMetadataMixin):
             ai_kwargs=ai_kwargs,
             latency_ms=self._elapsed_ms(llm_started_at),
         )
+        unsupported_actions = self.clarity_action_parser.unsupported_actions(
+            rex_response,
+        )
         assistant_response, clarity_action_proposals = (
             self.clarity_action_parser.extract_proposals(rex_response)
+        )
+        assistant_response = self._truthful_generated_response(
+            assistant_response,
+            clarity_action_proposals,
+            unsupported_actions=unsupported_actions,
+            intent_decision=intent_decision,
         )
         assistant_message = await self.memory_service.save_message(
             conversation_id,
@@ -394,8 +408,17 @@ class ChatService(ChatVoiceMetadataMixin):
                 yield {"event": "token", "token": visible_token}
 
         rex_response = "".join(response_parts).strip()
+        unsupported_actions = self.clarity_action_parser.unsupported_actions(
+            rex_response,
+        )
         assistant_response, clarity_action_proposals = (
             self.clarity_action_parser.extract_proposals(rex_response)
+        )
+        assistant_response = self._truthful_generated_response(
+            assistant_response,
+            clarity_action_proposals,
+            unsupported_actions=unsupported_actions,
+            intent_decision=intent_decision,
         )
         assistant_message = await self.memory_service.save_message(
             conversation_id,
@@ -468,6 +491,27 @@ class ChatService(ChatVoiceMetadataMixin):
             ]
             return updated_messages
         return updated_messages
+
+    def _truthful_generated_response(
+        self,
+        assistant_response: str,
+        clarity_action_proposals: list[dict],
+        *,
+        unsupported_actions: list[str],
+        intent_decision,
+    ) -> str:
+        response = safe_pending_action_response(
+            assistant_response,
+            clarity_action_proposals,
+        )
+        if clarity_action_proposals:
+            return response
+        response = safe_unsupported_action_response(response, unsupported_actions)
+        if unsupported_actions:
+            return response
+        if intent_decision.intent in {RexIntent.MEMORY_SAVE, RexIntent.MEMORY_UPDATE}:
+            return safe_unexecuted_memory_response(response)
+        return response
 
     async def _record_llm_usage(
         self,

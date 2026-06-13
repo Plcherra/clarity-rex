@@ -2,6 +2,8 @@ import json
 import re
 from typing import Optional
 
+from app.services.clarity_control_service import MUTATING_ACTIONS
+
 
 CLARITY_ACTION_BLOCK_PATTERN = re.compile(
     r"```clarity_action\s*(.*?)```",
@@ -10,6 +12,22 @@ CLARITY_ACTION_BLOCK_PATTERN = re.compile(
 
 
 class ClarityActionParser:
+    def unsupported_actions(self, response: str) -> list[str]:
+        actions: list[str] = []
+        for match in CLARITY_ACTION_BLOCK_PATTERN.finditer(response):
+            try:
+                decoded = json.loads(match.group(1).strip())
+            except json.JSONDecodeError:
+                continue
+            items = decoded if isinstance(decoded, list) else [decoded]
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                action = str(item.get("action") or "").strip()
+                if action and action not in MUTATING_ACTIONS:
+                    actions.append(action)
+        return actions
+
     def extract_proposals(self, response: str) -> tuple[str, list[dict]]:
         proposals: list[dict] = []
 
@@ -43,6 +61,8 @@ class ClarityActionParser:
         action = str(proposal.get("action") or "").strip()
         payload = proposal.get("payload")
         if not action or not isinstance(payload, dict):
+            return None
+        if action not in MUTATING_ACTIONS:
             return None
 
         confirmation_text = str(

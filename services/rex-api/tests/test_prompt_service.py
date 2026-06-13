@@ -107,6 +107,7 @@ def test_prompt_service_injects_time_conversation_memory_and_file_context():
     assert "warm, direct, honest, practical, and natural" in system_content
     assert "Memory/action rules:" in system_content
     assert "execution metadata confirms success" in system_content
+    assert "do not say saved, updated, fixed, noted, or remembered" in system_content
     assert "Current time context:" in system_content
     assert "- Clock: Tuesday afternoon" in system_content
     assert "- Previous message delta: earlier today" in system_content

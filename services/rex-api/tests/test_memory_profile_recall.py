@@ -179,6 +179,31 @@ async def test_chat_prompt_includes_past_chat_when_mom_fact_was_not_saved():
 
 
 @pytest.mark.asyncio
+async def test_chat_prompt_includes_surrounding_old_chat_turns_for_mom_recall():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    await memory_service.save_message(
+        conversation_id,
+        "user",
+        "How about you remember me about my mom's birthday?",
+    )
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        "Got it, I'll remember your mom's birthday on the 18th. Want a reminder?",
+    )
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    await chat_service.send_message("Do you know anything about my mom?")
+
+    system_content = ai_service.messages[0]["content"]
+    assert "- chat_excerpt: Past chat excerpt:" in system_content
+    assert "How about you remember me about my mom's birthday?" in system_content
+    assert "mom's birthday on the 18th" in system_content
+
+
+@pytest.mark.asyncio
 async def test_chat_prompt_ignores_past_chat_fact_user_rejected():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

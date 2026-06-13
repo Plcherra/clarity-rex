@@ -3,9 +3,11 @@ class FakeMemoryTurnStore:
         self,
         *,
         fail_save_memory=False,
+        return_empty_save_memory=False,
         fail_update_memory=False,
     ):
         self.fail_save_memory = fail_save_memory
+        self.return_empty_save_memory = return_empty_save_memory
         self.fail_update_memory = fail_update_memory
         self.messages = []
         self.long_term_memory = []
@@ -43,6 +45,8 @@ class FakeMemoryTurnStore:
     ):
         if self.fail_save_memory:
             raise RuntimeError("memory write failed")
+        if self.return_empty_save_memory:
+            return None
         memory = {
             "id": f"memory-{self.next_memory_id}",
             "memory_type": memory_type,
