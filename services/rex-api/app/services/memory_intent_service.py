@@ -73,10 +73,12 @@ class MemoryIntentService:
     )
     _explicit_save_request_pattern = re.compile(
         r"\b(?:remember|save|keep|note)\b.*\b(?:this|that|memory|birthday)\b|"
-        r"\bremember\s+me\s+(?:about|to)\b", re.IGNORECASE,
+        r"\bremember\s+me\s+(?:about|to)\b",
+        re.IGNORECASE,
     )
     _explicit_reject_request_pattern = re.compile(
-        r"\b(?:do\s+not|don't|dont|no|nope)\b.*\b(?:save|remember|keep)\b", re.IGNORECASE,
+        r"\b(?:do\s+not|don't|dont|no|nope)\b.*\b(?:save|remember|keep)\b",
+        re.IGNORECASE,
     )
     _date_only_pattern = re.compile(
         r"^(?:on\s+)?(?:the\s+)?(?P<date>[A-Za-z]+(?:\s+\d{1,2}(?:st|nd|rd|th)?)?|\d{1,2}(?:st|nd|rd|th)?)$",
@@ -125,8 +127,17 @@ class MemoryIntentService:
         conversation_history: list[dict],
         time_context: Optional[dict] = None,
     ) -> Optional[SimpleMemoryIntent]:
+        contextual_location = self._detect_contextual_location_memory(
+            message,
+            conversation_history=conversation_history,
+        )
+        if contextual_location is not None:
+            return contextual_location
+
         contextual_birthday = self._detect_contextual_birthday_memory(
-            message, conversation_history=conversation_history, time_context=time_context,
+            message,
+            conversation_history=conversation_history,
+            time_context=time_context,
         )
         if contextual_birthday is not None:
             return contextual_birthday
@@ -167,7 +178,9 @@ class MemoryIntentService:
     def is_contextual_memory_save_request(self, message: str) -> bool:
         normalized = self._normalize_reply(message)
         is_recall = normalized.startswith(("do you remember", "did you remember"))
-        return not is_recall and bool(self._explicit_save_request_pattern.search(normalized))
+        return not is_recall and bool(
+            self._explicit_save_request_pattern.search(normalized)
+        )
 
     def is_contextual_memory_reject_request(self, message: str) -> bool:
         normalized = self._normalize_reply(message)
@@ -291,6 +304,32 @@ class MemoryIntentService:
             return None
         return self._location_intent(place)
 
+    def _detect_contextual_location_memory(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+    ) -> Optional[SimpleMemoryIntent]:
+        if not self._recent_location_correction_context(conversation_history):
+            return None
+
+        normalized = self._normalize_reply(message)
+        recent_text = " ".join(
+            str(item.get("content") or "")
+            for item in conversation_history[-8:]
+            if item.get("role") in {"user", "assistant"}
+        ).lower()
+        if self._mentions_somerville_spelling(normalized):
+            if "massachusetts" in normalized or "massachusetts" in recent_text:
+                return self._location_intent("Somerville, Massachusetts")
+            return self._location_intent("Somerville")
+
+        direct_place = self._place_from_contextual_location_reply(message)
+        if direct_place:
+            return self._location_intent(direct_place)
+
+        return None
+
     def _location_intent(self, place: str) -> SimpleMemoryIntent:
         return SimpleMemoryIntent(
             memory_type="fact",
@@ -365,7 +404,9 @@ class MemoryIntentService:
 
     def _mentions_contextual_birthday_memory(self, message: str) -> bool:
         normalized = self._normalize_reply(message)
-        if "birthday" in normalized and self.is_contextual_memory_save_request(normalized):
+        if "birthday" in normalized and self.is_contextual_memory_save_request(
+            normalized
+        ):
             return True
         if self.is_contextual_memory_save_request(normalized) or (
             self.is_contextual_memory_reject_request(normalized)
@@ -414,7 +455,9 @@ class MemoryIntentService:
         cleaned = self._clean_fact(raw_date)
         return self._date_normalizer.normalize(cleaned, time_context=time_context)
 
-    def _recent_birthday_person(self, conversation_history: list[dict]) -> Optional[str]:
+    def _recent_birthday_person(
+        self, conversation_history: list[dict]
+    ) -> Optional[str]:
         recent_text = " ".join(
             str(message.get("content") or "")
             for message in conversation_history[-6:]
@@ -447,13 +490,81 @@ class MemoryIntentService:
         cleaned = self._clean_fact(place)
         normalized = cleaned.lower()
         message_normalized = message.lower()
-        if re.search(r"\b(?:summerville|somerville)\b", normalized) and re.search(
-            r"\b(?:one|1)\s*o\b", message_normalized
-        ) and re.search(r"\b(?:one|1)\s*m\b", message_normalized):
-            if "massachusetts" in message_normalized or "location" in message_normalized:
+        if re.search(
+            r"\b(?:summerville|somerville)\b",
+            normalized,
+        ) and self._mentions_somerville_spelling(message_normalized):
+            if (
+                "massachusetts" in message_normalized
+                or "location" in message_normalized
+            ):
                 return "Somerville, Massachusetts"
             return "Somerville"
         return cleaned
+
+    def _recent_location_correction_context(
+        self,
+        conversation_history: list[dict],
+    ) -> bool:
+        recent_text = " ".join(
+            str(message.get("content") or "")
+            for message in conversation_history[-6:]
+            if message.get("role") in {"user", "assistant"}
+        ).lower()
+        if not recent_text:
+            return False
+        has_location_topic = any(
+            term in recent_text
+            for term in (
+                "city",
+                "location",
+                "where i live",
+                "where you live",
+                "correct city",
+                "correct location",
+                "fix my city",
+                "fix my location",
+            )
+        )
+        has_correction_language = any(
+            term in recent_text
+            for term in ("correct", "fix", "wrong", "spelled", "spelling")
+        )
+        return has_location_topic and has_correction_language
+
+    def _place_from_contextual_location_reply(self, message: str) -> Optional[str]:
+        cleaned = self._clean_fact(message)
+        normalized = self._normalize_reply(message)
+        if "?" in message or normalized.startswith(
+            ("do ", "can ", "what ", "where ", "who ", "when ", "why ", "how ")
+        ):
+            return None
+        match = re.match(
+            r"^(?:it(?:'s| is)\s+|the\s+correct\s+(?:city|location)\s+is\s+)?"
+            r"(?P<place>[A-Z][A-Za-z\s,.'-]{2,80})"
+            r"(?:\.|,|$)",
+            cleaned,
+        )
+        if match is None:
+            return None
+        place = self._clean_place(match.group("place"), message)
+        if len(place) < 2:
+            return None
+        if place.lower() in {"thanks", "yes", "no", "you"}:
+            return None
+        return place
+
+    def _mentions_somerville_spelling(self, normalized_message: str) -> bool:
+        has_one_m = re.search(r"\b(?:one|1)\s*m\b", normalized_message) is not None
+        has_one_o = (
+            re.search(r"\b(?:one|1)\s*o\b", normalized_message) is not None
+            or re.search(r"\b(?:one|1)\s*m\s+and\s+o\b", normalized_message) is not None
+        )
+        has_wrong_spelling_hint = any(
+            hint in normalized_message
+            for hint in ("instead of u", "two m", "2 m", "summerville", "somerville")
+        )
+        return has_one_m and has_one_o and has_wrong_spelling_hint
 
     def _sentence_body(self, content: str) -> str:
         body = content.strip().rstrip(".")

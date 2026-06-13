@@ -31,9 +31,7 @@ async def test_memory_turn_service_saves_simple_memory_directly():
     metadata = result["memory_changes"]["records"][0]["metadata"]
     assert metadata["memory_path"] == "direct_save"
     assert metadata["review_required"] is False
-    assert store.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 18."
-    )
+    assert store.long_term_memory[0]["content"] == ("User's mom's birthday is June 18.")
 
 
 @pytest.mark.asyncio
@@ -54,7 +52,10 @@ async def test_memory_turn_service_skips_when_memory_already_saved():
     result = await service.handle_turn(
         "My mom's birthday is June 18",
         conversation_id="conversation-1",
-        user_message={"id": "message-repeat", "content": "My mom's birthday is June 18"},
+        user_message={
+            "id": "message-repeat",
+            "content": "My mom's birthday is June 18",
+        },
         conversation_history=[],
         time_context={"date": "2026-06-01"},
     )
@@ -84,7 +85,10 @@ async def test_memory_turn_service_updates_same_topic_instead_of_duplicating():
     result = await service.handle_turn(
         "My mom's birthday is June 28",
         conversation_id="conversation-1",
-        user_message={"id": "message-update", "content": "My mom's birthday is June 28"},
+        user_message={
+            "id": "message-update",
+            "content": "My mom's birthday is June 28",
+        },
         conversation_history=[],
         time_context={"date": "2026-06-01"},
     )
@@ -93,9 +97,7 @@ async def test_memory_turn_service_updates_same_topic_instead_of_duplicating():
     assert result["memory_changes"]["updated"] == 1
     assert result["memory_changes"]["records"][0]["action"] == "direct_updated"
     assert len(store.long_term_memory) == 1
-    assert store.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 28."
-    )
+    assert store.long_term_memory[0]["content"] == ("User's mom's birthday is June 28.")
     assert store.long_term_memory[0]["metadata"]["updated_from_memory_id"] == (
         "memory-existing"
     )
@@ -130,9 +132,7 @@ async def test_memory_turn_service_updates_birthday_without_my_prefix():
     assert result is not None
     assert result["memory_changes"]["updated"] == 1
     assert len(store.long_term_memory) == 1
-    assert store.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 28."
-    )
+    assert store.long_term_memory[0]["content"] == ("User's mom's birthday is June 28.")
 
 
 @pytest.mark.asyncio
@@ -328,8 +328,7 @@ async def test_memory_turn_service_updates_legacy_movie_plan_without_fingerprint
 
     assert result is not None
     assert result["response"] == (
-        "Got it, I updated that: "
-        "you plan to watch Masters of the Universe today."
+        "Got it, I updated that: " "you plan to watch Masters of the Universe today."
     )
     assert result["memory_changes"]["updated"] == 1
     assert len(store.long_term_memory) == 1
@@ -415,8 +414,55 @@ async def test_memory_turn_service_saves_contextual_birthday_answer():
 
     assert result is not None
     assert result["memory_changes"]["created"] == 1
+    assert store.long_term_memory[0]["content"] == ("User's mom's birthday is June 18.")
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_updates_city_from_contextual_spelling_reply():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Summerville, Massachusetts.",
+            "importance": 4,
+            "metadata": {"topic_fingerprint": "fact:identity:location"},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+    history = [
+        {
+            "id": "message-1",
+            "conversation_id": "conversation-1",
+            "role": "user",
+            "content": "Can you fix my city name, which you saved wrong?",
+        },
+        {
+            "id": "message-2",
+            "conversation_id": "conversation-1",
+            "role": "assistant",
+            "content": "Sure, what's the correct city? I'll note it.",
+        },
+    ]
+
+    result = await service.handle_turn(
+        "Massachusetts. It's with one m and o instead of u and two m's.",
+        conversation_id="conversation-1",
+        user_message={
+            "id": "message-3",
+            "content": (
+                "Massachusetts. It's with one m and o instead of u and two m's."
+            ),
+        },
+        conversation_history=history,
+        time_context={"date": "2026-06-12"},
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["updated"] == 1
     assert store.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 18."
+        "User lives in Somerville, Massachusetts."
     )
 
 

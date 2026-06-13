@@ -53,3 +53,15 @@ def test_plaid_category_mapper_covers_more_personal_finance_categories(
         )
         == expected
     )
+
+
+def test_plaid_category_mapper_never_returns_empty_category_for_expense():
+    assert (
+        clarity_category_for_plaid_transaction(
+            {
+                "name": "UNKNOWN MERCHANT WITH NO PLAID CATEGORY",
+                "amount": 12.34,
+            }
+        )
+        == "Miscellaneous"
+    )

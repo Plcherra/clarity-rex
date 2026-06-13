@@ -376,7 +376,7 @@ String suggestCategoryFromDescription(String description, {double? amount}) {
       _trySuggestHousing(h) ??
       _trySuggestFoodTransportShoppingMid(h) ??
       _trySuggestRemainingBuckets(h) ??
-      'Uncategorized';
+      kAutomaticFallbackCategoryName;
 }
 
 /// True for spend buckets that represent money in, not spending (case-insensitive).

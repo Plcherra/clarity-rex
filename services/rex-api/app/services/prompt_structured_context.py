@@ -16,6 +16,11 @@ class PromptStructuredContextMixin:
         entity_names = self._entity_name_map(structured_context.get("entities") or [])
         plan_titles = self._plan_title_map(structured_context.get("plans") or [])
 
+        used_characters = self._append_structured_line(
+            lines,
+            used_characters,
+            self._memory_status_line(structured_context.get("memory_status")),
+        )
         for entity in structured_context.get("entities") or []:
             used_characters = self._append_structured_line(
                 lines,
@@ -78,6 +83,35 @@ class PromptStructuredContextMixin:
 
         lines.append(line)
         return used_characters + len(line) + 1
+
+    def _memory_status_line(self, status: object) -> Optional[str]:
+        if not isinstance(status, dict):
+            return None
+        state = str(status.get("state") or "ready")
+        if state == "ready":
+            return None
+
+        message = str(
+            status.get("message") or "Some memory sources could not be searched."
+        )
+        failure_sources = []
+        failures = status.get("failures")
+        if isinstance(failures, list):
+            for failure in failures:
+                if not isinstance(failure, dict):
+                    continue
+                source = failure.get("source")
+                if source:
+                    failure_sources.append(str(source))
+        source_text = (
+            f" Failed sources: {', '.join(sorted(set(failure_sources)))}."
+            if failure_sources
+            else ""
+        )
+        return (
+            f"- memory_status/{state}: {message}{source_text} "
+            "Do not say memory search found nothing when memory status is degraded."
+        )
 
     def _entity_line(self, entity: dict) -> Optional[str]:
         name = entity.get("display_name") or entity.get("normalized_name")
@@ -159,7 +193,9 @@ class PromptStructuredContextMixin:
 
         plan_title = plan_titles.get(str(milestone.get("plan_id") or ""))
         subject = f" for {plan_title}" if plan_title else ""
-        line = f"- milestone/{milestone.get('milestone_type') or 'step'}{subject}: {title}"
+        line = (
+            f"- milestone/{milestone.get('milestone_type') or 'step'}{subject}: {title}"
+        )
         description = milestone.get("description")
         if description:
             line = f"{line} - {description}"
@@ -221,4 +257,3 @@ class PromptStructuredContextMixin:
             for plan in plans
             if plan.get("id") and plan.get("title")
         }
-

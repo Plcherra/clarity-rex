@@ -349,6 +349,57 @@ async def test_transaction_sync_reuses_existing_normalized_category_from_plaid_p
 
 
 @pytest.mark.asyncio
+async def test_transaction_sync_assigns_fallback_category_when_plaid_has_no_category():
+    class UnknownPlaidClient(SinglePagePlaidClient):
+        async def sync_transactions(self, access_token, *, cursor=None, count=100):
+            return {
+                "added": [
+                    {
+                        "transaction_id": "txn-unknown-1",
+                        "account_id": "plaid-account-1",
+                        "amount": 19.99,
+                        "date": "2026-06-01",
+                        "name": "UNKNOWN MERCHANT",
+                        "pending": False,
+                    }
+                ],
+                "modified": [],
+                "removed": [],
+                "next_cursor": "cursor-next",
+                "has_more": False,
+            }
+
+    cursor_service = FakeCursorService()
+    cursor_service.categories = []
+    sync = PlaidTransactionSync(
+        plaid_client=UnknownPlaidClient(),
+        cursor_service=cursor_service,
+    )
+
+    await sync.sync_transactions(
+        user_id="user-1",
+        item_id="item-record-1",
+        access_token="access-token-secret",
+        cursor=None,
+        account_map={"plaid-account-1": "linked-account-1"},
+    )
+
+    category_call = next(
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "POST" and call.get("table") == "categories"
+    )
+    assert category_call["body"]["name"] == "Miscellaneous"
+
+    upsert_call = next(
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "POST" and call.get("table") == "transactions"
+    )
+    assert upsert_call["body"]["category_id"] == "category-created-1"
+
+
+@pytest.mark.asyncio
 async def test_transaction_sync_backfills_existing_uncategorized_plaid_rows():
     cursor_service = FakeCursorService()
     cursor_service.categories = []

@@ -17,10 +17,12 @@ class FakeContextMemoryStore:
         *,
         fail_recent_messages=False,
         fail_relevant_memories=False,
+        fail_search_messages=False,
         fail_structured_context=False,
     ):
         self.fail_recent_messages = fail_recent_messages
         self.fail_relevant_memories = fail_relevant_memories
+        self.fail_search_messages = fail_search_messages
         self.fail_structured_context = fail_structured_context
         self.relevant_memory_queries = []
         self.search_message_queries = []
@@ -108,6 +110,8 @@ class FakeContextMemoryStore:
                 "exclude_conversation_id": exclude_conversation_id,
             }
         )
+        if self.fail_search_messages:
+            raise RuntimeError("past chat search failed")
         terms = {
             term.strip("'").removesuffix("'s")
             for term in re.findall(r"[a-z0-9']+", query.lower())
@@ -274,6 +278,87 @@ async def test_chat_context_uses_inventory_query_for_broad_memory_recall():
 
 
 @pytest.mark.asyncio
+async def test_chat_context_uses_inventory_query_for_about_me_recall():
+    store = FakeContextMemoryStore()
+    service = ChatContextService(store)
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message="What do you know about me?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert "profile_facts" in structured_context
+    assert [memory["id"] for memory in memories] == [
+        "profile-1",
+        "shared-1",
+        "chat-past-message-2",
+        "chat-past-message-1",
+    ]
+    assert store.relevant_memory_queries == [
+        {"query": MEMORY_INVENTORY_QUERY, "limit": 8},
+    ]
+
+
+@pytest.mark.asyncio
+async def test_chat_context_keeps_specific_person_memory_queries_targeted():
+    store = FakeContextMemoryStore()
+    service = ChatContextService(store)
+
+    _, memories, _ = await service.fetch_prompt_context(
+        message="Do you know anything about my mom?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert any(memory["id"] == "chat-past-message-2" for memory in memories)
+    assert store.relevant_memory_queries[0] == {
+        "query": "Do you know anything about my mom?",
+        "limit": 8,
+    }
+    assert store.search_message_queries[0]["query"] == (
+        "Do you know anything about my mom?"
+    )
+
+
+@pytest.mark.asyncio
+async def test_chat_context_uses_recent_subject_for_old_chat_followup():
+    store = FakeContextMemoryStore()
+    store.messages = [
+        {
+            "id": "message-1",
+            "role": "user",
+            "content": "Do you know anything about my mom?",
+            "timestamp": "2026-06-12T12:00:00Z",
+        },
+        {
+            "id": "message-2",
+            "role": "assistant",
+            "content": "I do not have anything saved about your mom.",
+            "timestamp": "2026-06-12T12:00:10Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, memories, _ = await service.fetch_prompt_context(
+        message="Can you check the old chats?",
+        conversation_id="conversation-1",
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert any(memory["id"] == "chat-past-message-2" for memory in memories)
+    assert store.search_message_queries == [
+        {
+            "query": (
+                "Do you know anything about my mom? Can you check the old chats?"
+            ),
+            "limit": 4,
+            "exclude_conversation_id": "conversation-1",
+        }
+    ]
+
+
+@pytest.mark.asyncio
 async def test_chat_context_loads_goals_without_long_term_memory_for_goal_intent():
     store = FakeContextMemoryStore()
     service = ChatContextService(store)
@@ -342,7 +427,14 @@ async def test_chat_context_structured_context_failure_is_best_effort():
         conversation_id=None,
     )
 
-    assert structured_context == {}
+    memory_status = structured_context["memory_status"]
+    assert memory_status["state"] == "degraded"
+    assert memory_status["failures"] == [
+        {
+            "source": "structured_memory",
+            "message": "structured context failed",
+        }
+    ]
 
 
 @pytest.mark.asyncio
@@ -417,6 +509,12 @@ async def test_chat_context_relevant_memory_failure_is_best_effort():
     assert structured_context["profile_facts"][0]["fact"] == (
         "timezone is America/New_York"
     )
+    memory_status = structured_context["memory_status"]
+    assert memory_status["state"] == "degraded"
+    assert memory_status["failures"] == [
+        {"source": "long_term_memory", "message": "relevant memory failed"},
+        {"source": "profile_memory", "message": "relevant memory failed"},
+    ]
 
 
 @pytest.mark.asyncio
@@ -437,6 +535,33 @@ async def test_chat_context_recent_message_failure_is_best_effort():
     assert structured_context["profile_facts"][0]["fact"] == (
         "timezone is America/New_York"
     )
+    memory_status = structured_context["memory_status"]
+    assert memory_status["state"] == "degraded"
+    assert memory_status["failures"] == [
+        {"source": "recent_messages", "message": "recent messages failed"}
+    ]
+
+
+@pytest.mark.asyncio
+async def test_chat_context_past_chat_failure_is_degraded_not_empty_truth():
+    service = ChatContextService(FakeContextMemoryStore(fail_search_messages=True))
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message="Do you know anything about my mom?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert [memory["id"] for memory in memories] == [
+        "shared-1",
+        "memory-1",
+        "profile-1",
+    ]
+    memory_status = structured_context["memory_status"]
+    assert memory_status["state"] == "degraded"
+    assert memory_status["failures"] == [
+        {"source": "past_chat_memory", "message": "past chat search failed"}
+    ]
 
 
 @pytest.mark.asyncio

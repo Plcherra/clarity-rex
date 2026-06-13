@@ -156,7 +156,11 @@ void main() {
             ).contains(TransactionReviewReason.needsCategory),
           )
           .toList(growable: false);
-      expect(reviewRows.map((row) => row.transaction.fingerprint), ['unknown']);
+      expect(reviewRows.map((row) => row.transaction.fingerprint), isEmpty);
+      final unknown = resolved.singleWhere(
+        (row) => row.transaction.fingerprint == 'unknown',
+      );
+      expect(unknown.displayCategory, kAutomaticFallbackCategoryName);
 
       final rexIndex = buildRexDrilldownIndex(
         resolvedTransactions: resolved,
@@ -164,19 +168,16 @@ void main() {
       );
       final reviewQueues =
           rexIndex['review_queues'] as List<Map<String, dynamic>>;
-      final needsCategory = reviewQueues.singleWhere(
-        (queue) => queue['key'] == 'needsCategory',
-      );
-      expect(needsCategory['label'], 'Uncategorized review');
-      expect(needsCategory['transaction_count'], 1);
-      expect(needsCategory['sample_transaction_ids'], contains('unknown'));
-      final samples = needsCategory['sample_transactions'] as List<dynamic>;
       expect(
-        (samples.single as Map<String, dynamic>)['description'],
-        'UNCLASSIFIED MERCHANT',
+        reviewQueues.map((queue) => queue['key']),
+        isNot(contains('needsCategory')),
       );
 
       final categories = rexIndex['categories'] as List<Map<String, dynamic>>;
+      final miscellaneous = categories.singleWhere(
+        (category) => category['label'] == kAutomaticFallbackCategoryName,
+      );
+      expect(miscellaneous['spend'], 7);
       final grocery = categories.singleWhere(
         (category) => category['label'] == 'Grocery / Supermarket',
       );
@@ -272,15 +273,15 @@ void main() {
   );
 
   test(
-    'Rex default transaction selection keeps review rows in large ledgers',
+    'Rex default transaction selection keeps true review rows in large ledgers',
     () {
       final records = [
         _record(
-          id: 'old-unknown',
+          id: 'old-card-payment',
           amount: 9,
           type: 'expense',
-          description: 'OLD UNKNOWN MERCHANT',
-          categoryId: 'cat-unknown',
+          description: 'ONLINE BANKING PAYMENT TO CRD VISA',
+          categoryId: 'cat-card-payment',
           date: DateTime(2025, 1, 2),
         ),
         for (var i = 0; i < 160; i += 1)
@@ -309,7 +310,7 @@ void main() {
       );
 
       expect(selected, hasLength(120));
-      expect(selected.map((record) => record.id), contains('old-unknown'));
+      expect(selected.map((record) => record.id), contains('old-card-payment'));
       expect(selected.first.id, 'recent-159');
     },
   );

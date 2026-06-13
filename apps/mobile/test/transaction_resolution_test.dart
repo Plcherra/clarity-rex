@@ -137,7 +137,7 @@ void main() {
     expect(source.countsAsIncome, isFalse);
   });
 
-  test('unknown statement rows are marked for category review', () {
+  test('unknown statement rows resolve to automatic fallback category', () {
     final transaction = Transaction(
       date: DateTime(2026, 3, 9),
       description: 'MYSTERY POS PURCHASE',
@@ -155,10 +155,11 @@ void main() {
       allTransactions: [transaction],
     );
 
-    expect(resolved.needsCategorization, isTrue);
+    expect(resolved.displayCategory, kAutomaticFallbackCategoryName);
+    expect(resolved.needsCategorization, isFalse);
     expect(
       transactionReviewReasons(resolved),
-      contains(TransactionReviewReason.needsCategory),
+      isNot(contains(TransactionReviewReason.needsCategory)),
     );
   });
 

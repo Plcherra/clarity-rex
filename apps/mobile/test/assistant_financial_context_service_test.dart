@@ -7,7 +7,7 @@ import 'package:clarity/features/transactions/domain/transaction_resolution.dart
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Rex transaction context stays bounded and keeps review rows', () {
+  test('Rex transaction context stays bounded and keeps newest rows', () {
     final records = [
       for (var i = 0; i < 150; i += 1)
         _record(
@@ -44,8 +44,8 @@ void main() {
     );
 
     expect(selected, hasLength(120));
-    expect(selected.map((record) => record.id), contains('tx-0'));
     expect(selected.first.id, 'tx-149');
+    expect(selected.map((record) => record.id), isNot(contains('tx-0')));
   });
 
   test(
@@ -109,72 +109,131 @@ void main() {
       expect(accounts.map((item) => item['label']), contains('Visa'));
 
       final categories = index['categories'] as List<Map<String, dynamic>>;
+      expect(categories.map((item) => item['label']), isNot(contains('Other')));
+      expect(
+        categories.map((item) => item['label']),
+        isNot(contains(kUnknownCategoryName)),
+      );
       final coffee = categories.singleWhere(
         (item) => item['label'] == 'Coffee / Quick Food',
       );
       expect(coffee['spend'], 8.25);
+      final miscellaneous = categories.singleWhere(
+        (item) => item['label'] == kAutomaticFallbackCategoryName,
+      );
+      expect(miscellaneous['spend'], 12);
 
       final reviewQueues = index['review_queues'] as List<Map<String, dynamic>>;
-      final needsCategory = reviewQueues.singleWhere(
-        (item) => item['key'] == 'needsCategory',
-      );
-      expect(needsCategory['label'], 'Uncategorized review');
-      expect(needsCategory['transaction_count'], 1);
-      expect(needsCategory['sample_transaction_ids'], contains('unknown'));
-      final samples = needsCategory['sample_transactions'] as List<dynamic>;
       expect(
-        (samples.single as Map<String, dynamic>)['description'],
-        'Unknown purchase',
+        reviewQueues.map((item) => item['key']),
+        isNot(contains('needsCategory')),
       );
     },
   );
 
   test(
-    'Rex transaction context keeps review rows when fingerprint differs',
+    'Rex resolves unknown spend rows to the fallback category instead of review',
     () {
-      final records = [
-        for (var i = 0; i < 150; i += 1)
-          _record(
-            id: 'db-$i',
-            date: DateTime(2026, 1, 1).add(Duration(days: i)),
-            categoryId: i == 0 ? kUnknownCategoryName : 'food',
-            description: i == 0 ? 'Uncategorized Plaid row' : 'Coffee $i',
-            source: 'plaid',
-            importedFromCsv: false,
-          ),
-      ];
+      const account = Account(
+        id: 'checking',
+        name: 'Checking',
+        type: AccountType.checking,
+      );
       final transactions = [
-        for (final record in records)
+        for (var i = 0; i < 12; i += 1)
           Transaction(
-            date: record.date,
-            description: record.description ?? '',
-            amount: -record.amount.abs(),
-            accountId: record.accountId,
-            categoryLabel: record.categoryId == kUnknownCategoryName
-                ? kUnknownCategoryName
-                : 'Food & Drink',
-            fingerprint: 'plaid-${record.id}',
-            source: record.source,
+            date: DateTime(2026, 6, 1 + i),
+            description: 'Unknown merchant $i',
+            amount: -10 - i.toDouble(),
+            accountId: account.id,
+            categoryLabel: i.isEven ? kUnknownCategoryName : 'Other',
+            fingerprint: 'unknown-$i',
           ),
+        Transaction(
+          date: DateTime(2026, 6, 20),
+          description: 'Coffee',
+          amount: -8,
+          accountId: account.id,
+          categoryLabel: 'Coffee / Quick Food',
+          fingerprint: 'coffee',
+        ),
       ];
       final resolved = resolveTransactions(
         transactions,
         categoryOverrides: const {},
         categoryDisplayRenamesLower: const {},
-        accountsById: const {},
+        accountsById: {account.id: account},
         allTransactions: transactions,
       );
 
-      final selected = selectRexTransactionContextRows(
-        transactions: records,
+      final index = buildRexDrilldownIndex(
         resolvedTransactions: resolved,
-        maxRows: 120,
+        accountsById: {account.id: account},
       );
 
-      expect(selected, hasLength(120));
-      expect(selected.map((record) => record.id), contains('db-0'));
+      final categories = index['categories'] as List<Map<String, dynamic>>;
+      expect(categories.map((item) => item['label']), [
+        kAutomaticFallbackCategoryName,
+        'Coffee / Quick Food',
+      ]);
+      final miscellaneous = categories.singleWhere(
+        (item) => item['label'] == kAutomaticFallbackCategoryName,
+      );
+      expect(miscellaneous['transaction_count'], 12);
+      expect(miscellaneous['included_sample_count'], 8);
+
+      final reviewQueues = index['review_queues'] as List<Map<String, dynamic>>;
+      expect(
+        reviewQueues.map((item) => item['key']),
+        isNot(contains('needsCategory')),
+      );
     },
   );
+
+  test('Rex transaction context stays bounded with newest rows', () {
+    final records = [
+      for (var i = 0; i < 150; i += 1)
+        _record(
+          id: 'db-$i',
+          date: DateTime(2026, 1, 1).add(Duration(days: i)),
+          categoryId: i == 0 ? kUnknownCategoryName : 'food',
+          description: i == 0 ? 'Uncategorized Plaid row' : 'Coffee $i',
+          source: 'plaid',
+          importedFromCsv: false,
+        ),
+    ];
+    final transactions = [
+      for (final record in records)
+        Transaction(
+          date: record.date,
+          description: record.description ?? '',
+          amount: -record.amount.abs(),
+          accountId: record.accountId,
+          categoryLabel: record.categoryId == kUnknownCategoryName
+              ? kUnknownCategoryName
+              : 'Food & Drink',
+          fingerprint: 'plaid-${record.id}',
+          source: record.source,
+        ),
+    ];
+    final resolved = resolveTransactions(
+      transactions,
+      categoryOverrides: const {},
+      categoryDisplayRenamesLower: const {},
+      accountsById: const {},
+      allTransactions: transactions,
+    );
+
+    final selected = selectRexTransactionContextRows(
+      transactions: records,
+      resolvedTransactions: resolved,
+      maxRows: 120,
+    );
+
+    expect(selected, hasLength(120));
+    expect(selected.map((record) => record.id), isNot(contains('db-0')));
+    expect(selected.first.id, 'db-149');
+  });
 
   test(
     'Rex financial context reports degraded reads instead of empty truth',

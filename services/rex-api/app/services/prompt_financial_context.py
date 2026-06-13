@@ -15,7 +15,7 @@ class PromptFinancialContextMixin:
             return None
 
         lines = [
-            "Rex is inside Clarity. Use this as first-party Clarity financial context. It may include specific accounts, account names, budgets, categories, merchants, descriptions, and transaction rows. You may reference specific records when they are present. Review queues are not user-facing categories; describe them as app review states, and use included transaction rows or sample_transactions to list names/descriptions when present. If this context says data is unavailable, degraded, stale, partial, or incomplete, say that clearly before answering and do not guess missing accounts, balances, budgets, categories, or transactions. For create/update/delete requests, ask for confirmation and append a fenced ```clarity_action``` JSON object with action, payload, confirmation_text, and risk_level. Use only actions listed in available_controls. Never claim a financial record was changed unless an execution result says it succeeded."
+            "Rex is inside Clarity. Use this as first-party Clarity financial context. It may include specific accounts, account names, budgets, categories, merchants, descriptions, and transaction rows. You may reference specific records when they are present. Review queues are not user-facing dashboard categories; describe them as app review states that may be hidden from normal category lists, and use included transaction rows or sample_transactions to list names/descriptions when present. Do not offer to pull, check, fetch, or list transaction details later unless the details are already present in this context or an execution result provides them; if only aggregate review data is present, say the exact rows are not included in this turn. If this context says data is unavailable, degraded, stale, partial, or incomplete, say that clearly before answering and do not guess missing accounts, balances, budgets, categories, or transactions. For create/update/delete requests, ask for confirmation and append a fenced ```clarity_action``` JSON object with action, payload, confirmation_text, and risk_level. Use only actions listed in available_controls. Never claim a financial record was changed unless an execution result says it succeeded."
         ]
         used_characters = len(lines[0]) + 1
 
@@ -233,14 +233,37 @@ class PromptFinancialContextMixin:
         return lines
 
     def _financial_slice_summary(self, item: dict) -> str:
+        label = str(item.get("label") or "")
+        key = str(item.get("key") or "")
+        display_label = "Category data issue" if key == "needsCategory" else label
+        is_review_queue = "review" in label.lower() or key in {
+            "needsCategory",
+            "internalPayment",
+            "manualRole",
+            "ignored",
+        }
         summary = (
-            f"{item.get('label')} count={item.get('transaction_count')} "
+            f"{display_label} count={item.get('transaction_count')} "
             f"spend={item.get('spend')} income={item.get('income')} "
             f"net={item.get('net')} latest={item.get('latest_date')}"
         )
+        detail_status = item.get("detail_status")
+        if detail_status:
+            summary = f"{summary} detail_status={detail_status}"
+        if item.get("user_facing_category") is False:
+            summary = (
+                f"{summary} user_facing_category=false "
+                "note=review_queue_not_dashboard_category"
+            )
+        included_sample_count = item.get("included_sample_count")
+        if included_sample_count is not None:
+            summary = f"{summary} included_sample_count={included_sample_count}"
         samples = self._list_value(item, "sample_transactions")
         if samples:
-            summary = f"{summary} samples={self._compact_json(samples[:5])}"
+            sample_limit = 50 if is_review_queue else 5
+            summary = f"{summary} samples={self._compact_json(samples[:sample_limit])}"
+        elif item.get("key") or "review" in str(item.get("label") or "").lower():
+            summary = f"{summary} detail_status=aggregate_only"
         return summary
 
     def _financial_increase_summary(self, item: dict) -> str:

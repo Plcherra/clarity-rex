@@ -8,6 +8,7 @@ import 'package:clarity/features/transactions/domain/transaction_resolution.dart
 const int kMaxRexTransactionContextRows = 120;
 const int kMaxRexDrilldownGroups = 18;
 const int kMaxRexDrilldownSampleIds = 8;
+const int kMaxRexReviewQueueSampleIds = 50;
 
 List<TransactionRecord> selectRexTransactionContextRows({
   required List<TransactionRecord> transactions,
@@ -75,15 +76,15 @@ Map<String, dynamic> buildRexDrilldownIndex({
         )
         .add(resolved);
 
-    final category = resolved.displayCategory.trim().isEmpty
-        ? 'Unknown'
-        : resolved.displayCategory.trim();
-    byCategory
-        .putIfAbsent(
-          category,
-          () => _RexSliceAccumulator(key: category, label: category),
-        )
-        .add(resolved);
+    if (_isVisibleFinancialCategorySlice(resolved)) {
+      final category = resolved.displayCategory.trim();
+      byCategory
+          .putIfAbsent(
+            category,
+            () => _RexSliceAccumulator(key: category, label: category),
+          )
+          .add(resolved);
+    }
 
     for (final reason in transactionReviewReasons(resolved)) {
       final key = reason.name;
@@ -103,7 +104,11 @@ Map<String, dynamic> buildRexDrilldownIndex({
     'months': _sliceContexts(byMonth.values, sortByLatest: true),
     'accounts': _sliceContexts(byAccount.values),
     'categories': _sliceContexts(byCategory.values, sortBySpend: true),
-    'review_queues': _sliceContexts(byReview.values),
+    'review_queues': _sliceContexts(
+      byReview.values,
+      sampleLimit: kMaxRexReviewQueueSampleIds,
+      userFacingCategory: false,
+    ),
   };
 }
 
@@ -111,6 +116,8 @@ List<Map<String, dynamic>> _sliceContexts(
   Iterable<_RexSliceAccumulator> groups, {
   bool sortByLatest = false,
   bool sortBySpend = false,
+  int sampleLimit = kMaxRexDrilldownSampleIds,
+  bool userFacingCategory = true,
 }) {
   final sorted = groups.toList();
   sorted.sort((a, b) {
@@ -127,7 +134,11 @@ List<Map<String, dynamic>> _sliceContexts(
     return b.transactionCount.compareTo(a.transactionCount);
   });
   return [
-    for (final group in sorted.take(kMaxRexDrilldownGroups)) group.toContext(),
+    for (final group in sorted.take(kMaxRexDrilldownGroups))
+      group.toContext(
+        sampleLimit: sampleLimit,
+        userFacingCategory: userFacingCategory,
+      ),
   ];
 }
 
@@ -155,30 +166,50 @@ class _RexSliceAccumulator {
     _samples.add(resolved);
   }
 
-  Map<String, dynamic> toContext() {
+  Map<String, dynamic> toContext({
+    required int sampleLimit,
+    required bool userFacingCategory,
+  }) {
     _samples.sort((a, b) {
       final byDate = b.transaction.date.compareTo(a.transaction.date);
       if (byDate != 0) return byDate;
       return _transactionId(b).compareTo(_transactionId(a));
     });
+    final includedSamples = _samples.take(sampleLimit).toList(growable: false);
+    final allRowsIncluded = includedSamples.length == transactionCount;
     return {
       'key': key,
       'label': label,
+      'user_facing_category': userFacingCategory,
       'transaction_count': transactionCount,
       'spend': _moneyValue(spend),
       'income': _moneyValue(income),
       'net': _moneyValue(net),
       if (latestDate != null) 'latest_date': _dateOnlyValue(latestDate!),
+      'included_sample_count': includedSamples.length,
+      'detail_status': allRowsIncluded
+          ? 'all_rows_included'
+          : 'sample_rows_included',
+      'can_list_all_included_rows': allRowsIncluded,
       'sample_transaction_ids': [
-        for (final sample in _samples.take(kMaxRexDrilldownSampleIds))
-          _transactionId(sample),
+        for (final sample in includedSamples) _transactionId(sample),
       ],
       'sample_transactions': [
-        for (final sample in _samples.take(kMaxRexDrilldownSampleIds))
-          _sampleTransactionContext(sample),
+        for (final sample in includedSamples) _sampleTransactionContext(sample),
       ],
     };
   }
+}
+
+bool _isVisibleFinancialCategorySlice(ResolvedTransaction resolved) {
+  final transaction = resolved.transaction;
+  final category = resolved.displayCategory.trim();
+  return category.isNotEmpty &&
+      !isUnresolvedCategoryLabel(category) &&
+      !isIncomeCategoryLabel(category) &&
+      !isIgnoredCategoryLabel(category) &&
+      resolved.countsAsSpend &&
+      !transaction.pending;
 }
 
 String? _recordIdForResolvedTransaction(
@@ -237,7 +268,7 @@ Map<String, dynamic> _sampleTransactionContext(ResolvedTransaction resolved) {
 
 String _reviewReasonLabel(TransactionReviewReason reason) {
   return switch (reason) {
-    TransactionReviewReason.needsCategory => 'Uncategorized review',
+    TransactionReviewReason.needsCategory => 'Category data issue',
     TransactionReviewReason.internalPayment => 'Possible internal payment',
     TransactionReviewReason.manualRole => 'Manual role',
     TransactionReviewReason.ignored => 'Ignored',

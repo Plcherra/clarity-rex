@@ -190,18 +190,51 @@ def test_prompt_service_injects_unified_financial_context():
                     {
                         "key": "needsCategory",
                         "label": "Uncategorized review",
-                        "transaction_count": 1,
-                        "spend": 24.5,
+                        "transaction_count": 6,
+                        "spend": 59.5,
                         "income": 0,
-                        "net": -24.5,
+                        "net": -59.5,
                         "latest_date": "2026-05-21",
+                        "user_facing_category": False,
+                        "detail_status": "all_rows_included",
+                        "included_sample_count": 6,
                         "sample_transactions": [
                             {
                                 "id": "transaction-1",
                                 "date": "2026-05-21",
                                 "description": "Coffee Shop",
                                 "amount": -24.5,
-                            }
+                            },
+                            {
+                                "id": "transaction-2",
+                                "date": "2026-05-20",
+                                "description": "Unknown Merchant 2",
+                                "amount": -5,
+                            },
+                            {
+                                "id": "transaction-3",
+                                "date": "2026-05-19",
+                                "description": "Unknown Merchant 3",
+                                "amount": -6,
+                            },
+                            {
+                                "id": "transaction-4",
+                                "date": "2026-05-18",
+                                "description": "Unknown Merchant 4",
+                                "amount": -7,
+                            },
+                            {
+                                "id": "transaction-5",
+                                "date": "2026-05-17",
+                                "description": "Unknown Merchant 5",
+                                "amount": -8,
+                            },
+                            {
+                                "id": "transaction-6",
+                                "date": "2026-05-16",
+                                "description": "Unknown Merchant 6",
+                                "amount": -9,
+                            },
                         ],
                     }
                 ]
@@ -250,7 +283,11 @@ def test_prompt_service_injects_unified_financial_context():
     assert FINANCIAL_CONTEXT_PREFIX in system_content
     assert "Rex is inside Clarity" in system_content
     assert "specific accounts, account names, budgets" in system_content
-    assert "Review queues are not user-facing categories" in system_content
+    assert "Review queues are not user-facing dashboard categories" in system_content
+    assert (
+        "Do not offer to pull, check, fetch, or list transaction details later"
+        in system_content
+    )
     assert "Data status: state=ready; complete=True; freshness=fresh" in system_content
     assert "reference_month=2026-05" in system_content
     assert "spent_this_month=3100.5" in system_content
@@ -258,9 +295,50 @@ def test_prompt_service_injects_unified_financial_context():
     assert "Food: 500 -> 900 (80%)" in system_content
     assert "Main Checking" in system_content
     assert "Coffee Shop" in system_content
-    assert "Uncategorized review count=1" in system_content
+    assert "Unknown Merchant 6" in system_content
+    assert "Category data issue count=6" in system_content
+    assert "user_facing_category=false" in system_content
+    assert "review_queue_not_dashboard_category" in system_content
     assert "sample_transactions" in system_content
     assert "create_transaction" in system_content
+
+
+def test_prompt_service_marks_aggregate_only_review_queue_without_rows():
+    service = PromptService()
+
+    messages = service.build_messages(
+        user_message="List uncategorized transactions.",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "generated_at": "2026-06-12T20:00:00Z",
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "transaction_slices": {
+                "review_queues": [
+                    {
+                        "key": "needsCategory",
+                        "label": "Uncategorized review",
+                        "transaction_count": 36,
+                        "spend": 36,
+                        "income": 0,
+                        "net": -36,
+                        "latest_date": "2026-06-07",
+                        "user_facing_category": False,
+                    }
+                ]
+            },
+        },
+    )
+
+    system_content = messages[0]["content"]
+    assert "Category data issue count=36" in system_content
+    assert "user_facing_category=false" in system_content
+    assert "review_queue_not_dashboard_category" in system_content
+    assert "detail_status=aggregate_only" in system_content
+    assert "exact rows are not included in this turn" in system_content
 
 
 def test_prompt_service_warns_when_financial_context_is_degraded_or_stale():
@@ -472,3 +550,29 @@ def test_prompt_service_injects_accountability_before_generic_memory():
     assert "sources: personal_rule:Avoid DoorDash" in system_content
     assert "Suggested framing: You said DoorDash was off-limits" in system_content
     assert "Action: Hold the user to the rule." in system_content
+
+
+def test_prompt_service_surfaces_degraded_memory_status():
+    service = PromptService(TimeContextService(timezone_name="America/New_York"))
+
+    messages = service.build_messages(
+        user_message="Do you know anything about my mom?",
+        structured_context={
+            "memory_status": {
+                "state": "degraded",
+                "message": "Some memory sources could not be searched.",
+                "failures": [
+                    {
+                        "source": "past_chat_memory",
+                        "message": "past chat search failed",
+                    }
+                ],
+            }
+        },
+    )
+
+    system_content = messages[0]["content"]
+    assert STRUCTURED_MEMORY_PREFIX in system_content
+    assert "memory_status/degraded" in system_content
+    assert "Failed sources: past_chat_memory" in system_content
+    assert "Do not say memory search found nothing" in system_content

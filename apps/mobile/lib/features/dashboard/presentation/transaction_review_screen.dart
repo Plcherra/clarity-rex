@@ -122,9 +122,6 @@ class _TransactionReviewScreenState extends State<TransactionReviewScreen> {
     final reasons = transactionReviewReasons(transaction);
     return switch (_filter) {
       _ReviewQueueFilter.all => reasons.isNotEmpty,
-      _ReviewQueueFilter.uncategorized => reasons.contains(
-        TransactionReviewReason.needsCategory,
-      ),
       _ReviewQueueFilter.internalPayments => reasons.contains(
         TransactionReviewReason.internalPayment,
       ),
@@ -599,18 +596,11 @@ class _ReviewEmptyState extends StatelessWidget {
   }
 }
 
-enum _ReviewQueueFilter {
-  all,
-  uncategorized,
-  internalPayments,
-  manualRoles,
-  ignored,
-}
+enum _ReviewQueueFilter { all, internalPayments, manualRoles, ignored }
 
 String _reviewFilterLabel(_ReviewQueueFilter filter) {
   return switch (filter) {
     _ReviewQueueFilter.all => 'All',
-    _ReviewQueueFilter.uncategorized => 'Uncategorized',
     _ReviewQueueFilter.internalPayments => 'Internal payments',
     _ReviewQueueFilter.manualRoles => 'Manual roles',
     _ReviewQueueFilter.ignored => 'Ignored',
@@ -620,7 +610,6 @@ String _reviewFilterLabel(_ReviewQueueFilter filter) {
 IconData _reviewFilterIcon(_ReviewQueueFilter filter) {
   return switch (filter) {
     _ReviewQueueFilter.all => Icons.fact_check_outlined,
-    _ReviewQueueFilter.uncategorized => Icons.category_outlined,
     _ReviewQueueFilter.internalPayments => Icons.swap_horiz_rounded,
     _ReviewQueueFilter.manualRoles => Icons.account_tree_outlined,
     _ReviewQueueFilter.ignored => Icons.visibility_off_outlined,
@@ -629,7 +618,7 @@ IconData _reviewFilterIcon(_ReviewQueueFilter filter) {
 
 String _reviewReasonLabel(TransactionReviewReason reason) {
   return switch (reason) {
-    TransactionReviewReason.needsCategory => 'Needs category',
+    TransactionReviewReason.needsCategory => 'Category data issue',
     TransactionReviewReason.internalPayment => 'Possible internal payment',
     TransactionReviewReason.manualRole => 'Manual role',
     TransactionReviewReason.ignored => 'Ignored',

@@ -185,8 +185,6 @@ class PlaidTransactionSync:
         category_cache: dict[str, str],
     ) -> Optional[str]:
         category_name = clarity_category_for_plaid_transaction(transaction)
-        if not category_name:
-            return None
         key = normalized_category_key(category_name)
         if not key:
             return None

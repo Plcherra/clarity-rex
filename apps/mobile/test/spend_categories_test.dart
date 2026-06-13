@@ -1,4 +1,5 @@
 import 'package:clarity/features/transactions/domain/spend_categories.dart';
+import 'package:clarity/features/categories/domain/category_normalization.dart';
 import 'package:clarity/core/models/transaction.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -54,7 +55,7 @@ void main() {
         'INDN:MARTINS PEDRO DES:PAYROLL',
         amount: -100,
       ),
-      'Uncategorized',
+      kAutomaticFallbackCategoryName,
     );
   });
 
@@ -85,5 +86,22 @@ void main() {
     );
 
     expect(spendGroupLabel(transaction), 'Coffee / Quick Food');
+  });
+
+  test('unknown merchants resolve to a real fallback category', () {
+    expect(
+      suggestCategoryFromDescription('MYSTERY POS PURCHASE', amount: -12.34),
+      kAutomaticFallbackCategoryName,
+    );
+
+    final transaction = Transaction(
+      date: DateTime(2026, 3, 9),
+      description: 'MYSTERY POS PURCHASE',
+      amount: -12.34,
+      accountId: 'checking',
+      categoryLabel: kUnknownCategoryName,
+    );
+
+    expect(spendGroupLabel(transaction), kAutomaticFallbackCategoryName);
   });
 }

@@ -53,6 +53,8 @@ _CATEGORY_BY_DETAILED_PFC = {
     "TRANSPORTATION_TAXIS_AND_RIDE_SHARES": "Transportation",
 }
 
+_AUTOMATIC_FALLBACK_CATEGORY = "Miscellaneous"
+
 
 def normalized_category_key(raw: str) -> str:
     value = raw.strip().lower().replace("&", " and ")
@@ -64,8 +66,10 @@ def normalized_category_key(raw: str) -> str:
 
 def clarity_category_for_plaid_transaction(
     transaction: dict[str, Any],
-) -> Optional[str]:
-    description = _text(transaction.get("merchant_name")) or _text(transaction.get("name"))
+) -> str:
+    description = _text(transaction.get("merchant_name")) or _text(
+        transaction.get("name")
+    )
     description_lower = description.lower()
     amount = _number_or_zero(transaction.get("amount"))
 
@@ -84,7 +88,7 @@ def clarity_category_for_plaid_transaction(
 
     if amount < 0:
         return "Income / Payroll"
-    return None
+    return _AUTOMATIC_FALLBACK_CATEGORY
 
 
 def _category_for_keywords(description_lower: str, *, amount: float) -> Optional[str]:
@@ -96,15 +100,25 @@ def _category_for_keywords(description_lower: str, *, amount: float) -> Optional
         return "Income / Payroll"
     if "zelle" in description_lower and amount < 0:
         return "Income / Zelle Received"
-    if any(token in description_lower for token in ("credit card payment", "cc payment")):
+    if any(
+        token in description_lower for token in ("credit card payment", "cc payment")
+    ):
         return "Credit Card Payment"
-    if any(token in description_lower for token in ("overdraft protection", "account transfer")):
+    if any(
+        token in description_lower
+        for token in ("overdraft protection", "account transfer")
+    ):
         return "Transfer Out" if amount >= 0 else "Transfer In"
-    if any(token in description_lower for token in ("uber", "lyft", "mbta", "gas", "parking")):
+    if any(
+        token in description_lower
+        for token in ("uber", "lyft", "mbta", "gas", "parking")
+    ):
         return "Transportation"
     if any(token in description_lower for token in ("cvs", "walgreens", "pharmacy")):
         return "Pharmacy / Health"
-    if any(token in description_lower for token in ("market", "grocery", "supermarket")):
+    if any(
+        token in description_lower for token in ("market", "grocery", "supermarket")
+    ):
         return "Grocery / Supermarket"
     if any(
         token in description_lower
@@ -116,11 +130,16 @@ def _category_for_keywords(description_lower: str, *, amount: float) -> Optional
         for token in ("cursor", "11labs", "11 labs", "hetzner", "hasner")
     ):
         return "Subscriptions"
-    if any(token in description_lower for token in ("apple.com/bill", "google *", "youtube")):
+    if any(
+        token in description_lower
+        for token in ("apple.com/bill", "google *", "youtube")
+    ):
         return "Subscriptions"
     if any(token in description_lower for token in ("gog.com", "gog ")):
         return "Shopping"
-    if any(token in description_lower for token in ("amc ", "amc theatre", "amc online")):
+    if any(
+        token in description_lower for token in ("amc ", "amc theatre", "amc online")
+    ):
         return "Entertainment"
     if any(token in description_lower for token in ("rent", "mortgage")):
         return "Housing"

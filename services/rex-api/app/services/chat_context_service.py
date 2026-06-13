@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import time
+from dataclasses import dataclass
 from typing import Optional
 
 from app.services.accountability_service import AccountabilityService
@@ -35,6 +36,20 @@ MEMORY_REJECTION_MARKERS = (
     "won't save that",
     "will not save that",
 )
+CONTEXT_ERROR_KEY = "_context_error"
+
+
+@dataclass(frozen=True)
+class ContextFetchError:
+    source: str
+    message: str
+
+    def as_dict(self) -> dict:
+        return {
+            CONTEXT_ERROR_KEY: True,
+            "source": self.source,
+            "message": self.message,
+        }
 
 
 class ChatContextService:
@@ -64,39 +79,43 @@ class ChatContextService:
     ) -> tuple[list[dict], list[dict], dict]:
         fetch_started = time.perf_counter()
         timings_ms: dict[str, int] = {}
+        memory_failures: list[dict] = []
         load_long_term_memory = self._load_long_term_memory(intent_decision)
         load_profile_memory = self._load_profile_memory(intent_decision)
         load_structured_memory = self._load_structured_memory(intent_decision)
         load_goal_context = self._load_goal_context(intent_decision)
-        memory_query = self.memory_retrieval_query(message)
+        memory_query = self.memory_retrieval_query(
+            message,
+            conversation_history=[],
+        )
         load_profile_memory = load_profile_memory and memory_query not in {
             PROFILE_MEMORY_QUERY,
             MEMORY_INVENTORY_QUERY,
         }
 
-        long_term_memory_task = (
-            self.timed_fetch(
+        long_term_memory_task = None
+        if load_long_term_memory and conversation_id is None:
+            long_term_memory_task = self.timed_fetch(
                 "long_term_memory",
                 self.fetch_relevant_memories(query=memory_query, limit=8),
                 timings_ms,
             )
-            if load_long_term_memory
-            else self.empty_list()
-        )
         profile_memory_task = (
             self.timed_fetch(
                 "profile_memory",
                 self.fetch_relevant_memories(
                     query=PROFILE_MEMORY_QUERY,
                     limit=PROFILE_MEMORY_LIMIT,
+                    source="profile_memory",
                 ),
                 timings_ms,
             )
             if load_profile_memory
             else self.empty_list()
         )
-        past_chat_memory_task = (
-            self.timed_fetch(
+        past_chat_memory_task = None
+        if load_long_term_memory and conversation_id is None:
+            past_chat_memory_task = self.timed_fetch(
                 "past_chat_memory",
                 self.fetch_relevant_chat_excerpts(
                     query=memory_query,
@@ -105,9 +124,6 @@ class ChatContextService:
                 ),
                 timings_ms,
             )
-            if load_long_term_memory
-            else self.empty_list()
-        )
         structured_context_task = self.timed_fetch(
             "structured_context",
             self.fetch_structured_context(
@@ -119,15 +135,34 @@ class ChatContextService:
         )
         if conversation_id is None:
             (
-                long_term_memory,
-                profile_memory,
-                past_chat_memory,
+                raw_long_term_memory,
+                raw_profile_memory,
+                raw_past_chat_memory,
                 structured_context,
             ) = await asyncio.gather(
-                long_term_memory_task,
+                long_term_memory_task or self.empty_list(),
                 profile_memory_task,
-                past_chat_memory_task,
+                past_chat_memory_task or self.empty_list(),
                 structured_context_task,
+            )
+            long_term_memory = self.context_items(
+                raw_long_term_memory,
+                memory_failures,
+            )
+            profile_memory = self.context_items(raw_profile_memory, memory_failures)
+            past_chat_memory = self.context_items(
+                raw_past_chat_memory,
+                memory_failures,
+            )
+            structured_context = self.with_memory_status(
+                structured_context,
+                memory_failures,
+                attempted_sources={
+                    "long_term_memory": load_long_term_memory,
+                    "profile_memory": load_profile_memory,
+                    "past_chat_memory": load_long_term_memory,
+                    "structured_memory": load_structured_memory,
+                },
             )
             merged_memory = self.merge_memories(
                 long_term_memory,
@@ -159,22 +194,71 @@ class ChatContextService:
                 structured_context,
             )
 
-        (
-            conversation_history,
-            long_term_memory,
-            profile_memory,
-            past_chat_memory,
-            structured_context,
-        ) = await asyncio.gather(
-            self.timed_fetch(
+        if load_long_term_memory:
+            conversation_history = await self.timed_fetch(
                 "recent_messages",
                 self.fetch_recent_messages(conversation_id, limit=20),
                 timings_ms,
-            ),
+            )
+            conversation_history = self.context_items(
+                conversation_history,
+                memory_failures,
+            )
+            memory_query = self.memory_retrieval_query(
+                message,
+                conversation_history=conversation_history,
+            )
+            long_term_memory_task = self.timed_fetch(
+                "long_term_memory",
+                self.fetch_relevant_memories(query=memory_query, limit=8),
+                timings_ms,
+            )
+            past_chat_memory_task = self.timed_fetch(
+                "past_chat_memory",
+                self.fetch_relevant_chat_excerpts(
+                    query=memory_query,
+                    limit=PAST_CHAT_MEMORY_LIMIT,
+                    exclude_conversation_id=conversation_id,
+                ),
+                timings_ms,
+            )
+        else:
+            conversation_history = await self.timed_fetch(
+                "recent_messages",
+                self.fetch_recent_messages(conversation_id, limit=20),
+                timings_ms,
+            )
+            conversation_history = self.context_items(
+                conversation_history,
+                memory_failures,
+            )
+            long_term_memory_task = self.empty_list()
+            past_chat_memory_task = self.empty_list()
+
+        (
+            raw_long_term_memory,
+            raw_profile_memory,
+            raw_past_chat_memory,
+            structured_context,
+        ) = await asyncio.gather(
             long_term_memory_task,
             profile_memory_task,
             past_chat_memory_task,
             structured_context_task,
+        )
+        long_term_memory = self.context_items(raw_long_term_memory, memory_failures)
+        profile_memory = self.context_items(raw_profile_memory, memory_failures)
+        past_chat_memory = self.context_items(raw_past_chat_memory, memory_failures)
+        structured_context = self.with_memory_status(
+            structured_context,
+            memory_failures,
+            attempted_sources={
+                "recent_messages": True,
+                "long_term_memory": load_long_term_memory,
+                "profile_memory": load_profile_memory,
+                "past_chat_memory": load_long_term_memory,
+                "structured_memory": load_structured_memory,
+            },
         )
         merged_memory = self.merge_memories(
             long_term_memory,
@@ -217,22 +301,35 @@ class ChatContextService:
                 conversation_id,
                 limit=limit,
             )
-        except Exception:
-            return []
+        except Exception as exc:
+            LOGGER.warning("rex_memory_fetch_failed source=recent_messages")
+            return [
+                ContextFetchError(
+                    source="recent_messages",
+                    message=self.safe_error_message(exc),
+                ).as_dict()
+            ]
 
     async def fetch_relevant_memories(
         self,
         *,
         query: str,
         limit: int,
+        source: str = "long_term_memory",
     ) -> list[dict]:
         try:
             return await self.memory_service.get_relevant_memories(
                 query=query,
                 limit=limit,
             )
-        except Exception:
-            return []
+        except Exception as exc:
+            LOGGER.warning("rex_memory_fetch_failed source=%s", source)
+            return [
+                ContextFetchError(
+                    source=source,
+                    message=self.safe_error_message(exc),
+                ).as_dict()
+            ]
 
     async def fetch_relevant_chat_excerpts(
         self,
@@ -243,15 +340,26 @@ class ChatContextService:
     ) -> list[dict]:
         search_messages = getattr(self.memory_service, "search_messages", None)
         if search_messages is None:
-            return []
+            return [
+                ContextFetchError(
+                    source="past_chat_memory",
+                    message="Past chat search is unavailable.",
+                ).as_dict()
+            ]
         try:
             messages = await search_messages(
                 query,
                 limit=limit,
                 exclude_conversation_id=exclude_conversation_id,
             )
-        except Exception:
-            return []
+        except Exception as exc:
+            LOGGER.warning("rex_memory_fetch_failed source=past_chat_memory")
+            return [
+                ContextFetchError(
+                    source="past_chat_memory",
+                    message=self.safe_error_message(exc),
+                ).as_dict()
+            ]
 
         excerpts = []
         for message in messages:
@@ -333,26 +441,168 @@ class ChatContextService:
     async def empty_list(self) -> list[dict]:
         return []
 
-    def memory_retrieval_query(self, message: str) -> str:
+    def context_items(
+        self,
+        items: list[dict],
+        failures: list[dict],
+    ) -> list[dict]:
+        clean_items = []
+        for item in items:
+            if item.get(CONTEXT_ERROR_KEY) is True:
+                failures.append(
+                    {
+                        "source": item.get("source") or "memory",
+                        "message": item.get("message") or "Memory lookup failed.",
+                    }
+                )
+                continue
+            clean_items.append(item)
+        return clean_items
+
+    def with_memory_status(
+        self,
+        structured_context: dict,
+        failures: list[dict],
+        *,
+        attempted_sources: dict,
+    ) -> dict:
+        attempted_memory_sources = {
+            key: value
+            for key, value in attempted_sources.items()
+            if key != "recent_messages"
+        }
+        if not failures and not any(attempted_memory_sources.values()):
+            return structured_context
+
+        status = {
+            "state": "degraded" if failures else "ready",
+            "message": (
+                "Some memory sources could not be searched."
+                if failures
+                else "Memory sources searched successfully."
+            ),
+            "attempted_sources": attempted_sources,
+            "failures": failures,
+        }
+        existing = structured_context.get("memory_status")
+        if isinstance(existing, dict):
+            existing_failures = existing.get("failures")
+            if isinstance(existing_failures, list):
+                status["failures"] = [*existing_failures, *status["failures"]]
+            existing_attempted = existing.get("attempted_sources")
+            if isinstance(existing_attempted, dict):
+                status["attempted_sources"] = {
+                    **existing_attempted,
+                    **status["attempted_sources"],
+                }
+            if status["failures"]:
+                status["state"] = "degraded"
+                status["message"] = "Some memory sources could not be searched."
+        if not structured_context:
+            return {"memory_status": status}
+        return {**structured_context, "memory_status": status}
+
+    def safe_error_message(self, exc: Exception) -> str:
+        message = str(exc).strip()
+        return message or exc.__class__.__name__
+
+    def memory_retrieval_query(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+    ) -> str:
         normalized = " ".join(str(message or "").lower().split())
         if self.is_memory_inventory_query(normalized):
             return MEMORY_INVENTORY_QUERY
+        if self.is_contextual_memory_followup(normalized):
+            subject = self.recent_memory_subject(conversation_history)
+            if subject:
+                return f"{subject} {message}".strip()
         return message
 
     def is_memory_inventory_query(self, normalized_message: str) -> bool:
         broad_inventory_questions = {
             "what do you know",
+            "what do you know about me",
             "what do you remember",
+            "what do you remember about me",
             "what does clarity know",
+            "what does clarity know about me",
             "what information do you have",
+            "what information do you have about me",
             "what have you saved",
             "what do you have saved",
+            "what do you have saved about me",
             "what rex knows",
+            "what does rex know",
+            "what does rex know about me",
+            "what does rex remember",
+            "what does rex remember about me",
+            "what does hackrex know",
+            "what does hackrex know about me",
+            "what information do you know",
+            "what information do you know about me",
         }
         normalized = normalized_message.rstrip("?.! ")
         if normalized not in broad_inventory_questions:
             return False
-        return " about " not in f" {normalized} "
+        return " about " not in f" {normalized} " or normalized.endswith(" about me")
+
+    def is_contextual_memory_followup(self, normalized_message: str) -> bool:
+        return any(
+            phrase in normalized_message
+            for phrase in (
+                "check old chat",
+                "check old chats",
+                "check chat",
+                "check chats",
+                "check the chat",
+                "check the chats",
+                "old chat",
+                "old chats",
+                "old conversation",
+                "old conversations",
+                "past chat",
+                "past chats",
+                "past conversation",
+                "past conversations",
+                "previous chat",
+                "previous chats",
+                "previous conversation",
+                "previous conversations",
+                "search chat",
+                "search chats",
+                "search your chat",
+                "search your chats",
+                "search conversations",
+            )
+        )
+
+    def recent_memory_subject(self, conversation_history: list[dict]) -> str:
+        for message in reversed(conversation_history[-8:]):
+            if message.get("role") != "user":
+                continue
+            content = str(message.get("content") or "").strip()
+            if not content:
+                continue
+            normalized = " ".join(content.lower().split())
+            if self.is_contextual_memory_followup(normalized):
+                continue
+            if any(
+                phrase in normalized
+                for phrase in (
+                    "do you know",
+                    "do you remember",
+                    "anything about",
+                    "talking about",
+                    "information about",
+                    "what do you know about",
+                    "what do you remember about",
+                )
+            ):
+                return content
+        return ""
 
     async def timed_fetch(self, name: str, awaitable, timings_ms: dict[str, int]):
         started = time.perf_counter()
@@ -377,8 +627,23 @@ class ChatContextService:
             if get_structured_context is not None:
                 try:
                     structured_context = await get_structured_context(message)
-                except Exception:
-                    structured_context = {}
+                except Exception as exc:
+                    LOGGER.warning("rex_memory_fetch_failed source=structured_memory")
+                    structured_context = {
+                        "memory_status": {
+                            "state": "degraded",
+                            "message": "Structured memory could not be searched.",
+                            "attempted_sources": {
+                                "structured_memory": True,
+                            },
+                            "failures": [
+                                {
+                                    "source": "structured_memory",
+                                    "message": self.safe_error_message(exc),
+                                }
+                            ],
+                        }
+                    }
 
         goal_context = {}
         if include_goal_context:

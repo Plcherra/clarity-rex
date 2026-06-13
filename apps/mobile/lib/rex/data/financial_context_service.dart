@@ -161,7 +161,7 @@ final class AssistantFinancialContextService {
             ? 'all_transactions'
             : 'review_rows_plus_recent_transactions',
         'drilldown_policy':
-            'Use transaction_slices to identify the account, month, category, or review queue to inspect. Ask the user to confirm the slice when details are not included in the default transaction rows.',
+            'Use included transactions and transaction_slices only. If a requested slice has sample_transactions, list those names/descriptions. If details are not included, say Clarity only sent an aggregate summary for this turn; do not claim you can pull/check/fetch more details unless an execution result provides them.',
         'supported_drilldown_filters': [
           'account_id',
           'account_name',
@@ -281,7 +281,7 @@ final class AssistantFinancialContextService {
           account.source ?? (account.isPlaidConnected ? 'plaid' : 'manual'),
       'source_label': account.sourceLabel,
       'plaid_connected': account.isPlaidConnected,
-      'institution': ?institution,
+      if (institution != null) 'institution': institution,
       if (account.plaidAccountMask != null) 'mask': account.plaidAccountMask,
       if (account.syncStatus != null) 'sync_status': account.syncStatus,
       if (account.lastSyncedAt != null)
