@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     grok_standard_model: Optional[str] = None
     grok_reasoning_model: Optional[str] = None
     grok_timeout_seconds: int = 120
+    # MVP launch: advanced Rex Brain routing is deferred. Keep these disabled;
+    # ChatService uses the direct memory path plus standard prompt path only.
     rex_brain_routing_enabled: bool = False
     rex_brain_debug_enabled: bool = False
     rex_brain_fast_first_enabled: bool = False

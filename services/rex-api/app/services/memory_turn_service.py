@@ -82,24 +82,42 @@ class MemoryTurnService(MemoryTurnDirectHelpers, MemoryTurnSummaries):
             time_context=time_context,
         )
         if intent is None:
+            if self.memory_intent_service.needs_direct_location_clarification(message):
+                return await self._clarify_contextual_location(
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                )
+
             intent = self.memory_intent_service.detect_contextual_memory(
                 message,
                 conversation_history=conversation_history,
                 time_context=time_context,
             )
             if intent is not None:
-                if self.memory_intent_service.is_contextual_memory_reject_request(message):
+                if self.memory_intent_service.is_contextual_memory_reject_request(
+                    message
+                ):
                     return await self._reject_simple_memory(
                         intent,
                         conversation_id=conversation_id,
                         user_message=user_message,
                     )
-                if self.memory_intent_service.is_contextual_memory_save_request(message):
+                if self.memory_intent_service.is_contextual_memory_save_request(
+                    message
+                ):
                     return await self._save_confirmed_simple_memory(
                         intent,
                         conversation_id=conversation_id,
                         user_message=user_message,
                     )
+            elif self.memory_intent_service.needs_contextual_location_clarification(
+                message,
+                conversation_history=conversation_history,
+            ):
+                return await self._clarify_contextual_location(
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                )
         if intent is None:
             return None
 
@@ -293,5 +311,47 @@ class MemoryTurnService(MemoryTurnDirectHelpers, MemoryTurnSummaries):
             "assistant_message": self.public_message(assistant_message),
             "memory_correction": None,
             "memory_changes": self._simple_memory_rejected_summary(intent),
+            "messages": await self.recent_public_messages(conversation_id),
+        }
+
+    async def _clarify_contextual_location(
+        self,
+        *,
+        conversation_id: str,
+        user_message: dict,
+    ) -> dict:
+        response = self.memory_intent_service.location_clarification_response()
+        assistant_message = await self.memory_service.save_message(
+            conversation_id,
+            "assistant",
+            response,
+        )
+        return {
+            "conversation_id": conversation_id,
+            "response": response,
+            "user_message": user_message,
+            "assistant_message": self.public_message(assistant_message),
+            "memory_correction": None,
+            "memory_changes": {
+                "created": 0,
+                "updated": 0,
+                "archived": 0,
+                "merged": 0,
+                "skipped": 1,
+                "confirmation_required": 0,
+                "records": [
+                    {
+                        "kind": "simple_memory",
+                        "type": "fact",
+                        "action": "clarification_required",
+                        "title": "Location correction needs a clear city name.",
+                        "metadata": {
+                            "fact_kind": "location",
+                            "memory_path": "direct_save_guard",
+                            "review_required": False,
+                        },
+                    }
+                ],
+            },
             "messages": await self.recent_public_messages(conversation_id),
         }

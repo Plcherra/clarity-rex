@@ -193,7 +193,9 @@ async def test_chat_service_includes_long_term_memory():
         {"query": PROFILE_MEMORY_QUERY, "limit": 4},
     ]
     assert ai_service.messages[0]["role"] == "system"
-    assert "Relevant long-term memory" in ai_service.messages[0]["content"]
+    assert "Relevant saved memory and old chat evidence" in (
+        ai_service.messages[0]["content"]
+    )
     assert "- preference: I prefer concise answers" in ai_service.messages[0]["content"]
 
 

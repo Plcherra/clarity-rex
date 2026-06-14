@@ -207,6 +207,115 @@ async def test_memory_turn_service_updates_negative_location_correction():
 
 
 @pytest.mark.asyncio
+async def test_memory_turn_service_updates_direct_city_correction():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Summerville, Massachusetts.",
+            "importance": 4,
+            "metadata": {},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "Change my city to Somerville.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-update", "content": "city correction"},
+        conversation_history=[],
+        time_context={"date": "2026-06-13"},
+    )
+
+    assert result is not None
+    assert result["response"] == (
+        "Got it, I updated that: you live in Somerville, Massachusetts."
+    )
+    assert result["memory_changes"]["updated"] == 1
+    assert store.long_term_memory[0]["content"] == (
+        "User lives in Somerville, Massachusetts."
+    )
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_rejects_direct_garbled_city_correction():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Somerville, Massachusetts.",
+            "importance": 4,
+            "metadata": {"topic_fingerprint": "fact:identity:location"},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "Change my city to Now I see a user leaves and I don't.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-update", "content": "garbled city correction"},
+        conversation_history=[],
+        time_context={"date": "2026-06-13"},
+    )
+
+    assert result is not None
+    assert result["response"].startswith("I couldn't read the city clearly")
+    assert result["memory_changes"]["records"][0]["action"] == (
+        "clarification_required"
+    )
+    assert store.long_term_memory[0]["content"] == (
+        "User lives in Somerville, Massachusetts."
+    )
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_archives_duplicate_bad_location_memory():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.extend(
+        [
+            {
+                "id": "memory-good",
+                "memory_type": "fact",
+                "content": "User lives in Summerville, Massachusetts.",
+                "importance": 4,
+                "metadata": {"topic_fingerprint": "fact:identity:location"},
+                "active": True,
+            },
+            {
+                "id": "memory-bad",
+                "memory_type": "fact",
+                "content": "User lives in Now I see a user leaves and I don't.",
+                "importance": 4,
+                "metadata": {},
+                "active": True,
+            },
+        ]
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "Change my city to Somerville.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-update", "content": "city correction"},
+        conversation_history=[],
+        time_context={"date": "2026-06-13"},
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["updated"] == 1
+    assert result["memory_changes"]["archived"] == 1
+    assert store.long_term_memory[0]["content"] == (
+        "User lives in Somerville, Massachusetts."
+    )
+    assert store.long_term_memory[1]["active"] is False
+    assert store.long_term_memory[1]["superseded_by"] == "memory-good"
+
+
+@pytest.mark.asyncio
 async def test_memory_turn_service_does_not_claim_failed_update_succeeded():
     store = FakeMemoryTurnStore(fail_update_memory=True)
     store.long_term_memory.append(
@@ -507,6 +616,142 @@ async def test_memory_turn_service_updates_city_from_compressed_voice_spelling_r
     assert result["response"] == (
         "Got it, I updated that: you live in Somerville, Massachusetts."
     )
+    assert result["memory_changes"]["updated"] == 1
+    assert store.long_term_memory[0]["content"] == (
+        "User lives in Somerville, Massachusetts."
+    )
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_rejects_ambiguous_city_spelling_fragment():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Summerville, Massachusetts.",
+            "importance": 4,
+            "metadata": {"topic_fingerprint": "fact:identity:location"},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+    history = [
+        {
+            "id": "message-1",
+            "conversation_id": "conversation-1",
+            "role": "user",
+            "content": "Can you change my city name from Summerville?",
+        },
+        {
+            "id": "message-2",
+            "conversation_id": "conversation-1",
+            "role": "assistant",
+            "content": "Sure, what's the right city?",
+        },
+    ]
+
+    result = await service.handle_turn(
+        "Two m's",
+        conversation_id="conversation-1",
+        user_message={"id": "message-3", "content": "Two m's"},
+        conversation_history=history,
+        time_context={"date": "2026-06-13"},
+    )
+
+    assert result is not None
+    assert result["response"].startswith("I couldn't read the city clearly")
+    assert result["memory_changes"]["records"][0]["action"] == (
+        "clarification_required"
+    )
+    assert store.long_term_memory[0]["content"] == (
+        "User lives in Summerville, Massachusetts."
+    )
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_rejects_garbled_city_voice_transcript():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Somerville.",
+            "importance": 4,
+            "metadata": {"topic_fingerprint": "fact:identity:location"},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+    history = [
+        {
+            "id": "message-1",
+            "conversation_id": "conversation-1",
+            "role": "user",
+            "content": "No, I meant I didn't see Somerville on my memory.",
+        },
+        {
+            "id": "message-2",
+            "conversation_id": "conversation-1",
+            "role": "assistant",
+            "content": "Got it, updating your city to Somerville.",
+        },
+    ]
+
+    result = await service.handle_turn(
+        "Now I see a user leaves and I don't",
+        conversation_id="conversation-1",
+        user_message={
+            "id": "message-3",
+            "content": "Now I see a user leaves and I don't",
+        },
+        conversation_history=history,
+        time_context={"date": "2026-06-13"},
+    )
+
+    assert result is not None
+    assert result["response"].startswith("I couldn't read the city clearly")
+    assert store.long_term_memory[0]["content"] == "User lives in Somerville."
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_updates_city_from_clean_contextual_reply():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Summerville, Massachusetts.",
+            "importance": 4,
+            "metadata": {"topic_fingerprint": "fact:identity:location"},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+    history = [
+        {
+            "id": "message-1",
+            "conversation_id": "conversation-1",
+            "role": "user",
+            "content": "Can you change my city?",
+        },
+        {
+            "id": "message-2",
+            "conversation_id": "conversation-1",
+            "role": "assistant",
+            "content": "Sure, what city should I update it to?",
+        },
+    ]
+
+    result = await service.handle_turn(
+        "Nope, Somerville",
+        conversation_id="conversation-1",
+        user_message={"id": "message-3", "content": "Nope, Somerville"},
+        conversation_history=history,
+        time_context={"date": "2026-06-13"},
+    )
+
+    assert result is not None
     assert result["memory_changes"]["updated"] == 1
     assert store.long_term_memory[0]["content"] == (
         "User lives in Somerville, Massachusetts."

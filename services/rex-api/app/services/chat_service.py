@@ -76,17 +76,15 @@ class ChatService(ChatVoiceMetadataMixin):
         self.clarity_action_parser = clarity_action_parser or ClarityActionParser()
         self.rex_intent_router = rex_intent_router or RexIntentRouter()
         self.usage_tracking_service = usage_tracking_service or UsageTrackingService()
-        self.rex_brain_chat_service = rex_brain_chat_service or RexBrainChatService(
-            rex_brain=rex_brain,
-            rex_model_router=rex_model_router,
-            rex_brain_observer=rex_brain_observer,
-        )
+        # MVP launch path: advanced Rex Brain routing stays dormant. The
+        # direct memory/goal handlers plus the standard context prompt are the
+        # only production orchestration path.
+        self.rex_brain_chat_service = rex_brain_chat_service
         self.chat_context_service = chat_context_service or ChatContextService(
             memory_service,
             prompt_service=self.prompt_service,
             time_context_service=self.time_context_service,
             accountability_service=self.accountability_service,
-            rex_brain_chat_service=self.rex_brain_chat_service,
         )
         self.chat_turn_context_service = ChatTurnContextService(
             file_service=file_service,
@@ -147,30 +145,7 @@ class ChatService(ChatVoiceMetadataMixin):
         conversation_history = self.memory_turn_service.public_messages(
             conversation_history
         )
-        rex_brain_plan = self.rex_brain_chat_service.safe_plan_chat_turn(
-            message=message,
-            conversation_id=conversation_id,
-            file_text=file_text,
-            has_attachment=attachment_context is not None,
-            financial_context=financial_context,
-            conversation_history=conversation_history,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-            accountability_signals=accountability_signals,
-            channel=channel,
-            user_requested_deep_thinking=user_requested_deep_thinking,
-        )
-        request_id = self.rex_brain_chat_service.request_id(
-            conversation_id,
-            user_message,
-        )
-        self.rex_brain_chat_service.log_turn(
-            rex_brain_plan,
-            channel=channel,
-            request_id=request_id,
-            status="planned",
-        )
-        ai_messages = self.chat_context_service.build_prompt_messages_for_rex_brain(
+        ai_messages = self.chat_context_service.build_prompt_messages(
             message=message,
             conversation_id=conversation_id,
             conversation_history=conversation_history,
@@ -180,19 +155,14 @@ class ChatService(ChatVoiceMetadataMixin):
             file_text=file_text,
             time_context=time_context,
             financial_context=financial_context,
-            rex_brain_plan=rex_brain_plan,
         )
 
         if response_instructions:
             ai_messages.append({"role": "system", "content": response_instructions})
 
         ai_messages = self._messages_with_attachment(ai_messages, attachment_context)
-        ai_messages = self.rex_brain_chat_service.apply_chat_contract(
-            ai_messages,
-            rex_brain_plan,
-        )
 
-        ai_kwargs = self.rex_brain_chat_service.ai_kwargs(rex_brain_plan)
+        ai_kwargs = {}
         if max_response_tokens is not None:
             ai_kwargs["max_tokens"] = max_response_tokens
         llm_started_at = time.perf_counter()
@@ -231,12 +201,6 @@ class ChatService(ChatVoiceMetadataMixin):
             conversation_id,
             "assistant",
             assistant_response,
-        )
-        self.rex_brain_chat_service.log_turn(
-            rex_brain_plan,
-            channel=channel,
-            request_id=request_id,
-            status="completed",
         )
 
         memory_changes = self.clarity_action_parser.with_memory_changes(
@@ -331,30 +295,7 @@ class ChatService(ChatVoiceMetadataMixin):
         conversation_history = self.memory_turn_service.public_messages(
             conversation_history
         )
-        rex_brain_plan = self.rex_brain_chat_service.safe_plan_chat_turn(
-            message=message,
-            conversation_id=conversation_id,
-            file_text=file_text,
-            has_attachment=attachment_context is not None,
-            financial_context=financial_context,
-            conversation_history=conversation_history,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-            accountability_signals=accountability_signals,
-            channel=channel,
-            user_requested_deep_thinking=user_requested_deep_thinking,
-        )
-        request_id = self.rex_brain_chat_service.request_id(
-            conversation_id,
-            user_message,
-        )
-        self.rex_brain_chat_service.log_turn(
-            rex_brain_plan,
-            channel=channel,
-            request_id=request_id,
-            status="planned",
-        )
-        ai_messages = self.chat_context_service.build_prompt_messages_for_rex_brain(
+        ai_messages = self.chat_context_service.build_prompt_messages(
             message=message,
             conversation_id=conversation_id,
             conversation_history=conversation_history,
@@ -364,21 +305,16 @@ class ChatService(ChatVoiceMetadataMixin):
             file_text=file_text,
             time_context=time_context,
             financial_context=financial_context,
-            rex_brain_plan=rex_brain_plan,
         )
 
         if response_instructions:
             ai_messages.append({"role": "system", "content": response_instructions})
 
         ai_messages = self._messages_with_attachment(ai_messages, attachment_context)
-        ai_messages = self.rex_brain_chat_service.apply_chat_contract(
-            ai_messages,
-            rex_brain_plan,
-        )
 
         response_parts = []
         stream_filter = ClarityActionStreamFilter()
-        ai_kwargs = self.rex_brain_chat_service.ai_kwargs(rex_brain_plan)
+        ai_kwargs = {}
         if max_response_tokens is not None:
             ai_kwargs["max_tokens"] = max_response_tokens
         token_stream = self.ai_service.stream_response(ai_messages, **ai_kwargs)
@@ -424,12 +360,6 @@ class ChatService(ChatVoiceMetadataMixin):
             conversation_id,
             "assistant",
             assistant_response,
-        )
-        self.rex_brain_chat_service.log_turn(
-            rex_brain_plan,
-            channel=channel,
-            request_id=request_id,
-            status="completed",
         )
 
         memory_changes = self.clarity_action_parser.with_memory_changes(

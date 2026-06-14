@@ -50,7 +50,7 @@ class MemoryIntentService:
         re.IGNORECASE,
     )
     _location_correction_pattern = re.compile(
-        r"\b(?:change|correct|update|fix)\s+(?:my\s+)?location\b.*?"
+        r"\b(?:change|correct|update|fix)\s+(?:my\s+)?(?:city|location)\b.*?"
         r"(?:\bit(?:'s| is)\b|\bto\b)\s+(?P<place>[A-Za-z][A-Za-z\s,.'-]{1,120})",
         re.IGNORECASE,
     )
@@ -186,6 +186,60 @@ class MemoryIntentService:
         normalized = self._normalize_reply(message)
         return bool(self._explicit_reject_request_pattern.search(normalized))
 
+    def needs_contextual_location_clarification(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+    ) -> bool:
+        if not self._recent_location_correction_context(conversation_history):
+            return False
+        if self._detect_contextual_location_memory(
+            message,
+            conversation_history=conversation_history,
+        ):
+            return False
+
+        normalized = self._normalize_reply(message)
+        if not normalized:
+            return False
+        if "?" in message or normalized.startswith(
+            ("do ", "can ", "what ", "where ", "who ", "when ", "why ", "how ")
+        ):
+            return False
+        if normalized in {
+            "thanks",
+            "thank you",
+            "you",
+            "yes",
+            "yep",
+            "no",
+            "nope",
+            "ok",
+            "okay",
+        }:
+            return False
+        return True
+
+    def needs_direct_location_clarification(self, message: str) -> bool:
+        location_correction = self._location_correction_pattern.search(message)
+        if location_correction is None:
+            location_correction = self._negative_location_correction_pattern.search(
+                message,
+            )
+        if location_correction is None:
+            return False
+
+        place = self._clean_place(location_correction.group("place"), message)
+        return not self._is_valid_location_place(place)
+
+    def location_clarification_response(self) -> str:
+        return (
+            "I couldn't read the city clearly enough to save it. "
+            "Please send just the city name, like Somerville or "
+            "Somerville, Massachusetts."
+        )
+
     def saved_response(self, intent: SimpleMemoryIntent) -> str:
         return f"Got it, {self.memory_sentence(intent.content)}"
 
@@ -273,13 +327,13 @@ class MemoryIntentService:
                 negative_location_correction.group("place"),
                 message,
             )
-            if len(place) >= 2:
+            if len(place) >= 2 and self._is_valid_location_place(place):
                 return self._location_intent(place)
 
         location_correction = self._location_correction_pattern.search(message)
         if location_correction is not None:
             place = self._clean_place(location_correction.group("place"), message)
-            if len(place) >= 2:
+            if len(place) >= 2 and self._is_valid_location_place(place):
                 return self._location_intent(place)
 
         name_match = self._name_pattern.search(message)
@@ -501,6 +555,10 @@ class MemoryIntentService:
         cleaned = self._clean_fact(place)
         normalized = cleaned.lower()
         message_normalized = message.lower()
+        if re.search(r"\bsomerville\b", message_normalized):
+            if "massachusetts" in message_normalized:
+                return "Somerville, Massachusetts"
+            return "Somerville"
         if re.search(
             r"\b(?:summerville|somerville)\b",
             normalized,
@@ -544,6 +602,7 @@ class MemoryIntentService:
                 "correct",
                 "fix",
                 "update",
+                "updating",
                 "wrong",
                 "spelled",
                 "spelling",
@@ -558,6 +617,9 @@ class MemoryIntentService:
             ("do ", "can ", "what ", "where ", "who ", "when ", "why ", "how ")
         ):
             return None
+        known_place = self._known_location_from_text(message)
+        if known_place:
+            return known_place
         match = re.match(
             r"^(?:it(?:'s| is)\s+|the\s+correct\s+(?:city|location)\s+is\s+)?"
             r"(?P<place>[A-Z][A-Za-z\s,.'-]{2,80})"
@@ -569,9 +631,64 @@ class MemoryIntentService:
         place = self._clean_place(match.group("place"), message)
         if len(place) < 2:
             return None
-        if place.lower() in {"thanks", "yes", "no", "you"}:
+        if not self._is_valid_location_place(place):
             return None
         return place
+
+    def _known_location_from_text(self, message: str) -> Optional[str]:
+        normalized = self._normalize_reply(message)
+        if re.search(r"\bsomerville\b", normalized):
+            if "massachusetts" in normalized:
+                return "Somerville, Massachusetts"
+            return "Somerville"
+        if re.search(
+            r"\bsummerville\b", normalized
+        ) and self._mentions_somerville_spelling(normalized):
+            if "massachusetts" in normalized:
+                return "Somerville, Massachusetts"
+            return "Somerville"
+        compact = re.sub(r"[^a-z]+", "", normalized)
+        if compact == "somerville":
+            return "Somerville"
+        return None
+
+    def _is_valid_location_place(self, place: str) -> bool:
+        normalized = self._normalize_reply(place)
+        if normalized in {
+            "thanks",
+            "thank you",
+            "yes",
+            "yep",
+            "no",
+            "nope",
+            "you",
+        }:
+            return False
+        words = normalized.split()
+        if len(words) > 4:
+            return False
+        blocked_terms = {
+            "all",
+            "available",
+            "city",
+            "dont",
+            "don't",
+            "got",
+            "instead",
+            "leave",
+            "leaves",
+            "meant",
+            "memory",
+            "nose",
+            "saved",
+            "see",
+            "user",
+        }
+        if any(word.strip("'") in blocked_terms for word in words):
+            return False
+        if re.search(r"\b(?:m'?s|o|one|two|2|1)\b", normalized):
+            return False
+        return bool(re.search(r"[a-z]", normalized))
 
     def _mentions_somerville_spelling(self, normalized_message: str) -> bool:
         compact = re.sub(r"[^a-z0-9]+", "", normalized_message.lower())

@@ -189,10 +189,7 @@ class MemoryTurnDirectHelpers:
 
         has_time_overlap = bool(
             {"today", "tonight", "tomorrow"} & set(normalized_content.split())
-        ) and bool(
-            {"today", "tonight", "tomorrow"}
-            & set(normalized_intent.split())
-        )
+        ) and bool({"today", "tonight", "tomorrow"} & set(normalized_intent.split()))
         return len(shared) >= 1 and has_time_overlap
 
     def _memory_topic_words(self, text: str) -> set[str]:
@@ -346,6 +343,10 @@ class MemoryTurnDirectHelpers:
             }
 
         updated_record = updated
+        archived_related = await self._archive_stale_location_memories(
+            intent,
+            updated_record,
+        )
         response = (
             "Got it, I updated that: "
             f"{self.memory_intent_service.memory_sentence(intent.content)}"
@@ -365,9 +366,62 @@ class MemoryTurnDirectHelpers:
                 intent,
                 updated_record,
                 previous_record=record,
+                archived_related=archived_related,
             ),
             "messages": await self.recent_public_messages(conversation_id),
         }
+
+    async def _archive_stale_location_memories(
+        self,
+        intent: SimpleMemoryIntent,
+        updated_record: dict,
+    ) -> list[dict]:
+        if intent.metadata.get("fact_kind") != "location":
+            return []
+
+        update_memory = getattr(self.memory_service, "update_long_term_memory", None)
+        if update_memory is None:
+            return []
+
+        updated_id = str(updated_record.get("id") or "")
+        archived = []
+        for memory in await self._active_memories_for_intent(intent):
+            memory_id = str(memory.get("id") or "")
+            if not memory_id or memory_id == updated_id:
+                continue
+            if not self._looks_like_location_memory(memory):
+                continue
+
+            metadata = (
+                memory.get("metadata")
+                if isinstance(memory.get("metadata"), dict)
+                else {}
+            )
+            try:
+                inactive = await update_memory(
+                    memory_id,
+                    active=False,
+                    superseded_by=updated_id or None,
+                    metadata={
+                        **metadata,
+                        "archived_by_memory_id": updated_id,
+                        "archive_reason": "superseded_location_correction",
+                    },
+                )
+            except Exception:
+                continue
+            if inactive is not None:
+                archived.append(inactive)
+        return archived
+
+    def _looks_like_location_memory(self, memory: dict) -> bool:
+        metadata = memory.get("metadata")
+        if isinstance(metadata, dict) and metadata.get("fact_kind") == "location":
+            return True
+        normalized = self._normalize_memory_text(str(memory.get("content") or ""))
+        return "live" in normalized and (
+            "user" in normalized or "i " in f"{normalized} "
+        )
 
     def _preserve_location_context(
         self,

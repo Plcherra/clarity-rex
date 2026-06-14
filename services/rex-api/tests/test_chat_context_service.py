@@ -237,13 +237,36 @@ async def test_chat_context_loads_memory_only_for_memory_recall_intent():
         {"query": "Do you remember my mom's birthday?", "limit": 8},
         {"query": PROFILE_MEMORY_QUERY, "limit": 4},
     ]
-    assert store.search_message_queries == [
+    assert store.search_message_queries[:4] == [
         {
             "query": "Do you remember my mom's birthday?",
             "limit": 4,
             "exclude_conversation_id": None,
-        }
+        },
+        {
+            "query": "mom mother birthday reminder money send her 10th 18th",
+            "limit": 4,
+            "exclude_conversation_id": None,
+        },
+        {
+            "query": "mom birthday",
+            "limit": 4,
+            "exclude_conversation_id": None,
+        },
+        {
+            "query": "send her money birthday",
+            "limit": 4,
+            "exclude_conversation_id": None,
+        },
     ]
+    assert {
+        "query": "mother birthday",
+        "limit": 4,
+        "exclude_conversation_id": None,
+    } in (store.search_message_queries)
+    assert {"query": "mom", "limit": 4, "exclude_conversation_id": None} in (
+        store.search_message_queries
+    )
     assert store.plan_calls == []
 
 
@@ -319,6 +342,59 @@ async def test_chat_context_keeps_specific_person_memory_queries_targeted():
     assert store.search_message_queries[0]["query"] == (
         "Do you know anything about my mom?"
     )
+    assert store.search_message_queries[1]["query"] == (
+        "mom mother birthday reminder money send her 10th 18th"
+    )
+
+
+@pytest.mark.asyncio
+async def test_chat_context_falls_back_to_subject_search_when_broad_terms_fill_limit():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "noise-1",
+            "role": "user",
+            "content": "I know this is unrelated.",
+            "timestamp": "2026-06-12T12:04:00Z",
+        },
+        {
+            "id": "noise-2",
+            "role": "user",
+            "content": "Anything else we should test?",
+            "timestamp": "2026-06-12T12:03:00Z",
+        },
+        {
+            "id": "noise-3",
+            "role": "user",
+            "content": "I know my finance dashboard needs polish.",
+            "timestamp": "2026-06-12T12:02:00Z",
+        },
+        {
+            "id": "noise-4",
+            "role": "user",
+            "content": "Anything about the app UI?",
+            "timestamp": "2026-06-12T12:01:00Z",
+        },
+        {
+            "id": "mom-1",
+            "role": "user",
+            "content": "My mom's birthday is on the 18th.",
+            "timestamp": "2026-06-11T12:00:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, memories, _ = await service.fetch_prompt_context(
+        message="Do you know anything about my mom?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert any(memory["id"] == "chat-mom-1" for memory in memories)
+    assert len(store.search_message_queries) >= 4
+    assert store.search_message_queries[1]["query"] == (
+        "mom mother birthday reminder money send her 10th 18th"
+    )
 
 
 @pytest.mark.asyncio
@@ -347,15 +423,35 @@ async def test_chat_context_uses_recent_subject_for_old_chat_followup():
     )
 
     assert any(memory["id"] == "chat-past-message-2" for memory in memories)
-    assert store.search_message_queries == [
+    assert store.search_message_queries[:4] == [
         {
             "query": (
                 "Do you know anything about my mom? Can you check the old chats?"
             ),
             "limit": 4,
             "exclude_conversation_id": "conversation-1",
-        }
+        },
+        {
+            "query": "mom mother birthday reminder money send her 10th 18th",
+            "limit": 4,
+            "exclude_conversation_id": "conversation-1",
+        },
+        {
+            "query": "mom birthday",
+            "limit": 4,
+            "exclude_conversation_id": "conversation-1",
+        },
+        {
+            "query": "send her money birthday",
+            "limit": 4,
+            "exclude_conversation_id": "conversation-1",
+        },
     ]
+    assert {
+        "query": "mom",
+        "limit": 4,
+        "exclude_conversation_id": "conversation-1",
+    } in store.search_message_queries
 
 
 @pytest.mark.asyncio

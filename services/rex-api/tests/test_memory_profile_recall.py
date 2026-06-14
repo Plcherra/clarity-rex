@@ -167,15 +167,16 @@ async def test_chat_prompt_includes_past_chat_when_mom_fact_was_not_saved():
     await chat_service.send_message("Do you know anything about my mom?")
 
     system_content = ai_service.messages[0]["content"]
-    assert "- chat_excerpt: Past chat" in system_content
+    assert "- old chat evidence (not saved memory):" in system_content
     assert "mom's birthday" in system_content
-    assert memory_service.search_message_queries == [
-        {
-            "query": "Do you know anything about my mom?",
-            "limit": 4,
-            "exclude_conversation_id": None,
-        }
-    ]
+    assert memory_service.search_message_queries[0] == {
+        "query": "Do you know anything about my mom?",
+        "limit": 4,
+        "exclude_conversation_id": None,
+    }
+    assert memory_service.search_message_queries[1]["query"] == (
+        "mom mother birthday reminder money send her 10th 18th"
+    )
 
 
 @pytest.mark.asyncio
@@ -198,7 +199,7 @@ async def test_chat_prompt_includes_surrounding_old_chat_turns_for_mom_recall():
     await chat_service.send_message("Do you know anything about my mom?")
 
     system_content = ai_service.messages[0]["content"]
-    assert "- chat_excerpt: Past chat excerpt:" in system_content
+    assert "- old chat evidence (not saved memory):" in system_content
     assert "How about you remember me about my mom's birthday?" in system_content
     assert "mom's birthday on the 18th" in system_content
 
@@ -233,5 +234,5 @@ async def test_chat_prompt_ignores_past_chat_fact_user_rejected():
     await chat_service.send_message("Do you know anything about my mom?")
 
     system_content = ai_service.messages[0]["content"]
-    assert "- chat_excerpt: Past chat" not in system_content
+    assert "- old chat evidence (not saved memory):" not in system_content
     assert "mom's birthday" not in system_content

@@ -36,25 +36,39 @@ class MemoryTurnSummaries:
         record: dict,
         *,
         previous_record: dict,
+        archived_related: Optional[list[dict]] = None,
     ) -> dict:
+        archived_related = archived_related or []
+        records = [
+            {
+                "kind": "long_term_memory",
+                "type": intent.memory_type,
+                "action": "direct_updated",
+                "id": record.get("id"),
+                "title": intent.content,
+                "previous_title": previous_record.get("content"),
+                "metadata": direct_save_metadata(intent.metadata),
+            }
+        ]
+        records.extend(
+            {
+                "kind": "long_term_memory",
+                "type": archived.get("memory_type") or intent.memory_type,
+                "action": "archived_superseded",
+                "id": archived.get("id"),
+                "title": archived.get("content"),
+                "metadata": archived.get("metadata") or {},
+            }
+            for archived in archived_related
+        )
         return {
             "created": 0,
             "updated": 1,
-            "archived": 0,
+            "archived": len(archived_related),
             "merged": 0,
             "skipped": 0,
             "confirmation_required": 0,
-            "records": [
-                {
-                    "kind": "long_term_memory",
-                    "type": intent.memory_type,
-                    "action": "direct_updated",
-                    "id": record.get("id"),
-                    "title": intent.content,
-                    "previous_title": previous_record.get("content"),
-                    "metadata": direct_save_metadata(intent.metadata),
-                }
-            ],
+            "records": records,
         }
 
     def _simple_memory_rejected_summary(

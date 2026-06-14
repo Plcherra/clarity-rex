@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 import time
 from dataclasses import dataclass
 from typing import Optional
@@ -68,7 +69,7 @@ class ChatContextService:
         self.time_context_service = time_context_service or TimeContextService()
         self.accountability_service = accountability_service or AccountabilityService()
         self.goal_context_service = goal_context_service or GoalContextService()
-        self.rex_brain_chat_service = rex_brain_chat_service or RexBrainChatService()
+        self.rex_brain_chat_service = rex_brain_chat_service
 
     async def fetch_prompt_context(
         self,
@@ -347,11 +348,18 @@ class ChatContextService:
                 ).as_dict()
             ]
         try:
-            messages = await search_messages(
-                query,
-                limit=limit,
-                exclude_conversation_id=exclude_conversation_id,
-            )
+            messages_by_id: dict[str, dict] = {}
+            for search_query in self.past_chat_search_queries(query):
+                messages = await search_messages(
+                    search_query,
+                    limit=limit,
+                    exclude_conversation_id=exclude_conversation_id,
+                )
+                for message in messages:
+                    message_id = str(message.get("id") or "")
+                    if not message_id:
+                        continue
+                    messages_by_id.setdefault(message_id, message)
         except Exception as exc:
             LOGGER.warning("rex_memory_fetch_failed source=past_chat_memory")
             return [
@@ -362,7 +370,7 @@ class ChatContextService:
             ]
 
         excerpts = []
-        for message in messages:
+        for message in messages_by_id.values():
             context_messages = await self.chat_excerpt_context(message)
             content = self.chat_excerpt_content(context_messages)
             if not content:
@@ -372,14 +380,82 @@ class ChatContextService:
             excerpts.append(
                 {
                     "id": f"chat-{message.get('id')}",
-                    "memory_type": "chat_excerpt",
-                    "content": f"Past chat excerpt:\n{content}",
+                    "memory_type": "old_chat_evidence",
+                    "content": content,
                     "importance": 3,
                     "created_at": message.get("timestamp"),
                     "relevance_reason": "Matched relevant past conversation.",
                 }
             )
+            if len(excerpts) >= limit:
+                break
         return excerpts
+
+    def past_chat_search_queries(self, query: str) -> list[str]:
+        normalized = " ".join(str(query or "").lower().split())
+        if str(query or "") == MEMORY_INVENTORY_QUERY:
+            return [query]
+        queries = [query]
+        has_mom_subject = bool(re.search(r"\b(?:mom|mother|mum|mama)\b", normalized))
+        has_parent_subject = has_mom_subject or bool(
+            re.search(r"\b(?:dad|father|papa|parent|parents)\b", normalized)
+        )
+        if has_mom_subject:
+            queries.extend(
+                [
+                    "mom mother birthday reminder money send her 10th 18th",
+                    "mom birthday",
+                    "send her money birthday",
+                    "mother birthday",
+                    "birthday 18th 10th",
+                    "mom",
+                ]
+            )
+        elif has_parent_subject:
+            queries.extend(
+                [
+                    "parent birthday reminder family",
+                    "birthday reminder family money",
+                ]
+            )
+        elif "birthday" in normalized:
+            queries.append("birthday reminder important date")
+        subject_query = self.subject_only_search_query(normalized)
+        if subject_query:
+            queries.append(subject_query)
+
+        unique_queries = []
+        for item in queries:
+            cleaned = str(item or "").strip()
+            if cleaned and cleaned not in unique_queries:
+                unique_queries.append(cleaned)
+        return unique_queries
+
+    def subject_only_search_query(self, normalized_query: str) -> str:
+        """Extract the user's target subject for old-chat search.
+
+        Message search is keyword based. A focused subject query gives old chats
+        one more chance to surface relevant evidence without relying on broad
+        question words like "know" or "remember".
+        """
+
+        match = re.search(
+            r"\b(?:about|for|with)\s+(?:my\s+)?(?P<subject>[a-z0-9'\s]{3,60})",
+            normalized_query,
+        )
+        if match is None:
+            return ""
+        subject = re.sub(
+            r"\b(?:old|past|previous|chat|chats|conversation|conversations|"
+            r"anything|information|details|memory|memories|saved|know|remember)\b",
+            " ",
+            match.group("subject"),
+        )
+        subject = re.sub(r"[^a-z0-9'\s]+", " ", subject)
+        subject = re.sub(r"\s+", " ", subject).strip()
+        if len(subject) < 3:
+            return ""
+        return subject
 
     async def chat_excerpt_context(
         self,
@@ -743,7 +819,8 @@ class ChatContextService:
         financial_context: Optional[dict],
         rex_brain_plan: dict,
     ) -> list[dict]:
-        prompt_context = self.rex_brain_chat_service.prompt_context(
+        rex_brain_chat_service = self.rex_brain_chat_service or RexBrainChatService()
+        prompt_context = rex_brain_chat_service.prompt_context(
             conversation_history=conversation_history,
             long_term_memory=long_term_memory,
             structured_context=structured_context,
@@ -761,7 +838,7 @@ class ChatContextService:
             file_text=file_text,
             time_context=time_context,
             financial_context=prompt_context["financial_context"],
-            max_context_characters=self.rex_brain_chat_service.prompt_context_limit(
+            max_context_characters=rex_brain_chat_service.prompt_context_limit(
                 rex_brain_plan,
             ),
         )

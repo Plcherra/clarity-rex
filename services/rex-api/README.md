@@ -130,16 +130,22 @@ Readiness check:
 curl http://localhost:8000/ready
 ```
 
-## Rex Brain Rollout
+## Rex Brain Launch Scope
 
-Rex Brain is disabled by default. `GROK_MODEL` remains the fallback model, so existing deployments keep working. Enable gradually with:
+MVP launch uses one assistant orchestration path: direct memory/goal handling,
+then the standard context and prompt path. The advanced Rex Brain router,
+layer-specific contracts, dynamic model routing, and rollout stages are deferred
+and must stay disabled for launch validation:
 
 ```env
-REX_BRAIN_ROUTING_ENABLED=true
-REX_BRAIN_ROLLOUT_STAGE=logging_only
+REX_BRAIN_ROUTING_ENABLED=false
+REX_BRAIN_ROLLOUT_STAGE=disabled
 ```
 
-Available rollout stages are `disabled`, `logging_only`, `fast_contextual`, `analytical`, `strategic_reflective`, and `deep_think_ui`. Roll back by setting `REX_BRAIN_ROUTING_ENABLED=false` and restarting `clarity-rex.service` through `./scripts/vps_restart_rex_api.sh`.
+The advanced brain files may remain in the tree for later work, but production
+chat and voice should not call them during MVP validation. If these values
+change by accident, set them back to the disabled values above and restart
+`clarity-rex.service` through `./scripts/vps_restart_rex_api.sh`.
 
 Production VPS restarts should use the canonical systemd unit:
 

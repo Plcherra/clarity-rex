@@ -33,8 +33,16 @@ class PromptMemoryContextMixin:
             if not memory_type or not content:
                 continue
 
-            line = f"- {memory_type}: {content}"
-            age_label = self._memory_age_label(memory, time_context)
+            if memory_type == "old_chat_evidence":
+                line = f"- old chat evidence (not saved memory): {content}"
+            else:
+                line = f"- {memory_type}: {content}"
+
+            age_label = self._memory_age_label(
+                memory,
+                time_context,
+                memory_type=memory_type,
+            )
             if age_label:
                 line = f"{line} ({age_label})"
             relevance_reason = memory.get("relevance_reason")
@@ -58,6 +66,8 @@ class PromptMemoryContextMixin:
         self,
         memory: dict,
         time_context: Optional[dict],
+        *,
+        memory_type: Optional[str] = None,
     ) -> Optional[str]:
         timestamp = memory.get("updated_at") or memory.get("created_at")
         if not timestamp:
@@ -72,6 +82,8 @@ class PromptMemoryContextMixin:
         if not delta:
             return None
 
+        if memory_type == "old_chat_evidence":
+            return f"from {delta}"
         return f"saved {delta}"
 
     def _messages_with_file_context(
