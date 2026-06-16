@@ -105,13 +105,19 @@ class SupabaseMemoryService(SupabaseMemoryTransport):
     async def search_messages(
         self,
         query: str,
-        limit: int = 8,
+        limit: int = 50,
         exclude_conversation_id: Optional[str] = None,
     ) -> list[dict]:
         return await self._get_conversation_repository().search_messages(
             query,
             limit=limit,
             exclude_conversation_id=exclude_conversation_id,
+        )
+
+    async def search_conversations(self, query: str, limit: int = 50) -> list[dict]:
+        return await self._get_conversation_repository().search_conversations(
+            query,
+            limit=limit,
         )
 
     async def delete_conversation(self, conversation_id: str) -> bool:

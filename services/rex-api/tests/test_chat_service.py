@@ -139,7 +139,7 @@ async def test_chat_service_replaces_pending_action_success_claim_with_confirmat
 
 
 @pytest.mark.asyncio
-async def test_chat_service_ignores_unsupported_clarity_action_proposal():
+async def test_chat_service_explains_unsupported_clarity_action_proposal():
     ai_service = FakeAIService(
         response=(
             "I can draft that.\n\n"
@@ -156,7 +156,10 @@ async def test_chat_service_ignores_unsupported_clarity_action_proposal():
 
     result = await chat_service.send_message("Send my mom an email")
 
-    assert result["response"] == "I can draft that."
+    assert result["response"] == (
+        "I can't complete send email from Clarity yet. I can help you think it "
+        "through or draft it, but I won't claim it was done."
+    )
     assert result["memory_changes"] is None
 
 
@@ -218,6 +221,99 @@ async def test_chat_service_downgrades_old_chat_search_claim_without_evidence():
         "saved."
     )
     assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
+async def test_chat_service_downgrades_no_memory_claim_when_memory_is_degraded():
+    ai_service = FakeAIService(response="I don't know anything about your mom.")
+    memory_service = FakeMemoryService()
+    memory_service.structured_context = {
+        "memory_status": {
+            "state": "degraded",
+            "message": "Some memory sources could not be searched.",
+            "failures": [
+                {
+                    "source": "past_chat_memory",
+                    "message": "search failed",
+                }
+            ],
+        }
+    }
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Do you know anything about my mom?")
+
+    assert result["response"] == (
+        "Memory search is temporarily unavailable right now. I can't confidently "
+        "say what I remember until it's working again."
+    )
+    assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
+async def test_chat_service_degraded_memory_status_overrides_old_chat_no_result_claim():
+    ai_service = FakeAIService(
+        response="I checked the old chats and found no mentions of your mom."
+    )
+    memory_service = FakeMemoryService()
+    memory_service.structured_context = {
+        "memory_status": {
+            "state": "degraded",
+            "message": "Some memory sources could not be searched.",
+            "failures": [
+                {
+                    "source": "past_chat_memory",
+                    "message": "search failed",
+                }
+            ],
+        }
+    }
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message(
+        "Can you check the old chats for my mom?"
+    )
+
+    assert result["response"] == (
+        "Memory search is temporarily unavailable right now. I can't confidently "
+        "say what I remember until it's working again."
+    )
+    assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
+async def test_chat_service_stream_downgrades_no_memory_claim_when_memory_is_degraded():
+    ai_service = FakeAIService(
+        stream_tokens=["I don't know ", "anything about your mom."]
+    )
+    memory_service = FakeMemoryService()
+    memory_service.structured_context = {
+        "memory_status": {
+            "state": "degraded",
+            "message": "Some memory sources could not be searched.",
+            "failures": [
+                {
+                    "source": "past_chat_memory",
+                    "message": "search failed",
+                }
+            ],
+        }
+    }
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "Do you know anything about my mom?"
+        )
+    ]
+
+    done = next(event for event in events if event["event"] == "done")
+    assert done["response"] == (
+        "Memory search is temporarily unavailable right now. I can't confidently "
+        "say what I remember until it's working again."
+    )
+    assert done["memory_changes"] is None
 
 
 @pytest.mark.asyncio

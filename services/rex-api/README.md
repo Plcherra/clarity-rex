@@ -132,19 +132,20 @@ curl http://localhost:8000/ready
 
 ## Rex Brain Launch Scope
 
-MVP launch uses one assistant orchestration path: direct memory/goal handling,
-then the standard context and prompt path. The advanced Rex Brain router,
-layer-specific contracts, dynamic model routing, and rollout stages are deferred
-and must stay disabled for launch validation:
+MVP launch uses Simple Rex Brain as the single production assistant brain:
+intent classification, direct memory/goal handling, long-horizon chat and memory
+retrieval, standard prompt assembly, and post-response truth enforcement. The
+advanced layered router, layer-specific prompt contracts, and dynamic model
+routing remain experimental and must stay off for launch validation:
 
 ```env
 REX_BRAIN_ROUTING_ENABLED=false
 REX_BRAIN_ROLLOUT_STAGE=disabled
 ```
 
-The advanced brain files may remain in the tree for later work, but production
-chat and voice should not call them during MVP validation. If these values
-change by accident, set them back to the disabled values above and restart
+The experimental brain files may remain in the tree for later work, but
+production chat and voice should call Simple Rex Brain only. If the experimental
+routing values change by accident, set them back to the values above and restart
 `clarity-rex.service` through `./scripts/vps_restart_rex_api.sh`.
 
 Production VPS restarts should use the canonical systemd unit:

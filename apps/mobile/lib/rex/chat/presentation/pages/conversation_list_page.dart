@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/rex/assistant_providers.dart';
+import 'package:clarity/rex/chat/application/conversation_controller.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
+import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/chat/presentation/widgets/conversation_history_widgets.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
@@ -24,12 +26,21 @@ class ConversationListPage extends ConsumerStatefulWidget {
 
 class _ConversationListPageState extends ConsumerState<ConversationListPage>
     with AutomaticKeepAliveClientMixin<ConversationListPage> {
+  late final TextEditingController _searchController;
+
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController();
     Future.microtask(
       () => ref.read(conversationListProvider.notifier).loadConversations(),
     );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -135,6 +146,30 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
     }
   }
 
+  Future<void> _openSearchResult(ConversationSearchResult result) async {
+    await ref
+        .read(chatProvider.notifier)
+        .loadConversation(result.conversationId);
+    if (!mounted) {
+      return;
+    }
+
+    if (widget.onConversationSelected != null) {
+      widget.onConversationSelected!();
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
+  void _submitSearch(String value) {
+    ref.read(conversationListProvider.notifier).searchConversations(value);
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    ref.read(conversationListProvider.notifier).clearSearch();
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -182,7 +217,23 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                 child: _HistoryErrorBanner(message: state.errorMessage!),
               ),
             ),
-          if (state.isLoading && state.conversations.isEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: _ConversationSearchField(
+                controller: _searchController,
+                isSearching: state.isSearching,
+                onSubmitted: _submitSearch,
+                onClear: _clearSearch,
+              ),
+            ),
+          ),
+          if (state.searchQuery.isNotEmpty)
+            _ConversationSearchResultsSliver(
+              state: state,
+              onResultTap: _openSearchResult,
+            )
+          else if (state.isLoading && state.conversations.isEmpty)
             const SliverFillRemaining(
               child: Center(
                 child: CircularProgressIndicator(color: RexUiTokens.accent),
@@ -240,6 +291,115 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
             )
           : null,
       body: body,
+    );
+  }
+}
+
+class _ConversationSearchField extends StatelessWidget {
+  const _ConversationSearchField({
+    required this.controller,
+    required this.isSearching,
+    required this.onSubmitted,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final bool isSearching;
+  final ValueChanged<String> onSubmitted;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      onSubmitted: onSubmitted,
+      textInputAction: TextInputAction.search,
+      style: const TextStyle(color: RexUiTokens.text),
+      decoration: InputDecoration(
+        hintText: 'Search chats',
+        hintStyle: const TextStyle(color: RexUiTokens.textSubtle),
+        prefixIcon: const Icon(
+          Icons.search_rounded,
+          color: RexUiTokens.textSubtle,
+        ),
+        suffixIcon: isSearching
+            ? const Padding(
+                padding: EdgeInsets.all(14),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: RexUiTokens.accent,
+                  ),
+                ),
+              )
+            : IconButton(
+                tooltip: 'Clear search',
+                onPressed: onClear,
+                icon: const Icon(Icons.close_rounded),
+                color: RexUiTokens.textSubtle,
+              ),
+        filled: true,
+        fillColor: RexUiTokens.surface,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
+          borderSide: const BorderSide(color: RexUiTokens.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
+          borderSide: const BorderSide(color: RexUiTokens.accent),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConversationSearchResultsSliver extends StatelessWidget {
+  const _ConversationSearchResultsSliver({
+    required this.state,
+    required this.onResultTap,
+  });
+
+  final ConversationListState state;
+  final ValueChanged<ConversationSearchResult> onResultTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.isSearching && state.searchResults.isEmpty) {
+      return const SliverFillRemaining(
+        child: Center(
+          child: CircularProgressIndicator(color: RexUiTokens.accent),
+        ),
+      );
+    }
+
+    if (state.searchResults.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'No matching chats',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: RexUiTokens.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final result = state.searchResults[index];
+        return ConversationSearchResultTile(
+          result: result,
+          onTap: () => onResultTap(result),
+        );
+      }, childCount: state.searchResults.length),
     );
   }
 }

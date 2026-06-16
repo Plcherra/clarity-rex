@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/chat/data/chat_models.dart';
+import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 
@@ -123,6 +124,104 @@ class ConversationHistoryTile extends StatelessWidget {
   }
 }
 
+class ConversationSearchResultTile extends StatelessWidget {
+  const ConversationSearchResultTile({
+    super.key,
+    required this.result,
+    required this.onTap,
+  });
+
+  final ConversationSearchResult result;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final title = _searchResultTitle(result);
+    final timestamp = timestampLabel(
+      result.message?.timestamp ?? result.conversationTimestamp,
+    );
+
+    return RexSurface(
+      margin: const EdgeInsets.fromLTRB(
+        RexUiTokens.space16,
+        0,
+        RexUiTokens.space16,
+        RexUiTokens.space12,
+      ),
+      padding: EdgeInsets.zero,
+      color: RexUiTokens.surface,
+      borderColor: RexUiTokens.border,
+      radius: RexUiTokens.radiusLarge,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(RexUiTokens.space16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(
+                width: 42,
+                height: 42,
+                child: Icon(
+                  Icons.manage_search_rounded,
+                  color: RexUiTokens.accent,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: RexUiTokens.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: RexUiTokens.text,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: RexUiTokens.space8),
+                        Text(
+                          timestamp,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: RexUiTokens.textSubtle,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: RexUiTokens.space8),
+                    Text(
+                      result.preview.trim().isEmpty
+                          ? 'Matched conversation'
+                          : result.preview,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: RexUiTokens.textMuted,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class ConversationGroup {
   ConversationGroup({required this.label}) : conversations = [];
 
@@ -157,6 +256,20 @@ String conversationTitle(Conversation conversation) {
   }
 
   return 'New conversation';
+}
+
+String _searchResultTitle(ConversationSearchResult result) {
+  final title = result.conversationTitle?.trim();
+  if (title != null && title.isNotEmpty) {
+    return title;
+  }
+
+  final message = result.message?.content.trim();
+  if (message != null && message.isNotEmpty) {
+    return message;
+  }
+
+  return 'Conversation';
 }
 
 String timestampLabel(DateTime? timestamp) {

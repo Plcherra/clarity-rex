@@ -30,6 +30,8 @@ class FakeMemoryDisciplineRepository:
         self.created_commitments = []
         self.created_rules = []
         self.calls = []
+        self.return_empty_create = False
+        self.return_empty_update = False
 
     async def list_long_term_memory(self, limit=50, memory_type=None, active=None):
         self.calls.append(("list_long_term_memory", active, limit))
@@ -112,6 +114,8 @@ class FakeMemoryDisciplineRepository:
         return row
 
     async def create_commitment(self, payload):
+        if self.return_empty_create:
+            return None
         row = {"id": f"commitment-{len(self.created_commitments) + 1}", **payload}
         self.created_commitments.append(row)
         self.commitments.append(row)
@@ -124,6 +128,8 @@ class FakeMemoryDisciplineRepository:
         return row
 
     async def update_plan(self, plan_id, **updates):
+        if self.return_empty_update:
+            return None
         return _update(self.plans, plan_id, updates)
 
 
@@ -376,6 +382,71 @@ async def test_apply_decision_creates_records_with_standard_metadata():
     assert repo.created_commitments[0]["metadata"]["discipline_action"] == (
         "create_commitment"
     )
+
+
+@pytest.mark.asyncio
+async def test_apply_decision_does_not_claim_unconfirmed_create():
+    repo = FakeMemoryDisciplineRepository()
+    repo.return_empty_create = True
+    service = MemoryDisciplineService(repo)
+    candidate = MemoryDisciplineCandidate(
+        kind=MemoryRecordKind.COMMITMENT,
+        payload={
+            "commitment_type": "work",
+            "title": "Ship small piece",
+            "commitment_text": "Ship one small Rex improvement today.",
+        },
+    )
+    decision = await service.decide(candidate)
+
+    result = await service.apply_decision(decision)
+
+    assert result["applied"] is False
+    assert result["reason"] == "Durable create was not confirmed."
+    assert repo.created_commitments == []
+
+
+@pytest.mark.asyncio
+async def test_apply_decision_does_not_claim_unconfirmed_update():
+    repo = FakeMemoryDisciplineRepository()
+    repo.return_empty_update = True
+    repo.plans.append(
+        {
+            "id": "plan-1",
+            "plan_type": "career",
+            "title": "Ship Rex",
+            "metadata": {"existing": True},
+            "active": True,
+        }
+    )
+    service = MemoryDisciplineService(repo)
+    decision = MemoryDisciplineDecision(
+        action=MemoryDisciplineAction.UPDATE_PLAN,
+        record_kind=MemoryRecordKind.PLAN,
+        target_table="plans",
+        target_id="plan-1",
+        payload={"description": "Ship Rex and polish voice mode."},
+        reason="duplicate plan update",
+        related_records=[
+            MemoryRelatedRecord(
+                table="plans",
+                id="plan-1",
+                score=1,
+                reason="test",
+                record=repo.plans[0],
+            )
+        ],
+        metadata={
+            "discipline_version": 1,
+            "discipline_action": "update_plan",
+        },
+    )
+
+    result = await service.apply_decision(decision)
+
+    assert result["applied"] is False
+    assert result["reason"] == "Durable update was not confirmed."
+    assert "description" not in repo.plans[0]
 
 
 @pytest.mark.asyncio

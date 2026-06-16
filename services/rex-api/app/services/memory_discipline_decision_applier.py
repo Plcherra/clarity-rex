@@ -56,6 +56,12 @@ class MemoryDisciplineDecisionApplier:
         create_method = create_method_for_action(action)
         if create_method:
             created = await getattr(self.memory_service, create_method)(payload)
+            if not isinstance(created, dict) or not created.get("id"):
+                return {
+                    "action": action.value,
+                    "applied": False,
+                    "reason": "Durable create was not confirmed.",
+                }
             return {"action": action.value, "applied": True, "record": created}
 
         update_method = update_method_for_action(action)
@@ -65,6 +71,12 @@ class MemoryDisciplineDecisionApplier:
                 target_id,
                 **payload,
             )
+            if not isinstance(updated, dict) or not updated.get("id"):
+                return {
+                    "action": action.value,
+                    "applied": False,
+                    "reason": "Durable update was not confirmed.",
+                }
             return {"action": action.value, "applied": True, "record": updated}
 
         archive_method = archive_method_for_action(action)

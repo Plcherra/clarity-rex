@@ -9,7 +9,6 @@ from typing import Optional
 from app.services.accountability_service import AccountabilityService
 from app.services.goal_context_service import GoalContextService
 from app.services.prompt_service import PromptService
-from app.services.rex_brain_chat_service import RexBrainChatService
 from app.services.rex_intent_router import RexIntentDecision
 from app.services.time_context_service import TimeContextService
 
@@ -23,7 +22,8 @@ MEMORY_INVENTORY_QUERY = (
     "chats conversations preferences"
 )
 PROFILE_MEMORY_LIMIT = 4
-PAST_CHAT_MEMORY_LIMIT = 4
+PAST_CHAT_MEMORY_LIMIT = 12
+PAST_CHAT_SEARCH_SCAN_LIMIT = 50
 LOGGER = logging.getLogger("rex.context")
 MEMORY_REJECTION_MARKERS = (
     "do not remember",
@@ -62,14 +62,12 @@ class ChatContextService:
         time_context_service: Optional[TimeContextService] = None,
         accountability_service: Optional[AccountabilityService] = None,
         goal_context_service: Optional[GoalContextService] = None,
-        rex_brain_chat_service: Optional[RexBrainChatService] = None,
     ) -> None:
         self.memory_service = memory_service
         self.prompt_service = prompt_service or PromptService()
         self.time_context_service = time_context_service or TimeContextService()
         self.accountability_service = accountability_service or AccountabilityService()
         self.goal_context_service = goal_context_service or GoalContextService()
-        self.rex_brain_chat_service = rex_brain_chat_service
 
     async def fetch_prompt_context(
         self,
@@ -121,7 +119,7 @@ class ChatContextService:
                 self.fetch_relevant_chat_excerpts(
                     query=memory_query,
                     limit=PAST_CHAT_MEMORY_LIMIT,
-                    exclude_conversation_id=conversation_id,
+                    exclude_conversation_id=None,
                 ),
                 timings_ms,
             )
@@ -219,7 +217,7 @@ class ChatContextService:
                 self.fetch_relevant_chat_excerpts(
                     query=memory_query,
                     limit=PAST_CHAT_MEMORY_LIMIT,
-                    exclude_conversation_id=conversation_id,
+                    exclude_conversation_id=None,
                 ),
                 timings_ms,
             )
@@ -352,7 +350,7 @@ class ChatContextService:
             for search_query in self.past_chat_search_queries(query):
                 messages = await search_messages(
                     search_query,
-                    limit=limit,
+                    limit=max(limit, PAST_CHAT_SEARCH_SCAN_LIMIT),
                     exclude_conversation_id=exclude_conversation_id,
                 )
                 for message in messages:
@@ -803,44 +801,6 @@ class ChatContextService:
             time_context=time_context,
             financial_context=financial_context,
             max_context_characters=max_context_characters,
-        )
-
-    def build_prompt_messages_for_rex_brain(
-        self,
-        *,
-        message: str,
-        conversation_id: str,
-        conversation_history: list[dict],
-        long_term_memory: list[dict],
-        structured_context: dict,
-        accountability_signals: list,
-        file_text: Optional[str],
-        time_context: dict,
-        financial_context: Optional[dict],
-        rex_brain_plan: dict,
-    ) -> list[dict]:
-        rex_brain_chat_service = self.rex_brain_chat_service or RexBrainChatService()
-        prompt_context = rex_brain_chat_service.prompt_context(
-            conversation_history=conversation_history,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-            accountability_signals=accountability_signals,
-            financial_context=financial_context,
-            rex_brain_plan=rex_brain_plan,
-        )
-        return self.build_prompt_messages(
-            message=message,
-            conversation_id=conversation_id,
-            conversation_history=prompt_context["conversation_history"],
-            long_term_memory=prompt_context["long_term_memory"],
-            structured_context=prompt_context["structured_context"],
-            accountability_signals=prompt_context["accountability_signals"],
-            file_text=file_text,
-            time_context=time_context,
-            financial_context=prompt_context["financial_context"],
-            max_context_characters=rex_brain_chat_service.prompt_context_limit(
-                rex_brain_plan,
-            ),
         )
 
     def current_time_context(self, conversation_history: list[dict]) -> dict:

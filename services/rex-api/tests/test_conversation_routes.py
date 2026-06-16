@@ -78,6 +78,57 @@ class FakeConversationMemoryService:
         self._raise_if_configured()
         return self.messages.get(conversation_id)
 
+    async def search_messages(self, query, limit=50):
+        self._raise_if_configured()
+        normalized_query = query.lower()
+        matches = []
+        for messages in self.messages.values():
+            for message in messages:
+                if normalized_query in message["content"].lower():
+                    matches.append(message)
+                if len(matches) >= limit:
+                    return matches
+        return matches
+
+    async def search_conversations(self, query, limit=50):
+        self._raise_if_configured()
+        normalized_query = query.lower()
+        results = []
+        for conversation in self.conversations:
+            title = conversation.get("title") or ""
+            if normalized_query in title.lower():
+                results.append(
+                    {
+                        "conversation_id": conversation["id"],
+                        "conversation_title": conversation.get("title"),
+                        "conversation_timestamp": conversation.get("timestamp"),
+                        "message": None,
+                        "match_type": "title",
+                        "preview": title,
+                    }
+                )
+                if len(results) >= limit:
+                    return results
+        for message in await self.search_messages(query, limit=limit):
+            conversation = next(
+                item
+                for item in self.conversations
+                if item["id"] == message["conversation_id"]
+            )
+            results.append(
+                {
+                    "conversation_id": message["conversation_id"],
+                    "conversation_title": conversation.get("title"),
+                    "conversation_timestamp": conversation.get("timestamp"),
+                    "message": message,
+                    "match_type": "message",
+                    "preview": message["content"],
+                }
+            )
+            if len(results) >= limit:
+                break
+        return results
+
     async def delete_conversation(self, conversation_id):
         self._raise_if_configured()
         if conversation_id not in {"conversation-1", "conversation-2"}:
@@ -147,6 +198,21 @@ def test_get_conversation_messages_returns_404_for_missing_conversation(client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Conversation not found."
+
+
+def test_search_conversation_messages(client):
+    override_memory_service(FakeConversationMemoryService())
+
+    response = client.get("/conversations/search?q=work")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    assert data[0]["conversation_id"] == "conversation-1"
+    assert data[0]["match_type"] == "title"
+    assert data[0]["preview"] == "Work stress"
+    assert data[1]["message"]["id"] == "message-1"
+    assert data[1]["preview"] == "I am stressed about work."
 
 
 def test_delete_conversation(client):

@@ -52,7 +52,7 @@ class MemoryService(Protocol):
     async def search_messages(
         self,
         query: str,
-        limit: int = 8,
+        limit: int = 50,
         exclude_conversation_id: Optional[str] = None,
     ) -> list[dict]:
         pass

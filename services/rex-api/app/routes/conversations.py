@@ -1,7 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from app.dependencies import get_memory_service
-from app.models.conversation import ConversationResponse, MessageResponse
+from app.models.conversation import (
+    ConversationResponse,
+    ConversationSearchResultResponse,
+    MessageResponse,
+)
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 
 
@@ -33,6 +37,23 @@ async def create_conversation(
         raise _memory_http_error(error) from error
 
     return ConversationResponse(**conversation)
+
+
+@router.get("/search", response_model=list[ConversationSearchResultResponse])
+async def search_conversation_messages(
+    q: str = Query(min_length=1),
+    limit: int = Query(default=50, ge=1, le=100),
+    memory_service: SupabaseMemoryService = Depends(get_memory_service),
+) -> list[ConversationSearchResultResponse]:
+    try:
+        results = await memory_service.search_conversations(q, limit=limit)
+    except MemoryServiceError as error:
+        raise _memory_http_error(error) from error
+
+    return [
+        ConversationSearchResultResponse(**_public_search_result(result))
+        for result in results
+    ]
 
 
 @router.get("/{conversation_id}/messages", response_model=list[MessageResponse])
@@ -81,3 +102,11 @@ def _public_conversation(conversation: dict) -> dict:
 
 def _public_message(message: dict) -> dict:
     return dict(message)
+
+
+def _public_search_result(result: dict) -> dict:
+    public_result = dict(result)
+    message = public_result.get("message")
+    if isinstance(message, dict):
+        public_result["message"] = _public_message(message)
+    return public_result

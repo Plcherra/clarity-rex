@@ -17,7 +17,7 @@
 - `/lib/services` - API calls and external services
 - `/lib/widgets` - Reusable UI components
 
-`/services/rex-api` - Python backend
+`\services\rex-api` - Python backend
 
 - All FastAPI endpoints, Plaid sync logic, memory handling
 

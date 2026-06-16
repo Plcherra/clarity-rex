@@ -7,6 +7,7 @@ from fastapi import UploadFile
 from app.services.ai_service import AIService
 from app.services.accountability_service import AccountabilityService
 from app.services.action_truth_policy import (
+    safe_degraded_memory_search_response,
     safe_old_chat_search_response,
     safe_pending_action_response,
     safe_unexecuted_memory_response,
@@ -29,14 +30,11 @@ from app.services.goal_command_service import GoalCommandService
 from app.services.memory_intent_service import MemoryIntentService
 from app.services.memory_turn_service import MemoryTurnService
 from app.services.prompt_service import PromptService
-from app.services.rex_brain import RexBrain
-from app.services.rex_brain_chat_service import RexBrainChatService
 from app.services.rex_brain_contracts import (
     RexBrainChannel,
 )
 from app.services.rex_intent_router import RexIntent, RexIntentRouter
-from app.services.rex_model_router import RexModelRouter
-from app.services.rex_observability import RexBrainObserver
+from app.services.simple_rex_brain import SimpleRexBrain
 from app.services.time_context_service import TimeContextService
 from app.services.usage_tracking_service import UsageTrackingService
 
@@ -55,12 +53,10 @@ class ChatService(ChatVoiceMetadataMixin):
         goal_command_service: Optional[GoalCommandService] = None,
         chat_context_service: Optional[ChatContextService] = None,
         clarity_action_parser: Optional[ClarityActionParser] = None,
-        rex_brain_chat_service: Optional[RexBrainChatService] = None,
-        rex_brain: Optional[RexBrain] = None,
-        rex_model_router: Optional[RexModelRouter] = None,
-        rex_brain_observer: Optional[RexBrainObserver] = None,
+        simple_rex_brain: Optional[SimpleRexBrain] = None,
         rex_intent_router: Optional[RexIntentRouter] = None,
         usage_tracking_service: Optional[UsageTrackingService] = None,
+        **experimental_rex_brain_kwargs,
     ) -> None:
         self.ai_service = ai_service
         self.memory_service = memory_service
@@ -77,15 +73,19 @@ class ChatService(ChatVoiceMetadataMixin):
         self.clarity_action_parser = clarity_action_parser or ClarityActionParser()
         self.rex_intent_router = rex_intent_router or RexIntentRouter()
         self.usage_tracking_service = usage_tracking_service or UsageTrackingService()
-        # MVP launch path: advanced Rex Brain routing stays dormant. The
-        # direct memory/goal handlers plus the standard context prompt are the
-        # only production orchestration path.
-        self.rex_brain_chat_service = rex_brain_chat_service
         self.chat_context_service = chat_context_service or ChatContextService(
             memory_service,
             prompt_service=self.prompt_service,
             time_context_service=self.time_context_service,
             accountability_service=self.accountability_service,
+        )
+        # Production launch brain: one simple Rex Brain surface owns intent and
+        # context assembly. Experimental routing kwargs are accepted for old
+        # tests/callers but intentionally do not create a second production path.
+        _ = experimental_rex_brain_kwargs
+        self.simple_rex_brain = simple_rex_brain or SimpleRexBrain(
+            intent_router=self.rex_intent_router,
+            chat_context_service=self.chat_context_service,
         )
         self.chat_turn_context_service = ChatTurnContextService(
             file_service=file_service,
@@ -104,7 +104,7 @@ class ChatService(ChatVoiceMetadataMixin):
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
     ) -> dict:
-        intent_decision = self.rex_intent_router.classify(
+        intent_decision = self.simple_rex_brain.classify(
             message,
             has_file=file is not None,
             has_financial_context=financial_context is not None,
@@ -146,7 +146,7 @@ class ChatService(ChatVoiceMetadataMixin):
         conversation_history = self.memory_turn_service.public_messages(
             conversation_history
         )
-        ai_messages = self.chat_context_service.build_prompt_messages(
+        ai_messages = self.simple_rex_brain.build_prompt_messages(
             message=message,
             conversation_id=conversation_id,
             conversation_history=conversation_history,
@@ -156,6 +156,7 @@ class ChatService(ChatVoiceMetadataMixin):
             file_text=file_text,
             time_context=time_context,
             financial_context=financial_context,
+            channel=channel,
         )
 
         if response_instructions:
@@ -197,6 +198,7 @@ class ChatService(ChatVoiceMetadataMixin):
             clarity_action_proposals,
             unsupported_actions=unsupported_actions,
             intent_decision=intent_decision,
+            memory_status=structured_context.get("memory_status"),
             old_chat_evidence_loaded=self._has_old_chat_evidence(ai_messages),
         )
         assistant_message = await self.memory_service.save_message(
@@ -234,7 +236,7 @@ class ChatService(ChatVoiceMetadataMixin):
         user_requested_deep_thinking: bool = False,
         include_turn_trace: bool = False,
     ) -> AsyncIterator[dict]:
-        intent_decision = self.rex_intent_router.classify(
+        intent_decision = self.simple_rex_brain.classify(
             message,
             has_file=file is not None,
             has_financial_context=financial_context is not None,
@@ -297,7 +299,7 @@ class ChatService(ChatVoiceMetadataMixin):
         conversation_history = self.memory_turn_service.public_messages(
             conversation_history
         )
-        ai_messages = self.chat_context_service.build_prompt_messages(
+        ai_messages = self.simple_rex_brain.build_prompt_messages(
             message=message,
             conversation_id=conversation_id,
             conversation_history=conversation_history,
@@ -307,6 +309,7 @@ class ChatService(ChatVoiceMetadataMixin):
             file_text=file_text,
             time_context=time_context,
             financial_context=financial_context,
+            channel=channel,
         )
 
         if response_instructions:
@@ -357,6 +360,7 @@ class ChatService(ChatVoiceMetadataMixin):
             clarity_action_proposals,
             unsupported_actions=unsupported_actions,
             intent_decision=intent_decision,
+            memory_status=structured_context.get("memory_status"),
             old_chat_evidence_loaded=self._has_old_chat_evidence(ai_messages),
         )
         assistant_message = await self.memory_service.save_message(
@@ -432,6 +436,7 @@ class ChatService(ChatVoiceMetadataMixin):
         *,
         unsupported_actions: list[str],
         intent_decision,
+        memory_status: object = None,
         old_chat_evidence_loaded: bool = False,
     ) -> str:
         response = safe_pending_action_response(
@@ -443,6 +448,10 @@ class ChatService(ChatVoiceMetadataMixin):
         response = safe_unsupported_action_response(response, unsupported_actions)
         if unsupported_actions:
             return response
+        response = safe_degraded_memory_search_response(
+            response,
+            memory_status=memory_status,
+        )
         response = safe_old_chat_search_response(
             response,
             old_chat_evidence_loaded=old_chat_evidence_loaded,

@@ -76,6 +76,36 @@ NO_OLD_CHAT_RESULT_CLAIMS = (
     "found nothing",
 )
 
+UNSUPPORTED_DENIAL_TERMS = (
+    "can't",
+    "cannot",
+    "can't complete",
+    "cannot complete",
+    "can't do",
+    "cannot do",
+    "not supported",
+    "not available",
+    "cannot yet",
+    "can't yet",
+)
+
+DEGRADED_MEMORY_NO_RESULT_CLAIMS = (
+    "i don't know",
+    "i do not know",
+    "i don't have anything",
+    "i do not have anything",
+    "i don't have any",
+    "i do not have any",
+    "nothing about",
+    "no information",
+    "no saved memory",
+    "no memory",
+    "no memories",
+    "couldn't find",
+    "could not find",
+    "found nothing",
+)
+
 
 def response_claims_unconfirmed_success(response: str) -> bool:
     """Return True when visible text sounds like a completed durable action."""
@@ -125,7 +155,12 @@ def safe_unsupported_action_response(
     """Block completion claims for action blocks the backend cannot execute."""
 
     cleaned = response.strip()
-    if not unsupported_actions or not response_claims_unconfirmed_success(cleaned):
+    if not unsupported_actions:
+        return cleaned
+    normalized = f" {cleaned.lower()} "
+    if not response_claims_unconfirmed_success(cleaned) and any(
+        term in normalized for term in UNSUPPORTED_DENIAL_TERMS
+    ):
         return cleaned
     action = unsupported_actions[0].replace("_", " ")
     return (
@@ -157,4 +192,33 @@ def safe_old_chat_search_response(
         "I don't see that in saved memory or in the chat evidence retrieved for "
         "this turn. Older chat recall may be incomplete unless that detail was "
         "saved."
+    )
+
+
+def memory_status_is_degraded(memory_status: object) -> bool:
+    if not isinstance(memory_status, dict):
+        return False
+    return str(memory_status.get("state") or "").strip().lower() == "degraded"
+
+
+def response_claims_no_memory_result(response: str) -> bool:
+    normalized = f" {response.lower()} "
+    return any(term in normalized for term in DEGRADED_MEMORY_NO_RESULT_CLAIMS)
+
+
+def safe_degraded_memory_search_response(
+    response: str,
+    *,
+    memory_status: object,
+) -> str:
+    """Avoid turning degraded memory/search context into a false no-results claim."""
+
+    cleaned = response.strip()
+    if not memory_status_is_degraded(memory_status):
+        return cleaned
+    if not response_claims_no_memory_result(cleaned):
+        return cleaned
+    return (
+        "Memory search is temporarily unavailable right now. I can't confidently "
+        "say what I remember until it's working again."
     )

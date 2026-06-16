@@ -32,23 +32,35 @@ final currentConversationProvider = Provider<Conversation?>((ref) {
 class ConversationListState {
   const ConversationListState({
     this.conversations = const [],
+    this.searchResults = const [],
+    this.searchQuery = '',
     this.isLoading = false,
+    this.isSearching = false,
     this.errorMessage,
   });
 
   final List<Conversation> conversations;
+  final List<ConversationSearchResult> searchResults;
+  final String searchQuery;
   final bool isLoading;
+  final bool isSearching;
   final String? errorMessage;
 
   ConversationListState copyWith({
     List<Conversation>? conversations,
+    List<ConversationSearchResult>? searchResults,
+    String? searchQuery,
     bool? isLoading,
+    bool? isSearching,
     String? errorMessage,
     bool clearError = false,
   }) {
     return ConversationListState(
       conversations: conversations ?? this.conversations,
+      searchResults: searchResults ?? this.searchResults,
+      searchQuery: searchQuery ?? this.searchQuery,
       isLoading: isLoading ?? this.isLoading,
+      isSearching: isSearching ?? this.isSearching,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
@@ -125,5 +137,52 @@ class ConversationListController extends Notifier<ConversationListState> {
       );
       return false;
     }
+  }
+
+  Future<void> searchConversations(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      state = state.copyWith(
+        searchQuery: '',
+        searchResults: const [],
+        isSearching: false,
+        clearError: true,
+      );
+      return;
+    }
+
+    state = state.copyWith(
+      searchQuery: trimmed,
+      isSearching: true,
+      clearError: true,
+    );
+
+    try {
+      final results = await ref
+          .read(conversationApiProvider)
+          .searchConversations(trimmed);
+      if (state.searchQuery != trimmed) {
+        return;
+      }
+      state = state.copyWith(
+        searchResults: results,
+        isSearching: false,
+        clearError: true,
+      );
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSearching: false,
+        errorMessage: error.toString(),
+      );
+    }
+  }
+
+  void clearSearch() {
+    state = state.copyWith(
+      searchQuery: '',
+      searchResults: const [],
+      isSearching: false,
+      clearError: true,
+    );
   }
 }

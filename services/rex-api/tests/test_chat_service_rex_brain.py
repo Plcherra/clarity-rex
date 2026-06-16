@@ -38,7 +38,7 @@ def _routed_chat_service(
 
 
 @pytest.mark.asyncio
-async def test_rex_brain_routing_disabled_keeps_chat_ai_call_unchanged():
+async def test_simple_rex_brain_keeps_chat_ai_call_unchanged():
     ai_service = FakeAIService(response="Rex response")
     memory_service = FakeMemoryService()
     chat_service = ChatService(
@@ -54,7 +54,7 @@ async def test_rex_brain_routing_disabled_keeps_chat_ai_call_unchanged():
 
 
 @pytest.mark.asyncio
-async def test_rex_brain_settings_are_ignored_for_mvp_base_path():
+async def test_experimental_rex_brain_settings_do_not_change_mvp_flow():
     ai_service = FakeAIService(response="Rex response")
     memory_service = FakeMemoryService()
     chat_service = _routed_chat_service(
@@ -80,7 +80,7 @@ async def test_rex_brain_settings_are_ignored_for_mvp_base_path():
 
 
 @pytest.mark.asyncio
-async def test_rex_brain_planner_is_not_called_on_base_path():
+async def test_experimental_rex_brain_planner_is_not_called_by_mvp_flow():
     ai_service = FakeAIService(response="Rex response")
     memory_service = FakeMemoryService()
     chat_service = _routed_chat_service(
@@ -97,7 +97,7 @@ async def test_rex_brain_planner_is_not_called_on_base_path():
 
 
 @pytest.mark.asyncio
-async def test_rex_brain_streaming_chat_uses_base_kwargs_only():
+async def test_rex_brain_streaming_chat_uses_mvp_kwargs_only():
     ai_service = FakeAIService(stream_tokens=["A", "B"])
     memory_service = FakeMemoryService()
     chat_service = _routed_chat_service(
@@ -159,7 +159,7 @@ async def test_base_prompt_contains_launch_safety_guards():
 
 
 @pytest.mark.asyncio
-async def test_rex_brain_observer_is_not_called_on_mvp_base_path():
+async def test_rex_brain_observer_is_not_called_on_mvp_flow():
     ai_service = FakeAIService(response="Rex response")
     memory_service = FakeMemoryService()
     observer = FakeRexBrainObserver()
@@ -175,7 +175,7 @@ async def test_rex_brain_observer_is_not_called_on_mvp_base_path():
 
 
 @pytest.mark.asyncio
-async def test_base_path_preserves_memory_status_in_prompt_context():
+async def test_mvp_flow_preserves_memory_status_in_prompt_context():
     ai_service = FakeAIService(response="Rex response")
     memory_service = FakeMemoryService()
     memory_service.structured_context = {
@@ -201,4 +201,4 @@ async def test_base_path_preserves_memory_status_in_prompt_context():
     system_prompt = ai_service.messages[0]["content"]
     assert "memory_status/degraded" in system_prompt
     assert "Failed sources: past_chat_memory" in system_prompt
-    assert "Do not say memory search found nothing" in system_prompt
+    assert "memory search is temporarily unavailable" in system_prompt

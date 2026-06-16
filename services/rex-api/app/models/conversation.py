@@ -16,3 +16,12 @@ class ConversationResponse(BaseModel):
     title: Optional[str] = None
     timestamp: Optional[str] = None
     last_message: Optional[MessageResponse] = None
+
+
+class ConversationSearchResultResponse(BaseModel):
+    conversation_id: str
+    conversation_title: Optional[str] = None
+    conversation_timestamp: Optional[str] = None
+    message: Optional[MessageResponse] = None
+    match_type: str
+    preview: str

@@ -1,0 +1,152 @@
+# REX_BRAIN_ARCHITECTURE.md
+
+## 1. Overview
+
+Rex Brain is one simple assistant flow for MVP.
+
+The goal is not to build a complex brain system. The goal is to give Grok the right context, keep Rex honest, and make the code easy to debug.
+
+Grok does the reasoning. Rex Brain handles context, backend-confirmed actions, and truth boundaries.
+
+## 2. MVP Flow
+
+```text
+User message
+  -> Simple intent check
+  -> Minimal context fetch
+  -> Optional direct backend action
+  -> Short prompt to Grok
+  -> Light truth check
+  -> Rex response
+```
+
+This is the production brain for MVP.
+
+Advanced routing, model selection, and deeper planning can be added later only if they plug into this same flow.
+
+## 3. Step 1: Simple Intent Check
+
+The intent check should stay lightweight.
+
+It only decides what context is needed for this turn.
+
+Main MVP intents:
+- Normal chat
+- Save memory
+- Update memory
+- Recall memory or old chats
+- Goal or commitment
+- Finance
+- File question
+- Unknown
+
+The intent check should not become a second reasoning system.
+
+## 4. Step 2: Minimal Context Fetch
+
+Context fetch gives Grok the smallest useful set of facts.
+
+Possible context sources:
+- Recent conversation messages
+- Relevant saved memory
+- Relevant old chat evidence
+- Goals and commitments
+- Financial context
+- Uploaded file context
+- Current time context
+
+Each source should have a simple status:
+- Searched and found results
+- Searched and found nothing
+- Unavailable or degraded
+
+A failed source is not proof that the user never said something.
+
+## 5. Step 3: Optional Direct Backend Action
+
+Some simple actions can happen before Grok answers.
+
+Examples:
+- Save a clear memory
+- Update a clear memory correction
+- Save a clear goal or commitment
+
+These actions must be deterministic and backend-confirmed.
+
+If the backend does not confirm the write, Rex must not claim success.
+
+Risky or unclear actions should not happen automatically. Rex should ask for confirmation or clarification.
+
+## 6. Step 4: Short Prompt To Grok
+
+The prompt should be short, labeled, and useful.
+
+It should include:
+- Short Rex behavior rules
+- Relevant saved memory
+- Relevant old chat evidence
+- Relevant financial context
+- Recent conversation context
+- The user's latest message
+
+Old chat evidence must be labeled as old chat evidence, not saved memory.
+
+Do not send large context blocks by default. Token usage matters.
+
+## 7. Step 5: Grok Response
+
+Grok writes the natural answer.
+
+Rex should rely on Grok for language, judgment, and reasoning once the right context is loaded.
+
+Grok must not invent saved memories, financial numbers, completed actions, or unavailable search results.
+
+## 8. Step 6: Light Truth Check
+
+The final check is small and practical.
+
+It should catch the highest-risk mistakes:
+- Claiming an action succeeded without backend confirmation
+- Claiming a memory was saved without backend confirmation
+- Treating old chat evidence as saved memory
+- Saying search found nothing when search failed
+- Claiming financial facts not present in context
+
+This check is a safety net. It should not become a large second brain.
+
+## 9. Saved Memory vs Old Chat Evidence
+
+Saved memory:
+- Confirmed memory record
+- User-visible in "What Clarity Knows"
+- Editable and deletable
+- Treated as Clarity knowledge
+
+Old chat evidence:
+- Search result from previous messages
+- Useful for recall
+- Not automatically shown in "What Clarity Knows"
+- Must be described as chat history unless saved later
+
+Rex should use both, but label them clearly.
+
+## 10. Chat And Voice
+
+Chat and voice use the same Rex Brain flow.
+
+Voice has a different input format, but the same memory rules, action rules, context rules, and truth policy.
+
+Voice can be more cautious because transcripts can be imperfect.
+
+## 11. Future Advanced Work
+
+Advanced brain work is allowed later, but it must not create a second production brain.
+
+Future improvements should stay inside the same simple flow:
+- Better intent checks
+- Better search ranking
+- Better prompt budgeting
+- Better source status tracking
+- Better truth checks
+
+The MVP architecture stays simple.

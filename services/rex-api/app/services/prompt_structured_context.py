@@ -110,7 +110,8 @@ class PromptStructuredContextMixin:
         )
         return (
             f"- memory_status/{state}: {message}{source_text} "
-            "Do not say memory search found nothing when memory status is degraded."
+            "If memory status is degraded, say memory search is temporarily "
+            "unavailable instead of claiming nothing was found."
         )
 
     def _entity_line(self, entity: dict) -> Optional[str]:

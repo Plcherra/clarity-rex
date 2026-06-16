@@ -20,12 +20,12 @@ class ConversationApi {
     RexAuthHeaders? authHeaders,
     RexApiClient? apiClient,
   }) : _apiClient =
-          apiClient ??
-          RexApiClient(
-            httpClient: client,
-            baseUrl: baseUrl,
-            authHeaders: authHeaders,
-          );
+           apiClient ??
+           RexApiClient(
+             httpClient: client,
+             baseUrl: baseUrl,
+             authHeaders: authHeaders,
+           );
 
   final RexApiClient _apiClient;
 
@@ -73,6 +73,30 @@ class ConversationApi {
         .toList(growable: false);
   }
 
+  Future<List<ConversationSearchResult>> searchConversations(
+    String query,
+  ) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return const [];
+    }
+
+    final response = await _apiClient.get(
+      '/conversations/search',
+      query: {'q': trimmed},
+    );
+    final data = _decodeResponse(response);
+
+    if (data is! List) {
+      throw const ChatApiException('Backend returned an invalid response.');
+    }
+
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(ConversationSearchResult.fromJson)
+        .toList(growable: false);
+  }
+
   Future<void> deleteConversation(String conversationId) async {
     final response = await _apiClient.delete('/conversations/$conversationId');
 
@@ -111,4 +135,43 @@ class ConversationApi {
 
     return 'Clarity API returned an error.';
   }
+}
+
+class ConversationSearchResult {
+  const ConversationSearchResult({
+    required this.conversationId,
+    required this.matchType,
+    required this.preview,
+    this.conversationTitle,
+    this.conversationTimestamp,
+    this.message,
+  });
+
+  final String conversationId;
+  final String matchType;
+  final String preview;
+  final String? conversationTitle;
+  final DateTime? conversationTimestamp;
+  final ChatApiMessage? message;
+
+  factory ConversationSearchResult.fromJson(Map<String, dynamic> json) {
+    final message = json['message'];
+    return ConversationSearchResult(
+      conversationId: json['conversation_id'] as String? ?? '',
+      conversationTitle: json['conversation_title'] as String?,
+      conversationTimestamp: _dateTimeOrNull(json['conversation_timestamp']),
+      matchType: json['match_type'] as String? ?? 'message',
+      preview: json['preview'] as String? ?? '',
+      message: message is Map<String, dynamic>
+          ? ChatApiMessage.fromJson(message)
+          : null,
+    );
+  }
+}
+
+DateTime? _dateTimeOrNull(Object? value) {
+  if (value is! String || value.trim().isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(value);
 }

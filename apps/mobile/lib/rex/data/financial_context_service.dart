@@ -281,7 +281,7 @@ final class AssistantFinancialContextService {
           account.source ?? (account.isPlaidConnected ? 'plaid' : 'manual'),
       'source_label': account.sourceLabel,
       'plaid_connected': account.isPlaidConnected,
-      if (institution != null) 'institution': institution,
+      'institution': ?institution,
       if (account.plaidAccountMask != null) 'mask': account.plaidAccountMask,
       if (account.syncStatus != null) 'sync_status': account.syncStatus,
       if (account.lastSyncedAt != null)

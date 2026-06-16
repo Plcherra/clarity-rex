@@ -7,5 +7,6 @@ python-multipart
 requests
 pytest
 pytest-asyncio
+tzdata
 uvicorn[standard]
 websockets

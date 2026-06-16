@@ -107,8 +107,11 @@ class GoogleTTSService:
                         scopes=scopes,
                     )
                 else:
+                    credentials_path = credentials_value
+                    if credentials_path.startswith("~"):
+                        credentials_path = str(Path(credentials_path).expanduser())
                     credentials = service_account.Credentials.from_service_account_file(
-                        str(Path(credentials_value).expanduser()),
+                        credentials_path,
                         scopes=scopes,
                     )
             elif self.settings.google_application_credentials:

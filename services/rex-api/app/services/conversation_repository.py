@@ -133,7 +133,7 @@ class ConversationRepository:
     async def search_messages(
         self,
         query: str,
-        limit: int = 8,
+        limit: int = 50,
         exclude_conversation_id: Optional[str] = None,
     ) -> list[dict]:
         terms = self._search_terms(query)
@@ -156,6 +156,75 @@ class ConversationRepository:
         )
         return rows
 
+    async def search_conversations(self, query: str, limit: int = 50) -> list[dict]:
+        terms = self._search_terms(query)
+        if not terms:
+            return []
+
+        results: list[dict] = []
+        seen: set[tuple[str, str]] = set()
+        title_filters = ",".join(f"title.ilike.*{term}*" for term in terms)
+        title_rows = await self.store._request(
+            "GET",
+            self.store.settings.supabase_conversations_table,
+            query={
+                "select": CONVERSATION_SELECT,
+                "or": f"({title_filters})",
+                "order": "timestamp.desc",
+                "limit": str(limit),
+            },
+        )
+        for conversation in title_rows:
+            conversation_id = str(conversation.get("id") or "")
+            if not conversation_id:
+                continue
+            key = (conversation_id, "title")
+            if key in seen:
+                continue
+            seen.add(key)
+            title = str(conversation.get("title") or "").strip()
+            results.append(
+                {
+                    "conversation_id": conversation_id,
+                    "conversation_title": conversation.get("title"),
+                    "conversation_timestamp": conversation.get("timestamp"),
+                    "message": None,
+                    "match_type": "title",
+                    "preview": title or "Matched conversation title.",
+                }
+            )
+            if len(results) >= limit:
+                return results
+
+        message_rows = await self.search_messages(query, limit=limit)
+        conversation_cache: dict[str, dict] = {}
+        for message in message_rows:
+            conversation_id = str(message.get("conversation_id") or "")
+            message_id = str(message.get("id") or "")
+            if not conversation_id or not message_id:
+                continue
+            key = (conversation_id, message_id)
+            if key in seen:
+                continue
+            seen.add(key)
+            conversation = conversation_cache.get(conversation_id)
+            if conversation is None:
+                conversation = await self._conversation_by_id(conversation_id)
+                conversation_cache[conversation_id] = conversation
+            results.append(
+                {
+                    "conversation_id": conversation_id,
+                    "conversation_title": conversation.get("title"),
+                    "conversation_timestamp": conversation.get("timestamp"),
+                    "message": message,
+                    "match_type": "message",
+                    "preview": str(message.get("content") or "").strip(),
+                }
+            )
+            if len(results) >= limit:
+                break
+        return results
+
     async def delete_conversation(self, conversation_id: str) -> bool:
         if not await self.conversation_exists(conversation_id):
             return False
@@ -166,6 +235,18 @@ class ConversationRepository:
             query={"id": f"eq.{conversation_id}"},
         )
         return True
+
+    async def _conversation_by_id(self, conversation_id: str) -> dict:
+        rows = await self.store._request(
+            "GET",
+            self.store.settings.supabase_conversations_table,
+            query={
+                "id": f"eq.{conversation_id}",
+                "select": CONVERSATION_SELECT,
+                "limit": "1",
+            },
+        )
+        return rows[0] if rows else {}
 
     async def save_voice_turn(
         self,

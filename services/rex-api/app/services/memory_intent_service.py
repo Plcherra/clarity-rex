@@ -723,6 +723,8 @@ class MemoryIntentService:
             "you",
         }:
             return False
+        if self._looks_like_transcript_noise(normalized):
+            return False
         words = normalized.split()
         if len(words) > 4:
             return False
@@ -748,6 +750,21 @@ class MemoryIntentService:
         if re.search(r"\b(?:m'?s|o|one|two|2|1)\b", normalized):
             return False
         return bool(re.search(r"[a-z]", normalized))
+
+    def _looks_like_transcript_noise(self, normalized: str) -> bool:
+        return any(
+            re.search(pattern, normalized) is not None
+            for pattern in (
+                r"\binaudible\b",
+                r"\bunintelligible\b",
+                r"\btranscript\b",
+                r"\baudio\b",
+                r"\bbackground noise\b",
+                r"\bgarbled\b",
+                r"\bunclear\b",
+                r"\bunknown\b",
+            )
+        )
 
     def _mentions_somerville_spelling(self, normalized_message: str) -> bool:
         compact = re.sub(r"[^a-z0-9]+", "", normalized_message.lower())

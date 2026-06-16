@@ -273,6 +273,42 @@ async def test_memory_turn_service_rejects_direct_garbled_city_correction():
 
 
 @pytest.mark.asyncio
+async def test_memory_turn_service_rejects_unclear_transcript_city_correction():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Somerville, Massachusetts.",
+            "importance": 4,
+            "metadata": {"topic_fingerprint": "fact:identity:location"},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "Change my city to transcript unclear.",
+        conversation_id="conversation-1",
+        user_message={
+            "id": "message-update",
+            "content": "voice transcript unclear",
+        },
+        conversation_history=[],
+        time_context={"date": "2026-06-13"},
+    )
+
+    assert result is not None
+    assert result["response"].startswith("I couldn't read the city clearly")
+    assert result["memory_changes"]["records"][0]["action"] == (
+        "clarification_required"
+    )
+    assert store.long_term_memory[0]["content"] == (
+        "User lives in Somerville, Massachusetts."
+    )
+
+
+@pytest.mark.asyncio
 async def test_memory_turn_service_archives_duplicate_bad_location_memory():
     store = FakeMemoryTurnStore()
     store.long_term_memory.extend(
