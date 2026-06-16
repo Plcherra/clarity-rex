@@ -205,6 +205,52 @@ async def test_chat_prompt_includes_surrounding_old_chat_turns_for_mom_recall():
 
 
 @pytest.mark.asyncio
+async def test_chat_prompt_reaches_old_chat_recall_after_recent_city_correction():
+    ai_service = FakeAIService(response="I found an old chat mention.")
+    memory_service = FakeMemoryService()
+    old_conversation_id = await memory_service.create_conversation()
+    await memory_service.save_message(
+        old_conversation_id,
+        "user",
+        "How about you remember me about my mom's birthday?",
+    )
+    await memory_service.save_message(
+        old_conversation_id,
+        "assistant",
+        "Got it, I'll remember your mom's birthday on the 18th. Want a reminder?",
+    )
+    current_conversation_id = await memory_service.create_conversation()
+    await memory_service.save_message(
+        current_conversation_id,
+        "user",
+        "Can you change my city?",
+    )
+    await memory_service.save_message(
+        current_conversation_id,
+        "assistant",
+        "Sure, what city should I update it to?",
+    )
+    await memory_service.save_message(current_conversation_id, "user", "Somerville")
+    await memory_service.save_message(
+        current_conversation_id,
+        "assistant",
+        "Got it, I updated that: you live in Somerville.",
+    )
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message(
+        "Nope, I want you to look into the chats and find any mentions of my mom",
+        conversation_id=current_conversation_id,
+    )
+
+    assert result["response"] == "I found an old chat mention."
+    assert result["memory_changes"] is None
+    system_content = ai_service.messages[0]["content"]
+    assert "- old chat evidence (not saved memory):" in system_content
+    assert "mom's birthday on the 18th" in system_content
+
+
+@pytest.mark.asyncio
 async def test_chat_prompt_ignores_past_chat_fact_user_rejected():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

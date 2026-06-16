@@ -715,6 +715,109 @@ async def test_memory_turn_service_rejects_garbled_city_voice_transcript():
 
 
 @pytest.mark.asyncio
+async def test_memory_turn_service_does_not_hijack_mom_old_chat_lookup_after_city_context():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-location",
+            "memory_type": "fact",
+            "content": "User lives in Somerville.",
+            "importance": 4,
+            "metadata": {"topic_fingerprint": "fact:identity:location"},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+    history = [
+        {
+            "id": "message-1",
+            "conversation_id": "conversation-1",
+            "role": "user",
+            "content": "Can you change my city?",
+        },
+        {
+            "id": "message-2",
+            "conversation_id": "conversation-1",
+            "role": "assistant",
+            "content": "Sure, what city should I update it to?",
+        },
+        {
+            "id": "message-3",
+            "conversation_id": "conversation-1",
+            "role": "user",
+            "content": "Somerville",
+        },
+        {
+            "id": "message-4",
+            "conversation_id": "conversation-1",
+            "role": "assistant",
+            "content": "Got it, I updated that: you live in Somerville.",
+        },
+    ]
+
+    result = await service.handle_turn(
+        "Nope, I want you to look into the chats and find any mentions of my mom",
+        conversation_id="conversation-1",
+        user_message={
+            "id": "message-5",
+            "content": (
+                "Nope, I want you to look into the chats and find any "
+                "mentions of my mom"
+            ),
+        },
+        conversation_history=history,
+        time_context={"date": "2026-06-13"},
+    )
+
+    assert result is None
+    assert store.long_term_memory[0]["content"] == "User lives in Somerville."
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_does_not_hijack_birthday_statement_after_city_context():
+    store = FakeMemoryTurnStore()
+    store.long_term_memory.append(
+        {
+            "id": "memory-location",
+            "memory_type": "fact",
+            "content": "User lives in Somerville.",
+            "importance": 4,
+            "metadata": {"topic_fingerprint": "fact:identity:location"},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+    history = [
+        {
+            "id": "message-1",
+            "conversation_id": "conversation-1",
+            "role": "user",
+            "content": "Can you change my city?",
+        },
+        {
+            "id": "message-2",
+            "conversation_id": "conversation-1",
+            "role": "assistant",
+            "content": "Sure, what city should I update it to?",
+        },
+    ]
+
+    result = await service.handle_turn(
+        "I have previous chats where I told you my mom's birthday",
+        conversation_id="conversation-1",
+        user_message={
+            "id": "message-3",
+            "content": "I have previous chats where I told you my mom's birthday",
+        },
+        conversation_history=history,
+        time_context={"date": "2026-06-13"},
+    )
+
+    assert result is None
+    assert store.long_term_memory[0]["content"] == "User lives in Somerville."
+
+
+@pytest.mark.asyncio
 async def test_memory_turn_service_updates_city_from_clean_contextual_reply():
     store = FakeMemoryTurnStore()
     store.long_term_memory.append(

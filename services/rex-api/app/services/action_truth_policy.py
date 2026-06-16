@@ -37,6 +37,45 @@ CONFIRMATION_TERMS = (
     "would you like me to",
 )
 
+OLD_CHAT_SEARCH_CLAIMS = (
+    "checked the old chat",
+    "checked the old chats",
+    "checked old chat",
+    "checked old chats",
+    "checked all old chats",
+    "checked the old conversation",
+    "checked the old conversations",
+    "checked old conversation",
+    "checked old conversations",
+    "searched the old chat",
+    "searched the old chats",
+    "searched old chat",
+    "searched old chats",
+    "searched all old chats",
+    "searched old conversation",
+    "searched old conversations",
+    "looked through old chat",
+    "looked through old chats",
+    "looked through all old chats",
+    "looked through old conversation",
+    "looked through old conversations",
+    "looked at old chat",
+    "looked at old chats",
+    "looked at old conversation",
+    "looked at old conversations",
+)
+
+NO_OLD_CHAT_RESULT_CLAIMS = (
+    "no mentions",
+    "no mention",
+    "nothing about",
+    "don't have any",
+    "do not have any",
+    "couldn't find",
+    "could not find",
+    "found nothing",
+)
+
 
 def response_claims_unconfirmed_success(response: str) -> bool:
     """Return True when visible text sounds like a completed durable action."""
@@ -92,4 +131,30 @@ def safe_unsupported_action_response(
     return (
         f"I can't complete {action} from Clarity yet. I can help you think it "
         "through or draft it, but I won't claim it was done."
+    )
+
+
+def response_claims_old_chat_search_result(response: str) -> bool:
+    normalized = f" {response.lower()} "
+    claims_search = any(term in normalized for term in OLD_CHAT_SEARCH_CLAIMS)
+    claims_no_result = any(term in normalized for term in NO_OLD_CHAT_RESULT_CLAIMS)
+    return claims_search and claims_no_result
+
+
+def safe_old_chat_search_response(
+    response: str,
+    *,
+    old_chat_evidence_loaded: bool,
+) -> str:
+    """Avoid pretending old-chat search was exhaustive when no evidence loaded."""
+
+    cleaned = response.strip()
+    if old_chat_evidence_loaded:
+        return cleaned
+    if not response_claims_old_chat_search_result(cleaned):
+        return cleaned
+    return (
+        "I don't see that in saved memory or in the chat evidence retrieved for "
+        "this turn. Older chat recall may be incomplete unless that detail was "
+        "saved."
     )

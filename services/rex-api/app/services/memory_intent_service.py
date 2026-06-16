@@ -192,6 +192,8 @@ class MemoryIntentService:
         *,
         conversation_history: list[dict],
     ) -> bool:
+        if self.is_memory_lookup_or_topic_shift(message):
+            return False
         if not self._recent_location_correction_context(conversation_history):
             return False
         if self._detect_contextual_location_memory(
@@ -222,6 +224,8 @@ class MemoryIntentService:
         return True
 
     def needs_direct_location_clarification(self, message: str) -> bool:
+        if self.is_memory_lookup_or_topic_shift(message):
+            return False
         location_correction = self._location_correction_pattern.search(message)
         if location_correction is None:
             location_correction = self._negative_location_correction_pattern.search(
@@ -232,6 +236,59 @@ class MemoryIntentService:
 
         place = self._clean_place(location_correction.group("place"), message)
         return not self._is_valid_location_place(place)
+
+    def is_memory_lookup_or_topic_shift(self, message: str) -> bool:
+        """Protect recall/search turns from the direct memory write path."""
+
+        normalized = self._normalize_reply(message)
+        if not normalized:
+            return False
+
+        lookup_phrases = (
+            "what do you know",
+            "what do you remember",
+            "what information",
+            "do you know",
+            "do you remember",
+            "anything about",
+            "information about",
+            "look into",
+            "find any mention",
+            "find mentions",
+            "check old chat",
+            "check old chats",
+            "check the old chat",
+            "check the old chats",
+            "search old chat",
+            "search old chats",
+            "old chat",
+            "old chats",
+            "old conversation",
+            "old conversations",
+            "past chat",
+            "past chats",
+            "previous chat",
+            "previous chats",
+        )
+        topic_terms = (
+            "mom",
+            "mother",
+            "mum",
+            "mama",
+            "dad",
+            "father",
+            "birthday",
+            "family",
+            "parent",
+            "parents",
+            "conversation",
+            "conversations",
+            "chat",
+            "chats",
+        )
+        if any(phrase in normalized for phrase in lookup_phrases):
+            return True
+        return any(term in normalized.split() for term in topic_terms)
 
     def location_clarification_response(self) -> str:
         return (
@@ -364,6 +421,8 @@ class MemoryIntentService:
         *,
         conversation_history: list[dict],
     ) -> Optional[SimpleMemoryIntent]:
+        if self.is_memory_lookup_or_topic_shift(message):
+            return None
         if not self._recent_location_correction_context(conversation_history):
             return None
 

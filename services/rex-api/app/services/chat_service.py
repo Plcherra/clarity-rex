@@ -7,6 +7,7 @@ from fastapi import UploadFile
 from app.services.ai_service import AIService
 from app.services.accountability_service import AccountabilityService
 from app.services.action_truth_policy import (
+    safe_old_chat_search_response,
     safe_pending_action_response,
     safe_unexecuted_memory_response,
     safe_unsupported_action_response,
@@ -196,6 +197,7 @@ class ChatService(ChatVoiceMetadataMixin):
             clarity_action_proposals,
             unsupported_actions=unsupported_actions,
             intent_decision=intent_decision,
+            old_chat_evidence_loaded=self._has_old_chat_evidence(ai_messages),
         )
         assistant_message = await self.memory_service.save_message(
             conversation_id,
@@ -355,6 +357,7 @@ class ChatService(ChatVoiceMetadataMixin):
             clarity_action_proposals,
             unsupported_actions=unsupported_actions,
             intent_decision=intent_decision,
+            old_chat_evidence_loaded=self._has_old_chat_evidence(ai_messages),
         )
         assistant_message = await self.memory_service.save_message(
             conversation_id,
@@ -429,6 +432,7 @@ class ChatService(ChatVoiceMetadataMixin):
         *,
         unsupported_actions: list[str],
         intent_decision,
+        old_chat_evidence_loaded: bool = False,
     ) -> str:
         response = safe_pending_action_response(
             assistant_response,
@@ -439,9 +443,20 @@ class ChatService(ChatVoiceMetadataMixin):
         response = safe_unsupported_action_response(response, unsupported_actions)
         if unsupported_actions:
             return response
+        response = safe_old_chat_search_response(
+            response,
+            old_chat_evidence_loaded=old_chat_evidence_loaded,
+        )
         if intent_decision.intent in {RexIntent.MEMORY_SAVE, RexIntent.MEMORY_UPDATE}:
             return safe_unexecuted_memory_response(response)
         return response
+
+    def _has_old_chat_evidence(self, messages: list[dict]) -> bool:
+        for message in messages:
+            content = message.get("content")
+            if isinstance(content, str) and "old chat evidence" in content:
+                return True
+        return False
 
     async def _record_llm_usage(
         self,

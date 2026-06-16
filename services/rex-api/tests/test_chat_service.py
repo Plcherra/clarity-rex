@@ -201,6 +201,55 @@ async def test_chat_service_blocks_memory_success_claim_without_backend_write():
 
 
 @pytest.mark.asyncio
+async def test_chat_service_downgrades_old_chat_search_claim_without_evidence():
+    ai_service = FakeAIService(
+        response="I checked the old chats and found no mentions of your mom."
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message(
+        "Can you check the old chats for my mom?"
+    )
+
+    assert result["response"] == (
+        "I don't see that in saved memory or in the chat evidence retrieved for "
+        "this turn. Older chat recall may be incomplete unless that detail was "
+        "saved."
+    )
+    assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
+async def test_chat_service_allows_old_chat_answer_when_evidence_is_loaded():
+    ai_service = FakeAIService(
+        response="I found an old chat mention that your mom's birthday is June 18."
+    )
+    memory_service = FakeMemoryService()
+    old_conversation_id = await memory_service.create_conversation()
+    await memory_service.save_message(
+        old_conversation_id,
+        "user",
+        "It's not next week, but on the eighteenth, it's my mom's birthday.",
+    )
+    await memory_service.save_message(
+        old_conversation_id,
+        "assistant",
+        "Got it, June 18th is your mom's birthday.",
+    )
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message(
+        "Can you check the old chats for my mom?"
+    )
+
+    assert result["response"] == (
+        "I found an old chat mention that your mom's birthday is June 18."
+    )
+    assert "old chat evidence" in ai_service.messages[0]["content"]
+
+
+@pytest.mark.asyncio
 async def test_chat_service_correction_uses_normal_single_llm_turn():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
