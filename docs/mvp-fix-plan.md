@@ -2,7 +2,7 @@
 
 This plan is organized by launch priority groups. Work one full group at a time, starting with Group 1.
 
-Group 1 is complete. The simple MVP Rex Brain now follows the strict "Saved = Memory" model: saved records are durable categorized memory, chat search results remain chat history, and Rex must not blur the two.
+Group 1 is complete. Rex now searches old chats as conversation-level history instead of isolated keyword hits. The simple MVP Rex Brain follows the strict "Saved = Memory" model: saved records are durable categorized memory, chat search results remain chat history, and Rex must not blur the two.
 
 ## Group 1: Core Trust & Truth Issues (Highest Priority)
 
@@ -19,6 +19,11 @@ Group 1 Completed Summary:
 - Rex reports degraded memory/chat search instead of pretending nothing exists.
 - Unsupported or unconfirmed actions cannot be presented as completed.
 - Chats tab search is available for user-visible conversation lookup.
+- Old-chat recall now uses generic expanded search terms and conversation-level excerpts so Rex can find related details from older chats without one-off mom/birthday behavior.
+- User-scoped service tests now cover message search, conversation search, and conversation message context fetches.
+
+Current search boundary:
+Group 1 completed the MVP keyword-search baseline. Rex can search old chats more reliably, but this is not full Hybrid Chat Search yet. The next search work is tracked in Group 2 for launch hardening and Group 3 for semantic/hybrid retrieval.
 
 High-Level Overview of Rex Brain and Memory System (MVP Scope):
 Rex's production brain for launch is one simple assistant flow.
@@ -51,6 +56,8 @@ Group 1 launch trust fixes completed:
 - Context remains capped and intent-guided for the low-token MVP flow.
 - The Chats tab has a simple search surface backed by the conversation search endpoint.
 - Saved memory categories include People, Events, Places, Goals, Preferences, Facts, and fallback Other.
+- Manual testing recall gaps were addressed: Rex now searches generic topic terms and gives Grok nearby old-conversation context for related details like "send her money" near a birthday mention or game/games/PC-game discussions.
+- Chat search trust coverage includes user-scoped Supabase transport tests for search and conversation context fetches.
 
 ### Issue 1A: Align Memory Model With Final Saved = Memory Rules
 
@@ -136,6 +143,56 @@ Rex only says it does not know when memory search actually succeeded and found n
 
 Priority:
 High
+
+### Issue 2A: Old-Chat Recall Must Be Conversation-Level, Not Keyword-Fragile
+
+Status:
+Complete.
+
+[Added after manual Rex Brain recall audit on 2026-06-16]
+
+Issue:
+Manual testing showed Rex can recall details when the user opens the exact old conversation, but can fail from another chat. It can also find one keyword detail, such as mom's birthday, while missing related details from the same old conversation, such as sending her money or a gift. This proves old-chat recall is still too keyword-fragile and can behave like a targeted patch instead of a smart Rex Brain capability.
+
+Current failure examples:
+- Rex finds "your mom's birthday is June 18" but misses nearby "send her money" / gift intent from the same chat.
+- Rex says there are no games or PC games even though an old chat includes first PC game, League of Legends, and Legacy of Kain.
+- Rex can answer correctly after the user opens the old game chat because current conversation context is loaded, but cannot reliably find the same facts from another chat.
+- Follow-ups like "Did I mention anything else about that?" need the previous subject and broader old-chat context, not only the literal word "that."
+
+Files:
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\chat_context_service.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\conversation_repository.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\prompt_memory_context.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\prompt_constants.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_chat_context_service.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_memory_profile_recall.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_chat_service.py`
+
+Fix Needed:
+- [Done] Remove one-off mom/birthday-specific query patches that make recall look hardcoded.
+- [Done] Add generic query expansion for common recall cases: singular/plural terms, simple stemming, people, family, games, places, events, goals, preferences, work, and money-related details.
+- [Done] When old-chat search finds a relevant message, retrieve enough surrounding conversation context for Grok to infer related details from the same topic.
+- [Done] Prefer conversation-level clusters over isolated message snippets when the user asks broad recall questions.
+- [Done] Preserve low-token behavior by ranking and capping the final prompt section, not by cutting context too early.
+- [Done] Track whether old-chat search used exact keyword matches, expanded keyword matches, or conversation context.
+- [Done] Strengthen follow-up handling so "that," "anything else," "what else," and "the chat" reuse the previous subject.
+- [Done] Keep saved memory and chat search separate. Do not turn old chats into memory unless the user explicitly asks Rex to save something and the backend confirms it.
+- [Done] Keep truth enforcement strict: if recall context is partial or degraded, Rex must not say "that's all" or "nothing else" with false certainty.
+
+Required Tests:
+- [Done] Mom birthday plus "send her money" / gift intent in the same old conversation.
+- [Done] "Did I mention anything else about that?" after a mom recall answer.
+- [Done] Game/games/PC game recall across old chats, including League of Legends and Legacy of Kain.
+- [Done] Recall from another chat should match what Rex can answer when the original chat is opened.
+- [Done] Generic recall for person, place, preference, event, goal, work, and money topics.
+- [Done] No old-chat recall result should appear as saved memory or on the Knows page unless explicitly saved.
+
+Goal After Fix:
+Rex can search old chats as real conversation history. If the user previously discussed a topic, Rex should find the relevant old conversation, summarize all useful related details from that conversation, and label the answer as coming from chat history rather than saved memory.
+
+Priority:
+Highest
 
 ### Issue 3: Rex Can Claim Memory Updates Without Durable Confirmation
 
@@ -457,6 +514,88 @@ The dashboard feels intentional, compact, and launch-ready.
 Priority:
 High
 
+### Issue 7A: Voice UI Must Be One Feature, Not Two Separate Experiences
+
+Issue:
+Manual testing showed voice feels like two different features. Starting voice from the Chat tab keeps the call inside the chat with an inline voice panel. Opening the Voice tab shows a separate full-screen voice interface. Backend voice mostly routes through the same chat brain, but the mobile UI makes voice feel split and inconsistent.
+
+Files:
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\presentation\assistant_screen.dart`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\presentation\pages\chat_page.dart`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\presentation\widgets\inline_voice_call_panel.dart`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\voice\presentation\pages\voice_chat_page.dart`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\voice\presentation\widgets\voice_call_controls.dart`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\voice\application\voice_call_controller.dart`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\routes\voice.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\voice_stream_session.py`
+
+Fix Needed:
+- Decide the MVP voice product shape: voice should be one mode of the same assistant conversation, not a separate assistant.
+- Make the Voice tab and Chat call button use the same active conversation and the same visible call state.
+- Avoid two different voice layouts with different behavior unless one is only a presentation wrapper around the same call mode.
+- If the Voice tab remains, make it clearly open/start the same chat voice call rather than creating a separate-feeling feature.
+- Ensure voice transcripts and assistant replies are saved into the same conversation shown in Chat and Chats.
+- Keep backend voice on the same `chat_service.send_message` Rex Brain path.
+- Add manual tests for starting voice from Chat, switching to Voice, returning to Chat, and confirming the conversation/history remains consistent.
+
+Goal After Fix:
+Voice feels like one Rex conversation mode. The user should not have to understand two different voice systems.
+
+Priority:
+High
+
+### Issue 7B: Arbitrary Chat Recall Hardening
+
+[Added after Rex Brain search audit against `docs/brain/REX_BRAIN_RULES.md`, `docs/brain/REX_BRAIN_ARCHITECTURE.md`, and `docs/brain/REX_BRAIN_HYBRID_CHAT_SEARCH.md`]
+
+Issue:
+Group 1 fixed the biggest old-chat recall failures, but current recall is still keyword-based. For a multi-user app, users can ask Rex about anything: family, games, plans, work, immigration, purchases, places, friends, money, or any personal topic. The MVP keyword layer needs more generic hardening before it can be trusted as the baseline for arbitrary recall.
+
+Current Alignment:
+- Rex searches chat history separately from saved memory.
+- Rex uses generic keyword expansion instead of one-off mom/birthday patches.
+- Rex retrieves conversation-level context around matches.
+- Rex reports degraded chat search through memory status.
+- Supabase transport scopes authenticated reads/writes by `user_id`.
+- Migrations define user-scoped conversations/messages with RLS.
+
+Remaining Gaps:
+- Search ranking is still basic and not clearly scored by exact match, user-authored content, recency, repeated mentions, and conversation relevance.
+- Query expansion is duplicated between Rex internal recall and user-visible Chats search.
+- Alias coverage is still manual and limited, so arbitrary topics may miss unless the user repeats similar wording.
+- Conversation clusters are useful, but there is no explicit score explaining why one old conversation outranked another.
+- Service-layer tests now prove message search, conversation search, and conversation message context fetches are scoped by authenticated `user_id`; broader ranking and shared result-shaping tests still need work.
+- `services/rex-api/supabase_schema.sql` is stale compared with migrations and does not show the current user-scoped assistant tables.
+- The user-visible Chats tab search and Rex internal recall share repository behavior, but their ranking/result shape is not fully unified.
+
+Files:
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\chat_context_service.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\conversation_repository.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\supabase_memory_transport.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\routes\conversations.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\prompt_memory_context.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\supabase_schema.sql`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\supabase\migrations\000010_create_rex_assistant_tables.sql`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_chat_context_service.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_conversation_routes.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_user_scoped_memory_service.py`
+
+Fix Needed:
+- Create one reusable keyword expansion/ranking helper used by both Rex internal recall and user-visible Chats search.
+- Add explicit scoring for exact matches, expanded matches, user-authored messages, recency, repeated mentions, and conversation-level relevance.
+- Return or log search status with enough detail to know whether exact, expanded, or conversation-context search found the result.
+- Add broad arbitrary-topic tests beyond family/birthday/games: people, places, purchases, work, immigration, preferences, goals, money, and objects.
+- Add broader multi-user tests around ranked result shaping after the reusable search helper exists.
+- Refresh `services/rex-api/supabase_schema.sql` so the documented schema matches the user-scoped migrations.
+- Keep prompt context capped and labeled as chat history, not saved memory.
+- Keep degraded/no-result truth enforcement unchanged: Rex must not say "nothing came up" unless search actually completed.
+
+Goal After Fix:
+Rex has a trustworthy MVP keyword recall baseline for arbitrary user topics. It is still not semantic search, but it is user-scoped, ranked, generic, test-covered, and honest.
+
+Priority:
+High
+
 ### Issue 11: Rex And Finance Use Separate Visual Token Systems
 
 Issue:
@@ -548,6 +687,40 @@ Fix Needed:
 
 Goal After Fix:
 Voice feels responsive enough for daily use and does not sound painfully slow.
+
+Priority:
+Medium
+
+### Issue 10B: Hybrid Chat Search For Arbitrary User Recall
+
+[Future retrieval work from `docs/brain/REX_BRAIN_HYBRID_CHAT_SEARCH.md`]
+
+Issue:
+Keyword search cannot fully support arbitrary user recall. Users may ask with different wording than they used in the original chat. Manual aliases can help, but they will never cover everything people may discuss in a multi-user assistant app.
+
+Examples:
+- Old chat says "I intend to send her money around the 18th"; user later asks "Did I mention a gift?"
+- Old chat says "EAD renewal"; user later asks "What did I say about immigration?"
+- Old chat says "Legacy of Kain"; user later asks "What was the game I wanted?"
+
+Files:
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\docs\brain\REX_BRAIN_HYBRID_CHAT_SEARCH.md`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\chat_context_service.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\conversation_repository.py`
+- Future embedding/indexing service and migration files
+
+Fix Needed:
+- Add semantic indexing for user messages or conversation summaries.
+- Keep all indexes strictly user-scoped.
+- Combine keyword results and semantic results into one ranked result set.
+- Rank by same user, exact keyword match, semantic similarity, user-authored messages, conversation relevance, recency, and repeated mentions.
+- Retrieve conversation-level context around selected results.
+- Keep chat history separate from saved memory.
+- Keep prompt context short and labeled.
+- Add tests where the user's recall wording differs from the original chat wording.
+
+Goal After Fix:
+Rex can search old chats intelligently across arbitrary topics, not only through exact or aliased keywords.
 
 Priority:
 Medium

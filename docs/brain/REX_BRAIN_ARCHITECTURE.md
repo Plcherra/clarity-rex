@@ -137,6 +137,8 @@ There should be no automatic or hidden saving of chat content into memory.
 
 Rex should use saved memory and chat search differently, and label them clearly.
 
+Future retrieval work should follow `docs/brain/REX_BRAIN_HYBRID_CHAT_SEARCH.md`: hybrid keyword plus semantic search, conversation-level ranking, strict user scoping, and clear chat-history labeling.
+
 ## 10. Chat And Voice
 
 Chat and voice use the same Rex Brain flow.
@@ -152,6 +154,7 @@ Advanced brain work is allowed later, but it must not create a second production
 Future improvements should stay inside the same simple flow:
 - Better intent checks
 - Better search ranking
+- Hybrid Chat Search for arbitrary user recall
 - Better prompt budgeting
 - Better source status tracking
 - Better truth checks

@@ -163,3 +163,90 @@ async def test_memory_service_strips_protected_fields_on_updates(monkeypatch):
     assert "id=eq.entity-1" in calls[0]["url"]
     assert "user_id=eq.user-123" in calls[0]["url"]
 
+
+@pytest.mark.asyncio
+async def test_memory_service_scopes_message_search(monkeypatch):
+    calls = []
+
+    async def fake_request(method, url, headers=None, json=None):
+        calls.append({"method": method, "url": url, "json": json})
+        return FakeSupabaseRestResponse()
+
+    monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
+    service = SupabaseMemoryService(
+        settings=Settings(
+            supabase_url="https://example.supabase.co",
+            supabase_anon_key="anon-key",
+            supabase_service_role_key="service-key",
+            _env_file=None,
+        ),
+        user_id="user-123",
+        access_token="access-token",
+    )
+
+    await service.search_messages("mom birthday")
+
+    assert calls[0]["method"] == "GET"
+    assert "/messages?" in calls[0]["url"]
+    assert "user_id=eq.user-123" in calls[0]["url"]
+    assert "or=" in calls[0]["url"]
+
+
+@pytest.mark.asyncio
+async def test_memory_service_scopes_conversation_search(monkeypatch):
+    calls = []
+
+    async def fake_request(method, url, headers=None, json=None):
+        calls.append({"method": method, "url": url, "json": json})
+        return FakeSupabaseRestResponse()
+
+    monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
+    service = SupabaseMemoryService(
+        settings=Settings(
+            supabase_url="https://example.supabase.co",
+            supabase_anon_key="anon-key",
+            supabase_service_role_key="service-key",
+            _env_file=None,
+        ),
+        user_id="user-123",
+        access_token="access-token",
+    )
+
+    await service.search_conversations("work")
+
+    assert calls[0]["method"] == "GET"
+    assert "/conversations?" in calls[0]["url"]
+    assert "user_id=eq.user-123" in calls[0]["url"]
+    assert "or=" in calls[0]["url"]
+
+
+@pytest.mark.asyncio
+async def test_memory_service_scopes_conversation_message_context(monkeypatch):
+    calls = []
+
+    async def fake_request(method, url, headers=None, json=None):
+        calls.append({"method": method, "url": url, "json": json})
+        return FakeSupabaseRestResponse()
+
+    monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
+    service = SupabaseMemoryService(
+        settings=Settings(
+            supabase_url="https://example.supabase.co",
+            supabase_anon_key="anon-key",
+            supabase_service_role_key="service-key",
+            _env_file=None,
+        ),
+        user_id="user-123",
+        access_token="access-token",
+    )
+
+    await service.get_conversation_messages("conversation-1")
+
+    assert len(calls) == 2
+    assert "/conversations?" in calls[0]["url"]
+    assert "id=eq.conversation-1" in calls[0]["url"]
+    assert "user_id=eq.user-123" in calls[0]["url"]
+    assert "/messages?" in calls[1]["url"]
+    assert "conversation_id=eq.conversation-1" in calls[1]["url"]
+    assert "user_id=eq.user-123" in calls[1]["url"]
+

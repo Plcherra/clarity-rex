@@ -73,6 +73,8 @@ Old chat search should:
 
 Old chat search does not turn past messages into memory. Chat history is searchable history. Saved memory is explicit, durable, categorized knowledge.
 
+Future work should evolve old chat search into Hybrid Chat Search for arbitrary user recall. See `docs/brain/REX_BRAIN_HYBRID_CHAT_SEARCH.md`.
+
 ## 5. Prompt And Token Rules
 
 Rex Brain must protect token usage.

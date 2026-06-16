@@ -24,6 +24,9 @@ MEMORY_INVENTORY_QUERY = (
 PROFILE_MEMORY_LIMIT = 4
 CHAT_SEARCH_RESULTS_LIMIT = 12
 PAST_CHAT_SEARCH_PAGE_LIMIT = 200
+CHAT_EXCERPT_CONTEXT_BEFORE = 6
+CHAT_EXCERPT_CONTEXT_AFTER = 8
+CHAT_EXCERPT_CONVERSATION_LIMIT = 120
 LOGGER = logging.getLogger("rex.context")
 MEMORY_REJECTION_MARKERS = (
     "do not remember",
@@ -56,6 +59,71 @@ CHAT_SEARCH_NO_RESULT_MARKERS = (
     "no mention",
     "not saved",
 )
+CHAT_SEARCH_QUERY_STOP_WORDS = {
+    "about",
+    "all",
+    "anything",
+    "chat",
+    "chats",
+    "check",
+    "checked",
+    "conversation",
+    "conversations",
+    "did",
+    "do",
+    "does",
+    "else",
+    "find",
+    "for",
+    "from",
+    "have",
+    "know",
+    "memory",
+    "mention",
+    "mentioned",
+    "old",
+    "remember",
+    "saved",
+    "say",
+    "search",
+    "tell",
+    "that",
+    "the",
+    "there",
+    "what",
+    "with",
+    "you",
+    "your",
+}
+CHAT_SEARCH_TERM_ALIASES = {
+    "mom": ("mom", "mother", "mum", "mama"),
+    "mother": ("mom", "mother", "mum", "mama"),
+    "mum": ("mom", "mother", "mum", "mama"),
+    "mama": ("mom", "mother", "mum", "mama"),
+    "dad": ("dad", "father", "papa"),
+    "father": ("dad", "father", "papa"),
+    "papa": ("dad", "father", "papa"),
+    "parent": ("parent", "parents", "mom", "mother", "dad", "father"),
+    "parents": ("parent", "parents", "mom", "mother", "dad", "father"),
+    "family": ("family", "mom", "mother", "dad", "father"),
+    "birthday": ("birthday", "birthdays", "date", "event"),
+    "game": ("game", "games", "gaming", "play", "played"),
+    "games": ("game", "games", "gaming", "play", "played"),
+    "gaming": ("game", "games", "gaming", "play", "played"),
+    "pc": ("pc", "computer", "game", "games"),
+    "gift": ("gift", "gifts", "present", "send", "sent"),
+    "gifts": ("gift", "gifts", "present", "send", "sent"),
+    "money": ("money", "send", "sent", "cash", "gift"),
+    "payroll": ("payroll", "paycheck", "income", "work"),
+    "job": ("job", "work", "company"),
+    "work": ("work", "job", "company", "payroll"),
+    "place": ("place", "places", "city", "home", "live", "lived"),
+    "places": ("place", "places", "city", "home", "live", "lived"),
+    "preference": ("preference", "preferences", "prefer", "like", "likes"),
+    "preferences": ("preference", "preferences", "prefer", "like", "likes"),
+    "goal": ("goal", "goals", "plan", "plans"),
+    "goals": ("goal", "goals", "plan", "plans"),
+}
 CONTEXT_ERROR_KEY = "_context_error"
 CONTEXT_STATUS_KEY = "_context_status"
 
@@ -383,8 +451,10 @@ class ChatContextService:
             ]
         try:
             messages_by_id: dict[str, dict] = {}
+            query_modes: set[str] = set()
             scanned_messages = 0
-            for search_query in self.past_chat_search_queries(query):
+            for search_query, query_mode in self.past_chat_search_queries(query):
+                query_modes.add(query_mode)
                 offset = 0
                 while True:
                     messages = await search_messages(
@@ -411,33 +481,10 @@ class ChatContextService:
                 ).as_dict()
             ]
 
-        excerpts = []
-        for message in sorted(
-            messages_by_id.values(),
-            key=self.chat_search_candidate_rank,
-        ):
-            if self.is_chat_search_no_result_message(message):
-                continue
-            context_messages = await self.chat_excerpt_context(message)
-            content = self.chat_excerpt_content(context_messages)
-            if not content:
-                continue
-            if await self.chat_excerpt_was_rejected(message):
-                continue
-            if not self.chat_excerpt_has_user_content(context_messages):
-                continue
-            excerpts.append(
-                {
-                    "id": f"chat-{message.get('id')}",
-                    "content": content,
-                    "timestamp": message.get("timestamp"),
-                    "conversation_id": message.get("conversation_id"),
-                    "source_message_id": message.get("id"),
-                    "relevance_reason": "Matched relevant chat history.",
-                }
-            )
-            if len(excerpts) >= limit:
-                break
+        excerpts = await self.chat_conversation_excerpts(
+            list(messages_by_id.values()),
+            limit=limit,
+        )
         return [
             {
                 CONTEXT_STATUS_KEY: True,
@@ -448,51 +495,71 @@ class ChatContextService:
                 "raw_match_count": len(messages_by_id),
                 "scanned_messages": scanned_messages,
                 "partial": False,
+                "query_modes": sorted(query_modes),
             },
             *excerpts,
         ]
 
-    def past_chat_search_queries(self, query: str) -> list[str]:
+    def past_chat_search_queries(self, query: str) -> list[tuple[str, str]]:
         normalized = " ".join(str(query or "").lower().split())
         if str(query or "") == MEMORY_INVENTORY_QUERY:
-            return [query]
-        queries = [query]
-        has_birthday_subject = "birthday" in normalized
-        has_mom_subject = bool(re.search(r"\b(?:mom|mother|mum|mama)\b", normalized))
-        has_parent_subject = has_mom_subject or bool(
-            re.search(r"\b(?:dad|father|papa|parent|parents)\b", normalized)
-        )
-        if has_mom_subject and has_birthday_subject:
-            queries.extend(
-                [
-                    "mom mother birthday reminder money send her 10th 18th",
-                    "mom birthday",
-                    "send her money birthday",
-                    "mother birthday",
-                    "birthday 18th 10th",
-                    "mom",
-                ]
-            )
-        elif has_mom_subject:
-            queries.extend(["mom mother mum mama", "mom"])
-        elif has_parent_subject:
-            queries.extend(
-                [
-                    "parent parents family mother father mom dad",
-                ]
-            )
-        elif has_birthday_subject:
-            queries.append("birthday reminder important date")
+            return [(query, "inventory")]
+        queries: list[tuple[str, str]] = [(query, "exact")]
         subject_query = self.subject_only_search_query(normalized)
+        subject_terms = self.recall_search_terms(
+            subject_query or normalized,
+            max_terms=10,
+        )
+        expanded_query = " ".join(subject_terms)
+        if expanded_query:
+            queries.append((expanded_query, "expanded_keywords"))
         if subject_query:
-            queries.append(subject_query)
+            queries.append((subject_query, "subject"))
 
-        unique_queries = []
-        for item in queries:
+        unique_queries: list[tuple[str, str]] = []
+        seen = set()
+        for item, mode in queries:
             cleaned = str(item or "").strip()
-            if cleaned and cleaned not in unique_queries:
-                unique_queries.append(cleaned)
+            if cleaned and cleaned not in seen:
+                seen.add(cleaned)
+                unique_queries.append((cleaned, mode))
         return unique_queries
+
+    def recall_search_terms(self, query: str, *, max_terms: int) -> list[str]:
+        raw_terms = [
+            self.normalize_recall_search_term(term)
+            for term in re.findall(r"[a-z0-9']+", str(query or "").lower())
+        ]
+        expanded_terms = []
+        for term in raw_terms:
+            if term in CHAT_SEARCH_QUERY_STOP_WORDS:
+                continue
+            if len(term) < 3 and term not in CHAT_SEARCH_TERM_ALIASES:
+                continue
+            expanded_terms.extend(CHAT_SEARCH_TERM_ALIASES.get(term, (term,)))
+            expanded_terms.extend(self.simple_recall_term_variants(term))
+
+        unique_terms = []
+        for term in expanded_terms:
+            if term and term not in unique_terms:
+                unique_terms.append(term)
+        return unique_terms[:max_terms]
+
+    def normalize_recall_search_term(self, term: str) -> str:
+        normalized = term.strip("'")
+        if normalized.endswith("'s"):
+            normalized = normalized[:-2]
+        return normalized
+
+    def simple_recall_term_variants(self, term: str) -> tuple[str, ...]:
+        variants = {term}
+        if term.endswith("ies") and len(term) > 4:
+            variants.add(f"{term[:-3]}y")
+        elif term.endswith("s") and len(term) > 3:
+            variants.add(term[:-1])
+        elif len(term) > 3:
+            variants.add(f"{term}s")
+        return tuple(variants)
 
     def subject_only_search_query(self, normalized_query: str) -> str:
         """Extract the user's target subject for chat search.
@@ -520,12 +587,149 @@ class ChatContextService:
             return ""
         return subject
 
+    async def chat_conversation_excerpts(
+        self,
+        matched_messages: list[dict],
+        *,
+        limit: int,
+    ) -> list[dict]:
+        grouped: dict[str, list[dict]] = {}
+        without_conversation = []
+        for message in sorted(matched_messages, key=self.chat_search_candidate_rank):
+            conversation_id = str(message.get("conversation_id") or "")
+            if conversation_id:
+                grouped.setdefault(conversation_id, []).append(message)
+            else:
+                without_conversation.append(message)
+
+        excerpts = []
+        for conversation_id, matches in grouped.items():
+            if await self.chat_cluster_was_rejected(matches):
+                continue
+            context_messages = await self.conversation_cluster_context(
+                conversation_id,
+                matches,
+            )
+            content = self.chat_excerpt_content(context_messages)
+            if not content or not self.chat_excerpt_has_user_content(context_messages):
+                continue
+            excerpts.append(
+                {
+                    "id": f"chat-{conversation_id}",
+                    "content": content,
+                    "timestamp": self.latest_message_timestamp(context_messages),
+                    "conversation_id": conversation_id,
+                    "source_message_id": matches[0].get("id"),
+                    "matched_message_ids": [
+                        str(message.get("id"))
+                        for message in matches
+                        if str(message.get("id") or "")
+                    ],
+                    "relevance_reason": (
+                        "Matched chat history; included nearby conversation context."
+                    ),
+                }
+            )
+            if len(excerpts) >= limit:
+                return excerpts
+
+        for message in without_conversation:
+            if self.is_chat_search_no_result_message(message):
+                continue
+            context_messages = await self.chat_excerpt_context(message)
+            content = self.chat_excerpt_content(context_messages)
+            if not content:
+                continue
+            if await self.chat_excerpt_was_rejected(message):
+                continue
+            if not self.chat_excerpt_has_user_content(context_messages):
+                continue
+            excerpts.append(
+                {
+                    "id": f"chat-{message.get('id')}",
+                    "content": content,
+                    "timestamp": message.get("timestamp"),
+                    "conversation_id": message.get("conversation_id"),
+                    "source_message_id": message.get("id"),
+                    "relevance_reason": "Matched relevant chat history.",
+                }
+            )
+            if len(excerpts) >= limit:
+                break
+        return excerpts
+
+    async def chat_cluster_was_rejected(self, matched_messages: list[dict]) -> bool:
+        for message in matched_messages:
+            if not self.is_chat_search_user_content_message(message):
+                continue
+            if await self.chat_excerpt_was_rejected(message):
+                return True
+        return False
+
+    async def conversation_cluster_context(
+        self,
+        conversation_id: str,
+        matched_messages: list[dict],
+    ) -> list[dict]:
+        get_messages = getattr(self.memory_service, "get_conversation_messages", None)
+        if get_messages is None:
+            return matched_messages
+
+        try:
+            conversation_messages = await get_messages(
+                conversation_id,
+                limit=CHAT_EXCERPT_CONVERSATION_LIMIT,
+            )
+        except Exception:
+            return matched_messages
+        if not conversation_messages:
+            return matched_messages
+
+        matched_ids = {
+            str(message.get("id") or "")
+            for message in matched_messages
+            if str(message.get("id") or "")
+        }
+        matched_indexes = [
+            index
+            for index, message in enumerate(conversation_messages)
+            if str(message.get("id") or "") in matched_ids
+        ]
+        if not matched_indexes:
+            return matched_messages
+
+        ranges = []
+        for index in matched_indexes:
+            start = max(0, index - CHAT_EXCERPT_CONTEXT_BEFORE)
+            end = min(
+                len(conversation_messages),
+                index + CHAT_EXCERPT_CONTEXT_AFTER + 1,
+            )
+            if ranges and start <= ranges[-1][1]:
+                ranges[-1] = (ranges[-1][0], max(ranges[-1][1], end))
+            else:
+                ranges.append((start, end))
+
+        context_messages = []
+        seen_ids = set()
+        for start, end in ranges:
+            for message in conversation_messages[start:end]:
+                message_id = str(message.get("id") or "")
+                if message_id and message_id in seen_ids:
+                    continue
+                if self.is_chat_search_no_result_message(message):
+                    continue
+                if message_id:
+                    seen_ids.add(message_id)
+                context_messages.append(message)
+        return context_messages
+
     async def chat_excerpt_context(
         self,
         message: dict,
         *,
-        before: int = 2,
-        after: int = 3,
+        before: int = CHAT_EXCERPT_CONTEXT_BEFORE,
+        after: int = CHAT_EXCERPT_CONTEXT_AFTER,
     ) -> list[dict]:
         conversation_id = str(message.get("conversation_id") or "")
         message_id = str(message.get("id") or "")
@@ -554,12 +758,22 @@ class ChatContextService:
     def chat_excerpt_content(self, messages: list[dict]) -> str:
         lines = []
         for message in messages:
+            if self.is_chat_search_no_result_message(message):
+                continue
             content = str(message.get("content") or "").strip()
             if not content:
                 continue
             role = str(message.get("role") or "message")
             lines.append(f"- {role}: {content}")
         return "\n".join(lines)
+
+    def latest_message_timestamp(self, messages: list[dict]) -> Optional[str]:
+        timestamps = [
+            str(message.get("timestamp") or "")
+            for message in messages
+            if str(message.get("timestamp") or "")
+        ]
+        return max(timestamps) if timestamps else None
 
     def chat_excerpt_has_user_content(self, messages: list[dict]) -> bool:
         return any(
@@ -827,6 +1041,9 @@ class ChatContextService:
                 "old chats",
                 "old conversation",
                 "old conversations",
+                "anything else",
+                "what else",
+                "about that",
                 "past chat",
                 "past chats",
                 "past conversation",
@@ -868,6 +1085,8 @@ class ChatContextService:
                 for phrase in (
                     "do you know",
                     "do you remember",
+                    "did i mention",
+                    "did i say",
                     "anything about",
                     "talking about",
                     "information about",

@@ -44,6 +44,21 @@ MESSAGE_SEARCH_STOP_WORDS = STOP_WORDS | {
     "told",
     "us",
 }
+MESSAGE_TERM_ALIASES = {
+    **FAMILY_TERM_ALIASES,
+    "game": ("game", "games", "gaming", "play", "played"),
+    "games": ("game", "games", "gaming", "play", "played"),
+    "gaming": ("game", "games", "gaming", "play", "played"),
+    "pc": ("pc", "computer", "game", "games"),
+    "gift": ("gift", "gifts", "present", "send", "sent"),
+    "gifts": ("gift", "gifts", "present", "send", "sent"),
+    "money": ("money", "send", "sent", "gift", "cash"),
+    "payroll": ("payroll", "paycheck", "income", "work"),
+    "preference": ("preference", "preferences", "prefer", "like", "likes"),
+    "preferences": ("preference", "preferences", "prefer", "like", "likes"),
+    "goal": ("goal", "goals", "plan", "plans"),
+    "goals": ("goal", "goals", "plan", "plans"),
+}
 
 
 class ConversationRepository:
@@ -317,9 +332,12 @@ class ConversationRepository:
         ]
         expanded_terms = []
         for term in raw_terms:
-            if len(term) < 3 or term in MESSAGE_SEARCH_STOP_WORDS:
+            if term in MESSAGE_SEARCH_STOP_WORDS:
                 continue
-            expanded_terms.extend(FAMILY_TERM_ALIASES.get(term, (term,)))
+            if len(term) < 3 and term not in MESSAGE_TERM_ALIASES:
+                continue
+            expanded_terms.extend(MESSAGE_TERM_ALIASES.get(term, (term,)))
+            expanded_terms.extend(self._simple_term_variants(term))
 
         unique_terms = []
         for term in expanded_terms:
@@ -332,3 +350,13 @@ class ConversationRepository:
         if normalized.endswith("'s"):
             normalized = normalized[:-2]
         return normalized
+
+    def _simple_term_variants(self, term: str) -> tuple[str, ...]:
+        variants = {term}
+        if term.endswith("ies") and len(term) > 4:
+            variants.add(f"{term[:-3]}y")
+        elif term.endswith("s") and len(term) > 3:
+            variants.add(term[:-1])
+        elif len(term) > 3:
+            variants.add(f"{term}s")
+        return tuple(variants)
