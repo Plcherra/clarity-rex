@@ -72,6 +72,7 @@ def test_router_memory_information_question_beats_attached_financial_context():
         "Have we talked about my immigration plan?",
         "What did I tell you about my sister?",
         "Can you search our chats for my birthday?",
+        "The chat.",
         "What have I told you about my preferences?",
     ],
 )

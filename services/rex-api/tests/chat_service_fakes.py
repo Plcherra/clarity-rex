@@ -182,14 +182,21 @@ class FakeMemoryService:
         self.relevant_memory_queries.append({"query": query, "limit": limit})
         return self.long_term_memory[-limit:]
 
-    async def search_messages(self, query, limit=8, exclude_conversation_id=None):
-        self.search_message_queries.append(
-            {
-                "query": query,
-                "limit": limit,
-                "exclude_conversation_id": exclude_conversation_id,
-            }
-        )
+    async def search_messages(
+        self,
+        query,
+        limit=8,
+        exclude_conversation_id=None,
+        offset=0,
+    ):
+        query_log = {
+            "query": query,
+            "limit": limit,
+            "exclude_conversation_id": exclude_conversation_id,
+        }
+        if offset:
+            query_log["offset"] = offset
+        self.search_message_queries.append(query_log)
         terms = {
             term.lower()
             for term in re.findall(r"[a-z0-9']+", query)
@@ -209,9 +216,7 @@ class FakeMemoryService:
             content = str(message.get("content") or "").lower()
             if any(term in content for term in terms):
                 matches.append(message)
-            if len(matches) >= limit:
-                break
-        return matches
+        return matches[offset : offset + limit]
 
     async def get_structured_memory_context(self, query):
         self.structured_context_queries.append(query)

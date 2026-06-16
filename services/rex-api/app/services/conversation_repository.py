@@ -23,12 +23,26 @@ FAMILY_TERM_ALIASES = {
 }
 MESSAGE_SEARCH_STOP_WORDS = STOP_WORDS | {
     "anything",
+    "chat",
+    "chats",
+    "conversation",
+    "conversations",
+    "did",
+    "me",
+    "my",
     "know",
     "knows",
     "memories",
     "memory",
+    "our",
     "remember",
     "rex",
+    "said",
+    "say",
+    "search",
+    "tell",
+    "told",
+    "us",
 }
 
 
@@ -135,6 +149,7 @@ class ConversationRepository:
         query: str,
         limit: int = 50,
         exclude_conversation_id: Optional[str] = None,
+        offset: int = 0,
     ) -> list[dict]:
         terms = self._search_terms(query)
         if not terms:
@@ -147,6 +162,8 @@ class ConversationRepository:
             "order": "timestamp.desc",
             "limit": str(limit),
         }
+        if offset > 0:
+            query_params["offset"] = str(offset)
         if exclude_conversation_id:
             query_params["conversation_id"] = f"neq.{exclude_conversation_id}"
         rows = await self.store._request(

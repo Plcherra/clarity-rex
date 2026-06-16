@@ -54,6 +54,7 @@ class MemoryService(Protocol):
         query: str,
         limit: int = 50,
         exclude_conversation_id: Optional[str] = None,
+        offset: int = 0,
     ) -> list[dict]:
         pass
 

@@ -23,7 +23,7 @@ MEMORY_INVENTORY_QUERY = (
 )
 PROFILE_MEMORY_LIMIT = 4
 CHAT_SEARCH_RESULTS_LIMIT = 12
-PAST_CHAT_SEARCH_SCAN_LIMIT = 50
+PAST_CHAT_SEARCH_PAGE_LIMIT = 200
 LOGGER = logging.getLogger("rex.context")
 MEMORY_REJECTION_MARKERS = (
     "do not remember",
@@ -57,6 +57,7 @@ CHAT_SEARCH_NO_RESULT_MARKERS = (
     "not saved",
 )
 CONTEXT_ERROR_KEY = "_context_error"
+CONTEXT_STATUS_KEY = "_context_status"
 
 
 @dataclass(frozen=True)
@@ -98,6 +99,7 @@ class ChatContextService:
         fetch_started = time.perf_counter()
         timings_ms: dict[str, int] = {}
         memory_failures: list[dict] = []
+        context_statuses: list[dict] = []
         load_long_term_memory = self._load_long_term_memory(intent_decision)
         load_profile_memory = self._load_profile_memory(intent_decision)
         load_structured_memory = self._load_structured_memory(intent_decision)
@@ -171,6 +173,7 @@ class ChatContextService:
             chat_search_results = self.context_items(
                 raw_chat_search_results,
                 memory_failures,
+                context_statuses,
             )
             structured_context = self.with_memory_status(
                 structured_context,
@@ -181,6 +184,7 @@ class ChatContextService:
                     "chat_search": load_long_term_memory,
                     "structured_memory": load_structured_memory,
                 },
+                source_statuses=context_statuses,
             )
             structured_context = self.with_chat_search_results(
                 structured_context,
@@ -273,6 +277,7 @@ class ChatContextService:
         chat_search_results = self.context_items(
             raw_chat_search_results,
             memory_failures,
+            context_statuses,
         )
         structured_context = self.with_memory_status(
             structured_context,
@@ -284,6 +289,7 @@ class ChatContextService:
                 "chat_search": load_long_term_memory,
                 "structured_memory": load_structured_memory,
             },
+            source_statuses=context_statuses,
         )
         structured_context = self.with_chat_search_results(
             structured_context,
@@ -377,17 +383,25 @@ class ChatContextService:
             ]
         try:
             messages_by_id: dict[str, dict] = {}
+            scanned_messages = 0
             for search_query in self.past_chat_search_queries(query):
-                messages = await search_messages(
-                    search_query,
-                    limit=max(limit, PAST_CHAT_SEARCH_SCAN_LIMIT),
-                    exclude_conversation_id=exclude_conversation_id,
-                )
-                for message in messages:
-                    message_id = str(message.get("id") or "")
-                    if not message_id:
-                        continue
-                    messages_by_id.setdefault(message_id, message)
+                offset = 0
+                while True:
+                    messages = await search_messages(
+                        search_query,
+                        limit=PAST_CHAT_SEARCH_PAGE_LIMIT,
+                        exclude_conversation_id=exclude_conversation_id,
+                        offset=offset,
+                    )
+                    scanned_messages += len(messages)
+                    for message in messages:
+                        message_id = str(message.get("id") or "")
+                        if not message_id:
+                            continue
+                        messages_by_id.setdefault(message_id, message)
+                    if len(messages) < PAST_CHAT_SEARCH_PAGE_LIMIT:
+                        break
+                    offset += PAST_CHAT_SEARCH_PAGE_LIMIT
         except Exception as exc:
             LOGGER.warning("rex_memory_fetch_failed source=chat_search")
             return [
@@ -398,7 +412,10 @@ class ChatContextService:
             ]
 
         excerpts = []
-        for message in messages_by_id.values():
+        for message in sorted(
+            messages_by_id.values(),
+            key=self.chat_search_candidate_rank,
+        ):
             if self.is_chat_search_no_result_message(message):
                 continue
             context_messages = await self.chat_excerpt_context(message)
@@ -421,7 +438,19 @@ class ChatContextService:
             )
             if len(excerpts) >= limit:
                 break
-        return excerpts
+        return [
+            {
+                CONTEXT_STATUS_KEY: True,
+                "source": "chat_search",
+                "attempted": True,
+                "succeeded": True,
+                "result_count": len(excerpts),
+                "raw_match_count": len(messages_by_id),
+                "scanned_messages": scanned_messages,
+                "partial": False,
+            },
+            *excerpts,
+        ]
 
     def past_chat_search_queries(self, query: str) -> list[str]:
         normalized = " ".join(str(query or "").lower().split())
@@ -649,6 +678,7 @@ class ChatContextService:
         self,
         items: list[dict],
         failures: list[dict],
+        statuses: Optional[list[dict]] = None,
     ) -> list[dict]:
         clean_items = []
         for item in items:
@@ -660,6 +690,16 @@ class ChatContextService:
                     }
                 )
                 continue
+            if item.get(CONTEXT_STATUS_KEY) is True:
+                if statuses is not None:
+                    statuses.append(
+                        {
+                            key: value
+                            for key, value in item.items()
+                            if key != CONTEXT_STATUS_KEY
+                        }
+                    )
+                continue
             clean_items.append(item)
         return clean_items
 
@@ -669,6 +709,7 @@ class ChatContextService:
         failures: list[dict],
         *,
         attempted_sources: dict,
+        source_statuses: Optional[list[dict]] = None,
     ) -> dict:
         attempted_memory_sources = {
             key: value
@@ -687,6 +728,7 @@ class ChatContextService:
             ),
             "attempted_sources": attempted_sources,
             "failures": failures,
+            "source_statuses": source_statuses or [],
         }
         existing = structured_context.get("memory_status")
         if isinstance(existing, dict):
@@ -699,6 +741,12 @@ class ChatContextService:
                     **existing_attempted,
                     **status["attempted_sources"],
                 }
+            existing_statuses = existing.get("source_statuses")
+            if isinstance(existing_statuses, list):
+                status["source_statuses"] = [
+                    *existing_statuses,
+                    *status["source_statuses"],
+                ]
             if status["failures"]:
                 status["state"] = "degraded"
                 status["message"] = "Some memory sources could not be searched."
@@ -754,6 +802,18 @@ class ChatContextService:
         return " about " not in f" {normalized} " or normalized.endswith(" about me")
 
     def is_contextual_memory_followup(self, normalized_message: str) -> bool:
+        stripped = normalized_message.strip("?.! ")
+        if stripped in {
+            "chat",
+            "chats",
+            "the chat",
+            "the chats",
+            "conversation",
+            "conversations",
+            "the conversation",
+            "the conversations",
+        }:
+            return True
         return any(
             phrase in normalized_message
             for phrase in (
@@ -782,6 +842,16 @@ class ChatContextService:
                 "search conversations",
             )
         )
+
+    def chat_search_candidate_rank(self, message: dict) -> tuple[int, str]:
+        if self.is_chat_search_user_content_message(message):
+            priority = 0
+        elif str(message.get("role") or "") == "assistant":
+            priority = 1
+        else:
+            priority = 2
+        timestamp = str(message.get("timestamp") or "")
+        return (priority, timestamp)
 
     def recent_memory_subject(self, conversation_history: list[dict]) -> str:
         for message in reversed(conversation_history[-8:]):

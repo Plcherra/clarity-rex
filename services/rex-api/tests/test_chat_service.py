@@ -204,11 +204,44 @@ async def test_chat_service_blocks_memory_success_claim_without_backend_write():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_downgrades_old_chat_search_claim_without_results():
+async def test_chat_service_allows_old_chat_no_result_claim_after_completed_search():
     ai_service = FakeAIService(
         response="I checked the old chats and found no mentions of your mom."
     )
     memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message(
+        "Can you check the old chats for my mom?"
+    )
+
+    assert result["response"] == (
+        "I checked the old chats and found no mentions of your mom."
+    )
+    assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
+async def test_chat_service_downgrades_old_chat_no_result_claim_after_partial_search():
+    ai_service = FakeAIService(
+        response="I checked the old chats and found no mentions of your mom."
+    )
+    memory_service = FakeMemoryService()
+    memory_service.structured_context = {
+        "memory_status": {
+            "state": "ready",
+            "message": "Memory sources searched successfully.",
+            "source_statuses": [
+                {
+                    "source": "chat_search",
+                    "attempted": True,
+                    "succeeded": True,
+                    "result_count": 0,
+                    "partial": True,
+                }
+            ],
+        }
+    }
     chat_service = ChatService(ai_service, FileService(), memory_service)
 
     result = await chat_service.send_message(

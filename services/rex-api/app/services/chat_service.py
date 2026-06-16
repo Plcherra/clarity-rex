@@ -455,6 +455,7 @@ class ChatService(ChatVoiceMetadataMixin):
         response = safe_old_chat_search_response(
             response,
             chat_search_results_loaded=chat_search_results_loaded,
+            memory_status=memory_status,
         )
         if intent_decision.intent in {RexIntent.MEMORY_SAVE, RexIntent.MEMORY_UPDATE}:
             return safe_unexecuted_memory_response(response)

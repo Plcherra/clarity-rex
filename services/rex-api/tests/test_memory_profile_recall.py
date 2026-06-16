@@ -172,7 +172,7 @@ async def test_chat_prompt_includes_past_chat_when_mom_fact_was_not_saved():
     assert "mom's birthday" in system_content
     assert memory_service.search_message_queries[0] == {
         "query": "Do you know anything about my mom?",
-        "limit": 50,
+        "limit": 200,
         "exclude_conversation_id": None,
     }
     assert memory_service.search_message_queries[1]["query"] == (

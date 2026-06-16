@@ -182,6 +182,7 @@ def safe_old_chat_search_response(
     response: str,
     *,
     chat_search_results_loaded: bool,
+    memory_status: object = None,
 ) -> str:
     """Avoid pretending old-chat search was exhaustive when no results loaded."""
 
@@ -190,10 +191,34 @@ def safe_old_chat_search_response(
         return cleaned
     if not response_claims_old_chat_search_result(cleaned):
         return cleaned
+    if chat_search_completed_without_results(memory_status):
+        return cleaned
     return (
         "I don't have a reliable chat search result for that right now. I can't "
         "confidently say it was never mentioned unless chat search completes."
     )
+
+
+def chat_search_completed_without_results(memory_status: object) -> bool:
+    if not isinstance(memory_status, dict):
+        return False
+    if memory_status_is_degraded(memory_status):
+        return False
+    statuses = memory_status.get("source_statuses")
+    if not isinstance(statuses, list):
+        return False
+    for status in statuses:
+        if not isinstance(status, dict):
+            continue
+        if status.get("source") != "chat_search":
+            continue
+        return (
+            status.get("attempted") is True
+            and status.get("succeeded") is True
+            and status.get("partial") is not True
+            and int(status.get("result_count") or 0) == 0
+        )
+    return False
 
 
 def memory_status_is_degraded(memory_status: object) -> bool:
