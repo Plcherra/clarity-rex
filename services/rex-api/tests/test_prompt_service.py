@@ -564,7 +564,7 @@ def test_prompt_service_surfaces_degraded_memory_status():
                 "message": "Some memory sources could not be searched.",
                 "failures": [
                     {
-                        "source": "past_chat_memory",
+                        "source": "chat_search",
                         "message": "past chat search failed",
                     }
                 ],
@@ -575,5 +575,5 @@ def test_prompt_service_surfaces_degraded_memory_status():
     system_content = messages[0]["content"]
     assert STRUCTURED_MEMORY_PREFIX in system_content
     assert "memory_status/degraded" in system_content
-    assert "Failed sources: past_chat_memory" in system_content
+    assert "Failed sources: chat_search" in system_content
     assert "memory search is temporarily unavailable" in system_content

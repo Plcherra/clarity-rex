@@ -2,9 +2,23 @@
 
 This plan is organized by launch priority groups. Work one full group at a time, starting with Group 1.
 
-Issue 1 is complete and removed from active MVP work. Active tracking now starts at Issue 2.
+Group 1 is complete. The simple MVP Rex Brain now follows the strict "Saved = Memory" model: saved records are durable categorized memory, chat search results remain chat history, and Rex must not blur the two.
 
 ## Group 1: Core Trust & Truth Issues (Highest Priority)
+
+Status:
+Complete.
+
+Group 1 Completed Summary:
+
+- Rex Brain uses one simple MVP production flow for chat and voice.
+- Durable memory writes require backend confirmation.
+- Saved memory is categorized and visible through the Knows page categories.
+- Chat search results are separate chat history, not memory or pseudo-memory.
+- Hidden chat-to-memory auto-saving is disabled.
+- Rex reports degraded memory/chat search instead of pretending nothing exists.
+- Unsupported or unconfirmed actions cannot be presented as completed.
+- Chats tab search is available for user-visible conversation lookup.
 
 High-Level Overview of Rex Brain and Memory System (MVP Scope):
 Rex's production brain for launch is one simple assistant flow.
@@ -29,13 +43,59 @@ Advanced routing, model selection, deeper planning, layer-specific prompt contra
 Group 1 launch trust fixes completed:
 
 - Rex Brain language now treats the simple MVP flow as the active production brain.
-- Old-chat recall is explicit, all-chat, evidence-labeled, and degradation-aware.
+- Old-chat recall is explicit, all-chat, and degradation-aware.
 - Search failure is reported as unavailable/degraded instead of "nothing was found."
 - Memory updates and structured memory writes require durable backend confirmation.
 - Unclear voice/location transcript fragments are blocked from direct memory writes.
-- Saved memory and old chat evidence are labeled separately.
+- Saved memory and chat search results stay separate.
 - Context remains capped and intent-guided for the low-token MVP flow.
 - The Chats tab has a simple search surface backed by the conversation search endpoint.
+- Saved memory categories include People, Events, Places, Goals, Preferences, Facts, and fallback Other.
+
+### Issue 1A: Align Memory Model With Final Saved = Memory Rules
+
+Status:
+Complete.
+
+[Added after latest Rex Brain audit against `docs/brain/REX_BRAIN_RULES.md` and `docs/brain/REX_BRAIN_ARCHITECTURE.md`]
+
+Issue:
+The final brain docs are strict: saved memory is the only durable memory, chat search results are only chat history, and anything Rex saves must be categorized and visible in Knows.
+
+Files:
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\chat_context_service.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\prompt_memory_context.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\prompt_constants.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\action_truth_policy.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\chat_service.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\models\memory.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\long_term_memory_repository.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\memory_service.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\memory_intent_service.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\memory_turn_service.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\supabase_schema.sql`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\memory`
+- Relevant tests under `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests`
+
+Fix Needed:
+- [Done] Remove the legacy chat pseudo-memory concept from production code, prompts, truth policy, and tests.
+- [Done] Keep chat search results as a separate context source, not as memory-shaped records.
+- [Done] Use prompt sections that clearly separate saved memory from chat search results.
+- [Done] Ensure chat search results are described as chat history unless the user explicitly asks Rex to save something.
+- [Done] Ensure anything Rex saves through the direct memory path becomes durable, backend-confirmed memory.
+- [Done] Ensure saved memories are categorized into clear groups such as People, Events, Places, Goals, Preferences, Facts, or fallback Other.
+- [Done] Ensure the Knows page only shows properly saved and categorized memory or approved structured memory records.
+- [Done] Prevent hidden or automatic chat-content saving into memory.
+- [Done] Deprecate or remove save-from-message paths that can turn ordinary chat text into memory without a clear memory action.
+- [Done] Track saved memory and chat search separately enough for MVP truth enforcement, with degraded search handled explicitly.
+- [Done] Update truth enforcement so Rex cannot say it searched chats and found nothing unless chat search actually succeeded and returned useful results.
+- [Done] Add tests for "Do you know anything about my mom?", chat search separation, durable categorized memory, no hidden chat auto-save, degraded chat search, and Knows category visibility.
+
+Goal After Fix:
+Rex follows the final memory rule exactly: saved means durable categorized memory, chat search means searchable chat history, and the two are never blurred.
+
+Priority:
+Highest
 
 ### Issue 2: Memory Retrieval Can Silently Fail
 
@@ -60,7 +120,7 @@ Files:
 
 Fix Needed:
 - Keep memory and old-chat retrieval explicit for people, family, places, events, goals, and preferences.
-- Label old-chat excerpts as evidence, not confirmed saved facts.
+- Label chat search results as chat history, not saved memory.
 - Search old chats with safer fallback queries for family/date/relationship questions.
 - Search across all user chats when the user asks about past information.
 - Include the current conversation.
@@ -252,8 +312,8 @@ Fix Needed:
 - Avoid large prompt contracts unless they directly improve reliability.
 - Keep default context small.
 - Retrieve only context related to the current intent.
-- Prefer short evidence snippets over full conversations.
-- Cap old chat evidence before prompt assembly.
+- Prefer short chat search result snippets over full conversations.
+- Cap chat search results before prompt assembly.
 - Avoid loading broad structured context unless needed.
 - Add tests or assertions for token/context discipline.
 
@@ -263,7 +323,7 @@ Rex Brain stays fast, cheap, maintainable, and easier to debug.
 Priority:
 High
 
-### Issue 4e: Saved Memory And Old Chat Evidence Must Stay Separate
+### Issue 4e: Saved Memory And Chat Search Results Must Stay Separate
 
 Status:
 Complete for Group 1.
@@ -271,7 +331,7 @@ Complete for Group 1.
 [Merged from Rex Brain MVP Fix Plan: Group 3 Issue 5]
 
 Issue:
-Rex needs to use old chat history without pretending it is saved memory. The user-visible "What Clarity Knows" screen should only show confirmed saved memory, while Rex may still cite old chat evidence honestly.
+Rex needs to use old chat history without pretending it is saved memory. The user-visible "What Clarity Knows" screen should only show confirmed, categorized saved memory. Chat search results should be used only as chat history unless the user explicitly asks Rex to save something.
 
 Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\chat_context_service.py`
@@ -283,14 +343,15 @@ Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_chat_context_service.py`
 
 Fix Needed:
-- Label saved memory and old chat evidence separately in the prompt.
+- Label saved memory and chat search results in separate prompt sections.
 - Tell the user when an answer came from chat history instead of saved memory.
-- Do not show unsaved chat facts in "What Clarity Knows."
-- Save a chat fact only when the user confirms or the save rule clearly applies.
+- Do not show unsaved chat content in "What Clarity Knows."
+- Save a chat detail only when the user explicitly asks Rex to save it or a clear memory-save action is confirmed.
+- When saved, the detail must become durable categorized memory.
 - Keep saved memory editable and user-visible.
 
 Goal After Fix:
-Rex can remember through chat search without polluting saved memory.
+Rex can recall through chat search without polluting saved memory or creating hidden memory.
 
 Priority:
 High

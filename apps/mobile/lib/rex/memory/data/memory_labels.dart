@@ -1,28 +1,31 @@
 enum MemoryGroup {
-  identity,
+  facts,
   preferences,
-  peoplePlaces,
-  plans,
+  people,
+  places,
+  goals,
   rules,
-  recent,
+  events,
   other,
 }
 
 extension MemoryGroupLabel on MemoryGroup {
   String get label {
     switch (this) {
-      case MemoryGroup.identity:
-        return 'About me';
+      case MemoryGroup.facts:
+        return 'Facts';
       case MemoryGroup.preferences:
         return 'Preferences';
-      case MemoryGroup.peoplePlaces:
+      case MemoryGroup.people:
         return 'People';
-      case MemoryGroup.plans:
-        return 'Plans';
+      case MemoryGroup.places:
+        return 'Places';
+      case MemoryGroup.goals:
+        return 'Goals';
       case MemoryGroup.rules:
         return 'Preferences';
-      case MemoryGroup.recent:
-        return 'Recent';
+      case MemoryGroup.events:
+        return 'Events';
       case MemoryGroup.other:
         return 'Other';
     }
@@ -83,27 +86,33 @@ MemoryGroup memoryGroupForTypeLabel(String value) {
   switch (_normalLabelKey(value)) {
     case 'fact':
     case 'identity':
-      return MemoryGroup.identity;
+    case 'facts':
+      return MemoryGroup.facts;
     case 'preference':
     case 'preferences':
       return MemoryGroup.preferences;
+    case 'people':
     case 'entity':
     case 'person':
-    case 'people':
-    case 'place':
     case 'people_places':
-      return MemoryGroup.peoplePlaces;
+      return MemoryGroup.people;
+    case 'place':
+    case 'places':
+      return MemoryGroup.places;
+    case 'goal':
+    case 'goals':
     case 'plan':
     case 'plan_milestone':
     case 'commitment':
-      return MemoryGroup.plans;
+      return MemoryGroup.goals;
     case 'personal_rule':
     case 'rule':
       return MemoryGroup.rules;
     case 'event':
+    case 'events':
     case 'entity_event':
     case 'recent':
-      return MemoryGroup.recent;
+      return MemoryGroup.events;
     default:
       return MemoryGroup.other;
   }

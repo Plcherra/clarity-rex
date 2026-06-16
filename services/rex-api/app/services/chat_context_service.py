@@ -22,7 +22,7 @@ MEMORY_INVENTORY_QUERY = (
     "chats conversations preferences"
 )
 PROFILE_MEMORY_LIMIT = 4
-PAST_CHAT_MEMORY_LIMIT = 12
+CHAT_SEARCH_RESULTS_LIMIT = 12
 PAST_CHAT_SEARCH_SCAN_LIMIT = 50
 LOGGER = logging.getLogger("rex.context")
 MEMORY_REJECTION_MARKERS = (
@@ -36,6 +36,25 @@ MEMORY_REJECTION_MARKERS = (
     "no problem. i will not save that",
     "won't save that",
     "will not save that",
+)
+CHAT_SEARCH_NO_RESULT_MARKERS = (
+    "do not have anything saved",
+    "don't have anything saved",
+    "do not have any info",
+    "don't have any info",
+    "do not have your",
+    "don't have your",
+    "nothing about",
+    "nothing came up",
+    "nothing showed up",
+    "found nothing",
+    "could not find",
+    "couldn't find",
+    "did not find",
+    "didn't find",
+    "no mentions",
+    "no mention",
+    "not saved",
 )
 CONTEXT_ERROR_KEY = "_context_error"
 
@@ -112,13 +131,13 @@ class ChatContextService:
             if load_profile_memory
             else self.empty_list()
         )
-        past_chat_memory_task = None
+        chat_search_results_task = None
         if load_long_term_memory and conversation_id is None:
-            past_chat_memory_task = self.timed_fetch(
-                "past_chat_memory",
+            chat_search_results_task = self.timed_fetch(
+                "chat_search",
                 self.fetch_relevant_chat_excerpts(
                     query=memory_query,
-                    limit=PAST_CHAT_MEMORY_LIMIT,
+                    limit=CHAT_SEARCH_RESULTS_LIMIT,
                     exclude_conversation_id=None,
                 ),
                 timings_ms,
@@ -136,12 +155,12 @@ class ChatContextService:
             (
                 raw_long_term_memory,
                 raw_profile_memory,
-                raw_past_chat_memory,
+                raw_chat_search_results,
                 structured_context,
             ) = await asyncio.gather(
                 long_term_memory_task or self.empty_list(),
                 profile_memory_task,
-                past_chat_memory_task or self.empty_list(),
+                chat_search_results_task or self.empty_list(),
                 structured_context_task,
             )
             long_term_memory = self.context_items(
@@ -149,8 +168,8 @@ class ChatContextService:
                 memory_failures,
             )
             profile_memory = self.context_items(raw_profile_memory, memory_failures)
-            past_chat_memory = self.context_items(
-                raw_past_chat_memory,
+            chat_search_results = self.context_items(
+                raw_chat_search_results,
                 memory_failures,
             )
             structured_context = self.with_memory_status(
@@ -159,14 +178,17 @@ class ChatContextService:
                 attempted_sources={
                     "long_term_memory": load_long_term_memory,
                     "profile_memory": load_profile_memory,
-                    "past_chat_memory": load_long_term_memory,
+                    "chat_search": load_long_term_memory,
                     "structured_memory": load_structured_memory,
                 },
+            )
+            structured_context = self.with_chat_search_results(
+                structured_context,
+                chat_search_results,
             )
             merged_memory = self.merge_memories(
                 long_term_memory,
                 profile_memory,
-                past_chat_memory,
             )
             self.log_context_fetch(
                 intent_decision=intent_decision,
@@ -175,13 +197,14 @@ class ChatContextService:
                     "recent_messages": False,
                     "long_term_memory": load_long_term_memory,
                     "profile_memory": load_profile_memory,
-                    "past_chat_memory": load_long_term_memory,
+                    "chat_search": load_long_term_memory,
                     "structured_memory": load_structured_memory,
                     "goal_context": load_goal_context,
                 },
                 counts={
                     "recent_messages": 0,
                     "long_term_memory": len(merged_memory),
+                    "chat_search_results": len(chat_search_results),
                     "structured_context_keys": len(structured_context),
                 },
                 timings_ms=timings_ms,
@@ -212,11 +235,11 @@ class ChatContextService:
                 self.fetch_relevant_memories(query=memory_query, limit=8),
                 timings_ms,
             )
-            past_chat_memory_task = self.timed_fetch(
-                "past_chat_memory",
+            chat_search_results_task = self.timed_fetch(
+                "chat_search",
                 self.fetch_relevant_chat_excerpts(
                     query=memory_query,
-                    limit=PAST_CHAT_MEMORY_LIMIT,
+                    limit=CHAT_SEARCH_RESULTS_LIMIT,
                     exclude_conversation_id=None,
                 ),
                 timings_ms,
@@ -232,22 +255,25 @@ class ChatContextService:
                 memory_failures,
             )
             long_term_memory_task = self.empty_list()
-            past_chat_memory_task = self.empty_list()
+            chat_search_results_task = self.empty_list()
 
         (
             raw_long_term_memory,
             raw_profile_memory,
-            raw_past_chat_memory,
+            raw_chat_search_results,
             structured_context,
         ) = await asyncio.gather(
             long_term_memory_task,
             profile_memory_task,
-            past_chat_memory_task,
+            chat_search_results_task,
             structured_context_task,
         )
         long_term_memory = self.context_items(raw_long_term_memory, memory_failures)
         profile_memory = self.context_items(raw_profile_memory, memory_failures)
-        past_chat_memory = self.context_items(raw_past_chat_memory, memory_failures)
+        chat_search_results = self.context_items(
+            raw_chat_search_results,
+            memory_failures,
+        )
         structured_context = self.with_memory_status(
             structured_context,
             memory_failures,
@@ -255,14 +281,17 @@ class ChatContextService:
                 "recent_messages": True,
                 "long_term_memory": load_long_term_memory,
                 "profile_memory": load_profile_memory,
-                "past_chat_memory": load_long_term_memory,
+                "chat_search": load_long_term_memory,
                 "structured_memory": load_structured_memory,
             },
+        )
+        structured_context = self.with_chat_search_results(
+            structured_context,
+            chat_search_results,
         )
         merged_memory = self.merge_memories(
             long_term_memory,
             profile_memory,
-            past_chat_memory,
         )
         self.log_context_fetch(
             intent_decision=intent_decision,
@@ -271,13 +300,14 @@ class ChatContextService:
                 "recent_messages": True,
                 "long_term_memory": load_long_term_memory,
                 "profile_memory": load_profile_memory,
-                "past_chat_memory": load_long_term_memory,
+                "chat_search": load_long_term_memory,
                 "structured_memory": load_structured_memory,
                 "goal_context": load_goal_context,
             },
             counts={
                 "recent_messages": len(conversation_history),
                 "long_term_memory": len(merged_memory),
+                "chat_search_results": len(chat_search_results),
                 "structured_context_keys": len(structured_context),
             },
             timings_ms=timings_ms,
@@ -341,7 +371,7 @@ class ChatContextService:
         if search_messages is None:
             return [
                 ContextFetchError(
-                    source="past_chat_memory",
+                    source="chat_search",
                     message="Past chat search is unavailable.",
                 ).as_dict()
             ]
@@ -359,30 +389,34 @@ class ChatContextService:
                         continue
                     messages_by_id.setdefault(message_id, message)
         except Exception as exc:
-            LOGGER.warning("rex_memory_fetch_failed source=past_chat_memory")
+            LOGGER.warning("rex_memory_fetch_failed source=chat_search")
             return [
                 ContextFetchError(
-                    source="past_chat_memory",
+                    source="chat_search",
                     message=self.safe_error_message(exc),
                 ).as_dict()
             ]
 
         excerpts = []
         for message in messages_by_id.values():
+            if self.is_chat_search_no_result_message(message):
+                continue
             context_messages = await self.chat_excerpt_context(message)
             content = self.chat_excerpt_content(context_messages)
             if not content:
                 continue
             if await self.chat_excerpt_was_rejected(message):
                 continue
+            if not self.chat_excerpt_has_user_content(context_messages):
+                continue
             excerpts.append(
                 {
                     "id": f"chat-{message.get('id')}",
-                    "memory_type": "old_chat_evidence",
                     "content": content,
-                    "importance": 3,
-                    "created_at": message.get("timestamp"),
-                    "relevance_reason": "Matched relevant past conversation.",
+                    "timestamp": message.get("timestamp"),
+                    "conversation_id": message.get("conversation_id"),
+                    "source_message_id": message.get("id"),
+                    "relevance_reason": "Matched relevant chat history.",
                 }
             )
             if len(excerpts) >= limit:
@@ -394,11 +428,12 @@ class ChatContextService:
         if str(query or "") == MEMORY_INVENTORY_QUERY:
             return [query]
         queries = [query]
+        has_birthday_subject = "birthday" in normalized
         has_mom_subject = bool(re.search(r"\b(?:mom|mother|mum|mama)\b", normalized))
         has_parent_subject = has_mom_subject or bool(
             re.search(r"\b(?:dad|father|papa|parent|parents)\b", normalized)
         )
-        if has_mom_subject:
+        if has_mom_subject and has_birthday_subject:
             queries.extend(
                 [
                     "mom mother birthday reminder money send her 10th 18th",
@@ -409,14 +444,15 @@ class ChatContextService:
                     "mom",
                 ]
             )
+        elif has_mom_subject:
+            queries.extend(["mom mother mum mama", "mom"])
         elif has_parent_subject:
             queries.extend(
                 [
-                    "parent birthday reminder family",
-                    "birthday reminder family money",
+                    "parent parents family mother father mom dad",
                 ]
             )
-        elif "birthday" in normalized:
+        elif has_birthday_subject:
             queries.append("birthday reminder important date")
         subject_query = self.subject_only_search_query(normalized)
         if subject_query:
@@ -430,10 +466,10 @@ class ChatContextService:
         return unique_queries
 
     def subject_only_search_query(self, normalized_query: str) -> str:
-        """Extract the user's target subject for old-chat search.
+        """Extract the user's target subject for chat search.
 
         Message search is keyword based. A focused subject query gives old chats
-        one more chance to surface relevant evidence without relying on broad
+        one more chance to surface relevant history without relying on broad
         question words like "know" or "remember".
         """
 
@@ -496,6 +532,12 @@ class ChatContextService:
             lines.append(f"- {role}: {content}")
         return "\n".join(lines)
 
+    def chat_excerpt_has_user_content(self, messages: list[dict]) -> bool:
+        return any(
+            self.is_chat_search_user_content_message(message)
+            for message in messages
+        )
+
     async def chat_excerpt_was_rejected(self, message: dict) -> bool:
         conversation_id = str(message.get("conversation_id") or "")
         message_id = str(message.get("id") or "")
@@ -539,6 +581,53 @@ class ChatContextService:
         if not content:
             return False
         return any(marker in content for marker in MEMORY_REJECTION_MARKERS)
+
+    def is_chat_search_no_result_message(self, message: dict) -> bool:
+        content = str(message.get("content") or "").strip().lower()
+        if not content:
+            return False
+        return any(marker in content for marker in CHAT_SEARCH_NO_RESULT_MARKERS)
+
+    def is_chat_search_user_content_message(self, message: dict) -> bool:
+        if str(message.get("role") or "") != "user":
+            return False
+        content = str(message.get("content") or "").strip().lower()
+        if not content or self.is_chat_search_no_result_message(message):
+            return False
+        if any(
+            marker in content
+            for marker in (
+                "do you know",
+                "do you remember",
+                "can you search",
+                "search old",
+                "search the old",
+                "check old",
+                "check the old",
+                "look into the chats",
+                "looked through",
+                "double checked",
+                "double-checked",
+                "pretty sure",
+                "i told you",
+                "already told",
+                "have access to the chat",
+            )
+        ):
+            return False
+        return True
+
+    def with_chat_search_results(
+        self,
+        structured_context: dict,
+        chat_search_results: list[dict],
+    ) -> dict:
+        if not chat_search_results:
+            return structured_context
+        return {
+            **structured_context,
+            "chat_search_results": chat_search_results,
+        }
 
     def merge_memories(self, *memory_groups: list[dict]) -> list[dict]:
         merged: list[dict] = []

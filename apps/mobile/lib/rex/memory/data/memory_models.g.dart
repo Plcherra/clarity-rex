@@ -18,6 +18,8 @@ _MemoryItem _$MemoryItemFromJson(Map<String, dynamic> json) => _MemoryItem(
   sourceMessageId: json['source_message_id'] as String?,
   importance: (json['importance'] as num).toInt(),
   active: json['active'] as bool,
+  metadata:
+      json['metadata'] as Map<String, dynamic>? ?? const <String, dynamic>{},
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -38,6 +40,7 @@ Map<String, dynamic> _$MemoryItemToJson(_MemoryItem instance) =>
       'source_message_id': instance.sourceMessageId,
       'importance': instance.importance,
       'active': instance.active,
+      'metadata': instance.metadata,
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
       'last_accessed_at': instance.lastAccessedAt?.toIso8601String(),

@@ -34,7 +34,7 @@ Main MVP intents:
 - Normal chat
 - Save memory
 - Update memory
-- Recall memory or old chats
+- Recall memory or search chats
 - Goal or commitment
 - Finance
 - File question
@@ -49,7 +49,7 @@ Context fetch gives Grok the smallest useful set of facts.
 Possible context sources:
 - Recent conversation messages
 - Relevant saved memory
-- Relevant old chat evidence
+- Relevant chat search results when the user asks for recall
 - Goals and commitments
 - Financial context
 - Uploaded file context
@@ -75,6 +75,8 @@ These actions must be deterministic and backend-confirmed.
 
 If the backend does not confirm the write, Rex must not claim success.
 
+Anything Rex saves is durable memory. There should be no hidden or temporary save path that does not create a categorized memory record.
+
 Risky or unclear actions should not happen automatically. Rex should ask for confirmation or clarification.
 
 ## 6. Step 4: Short Prompt To Grok
@@ -84,12 +86,12 @@ The prompt should be short, labeled, and useful.
 It should include:
 - Short Rex behavior rules
 - Relevant saved memory
-- Relevant old chat evidence
+- Relevant chat search results when the user asks for recall
 - Relevant financial context
 - Recent conversation context
 - The user's latest message
 
-Old chat evidence must be labeled as old chat evidence, not saved memory.
+Chat search results must be labeled as chat search results, not saved memory.
 
 Do not send large context blocks by default. Token usage matters.
 
@@ -108,27 +110,32 @@ The final check is small and practical.
 It should catch the highest-risk mistakes:
 - Claiming an action succeeded without backend confirmation
 - Claiming a memory was saved without backend confirmation
-- Treating old chat evidence as saved memory
+- Treating chat search results as saved memory
 - Saying search found nothing when search failed
 - Claiming financial facts not present in context
 
 This check is a safety net. It should not become a large second brain.
 
-## 9. Saved Memory vs Old Chat Evidence
+## 9. Saved Memory vs Chat Search
 
 Saved memory:
-- Confirmed memory record
+- Explicitly saved and backend-confirmed memory record
+- Categorized as People, Events, Places, Goals, Preferences, Facts, or another clear memory group
 - User-visible in "What Clarity Knows"
 - Editable and deletable
 - Treated as Clarity knowledge
 
-Old chat evidence:
-- Search result from previous messages
-- Useful for recall
+Chat search:
+- Strong keyword search across all user chats
+- Includes old conversations and the current conversation
+- Used when the user asks recall questions such as "Do you remember...", "What did I say about...", "Search chats about...", or "Do you know anything about my mom?"
+- Not saved memory
 - Not automatically shown in "What Clarity Knows"
-- Must be described as chat history unless saved later
+- Must be described as chat history unless the user explicitly saves something as memory
 
-Rex should use both, but label them clearly.
+There should be no automatic or hidden saving of chat content into memory.
+
+Rex should use saved memory and chat search differently, and label them clearly.
 
 ## 10. Chat And Voice
 

@@ -98,6 +98,8 @@ DEGRADED_MEMORY_NO_RESULT_CLAIMS = (
     "i do not have any",
     "nothing about",
     "no information",
+    "no mention",
+    "no mentions",
     "no saved memory",
     "no memory",
     "no memories",
@@ -179,19 +181,18 @@ def response_claims_old_chat_search_result(response: str) -> bool:
 def safe_old_chat_search_response(
     response: str,
     *,
-    old_chat_evidence_loaded: bool,
+    chat_search_results_loaded: bool,
 ) -> str:
-    """Avoid pretending old-chat search was exhaustive when no evidence loaded."""
+    """Avoid pretending old-chat search was exhaustive when no results loaded."""
 
     cleaned = response.strip()
-    if old_chat_evidence_loaded:
+    if chat_search_results_loaded:
         return cleaned
     if not response_claims_old_chat_search_result(cleaned):
         return cleaned
     return (
-        "I don't see that in saved memory or in the chat evidence retrieved for "
-        "this turn. Older chat recall may be incomplete unless that detail was "
-        "saved."
+        "I don't have a reliable chat search result for that right now. I can't "
+        "confidently say it was never mentioned unless chat search completes."
     )
 
 

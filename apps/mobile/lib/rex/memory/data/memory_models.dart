@@ -24,6 +24,7 @@ abstract class MemoryItem with _$MemoryItem {
     @JsonKey(name: 'source_message_id') String? sourceMessageId,
     required int importance,
     required bool active,
+    @Default(<String, dynamic>{}) Map<String, dynamic> metadata,
     @JsonKey(name: 'created_at') DateTime? createdAt,
     @JsonKey(name: 'updated_at') DateTime? updatedAt,
     @JsonKey(name: 'last_accessed_at') DateTime? lastAccessedAt,
@@ -65,14 +66,49 @@ extension MemoryTypeLabel on MemoryType {
   MemoryGroup get memoryGroup {
     switch (this) {
       case MemoryType.fact:
-        return MemoryGroup.identity;
+        return MemoryGroup.facts;
       case MemoryType.preference:
         return MemoryGroup.preferences;
       case MemoryType.event:
-        return MemoryGroup.recent;
+        return MemoryGroup.events;
       case MemoryType.other:
         return MemoryGroup.other;
     }
+  }
+}
+
+extension MemoryItemCategory on MemoryItem {
+  String get categoryLabel => memoryGroup.label;
+
+  MemoryGroup get memoryGroup {
+    final category = _memoryCategoryFromMetadata(metadata);
+    if (category != null) {
+      return category;
+    }
+    return memoryType.memoryGroup;
+  }
+}
+
+MemoryGroup? _memoryCategoryFromMetadata(Map<String, dynamic> metadata) {
+  final rawValue = metadata['memory_category'] ?? metadata['category'];
+  if (rawValue is! String) {
+    return null;
+  }
+  switch (normalMemoryLabelKey(rawValue)) {
+    case 'people':
+      return MemoryGroup.people;
+    case 'events':
+      return MemoryGroup.events;
+    case 'places':
+      return MemoryGroup.places;
+    case 'goals':
+      return MemoryGroup.goals;
+    case 'preferences':
+      return MemoryGroup.preferences;
+    case 'facts':
+      return MemoryGroup.facts;
+    default:
+      return null;
   }
 }
 

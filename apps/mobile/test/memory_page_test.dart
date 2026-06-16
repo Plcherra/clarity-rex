@@ -14,28 +14,20 @@ void main() {
     expect(find.text('People'), findsOneWidget);
     expect(find.text('Pending'), findsNothing);
     expect(find.text('Corrections'), findsNothing);
-    expect(find.text('About me'), findsOneWidget);
+    expect(find.text('Facts'), findsWidgets);
     expect(find.text('Preferences'), findsWidgets);
     expect(find.text('Pedro prefers email updates.'), findsOneWidget);
     expect(find.text('Updated 05/31/2026'), findsWidgets);
 
-    await tester.scrollUntilVisible(
-      find.text('Plans'),
-      500,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
     await tester.pumpAndSettle();
 
-    expect(find.text('Plans'), findsOneWidget);
+    expect(find.text('Goals'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.text('Recent'),
-      500,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
     await tester.pumpAndSettle();
 
-    expect(find.text('Recent'), findsOneWidget);
+    expect(find.text('Events'), findsWidgets);
     expect(find.text('Other'), findsNothing);
   });
 

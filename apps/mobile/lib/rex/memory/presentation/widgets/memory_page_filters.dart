@@ -26,25 +26,31 @@ SavedMemoryResults filterSavedMemory({
           return _matchesQuery(normalizedQuery, [
             memory.content,
             memory.memoryType.label,
+            memory.categoryLabel,
             'Importance ${memory.importance}',
           ]);
         });
 
   return SavedMemoryResults(
-    identity: showPreferencesOnly
+    facts: showPreferencesOnly || showPeopleOnly
         ? const []
         : memories
               .where(
-                (memory) =>
-                    memory.memoryType.memoryGroup == MemoryGroup.identity,
+                (memory) => memory.memoryGroup == MemoryGroup.facts,
               )
               .toList(growable: false),
     preferences: showPeopleOnly
         ? const []
         : memories
               .where(
-                (memory) =>
-                    memory.memoryType.memoryGroup == MemoryGroup.preferences,
+                (memory) => memory.memoryGroup == MemoryGroup.preferences,
+              )
+              .toList(growable: false),
+    peopleMemories: showPreferencesOnly
+        ? const []
+        : memories
+              .where(
+                (memory) => memory.memoryGroup == MemoryGroup.people,
               )
               .toList(growable: false),
     people: showPreferencesOnly
@@ -60,6 +66,20 @@ SavedMemoryResults filterSavedMemory({
               person.status.memoryRecordLabel,
             ]),
           ),
+    places: showPeopleOnly || showPreferencesOnly
+        ? const []
+        : memories
+              .where(
+                (memory) => memory.memoryGroup == MemoryGroup.places,
+              )
+              .toList(growable: false),
+    goalMemories: showPeopleOnly || showPreferencesOnly
+        ? const []
+        : memories
+              .where(
+                (memory) => memory.memoryGroup == MemoryGroup.goals,
+              )
+              .toList(growable: false),
     rules: showPeopleOnly || showPreferencesOnly
         ? const []
         : filterList(
@@ -98,18 +118,18 @@ SavedMemoryResults filterSavedMemory({
               commitment.status.memoryRecordLabel,
             ]),
           ),
-    recent: showPeopleOnly || showPreferencesOnly
+    events: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories
               .where(
-                (memory) => memory.memoryType.memoryGroup == MemoryGroup.recent,
+                (memory) => memory.memoryGroup == MemoryGroup.events,
               )
               .toList(growable: false),
     other: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories
               .where(
-                (memory) => memory.memoryType.memoryGroup == MemoryGroup.other,
+                (memory) => memory.memoryGroup == MemoryGroup.other,
               )
               .toList(growable: false),
   );

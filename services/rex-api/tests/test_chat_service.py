@@ -204,7 +204,7 @@ async def test_chat_service_blocks_memory_success_claim_without_backend_write():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_downgrades_old_chat_search_claim_without_evidence():
+async def test_chat_service_downgrades_old_chat_search_claim_without_results():
     ai_service = FakeAIService(
         response="I checked the old chats and found no mentions of your mom."
     )
@@ -216,9 +216,8 @@ async def test_chat_service_downgrades_old_chat_search_claim_without_evidence():
     )
 
     assert result["response"] == (
-        "I don't see that in saved memory or in the chat evidence retrieved for "
-        "this turn. Older chat recall may be incomplete unless that detail was "
-        "saved."
+        "I don't have a reliable chat search result for that right now. I can't "
+        "confidently say it was never mentioned unless chat search completes."
     )
     assert result["memory_changes"] is None
 
@@ -233,7 +232,7 @@ async def test_chat_service_downgrades_no_memory_claim_when_memory_is_degraded()
             "message": "Some memory sources could not be searched.",
             "failures": [
                 {
-                    "source": "past_chat_memory",
+                    "source": "chat_search",
                     "message": "search failed",
                 }
             ],
@@ -262,7 +261,7 @@ async def test_chat_service_degraded_memory_status_overrides_old_chat_no_result_
             "message": "Some memory sources could not be searched.",
             "failures": [
                 {
-                    "source": "past_chat_memory",
+                    "source": "chat_search",
                     "message": "search failed",
                 }
             ],
@@ -293,7 +292,7 @@ async def test_chat_service_stream_downgrades_no_memory_claim_when_memory_is_deg
             "message": "Some memory sources could not be searched.",
             "failures": [
                 {
-                    "source": "past_chat_memory",
+                    "source": "chat_search",
                     "message": "search failed",
                 }
             ],
@@ -342,7 +341,7 @@ async def test_chat_service_allows_old_chat_answer_when_evidence_is_loaded():
     assert result["response"] == (
         "I found an old chat mention that your mom's birthday is June 18."
     )
-    assert "old chat evidence" in ai_service.messages[0]["content"]
+    assert "Relevant chat search results:" in ai_service.messages[0]["content"]
 
 
 @pytest.mark.asyncio

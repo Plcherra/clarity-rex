@@ -4,6 +4,14 @@ from typing import Optional
 from app.services.memory_errors import MemoryServiceError
 
 VALID_MEMORY_TYPES = {"fact", "preference", "event"}
+VALID_MEMORY_CATEGORIES = {
+    "People",
+    "Events",
+    "Places",
+    "Goals",
+    "Preferences",
+    "Facts",
+}
 LONG_TERM_MEMORY_SELECT = (
     "id,memory_type,content,source_conversation_id,source_message_id,"
     "importance,active,superseded_by,confidence,correction_group,metadata,"
@@ -26,6 +34,11 @@ class LongTermMemoryRepository:
         correction_group: Optional[str] = None,
         metadata: Optional[dict] = None,
     ) -> dict:
+        memory_metadata = dict(metadata or {})
+        memory_metadata.setdefault(
+            "memory_category",
+            self.infer_memory_category(memory_type, content, memory_metadata),
+        )
         rows = await self.store._request(
             "POST",
             self.store.settings.supabase_long_term_memory_table,
@@ -37,7 +50,7 @@ class LongTermMemoryRepository:
                 "importance": importance,
                 "confidence": confidence,
                 "correction_group": correction_group,
-                "metadata": metadata or {},
+                "metadata": memory_metadata,
             },
             query={"select": LONG_TERM_MEMORY_SELECT},
             prefer="return=representation",
@@ -49,17 +62,10 @@ class LongTermMemoryRepository:
         conversation_id: str,
         message: dict,
     ) -> Optional[dict]:
-        memory = self.memory_from_message_text(str(message.get("content", "")))
-        if not memory:
-            return None
+        """Deprecated: ordinary chat messages must not auto-save into memory."""
 
-        return await self.save_long_term_memory(
-            memory_type=memory["memory_type"],
-            content=memory["content"],
-            source_conversation_id=conversation_id,
-            source_message_id=str(message.get("id")) if message.get("id") else None,
-            importance=memory["importance"],
-        )
+        _ = conversation_id, message
+        return None
 
     async def list_long_term_memory(
         self,
@@ -193,6 +199,35 @@ class LongTermMemoryRepository:
             return "event"
 
         return "fact"
+
+    def infer_memory_category(
+        self,
+        memory_type: str,
+        content: str,
+        metadata: Optional[dict] = None,
+    ) -> str:
+        metadata = metadata or {}
+        existing = metadata.get("memory_category")
+        if isinstance(existing, str) and existing in VALID_MEMORY_CATEGORIES:
+            return existing
+
+        fact_kind = str(metadata.get("fact_kind") or "").lower()
+        lowered = content.lower()
+        if fact_kind in {"name"}:
+            return "People"
+        if fact_kind in {"birthday"}:
+            return "Events"
+        if fact_kind in {"location"}:
+            return "Places"
+        if fact_kind in {"preference"} or memory_type == "preference":
+            return "Preferences"
+        if fact_kind in {"personal_plan"} or memory_type == "event":
+            return "Goals" if fact_kind == "personal_plan" else "Events"
+        if any(word in lowered for word in ("birthday", "anniversary")):
+            return "Events"
+        if any(word in lowered for word in ("live in", "location", "city")):
+            return "Places"
+        return "Facts"
 
     def validate_memory_type(self, memory_type: Optional[str]) -> None:
         if memory_type is not None and memory_type not in VALID_MEMORY_TYPES:

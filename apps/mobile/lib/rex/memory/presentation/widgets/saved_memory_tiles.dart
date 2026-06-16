@@ -20,11 +20,11 @@ class MemoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _SavedMemoryTileShell(
-      icon: _iconForType(memory.memoryType),
+      icon: _iconForGroup(memory.memoryGroup),
       active: memory.active,
       title: memory.content,
       chips: _baseChips(
-        typeLabel: memory.memoryType.label,
+        typeLabel: memory.categoryLabel,
         active: memory.active,
         savedAt: _savedDate(memory.updatedAt, memory.createdAt),
       ),
@@ -33,15 +33,23 @@ class MemoryTile extends StatelessWidget {
     );
   }
 
-  IconData _iconForType(MemoryType type) {
-    switch (type) {
-      case MemoryType.fact:
+  IconData _iconForGroup(MemoryGroup group) {
+    switch (group) {
+      case MemoryGroup.facts:
         return Icons.badge_outlined;
-      case MemoryType.preference:
+      case MemoryGroup.preferences:
         return Icons.tune_rounded;
-      case MemoryType.event:
+      case MemoryGroup.people:
+        return Icons.person_outline_rounded;
+      case MemoryGroup.places:
+        return Icons.place_outlined;
+      case MemoryGroup.goals:
+        return Icons.flag_outlined;
+      case MemoryGroup.events:
         return Icons.event_note_outlined;
-      case MemoryType.other:
+      case MemoryGroup.rules:
+        return Icons.rule_rounded;
+      case MemoryGroup.other:
         return Icons.note_alt_outlined;
     }
   }

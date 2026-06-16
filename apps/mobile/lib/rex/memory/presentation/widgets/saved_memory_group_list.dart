@@ -43,16 +43,18 @@ class SavedMemoryGroupList extends StatelessWidget {
     }
 
     addGroup(
-      MemoryGroup.identity,
-      saved.identity.map(_memoryTile).toList(growable: false),
+      MemoryGroup.facts,
+      saved.facts.map(_memoryTile).toList(growable: false),
     );
     addGroup(
       MemoryGroup.preferences,
       saved.preferences.map(_memoryTile).toList(growable: false),
     );
     addGroup(
-      MemoryGroup.peoplePlaces,
-      saved.people
+      MemoryGroup.people,
+      [
+        ...saved.peopleMemories.map(_memoryTile),
+        ...saved.people
           .map(
             (person) => PersonMemoryTile(
               person: person,
@@ -66,9 +68,14 @@ class SavedMemoryGroupList extends StatelessWidget {
                   : null,
             ),
           )
-          .toList(growable: false),
+      ],
     );
-    addGroup(MemoryGroup.plans, [
+    addGroup(
+      MemoryGroup.places,
+      saved.places.map(_memoryTile).toList(growable: false),
+    );
+    addGroup(MemoryGroup.goals, [
+      ...saved.goalMemories.map(_memoryTile),
       ...saved.plans.map(
         (plan) => PlanMemoryTile(
           plan: plan,
@@ -115,8 +122,8 @@ class SavedMemoryGroupList extends StatelessWidget {
           .toList(growable: false),
     );
     addGroup(
-      MemoryGroup.recent,
-      saved.recent.map(_memoryTile).toList(growable: false),
+      MemoryGroup.events,
+      saved.events.map(_memoryTile).toList(growable: false),
     );
     addGroup(
       MemoryGroup.other,

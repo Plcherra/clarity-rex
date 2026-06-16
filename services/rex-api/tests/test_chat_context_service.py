@@ -179,6 +179,8 @@ async def test_chat_context_fetches_and_deduplicates_prompt_context():
         "shared-1",
         "memory-1",
         "profile-1",
+    ]
+    assert [item["id"] for item in structured_context["chat_search_results"]] == [
         "chat-past-message-1",
     ]
     assert store.relevant_memory_queries == [
@@ -228,6 +230,8 @@ async def test_chat_context_loads_memory_only_for_memory_recall_intent():
         "shared-1",
         "memory-1",
         "profile-1",
+    ]
+    assert [item["id"] for item in structured_context["chat_search_results"]] == [
         "chat-past-message-2",
     ]
     assert structured_context["profile_facts"][0]["fact"] == (
@@ -285,6 +289,8 @@ async def test_chat_context_uses_inventory_query_for_broad_memory_recall():
     assert [memory["id"] for memory in memories] == [
         "profile-1",
         "shared-1",
+    ]
+    assert [item["id"] for item in structured_context["chat_search_results"]] == [
         "chat-past-message-2",
         "chat-past-message-1",
     ]
@@ -315,6 +321,8 @@ async def test_chat_context_uses_inventory_query_for_about_me_recall():
     assert [memory["id"] for memory in memories] == [
         "profile-1",
         "shared-1",
+    ]
+    assert [item["id"] for item in structured_context["chat_search_results"]] == [
         "chat-past-message-2",
         "chat-past-message-1",
     ]
@@ -328,13 +336,17 @@ async def test_chat_context_keeps_specific_person_memory_queries_targeted():
     store = FakeContextMemoryStore()
     service = ChatContextService(store)
 
-    _, memories, _ = await service.fetch_prompt_context(
+    _, memories, structured_context = await service.fetch_prompt_context(
         message="Do you know anything about my mom?",
         conversation_id=None,
         intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
     )
 
-    assert any(memory["id"] == "chat-past-message-2" for memory in memories)
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
+    assert any(
+        item["id"] == "chat-past-message-2"
+        for item in structured_context["chat_search_results"]
+    )
     assert store.relevant_memory_queries[0] == {
         "query": "Do you know anything about my mom?",
         "limit": 8,
@@ -343,7 +355,7 @@ async def test_chat_context_keeps_specific_person_memory_queries_targeted():
         "Do you know anything about my mom?"
     )
     assert store.search_message_queries[1]["query"] == (
-        "mom mother birthday reminder money send her 10th 18th"
+        "mom mother mum mama"
     )
 
 
@@ -384,17 +396,62 @@ async def test_chat_context_falls_back_to_subject_search_when_broad_terms_fill_l
     ]
     service = ChatContextService(store)
 
-    _, memories, _ = await service.fetch_prompt_context(
+    _, memories, structured_context = await service.fetch_prompt_context(
         message="Do you know anything about my mom?",
         conversation_id=None,
         intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
     )
 
-    assert any(memory["id"] == "chat-mom-1" for memory in memories)
-    assert len(store.search_message_queries) >= 4
-    assert store.search_message_queries[1]["query"] == (
-        "mom mother birthday reminder money send her 10th 18th"
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
+    assert any(
+        item["id"] == "chat-mom-1"
+        for item in structured_context["chat_search_results"]
     )
+    assert len(store.search_message_queries) >= 2
+    assert store.search_message_queries[1]["query"] == (
+        "mom mother mum mama"
+    )
+
+
+@pytest.mark.asyncio
+async def test_chat_context_ignores_old_failed_search_replies_as_chat_results():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "real-fact",
+            "role": "user",
+            "content": "It's not next week, but on the eighteenth, it's my mom's birthday.",
+            "timestamp": "2026-06-12T18:48:00Z",
+        },
+        {
+            "id": "search-request",
+            "role": "user",
+            "content": "Can you search into the old chats?",
+            "timestamp": "2026-06-12T19:04:00Z",
+        },
+        {
+            "id": "failed-rex-reply",
+            "role": "assistant",
+            "content": (
+                "I double-checked the old chats, but nothing about your mom's "
+                "birthday came up."
+            ),
+            "timestamp": "2026-06-12T19:05:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message="Do you know anything about my mom?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
+    result_ids = [item["id"] for item in structured_context["chat_search_results"]]
+    assert "chat-real-fact" in result_ids
+    assert "chat-failed-rex-reply" not in result_ids
+    assert "chat-search-request" not in result_ids
 
 
 @pytest.mark.asyncio
@@ -416,13 +473,17 @@ async def test_chat_context_uses_recent_subject_for_old_chat_followup():
     ]
     service = ChatContextService(store)
 
-    _, memories, _ = await service.fetch_prompt_context(
+    _, memories, structured_context = await service.fetch_prompt_context(
         message="Can you check the old chats?",
         conversation_id="conversation-1",
         intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
     )
 
-    assert any(memory["id"] == "chat-past-message-2" for memory in memories)
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
+    assert any(
+        item["id"] == "chat-past-message-2"
+        for item in structured_context["chat_search_results"]
+    )
     assert store.search_message_queries[:4] == [
         {
             "query": (
@@ -432,26 +493,19 @@ async def test_chat_context_uses_recent_subject_for_old_chat_followup():
             "exclude_conversation_id": None,
         },
         {
-            "query": "mom mother birthday reminder money send her 10th 18th",
+            "query": "mom mother mum mama",
             "limit": 50,
             "exclude_conversation_id": None,
         },
         {
-            "query": "mom birthday",
-            "limit": 50,
-            "exclude_conversation_id": None,
-        },
-        {
-            "query": "send her money birthday",
+            "query": "mom",
             "limit": 50,
             "exclude_conversation_id": None,
         },
     ]
-    assert {
-        "query": "mom",
-        "limit": 50,
-        "exclude_conversation_id": None,
-    } in store.search_message_queries
+    assert {"query": "mom", "limit": 50, "exclude_conversation_id": None} in (
+        store.search_message_queries
+    )
 
 
 @pytest.mark.asyncio
@@ -479,14 +533,18 @@ async def test_chat_context_searches_current_conversation_beyond_recent_window()
     store.past_messages = list(store.messages)
     service = ChatContextService(store)
 
-    history, memories, _ = await service.fetch_prompt_context(
+    history, memories, structured_context = await service.fetch_prompt_context(
         message="Do you know anything about my mom?",
         conversation_id="conversation-1",
         intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
     )
 
     assert all(message["id"] != "same-conversation-mom" for message in history)
-    assert any(memory["id"] == "chat-same-conversation-mom" for memory in memories)
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
+    assert any(
+        item["id"] == "chat-same-conversation-mom"
+        for item in structured_context["chat_search_results"]
+    )
     assert store.search_message_queries[0] == {
         "query": "Do you know anything about my mom?",
         "limit": 50,
@@ -696,7 +754,7 @@ async def test_chat_context_past_chat_failure_is_degraded_not_empty_truth():
     memory_status = structured_context["memory_status"]
     assert memory_status["state"] == "degraded"
     assert memory_status["failures"] == [
-        {"source": "past_chat_memory", "message": "past chat search failed"}
+        {"source": "chat_search", "message": "past chat search failed"}
     ]
 
 

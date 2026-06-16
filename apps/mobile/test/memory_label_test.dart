@@ -42,6 +42,30 @@ void main() {
       expect(memory.memoryType.label, 'Other memory');
     });
 
+    test('saved memory category metadata controls Knows grouping', () {
+      final place = MemoryItem.fromJson({
+        'id': 'memory-place',
+        'memory_type': 'fact',
+        'content': 'Pedro lives in Somerville.',
+        'importance': 4,
+        'active': true,
+        'metadata': {'memory_category': 'Places'},
+      });
+      final goal = MemoryItem.fromJson({
+        'id': 'memory-goal',
+        'memory_type': 'event',
+        'content': 'Pedro plans to call mom.',
+        'importance': 3,
+        'active': true,
+        'metadata': {'memory_category': 'Goals'},
+      });
+
+      expect(place.memoryGroup, MemoryGroup.places);
+      expect(place.categoryLabel, 'Places');
+      expect(goal.memoryGroup, MemoryGroup.goals);
+      expect(goal.categoryLabel, 'Goals');
+    });
+
     test('cleans raw type prefixes from memory preview text', () {
       expect(
         memoryPreviewWithRecordType('long_term_memory: Pedro prefers email'),

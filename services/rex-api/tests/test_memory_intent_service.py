@@ -18,6 +18,7 @@ def test_detects_birthday_with_current_month_context():
         importance=5,
         metadata={
             "fact_kind": "birthday",
+            "memory_category": "Events",
             "entity_label": "mom",
             "normalized_date": "June 18",
             "topic_fingerprint": "fact:birthday:mom",
@@ -39,6 +40,7 @@ def test_detects_birthday_with_spelled_out_ordinal():
         importance=5,
         metadata={
             "fact_kind": "birthday",
+            "memory_category": "Events",
             "entity_label": "mom",
             "normalized_date": "June 18",
             "topic_fingerprint": "fact:birthday:mom",
@@ -60,6 +62,7 @@ def test_detects_inverted_birthday_phrase_with_spelled_out_ordinal():
         importance=5,
         metadata={
             "fact_kind": "birthday",
+            "memory_category": "Events",
             "entity_label": "mom",
             "normalized_date": "June 18",
             "topic_fingerprint": "fact:birthday:mom",
@@ -91,6 +94,7 @@ def test_detects_contextual_birthday_date_answer():
         importance=5,
         metadata={
             "fact_kind": "birthday",
+            "memory_category": "Events",
             "entity_label": "mom",
             "normalized_date": "June 18",
             "topic_fingerprint": "fact:birthday:mom",
@@ -128,6 +132,7 @@ def test_detects_birthday_with_explicit_month():
         importance=5,
         metadata={
             "fact_kind": "birthday",
+            "memory_category": "Events",
             "entity_label": "mom",
             "normalized_date": "March 4",
             "topic_fingerprint": "fact:birthday:mom",
@@ -149,6 +154,7 @@ def test_detects_family_birthday_correction_without_my_prefix():
         importance=5,
         metadata={
             "fact_kind": "birthday",
+            "memory_category": "Events",
             "entity_label": "mom",
             "normalized_date": "June 28",
             "topic_fingerprint": "fact:birthday:mom",
@@ -169,6 +175,7 @@ def test_detects_negative_location_correction_phrase():
         importance=4,
         metadata={
             "fact_kind": "location",
+            "memory_category": "Places",
             "topic_fingerprint": "fact:identity:location",
         },
     )
@@ -187,6 +194,7 @@ def test_detects_explicit_remember_that_fact():
         importance=4,
         metadata={
             "fact_kind": "remember_that",
+            "memory_category": "Facts",
             "topic_fingerprint": "fact:remember_that:i_work_best_in_the_morning",
         },
     )
@@ -205,6 +213,7 @@ def test_detects_precise_movie_plan_with_speech_title_normalization():
         importance=3,
         metadata={
             "fact_kind": "personal_plan",
+            "memory_category": "Goals",
             "plan_action": "watch",
             "plan_title": "Masters of the Universe",
             "plan_time": "today",
@@ -291,6 +300,7 @@ def test_detects_preference_comparison():
         importance=4,
         metadata={
             "fact_kind": "preference",
+            "memory_category": "Preferences",
             "preferred": "tea",
             "compared_to": "coffee",
             "topic_fingerprint": "preference:tea:coffee",

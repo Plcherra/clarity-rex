@@ -349,6 +349,7 @@ class MemoryIntentService:
             importance=5,
             metadata={
                 "fact_kind": "birthday",
+                "memory_category": "Events",
                 "entity_label": person,
                 "normalized_date": date_text,
                 "topic_fingerprint": f"fact:birthday:{person.lower()}",
@@ -371,6 +372,7 @@ class MemoryIntentService:
             importance=4,
             metadata={
                 "fact_kind": "remember_that",
+                "memory_category": "Facts",
                 "topic_fingerprint": f"fact:remember_that:{self._fingerprint(fact)}",
             },
         )
@@ -403,6 +405,7 @@ class MemoryIntentService:
                     importance=5,
                     metadata={
                         "fact_kind": "name",
+                        "memory_category": "People",
                         "topic_fingerprint": "fact:identity:name",
                     },
                 )
@@ -450,6 +453,7 @@ class MemoryIntentService:
             importance=4,
             metadata={
                 "fact_kind": "location",
+                "memory_category": "Places",
                 "topic_fingerprint": "fact:identity:location",
             },
         )
@@ -466,11 +470,13 @@ class MemoryIntentService:
         )
         if draft is None:
             return None
+        metadata = dict(draft.metadata)
+        metadata.setdefault("memory_category", "Goals")
         return SimpleMemoryIntent(
             memory_type="event",
             content=draft.content,
             importance=draft.importance,
-            metadata=draft.metadata,
+            metadata=metadata,
         )
 
     def _detect_preference(self, message: str) -> Optional[SimpleMemoryIntent]:
@@ -492,6 +498,7 @@ class MemoryIntentService:
             importance=4,
             metadata={
                 "fact_kind": "preference",
+                "memory_category": "Preferences",
                 "preferred": preferred,
                 "compared_to": other,
                 "topic_fingerprint": (

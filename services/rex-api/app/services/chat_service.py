@@ -199,7 +199,7 @@ class ChatService(ChatVoiceMetadataMixin):
             unsupported_actions=unsupported_actions,
             intent_decision=intent_decision,
             memory_status=structured_context.get("memory_status"),
-            old_chat_evidence_loaded=self._has_old_chat_evidence(ai_messages),
+            chat_search_results_loaded=self._has_chat_search_results(ai_messages),
         )
         assistant_message = await self.memory_service.save_message(
             conversation_id,
@@ -361,7 +361,7 @@ class ChatService(ChatVoiceMetadataMixin):
             unsupported_actions=unsupported_actions,
             intent_decision=intent_decision,
             memory_status=structured_context.get("memory_status"),
-            old_chat_evidence_loaded=self._has_old_chat_evidence(ai_messages),
+            chat_search_results_loaded=self._has_chat_search_results(ai_messages),
         )
         assistant_message = await self.memory_service.save_message(
             conversation_id,
@@ -437,7 +437,7 @@ class ChatService(ChatVoiceMetadataMixin):
         unsupported_actions: list[str],
         intent_decision,
         memory_status: object = None,
-        old_chat_evidence_loaded: bool = False,
+        chat_search_results_loaded: bool = False,
     ) -> str:
         response = safe_pending_action_response(
             assistant_response,
@@ -454,16 +454,16 @@ class ChatService(ChatVoiceMetadataMixin):
         )
         response = safe_old_chat_search_response(
             response,
-            old_chat_evidence_loaded=old_chat_evidence_loaded,
+            chat_search_results_loaded=chat_search_results_loaded,
         )
         if intent_decision.intent in {RexIntent.MEMORY_SAVE, RexIntent.MEMORY_UPDATE}:
             return safe_unexecuted_memory_response(response)
         return response
 
-    def _has_old_chat_evidence(self, messages: list[dict]) -> bool:
+    def _has_chat_search_results(self, messages: list[dict]) -> bool:
         for message in messages:
             content = message.get("content")
-            if isinstance(content, str) and "old chat evidence" in content:
+            if isinstance(content, str) and "Relevant chat search results:" in content:
                 return True
         return False
 

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MemoryItem {
 
- String get id;@JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) MemoryType get memoryType; String get content;@JsonKey(name: 'source_conversation_id') String? get sourceConversationId;@JsonKey(name: 'source_message_id') String? get sourceMessageId; int get importance; bool get active;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;@JsonKey(name: 'last_accessed_at') DateTime? get lastAccessedAt;
+ String get id;@JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) MemoryType get memoryType; String get content;@JsonKey(name: 'source_conversation_id') String? get sourceConversationId;@JsonKey(name: 'source_message_id') String? get sourceMessageId; int get importance; bool get active; Map<String, dynamic> get metadata;@JsonKey(name: 'created_at') DateTime? get createdAt;@JsonKey(name: 'updated_at') DateTime? get updatedAt;@JsonKey(name: 'last_accessed_at') DateTime? get lastAccessedAt;
 /// Create a copy of MemoryItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $MemoryItemCopyWith<MemoryItem> get copyWith => _$MemoryItemCopyWithImpl<MemoryI
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MemoryItem&&(identical(other.id, id) || other.id == id)&&(identical(other.memoryType, memoryType) || other.memoryType == memoryType)&&(identical(other.content, content) || other.content == content)&&(identical(other.sourceConversationId, sourceConversationId) || other.sourceConversationId == sourceConversationId)&&(identical(other.sourceMessageId, sourceMessageId) || other.sourceMessageId == sourceMessageId)&&(identical(other.importance, importance) || other.importance == importance)&&(identical(other.active, active) || other.active == active)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.lastAccessedAt, lastAccessedAt) || other.lastAccessedAt == lastAccessedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MemoryItem&&(identical(other.id, id) || other.id == id)&&(identical(other.memoryType, memoryType) || other.memoryType == memoryType)&&(identical(other.content, content) || other.content == content)&&(identical(other.sourceConversationId, sourceConversationId) || other.sourceConversationId == sourceConversationId)&&(identical(other.sourceMessageId, sourceMessageId) || other.sourceMessageId == sourceMessageId)&&(identical(other.importance, importance) || other.importance == importance)&&(identical(other.active, active) || other.active == active)&&const DeepCollectionEquality().equals(other.metadata, metadata)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.lastAccessedAt, lastAccessedAt) || other.lastAccessedAt == lastAccessedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,memoryType,content,sourceConversationId,sourceMessageId,importance,active,createdAt,updatedAt,lastAccessedAt);
+int get hashCode => Object.hash(runtimeType,id,memoryType,content,sourceConversationId,sourceMessageId,importance,active,const DeepCollectionEquality().hash(metadata),createdAt,updatedAt,lastAccessedAt);
 
 @override
 String toString() {
-  return 'MemoryItem(id: $id, memoryType: $memoryType, content: $content, sourceConversationId: $sourceConversationId, sourceMessageId: $sourceMessageId, importance: $importance, active: $active, createdAt: $createdAt, updatedAt: $updatedAt, lastAccessedAt: $lastAccessedAt)';
+  return 'MemoryItem(id: $id, memoryType: $memoryType, content: $content, sourceConversationId: $sourceConversationId, sourceMessageId: $sourceMessageId, importance: $importance, active: $active, metadata: $metadata, createdAt: $createdAt, updatedAt: $updatedAt, lastAccessedAt: $lastAccessedAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $MemoryItemCopyWith<$Res>  {
   factory $MemoryItemCopyWith(MemoryItem value, $Res Function(MemoryItem) _then) = _$MemoryItemCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) MemoryType memoryType, String content,@JsonKey(name: 'source_conversation_id') String? sourceConversationId,@JsonKey(name: 'source_message_id') String? sourceMessageId, int importance, bool active,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt,@JsonKey(name: 'last_accessed_at') DateTime? lastAccessedAt
+ String id,@JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) MemoryType memoryType, String content,@JsonKey(name: 'source_conversation_id') String? sourceConversationId,@JsonKey(name: 'source_message_id') String? sourceMessageId, int importance, bool active, Map<String, dynamic> metadata,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt,@JsonKey(name: 'last_accessed_at') DateTime? lastAccessedAt
 });
 
 
@@ -65,7 +65,7 @@ class _$MemoryItemCopyWithImpl<$Res>
 
 /// Create a copy of MemoryItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? memoryType = null,Object? content = null,Object? sourceConversationId = freezed,Object? sourceMessageId = freezed,Object? importance = null,Object? active = null,Object? createdAt = freezed,Object? updatedAt = freezed,Object? lastAccessedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? memoryType = null,Object? content = null,Object? sourceConversationId = freezed,Object? sourceMessageId = freezed,Object? importance = null,Object? active = null,Object? metadata = null,Object? createdAt = freezed,Object? updatedAt = freezed,Object? lastAccessedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,memoryType: null == memoryType ? _self.memoryType : memoryType // ignore: cast_nullable_to_non_nullable
@@ -74,7 +74,8 @@ as String,sourceConversationId: freezed == sourceConversationId ? _self.sourceCo
 as String?,sourceMessageId: freezed == sourceMessageId ? _self.sourceMessageId : sourceMessageId // ignore: cast_nullable_to_non_nullable
 as String?,importance: null == importance ? _self.importance : importance // ignore: cast_nullable_to_non_nullable
 as int,active: null == active ? _self.active : active // ignore: cast_nullable_to_non_nullable
-as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as bool,metadata: null == metadata ? _self.metadata : metadata // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastAccessedAt: freezed == lastAccessedAt ? _self.lastAccessedAt : lastAccessedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
@@ -162,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other)  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other)  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active,  Map<String, dynamic> metadata, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MemoryItem() when $default != null:
-return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversationId,_that.sourceMessageId,_that.importance,_that.active,_that.createdAt,_that.updatedAt,_that.lastAccessedAt);case _:
+return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversationId,_that.sourceMessageId,_that.importance,_that.active,_that.metadata,_that.createdAt,_that.updatedAt,_that.lastAccessedAt);case _:
   return orElse();
 
 }
@@ -183,10 +184,10 @@ return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversation
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other)  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other)  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active,  Map<String, dynamic> metadata, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)  $default,) {final _that = this;
 switch (_that) {
 case _MemoryItem():
-return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversationId,_that.sourceMessageId,_that.importance,_that.active,_that.createdAt,_that.updatedAt,_that.lastAccessedAt);case _:
+return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversationId,_that.sourceMessageId,_that.importance,_that.active,_that.metadata,_that.createdAt,_that.updatedAt,_that.lastAccessedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +204,10 @@ return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversation
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other)  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other)  MemoryType memoryType,  String content, @JsonKey(name: 'source_conversation_id')  String? sourceConversationId, @JsonKey(name: 'source_message_id')  String? sourceMessageId,  int importance,  bool active,  Map<String, dynamic> metadata, @JsonKey(name: 'created_at')  DateTime? createdAt, @JsonKey(name: 'updated_at')  DateTime? updatedAt, @JsonKey(name: 'last_accessed_at')  DateTime? lastAccessedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _MemoryItem() when $default != null:
-return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversationId,_that.sourceMessageId,_that.importance,_that.active,_that.createdAt,_that.updatedAt,_that.lastAccessedAt);case _:
+return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversationId,_that.sourceMessageId,_that.importance,_that.active,_that.metadata,_that.createdAt,_that.updatedAt,_that.lastAccessedAt);case _:
   return null;
 
 }
@@ -218,7 +219,7 @@ return $default(_that.id,_that.memoryType,_that.content,_that.sourceConversation
 @JsonSerializable()
 
 class _MemoryItem implements MemoryItem {
-  const _MemoryItem({required this.id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) required this.memoryType, required this.content, @JsonKey(name: 'source_conversation_id') this.sourceConversationId, @JsonKey(name: 'source_message_id') this.sourceMessageId, required this.importance, required this.active, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt, @JsonKey(name: 'last_accessed_at') this.lastAccessedAt});
+  const _MemoryItem({required this.id, @JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) required this.memoryType, required this.content, @JsonKey(name: 'source_conversation_id') this.sourceConversationId, @JsonKey(name: 'source_message_id') this.sourceMessageId, required this.importance, required this.active, final  Map<String, dynamic> metadata = const <String, dynamic>{}, @JsonKey(name: 'created_at') this.createdAt, @JsonKey(name: 'updated_at') this.updatedAt, @JsonKey(name: 'last_accessed_at') this.lastAccessedAt}): _metadata = metadata;
   factory _MemoryItem.fromJson(Map<String, dynamic> json) => _$MemoryItemFromJson(json);
 
 @override final  String id;
@@ -228,6 +229,13 @@ class _MemoryItem implements MemoryItem {
 @override@JsonKey(name: 'source_message_id') final  String? sourceMessageId;
 @override final  int importance;
 @override final  bool active;
+ final  Map<String, dynamic> _metadata;
+@override@JsonKey() Map<String, dynamic> get metadata {
+  if (_metadata is EqualUnmodifiableMapView) return _metadata;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_metadata);
+}
+
 @override@JsonKey(name: 'created_at') final  DateTime? createdAt;
 @override@JsonKey(name: 'updated_at') final  DateTime? updatedAt;
 @override@JsonKey(name: 'last_accessed_at') final  DateTime? lastAccessedAt;
@@ -245,16 +253,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MemoryItem&&(identical(other.id, id) || other.id == id)&&(identical(other.memoryType, memoryType) || other.memoryType == memoryType)&&(identical(other.content, content) || other.content == content)&&(identical(other.sourceConversationId, sourceConversationId) || other.sourceConversationId == sourceConversationId)&&(identical(other.sourceMessageId, sourceMessageId) || other.sourceMessageId == sourceMessageId)&&(identical(other.importance, importance) || other.importance == importance)&&(identical(other.active, active) || other.active == active)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.lastAccessedAt, lastAccessedAt) || other.lastAccessedAt == lastAccessedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MemoryItem&&(identical(other.id, id) || other.id == id)&&(identical(other.memoryType, memoryType) || other.memoryType == memoryType)&&(identical(other.content, content) || other.content == content)&&(identical(other.sourceConversationId, sourceConversationId) || other.sourceConversationId == sourceConversationId)&&(identical(other.sourceMessageId, sourceMessageId) || other.sourceMessageId == sourceMessageId)&&(identical(other.importance, importance) || other.importance == importance)&&(identical(other.active, active) || other.active == active)&&const DeepCollectionEquality().equals(other._metadata, _metadata)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.lastAccessedAt, lastAccessedAt) || other.lastAccessedAt == lastAccessedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,memoryType,content,sourceConversationId,sourceMessageId,importance,active,createdAt,updatedAt,lastAccessedAt);
+int get hashCode => Object.hash(runtimeType,id,memoryType,content,sourceConversationId,sourceMessageId,importance,active,const DeepCollectionEquality().hash(_metadata),createdAt,updatedAt,lastAccessedAt);
 
 @override
 String toString() {
-  return 'MemoryItem(id: $id, memoryType: $memoryType, content: $content, sourceConversationId: $sourceConversationId, sourceMessageId: $sourceMessageId, importance: $importance, active: $active, createdAt: $createdAt, updatedAt: $updatedAt, lastAccessedAt: $lastAccessedAt)';
+  return 'MemoryItem(id: $id, memoryType: $memoryType, content: $content, sourceConversationId: $sourceConversationId, sourceMessageId: $sourceMessageId, importance: $importance, active: $active, metadata: $metadata, createdAt: $createdAt, updatedAt: $updatedAt, lastAccessedAt: $lastAccessedAt)';
 }
 
 
@@ -265,7 +273,7 @@ abstract mixin class _$MemoryItemCopyWith<$Res> implements $MemoryItemCopyWith<$
   factory _$MemoryItemCopyWith(_MemoryItem value, $Res Function(_MemoryItem) _then) = __$MemoryItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) MemoryType memoryType, String content,@JsonKey(name: 'source_conversation_id') String? sourceConversationId,@JsonKey(name: 'source_message_id') String? sourceMessageId, int importance, bool active,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt,@JsonKey(name: 'last_accessed_at') DateTime? lastAccessedAt
+ String id,@JsonKey(name: 'memory_type', unknownEnumValue: MemoryType.other) MemoryType memoryType, String content,@JsonKey(name: 'source_conversation_id') String? sourceConversationId,@JsonKey(name: 'source_message_id') String? sourceMessageId, int importance, bool active, Map<String, dynamic> metadata,@JsonKey(name: 'created_at') DateTime? createdAt,@JsonKey(name: 'updated_at') DateTime? updatedAt,@JsonKey(name: 'last_accessed_at') DateTime? lastAccessedAt
 });
 
 
@@ -282,7 +290,7 @@ class __$MemoryItemCopyWithImpl<$Res>
 
 /// Create a copy of MemoryItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? memoryType = null,Object? content = null,Object? sourceConversationId = freezed,Object? sourceMessageId = freezed,Object? importance = null,Object? active = null,Object? createdAt = freezed,Object? updatedAt = freezed,Object? lastAccessedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? memoryType = null,Object? content = null,Object? sourceConversationId = freezed,Object? sourceMessageId = freezed,Object? importance = null,Object? active = null,Object? metadata = null,Object? createdAt = freezed,Object? updatedAt = freezed,Object? lastAccessedAt = freezed,}) {
   return _then(_MemoryItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,memoryType: null == memoryType ? _self.memoryType : memoryType // ignore: cast_nullable_to_non_nullable
@@ -291,7 +299,8 @@ as String,sourceConversationId: freezed == sourceConversationId ? _self.sourceCo
 as String?,sourceMessageId: freezed == sourceMessageId ? _self.sourceMessageId : sourceMessageId // ignore: cast_nullable_to_non_nullable
 as String?,importance: null == importance ? _self.importance : importance // ignore: cast_nullable_to_non_nullable
 as int,active: null == active ? _self.active : active // ignore: cast_nullable_to_non_nullable
-as bool,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as bool,metadata: null == metadata ? _self._metadata : metadata // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,lastAccessedAt: freezed == lastAccessedAt ? _self.lastAccessedAt : lastAccessedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,

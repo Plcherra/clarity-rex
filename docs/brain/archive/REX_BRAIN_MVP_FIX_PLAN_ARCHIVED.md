@@ -87,15 +87,15 @@ High
 
 ## Group 3: Memory And Evidence Truth
 
-### Issue 5: Saved Memory And Old Chat Evidence Must Stay Separate
+### Issue 5: Saved Memory And Chat Search Results Must Stay Separate
 
 Problem:
 Rex needs to use old chat history without pretending it is saved memory.
 
 Fix Needed:
-- Label saved memory and old chat evidence separately in the prompt.
+- Label saved memory and chat search results separately in the prompt.
 - Tell the user when an answer came from chat history instead of saved memory.
-- Do not show unsaved chat facts in "What Clarity Knows."
+- Do not show unsaved chat content in "What Clarity Knows."
 - Save a chat fact only when the user confirms or the save rule clearly applies.
 - Keep saved memory editable and user-visible.
 
@@ -153,7 +153,7 @@ Fix Needed:
 - Keep default context small.
 - Retrieve only context related to the current intent.
 - Prefer short evidence snippets over full conversations.
-- Cap old chat evidence before prompt assembly.
+- Cap chat search results before prompt assembly.
 - Avoid loading broad structured context unless needed.
 
 Goal:
@@ -189,7 +189,7 @@ Rex Brain is MVP-ready when:
 - Rex uses minimal relevant context by default.
 - Rex searches saved memory and old chats for recall questions.
 - Rex searches across all chats, including the current conversation.
-- Rex clearly labels saved memory and old chat evidence.
+- Rex clearly labels saved memory and chat search results.
 - Rex reports degraded search instead of pretending nothing exists.
 - Rex only claims saved or completed actions after backend confirmation.
 - The Chats tab has simple search for old conversations and messages.

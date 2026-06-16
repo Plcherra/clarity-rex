@@ -15,7 +15,7 @@ Rex Brain is not a second app and not a heavy reasoning engine. Grok provides mo
 - Prefer good context over complex routing.
 - Keep prompts short and relevant.
 - Search saved memory and old chats when the user asks about past information.
-- Clearly separate saved memory from old chat evidence.
+- Clearly separate saved durable memory from chat search results.
 - Never claim a durable action happened unless the backend confirms it.
 - Say when memory, old chat search, financial data, or another source is unavailable or degraded.
 - Use the same financial data the user sees in Clarity.
@@ -23,37 +23,55 @@ Rex Brain is not a second app and not a heavy reasoning engine. Grok provides mo
 
 ## 3. Memory Truth
 
-Saved memory and old chat history are different.
+Only things that Rex explicitly saves with backend confirmation become durable memory.
 
-Saved memory is confirmed Clarity knowledge. It can appear in the "What Clarity Knows" screen and can be edited or deleted by the user.
+These saved memories must be organized into clear categories, such as People, Events, Places, Goals, Preferences, Facts, and other useful Clarity memory groups.
 
-Old chat evidence is something found in previous conversation messages. Rex can use it, but Rex must label it honestly.
+Only properly saved and categorized memories should appear in the "What Clarity Knows" / Knows page.
+
+If Rex saves anything, it is memory. There should be no such thing as saving something that is not durable memory.
+
+There should be no automatic or hidden saving of chat content into memory.
+
+Old chat messages are not saved memory. Rex should not treat old chat messages as evidence or saved memory unless the user explicitly asks to save them.
+
+Rex can search chats when the user asks recall questions, but search results remain chat history unless the user explicitly saves something as memory.
 
 Good:
-- "I do not have that saved as memory, but I found an old chat where you said your mom's birthday is June 18."
-- "I found this in chat history, not saved memory."
+- "I do not have that saved as memory, but I found a chat message where you said your mom's birthday is June 18."
+- "I found this by searching chats. It is not saved memory."
+- "I can save that as memory if you want."
 - "I tried to search memory and old chats, but chat search is degraded right now."
 
 Bad:
-- "I know your mom's birthday is June 18" when it only came from old chat evidence.
+- "I know your mom's birthday is June 18" when it only came from chat search.
 - "I do not know anything about your mom" when chat search failed or was not checked.
 - "I saved that" when the backend did not confirm a saved memory record.
+- Saving chat content automatically without a clear save action.
 
 ## 4. Old Chat Search
 
 Old chat search is part of Rex Brain MVP.
 
-When the user asks what Rex knows, remembers, or talked about before, Rex must search beyond the recent message window.
+Rex must be able to do strong keyword search across all user chats, including old conversations and the current one, when the user asks recall questions.
+
+Recall questions include:
+- "Do you remember..."
+- "What did I say about..."
+- "Search chats about..."
+- "Do you know anything about my mom?"
+
+When the user asks what Rex remembers, what they said, what Rex knows about a topic, or what was talked about before, Rex must search beyond the recent message window.
 
 Old chat search should:
 - Search all user chats, including the current conversation.
 - Use simple keyword search first.
 - Use aliases for common terms, such as mom, mother, mum, and mama.
-- Return only the most useful evidence for the current question.
+- Return only the most useful chat matches for the current question.
 - Avoid flooding the prompt with long chat history.
 - Report clearly when search is unavailable or degraded.
 
-Old chat search does not turn every past message into saved memory. Chat history is searchable evidence. Saved memory is curated knowledge.
+Old chat search does not turn past messages into memory. Chat history is searchable history. Saved memory is explicit, durable, categorized knowledge.
 
 ## 5. Prompt And Token Rules
 
@@ -62,7 +80,7 @@ Rex Brain must protect token usage.
 The prompt should include only what is useful for the current turn:
 - Short Rex behavior rules
 - Relevant saved memory
-- Relevant old chat evidence
+- Relevant chat search results when the user asks for recall
 - Relevant financial context
 - Recent conversation context
 - The user's latest message
@@ -118,8 +136,8 @@ Rex must not invent balances, budgets, spending totals, account names, merchants
 - Making MVP routing too complex.
 - Spending tokens on context the user did not ask for.
 - Searching only recent messages and calling that memory.
-- Treating old chat evidence as saved memory.
-- Saving every old chat mention as memory.
+- Treating old chat messages as saved memory.
+- Saving chat content automatically or secretly.
 - Saying "I do not know" when search failed or was not checked.
 - Hiding degraded memory, chat, or financial context.
 - Letting Rex and the UI use different data truth.

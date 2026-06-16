@@ -1,6 +1,7 @@
 from typing import Optional
 
 from app.services.prompt_constants import (
+    CHAT_SEARCH_RESULTS_PREFIX,
     FILE_CONTEXT_PREFIX,
     LONG_TERM_MEMORY_PREFIX,
     MAX_CONTEXT_CHARACTERS,
@@ -33,10 +34,7 @@ class PromptMemoryContextMixin:
             if not memory_type or not content:
                 continue
 
-            if memory_type == "old_chat_evidence":
-                line = f"- old chat evidence (not saved memory): {content}"
-            else:
-                line = f"- {memory_type}: {content}"
+            line = f"- {memory_type}: {content}"
 
             age_label = self._memory_age_label(
                 memory,
@@ -82,9 +80,72 @@ class PromptMemoryContextMixin:
         if not delta:
             return None
 
-        if memory_type == "old_chat_evidence":
-            return f"from {delta}"
         return f"saved {delta}"
+
+    def _chat_search_results_section(
+        self,
+        chat_search_results: list[dict],
+        time_context: Optional[dict],
+    ) -> Optional[str]:
+        lines = self._chat_search_result_lines_with_budget(
+            chat_search_results,
+            time_context,
+        )
+        if not lines:
+            return None
+        return f"{CHAT_SEARCH_RESULTS_PREFIX}{chr(10).join(lines)}"
+
+    def _chat_search_result_lines_with_budget(
+        self,
+        chat_search_results: list[dict],
+        time_context: Optional[dict],
+    ) -> list[str]:
+        lines = []
+        used_characters = 0
+
+        for result in chat_search_results:
+            content = str(result.get("content") or "").strip()
+            if not content:
+                continue
+
+            line = f"- chat_history: {content}"
+            age_label = self._chat_search_age_label(result, time_context)
+            if age_label:
+                line = f"{line} ({age_label})"
+            relevance_reason = result.get("relevance_reason")
+            if relevance_reason:
+                line = f"{line} (why recalled: {relevance_reason})"
+
+            remaining_characters = MAX_MEMORY_CONTEXT_CHARACTERS - used_characters
+            if remaining_characters <= 0:
+                break
+            if len(line) > remaining_characters:
+                if remaining_characters < 40:
+                    break
+                line = f"{line[: remaining_characters - 22].rstrip()} [truncated]"
+
+            lines.append(line)
+            used_characters += len(line) + 1
+
+        return lines
+
+    def _chat_search_age_label(
+        self,
+        result: dict,
+        time_context: Optional[dict],
+    ) -> Optional[str]:
+        timestamp = result.get("timestamp") or result.get("created_at")
+        if not timestamp:
+            return None
+        now = None
+        if time_context:
+            now = self.time_context_service.parse_timestamp(
+                time_context.get("iso_timestamp"),
+            )
+        delta = self.time_context_service.delta_from(timestamp, now=now)
+        if not delta:
+            return None
+        return f"from {delta}"
 
     def _messages_with_file_context(
         self,

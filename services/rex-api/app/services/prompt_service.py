@@ -128,4 +128,11 @@ class PromptService(
         if memory_section:
             sections.append(memory_section)
 
+        chat_search_section = self._chat_search_results_section(
+            structured_context.get("chat_search_results") or [],
+            time_context,
+        )
+        if chat_search_section:
+            sections.append(chat_search_section)
+
         return sections
