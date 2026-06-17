@@ -8,13 +8,16 @@ import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/rex/voice/presentation/widgets/voice_call_controls.dart';
 
 class VoiceChatPage extends ConsumerWidget {
-  const VoiceChatPage({super.key});
+  const VoiceChatPage({super.key, this.onOpenChat});
+
+  final VoidCallback? onOpenChat;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final voice = ref.watch(voiceCallProvider);
     final voiceController = ref.read(voiceCallProvider.notifier);
     final chat = ref.watch(chatProvider);
+    final currentConversation = ref.watch(currentConversationProvider);
 
     Future<void> startCall() async {
       final started = await voiceController.startCall(
@@ -39,6 +42,11 @@ class VoiceChatPage extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
           child: Column(
             children: [
+              _VoiceSessionHeader(
+                title: currentConversation?.title ?? 'Current chat',
+                state: voice,
+                onOpenChat: onOpenChat,
+              ),
               Expanded(
                 child: _MinimalVoiceBody(state: voice, onStart: startCall),
               ),
@@ -55,6 +63,89 @@ class VoiceChatPage extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VoiceSessionHeader extends StatelessWidget {
+  const _VoiceSessionHeader({
+    required this.title,
+    required this.state,
+    required this.onOpenChat,
+  });
+
+  final String title;
+  final VoiceCallState state;
+  final VoidCallback? onOpenChat;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: RexUiTokens.surface.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
+        border: Border.all(color: RexUiTokens.border.withValues(alpha: 0.68)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        child: Row(
+          children: [
+            Icon(
+              state.isCallActive
+                  ? Icons.graphic_eq_rounded
+                  : Icons.call_rounded,
+              color: state.isCallActive
+                  ? RexUiTokens.accent
+                  : RexUiTokens.textMuted,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Rex voice',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: RexUiTokens.text,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: RexUiTokens.textSubtle,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (onOpenChat != null)
+              TextButton.icon(
+                onPressed: onOpenChat,
+                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 17),
+                label: const Text('Open Chat'),
+                style: TextButton.styleFrom(
+                  foregroundColor: RexUiTokens.accent,
+                  textStyle: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+          ],
         ),
       ),
     );

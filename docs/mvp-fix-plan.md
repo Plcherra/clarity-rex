@@ -449,6 +449,9 @@ High
 
 ### Issue 5: Manage Categories Scroll Bug
 
+Status:
+Complete for code. Needs device smoke verification.
+
 Issue:
 Manage Categories cannot reliably scroll to all saved categories on device.
 
@@ -458,9 +461,9 @@ Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\features\budgets\presentation\category_management_sheet_sections.dart`
 
 Fix Needed:
-- Rework the category management modal so content has one predictable scroll container.
-- Verify the list reaches the final category on small iPhone screens.
-- Keep tabs and the add button usable without blocking list scroll.
+- [Done] Rework the category management modal so content has one predictable scroll container.
+- [Manual] Verify the list reaches the final category on small iPhone screens.
+- [Done] Keep tabs and the add button usable without blocking list scroll.
 
 Goal After Fix:
 Users can open Manage Categories and scroll through every saved category without layout traps.
@@ -469,6 +472,9 @@ Priority:
 High
 
 ### Issue 6: Account Cards Are Still Too Crowded
+
+Status:
+Complete for code. Needs device smoke verification.
 
 Issue:
 Account cards still feel crowded and can make account identity hard to read.
@@ -480,10 +486,10 @@ Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\features\accounts\presentation\accounts_screen.dart`
 
 Fix Needed:
-- Keep the shared display name format: institution + account type + mask.
-- Give the account title more horizontal space.
-- Move secondary metadata and actions so they do not crowd the account name.
-- Verify the same display name is used by Rex and the UI.
+- [Done] Keep the shared display name format: institution + account type + mask.
+- [Done] Give the account title more horizontal space.
+- [Done] Move secondary metadata and actions so they do not crowd the account name.
+- [Done] Verify Rex and the UI both use `account.displayName`.
 
 Goal After Fix:
 Users can instantly recognize each account, and Rex uses the exact same account names.
@@ -516,6 +522,9 @@ High
 
 ### Issue 7A: Voice UI Must Be One Feature, Not Two Separate Experiences
 
+Status:
+Complete for code. Needs device smoke verification.
+
 Issue:
 Manual testing showed voice feels like two different features. Starting voice from the Chat tab keeps the call inside the chat with an inline voice panel. Opening the Voice tab shows a separate full-screen voice interface. Backend voice mostly routes through the same chat brain, but the mobile UI makes voice feel split and inconsistent.
 
@@ -530,13 +539,13 @@ Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\voice_stream_session.py`
 
 Fix Needed:
-- Decide the MVP voice product shape: voice should be one mode of the same assistant conversation, not a separate assistant.
-- Make the Voice tab and Chat call button use the same active conversation and the same visible call state.
-- Avoid two different voice layouts with different behavior unless one is only a presentation wrapper around the same call mode.
-- If the Voice tab remains, make it clearly open/start the same chat voice call rather than creating a separate-feeling feature.
-- Ensure voice transcripts and assistant replies are saved into the same conversation shown in Chat and Chats.
-- Keep backend voice on the same `chat_service.send_message` Rex Brain path.
-- Add manual tests for starting voice from Chat, switching to Voice, returning to Chat, and confirming the conversation/history remains consistent.
+- [Done] Decide the MVP voice product shape: voice should be one mode of the same assistant conversation, not a separate assistant.
+- [Done] Make the Voice tab and Chat call button use the same active conversation and the same visible call state.
+- [Done] Avoid two different voice layouts with different behavior unless one is only a presentation wrapper around the same call mode.
+- [Done] If the Voice tab remains, make it clearly open/start the same chat voice call rather than creating a separate-feeling feature.
+- [Done] Ensure voice transcripts and assistant replies are saved into the same conversation shown in Chat and Chats.
+- [Done] Keep backend voice on the same `chat_service.send_message` Rex Brain path.
+- [Manual] Add manual tests for starting voice from Chat, switching to Voice, returning to Chat, and confirming the conversation/history remains consistent.
 
 Goal After Fix:
 Voice feels like one Rex conversation mode. The user should not have to understand two different voice systems.
@@ -545,6 +554,9 @@ Priority:
 High
 
 ### Issue 7B: Arbitrary Chat Recall Hardening
+
+Status:
+Complete for code. Needs manual device validation.
 
 [Added after Rex Brain search audit against `docs/brain/REX_BRAIN_RULES.md`, `docs/brain/REX_BRAIN_ARCHITECTURE.md`, and `docs/brain/REX_BRAIN_HYBRID_CHAT_SEARCH.md`]
 
@@ -558,37 +570,50 @@ Current Alignment:
 - Rex reports degraded chat search through memory status.
 - Supabase transport scopes authenticated reads/writes by `user_id`.
 - Migrations define user-scoped conversations/messages with RLS.
+- Shared keyword expansion and scoring now live in `chat_search_ranking.py`.
+- Rex internal recall and user-visible Chats search now use the same keyword expansion/ranking helper.
+- Search results now include relevance score, matched terms, and search reason metadata.
+- Tests cover immigration, purchases, PC/object recall, ranked user-authored matches, public search response metadata, multi-user isolation, and repeated-conversation ranking.
+- `services/rex-api/supabase_schema.sql` now matches the user-scoped assistant table migration and includes RLS policies.
 
 Remaining Gaps:
-- Search ranking is still basic and not clearly scored by exact match, user-authored content, recency, repeated mentions, and conversation relevance.
-- Query expansion is duplicated between Rex internal recall and user-visible Chats search.
+- Ranking is still keyword-only; semantic/hybrid search remains later work.
 - Alias coverage is still manual and limited, so arbitrary topics may miss unless the user repeats similar wording.
-- Conversation clusters are useful, but there is no explicit score explaining why one old conversation outranked another.
-- Service-layer tests now prove message search, conversation search, and conversation message context fetches are scoped by authenticated `user_id`; broader ranking and shared result-shaping tests still need work.
-- `services/rex-api/supabase_schema.sql` is stale compared with migrations and does not show the current user-scoped assistant tables.
-- The user-visible Chats tab search and Rex internal recall share repository behavior, but their ranking/result shape is not fully unified.
+- Manual validation is still needed on device for arbitrary recall across multiple old chats.
 
 Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\chat_context_service.py`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\conversation_repository.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\chat_search_ranking.py`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\supabase_memory_transport.py`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\routes\conversations.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\models\conversation.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\data\conversation_api.dart`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\prompt_memory_context.py`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\supabase_schema.sql`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\supabase\migrations\000010_create_rex_assistant_tables.sql`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_chat_context_service.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_chat_search_ranking.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_conversation_repository_search.py`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_conversation_routes.py`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_user_scoped_memory_service.py`
 
 Fix Needed:
-- Create one reusable keyword expansion/ranking helper used by both Rex internal recall and user-visible Chats search.
-- Add explicit scoring for exact matches, expanded matches, user-authored messages, recency, repeated mentions, and conversation-level relevance.
-- Return or log search status with enough detail to know whether exact, expanded, or conversation-context search found the result.
-- Add broad arbitrary-topic tests beyond family/birthday/games: people, places, purchases, work, immigration, preferences, goals, money, and objects.
-- Add broader multi-user tests around ranked result shaping after the reusable search helper exists.
-- Refresh `services/rex-api/supabase_schema.sql` so the documented schema matches the user-scoped migrations.
-- Keep prompt context capped and labeled as chat history, not saved memory.
-- Keep degraded/no-result truth enforcement unchanged: Rex must not say "nothing came up" unless search actually completed.
+- [Done] Create one reusable keyword expansion/ranking helper used by both Rex internal recall and user-visible Chats search.
+- [Done] Add explicit scoring for exact matches, expanded matches, user-authored messages, recency, repeated mentions, and conversation-level relevance.
+- [Done] Return search metadata with enough detail to know whether exact, expanded, or conversation-context search found the result.
+- [Done] Add broad arbitrary-topic tests beyond family/birthday/games: people, purchases, work/immigration, preferences, goals, money, and objects.
+- [Done] Add broader multi-user tests around ranked result shaping.
+- [Done] Refresh `services/rex-api/supabase_schema.sql` so the documented schema matches the user-scoped migrations.
+- [Done] Keep prompt context capped and labeled as chat history, not saved memory.
+- [Done] Keep degraded/no-result truth enforcement unchanged: Rex must not say "nothing came up" unless search actually completed.
+
+Manual Validation Checklist:
+- Ask from a new chat: "What do you know about my mom?" and confirm Rex searches older chats without claiming saved memory.
+- Ask: "Did I mention anything else about that?" and confirm Rex includes nearby related old-chat details.
+- Ask arbitrary topics from old chats: games, PC, immigration/EAD, purchases, work, places, goals, and money.
+- Confirm Chats tab search returns similar conversations/results for the same keywords.
+- Confirm no result from another user/account can appear.
 
 Goal After Fix:
 Rex has a trustworthy MVP keyword recall baseline for arbitrary user topics. It is still not semantic search, but it is user-scoped, ranked, generic, test-covered, and honest.

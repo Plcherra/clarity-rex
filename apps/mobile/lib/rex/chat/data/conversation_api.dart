@@ -145,6 +145,9 @@ class ConversationSearchResult {
     this.conversationTitle,
     this.conversationTimestamp,
     this.message,
+    this.relevanceScore,
+    this.searchReason,
+    this.matchedTerms = const <String>[],
   });
 
   final String conversationId;
@@ -153,6 +156,9 @@ class ConversationSearchResult {
   final String? conversationTitle;
   final DateTime? conversationTimestamp;
   final ChatApiMessage? message;
+  final double? relevanceScore;
+  final String? searchReason;
+  final List<String> matchedTerms;
 
   factory ConversationSearchResult.fromJson(Map<String, dynamic> json) {
     final message = json['message'];
@@ -165,8 +171,25 @@ class ConversationSearchResult {
       message: message is Map<String, dynamic>
           ? ChatApiMessage.fromJson(message)
           : null,
+      relevanceScore: _doubleOrNull(json['relevance_score']),
+      searchReason: json['search_reason'] as String?,
+      matchedTerms:
+          (json['matched_terms'] as List<dynamic>?)?.whereType<String>().toList(
+            growable: false,
+          ) ??
+          const <String>[],
     );
   }
+}
+
+double? _doubleOrNull(Object? value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value);
+  }
+  return null;
 }
 
 DateTime? _dateTimeOrNull(Object? value) {

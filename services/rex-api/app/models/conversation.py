@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MessageResponse(BaseModel):
@@ -25,3 +25,6 @@ class ConversationSearchResultResponse(BaseModel):
     message: Optional[MessageResponse] = None
     match_type: str
     preview: str
+    relevance_score: Optional[float] = None
+    search_reason: Optional[str] = None
+    matched_terms: list[str] = Field(default_factory=list)

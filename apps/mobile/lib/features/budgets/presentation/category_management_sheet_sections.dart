@@ -227,8 +227,27 @@ class _CategoryListSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    final rows = savedCategories
+        .map((category) {
+          final custom = isCustomCategory(category);
+          return _CategoryManagementRow(
+            category: category,
+            usage: categoryUsageFor(category),
+            custom: custom,
+            saving: saving,
+            onRename: custom ? () => onRenameCategory(category) : null,
+            onDelete: custom ? () => onDeleteCategory(category) : null,
+            onMerge: custom
+                ? () => onMergeCategory(category, savedCategories)
+                : null,
+            onToggleHidden: custom
+                ? () => onToggleCategoryHidden(category)
+                : null,
+          );
+        })
+        .toList(growable: false);
+    return ListView(
+      padding: EdgeInsets.zero,
       children: [
         FilledButton.icon(
           onPressed: saving ? null : onAddCategory,
@@ -241,31 +260,10 @@ class _CategoryListSection extends StatelessWidget {
         if (savedCategories.isEmpty)
           const _CategoryEmptyState(message: 'No saved categories yet.')
         else
-          Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: savedCategories.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final category = savedCategories[index];
-                final custom = isCustomCategory(category);
-                return _CategoryManagementRow(
-                  category: category,
-                  usage: categoryUsageFor(category),
-                  custom: custom,
-                  saving: saving,
-                  onRename: custom ? () => onRenameCategory(category) : null,
-                  onDelete: custom ? () => onDeleteCategory(category) : null,
-                  onMerge: custom
-                      ? () => onMergeCategory(category, savedCategories)
-                      : null,
-                  onToggleHidden: custom
-                      ? () => onToggleCategoryHidden(category)
-                      : null,
-                );
-              },
-            ),
-          ),
+          for (var index = 0; index < rows.length; index++) ...[
+            if (index > 0) const SizedBox(height: 8),
+            rows[index],
+          ],
         const SizedBox(height: 14),
         Text(
           'Built-in budget categories are always available: ${kSelectableSpendCategories.length}. Used custom categories must be merged or hidden before deletion.',
@@ -273,6 +271,7 @@ class _CategoryListSection extends StatelessWidget {
             color: cs.onSurface.withValues(alpha: 0.48),
           ),
         ),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -308,34 +307,32 @@ class _MerchantRulesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    final rows = merchantRules
+        .map(
+          (rule) => _MerchantRuleManagementRow(
+            rule: rule,
+            category: categoryById[rule.categoryId],
+            stats: merchantRuleStatsFor(rule),
+            saving: saving,
+            onEditCategory: () =>
+                onEditMerchantRuleCategory(rule, savedCategories),
+            onToggleDisabled: () => onToggleMerchantRuleDisabled(rule),
+            onDelete: () => onDeleteMerchantRule(rule),
+          ),
+        )
+        .toList(growable: false);
+    return ListView(
+      padding: EdgeInsets.zero,
       children: [
         _SectionLabel(text: 'Merchant rules'),
         const SizedBox(height: 8),
         if (merchantRules.isEmpty)
           const _CategoryEmptyState(message: 'No learned merchant rules yet.')
         else
-          Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: merchantRules.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final rule = merchantRules[index];
-                return _MerchantRuleManagementRow(
-                  rule: rule,
-                  category: categoryById[rule.categoryId],
-                  stats: merchantRuleStatsFor(rule),
-                  saving: saving,
-                  onEditCategory: () =>
-                      onEditMerchantRuleCategory(rule, savedCategories),
-                  onToggleDisabled: () => onToggleMerchantRuleDisabled(rule),
-                  onDelete: () => onDeleteMerchantRule(rule),
-                );
-              },
-            ),
-          ),
+          for (var index = 0; index < rows.length; index++) ...[
+            if (index > 0) const SizedBox(height: 8),
+            rows[index],
+          ],
         const SizedBox(height: 14),
         Text(
           'Merchant rules affect future CSV imports. Editing a rule does not rewrite existing transactions.',
@@ -343,6 +340,7 @@ class _MerchantRulesSection extends StatelessWidget {
             color: cs.onSurface.withValues(alpha: 0.48),
           ),
         ),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -355,8 +353,8 @@ class _AuditTrailSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
+      padding: EdgeInsets.zero,
       children: [
         _SectionLabel(text: 'Recent changes'),
         const SizedBox(height: 8),
@@ -365,16 +363,11 @@ class _AuditTrailSection extends StatelessWidget {
             message: 'No financial changes recorded yet.',
           )
         else
-          Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: auditEvents.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                return _AuditEventRow(event: auditEvents[index]);
-              },
-            ),
-          ),
+          for (var index = 0; index < auditEvents.length; index++) ...[
+            if (index > 0) const SizedBox(height: 8),
+            _AuditEventRow(event: auditEvents[index]),
+          ],
+        const SizedBox(height: 8),
       ],
     );
   }

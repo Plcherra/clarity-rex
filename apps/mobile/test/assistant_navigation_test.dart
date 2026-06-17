@@ -78,6 +78,40 @@ void main() {
     },
   );
 
+  testWidgets('Voice tab can return to the same chat surface', (tester) async {
+    await _pumpAssistantNavigation(tester);
+
+    TabController controller() {
+      return tester.widget<TabBar>(find.byType(TabBar)).controller!;
+    }
+
+    await tester.tap(find.byKey(AssistantTab.voice.key));
+    await tester.pumpAndSettle();
+
+    expect(controller().index, AssistantTab.voice.index);
+    expect(find.text('Rex voice'), findsOneWidget);
+    expect(find.text('Open Chat'), findsOneWidget);
+
+    await tester.tap(find.text('Open Chat'));
+    await tester.pumpAndSettle();
+
+    expect(controller().index, AssistantTab.chat.index);
+    expect(find.byType(TextField), findsOneWidget);
+  });
+
+  testWidgets('Voice tab starts the current chat voice call', (tester) async {
+    final voiceController = _FakeVoiceCallController();
+    await _pumpAssistantNavigation(tester, voiceController: voiceController);
+
+    await tester.tap(find.byKey(AssistantTab.voice.key));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Start voice'));
+    await tester.pump();
+
+    expect(voiceController.startCount, 1);
+  });
+
   testWidgets('Assistant navigation excludes unrelated global actions', (
     tester,
   ) async {

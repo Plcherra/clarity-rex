@@ -272,7 +272,7 @@ async def test_chat_context_loads_memory_only_for_memory_recall_intent():
             "exclude_conversation_id": None,
         },
         {
-            "query": "mom mother mum mama birthday birthdays date event",
+            "query": "mom mother mum mama birthday birthdays birthdate date event",
             "limit": 200,
             "exclude_conversation_id": None,
         },
@@ -930,6 +930,84 @@ async def test_chat_context_searches_short_pc_subject():
     assert result["id"] == "chat-conversation-pc"
     assert "first PC game" in result["content"]
     assert "Legacy of Kain" in result["content"]
+
+
+@pytest.mark.asyncio
+async def test_chat_context_searches_arbitrary_immigration_topic():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "immigration-ead",
+            "conversation_id": "conversation-immigration",
+            "role": "user",
+            "content": "My EAD renewal and USCIS paperwork are due soon.",
+            "timestamp": "2026-06-10T10:00:00Z",
+        },
+        {
+            "id": "immigration-plan",
+            "conversation_id": "conversation-immigration",
+            "role": "user",
+            "content": "I need to check my immigration status before the trip.",
+            "timestamp": "2026-06-10T10:01:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message="What did I say about immigration?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-immigration"
+    assert "EAD renewal" in result["content"]
+    assert "immigration status" in result["content"]
+    assert result["relevance_score"] > 0
+    assert "expanded_keywords" in result["query_modes"]
+
+
+@pytest.mark.asyncio
+async def test_chat_context_searches_arbitrary_purchase_and_object_topics():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "chair-purchase",
+            "conversation_id": "conversation-purchase",
+            "role": "user",
+            "content": "I am buying an ergonomic chair for the desk setup.",
+            "timestamp": "2026-06-10T10:00:00Z",
+        },
+        {
+            "id": "monitor-object",
+            "conversation_id": "conversation-purchase",
+            "role": "user",
+            "content": "The monitor I liked was the ultrawide one.",
+            "timestamp": "2026-06-10T10:01:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Search chats for purchases",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-purchase"
+    assert "ergonomic chair" in result["content"]
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="What did I say about the monitor?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-purchase"
+    assert "ultrawide" in result["content"]
 
 
 @pytest.mark.asyncio

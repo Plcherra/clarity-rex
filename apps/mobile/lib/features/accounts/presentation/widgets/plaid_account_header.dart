@@ -126,41 +126,37 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  SourceLabelChip(label: account.sourceLabel),
-                  PlaidAccountStatusPill(status: status),
-                ],
-              ),
-              const SizedBox(height: 5),
-              Text(
-                _lastSyncedLabel(lastSyncedAt),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: cs.onSurface.withValues(alpha: 0.52),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            SourceLabelChip(label: account.sourceLabel),
+            PlaidAccountStatusPill(status: status),
+          ],
+        ),
+        const SizedBox(height: 5),
+        Text(
+          _lastSyncedLabel(lastSyncedAt),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurface.withValues(alpha: 0.52),
+            fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(width: 10),
-        _PlaidAccountNetAndSync(
-          netCashFlow: item.netCashFlow,
-          status: status,
-          onResync: onResync,
-          onDisconnect: onDisconnect,
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: _PlaidAccountNetAndSync(
+            netCashFlow: item.netCashFlow,
+            status: status,
+            onResync: onResync,
+            onDisconnect: onDisconnect,
+          ),
         ),
       ],
     );

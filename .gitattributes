@@ -1,2 +1,5 @@
+.gitattributes text eol=lf
 *.md text eol=lf
 *.py text eol=lf
+*.dart text eol=lf
+*.sql text eol=lf

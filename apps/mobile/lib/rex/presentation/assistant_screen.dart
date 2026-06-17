@@ -221,7 +221,7 @@ class _AssistantTabContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (tab) {
       AssistantTab.chat => const ChatPage(showAppBar: false),
-      AssistantTab.voice => const VoiceChatPage(),
+      AssistantTab.voice => VoiceChatPage(onOpenChat: onConversationSelected),
       AssistantTab.memory => const MemoryPage(showAppBar: false),
       AssistantTab.goals => const AccountabilityPage(showAppBar: false),
       AssistantTab.chats => ConversationListPage(

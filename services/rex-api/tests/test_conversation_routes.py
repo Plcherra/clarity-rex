@@ -105,6 +105,9 @@ class FakeConversationMemoryService:
                         "message": None,
                         "match_type": "title",
                         "preview": title,
+                        "relevance_score": 4.6,
+                        "search_reason": "exact terms, conversation title",
+                        "matched_terms": ["work"],
                     }
                 )
                 if len(results) >= limit:
@@ -123,6 +126,9 @@ class FakeConversationMemoryService:
                     "message": message,
                     "match_type": "message",
                     "preview": message["content"],
+                    "relevance_score": 3.6,
+                    "search_reason": "exact terms, user-authored",
+                    "matched_terms": ["work"],
                 }
             )
             if len(results) >= limit:
@@ -211,6 +217,8 @@ def test_search_conversation_messages(client):
     assert data[0]["conversation_id"] == "conversation-1"
     assert data[0]["match_type"] == "title"
     assert data[0]["preview"] == "Work stress"
+    assert data[0]["relevance_score"] == 4.6
+    assert data[0]["matched_terms"] == ["work"]
     assert data[1]["message"]["id"] == "message-1"
     assert data[1]["preview"] == "I am stressed about work."
 

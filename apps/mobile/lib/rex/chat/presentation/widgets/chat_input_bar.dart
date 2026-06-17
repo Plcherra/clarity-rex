@@ -79,7 +79,7 @@ class ChatInputBar extends StatelessWidget {
                               ? Icons.graphic_eq_rounded
                               : Icons.call_rounded,
                           tooltip: isVoiceCallActive
-                              ? 'Voice call active'
+                              ? 'Show voice call'
                               : 'Start voice call',
                           onPressed: isLoading ? null : onStartVoice,
                           isActive: isVoiceCallActive,

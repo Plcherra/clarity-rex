@@ -231,9 +231,15 @@ class _ChatPageState extends ConsumerState<ChatPage>
               title: Text(currentConversation?.title ?? 'Rex'),
               actions: [
                 IconButton(
-                  onPressed: voiceCall.isCallActive ? null : _startVoiceCall,
-                  icon: const Icon(Icons.call_rounded),
-                  tooltip: 'Call Rex',
+                  onPressed: _startVoiceCall,
+                  icon: Icon(
+                    voiceCall.isCallActive
+                        ? Icons.graphic_eq_rounded
+                        : Icons.call_rounded,
+                  ),
+                  tooltip: voiceCall.isCallActive
+                      ? 'Show voice call'
+                      : 'Call Rex',
                 ),
               ],
             )
@@ -282,7 +288,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
                   : _onSendTapped,
               onPickAttachment: _pickAttachment,
               onRemoveAttachment: _removeAttachment,
-              onStartVoice: voiceCall.isCallActive ? null : _startVoiceCall,
+              onStartVoice: _startVoiceCall,
               isVoiceCallActive: voiceCall.isCallActive,
               attachmentName: _attachmentName,
               attachmentSize: _attachmentSize,

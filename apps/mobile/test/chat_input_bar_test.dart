@@ -66,6 +66,37 @@ void main() {
     expect(find.text('Deep Think on'), findsNothing);
   });
 
+  testWidgets('ChatInputBar keeps voice control usable during active calls', (
+    tester,
+  ) async {
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+
+    var voiceTapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.bottomCenter,
+            child: ChatInputBar(
+              controller: controller,
+              isVoiceCallActive: true,
+              onStartVoice: () => voiceTapped = true,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byTooltip('Show voice call'), findsOneWidget);
+    expect(find.byTooltip('Start voice call'), findsNothing);
+
+    await tester.tap(find.byTooltip('Show voice call'));
+
+    expect(voiceTapped, isTrue);
+  });
+
   testWidgets('ChatInputBar supports longer drafted messages', (tester) async {
     final controller = TextEditingController(
       text:

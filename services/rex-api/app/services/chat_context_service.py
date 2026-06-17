@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from app.services.accountability_service import AccountabilityService
+from app.services.chat_search_ranking import ChatSearchRanking
 from app.services.goal_context_service import GoalContextService
 from app.services.prompt_service import PromptService
 from app.services.rex_intent_router import RexIntentDecision
@@ -59,71 +60,6 @@ CHAT_SEARCH_NO_RESULT_MARKERS = (
     "no mention",
     "not saved",
 )
-CHAT_SEARCH_QUERY_STOP_WORDS = {
-    "about",
-    "all",
-    "anything",
-    "chat",
-    "chats",
-    "check",
-    "checked",
-    "conversation",
-    "conversations",
-    "did",
-    "do",
-    "does",
-    "else",
-    "find",
-    "for",
-    "from",
-    "have",
-    "know",
-    "memory",
-    "mention",
-    "mentioned",
-    "old",
-    "remember",
-    "saved",
-    "say",
-    "search",
-    "tell",
-    "that",
-    "the",
-    "there",
-    "what",
-    "with",
-    "you",
-    "your",
-}
-CHAT_SEARCH_TERM_ALIASES = {
-    "mom": ("mom", "mother", "mum", "mama"),
-    "mother": ("mom", "mother", "mum", "mama"),
-    "mum": ("mom", "mother", "mum", "mama"),
-    "mama": ("mom", "mother", "mum", "mama"),
-    "dad": ("dad", "father", "papa"),
-    "father": ("dad", "father", "papa"),
-    "papa": ("dad", "father", "papa"),
-    "parent": ("parent", "parents", "mom", "mother", "dad", "father"),
-    "parents": ("parent", "parents", "mom", "mother", "dad", "father"),
-    "family": ("family", "mom", "mother", "dad", "father"),
-    "birthday": ("birthday", "birthdays", "date", "event"),
-    "game": ("game", "games", "gaming", "play", "played"),
-    "games": ("game", "games", "gaming", "play", "played"),
-    "gaming": ("game", "games", "gaming", "play", "played"),
-    "pc": ("pc", "computer", "game", "games"),
-    "gift": ("gift", "gifts", "present", "send", "sent"),
-    "gifts": ("gift", "gifts", "present", "send", "sent"),
-    "money": ("money", "send", "sent", "cash", "gift"),
-    "payroll": ("payroll", "paycheck", "income", "work"),
-    "job": ("job", "work", "company"),
-    "work": ("work", "job", "company", "payroll"),
-    "place": ("place", "places", "city", "home", "live", "lived"),
-    "places": ("place", "places", "city", "home", "live", "lived"),
-    "preference": ("preference", "preferences", "prefer", "like", "likes"),
-    "preferences": ("preference", "preferences", "prefer", "like", "likes"),
-    "goal": ("goal", "goals", "plan", "plans"),
-    "goals": ("goal", "goals", "plan", "plans"),
-}
 CONTEXT_ERROR_KEY = "_context_error"
 CONTEXT_STATUS_KEY = "_context_status"
 
@@ -150,12 +86,14 @@ class ChatContextService:
         time_context_service: Optional[TimeContextService] = None,
         accountability_service: Optional[AccountabilityService] = None,
         goal_context_service: Optional[GoalContextService] = None,
+        chat_search_ranking: Optional[ChatSearchRanking] = None,
     ) -> None:
         self.memory_service = memory_service
         self.prompt_service = prompt_service or PromptService()
         self.time_context_service = time_context_service or TimeContextService()
         self.accountability_service = accountability_service or AccountabilityService()
         self.goal_context_service = goal_context_service or GoalContextService()
+        self.chat_search_ranking = chat_search_ranking or ChatSearchRanking()
 
     async def fetch_prompt_context(
         self,
@@ -468,7 +406,17 @@ class ChatContextService:
                         message_id = str(message.get("id") or "")
                         if not message_id:
                             continue
-                        messages_by_id.setdefault(message_id, message)
+                        scored_message = self.scored_chat_message(
+                            query,
+                            message,
+                            query_mode=query_mode,
+                        )
+                        existing = messages_by_id.get(message_id)
+                        if existing is None or (
+                            scored_message.get("_chat_search_score", 0)
+                            > existing.get("_chat_search_score", 0)
+                        ):
+                            messages_by_id[message_id] = scored_message
                     if len(messages) < PAST_CHAT_SEARCH_PAGE_LIMIT:
                         break
                     offset += PAST_CHAT_SEARCH_PAGE_LIMIT
@@ -501,91 +449,47 @@ class ChatContextService:
         ]
 
     def past_chat_search_queries(self, query: str) -> list[tuple[str, str]]:
-        normalized = " ".join(str(query or "").lower().split())
-        if str(query or "") == MEMORY_INVENTORY_QUERY:
-            return [(query, "inventory")]
-        queries: list[tuple[str, str]] = [(query, "exact")]
-        subject_query = self.subject_only_search_query(normalized)
-        subject_terms = self.recall_search_terms(
-            subject_query or normalized,
-            max_terms=10,
-        )
-        expanded_query = " ".join(subject_terms)
-        if expanded_query:
-            queries.append((expanded_query, "expanded_keywords"))
-        if subject_query:
-            queries.append((subject_query, "subject"))
+        return [
+            (item.query, item.mode)
+            for item in self.chat_search_ranking.build_queries(
+                query,
+                inventory_query=MEMORY_INVENTORY_QUERY,
+                max_terms=10,
+            )
+        ]
 
-        unique_queries: list[tuple[str, str]] = []
-        seen = set()
-        for item, mode in queries:
-            cleaned = str(item or "").strip()
-            if cleaned and cleaned not in seen:
-                seen.add(cleaned)
-                unique_queries.append((cleaned, mode))
-        return unique_queries
+    def scored_chat_message(
+        self,
+        query: str,
+        message: dict,
+        *,
+        query_mode: str,
+    ) -> dict:
+        score = self.chat_search_ranking.score_text(
+            query,
+            str(message.get("content") or ""),
+            role=str(message.get("role") or ""),
+            timestamp=str(message.get("timestamp") or ""),
+        )
+        return {
+            **message,
+            "_chat_search_score": score.score,
+            "_chat_search_reason": score.reason,
+            "_chat_search_query_mode": query_mode,
+            "_chat_search_matched_terms": list(score.matched_terms),
+        }
 
     def recall_search_terms(self, query: str, *, max_terms: int) -> list[str]:
-        raw_terms = [
-            self.normalize_recall_search_term(term)
-            for term in re.findall(r"[a-z0-9']+", str(query or "").lower())
-        ]
-        expanded_terms = []
-        for term in raw_terms:
-            if term in CHAT_SEARCH_QUERY_STOP_WORDS:
-                continue
-            if len(term) < 3 and term not in CHAT_SEARCH_TERM_ALIASES:
-                continue
-            expanded_terms.extend(CHAT_SEARCH_TERM_ALIASES.get(term, (term,)))
-            expanded_terms.extend(self.simple_recall_term_variants(term))
-
-        unique_terms = []
-        for term in expanded_terms:
-            if term and term not in unique_terms:
-                unique_terms.append(term)
-        return unique_terms[:max_terms]
+        return self.chat_search_ranking.expand_terms(query, max_terms=max_terms)
 
     def normalize_recall_search_term(self, term: str) -> str:
-        normalized = term.strip("'")
-        if normalized.endswith("'s"):
-            normalized = normalized[:-2]
-        return normalized
+        return self.chat_search_ranking.normalize_term(term)
 
     def simple_recall_term_variants(self, term: str) -> tuple[str, ...]:
-        variants = {term}
-        if term.endswith("ies") and len(term) > 4:
-            variants.add(f"{term[:-3]}y")
-        elif term.endswith("s") and len(term) > 3:
-            variants.add(term[:-1])
-        elif len(term) > 3:
-            variants.add(f"{term}s")
-        return tuple(variants)
+        return self.chat_search_ranking.simple_term_variants(term)
 
     def subject_only_search_query(self, normalized_query: str) -> str:
-        """Extract the user's target subject for chat search.
-
-        Message search is keyword based. A focused subject query gives old chats
-        one more chance to surface relevant history without relying on broad
-        question words like "know" or "remember".
-        """
-
-        match = re.search(
-            r"\b(?:about|for|with)\s+(?:my\s+)?(?P<subject>[a-z0-9'\s]{3,60})",
-            normalized_query,
-        )
-        if match is None:
-            return ""
-        subject = re.sub(
-            r"\b(?:old|past|previous|chat|chats|conversation|conversations|"
-            r"anything|information|details|memory|memories|saved|know|remember)\b",
-            " ",
-            match.group("subject"),
-        )
-        subject = re.sub(r"[^a-z0-9'\s]+", " ", subject)
-        subject = re.sub(r"\s+", " ", subject).strip()
-        if len(subject) < 3:
-            return ""
-        return subject
+        return self.chat_search_ranking.subject_only_query(normalized_query)
 
     async def chat_conversation_excerpts(
         self,
@@ -625,6 +529,25 @@ class ChatContextService:
                         for message in matches
                         if str(message.get("id") or "")
                     ],
+                    "relevance_score": max(
+                        float(message.get("_chat_search_score") or 0)
+                        for message in matches
+                    ),
+                    "query_modes": sorted(
+                        {
+                            str(message.get("_chat_search_query_mode") or "")
+                            for message in matches
+                            if str(message.get("_chat_search_query_mode") or "")
+                        }
+                    ),
+                    "matched_terms": sorted(
+                        {
+                            str(term)
+                            for message in matches
+                            for term in message.get("_chat_search_matched_terms", [])
+                            if str(term)
+                        }
+                    ),
                     "relevance_reason": (
                         "Matched chat history; included nearby conversation context."
                     ),
@@ -651,6 +574,13 @@ class ChatContextService:
                     "timestamp": message.get("timestamp"),
                     "conversation_id": message.get("conversation_id"),
                     "source_message_id": message.get("id"),
+                    "relevance_score": float(message.get("_chat_search_score") or 0),
+                    "query_modes": [
+                        str(message.get("_chat_search_query_mode") or "exact")
+                    ],
+                    "matched_terms": list(
+                        message.get("_chat_search_matched_terms") or []
+                    ),
                     "relevance_reason": "Matched relevant chat history.",
                 }
             )
@@ -1068,7 +998,8 @@ class ChatContextService:
         else:
             priority = 2
         timestamp = str(message.get("timestamp") or "")
-        return (priority, timestamp)
+        score = float(message.get("_chat_search_score") or 0)
+        return (priority, f"{9999 - score:09.4f}", timestamp)
 
     def recent_memory_subject(self, conversation_history: list[dict]) -> str:
         for message in reversed(conversation_history[-8:]):

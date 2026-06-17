@@ -1,8 +1,6 @@
-import re
 from typing import Optional
 
-from app.services.memory_retrieval_terms import STOP_WORDS
-
+from app.services.chat_search_ranking import ChatSearchRanking
 from app.services.memory_errors import MemoryServiceError
 
 CONVERSATION_SELECT = "id,title,timestamp"
@@ -12,58 +10,10 @@ VOICE_TURN_SELECT = (
     "transcript_confidence,audio_duration_seconds,input_mime_type,"
     "output_audio_encoding,stt_vendor,tts_vendor,metadata,created_at"
 )
-FAMILY_TERM_ALIASES = {
-    "mom": ("mom", "mother", "mum", "mama"),
-    "mother": ("mom", "mother", "mum", "mama"),
-    "mum": ("mom", "mother", "mum", "mama"),
-    "mama": ("mom", "mother", "mum", "mama"),
-    "dad": ("dad", "father", "papa"),
-    "father": ("dad", "father", "papa"),
-    "papa": ("dad", "father", "papa"),
-}
-MESSAGE_SEARCH_STOP_WORDS = STOP_WORDS | {
-    "anything",
-    "chat",
-    "chats",
-    "conversation",
-    "conversations",
-    "did",
-    "me",
-    "my",
-    "know",
-    "knows",
-    "memories",
-    "memory",
-    "our",
-    "remember",
-    "rex",
-    "said",
-    "say",
-    "search",
-    "tell",
-    "told",
-    "us",
-}
-MESSAGE_TERM_ALIASES = {
-    **FAMILY_TERM_ALIASES,
-    "game": ("game", "games", "gaming", "play", "played"),
-    "games": ("game", "games", "gaming", "play", "played"),
-    "gaming": ("game", "games", "gaming", "play", "played"),
-    "pc": ("pc", "computer", "game", "games"),
-    "gift": ("gift", "gifts", "present", "send", "sent"),
-    "gifts": ("gift", "gifts", "present", "send", "sent"),
-    "money": ("money", "send", "sent", "gift", "cash"),
-    "payroll": ("payroll", "paycheck", "income", "work"),
-    "preference": ("preference", "preferences", "prefer", "like", "likes"),
-    "preferences": ("preference", "preferences", "prefer", "like", "likes"),
-    "goal": ("goal", "goals", "plan", "plans"),
-    "goals": ("goal", "goals", "plan", "plans"),
-}
-
-
 class ConversationRepository:
     def __init__(self, store: object) -> None:
         self.store = store
+        self.search_ranking = ChatSearchRanking()
 
     async def create_conversation(self) -> str:
         row = await self.create_conversation_record()
@@ -186,7 +136,7 @@ class ConversationRepository:
             self.store.settings.supabase_messages_table,
             query=query_params,
         )
-        return rows
+        return self._rank_messages(query, rows)
 
     async def search_conversations(self, query: str, limit: int = 50) -> list[dict]:
         terms = self._search_terms(query)
@@ -215,6 +165,12 @@ class ConversationRepository:
                 continue
             seen.add(key)
             title = str(conversation.get("title") or "").strip()
+            score = self.search_ranking.score_text(
+                query,
+                title,
+                timestamp=str(conversation.get("timestamp") or ""),
+                title_match=True,
+            )
             results.append(
                 {
                     "conversation_id": conversation_id,
@@ -223,12 +179,22 @@ class ConversationRepository:
                     "message": None,
                     "match_type": "title",
                     "preview": title or "Matched conversation title.",
+                    "relevance_score": score.score,
+                    "search_reason": score.reason,
+                    "matched_terms": list(score.matched_terms),
                 }
             )
-            if len(results) >= limit:
-                return results
 
         message_rows = await self.search_messages(query, limit=limit)
+        repeated_counts: dict[str, int] = {}
+        for message in message_rows:
+            conversation_id = str(message.get("conversation_id") or "")
+            if conversation_id:
+                repeated_counts[conversation_id] = repeated_counts.get(
+                    conversation_id,
+                    0,
+                ) + 1
+
         conversation_cache: dict[str, dict] = {}
         for message in message_rows:
             conversation_id = str(message.get("conversation_id") or "")
@@ -243,6 +209,13 @@ class ConversationRepository:
             if conversation is None:
                 conversation = await self._conversation_by_id(conversation_id)
                 conversation_cache[conversation_id] = conversation
+            score = self.search_ranking.score_text(
+                query,
+                str(message.get("content") or ""),
+                role=str(message.get("role") or ""),
+                timestamp=str(message.get("timestamp") or ""),
+                repeated_mentions=repeated_counts.get(conversation_id, 1),
+            )
             results.append(
                 {
                     "conversation_id": conversation_id,
@@ -251,11 +224,19 @@ class ConversationRepository:
                     "message": message,
                     "match_type": "message",
                     "preview": str(message.get("content") or "").strip(),
+                    "relevance_score": score.score,
+                    "search_reason": score.reason,
+                    "matched_terms": list(score.matched_terms),
                 }
             )
-            if len(results) >= limit:
-                break
-        return results
+        results.sort(
+            key=lambda result: (
+                float(result.get("relevance_score") or 0),
+                str(result.get("conversation_timestamp") or ""),
+            ),
+            reverse=True,
+        )
+        return results[:limit]
 
     async def delete_conversation(self, conversation_id: str) -> bool:
         if not await self.conversation_exists(conversation_id):
@@ -326,37 +307,36 @@ class ConversationRepository:
         }
 
     def _search_terms(self, query: str) -> list[str]:
-        raw_terms = [
-            self._normalize_search_term(term)
-            for term in re.findall(r"[a-z0-9']+", query.lower())
-        ]
-        expanded_terms = []
-        for term in raw_terms:
-            if term in MESSAGE_SEARCH_STOP_WORDS:
-                continue
-            if len(term) < 3 and term not in MESSAGE_TERM_ALIASES:
-                continue
-            expanded_terms.extend(MESSAGE_TERM_ALIASES.get(term, (term,)))
-            expanded_terms.extend(self._simple_term_variants(term))
-
-        unique_terms = []
-        for term in expanded_terms:
-            if term not in unique_terms:
-                unique_terms.append(term)
-        return unique_terms[:8]
+        return self.search_ranking.expand_terms(query, max_terms=8)
 
     def _normalize_search_term(self, term: str) -> str:
-        normalized = term.strip("'")
-        if normalized.endswith("'s"):
-            normalized = normalized[:-2]
-        return normalized
+        return self.search_ranking.normalize_term(term)
 
     def _simple_term_variants(self, term: str) -> tuple[str, ...]:
-        variants = {term}
-        if term.endswith("ies") and len(term) > 4:
-            variants.add(f"{term[:-3]}y")
-        elif term.endswith("s") and len(term) > 3:
-            variants.add(term[:-1])
-        elif len(term) > 3:
-            variants.add(f"{term}s")
-        return tuple(variants)
+        return self.search_ranking.simple_term_variants(term)
+
+    def _rank_messages(self, query: str, rows: list[dict]) -> list[dict]:
+        ranked = []
+        for row in rows:
+            score = self.search_ranking.score_text(
+                query,
+                str(row.get("content") or ""),
+                role=str(row.get("role") or ""),
+                timestamp=str(row.get("timestamp") or ""),
+            )
+            ranked.append(
+                {
+                    **row,
+                    "relevance_score": score.score,
+                    "search_reason": score.reason,
+                    "matched_terms": list(score.matched_terms),
+                }
+            )
+        ranked.sort(
+            key=lambda item: (
+                float(item.get("relevance_score") or 0),
+                str(item.get("timestamp") or ""),
+            ),
+            reverse=True,
+        )
+        return ranked
