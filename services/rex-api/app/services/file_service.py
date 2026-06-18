@@ -1,9 +1,15 @@
 import base64
+from io import BytesIO
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
 from fastapi import HTTPException, UploadFile
+
+try:
+    from pypdf import PdfReader
+except ImportError:  # pragma: no cover - production installs pypdf.
+    PdfReader = None
 
 
 @dataclass(frozen=True)
@@ -23,13 +29,18 @@ class AttachmentContext:
                 f"Image attachment: {self.filename} ({self.content_type}). "
                 "Use the attached image as visual context when answering."
             )
+        if self.kind == "pdf":
+            return self.text
         return None
 
 
 class FileService:
     max_text_file_size_bytes = 2 * 1024 * 1024
     max_image_file_size_bytes = 5 * 1024 * 1024
+    max_pdf_file_size_bytes = 10 * 1024 * 1024
+    max_pdf_prompt_chars = 12000
     supported_text_extensions = {".txt", ".md", ".csv"}
+    supported_pdf_extensions = {".pdf"}
     supported_image_extensions = {
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
@@ -52,8 +63,10 @@ class FileService:
             return await self._read_text_attachment(file, extension)
         if extension in self.supported_image_extensions:
             return await self._read_image_attachment(file, extension)
+        if extension in self.supported_pdf_extensions:
+            return await self._read_pdf_attachment(file, extension)
 
-        supported = ".txt, .md, .csv, .jpg, .jpeg, .png, or .webp"
+        supported = ".txt, .md, .csv, .pdf, .jpg, .jpeg, .png, or .webp"
         raise HTTPException(
             status_code=400,
             detail=f"Only {supported} files are supported.",
@@ -120,6 +133,57 @@ class FileService:
             filename=file.filename or f"attachment{extension}",
             content_type=content_type,
             data_url=f"data:{content_type};base64,{encoded}",
+        )
+
+    async def _read_pdf_attachment(
+        self,
+        file: UploadFile,
+        extension: str,
+    ) -> AttachmentContext:
+        content = await file.read()
+        if len(content) > self.max_pdf_file_size_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail="Uploaded PDF is too large. Maximum size is 10MB.",
+            )
+
+        if PdfReader is None:
+            raise HTTPException(
+                status_code=500,
+                detail="PDF reading is not available right now.",
+            )
+
+        try:
+            reader = PdfReader(BytesIO(content))
+            page_text = [
+                self._clean_text(page.extract_text() or "")
+                for page in reader.pages
+            ]
+        except Exception as error:
+            raise HTTPException(
+                status_code=400,
+                detail="Uploaded PDF could not be read.",
+            ) from error
+
+        text = self._clean_text("\n\n".join(part for part in page_text if part))
+        if not text:
+            raise HTTPException(
+                status_code=400,
+                detail="Uploaded PDF does not contain readable text.",
+            )
+
+        if len(text) > self.max_pdf_prompt_chars:
+            text = (
+                text[: self.max_pdf_prompt_chars].rstrip()
+                + "\n\n[PDF text truncated for this chat turn.]"
+            )
+
+        filename = file.filename or f"attachment{extension}"
+        return AttachmentContext(
+            kind="pdf",
+            filename=filename,
+            content_type=self._content_type(file, fallback="application/pdf"),
+            text=f"PDF attachment: {filename}\n\n{text}",
         )
 
     def _content_type(self, file: UploadFile, *, fallback: str) -> str:

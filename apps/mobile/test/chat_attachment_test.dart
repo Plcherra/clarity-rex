@@ -24,6 +24,25 @@ void main() {
       expect(error, 'Image is too large. Maximum size is 5MB.');
     });
 
+    test('accepts pdf attachments without UTF-8 validation', () {
+      final error = validateChatAttachmentBytes(
+        fileName: 'statement.pdf',
+        fileSize: 4,
+        bytes: Uint8List.fromList([0x25, 0x50, 0x44, 0x46]),
+      );
+
+      expect(error, isNull);
+    });
+
+    test('rejects oversized pdf attachments', () {
+      final error = validateChatAttachment(
+        fileName: 'statement.pdf',
+        fileSize: maxChatPdfAttachmentBytes + 1,
+      );
+
+      expect(error, 'PDF is too large. Maximum size is 10MB.');
+    });
+
     test('keeps text attachments strict UTF-8', () {
       final error = validateChatAttachmentBytes(
         fileName: 'notes.txt',

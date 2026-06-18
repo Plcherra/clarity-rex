@@ -9,8 +9,8 @@ from app.services.voice_stream_config import (
     voice_response_max_tokens,
 )
 
-_MIN_SPEAKABLE_CHUNK_CHARS = 80
-_MAX_SPEAKABLE_CHUNK_CHARS = 220
+_MIN_SPEAKABLE_CHUNK_CHARS = 36
+_MAX_SPEAKABLE_CHUNK_CHARS = 140
 
 
 class VoiceStreamResponseWriterMixin:

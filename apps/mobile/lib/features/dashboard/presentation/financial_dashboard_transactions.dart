@@ -1,6 +1,6 @@
 part of 'financial_dashboard_view.dart';
 
-enum _TransactionsViewMode { months, categories, rows }
+enum _TransactionsViewMode { months, categories }
 
 enum _TransactionsTimeFilter {
   all,
@@ -360,20 +360,6 @@ class _DashboardTransactionsSectionState
             ),
             _TransactionsViewMode.categories => _CategoryGroupsList(
               groups: _categoryGroups,
-              onCategorySelected: (category) {
-                setState(() {
-                  _categoryFilter = category;
-                  _mode = _TransactionsViewMode.rows;
-                });
-              },
-            ),
-            _TransactionsViewMode.rows => _InlineTransactionsList(
-              transactions: filtered,
-              controller: widget.transactionController,
-              accountsById: {
-                for (final account in _accounts) account.id: account,
-              },
-              showAccount: !_isAccountScope,
             ),
           },
       ],

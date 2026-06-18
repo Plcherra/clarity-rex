@@ -24,10 +24,9 @@ def test_voice_chunker_splits_at_substantial_sentence_boundary():
     chunk, rest = probe._next_speakable_chunk(text)
 
     assert chunk == (
-        "Got it, you are canceling the movie because money is tight tonight. "
-        "I can help you keep the evening simple."
+        "Got it, you are canceling the movie because money is tight tonight."
     )
-    assert rest == ""
+    assert rest.strip() == "I can help you keep the evening simple."
 
 
 def test_voice_chunker_uses_word_boundary_for_long_text_without_punctuation():
@@ -37,5 +36,15 @@ def test_voice_chunker_uses_word_boundary_for_long_text_without_punctuation():
     chunk, rest = probe._next_speakable_chunk(text)
 
     assert chunk is not None
-    assert 80 <= len(chunk) <= 220
+    assert 36 <= len(chunk) <= 140
     assert rest.strip().startswith("steady")
+
+
+def test_voice_chunker_starts_audio_after_short_voice_sentence():
+    probe = _ChunkProbe()
+    text = "Yes, I can help you with that. Tell me what changed."
+
+    chunk, rest = probe._next_speakable_chunk(text)
+
+    assert chunk == "Yes, I can help you with that. Tell me what changed."
+    assert rest == ""

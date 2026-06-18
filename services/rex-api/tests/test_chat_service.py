@@ -8,6 +8,7 @@ from chat_service_fakes import (
     FakeUpload,
 )
 from app.config import Settings
+from app.services import file_service as file_service_module
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.memory_service import SupabaseMemoryService, MemoryServiceError
@@ -57,6 +58,59 @@ async def test_image_upload_builds_data_url_context():
         "Image attachment: receipt.png (image/png). "
         "Use the attached image as visual context when answering."
     )
+
+
+@pytest.mark.asyncio
+async def test_pdf_upload_extracts_text_context(monkeypatch):
+    monkeypatch.setattr(file_service_module, "PdfReader", _FakePdfReader)
+    file_service = FileService()
+    upload = FakeUpload(
+        "statement.pdf",
+        b"%PDF bytes",
+        content_type="application/pdf",
+    )
+
+    attachment = await file_service.read_attachment(upload)
+
+    assert attachment.kind == "pdf"
+    assert attachment.filename == "statement.pdf"
+    assert attachment.content_type == "application/pdf"
+    assert attachment.prompt_context == (
+        "PDF attachment: statement.pdf\n\nFirst page text\n\nSecond page text"
+    )
+
+
+@pytest.mark.asyncio
+async def test_pdf_upload_rejects_oversized_files():
+    file_service = FileService()
+    upload = FakeUpload(
+        "statement.pdf",
+        b"a" * (10 * 1024 * 1024 + 1),
+        content_type="application/pdf",
+    )
+
+    with pytest.raises(HTTPException) as error:
+        await file_service.read_attachment(upload)
+
+    assert error.value.status_code == 413
+    assert error.value.detail == "Uploaded PDF is too large. Maximum size is 10MB."
+
+
+@pytest.mark.asyncio
+async def test_pdf_upload_rejects_unreadable_text(monkeypatch):
+    monkeypatch.setattr(file_service_module, "PdfReader", _EmptyPdfReader)
+    file_service = FileService()
+    upload = FakeUpload(
+        "scan.pdf",
+        b"%PDF bytes",
+        content_type="application/pdf",
+    )
+
+    with pytest.raises(HTTPException) as error:
+        await file_service.read_attachment(upload)
+
+    assert error.value.status_code == 400
+    assert error.value.detail == "Uploaded PDF does not contain readable text."
 
 
 @pytest.mark.asyncio
@@ -639,3 +693,21 @@ async def test_supabase_memory_requires_configuration():
         await memory_service.create_conversation()
 
     assert error.value.detail == "Supabase memory is not configured."
+
+
+class _FakePdfReader:
+    def __init__(self, _stream):
+        self.pages = [_FakePdfPage("First page text"), _FakePdfPage("Second page text")]
+
+
+class _EmptyPdfReader:
+    def __init__(self, _stream):
+        self.pages = [_FakePdfPage("")]
+
+
+class _FakePdfPage:
+    def __init__(self, text):
+        self._text = text
+
+    def extract_text(self):
+        return self._text

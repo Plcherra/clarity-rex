@@ -11,7 +11,7 @@ import '../../shell/presentation/import_job_progress_banner.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
-import '../../transactions/presentation/widgets/transaction_category_dropdown.dart';
+import '../../../rex/presentation/rex_ui_tokens.dart';
 import 'month_detail_screen.dart';
 
 part 'financial_dashboard_transactions.dart';
@@ -21,7 +21,7 @@ part 'financial_dashboard_shell.dart';
 part 'financial_dashboard_summary_sections.dart';
 part 'financial_dashboard_cards.dart';
 
-const double _sectionGap = 24.0;
+const double _sectionGap = 20.0;
 const double _cardRadius = 18.0;
 const List<String> _monthAbbreviations = [
   'Jan',
@@ -39,19 +39,19 @@ const List<String> _monthAbbreviations = [
 ];
 
 Color _dashboardPanel(BuildContext context) {
-  return Theme.of(context).colorScheme.surfaceContainerLow;
+  return RexUiTokens.surface;
 }
 
 Color _dashboardPanelMuted(BuildContext context) {
-  return Theme.of(context).colorScheme.surfaceContainer;
+  return RexUiTokens.surfaceSoft;
 }
 
 Color _dashboardOutline(BuildContext context) {
-  return Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.78);
+  return RexUiTokens.border.withValues(alpha: 0.78);
 }
 
 Color _dashboardSelected(BuildContext context) {
-  return Theme.of(context).colorScheme.primary.withValues(alpha: 0.18);
+  return RexUiTokens.accent.withValues(alpha: 0.16);
 }
 
 Color _balanceColor(BuildContext context, double v) {
@@ -75,33 +75,6 @@ bool _isSpendCategoryTransaction(ResolvedTransaction transaction) {
     return false;
   }
   return transaction.countsAsSpend;
-}
-
-class _TransactionMetaChip extends StatelessWidget {
-  const _TransactionMetaChip(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _dashboardOutline(context)),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: cs.onSurface.withValues(alpha: 0.56),
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
 }
 
 DateTime? _latestTransactionDate(List<Transaction> transactions) {

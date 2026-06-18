@@ -3,6 +3,7 @@ google-auth
 httpx
 cryptography
 pydantic-settings
+pypdf
 python-multipart
 requests
 pytest

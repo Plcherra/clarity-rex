@@ -6,7 +6,9 @@ import 'package:path/path.dart' as p;
 
 const int maxChatAttachmentBytes = 2 * 1024 * 1024;
 const int maxChatImageAttachmentBytes = 5 * 1024 * 1024;
+const int maxChatPdfAttachmentBytes = 10 * 1024 * 1024;
 const Set<String> allowedTextChatAttachmentExtensions = {'txt', 'md', 'csv'};
+const Set<String> allowedPdfChatAttachmentExtensions = {'pdf'};
 const Set<String> allowedImageChatAttachmentExtensions = {
   'jpg',
   'jpeg',
@@ -15,6 +17,7 @@ const Set<String> allowedImageChatAttachmentExtensions = {
 };
 const Set<String> allowedChatAttachmentExtensions = {
   ...allowedTextChatAttachmentExtensions,
+  ...allowedPdfChatAttachmentExtensions,
   ...allowedImageChatAttachmentExtensions,
 };
 
@@ -61,7 +64,14 @@ String? validateChatAttachment({
     return null;
   }
 
-  return 'Attach a .txt, .md, .csv, .jpg, .png, or .webp file.';
+  if (allowedPdfChatAttachmentExtensions.contains(extension)) {
+    if (fileSize > maxChatPdfAttachmentBytes) {
+      return 'PDF is too large. Maximum size is 10MB.';
+    }
+    return null;
+  }
+
+  return 'Attach a .txt, .md, .csv, .pdf, .jpg, .png, or .webp file.';
 }
 
 String? validateChatAttachmentBytes({
@@ -78,7 +88,8 @@ String? validateChatAttachmentBytes({
   }
 
   final extension = p.extension(fileName).replaceFirst('.', '').toLowerCase();
-  if (allowedImageChatAttachmentExtensions.contains(extension)) {
+  if (allowedImageChatAttachmentExtensions.contains(extension) ||
+      allowedPdfChatAttachmentExtensions.contains(extension)) {
     return null;
   }
 
@@ -110,7 +121,8 @@ Future<String?> validateChatAttachmentFile(XFile attachment) async {
   }
 
   final extension = p.extension(fileName).replaceFirst('.', '').toLowerCase();
-  if (allowedImageChatAttachmentExtensions.contains(extension)) {
+  if (allowedImageChatAttachmentExtensions.contains(extension) ||
+      allowedPdfChatAttachmentExtensions.contains(extension)) {
     return null;
   }
 

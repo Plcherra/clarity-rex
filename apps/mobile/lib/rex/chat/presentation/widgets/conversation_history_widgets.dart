@@ -6,9 +6,14 @@ import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 
 class ConversationDateHeader extends StatelessWidget {
-  const ConversationDateHeader({super.key, required this.label});
+  const ConversationDateHeader({
+    super.key,
+    required this.label,
+    required this.count,
+  });
 
   final String label;
+  final int count;
 
   @override
   Widget build(BuildContext context) {
@@ -21,12 +26,25 @@ class ConversationDateHeader extends StatelessWidget {
         RexUiTokens.space24,
         RexUiTokens.space8,
       ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: RexUiTokens.textSubtle,
-          fontWeight: FontWeight.w800,
-        ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: RexUiTokens.textSubtle,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Text(
+            '$count',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: RexUiTokens.textSubtle.withValues(alpha: 0.72),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -92,11 +110,17 @@ class ConversationHistoryTile extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: RexUiTokens.space8),
-                        Text(
-                          timestampLabel(conversation.timestamp),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: RexUiTokens.textSubtle,
-                            fontWeight: FontWeight.w700,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 96),
+                          child: Text(
+                            timestampLabel(conversation.timestamp),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: RexUiTokens.textSubtle,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ],
@@ -232,9 +256,15 @@ class ConversationGroup {
 List<ConversationGroup> conversationGroups(List<Conversation> conversations) {
   final now = DateTime.now();
   final groups = <ConversationGroup>[];
+  final sorted = [...conversations]
+    ..sort((a, b) {
+      final aTime = a.timestamp ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.timestamp ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
 
-  for (final conversation in conversations) {
-    final label = conversationDateLabel(conversation.timestamp, now);
+  for (final conversation in sorted) {
+    final label = conversationGroupLabel(conversation.timestamp, now);
     if (groups.isEmpty || groups.last.label != label) {
       groups.add(ConversationGroup(label: label));
     }
@@ -278,12 +308,21 @@ String timestampLabel(DateTime? timestamp) {
   }
 
   final local = timestamp.toLocal();
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final date = DateTime(local.year, local.month, local.day);
   final hour = local.hour.toString().padLeft(2, '0');
   final minute = local.minute.toString().padLeft(2, '0');
-  return '$hour:$minute';
+  if (date == today) {
+    return '$hour:$minute';
+  }
+  if (date.year == today.year) {
+    return '${_shortMonthName(local.month)} ${local.day}';
+  }
+  return '${_shortMonthName(local.month)} ${local.day}, ${local.year}';
 }
 
-String conversationDateLabel(DateTime? timestamp, DateTime now) {
+String conversationGroupLabel(DateTime? timestamp, DateTime now) {
   if (timestamp == null) {
     return 'Undated';
   }
@@ -303,10 +342,9 @@ String conversationDateLabel(DateTime? timestamp, DateTime now) {
     return 'Yesterday';
   }
   if (dayDifference < 7) {
-    return _weekdayName(local.weekday);
+    return 'This week';
   }
-
-  return '${_monthName(local.month)} ${local.day}, ${local.year}';
+  return '${_monthName(local.month)} ${local.year}';
 }
 
 String _conversationPreview(Conversation conversation) {
@@ -315,19 +353,6 @@ String _conversationPreview(Conversation conversation) {
     return preview;
   }
   return 'No messages yet';
-}
-
-String _weekdayName(int weekday) {
-  return switch (weekday) {
-    DateTime.monday => 'Monday',
-    DateTime.tuesday => 'Tuesday',
-    DateTime.wednesday => 'Wednesday',
-    DateTime.thursday => 'Thursday',
-    DateTime.friday => 'Friday',
-    DateTime.saturday => 'Saturday',
-    DateTime.sunday => 'Sunday',
-    _ => 'Older',
-  };
 }
 
 String _monthName(int month) {
@@ -345,6 +370,24 @@ String _monthName(int month) {
     DateTime.november => 'November',
     DateTime.december => 'December',
     _ => 'Older',
+  };
+}
+
+String _shortMonthName(int month) {
+  return switch (month) {
+    DateTime.january => 'Jan',
+    DateTime.february => 'Feb',
+    DateTime.march => 'Mar',
+    DateTime.april => 'Apr',
+    DateTime.may => 'May',
+    DateTime.june => 'Jun',
+    DateTime.july => 'Jul',
+    DateTime.august => 'Aug',
+    DateTime.september => 'Sep',
+    DateTime.october => 'Oct',
+    DateTime.november => 'Nov',
+    DateTime.december => 'Dec',
+    _ => 'Old',
   };
 }
 

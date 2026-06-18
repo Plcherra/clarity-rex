@@ -33,7 +33,7 @@ class DashboardScreen extends StatelessWidget {
       importJobStatusController: importJobStatusController,
       scope: const GlobalDashboardScope(),
       showBackButton: !isRoot,
-      title: 'Overview',
+      title: '',
       onConnectBank: onConnectBank,
       onImportCsvInstead: onImportCsvInstead,
     );

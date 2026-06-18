@@ -24,9 +24,7 @@ class _TransactionsModePicker extends StatelessWidget {
         _ModeChip(
           label: 'Categories',
           icon: Icons.category_outlined,
-          selected:
-              selected == _TransactionsViewMode.categories ||
-              selected == _TransactionsViewMode.rows,
+          selected: selected == _TransactionsViewMode.categories,
           onTap: () => onSelected(_TransactionsViewMode.categories),
         ),
       ],
@@ -50,7 +48,6 @@ class _ModeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
     return ChoiceChip(
       selected: selected,
       onSelected: (_) => onTap(),
@@ -60,7 +57,7 @@ class _ModeChip extends StatelessWidget {
         fontWeight: FontWeight.w700,
       ),
       selectedColor: _dashboardSelected(context),
-      backgroundColor: cs.surface,
+      backgroundColor: _dashboardPanel(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(999),
         side: BorderSide(color: _dashboardOutline(context)),

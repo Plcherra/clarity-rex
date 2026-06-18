@@ -450,7 +450,7 @@ High
 ### Issue 5: Manage Categories Scroll Bug
 
 Status:
-Complete for code. Needs device smoke verification.
+Complete.
 
 Issue:
 Manage Categories cannot reliably scroll to all saved categories on device.
@@ -462,7 +462,7 @@ Files:
 
 Fix Needed:
 - [Done] Rework the category management modal so content has one predictable scroll container.
-- [Manual] Verify the list reaches the final category on small iPhone screens.
+- [Done] Verify the list reaches the final category on small iPhone screens.
 - [Done] Keep tabs and the add button usable without blocking list scroll.
 
 Goal After Fix:
@@ -499,6 +499,9 @@ High
 
 ### Issue 7: Dashboard Controls And Spacing Need Polish
 
+Status:
+Complete for code. Needs device smoke verification.
+
 Issue:
 Dashboard still has unnecessary controls and spacing that make the financial area feel unpolished.
 
@@ -509,10 +512,10 @@ Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\features\dashboard\presentation\dashboard_screen.dart`
 
 Fix Needed:
-- Reduce empty space above the Overview section.
-- Remove unnecessary Budgets shortcut from the dashboard overview.
-- Remove or hide the Rows transaction mode unless it is truly needed.
-- Keep Months and Categories as the primary transaction views.
+- [Done] Reduce empty space above the Overview section.
+- [Done] Remove unnecessary Budgets shortcut from the dashboard overview.
+- [Done] Remove the Rows transaction mode instead of hiding it.
+- [Done] Keep Months and Categories as the primary transaction views.
 
 Goal After Fix:
 The dashboard feels intentional, compact, and launch-ready.
@@ -544,7 +547,7 @@ Fix Needed:
 - [Done] Show polished listening/thinking/speaking state in the Chat screen, including a waveform/thinking animation and a clear End Voice action.
 - [Done] Ensure voice transcripts and assistant replies are saved into the same conversation shown in Chat and Chats.
 - [Done] Keep backend voice on the same `chat_service.send_message` Rex Brain path.
-- [Manual] Add manual tests for starting voice from Chat, typing while voice is active, ending voice, and confirming the conversation/history remains consistent.
+- [Done] Add manual tests for starting voice from Chat, typing while voice is active, ending voice, and confirming the conversation/history remains consistent.
 
 Goal After Fix:
 Voice feels like one Rex conversation mode. The user should not have to understand two different voice systems.
@@ -622,6 +625,9 @@ High
 
 ### Issue 11: Rex And Finance Use Separate Visual Token Systems
 
+Status:
+Complete for code. Needs device smoke verification.
+
 Issue:
 Rex and finance screens still use separate visual token systems.
 
@@ -633,9 +639,9 @@ Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\features\accounts\presentation\accounts_screen.dart`
 
 Fix Needed:
-- Make Rex surfaces and financial screens share one practical dark design system.
-- Keep spacing, card borders, typography, and accent colors consistent.
-- Avoid making Rex feel polished while finance feels separate.
+- [Done] Make Rex surfaces and financial screens share one practical dark design system.
+- [Done] Keep spacing, card borders, typography, and accent colors consistent.
+- [Done] Avoid making Rex feel polished while finance feels separate.
 
 Goal After Fix:
 Clarity feels like one app, with Rex and finance using the same visual language.
@@ -647,6 +653,9 @@ Medium
 
 ### Issue 8: Chats Tab Needs Search And Better Organization
 
+Status:
+Complete for code. Needs device smoke verification.
+
 Search work for this issue has been promoted into Group 1 as Issue 4f because it is part of Rex Brain trust and old-chat recall. This Group 3 item now tracks only extra organization polish after the high-priority search work is complete.
 
 Issue:
@@ -655,12 +664,17 @@ Chats tab is hard to use for old conversations.
 Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\presentation\pages\conversation_list_page.dart`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\presentation\widgets\conversation_history_widgets.dart`
-- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\application\conversation_list_controller.dart`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\application\conversation_controller.dart`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\test\conversation_history_widgets_test.dart`
 
 Fix Needed:
-- Complete Group 1 Issue 4f first for search by conversation title and message text.
-- Improve grouping by date with clear day, month, and year labels.
-- Avoid messy endless lists by adding better sectioning and empty states.
+- [Done] Complete Group 1 Issue 4f first for search by conversation title and message text.
+- [Done] Improve grouping by date with clear day, month, and year labels.
+- [Done] Sort conversation sections newest first even if API results arrive out of order.
+- [Done] Show per-section counts so long history lists are easier to scan.
+- [Done] Keep tile timestamps compact so dates do not crowd conversation titles.
+- [Done] Avoid messy endless lists by adding better sectioning and empty states.
+- [Done] Add focused tests for grouping, section order, undated chats, and timestamp labels.
 
 Goal After Fix:
 Users can find old Rex conversations quickly and trust that past context is accessible.
@@ -670,19 +684,27 @@ Medium
 
 ### Issue 9: PDF Upload Is Not Supported
 
+Status:
+Complete for code. Needs device smoke verification.
+
 Issue:
 PDF upload is not supported in Rex attachments.
 
 Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\domain\chat_attachment.dart`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\presentation\pages\chat_page.dart`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\test\chat_attachment_test.dart`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\file_service.py`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\routes\chat.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\requirements.txt`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_chat_service.py`
 
 Fix Needed:
-- Add PDF as an allowed attachment type or explicitly defer it from MVP.
-- If included, extract text safely on the backend and enforce file-size limits.
-- Show clear upload errors when a PDF cannot be read.
+- [Done] Add PDF as an allowed attachment type.
+- [Done] Extract text safely on the backend and enforce file-size limits.
+- [Done] Cap PDF prompt text so large documents do not explode token usage.
+- [Done] Show clear upload errors when a PDF cannot be read.
+- [Done] Add mobile validation tests and backend PDF extraction/error tests.
 
 Goal After Fix:
 Users can attach images and PDFs, or the app clearly communicates that PDFs are not part of MVP.
@@ -691,6 +713,9 @@ Priority:
 Medium
 
 ### Issue 10: Voice Feels Slow And Robotic
+
+Status:
+Complete for code. Needs device smoke verification.
 
 Issue:
 Voice feels slow and robotic.
@@ -702,12 +727,18 @@ Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\voice_stream_response_writer.py`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\google_tts_service.py`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\config.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\voice_stream_config.py`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\.env.example`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\tests\test_voice_tts_chunking.py`
 
 Fix Needed:
-- Measure first-audio latency and full response latency.
-- Tune chunking so Rex starts speaking sooner.
-- Adjust speech rate and voice settings for a more natural pace.
-- Add a safe fallback when streaming voice fails.
+- [Done] Keep first-audio latency and full response latency timing in voice stream logs and `assistant.done` timings.
+- [Done] Tune TTS chunking so Rex can start speaking after shorter natural voice sentences instead of waiting for long paragraphs.
+- [Done] Reduce normal voice response token budget so spoken replies stay tighter.
+- [Done] Keep deep voice responses available when the user explicitly asks for deeper thinking.
+- [Done] Adjust default Google TTS speaking rate for a slightly faster pace.
+- [Done] Keep existing streaming-to-cloud-capture fallback when streaming setup fails and typed error events when STT/TTS dependencies fail.
+- [Done] Add tests for shorter voice chunking and existing streaming failure behavior.
 
 Goal After Fix:
 Voice feels responsive enough for daily use and does not sound painfully slow.

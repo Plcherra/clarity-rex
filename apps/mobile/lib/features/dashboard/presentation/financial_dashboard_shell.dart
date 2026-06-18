@@ -35,21 +35,24 @@ class _DashboardScrollBody extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  Text(
-                    title,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      letterSpacing: 3.2,
-                      color: cs.onSurface.withValues(alpha: 0.38),
-                      fontWeight: FontWeight.w600,
+                  if (title.trim().isNotEmpty) ...[
+                    Text(
+                      title,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        letterSpacing: 2.4,
+                        color: cs.onSurface.withValues(alpha: 0.38),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 10),
+                  ],
+                  if (title.trim().isEmpty) const SizedBox(height: 2),
                   if (onUploadTransactions != null) ...[
-                    const SizedBox(height: 14),
                     _DashboardActionRow(
                       onUploadTransactions: onUploadTransactions!,
                     ),
+                    const SizedBox(height: 10),
                   ],
-                  const SizedBox(height: 14),
                   _CashFlowSummaryCard(snapshot: snapshot),
                   const SizedBox(height: _sectionGap),
                   _DashboardTransactionsSection(
@@ -159,18 +162,19 @@ class _DashboardEmptySetupBody extends StatelessWidget {
       decoration: BoxDecoration(color: cs.surface),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+          padding: const EdgeInsets.fromLTRB(24, 2, 24, 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                title,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  letterSpacing: 3.2,
-                  color: cs.onSurface.withValues(alpha: 0.38),
-                  fontWeight: FontWeight.w600,
+              if (title.trim().isNotEmpty)
+                Text(
+                  title,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    letterSpacing: 2.4,
+                    color: cs.onSurface.withValues(alpha: 0.38),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
               const Spacer(),
               ConnectBankSetupCard(
                 title: 'Connect your first bank',

@@ -258,7 +258,10 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                 conversationGroups(state.conversations)
                     .expand<Widget>(
                       (group) => [
-                        ConversationDateHeader(label: group.label),
+                        ConversationDateHeader(
+                          label: group.label,
+                          count: group.conversations.length,
+                        ),
                         for (final conversation in group.conversations)
                           ConversationHistoryTile(
                             conversation: conversation,
@@ -381,7 +384,7 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              'No matching chats',
+              'No chats matched "${state.searchQuery}"',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: RexUiTokens.textMuted,
                 fontWeight: FontWeight.w700,
