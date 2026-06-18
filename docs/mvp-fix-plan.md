@@ -526,26 +526,25 @@ Status:
 Complete for code. Needs device smoke verification.
 
 Issue:
-Manual testing showed voice feels like two different features. Starting voice from the Chat tab keeps the call inside the chat with an inline voice panel. Opening the Voice tab shows a separate full-screen voice interface. Backend voice mostly routes through the same chat brain, but the mobile UI makes voice feel split and inconsistent.
+Manual testing showed voice felt like two different features. Starting voice from Chat kept the call inside the chat with an inline voice panel, while the old separate voice surface showed a full-screen voice interface. Backend voice mostly routed through the same chat brain, but the mobile UI made voice feel split and inconsistent.
 
 Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\presentation\assistant_screen.dart`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\presentation\pages\chat_page.dart`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\presentation\widgets\inline_voice_call_panel.dart`
-- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\voice\presentation\pages\voice_chat_page.dart`
-- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\voice\presentation\widgets\voice_call_controls.dart`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\voice\application\voice_call_controller.dart`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\routes\voice.py`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\voice_stream_session.py`
 
 Fix Needed:
 - [Done] Decide the MVP voice product shape: voice should be one mode of the same assistant conversation, not a separate assistant.
-- [Done] Make the Voice tab and Chat call button use the same active conversation and the same visible call state.
-- [Done] Avoid two different voice layouts with different behavior unless one is only a presentation wrapper around the same call mode.
-- [Done] If the Voice tab remains, make it clearly open/start the same chat voice call rather than creating a separate-feeling feature.
+- [Done] Remove the separate voice surface from Assistant navigation.
+- [Done] Make voice start from the Chat composer mic and stay tied to the active chat conversation.
+- [Done] Replace the separate full-screen voice layout with an inline Chat voice mode.
+- [Done] Show polished listening/thinking/speaking state in the Chat screen, including a waveform/thinking animation and a clear End Voice action.
 - [Done] Ensure voice transcripts and assistant replies are saved into the same conversation shown in Chat and Chats.
 - [Done] Keep backend voice on the same `chat_service.send_message` Rex Brain path.
-- [Manual] Add manual tests for starting voice from Chat, switching to Voice, returning to Chat, and confirming the conversation/history remains consistent.
+- [Manual] Add manual tests for starting voice from Chat, typing while voice is active, ending voice, and confirming the conversation/history remains consistent.
 
 Goal After Fix:
 Voice feels like one Rex conversation mode. The user should not have to understand two different voice systems.

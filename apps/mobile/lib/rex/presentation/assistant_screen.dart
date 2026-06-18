@@ -5,7 +5,6 @@ import '../accountability/presentation/pages/accountability_page.dart';
 import '../chat/presentation/pages/chat_page.dart';
 import '../chat/presentation/pages/conversation_list_page.dart';
 import '../memory/presentation/pages/memory_page.dart';
-import '../voice/presentation/pages/voice_chat_page.dart';
 import 'assistant_tab.dart';
 import 'rex_surfaces.dart';
 import 'rex_ui_tokens.dart';
@@ -221,7 +220,6 @@ class _AssistantTabContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (tab) {
       AssistantTab.chat => const ChatPage(showAppBar: false),
-      AssistantTab.voice => VoiceChatPage(onOpenChat: onConversationSelected),
       AssistantTab.memory => const MemoryPage(showAppBar: false),
       AssistantTab.goals => const AccountabilityPage(showAppBar: false),
       AssistantTab.chats => ConversationListPage(

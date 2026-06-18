@@ -12,7 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Assistant navigation renders the five tabs in contract order', (
+  testWidgets('Assistant navigation renders the four tabs in contract order', (
     tester,
   ) async {
     await _pumpAssistantNavigation(tester);
@@ -78,40 +78,6 @@ void main() {
     },
   );
 
-  testWidgets('Voice tab can return to the same chat surface', (tester) async {
-    await _pumpAssistantNavigation(tester);
-
-    TabController controller() {
-      return tester.widget<TabBar>(find.byType(TabBar)).controller!;
-    }
-
-    await tester.tap(find.byKey(AssistantTab.voice.key));
-    await tester.pumpAndSettle();
-
-    expect(controller().index, AssistantTab.voice.index);
-    expect(find.text('Rex voice'), findsOneWidget);
-    expect(find.text('Open Chat'), findsOneWidget);
-
-    await tester.tap(find.text('Open Chat'));
-    await tester.pumpAndSettle();
-
-    expect(controller().index, AssistantTab.chat.index);
-    expect(find.byType(TextField), findsOneWidget);
-  });
-
-  testWidgets('Voice tab starts the current chat voice call', (tester) async {
-    final voiceController = _FakeVoiceCallController();
-    await _pumpAssistantNavigation(tester, voiceController: voiceController);
-
-    await tester.tap(find.byKey(AssistantTab.voice.key));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byTooltip('Start voice'));
-    await tester.pump();
-
-    expect(voiceController.startCount, 1);
-  });
-
   testWidgets('Assistant navigation excludes unrelated global actions', (
     tester,
   ) async {
@@ -147,7 +113,7 @@ void main() {
 
       for (final tab in [
         AssistantTab.chat,
-        AssistantTab.voice,
+        AssistantTab.memory,
         AssistantTab.goals,
         AssistantTab.chats,
       ]) {

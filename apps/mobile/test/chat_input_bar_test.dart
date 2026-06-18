@@ -31,10 +31,10 @@ void main() {
     expect(find.text('Deep Think'), findsNothing);
     expect(find.text('Deep Think on'), findsNothing);
     expect(find.byTooltip('Send'), findsOneWidget);
-    expect(find.byTooltip('Start voice call'), findsOneWidget);
+    expect(find.byTooltip('Start voice mode'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Send'));
-    await tester.tap(find.byTooltip('Start voice call'));
+    await tester.tap(find.byTooltip('Start voice mode'));
 
     expect(sent, isTrue);
     expect(voiceStarted, isTrue);
@@ -90,7 +90,7 @@ void main() {
     );
 
     expect(find.byTooltip('Show voice call'), findsOneWidget);
-    expect(find.byTooltip('Start voice call'), findsNothing);
+    expect(find.byTooltip('Start voice mode'), findsNothing);
 
     await tester.tap(find.byTooltip('Show voice call'));
 

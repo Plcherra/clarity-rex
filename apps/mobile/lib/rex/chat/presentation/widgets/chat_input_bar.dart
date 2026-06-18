@@ -77,12 +77,13 @@ class ChatInputBar extends StatelessWidget {
                         child: _ComposerIconButton(
                           icon: isVoiceCallActive
                               ? Icons.graphic_eq_rounded
-                              : Icons.call_rounded,
+                              : Icons.mic_rounded,
                           tooltip: isVoiceCallActive
                               ? 'Show voice call'
-                              : 'Start voice call',
+                              : 'Start voice mode',
                           onPressed: isLoading ? null : onStartVoice,
                           isActive: isVoiceCallActive,
+                          isProminent: true,
                         ),
                       ),
                       Expanded(
@@ -184,18 +185,26 @@ class _ComposerIconButton extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.isActive = false,
+    this.isProminent = false,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
   final bool isActive;
+  final bool isProminent;
 
   @override
   Widget build(BuildContext context) {
-    final foreground = isActive ? RexUiTokens.accent : RexUiTokens.textMuted;
+    final foreground = isActive
+        ? RexUiTokens.accent
+        : isProminent
+        ? RexUiTokens.text
+        : RexUiTokens.textMuted;
     final background = isActive
-        ? RexUiTokens.accent.withValues(alpha: 0.12)
+        ? RexUiTokens.accent.withValues(alpha: 0.16)
+        : isProminent
+        ? RexUiTokens.surfaceRaised
         : Colors.transparent;
 
     return IconButton(

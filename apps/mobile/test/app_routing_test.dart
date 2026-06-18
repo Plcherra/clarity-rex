@@ -20,21 +20,18 @@ void main() {
   test('assistant tab contract is stable and ordered', () {
     expect(AssistantTab.values.map((tab) => tab.id), [
       'chat',
-      'voice',
       'memory',
       'goals',
       'chats',
     ]);
     expect(AssistantTab.values.map((tab) => tab.label), [
       'Chat',
-      'Voice',
       'Knows',
       'Goals',
       'Chats',
     ]);
     expect(AssistantTab.values.map((tab) => tab.semanticLabel), [
       'Assistant Chat tab',
-      'Assistant Voice tab',
       'Assistant Knows tab',
       'Assistant Goals tab',
       'Assistant Chats tab',
@@ -139,45 +136,48 @@ void main() {
     expect(find.byType(ProfileScreen), findsOneWidget);
     expect(find.text('Multi-factor authentication'), findsOneWidget);
     expect(find.text('Voice usage'), findsOneWidget);
-    expect(find.text('Minutes today, this week, and this month'), findsOneWidget);
+    expect(
+      find.text('Minutes today, this week, and this month'),
+      findsOneWidget,
+    );
     expect(find.text('Sign out'), findsOneWidget);
   });
 
-  testWidgets(
-    'assistant tab exposes Chat Voice Knows Goals and Chats sections',
-    (tester) async {
-      final app = AppComposition(initialAuthenticated: true);
-      addTearDown(app.dispose);
-      app.profileController.profile = ProfileRecord(
-        id: 'user-1',
-        email: 'test@example.com',
-        fullName: 'Test User',
-        avatarUrl: null,
-        createdAt: DateTime.utc(2026),
-        updatedAt: DateTime.utc(2026),
-      );
+  testWidgets('assistant tab exposes Chat Knows Goals and Chats sections', (
+    tester,
+  ) async {
+    final app = AppComposition(initialAuthenticated: true);
+    addTearDown(app.dispose);
+    app.profileController.profile = ProfileRecord(
+      id: 'user-1',
+      email: 'test@example.com',
+      fullName: 'Test User',
+      avatarUrl: null,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+    );
 
-      await tester.pumpWidget(
-        ClarityApp(
-          ui: app.ui,
-          authController: app.authController,
-          profileController: app.profileController,
-        ),
-      );
+    await tester.pumpWidget(
+      ClarityApp(
+        ui: app.ui,
+        authController: app.authController,
+        profileController: app.profileController,
+      ),
+    );
 
-      await tester.tap(find.text('Assistant'));
-      await tester.pump();
+    await tester.tap(find.text('Assistant'));
+    await tester.pump();
 
-      expect(find.byType(AssistantScreen), findsOneWidget);
-      expect(find.byTooltip('Conversations'), findsNothing);
-      expect(find.byTooltip('Knows'), findsNothing);
-      expect(find.byTooltip('Accountability'), findsNothing);
-      for (final tab in AssistantTab.values) {
-        expect(find.byKey(tab.key), findsOneWidget);
-        expect(find.text(tab.label), findsOneWidget);
-      }
-    },
-  );
+    expect(find.byType(AssistantScreen), findsOneWidget);
+    expect(find.byTooltip('Conversations'), findsNothing);
+    expect(find.byTooltip('Knows'), findsNothing);
+    expect(find.byTooltip('Accountability'), findsNothing);
+    for (final tab in AssistantTab.values) {
+      expect(find.byKey(tab.key), findsOneWidget);
+      expect(find.text(tab.label), findsOneWidget);
+    }
+    expect(find.text('Voice'), findsNothing);
+  });
 
   testWidgets('assistant shared tab nav switches to Chats content', (
     tester,
@@ -244,39 +244,35 @@ void main() {
     expect(find.text('Conversations'), findsNothing);
   });
 
-  testWidgets(
-    'assistant Voice tab opens minimal voice for the active conversation',
-    (tester) async {
-      final voiceController = _FakeVoiceCallController();
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            conversationApiProvider.overrideWithValue(
-              _FakeConversationApi.withConversation(),
-            ),
-            voiceCallProvider.overrideWith(() => voiceController),
-          ],
-          child: const MaterialApp(home: AssistantScreen()),
-        ),
-      );
-      await tester.pump();
+  testWidgets('assistant chat mic starts voice for the active conversation', (
+    tester,
+  ) async {
+    final voiceController = _FakeVoiceCallController();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          conversationApiProvider.overrideWithValue(
+            _FakeConversationApi.withConversation(),
+          ),
+          voiceCallProvider.overrideWith(() => voiceController),
+        ],
+        child: const MaterialApp(home: AssistantScreen()),
+      ),
+    );
+    await tester.pump();
 
-      await tester.tap(find.byKey(AssistantTab.chats.key));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Budget check-in'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(AssistantTab.voice.key));
-      await tester.pumpAndSettle();
-      expect(find.text('Tap to speak'), findsOneWidget);
+    await tester.tap(find.byKey(AssistantTab.chats.key));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Budget check-in'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Start voice mode'));
+    await tester.pump();
 
-      await tester.tap(find.text('Speak'));
-      await tester.pumpAndSettle();
-
-      expect(voiceController.startCount, 1);
-      expect(voiceController.lastConversationId, 'conversation-1');
-      expect(find.text('Listening'), findsOneWidget);
-    },
-  );
+    expect(voiceController.startCount, 1);
+    expect(voiceController.lastConversationId, 'conversation-1');
+    expect(find.text('Listening'), findsOneWidget);
+    expect(find.text('End Voice'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpAssistantScreen(

@@ -31,6 +31,7 @@ class InlineVoiceCallPanel extends StatelessWidget {
     final transcript = state.currentTranscript.trim();
     final error = state.errorMessage?.trim();
     final statusColor = isFailed ? RexUiTokens.danger : RexUiTokens.accent;
+    final statusLabel = _voiceStatusLabel(state);
 
     return Material(
       color: RexUiTokens.background,
@@ -60,15 +61,15 @@ class InlineVoiceCallPanel extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        _voiceStatusIcon(state),
+                      _VoiceActivityGlyph(
+                        phase: state.phase,
+                        isMuted: state.isMuted,
                         color: statusColor,
-                        size: 18,
                       ),
                       const SizedBox(width: RexUiTokens.space8),
                       Expanded(
                         child: Text(
-                          _voiceStatusLabel(state),
+                          statusLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelLarge?.copyWith(
@@ -90,6 +91,11 @@ class InlineVoiceCallPanel extends StatelessWidget {
                         ),
                       ] else ...[
                         IconButton(
+                          onPressed: canInterrupt ? onInterrupt : null,
+                          icon: const Icon(Icons.front_hand_rounded),
+                          tooltip: 'Interrupt Rex',
+                        ),
+                        IconButton(
                           onPressed: onToggleMute,
                           icon: Icon(
                             state.isMuted
@@ -98,17 +104,20 @@ class InlineVoiceCallPanel extends StatelessWidget {
                           ),
                           tooltip: state.isMuted ? 'Unmute mic' : 'Mute mic',
                         ),
-                        IconButton(
-                          onPressed: canInterrupt ? onInterrupt : null,
-                          icon: const Icon(Icons.front_hand_rounded),
-                          tooltip: 'Interrupt Rex',
-                        ),
                       ],
-                      IconButton(
+                      TextButton.icon(
                         onPressed: onEnd,
-                        icon: const Icon(Icons.call_end_rounded),
-                        color: RexUiTokens.danger,
-                        tooltip: 'End call',
+                        icon: const Icon(Icons.call_end_rounded, size: 18),
+                        label: const Text('End Voice'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: RexUiTokens.danger,
+                          textStyle: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: const Size(0, 36),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                       ),
                     ],
                   ),
@@ -135,19 +144,6 @@ class InlineVoiceCallPanel extends StatelessWidget {
     );
   }
 
-  IconData _voiceStatusIcon(VoiceCallState state) {
-    if (state.isMuted && state.phase == VoiceCallPhase.listening) {
-      return Icons.mic_off_rounded;
-    }
-    return switch (state.phase) {
-      VoiceCallPhase.idle => Icons.call_rounded,
-      VoiceCallPhase.listening => Icons.mic_rounded,
-      VoiceCallPhase.thinking => Icons.more_horiz_rounded,
-      VoiceCallPhase.speaking => Icons.volume_up_rounded,
-      VoiceCallPhase.failed => Icons.error_outline_rounded,
-    };
-  }
-
   String _voiceStatusLabel(VoiceCallState state) {
     if (state.isMuted && state.phase == VoiceCallPhase.listening) {
       return 'Voice muted';
@@ -155,9 +151,113 @@ class InlineVoiceCallPanel extends StatelessWidget {
     return switch (state.phase) {
       VoiceCallPhase.idle => 'Voice ready',
       VoiceCallPhase.listening => 'Listening',
-      VoiceCallPhase.thinking => 'Thinking',
+      VoiceCallPhase.thinking => 'Rex is thinking...',
       VoiceCallPhase.speaking => 'Speaking',
       VoiceCallPhase.failed => 'Voice paused',
     };
+  }
+}
+
+class _VoiceActivityGlyph extends StatefulWidget {
+  const _VoiceActivityGlyph({
+    required this.phase,
+    required this.isMuted,
+    required this.color,
+  });
+
+  final VoiceCallPhase phase;
+  final bool isMuted;
+  final Color color;
+
+  @override
+  State<_VoiceActivityGlyph> createState() => _VoiceActivityGlyphState();
+}
+
+class _VoiceActivityGlyphState extends State<_VoiceActivityGlyph>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.phase == VoiceCallPhase.failed) {
+      return Icon(Icons.error_outline_rounded, color: widget.color, size: 20);
+    }
+    if (widget.isMuted && widget.phase == VoiceCallPhase.listening) {
+      return Icon(Icons.mic_off_rounded, color: widget.color, size: 20);
+    }
+    if (widget.phase == VoiceCallPhase.thinking) {
+      return AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final dot = 0.36 + (_controller.value * 0.54);
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var index = 0; index < 3; index++)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                  child: Opacity(
+                    opacity: (dot - (index * 0.16)).clamp(0.22, 1.0),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: widget.color,
+                      ),
+                      child: const SizedBox.square(dimension: 4),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            for (var index = 0; index < 4; index++)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 1.2),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: widget.color,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: SizedBox(
+                    width: 3,
+                    height:
+                        8 +
+                        (((index.isEven
+                                    ? _controller.value
+                                    : 1 - _controller.value) *
+                                10)
+                            .roundToDouble()),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
