@@ -8,7 +8,9 @@ from app.services.ai_service import AIService
 from app.services.accountability_service import AccountabilityService
 from app.services.action_truth_policy import (
     safe_degraded_memory_search_response,
+    safe_empty_recall_search_response,
     safe_old_chat_search_response,
+    safe_chat_search_capability_response,
     safe_pending_action_response,
     safe_unexecuted_memory_response,
     safe_unsupported_action_response,
@@ -457,6 +459,11 @@ class ChatService(ChatVoiceMetadataMixin):
             chat_search_results_loaded=chat_search_results_loaded,
             memory_status=memory_status,
         )
+        response = safe_empty_recall_search_response(
+            response,
+            memory_status=memory_status,
+        )
+        response = safe_chat_search_capability_response(response)
         if intent_decision.intent in {RexIntent.MEMORY_SAVE, RexIntent.MEMORY_UPDATE}:
             return safe_unexecuted_memory_response(response)
         return response

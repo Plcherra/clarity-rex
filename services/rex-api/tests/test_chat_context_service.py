@@ -199,29 +199,12 @@ async def test_chat_context_fetches_and_deduplicates_prompt_context():
         "memory-1",
         "profile-1",
     ]
-    assert [item["id"] for item in structured_context["chat_search_results"]] == [
-        "chat-past-message-1",
-    ]
+    assert "chat_search_results" not in structured_context
+    assert store.search_message_queries == []
     assert store.relevant_memory_queries == [
         {"query": "remember my preferences", "limit": 8},
         {"query": PROFILE_MEMORY_QUERY, "limit": 4},
     ]
-    assert store.search_message_queries[:2] == [
-        {
-            "query": "remember my preferences",
-            "limit": 200,
-            "exclude_conversation_id": None,
-        },
-        {
-            "query": "preference preferences prefer like likes",
-            "limit": 200,
-            "exclude_conversation_id": None,
-        },
-    ]
-    assert any(
-        item["query"] == "preferences"
-        for item in store.search_message_queries
-    )
 
 
 @pytest.mark.asyncio
@@ -236,7 +219,7 @@ async def test_chat_context_skips_memory_and_goals_for_casual_intent():
     )
 
     assert history == store.messages
-    assert memories == []
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
     assert structured_context == {}
     assert store.relevant_memory_queries == []
     assert store.structured_context_queries == []
@@ -935,17 +918,73 @@ async def test_chat_context_forces_chat_search_for_recall_even_when_intent_skips
         intent_decision=RexIntentDecision(RexIntent.CASUAL),
     )
 
-    assert memories == []
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
     result = structured_context["chat_search_results"][0]
     assert result["id"] == "chat-conversation-games"
     assert "first PC game" in result["content"]
     assert "Legacy of Kain" in result["content"]
     assert structured_context["memory_status"]["attempted_sources"][
         "long_term_memory"
-    ] is False
+    ] is True
     assert structured_context["memory_status"]["attempted_sources"][
         "chat_search"
     ] is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("message", "past_content", "expected_text"),
+    [
+        (
+            "Do you remember when I talked about my EAD?",
+            "We talked about my EAD renewal last month.",
+            "EAD renewal",
+        ),
+        (
+            "Did I ever say anything about sending money?",
+            "I said I wanted to send money to my mama.",
+            "send money",
+        ),
+        (
+            "Can you search my history for brain?",
+            "The word brain came up when we discussed Rex.",
+            "word brain",
+        ),
+        (
+            "What did we discuss about PC games?",
+            "We discussed buying Legacy of Kain on PC.",
+            "Legacy of Kain",
+        ),
+    ],
+)
+async def test_chat_context_broad_past_phrases_always_trigger_chat_search(
+    message,
+    past_content,
+    expected_text,
+):
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "broad-recall-match",
+            "conversation_id": "conversation-broad",
+            "role": "user",
+            "content": past_content,
+            "timestamp": "2026-06-18T12:00:00Z",
+        }
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message=message,
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.CASUAL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert expected_text in result["content"]
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert status["source"] == "chat_search"
+    assert status["attempted"] is True
 
 
 @pytest.mark.asyncio
@@ -1028,6 +1067,69 @@ async def test_chat_context_searches_short_pc_subject():
     result = structured_context["chat_search_results"][0]
     assert result["id"] == "chat-conversation-pc"
     assert "first PC game" in result["content"]
+    assert "Legacy of Kain" in result["content"]
+
+
+@pytest.mark.asyncio
+async def test_chat_context_treats_old_chet_as_old_chat_recall():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "mom-birthday",
+            "conversation_id": "conversation-old",
+            "role": "user",
+            "content": "My mom's birthday is June 18.",
+            "timestamp": "2026-06-12T18:48:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Can you check the old Chet for my mom?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.CASUAL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-old"
+    assert "mom's birthday" in result["content"]
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert status["source"] == "chat_search"
+    assert status["attempted"] is True
+
+
+@pytest.mark.asyncio
+async def test_chat_context_uses_wide_conversation_window_for_old_matches():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": f"message-{index}",
+            "conversation_id": "conversation-long",
+            "role": "user" if index in {10, 11, 12} else "assistant",
+            "content": (
+                "My mom's birthday is June 18."
+                if index == 10
+                else "I want to send money to my mama."
+                if index == 11
+                else "I am buying Legacy of Kain as my first PC game."
+                if index == 12
+                else f"filler message {index}"
+            ),
+            "timestamp": f"2026-06-18T12:{index:02d}:00Z",
+        }
+        for index in range(180)
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="What do you know about my mom?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.CASUAL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert "mom's birthday is June 18" in result["content"]
+    assert "send money to my mama" in result["content"]
     assert "Legacy of Kain" in result["content"]
 
 

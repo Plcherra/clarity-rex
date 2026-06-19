@@ -270,7 +270,25 @@ async def test_chat_service_allows_old_chat_no_result_claim_after_completed_sear
     )
 
     assert result["response"] == (
-        "I checked the old chats and found no mentions of your mom."
+        "I searched my saved memory and old chats but couldn't find anything "
+        "about that."
+    )
+    assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
+async def test_chat_service_standardizes_no_saved_memory_after_empty_chat_search():
+    ai_service = FakeAIService(
+        response="No, I don't have anything about your mom saved. Want to share?"
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Do you know anything about my mom?")
+
+    assert result["response"] == (
+        "I searched my saved memory and old chats but couldn't find anything "
+        "about that."
     )
     assert result["memory_changes"] is None
 
@@ -429,6 +447,29 @@ async def test_chat_service_allows_old_chat_answer_when_chat_search_is_loaded():
         "I found an old chat mention that your mom's birthday is June 18."
     )
     assert "Relevant chat search results:" in ai_service.messages[0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_chat_service_blocks_false_current_chat_only_search_claim():
+    ai_service = FakeAIService(
+        response=(
+            "I only search the chat history available right here, so older "
+            "messages might not show up."
+        )
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message(
+        "Why can't you find all the history of our messages?"
+    )
+
+    assert result["response"] == (
+        "I should be able to search across your saved chat history, not only this "
+        "current chat. If a search does not return results, that means the chat "
+        "search path needs fixing or the source is unavailable; it is not a limit "
+        "you can fix from your side."
+    )
 
 
 @pytest.mark.asyncio

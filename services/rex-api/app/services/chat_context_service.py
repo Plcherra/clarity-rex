@@ -27,7 +27,7 @@ CHAT_SEARCH_RESULTS_LIMIT = 12
 PAST_CHAT_SEARCH_PAGE_LIMIT = 200
 CHAT_EXCERPT_CONTEXT_BEFORE = 6
 CHAT_EXCERPT_CONTEXT_AFTER = 8
-CHAT_EXCERPT_CONVERSATION_LIMIT = 120
+CHAT_EXCERPT_CONVERSATION_LIMIT = 500
 LOGGER = logging.getLogger("rex.context")
 MEMORY_REJECTION_MARKERS = (
     "do not remember",
@@ -106,12 +106,14 @@ class ChatContextService:
         timings_ms: dict[str, int] = {}
         memory_failures: list[dict] = []
         context_statuses: list[dict] = []
-        load_long_term_memory = self._load_long_term_memory(intent_decision)
-        force_chat_search = self.should_force_chat_recall_search(
+        recall_request = self.should_force_chat_recall_search(
             message,
             conversation_history=[],
         )
-        load_chat_search = load_long_term_memory or force_chat_search
+        load_long_term_memory = (
+            self._load_long_term_memory(intent_decision) or recall_request
+        )
+        load_chat_search = recall_request
         load_profile_memory = self._load_profile_memory(intent_decision)
         load_structured_memory = self._load_structured_memory(intent_decision)
         load_goal_context = self._load_goal_context(intent_decision)
@@ -240,11 +242,12 @@ class ChatContextService:
             conversation_history,
             memory_failures,
         )
-        force_chat_search = self.should_force_chat_recall_search(
+        recall_request = self.should_force_chat_recall_search(
             message,
             conversation_history=conversation_history,
         )
-        load_chat_search = load_long_term_memory or force_chat_search
+        load_long_term_memory = load_long_term_memory or recall_request
+        load_chat_search = recall_request
 
         if load_long_term_memory:
             memory_query = self.memory_retrieval_query(
@@ -923,7 +926,7 @@ class ChatContextService:
         *,
         conversation_history: list[dict],
     ) -> str:
-        normalized = " ".join(str(message or "").lower().split())
+        normalized = self.normalized_recall_text(message)
         if self.is_memory_inventory_query(normalized):
             return MEMORY_INVENTORY_QUERY
         if self.is_contextual_memory_followup(normalized):
@@ -961,6 +964,7 @@ class ChatContextService:
         return " about " not in f" {normalized} " or normalized.endswith(" about me")
 
     def is_contextual_memory_followup(self, normalized_message: str) -> bool:
+        normalized_message = self.normalized_recall_text(normalized_message)
         stripped = normalized_message.strip("?.! ")
         if stripped in {
             "chat",
@@ -982,6 +986,10 @@ class ChatContextService:
                 "check chats",
                 "check the chat",
                 "check the chats",
+                "look into chat",
+                "look into chats",
+                "look into the chat",
+                "look into the chats",
                 "old chat",
                 "old chats",
                 "old conversation",
@@ -1011,7 +1019,7 @@ class ChatContextService:
         *,
         conversation_history: list[dict],
     ) -> bool:
-        normalized = " ".join(str(message or "").lower().split())
+        normalized = self.normalized_recall_text(message)
         stripped = normalized.strip("?.! ")
         if not stripped:
             return False
@@ -1024,10 +1032,12 @@ class ChatContextService:
             "all chats",
             "any chats",
             "anything about",
+            "chat history",
             "can you find",
             "can you search",
             "check chat",
             "check chats",
+            "did i ever",
             "did i mention",
             "did i say",
             "did i tell",
@@ -1042,16 +1052,26 @@ class ChatContextService:
             "have i mentioned",
             "have i said",
             "have i told you",
+            "have we discussed",
+            "have we talked about",
+            "history",
             "i mentioned",
             "i told you",
+            "look into chat",
+            "look into chats",
+            "look into the chat",
+            "look into the chats",
             "old chat",
             "old chats",
             "previous chat",
             "previous chats",
+            "remember when",
             "search chat",
             "search chats",
+            "talked about",
             "what did i say",
             "what did i tell you",
+            "what did we",
             "what do you know about",
             "what do you remember about",
             "what games do i play",
@@ -1066,6 +1086,19 @@ class ChatContextService:
         if re.search(r"\bwhat\s+.+\b(?:did|do)\s+i\s+(?:play|buy|want|mention|say|tell)", normalized):
             return True
         if re.search(r"\b(?:did|do|have)\s+i\s+.+\b(?:mention|mentioned|say|said|tell|told|buy|send|sent)", normalized):
+            return True
+        if re.search(
+            r"\b(?:did|do|have|had|when|what|who|where)\s+(?:i|we)\b"
+            r".*\b(?:mention|mentioned|say|said|tell|told|talk|talked|"
+            r"discuss|discussed|buy|bought|send|sent|play|played)\b",
+            normalized,
+        ):
+            return True
+        if re.search(
+            r"\b(?:past|previous|earlier|before|history|remember when|did i ever|"
+            r"have we ever)\b",
+            normalized,
+        ):
             return True
         if re.search(r"\bi\s+(?:would|was|am|m|'m)\s+.+\b(?:buy|buying|send|sending|sent)", normalized):
             return True
@@ -1085,6 +1118,10 @@ class ChatContextService:
             return bool(self.recent_memory_subject(conversation_history))
 
         return False
+
+    def normalized_recall_text(self, message: str) -> str:
+        normalized = " ".join(str(message or "").lower().split())
+        return re.sub(r"\bchet\b", "chat", normalized)
 
     def chat_search_candidate_rank(self, message: dict) -> tuple[int, str]:
         if self.is_chat_search_user_content_message(message):

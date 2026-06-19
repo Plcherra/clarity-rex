@@ -577,3 +577,69 @@ def test_prompt_service_surfaces_degraded_memory_status():
     assert "memory_status/degraded" in system_content
     assert "Failed sources: chat_search" in system_content
     assert "memory search is temporarily unavailable" in system_content
+
+
+def test_prompt_service_surfaces_empty_chat_search_status():
+    service = PromptService(TimeContextService(timezone_name="America/New_York"))
+
+    messages = service.build_messages(
+        user_message="Do you know anything about my mom?",
+        structured_context={
+            "memory_status": {
+                "state": "ready",
+                "message": "Memory sources searched successfully.",
+                "source_statuses": [
+                    {
+                        "source": "chat_search",
+                        "attempted": True,
+                        "succeeded": True,
+                        "result_count": 0,
+                        "raw_match_count": 0,
+                        "partial": False,
+                    }
+                ],
+            }
+        },
+    )
+
+    system_content = messages[0]["content"]
+    assert STRUCTURED_MEMORY_PREFIX in system_content
+    assert "chat_search_status/empty" in system_content
+    assert "old chat search ran across saved chat history" in system_content
+    assert "searched saved memory and old chats" in system_content
+    assert "anything about that" in system_content
+
+
+def test_prompt_service_surfaces_found_chat_search_status():
+    service = PromptService(TimeContextService(timezone_name="America/New_York"))
+
+    messages = service.build_messages(
+        user_message="What did I say about PC games?",
+        structured_context={
+            "memory_status": {
+                "state": "ready",
+                "message": "Memory sources searched successfully.",
+                "source_statuses": [
+                    {
+                        "source": "chat_search",
+                        "attempted": True,
+                        "succeeded": True,
+                        "result_count": 2,
+                        "raw_match_count": 4,
+                        "partial": False,
+                    }
+                ],
+            },
+            "chat_search_results": [
+                {
+                    "content": "user: I am buying Legacy of Kain on PC.",
+                    "timestamp": "2026-06-18T12:00:00Z",
+                }
+            ],
+        },
+    )
+
+    system_content = messages[0]["content"]
+    assert "chat_search_status/found" in system_content
+    assert "Relevant chat search results:" in system_content
+    assert "Use the Relevant chat search results section as chat history" in system_content

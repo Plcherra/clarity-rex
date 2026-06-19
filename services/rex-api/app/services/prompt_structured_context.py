@@ -88,8 +88,6 @@ class PromptStructuredContextMixin:
         if not isinstance(status, dict):
             return None
         state = str(status.get("state") or "ready")
-        if state == "ready":
-            return None
 
         message = str(
             status.get("message") or "Some memory sources could not be searched."
@@ -108,11 +106,55 @@ class PromptStructuredContextMixin:
             if failure_sources
             else ""
         )
-        return (
-            f"- memory_status/{state}: {message}{source_text} "
-            "If memory status is degraded, say memory search is temporarily "
-            "unavailable instead of claiming nothing was found."
-        )
+        if state != "ready":
+            return (
+                f"- memory_status/{state}: {message}{source_text} "
+                "If memory status is degraded, say memory search is temporarily "
+                "unavailable instead of claiming nothing was found."
+            )
+        return self._chat_search_status_line(status)
+
+    def _chat_search_status_line(self, status: dict) -> Optional[str]:
+        source_statuses = status.get("source_statuses")
+        if not isinstance(source_statuses, list):
+            return None
+
+        for source_status in source_statuses:
+            if not isinstance(source_status, dict):
+                continue
+            if source_status.get("source") != "chat_search":
+                continue
+            if source_status.get("attempted") is not True:
+                return None
+            if source_status.get("succeeded") is not True:
+                return (
+                    "- chat_search_status/degraded: old chat search was attempted "
+                    "but is unavailable. Say chat search is temporarily unavailable "
+                    "instead of claiming nothing was found."
+                )
+            if source_status.get("partial") is True:
+                return (
+                    "- chat_search_status/partial: old chat search ran but may be "
+                    "incomplete. Do not claim the user never mentioned something."
+                )
+
+            result_count = int(source_status.get("result_count") or 0)
+            raw_match_count = int(source_status.get("raw_match_count") or 0)
+            if result_count > 0:
+                return (
+                    "- chat_search_status/found: old chat search found "
+                    f"{result_count} relevant conversation result(s). Use the "
+                    "Relevant chat search results section as chat history, not saved "
+                    "memory."
+                )
+            return (
+                "- chat_search_status/empty: old chat search ran across saved chat "
+                f"history and found no relevant conversation results "
+                f"({raw_match_count} raw message match(es)). If answering no, say "
+                "you searched saved memory and old chats but could not find "
+                "anything about that."
+            )
+        return None
 
     def _entity_line(self, entity: dict) -> Optional[str]:
         name = entity.get("display_name") or entity.get("normalized_name")

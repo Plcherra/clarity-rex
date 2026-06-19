@@ -76,6 +76,22 @@ NO_OLD_CHAT_RESULT_CLAIMS = (
     "found nothing",
 )
 
+CHAT_SEARCH_CAPABILITY_LIMIT_CLAIMS = (
+    "only search the chat history available right here",
+    "only search what's here",
+    "only search what is here",
+    "only search the current chat",
+    "only search this chat",
+    "just what's here",
+    "just what is here",
+    "older messages might not show up",
+    "older parts don't show up",
+    "older parts do not show up",
+    "older ones stay hidden",
+    "search only pulls from the chats here",
+    "search only pulls from chats here",
+)
+
 UNSUPPORTED_DENIAL_TERMS = (
     "can't",
     "cannot",
@@ -196,6 +212,43 @@ def safe_old_chat_search_response(
     return (
         "I don't have a reliable chat search result for that right now. I can't "
         "confidently say it was never mentioned unless chat search completes."
+    )
+
+
+def safe_empty_recall_search_response(
+    response: str,
+    *,
+    memory_status: object = None,
+) -> str:
+    """Use one calm no-results answer after a complete empty recall search."""
+
+    cleaned = response.strip()
+    if not chat_search_completed_without_results(memory_status):
+        return cleaned
+    if not response_claims_no_memory_result(cleaned):
+        return cleaned
+    return (
+        "I searched my saved memory and old chats but couldn't find anything "
+        "about that."
+    )
+
+
+def response_claims_limited_chat_search_capability(response: str) -> bool:
+    normalized = f" {response.lower()} "
+    return any(term in normalized for term in CHAT_SEARCH_CAPABILITY_LIMIT_CLAIMS)
+
+
+def safe_chat_search_capability_response(response: str) -> str:
+    """Block false claims that Rex can only search the visible/current chat."""
+
+    cleaned = response.strip()
+    if not response_claims_limited_chat_search_capability(cleaned):
+        return cleaned
+    return (
+        "I should be able to search across your saved chat history, not only this "
+        "current chat. If a search does not return results, that means the chat "
+        "search path needs fixing or the source is unavailable; it is not a limit "
+        "you can fix from your side."
     )
 
 
