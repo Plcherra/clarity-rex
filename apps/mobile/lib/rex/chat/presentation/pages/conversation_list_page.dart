@@ -170,12 +170,64 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
     ref.read(conversationListProvider.notifier).clearSearch();
   }
 
+  void _setDateFilter(ConversationDateFilter filter) {
+    ref.read(conversationListProvider.notifier).setDateFilter(filter);
+  }
+
+  Future<void> _pickCustomDateFilter() async {
+    final now = DateTime.now();
+    final currentFilter = ref.read(conversationListProvider).dateFilter;
+    final initialRange = currentFilter.type == ConversationDateFilterType.custom
+        ? DateTimeRange(
+            start: currentFilter.start ?? now,
+            end: currentFilter.end ?? now,
+          )
+        : DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now);
+    final range = await showDateRangePicker(
+      context: context,
+      initialDateRange: initialRange,
+      firstDate: DateTime(now.year - 10),
+      lastDate: DateTime(now.year + 1, 12, 31),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: RexUiTokens.accent,
+              onPrimary: RexUiTokens.background,
+              surface: RexUiTokens.surfaceRaised,
+              onSurface: RexUiTokens.text,
+            ),
+            dialogTheme: const DialogThemeData(
+              backgroundColor: RexUiTokens.surfaceRaised,
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+    if (!mounted || range == null) {
+      return;
+    }
+
+    _setDateFilter(
+      ConversationDateFilter.custom(start: range.start, end: range.end),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
     final state = ref.watch(conversationListProvider);
     final currentConversation = ref.watch(currentConversationProvider);
+    final filteredConversations = filterConversationsByDate(
+      state.conversations,
+      state.dateFilter,
+    );
+    final filteredSearchResults = filterConversationSearchResultsByDate(
+      state.searchResults,
+      state.dateFilter,
+    );
 
     final body = RefreshIndicator(
       color: RexUiTokens.accent,
@@ -220,17 +272,29 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: _ConversationSearchField(
-                controller: _searchController,
-                isSearching: state.isSearching,
-                onSubmitted: _submitSearch,
-                onClear: _clearSearch,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _ConversationSearchField(
+                    controller: _searchController,
+                    isSearching: state.isSearching,
+                    onSubmitted: _submitSearch,
+                    onClear: _clearSearch,
+                  ),
+                  const SizedBox(height: RexUiTokens.space12),
+                  _ConversationDateFilters(
+                    filter: state.dateFilter,
+                    onFilterChanged: _setDateFilter,
+                    onCustomTap: _pickCustomDateFilter,
+                  ),
+                ],
               ),
             ),
           ),
           if (state.searchQuery.isNotEmpty)
             _ConversationSearchResultsSliver(
               state: state,
+              results: filteredSearchResults,
               onResultTap: _openSearchResult,
             )
           else if (state.isLoading && state.conversations.isEmpty)
@@ -239,13 +303,19 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                 child: CircularProgressIndicator(color: RexUiTokens.accent),
               ),
             )
-          else if (state.conversations.isEmpty)
+          else if (filteredConversations.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: _EmptyConversationState(
+                    title: state.dateFilter.isActive
+                        ? 'No chats in ${state.dateFilter.label(DateTime.now()).toLowerCase()}'
+                        : 'No chats yet',
+                    message: state.dateFilter.isActive
+                        ? 'Clear the date filter or choose a wider range.'
+                        : 'Start a fresh conversation when you are ready.',
                     isLoading: state.isLoading,
                     onNewConversation: _newConversation,
                   ),
@@ -255,7 +325,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
           else
             SliverList(
               delegate: SliverChildListDelegate(
-                conversationGroups(state.conversations)
+                conversationGroups(filteredConversations)
                     .expand<Widget>(
                       (group) => [
                         ConversationDateHeader(
@@ -361,10 +431,12 @@ class _ConversationSearchField extends StatelessWidget {
 class _ConversationSearchResultsSliver extends StatelessWidget {
   const _ConversationSearchResultsSliver({
     required this.state,
+    required this.results,
     required this.onResultTap,
   });
 
   final ConversationListState state;
+  final List<ConversationSearchResult> results;
   final ValueChanged<ConversationSearchResult> onResultTap;
 
   @override
@@ -377,14 +449,17 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
       );
     }
 
-    if (state.searchResults.isEmpty) {
+    if (results.isEmpty) {
+      final suffix = state.dateFilter.isActive
+          ? ' in ${state.dateFilter.label(DateTime.now()).toLowerCase()}'
+          : '';
       return SliverFillRemaining(
         hasScrollBody: false,
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Text(
-              'No chats matched "${state.searchQuery}"',
+              'No chats matched "${state.searchQuery}"$suffix',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: RexUiTokens.textMuted,
                 fontWeight: FontWeight.w700,
@@ -397,22 +472,120 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
 
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
-        final result = state.searchResults[index];
+        final result = results[index];
         return ConversationSearchResultTile(
           result: result,
           onTap: () => onResultTap(result),
         );
-      }, childCount: state.searchResults.length),
+      }, childCount: results.length),
+    );
+  }
+}
+
+class _ConversationDateFilters extends StatelessWidget {
+  const _ConversationDateFilters({
+    required this.filter,
+    required this.onFilterChanged,
+    required this.onCustomTap,
+  });
+
+  final ConversationDateFilter filter;
+  final ValueChanged<ConversationDateFilter> onFilterChanged;
+  final VoidCallback onCustomTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final chips = <Widget>[
+      _ConversationFilterChip(
+        label: 'All',
+        selected: filter.type == ConversationDateFilterType.all,
+        onTap: () => onFilterChanged(const ConversationDateFilter.all()),
+      ),
+      _ConversationFilterChip(
+        label: 'Today',
+        selected: filter.type == ConversationDateFilterType.today,
+        onTap: () => onFilterChanged(const ConversationDateFilter.today()),
+      ),
+      _ConversationFilterChip(
+        label: 'This week',
+        selected: filter.type == ConversationDateFilterType.thisWeek,
+        onTap: () => onFilterChanged(const ConversationDateFilter.thisWeek()),
+      ),
+      _ConversationFilterChip(
+        label: 'This month',
+        selected: filter.type == ConversationDateFilterType.thisMonth,
+        onTap: () => onFilterChanged(const ConversationDateFilter.thisMonth()),
+      ),
+      _ConversationFilterChip(
+        label: filter.type == ConversationDateFilterType.custom
+            ? filter.label(now)
+            : 'Custom',
+        icon: Icons.calendar_month_rounded,
+        selected: filter.type == ConversationDateFilterType.custom,
+        onTap: onCustomTap,
+      ),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(children: chips),
+    );
+  }
+}
+
+class _ConversationFilterChip extends StatelessWidget {
+  const _ConversationFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected
+        ? RexUiTokens.background
+        : RexUiTokens.textMuted;
+    return Padding(
+      padding: const EdgeInsets.only(right: RexUiTokens.space8),
+      child: ActionChip(
+        avatar: icon == null ? null : Icon(icon, size: 16, color: foreground),
+        label: Text(label),
+        labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: foreground,
+          fontWeight: FontWeight.w800,
+        ),
+        backgroundColor: selected
+            ? RexUiTokens.accent
+            : RexUiTokens.surfaceRaised,
+        side: BorderSide(
+          color: selected ? RexUiTokens.accent : RexUiTokens.border,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+        ),
+        onPressed: onTap,
+      ),
     );
   }
 }
 
 class _EmptyConversationState extends StatelessWidget {
   const _EmptyConversationState({
+    required this.title,
+    required this.message,
     required this.isLoading,
     required this.onNewConversation,
   });
 
+  final String title;
+  final String message;
   final bool isLoading;
   final VoidCallback onNewConversation;
 
@@ -430,7 +603,7 @@ class _EmptyConversationState extends StatelessWidget {
           const Icon(Icons.forum_outlined, color: RexUiTokens.accent, size: 34),
           const SizedBox(height: RexUiTokens.space16),
           Text(
-            'No chats yet',
+            title,
             style: theme.textTheme.titleMedium?.copyWith(
               color: RexUiTokens.text,
               fontWeight: FontWeight.w800,
@@ -438,7 +611,7 @@ class _EmptyConversationState extends StatelessWidget {
           ),
           const SizedBox(height: RexUiTokens.space8),
           Text(
-            'Start a fresh conversation when you are ready.',
+            message,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: RexUiTokens.textMuted,

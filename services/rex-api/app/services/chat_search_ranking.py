@@ -41,6 +41,8 @@ CHAT_SEARCH_STOP_WORDS = STOP_WORDS | {
     "told",
     "there",
     "us",
+    "was",
+    "were",
 }
 
 CHAT_SEARCH_TERM_ALIASES = {
@@ -61,9 +63,15 @@ CHAT_SEARCH_TERM_ALIASES = {
     "pc": ("pc", "computer", "game", "games"),
     "gift": ("gift", "gifts", "present", "send", "sent"),
     "gifts": ("gift", "gifts", "present", "send", "sent"),
+    "give": ("give", "giving", "gift", "gifts", "present", "send", "sent"),
+    "giving": ("give", "giving", "gift", "gifts", "present", "send", "sent"),
     "money": ("money", "send", "sent", "cash", "gift"),
     "purchase": ("purchase", "purchases", "buy", "buying", "bought"),
     "purchases": ("purchase", "purchases", "buy", "buying", "bought"),
+    "buy": ("purchase", "purchases", "buy", "buying", "bought"),
+    "buying": ("purchase", "purchases", "buy", "buying", "bought"),
+    "bought": ("purchase", "purchases", "buy", "buying", "bought"),
+    "wanted": ("want", "wanted", "buy", "buying", "purchase"),
     "payroll": ("payroll", "paycheck", "income", "work"),
     "job": ("job", "work", "company"),
     "work": ("work", "job", "company", "payroll"),
@@ -106,8 +114,11 @@ class ChatSearchRanking:
 
         queries = [ChatSearchQuery(cleaned_query, "exact")]
         subject_query = self.subject_only_query(normalized)
-        expanded_terms = self.expand_terms(subject_query or normalized, max_terms=max_terms)
-        expanded_query = " ".join(expanded_terms)
+        expanded_terms = self.expand_terms(normalized, max_terms=max_terms)
+        subject_terms = self.expand_terms(subject_query, max_terms=max_terms)
+        if subject_terms:
+            expanded_terms = [*subject_terms, *expanded_terms]
+        expanded_query = " ".join(self.unique_terms(expanded_terms)[:max_terms])
         if expanded_query:
             queries.append(ChatSearchQuery(expanded_query, "expanded_keywords"))
         if subject_query:
@@ -137,6 +148,13 @@ class ChatSearchRanking:
             if term and term not in unique_terms:
                 unique_terms.append(term)
         return unique_terms[:max_terms]
+
+    def unique_terms(self, terms: list[str]) -> list[str]:
+        unique: list[str] = []
+        for term in terms:
+            if term and term not in unique:
+                unique.append(term)
+        return unique
 
     def subject_only_query(self, normalized_query: str) -> str:
         match = re.search(

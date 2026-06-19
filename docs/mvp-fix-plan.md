@@ -4,6 +4,16 @@ This plan is organized by launch priority groups. Work one full group at a time,
 
 Group 1 is complete. Rex now searches old chats as conversation-level history instead of isolated keyword hits. The simple MVP Rex Brain follows the strict "Saved = Memory" model: saved records are durable categorized memory, chat search results remain chat history, and Rex must not blur the two.
 
+Current manual-smoke priority after 2026-06-18 testing:
+
+1. Fix Issue 7B first: Rex old-chat recall is still unreliable on device and affects core trust.
+2. Fix Issue 7A next: typed turns during active voice mode must also speak the reply.
+3. Fix Issue 10 next: reduce voice response latency, spoken chunk gaps, and delayed return to listening.
+4. Fix Issue 9 next: real PDF uploads fail on device and attachment source choices are missing.
+5. Fix Issue 8 next: Chats needs real date filters, not only headers.
+6. Fix Issue 11 after functional bugs: visual quality needs a premium polish pass.
+7. Issues 6 and 7 passed manual smoke and are closed.
+
 ## Group 1: Core Trust & Truth Issues (Highest Priority)
 
 Status:
@@ -447,6 +457,17 @@ High
 
 ## Group 2: UX Polish & Usability
 
+Manual smoke test update on 2026-06-18:
+
+- Issue 6 account cards passed manual smoke.
+- Issue 7 dashboard spacing/controls passed manual smoke.
+- Issue 11 visual consistency is acceptable for first launch consistency, but the app still needs a stronger modern visual polish pass before it feels premium.
+- Issue 7A failed manual smoke because typed replies while voice mode is active only return chat text, not spoken audio.
+- Issue 7B failed manual smoke because arbitrary recall still misses important old-chat facts, especially mom and sending money; game recall appears inconsistent and may still be too narrow.
+- Issue 8 needs more than date headers: Chats needs filtering by day, week, month, and custom date range to reduce long lists.
+- Issue 9 failed manual smoke because PDF upload returned a generic connection/upload failure, and the attachment picker needs Gallery, Camera, and Files choices.
+- Issue 10 improved slightly, but voice still has 4-5 second response latency, awkward audio gaps, and a slow return to listening.
+
 ### Issue 5: Manage Categories Scroll Bug
 
 Status:
@@ -474,7 +495,7 @@ High
 ### Issue 6: Account Cards Are Still Too Crowded
 
 Status:
-Complete for code. Needs device smoke verification.
+Complete.
 
 Issue:
 Account cards still feel crowded and can make account identity hard to read.
@@ -490,6 +511,7 @@ Fix Needed:
 - [Done] Give the account title more horizontal space.
 - [Done] Move secondary metadata and actions so they do not crowd the account name.
 - [Done] Verify Rex and the UI both use `account.displayName`.
+- [Done] Manual smoke passed on device.
 
 Goal After Fix:
 Users can instantly recognize each account, and Rex uses the exact same account names.
@@ -500,7 +522,7 @@ High
 ### Issue 7: Dashboard Controls And Spacing Need Polish
 
 Status:
-Complete for code. Needs device smoke verification.
+Complete.
 
 Issue:
 Dashboard still has unnecessary controls and spacing that make the financial area feel unpolished.
@@ -516,6 +538,7 @@ Fix Needed:
 - [Done] Remove unnecessary Budgets shortcut from the dashboard overview.
 - [Done] Remove the Rows transaction mode instead of hiding it.
 - [Done] Keep Months and Categories as the primary transaction views.
+- [Done] Manual smoke passed on device.
 
 Goal After Fix:
 The dashboard feels intentional, compact, and launch-ready.
@@ -526,10 +549,13 @@ High
 ### Issue 7A: Voice UI Must Be One Feature, Not Two Separate Experiences
 
 Status:
-Complete for code. Needs device smoke verification.
+Reopened after manual smoke. Needs fix.
 
 Issue:
 Manual testing showed voice felt like two different features. Starting voice from Chat kept the call inside the chat with an inline voice panel, while the old separate voice surface showed a full-screen voice interface. Backend voice mostly routed through the same chat brain, but the mobile UI made voice feel split and inconsistent.
+
+Manual smoke failure on 2026-06-18:
+Typing a reply while voice mode is active sends the message and Rex replies in chat, but Rex does not speak the reply. Voice mode and typed input are still not fully unified because typed turns during an active voice session do not route their assistant response into voice playback.
 
 Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\presentation\assistant_screen.dart`
@@ -548,6 +574,11 @@ Fix Needed:
 - [Done] Ensure voice transcripts and assistant replies are saved into the same conversation shown in Chat and Chats.
 - [Done] Keep backend voice on the same `chat_service.send_message` Rex Brain path.
 - [Done] Add manual tests for starting voice from Chat, typing while voice is active, ending voice, and confirming the conversation/history remains consistent.
+- [Done] When voice mode is active, typed messages still produce spoken assistant audio unless the user has muted/ended voice.
+- [Done] Voice playback for typed turns stays tied to the active conversation and saves the same messages as normal chat.
+- [Done] The inline voice panel reflects typed-turn thinking/speaking state instead of looking disconnected from the chat response.
+- [Done] Add mobile/controller tests for typed input during active voice mode producing voice playback.
+- [Needs Test] Manual device smoke for typed replies during active voice mode.
 
 Goal After Fix:
 Voice feels like one Rex conversation mode. The user should not have to understand two different voice systems.
@@ -558,7 +589,7 @@ High
 ### Issue 7B: Arbitrary Chat Recall Hardening
 
 Status:
-Complete for code. Needs manual device validation.
+Code fix complete. Needs manual device validation before moving on.
 
 [Added after Rex Brain search audit against `docs/brain/REX_BRAIN_RULES.md`, `docs/brain/REX_BRAIN_ARCHITECTURE.md`, and `docs/brain/REX_BRAIN_HYBRID_CHAT_SEARCH.md`]
 
@@ -579,9 +610,11 @@ Current Alignment:
 - `services/rex-api/supabase_schema.sql` now matches the user-scoped assistant table migration and includes RLS policies.
 
 Remaining Gaps:
-- Ranking is still keyword-only; semantic/hybrid search remains later work.
-- Alias coverage is still manual and limited, so arbitrary topics may miss unless the user repeats similar wording.
-- Manual validation is still needed on device for arbitrary recall across multiple old chats.
+- Manual smoke needs to confirm the hardened recall path works against the real device data.
+- Rex should now force chat search for recall-looking turns even if intent routing would otherwise skip memory.
+- Rex should now return nearby conversation details for mom, sending money/gift, PC game, and arbitrary-topic recall.
+- Ranking is still keyword-only; semantic/hybrid search remains later work, but the MVP keyword layer must not fail obvious old-chat terms.
+- Alias coverage is still manual and limited, so semantic/hybrid search remains the later upgrade for less obvious wording.
 
 Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\chat_context_service.py`
@@ -609,6 +642,14 @@ Fix Needed:
 - [Done] Refresh `services/rex-api/supabase_schema.sql` so the documented schema matches the user-scoped migrations.
 - [Done] Keep prompt context capped and labeled as chat history, not saved memory.
 - [Done] Keep degraded/no-result truth enforcement unchanged: Rex must not say "nothing came up" unless search actually completed.
+- [Done] Audit production request path against tests to find why device recall still misses chats that the Chats tab can show.
+- [Done] Force Rex chat search for recall-like turns even when intent routing would otherwise skip long-term memory.
+- [Done] Verify internal recall continues through the same shared ranking helper used by Chats search.
+- [Done] Add runtime/debug metadata for manual testing showing which chat search queries and modes were used, how many results returned, and how many messages were scanned.
+- [Done] Make recall retrieve useful nearby details from the matched conversation, not only the first matched phrase.
+- [Done] Add failing tests from manual smoke: mom birthday plus send-money/gift mention, buying first PC game, and follow-up recall from a different chat.
+- [Done] Confirm there is no hardcoded games/mom behavior and no production path bypassing the shared ranking helper.
+- [Needs Test] Manual device smoke with real chat history.
 
 Manual Validation Checklist:
 - Ask from a new chat: "What do you know about my mom?" and confirm Rex searches older chats without claiming saved memory.
@@ -616,6 +657,7 @@ Manual Validation Checklist:
 - Ask arbitrary topics from old chats: games, PC, immigration/EAD, purchases, work, places, goals, and money.
 - Confirm Chats tab search returns similar conversations/results for the same keywords.
 - Confirm no result from another user/account can appear.
+- Confirm "sending money to my mom" and "buying my first PC game" are found from a different chat without opening the original conversation.
 
 Goal After Fix:
 Rex has a trustworthy MVP keyword recall baseline for arbitrary user topics. It is still not semantic search, but it is user-scoped, ranked, generic, test-covered, and honest.
@@ -626,10 +668,13 @@ High
 ### Issue 11: Rex And Finance Use Separate Visual Token Systems
 
 Status:
-Complete for code. Needs device smoke verification.
+Code fix complete. Needs manual device validation.
 
 Issue:
 Rex and finance screens still use separate visual token systems.
+
+Manual smoke result on 2026-06-18:
+The app is visually consistent enough for a first launch pass, but the UI still feels primitive and too simple in places. The yellow accent and dark green/brown surfaces feel less like a premium black dark theme. Some cards feel too large and heavy. Account cards look more modern than other surfaces, but account rows need clearer separation.
 
 Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\app\app.dart`
@@ -642,9 +687,15 @@ Fix Needed:
 - [Done] Make Rex surfaces and financial screens share one practical dark design system.
 - [Done] Keep spacing, card borders, typography, and accent colors consistent.
 - [Done] Avoid making Rex feel polished while finance feels separate.
+- [Done] Refine the dark theme toward a cleaner black/near-black premium base instead of green/brown-heavy surfaces.
+- [Done] Reduce oversized card feeling where screens look too bulky or primitive.
+- [Done] Add subtle separators or stronger visual rhythm between account cards without making the page noisy.
+- [Done] Revisit yellow accent usage so it feels intentional and modern, not cheap or overpowering.
+- [Done] Run a cross-screen visual pass on Dashboard, Accounts, Budgets, Assistant, Knows, Goals, and Chats.
+- [Needs Test] Manual device smoke across Dashboard, Accounts, Budgets, Assistant, Knows, Goals, and Chats.
 
 Goal After Fix:
-Clarity feels like one app, with Rex and finance using the same visual language.
+Clarity feels like one modern, premium app, with Rex and finance using the same visual language.
 
 Priority:
 Medium
@@ -654,12 +705,15 @@ Medium
 ### Issue 8: Chats Tab Needs Search And Better Organization
 
 Status:
-Complete for code. Needs device smoke verification.
+Code fix complete. Needs manual device validation.
 
 Search work for this issue has been promoted into Group 1 as Issue 4f because it is part of Rex Brain trust and old-chat recall. This Group 3 item now tracks only extra organization polish after the high-priority search work is complete.
 
 Issue:
 Chats tab is hard to use for old conversations.
+
+Manual smoke result on 2026-06-18:
+Date headers now look cleaner, but the list is still not truly organized. Users cannot filter to this month, a specific day, a specific week, or a custom date range. Long chat histories still become too many conversations on one page.
 
 Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\presentation\pages\conversation_list_page.dart`
@@ -675,6 +729,13 @@ Fix Needed:
 - [Done] Keep tile timestamps compact so dates do not crowd conversation titles.
 - [Done] Avoid messy endless lists by adding better sectioning and empty states.
 - [Done] Add focused tests for grouping, section order, undated chats, and timestamp labels.
+- [Done] Add quick filters for Today, This week, This month, and All.
+- [Done] Add a custom date range picker for exact day/week/month range.
+- [Done] Make active filters visually obvious and easy to clear.
+- [Done] Ensure search and date filters work together.
+- [Done] Reduce overwhelming one-page lists by letting users narrow the visible history by date.
+- [Done] Add focused tests for date filters and combined search/date filtering behavior.
+- [Needs Test] Manual device smoke for quick filters, custom range picker, search + date filters together, and empty states.
 
 Goal After Fix:
 Users can find old Rex conversations quickly and trust that past context is accessible.
@@ -685,14 +746,19 @@ Medium
 ### Issue 9: PDF Upload Is Not Supported
 
 Status:
-Complete for code. Needs device smoke verification.
+Code fix complete. Needs manual device validation.
 
 Issue:
 PDF upload is not supported in Rex attachments.
 
+Manual smoke failure on 2026-06-18:
+Two tested PDFs failed with "Could not upload the file. Check your connection and try again." The user also needs the upload button to offer Gallery, Camera, and Files choices instead of one generic file picker path.
+
 Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\domain\chat_attachment.dart`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\presentation\pages\chat_page.dart`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\presentation\widgets\chat_input_bar.dart`
+- `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\chat\data\chat_api.dart`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\test\chat_attachment_test.dart`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\services\file_service.py`
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\services\rex-api\app\routes\chat.py`
@@ -705,6 +771,15 @@ Fix Needed:
 - [Done] Cap PDF prompt text so large documents do not explode token usage.
 - [Done] Show clear upload errors when a PDF cannot be read.
 - [Done] Add mobile validation tests and backend PDF extraction/error tests.
+- [Done] Debug real mobile PDF upload failure and expose the actual backend error instead of generic connection copy.
+- [Done] Confirm multipart upload includes the PDF file bytes, filename, and content type correctly.
+- [Done] Add attachment picker sheet with Gallery, Camera, and Files options.
+- [Done] Gallery prioritizes images from the photo library.
+- [Done] Camera captures a new image and attaches it.
+- [Done] Files support PDF, text, CSV, markdown, and supported image files.
+- [Done] Keep validation messages specific for unsupported type, oversized file, unreadable PDF, scanned/no-text PDF, and network/upload failure.
+- [Done] Add mobile tests for picker option handling and upload error mapping.
+- [Needs Test] Manual device smoke with Gallery, Camera, Files, readable PDF, scanned/no-text PDF, oversized PDF, and a disconnected/network failure.
 
 Goal After Fix:
 Users can attach images and PDFs, or the app clearly communicates that PDFs are not part of MVP.
@@ -715,10 +790,13 @@ Medium
 ### Issue 10: Voice Feels Slow And Robotic
 
 Status:
-Complete for code. Needs device smoke verification.
+Code fix complete. Needs manual device validation.
 
 Issue:
 Voice feels slow and robotic.
+
+Manual smoke result on 2026-06-18:
+Voice is slightly faster, but still takes around 4-5 seconds to respond. Spoken playback has awkward 2-3 second gaps between chunks, and after Rex finishes speaking it takes around 3 seconds before listening starts again.
 
 Files:
 - `C:\Users\admin\Documents\Codex\2026-06-15\we-re-coming-from-a-mac\work\clarity-rex\apps\mobile\lib\rex\voice\application\voice_call_controller_streaming.dart`
@@ -739,6 +817,14 @@ Fix Needed:
 - [Done] Adjust default Google TTS speaking rate for a slightly faster pace.
 - [Done] Keep existing streaming-to-cloud-capture fallback when streaming setup fails and typed error events when STT/TTS dependencies fail.
 - [Done] Add tests for shorter voice chunking and existing streaming failure behavior.
+- [Done] Reduce or hide 2-3 second gaps between spoken chunks by allowing backend TTS synthesis to prefetch ordered chunks.
+- [Done] Investigate whether chunked TTS playback waits for each network synthesis sequentially instead of prefetching the next chunk while current audio plays.
+- [Done] Start listening faster after playback completes by keeping the mobile playback queue drain/resume path covered by tests.
+- [Done] Check mobile playback queue/drain timing and whether completion callbacks are delayed.
+- [Done] Add timing logs visible enough for manual device testing: first audio, chunk gap, playback done, listening resumed, and `assistant.done` timings.
+- [Done] Tune chunking so short two-sentence replies are less likely to split into two separate TTS requests.
+- [Done] Add backend tests for chunk gap strategy and mobile tests for resume-listening state after playback.
+- [Needs Test] Manual device smoke for response latency, spoken chunk gaps, and return-to-listening delay.
 
 Goal After Fix:
 Voice feels responsive enough for daily use and does not sound painfully slow.

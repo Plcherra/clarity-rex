@@ -85,23 +85,36 @@ class AccountsBody extends StatelessWidget {
               ],
               AccountsSummaryCard(accounts: accounts),
               const SizedBox(height: 16),
-              for (final item in accounts) ...[
-                if (item.account.isPlaidConnected)
+              for (var i = 0; i < accounts.length; i++) ...[
+                if (accounts[i].account.isPlaidConnected)
                   PlaidAccountTile(
-                    item: item,
-                    status: statusFor(item.account),
-                    lastSyncedAt: lastSyncedAtFor(item.account),
+                    item: accounts[i],
+                    status: statusFor(accounts[i].account),
+                    lastSyncedAt: lastSyncedAtFor(accounts[i].account),
                     onResync: () =>
-                        onResyncPlaidItem(item.account.plaidItemId!),
-                    onDisconnect: () => onDisconnectPlaidItem(item.account),
-                    onTap: () => onOpenAccountDetail(item.account),
+                        onResyncPlaidItem(accounts[i].account.plaidItemId!),
+                    onDisconnect: () =>
+                        onDisconnectPlaidItem(accounts[i].account),
+                    onTap: () => onOpenAccountDetail(accounts[i].account),
                   )
                 else
                   ManualAccountTile(
-                    item: item,
-                    onTap: () => onOpenAccountDetail(item.account),
+                    item: accounts[i],
+                    onTap: () => onOpenAccountDetail(accounts[i].account),
                   ),
-                const SizedBox(height: 10),
+                if (i < accounts.length - 1)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    child: Divider(
+                      height: 1,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withValues(alpha: 0.48),
+                    ),
+                  ),
               ],
             ],
           ),

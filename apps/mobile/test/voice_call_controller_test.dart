@@ -8,6 +8,7 @@ import 'package:clarity/rex/voice/data/audio_playback_service.dart';
 import 'package:clarity/rex/voice/data/audio_recording_service.dart';
 import 'package:clarity/rex/voice/data/audio_session_service.dart';
 import 'package:clarity/rex/voice/data/background_voice_service.dart';
+import 'package:clarity/rex/voice/data/cloud_voice_api.dart';
 import 'package:clarity/rex/voice/data/streaming_audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/streaming_voice_api.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
@@ -526,4 +527,117 @@ void main() {
       expect(state.errorMessage, contains('previous response'));
     },
   );
+
+  test(
+    'typed reply during active voice synthesizes audio and returns to listening',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final playbackService = _ControlledAudioPlaybackService();
+      final audioSessionService = _CountingVoiceAudioSessionService();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            audioSessionService,
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      controller.beginTypedTextTurn('Typed while voice is open.');
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      expect(
+        container.read(voiceCallProvider).currentTranscript,
+        'Typed while voice is open.',
+      );
+
+      final speak = controller.speakTypedAssistantResponse(
+        'Spoken typed reply.',
+      );
+      await playbackService.playStarted.future;
+
+      expect(cloudVoiceApi.synthesizedTexts, ['Spoken typed reply.']);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+      expect(
+        container.read(voiceCallProvider).lastAssistantResponse,
+        'Spoken typed reply.',
+      );
+      expect(audioSessionService.preferLoudSpeakerCount, 1);
+
+      playbackService.complete();
+      await speak;
+      await captureService.readyAt(1);
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(state.errorMessage, isNull);
+    },
+  );
+
+  test('typed reply during muted voice skips audio playback', () async {
+    final captureService = _ScriptedStreamingAudioCaptureService();
+    final playbackService = _ControlledAudioPlaybackService();
+    final cloudVoiceApi = _FakeCloudVoiceApi();
+    final container = ProviderContainer(
+      overrides: [
+        microphonePermissionProvider.overrideWithValue(
+          const _GrantedMicrophonePermissionService(),
+        ),
+        voiceAudioSessionServiceProvider.overrideWithValue(
+          const _NoopVoiceAudioSessionService(),
+        ),
+        backgroundVoiceServiceProvider.overrideWithValue(
+          const _NoopBackgroundVoiceService(),
+        ),
+        audioCaptureServiceProvider.overrideWithValue(
+          const _NoopAudioCaptureService(),
+        ),
+        audioPlaybackServiceProvider.overrideWithValue(playbackService),
+        streamingVoiceEnabledProvider.overrideWithValue(true),
+        nativeIosVoiceEnabledProvider.overrideWithValue(false),
+        streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+        streamingAudioCaptureServiceProvider.overrideWithValue(captureService),
+        cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(voiceCallProvider.notifier);
+
+    expect(await controller.startCall(), isTrue);
+    await captureService.readyAt(0);
+    controller.setMuted(true);
+
+    controller.beginTypedTextTurn('Typed while muted.');
+    await controller.speakTypedAssistantResponse('Silent typed reply.');
+
+    final state = container.read(voiceCallProvider);
+    expect(state.phase, VoiceCallPhase.listening);
+    expect(state.isMuted, isTrue);
+    expect(state.lastAssistantResponse, 'Silent typed reply.');
+    expect(cloudVoiceApi.synthesizedTexts, isEmpty);
+    expect(playbackService.playStarted.isCompleted, isFalse);
+  });
 }

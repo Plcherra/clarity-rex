@@ -31,13 +31,13 @@ class PlaidAccountTile extends StatelessWidget {
     final balance = account.currentBalance;
     final availableBalance = account.plaidAvailableBalance;
     return Material(
-      color: cs.surface,
-      borderRadius: BorderRadius.circular(16),
+      color: cs.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
           child: Column(
             children: [
               PlaidAccountHeader(

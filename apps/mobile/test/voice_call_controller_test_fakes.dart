@@ -296,6 +296,24 @@ class _ControlledAudioPlaybackService implements AudioPlaybackService {
   }
 }
 
+class _FakeCloudVoiceApi extends CloudVoiceApi {
+  _FakeCloudVoiceApi() : super(baseUrl: 'http://localhost');
+
+  final synthesizedTexts = <String>[];
+
+  @override
+  Future<CloudVoiceSynthesisResponse> synthesize(String text) async {
+    synthesizedTexts.add(text);
+    return CloudVoiceSynthesisResponse(
+      audioContentType: 'audio/mpeg',
+      audioBase64: base64Encode([1, 2, 3]),
+      audioEncoding: 'mp3',
+      voiceName: 'test-voice',
+      languageCode: 'en-US',
+    );
+  }
+}
+
 class _FakeStreamingVoiceApi extends StreamingVoiceApi {
   _FakeStreamingVoiceApi() : super(baseUrl: 'http://localhost');
 

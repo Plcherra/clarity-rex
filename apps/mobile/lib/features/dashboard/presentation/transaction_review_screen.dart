@@ -470,7 +470,7 @@ class _ReviewTransactionCard extends StatelessWidget {
                   [
                     _shortDate(raw.date),
                     if (showAccount && account != null) account!.displayName,
-                  ].join(' · '),
+                  ].join(' / '),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.48),
                     fontWeight: FontWeight.w700,

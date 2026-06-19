@@ -29,6 +29,20 @@ String chatAttachmentName(XFile attachment) {
   return p.basename(attachment.path);
 }
 
+String? chatAttachmentContentType(String fileName) {
+  final extension = p.extension(fileName).replaceFirst('.', '').toLowerCase();
+  return switch (extension) {
+    'txt' => 'text/plain',
+    'md' => 'text/markdown',
+    'csv' => 'text/csv',
+    'pdf' => 'application/pdf',
+    'jpg' || 'jpeg' => 'image/jpeg',
+    'png' => 'image/png',
+    'webp' => 'image/webp',
+    _ => null,
+  };
+}
+
 String formatAttachmentSize(int bytes) {
   if (bytes < 1024) {
     return '$bytes B';

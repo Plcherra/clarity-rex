@@ -34,6 +34,7 @@ class ConversationListState {
     this.conversations = const [],
     this.searchResults = const [],
     this.searchQuery = '',
+    this.dateFilter = const ConversationDateFilter.all(),
     this.isLoading = false,
     this.isSearching = false,
     this.errorMessage,
@@ -42,6 +43,7 @@ class ConversationListState {
   final List<Conversation> conversations;
   final List<ConversationSearchResult> searchResults;
   final String searchQuery;
+  final ConversationDateFilter dateFilter;
   final bool isLoading;
   final bool isSearching;
   final String? errorMessage;
@@ -50,6 +52,7 @@ class ConversationListState {
     List<Conversation>? conversations,
     List<ConversationSearchResult>? searchResults,
     String? searchQuery,
+    ConversationDateFilter? dateFilter,
     bool? isLoading,
     bool? isSearching,
     String? errorMessage,
@@ -59,11 +62,80 @@ class ConversationListState {
       conversations: conversations ?? this.conversations,
       searchResults: searchResults ?? this.searchResults,
       searchQuery: searchQuery ?? this.searchQuery,
+      dateFilter: dateFilter ?? this.dateFilter,
       isLoading: isLoading ?? this.isLoading,
       isSearching: isSearching ?? this.isSearching,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
+}
+
+enum ConversationDateFilterType { all, today, thisWeek, thisMonth, custom }
+
+class ConversationDateFilter {
+  const ConversationDateFilter._({required this.type, this.start, this.end});
+
+  const ConversationDateFilter.all()
+    : this._(type: ConversationDateFilterType.all);
+
+  const ConversationDateFilter.today()
+    : this._(type: ConversationDateFilterType.today);
+
+  const ConversationDateFilter.thisWeek()
+    : this._(type: ConversationDateFilterType.thisWeek);
+
+  const ConversationDateFilter.thisMonth()
+    : this._(type: ConversationDateFilterType.thisMonth);
+
+  const ConversationDateFilter.custom({
+    required DateTime start,
+    required DateTime end,
+  }) : this._(type: ConversationDateFilterType.custom, start: start, end: end);
+
+  final ConversationDateFilterType type;
+  final DateTime? start;
+  final DateTime? end;
+
+  bool get isActive => type != ConversationDateFilterType.all;
+
+  String label(DateTime now) {
+    return switch (type) {
+      ConversationDateFilterType.all => 'All',
+      ConversationDateFilterType.today => 'Today',
+      ConversationDateFilterType.thisWeek => 'This week',
+      ConversationDateFilterType.thisMonth => 'This month',
+      ConversationDateFilterType.custom => _customLabel(now),
+    };
+  }
+
+  String _customLabel(DateTime now) {
+    final startDate = start;
+    final endDate = end;
+    if (startDate == null || endDate == null) {
+      return 'Custom';
+    }
+    final normalizedStart = DateTime(
+      startDate.year,
+      startDate.month,
+      startDate.day,
+    );
+    final normalizedEnd = DateTime(endDate.year, endDate.month, endDate.day);
+    if (normalizedStart == normalizedEnd) {
+      return '${normalizedStart.month}/${normalizedStart.day}/${normalizedStart.year}';
+    }
+    return '${normalizedStart.month}/${normalizedStart.day} - ${normalizedEnd.month}/${normalizedEnd.day}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ConversationDateFilter &&
+        other.type == type &&
+        other.start == start &&
+        other.end == end;
+  }
+
+  @override
+  int get hashCode => Object.hash(type, start, end);
 }
 
 class ConversationListController extends Notifier<ConversationListState> {
@@ -182,6 +254,17 @@ class ConversationListController extends Notifier<ConversationListState> {
       searchQuery: '',
       searchResults: const [],
       isSearching: false,
+      clearError: true,
+    );
+  }
+
+  void setDateFilter(ConversationDateFilter filter) {
+    state = state.copyWith(dateFilter: filter, clearError: true);
+  }
+
+  void clearDateFilter() {
+    state = state.copyWith(
+      dateFilter: const ConversationDateFilter.all(),
       clearError: true,
     );
   }

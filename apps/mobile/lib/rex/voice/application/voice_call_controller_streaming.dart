@@ -283,6 +283,9 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
   ) async {
     var assistantText = '';
     var responseAudioStarted = false;
+    DateTime? assistantStartedAt;
+    DateTime? firstAudioChunkAt;
+    DateTime? lastAudioChunkStartedAt;
     void beginStreamingAudioIfNeeded() {
       if (responseAudioStarted) {
         return;
@@ -294,13 +297,27 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
 
     StreamingAudioPlaybackCallbacks playbackCallbacks() {
       return StreamingAudioPlaybackCallbacks(
-        onChunkStarted: (_) {
+        onChunkStarted: (chunk) {
           if (_isCurrentCall(generation)) {
+            final now = DateTime.now();
+            firstAudioChunkAt ??= now;
+            final previousChunkAt = lastAudioChunkStartedAt;
+            lastAudioChunkStartedAt = now;
+            debugPrint(
+              'rex_voice_playback chunk_started '
+              'first_audio_ms=${_elapsedSince(assistantStartedAt, now)} '
+              'chunk_gap_ms=${_elapsedSince(previousChunkAt, now)} '
+              'text_chars=${chunk.text.length}',
+            );
             startSpeaking(assistantText);
             _startBargeInMonitoring(generation);
           }
         },
         onQueueDrained: () {
+          debugPrint(
+            'rex_voice_playback queue_drained '
+            'speaking_ms=${_elapsedSince(firstAudioChunkAt, DateTime.now())}',
+          );
           _stopBargeInMonitoring();
         },
         onError: (message) {
@@ -341,6 +358,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
               clearError: true,
             );
           case 'assistant.started':
+            assistantStartedAt = DateTime.now();
             unawaited(_activeStreamingCaptureService?.cancel());
             if (state.phase != VoiceCallPhase.thinking) {
               startThinking(finalTranscript: state.currentTranscript);
@@ -383,6 +401,9 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
           case 'assistant.done':
             _cancelThinkingTimeout();
             beginStreamingAudioIfNeeded();
+            debugPrint(
+              'rex_voice_playback assistant_done timings=${event.data['timings']}',
+            );
             if (event.conversationId != null) {
               state = state.copyWith(
                 conversationId: event.conversationId,
@@ -398,9 +419,11 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
             if (_isCurrentCall(generation) && state.isCallActive) {
               if (state.phase == VoiceCallPhase.speaking) {
                 completeSpeaking();
+                debugPrint('rex_voice_playback listening_resumed');
               } else if (state.phase != VoiceCallPhase.listening &&
                   !state.isMuted) {
                 resumeListening();
+                debugPrint('rex_voice_playback listening_resumed');
               }
             }
             unawaited(session.endSession());
@@ -450,5 +473,12 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         error: error,
       );
     }
+  }
+
+  int? _elapsedSince(DateTime? startedAt, DateTime now) {
+    if (startedAt == null) {
+      return null;
+    }
+    return now.difference(startedAt).inMilliseconds;
   }
 }

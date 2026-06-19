@@ -94,6 +94,91 @@ extension VoiceCallControllerCommands on VoiceCallController {
     _armThinkingTimeout(_callGeneration);
   }
 
+  void beginTypedTextTurn(String text) {
+    if (!state.isCallActive) {
+      return;
+    }
+
+    final transcript = text.trim();
+    final generation = ++_callGeneration;
+    _cancelThinkingTimeout();
+    _cancelListeningEndpointTimeout();
+    _cancelNoSpeechTimeout();
+    unawaited(_stopInterimTranscription());
+    if (_isUsingNativeVoice) {
+      unawaited(_nativeVoiceSessionService.interrupt());
+    } else {
+      unawaited(_captureService.cancel());
+      unawaited(_streamingCaptureService.cancel());
+      _stopBargeInMonitoring();
+      final streamingSession = _activeStreamingSession;
+      _activeStreamingSession = null;
+      streamingSession?.interrupt();
+      unawaited(_streamingPlaybackQueue.cancel());
+      unawaited(streamingSession?.endSession());
+      unawaited(_playbackService.stop());
+    }
+    _clearVisibleTranscript();
+    state = state.copyWith(
+      phase: VoiceCallPhase.thinking,
+      currentTranscript: transcript,
+      isCapturingSpeech: false,
+      clearError: true,
+    );
+    _armThinkingTimeout(generation);
+  }
+
+  Future<void> speakTypedAssistantResponse(String responseText) async {
+    final text = responseText.trim();
+    if (!state.isCallActive || text.isEmpty) {
+      return;
+    }
+
+    final generation = _callGeneration;
+    _cancelThinkingTimeout();
+    state = state.copyWith(lastAssistantResponse: text, clearError: true);
+
+    if (state.isMuted) {
+      resumeListening();
+      return;
+    }
+
+    try {
+      final response = await ref.read(cloudVoiceApiProvider).synthesize(text);
+      if (!_isCurrentCall(generation) || !state.isCallActive) {
+        return;
+      }
+
+      startSpeaking(text);
+      _startBargeInMonitoring(generation);
+      await _audioSessionService.preferLoudSpeaker();
+      await _playbackService.playBase64Audio(
+        response.audioBase64,
+        contentType: response.audioContentType,
+        onComplete: () {
+          if (_isCurrentCall(generation)) {
+            _stopBargeInMonitoring();
+            completeSpeaking();
+          }
+        },
+        onError: (message) {
+          if (_isCurrentCall(generation)) {
+            _stopBargeInMonitoring();
+            fail(message);
+          }
+        },
+      );
+    } on CloudVoiceApiException catch (error) {
+      if (_isCurrentCall(generation)) {
+        fail(error.message);
+      }
+    } on Object {
+      if (_isCurrentCall(generation)) {
+        fail('Could not play Rex voice for this reply.');
+      }
+    }
+  }
+
   void interrupt({String? reason}) {
     if (!state.isCallActive) {
       return;

@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -93,6 +96,81 @@ void main() {
     expect(requests.single.body, contains('"spent_this_month":1200.5'));
     expect(requests.single.body, contains('"transactions"'));
     expect(requests.single.body, contains('"Coffee Shop"'));
+  });
+
+  test('ChatApi sends PDF attachments with filename and content type', () async {
+    final requests = <http.Request>[];
+    final chatApi = ChatApi(
+      apiClient: RexApiClient(
+        baseUrl: 'https://clarity.example.com',
+        authHeaders: const RexAuthHeaders(
+          accessTokenProvider: _testAccessToken,
+        ),
+        httpClient: MockClient((request) async {
+          requests.add(request);
+          return http.Response(
+            '{"conversation_id":"conversation-1","response":"ok","messages":[]}',
+            200,
+          );
+        }),
+      ),
+    );
+
+    await chatApi.sendMessage(
+      'Read this PDF.',
+      attachment: XFile.fromData(
+        Uint8List.fromList('%PDF-1.4 test'.codeUnits),
+        name: 'statement.pdf',
+        mimeType: 'application/pdf',
+        path: 'statement.pdf',
+      ),
+    );
+
+    final request = requests.single;
+    final body = String.fromCharCodes(request.bodyBytes);
+
+    expect(request.headers['Authorization'], 'Bearer test-token');
+    expect(request.headers['content-type'], contains('multipart/form-data'));
+    expect(body, contains('name="file"'));
+    expect(body, contains('filename="statement.pdf"'));
+    expect(body.toLowerCase(), contains('content-type: application/pdf'));
+    expect(body, contains('%PDF-1.4 test'));
+  });
+
+  test('ChatApi surfaces backend upload validation details', () async {
+    final chatApi = ChatApi(
+      apiClient: RexApiClient(
+        baseUrl: 'https://clarity.example.com',
+        authHeaders: const RexAuthHeaders(
+          accessTokenProvider: _testAccessToken,
+        ),
+        httpClient: MockClient((request) async {
+          return http.Response(
+            '{"detail":"Uploaded PDF does not contain readable text."}',
+            400,
+          );
+        }),
+      ),
+    );
+
+    expect(
+      () => chatApi.sendMessage(
+        'Read this PDF.',
+        attachment: XFile.fromData(
+          Uint8List.fromList('%PDF-1.4 test'.codeUnits),
+          name: 'scanned.pdf',
+          mimeType: 'application/pdf',
+          path: 'scanned.pdf',
+        ),
+      ),
+      throwsA(
+        isA<ChatApiException>().having(
+          (error) => error.message,
+          'message',
+          'Uploaded PDF does not contain readable text.',
+        ),
+      ),
+    );
   });
 
   test('ClarityActionsApi posts confirmed action requests', () async {

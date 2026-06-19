@@ -1,5 +1,7 @@
+import asyncio
 import time
 from collections.abc import AsyncIterator
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from app.services.google_tts_service import estimate_tts_duration_ms
@@ -10,7 +12,14 @@ from app.services.voice_stream_config import (
 )
 
 _MIN_SPEAKABLE_CHUNK_CHARS = 36
+_MIN_SINGLE_SENTENCE_CHUNK_CHARS = 67
 _MAX_SPEAKABLE_CHUNK_CHARS = 140
+
+
+@dataclass
+class _PendingVoiceAudioChunk:
+    text: str
+    task: asyncio.Task[dict[str, Any]]
 
 
 class VoiceStreamResponseWriterMixin:
@@ -31,6 +40,40 @@ class VoiceStreamResponseWriterMixin:
         self._last_memory_changes = None
         self._last_turn_trace = {}
         chat_started_at = time.perf_counter()
+        pending_audio_chunks: list[_PendingVoiceAudioChunk] = []
+        last_audio_sent_at: Optional[float] = None
+
+        def queue_audio_chunk(text: str) -> None:
+            pending_audio_chunks.append(
+                _PendingVoiceAudioChunk(
+                    text=text,
+                    task=asyncio.create_task(
+                        self._synthesize_audio_chunk(text, timings),
+                    ),
+                )
+            )
+
+        async def send_ready_audio_chunks(*, block: bool) -> None:
+            nonlocal first_audio_at, last_audio_sent_at
+            while pending_audio_chunks:
+                pending = pending_audio_chunks[0]
+                if not block and not pending.task.done():
+                    return
+                synthesis = await pending.task
+                pending_audio_chunks.pop(0)
+                now = time.perf_counter()
+                if last_audio_sent_at is not None:
+                    gap_ms = self._elapsed_ms(last_audio_sent_at)
+                    timings["tts_last_chunk_gap_ms"] = gap_ms
+                    timings["tts_max_chunk_gap_ms"] = max(
+                        timings.get("tts_max_chunk_gap_ms", 0),
+                        gap_ms,
+                    )
+                last_audio_sent_at = now
+                if first_audio_at is None:
+                    first_audio_at = now
+                    timings["tts_first_audio_turn_ms"] = self._elapsed_ms(chat_started_at)
+                await self._send_audio_chunk_event(pending.text, synthesis)
 
         async for event in self.chat_service.stream_message(
             transcript,
@@ -62,11 +105,8 @@ class VoiceStreamResponseWriterMixin:
                 await self._send_event("assistant.token", token=token)
                 chunk, speech_buffer = self._next_speakable_chunk(speech_buffer)
                 if chunk:
-                    first_audio_at = await self._synthesize_and_send_audio_chunk(
-                        chunk,
-                        timings,
-                        first_audio_at,
-                    )
+                    queue_audio_chunk(chunk)
+                await send_ready_audio_chunks(block=False)
             elif event_name == "done":
                 self.conversation_id = event.get("conversation_id") or self.conversation_id
                 messages = event.get("messages") or []
@@ -75,11 +115,8 @@ class VoiceStreamResponseWriterMixin:
 
         response_text = "".join(response_parts).strip()
         if speech_buffer.strip():
-            first_audio_at = await self._synthesize_and_send_audio_chunk(
-                speech_buffer.strip(),
-                timings,
-                first_audio_at,
-            )
+            queue_audio_chunk(speech_buffer.strip())
+        await send_ready_audio_chunks(block=True)
 
         metadata_record = await self.chat_service.save_voice_turn_metadata(
             conversation_id=self.conversation_id or "",
@@ -109,12 +146,11 @@ class VoiceStreamResponseWriterMixin:
         }
         return response_text
 
-    async def _synthesize_and_send_audio_chunk(
+    async def _synthesize_audio_chunk(
         self,
         text: str,
         timings: dict[str, int],
-        first_audio_at: Optional[float],
-    ) -> Optional[float]:
+    ) -> dict[str, Any]:
         synthesis_started_at = time.perf_counter()
         try:
             synthesis = await self.google_tts_service.synthesize_speech(text)
@@ -125,19 +161,28 @@ class VoiceStreamResponseWriterMixin:
                 error_class=error.__class__.__name__,
             )
             raise
+        latency_ms = self._elapsed_ms(synthesis_started_at)
         timings["tts_chunk_count"] = timings.get("tts_chunk_count", 0) + 1
-        timings["tts_total_ms"] = timings.get("tts_total_ms", 0) + self._elapsed_ms(
-            synthesis_started_at
+        timings["tts_total_ms"] = timings.get("tts_total_ms", 0) + latency_ms
+        timings["tts_last_chunk_synthesis_ms"] = latency_ms
+        timings["tts_max_chunk_synthesis_ms"] = max(
+            timings.get("tts_max_chunk_synthesis_ms", 0),
+            latency_ms,
         )
         await self._record_tts_usage(
             duration_ms=estimate_tts_duration_ms(text),
-            latency_ms=self._elapsed_ms(synthesis_started_at),
+            latency_ms=latency_ms,
             model=synthesis.get("voice_name"),
         )
-        if first_audio_at is None:
-            first_audio_at = time.perf_counter()
-            timings["tts_first_audio_ms"] = self._elapsed_ms(synthesis_started_at)
+        if "tts_first_audio_ms" not in timings:
+            timings["tts_first_audio_ms"] = latency_ms
+        return synthesis
 
+    async def _send_audio_chunk_event(
+        self,
+        text: str,
+        synthesis: dict[str, Any],
+    ) -> None:
         await self._send_event(
             "assistant.audio_chunk",
             text=text,
@@ -148,7 +193,6 @@ class VoiceStreamResponseWriterMixin:
             language_code=synthesis["language_code"],
             metadata=synthesis.get("metadata") or {},
         )
-        return first_audio_at
 
     def _safe_turn_trace(self, event: dict[str, Any]) -> dict[str, Any]:
         return {
@@ -190,9 +234,18 @@ class VoiceStreamResponseWriterMixin:
         if not stripped:
             return None, ""
 
+        sentence_end_count = 0
         for index, character in enumerate(text):
+            if character in ".!?":
+                sentence_end_count += 1
             if character in ".!?;\n" and index >= _MIN_SPEAKABLE_CHUNK_CHARS:
                 chunk = text[: index + 1].strip()
+                if (
+                    character in ".!?"
+                    and sentence_end_count < 2
+                    and len(chunk) < _MIN_SINGLE_SENTENCE_CHUNK_CHARS
+                ):
+                    continue
                 rest = text[index + 1 :]
                 return chunk, rest
 

@@ -7,6 +7,8 @@ def test_chat_search_expands_arbitrary_recall_topics():
     assert "ead" in ranking.expand_terms("What did I say about immigration?")
     assert "buying" in ranking.expand_terms("Search chats for purchases")
     assert "computer" in ranking.expand_terms("What did I say about my PC?")
+    assert "send" in ranking.expand_terms("Did I mention giving her a gift?")
+    assert "buying" in ranking.expand_terms("What was the game I wanted to buy?")
 
 
 def test_chat_search_builds_subject_and_expanded_queries():
@@ -21,6 +23,28 @@ def test_chat_search_builds_subject_and_expanded_queries():
     ]
     assert queries[1].query == "mom mother mum mama"
     assert queries[2].query == "mom"
+
+
+def test_chat_search_keeps_full_query_terms_when_subject_exists():
+    ranking = ChatSearchRanking()
+
+    queries = ranking.build_queries("What did I say about my PC game?")
+
+    expanded = queries[1].query.split()
+    assert "pc" in expanded
+    assert "computer" in expanded
+    assert "game" in expanded
+
+
+def test_chat_search_expands_buying_recall_without_subject_phrase():
+    ranking = ChatSearchRanking()
+
+    queries = ranking.build_queries("What was the game I wanted to buy?")
+
+    expanded = queries[1].query.split()
+    assert "game" in expanded
+    assert "buying" in expanded
+    assert "purchase" in expanded
 
 
 def test_chat_search_scores_user_exact_match_above_assistant_noise():

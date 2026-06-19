@@ -111,7 +111,7 @@ class _BudgetPerformanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Budgeted ${formatMoney(performance.totalBudgeted)} · Spent ${formatMoney(performance.totalSpent)}',
+            'Budgeted ${formatMoney(performance.totalBudgeted)} / Spent ${formatMoney(performance.totalSpent)}',
             style: theme.textTheme.bodySmall?.copyWith(
               color: cs.onSurface.withValues(alpha: 0.58),
             ),
@@ -170,7 +170,7 @@ class _LeakRow extends StatelessWidget {
       );
     } else if (pct == null) {
       trendWidget = Text(
-        '—',
+        '-',
         style: theme.textTheme.labelLarge?.copyWith(
           color: cs.onSurface.withValues(alpha: 0.35),
         ),
@@ -343,7 +343,7 @@ class _AccountHealthCard extends StatelessWidget {
             label: 'Cash flow',
             value: formatMoney(snapshot.availableThisMonth),
             detail:
-                'Income ${formatMoney(snapshot.incomeThisMonth)} · Spending ${formatMoney(snapshot.spentThisMonth)}',
+                'Income ${formatMoney(snapshot.incomeThisMonth)} / Spending ${formatMoney(snapshot.spentThisMonth)}',
             valueColor: _balanceColor(context, snapshot.availableThisMonth),
           ),
           const SizedBox(height: 14),

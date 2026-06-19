@@ -23,15 +23,15 @@ final class ClarityApp extends StatelessWidget {
   final ProfileController profileController;
 
   static ThemeData buildTheme() {
-    const background = Color(0xFF10100D);
-    const surface = Color(0xFF191811);
-    const surfaceSoft = Color(0xFF222016);
-    const surfaceRaised = Color(0xFF2B281C);
-    const border = Color(0xFF3A3728);
-    const text = Color(0xFFF4F0E6);
-    const textMuted = Color(0xFFBEB7A7);
-    const accent = Color(0xFFE5CD6A);
-    const accentStrong = Color(0xFFFFE377);
+    const background = Color(0xFF080908);
+    const surface = Color(0xFF111311);
+    const surfaceSoft = Color(0xFF171A18);
+    const surfaceRaised = Color(0xFF20231F);
+    const border = Color(0xFF30352F);
+    const text = Color(0xFFF2F1EA);
+    const textMuted = Color(0xFFB7B3A7);
+    const accent = Color(0xFFD7BF57);
+    const accentStrong = Color(0xFFEBD56F);
     const danger = Color(0xFFFF706A);
     final base =
         ColorScheme.fromSeed(
@@ -68,7 +68,7 @@ final class ClarityApp extends StatelessWidget {
         elevation: 2,
         backgroundColor: surfaceRaised,
         contentTextStyle: const TextStyle(color: text),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
@@ -144,7 +144,7 @@ final class ClarityApp extends StatelessWidget {
             fontSize: 15,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
@@ -160,7 +160,7 @@ final class ClarityApp extends StatelessWidget {
           ),
           side: BorderSide(color: outlineSoft),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
@@ -176,15 +176,15 @@ final class ClarityApp extends StatelessWidget {
         hintStyle: const TextStyle(color: textMuted),
         labelStyle: const TextStyle(color: textMuted),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: outlineSoft),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: outlineSoft),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: accent),
         ),
       ),

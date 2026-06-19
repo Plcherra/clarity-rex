@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:clarity/rex/chat/application/conversation_controller.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
+import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/chat/presentation/widgets/conversation_history_widgets.dart';
 
 void main() {
@@ -73,8 +75,84 @@ void main() {
       expect(timestampLabel(previousYear), 'Nov 4, ${now.year - 1}');
     });
   });
+
+  group('conversation date filters', () {
+    test('filters conversations by today week month and custom ranges', () {
+      final now = DateTime(2026, 6, 18, 15);
+      final conversations = [
+        _conversation('today', DateTime(2026, 6, 18, 9)),
+        _conversation('this-week', DateTime(2026, 6, 16, 9)),
+        _conversation('this-month', DateTime(2026, 6, 1, 9)),
+        _conversation('older', DateTime(2026, 5, 31, 9)),
+        _conversation('undated', null),
+      ];
+
+      expect(
+        filterConversationsByDate(
+          conversations,
+          const ConversationDateFilter.today(),
+          now: now,
+        ).map((conversation) => conversation.id),
+        ['today'],
+      );
+      expect(
+        filterConversationsByDate(
+          conversations,
+          const ConversationDateFilter.thisWeek(),
+          now: now,
+        ).map((conversation) => conversation.id),
+        ['today', 'this-week'],
+      );
+      expect(
+        filterConversationsByDate(
+          conversations,
+          const ConversationDateFilter.thisMonth(),
+          now: now,
+        ).map((conversation) => conversation.id),
+        ['today', 'this-week', 'this-month'],
+      );
+      expect(
+        filterConversationsByDate(
+          conversations,
+          ConversationDateFilter.custom(
+            start: DateTime(2026, 5, 31),
+            end: DateTime(2026, 6, 1),
+          ),
+          now: now,
+        ).map((conversation) => conversation.id),
+        ['this-month', 'older'],
+      );
+    });
+
+    test('filters search results with the same date rules', () {
+      final now = DateTime(2026, 6, 18, 15);
+      final results = [
+        _searchResult('today', DateTime(2026, 6, 18, 9)),
+        _searchResult('this-week', DateTime(2026, 6, 16, 9)),
+        _searchResult('older', DateTime(2026, 5, 31, 9)),
+      ];
+
+      expect(
+        filterConversationSearchResultsByDate(
+          results,
+          const ConversationDateFilter.thisWeek(),
+          now: now,
+        ).map((result) => result.conversationId),
+        ['today', 'this-week'],
+      );
+    });
+  });
 }
 
 Conversation _conversation(String id, DateTime? timestamp) {
   return Conversation(id: id, timestamp: timestamp);
+}
+
+ConversationSearchResult _searchResult(String id, DateTime timestamp) {
+  return ConversationSearchResult(
+    conversationId: id,
+    matchType: 'message',
+    preview: id,
+    conversationTimestamp: timestamp,
+  );
 }

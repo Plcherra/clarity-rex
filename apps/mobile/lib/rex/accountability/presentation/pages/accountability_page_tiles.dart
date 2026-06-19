@@ -265,7 +265,7 @@ class _NestedGoalGroup extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '$title · ${children.length}',
+            '$title / ${children.length}',
             style: theme.textTheme.labelLarge?.copyWith(
               color: RexUiTokens.text,
               fontWeight: FontWeight.w700,

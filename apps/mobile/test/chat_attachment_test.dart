@@ -34,6 +34,15 @@ void main() {
       expect(error, isNull);
     });
 
+    test('maps supported attachment names to upload content types', () {
+      expect(chatAttachmentContentType('statement.pdf'), 'application/pdf');
+      expect(chatAttachmentContentType('notes.md'), 'text/markdown');
+      expect(chatAttachmentContentType('transactions.csv'), 'text/csv');
+      expect(chatAttachmentContentType('receipt.jpg'), 'image/jpeg');
+      expect(chatAttachmentContentType('receipt.png'), 'image/png');
+      expect(chatAttachmentContentType('archive.zip'), isNull);
+    });
+
     test('rejects oversized pdf attachments', () {
       final error = validateChatAttachment(
         fileName: 'statement.pdf',

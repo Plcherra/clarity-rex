@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 class RexUiTokens {
   const RexUiTokens._();
 
-  static const background = Color(0xFF10100D);
-  static const surface = Color(0xFF191811);
-  static const surfaceSoft = Color(0xFF222016);
-  static const surfaceRaised = Color(0xFF2B281C);
-  static const border = Color(0xFF3A3728);
-  static const text = Color(0xFFF4F0E6);
-  static const textMuted = Color(0xFFBEB7A7);
-  static const textSubtle = Color(0xFF8F8878);
-  static const accent = Color(0xFFE5CD6A);
-  static const accentStrong = Color(0xFFFFE377);
-  static const userBubble = Color(0xFF746A05);
+  static const background = Color(0xFF080908);
+  static const surface = Color(0xFF111311);
+  static const surfaceSoft = Color(0xFF171A18);
+  static const surfaceRaised = Color(0xFF20231F);
+  static const border = Color(0xFF30352F);
+  static const text = Color(0xFFF2F1EA);
+  static const textMuted = Color(0xFFB7B3A7);
+  static const textSubtle = Color(0xFF858073);
+  static const accent = Color(0xFFD7BF57);
+  static const accentStrong = Color(0xFFEBD56F);
+  static const userBubble = Color(0xFF5F5609);
   static const danger = Color(0xFFFF706A);
 
   static const space2 = 2.0;
@@ -24,9 +24,9 @@ class RexUiTokens {
   static const space20 = 20.0;
   static const space24 = 24.0;
 
-  static const radiusSmall = 10.0;
-  static const radiusMedium = 16.0;
-  static const radiusLarge = 18.0;
+  static const radiusSmall = 8.0;
+  static const radiusMedium = 12.0;
+  static const radiusLarge = 14.0;
   static const radiusPill = 999.0;
 
   static ThemeData darkTheme(BuildContext context) {

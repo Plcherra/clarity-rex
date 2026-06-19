@@ -1,18 +1,24 @@
+import 'dart:typed_data';
+
 import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart'
     show ChatState;
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
+import 'package:clarity/rex/chat/presentation/widgets/attachment_source_sheet.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_input_bar.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_transcript.dart';
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
+import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
+import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 
 /// Main chat surface: empty thread UI + composer.
@@ -75,9 +81,16 @@ class _ChatPageState extends ConsumerState<ChatPage>
 
     final message = _messageController.text;
     final attachment = _attachment;
-    final sent = await ref
+    final voiceController = ref.read(voiceCallProvider.notifier);
+    final voiceWasActive = ref.read(voiceCallProvider).isCallActive;
+    if (voiceWasActive) {
+      voiceController.beginTypedTextTurn(message);
+    }
+
+    final response = await ref
         .read(chatProvider.notifier)
-        .sendMessage(message, attachment: attachment);
+        .sendMessageForAssistantResponse(message, attachment: attachment);
+    final sent = response != null;
     if (!mounted) {
       return;
     }
@@ -90,6 +103,9 @@ class _ChatPageState extends ConsumerState<ChatPage>
         _attachmentSize = null;
         _attachmentError = null;
       });
+      if (voiceWasActive && response.trim().isNotEmpty) {
+        await voiceController.speakTypedAssistantResponse(response);
+      }
       return;
     }
 
@@ -98,10 +114,43 @@ class _ChatPageState extends ConsumerState<ChatPage>
     if (attachment != null) {
       setState(() => _attachmentError = errorMessage);
     }
+    if (voiceWasActive) {
+      voiceController.resumeListening();
+    }
     _showSnackBar(errorMessage);
   }
 
   Future<void> _pickAttachment() async {
+    final source = await showModalBottomSheet<ChatAttachmentSource>(
+      context: context,
+      backgroundColor: RexUiTokens.surface,
+      showDragHandle: false,
+      builder: (_) => const AttachmentSourceSheet(),
+    );
+    if (!mounted || source == null) {
+      return;
+    }
+
+    switch (source) {
+      case ChatAttachmentSource.gallery:
+        await _pickImageAttachment(ImageSource.gallery);
+      case ChatAttachmentSource.camera:
+        await _pickImageAttachment(ImageSource.camera);
+      case ChatAttachmentSource.files:
+        await _pickFileAttachment();
+    }
+  }
+
+  Future<void> _pickImageAttachment(ImageSource source) async {
+    final image = await ImagePicker().pickImage(source: source);
+    if (!mounted || image == null) {
+      return;
+    }
+
+    await _setPickedAttachment(image);
+  }
+
+  Future<void> _pickFileAttachment() async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: allowedChatAttachmentExtensions.toList(
@@ -115,23 +164,6 @@ class _ChatPageState extends ConsumerState<ChatPage>
     }
 
     final file = result.files.single;
-    final validationError = file.bytes == null
-        ? validateChatAttachment(fileName: file.name, fileSize: file.size)
-        : validateChatAttachmentBytes(
-            fileName: file.name,
-            fileSize: file.size,
-            bytes: file.bytes!,
-          );
-    if (validationError != null) {
-      setState(() {
-        _attachment = null;
-        _attachmentName = file.name;
-        _attachmentSize = file.size;
-        _attachmentError = validationError;
-      });
-      _showSnackBar(validationError);
-      return;
-    }
     if (file.path == null && file.bytes == null) {
       setState(() {
         _attachment = null;
@@ -151,10 +183,43 @@ class _ChatPageState extends ConsumerState<ChatPage>
             length: file.size,
             path: file.name,
           );
+    await _setPickedAttachment(attachment, bytes: file.bytes);
+  }
+
+  Future<void> _setPickedAttachment(
+    XFile attachment, {
+    Uint8List? bytes,
+  }) async {
+    final fileName = chatAttachmentName(attachment);
+    int fileSize;
+    try {
+      fileSize = await attachment.length();
+    } on Object {
+      fileSize = bytes?.length ?? 0;
+    }
+
+    final validationError = bytes == null
+        ? validateChatAttachment(fileName: fileName, fileSize: fileSize)
+        : validateChatAttachmentBytes(
+            fileName: fileName,
+            fileSize: fileSize,
+            bytes: bytes,
+          );
+    if (validationError != null) {
+      setState(() {
+        _attachment = null;
+        _attachmentName = fileName;
+        _attachmentSize = fileSize;
+        _attachmentError = validationError;
+      });
+      _showSnackBar(validationError);
+      return;
+    }
+
     setState(() {
       _attachment = attachment;
-      _attachmentName = file.name;
-      _attachmentSize = file.size;
+      _attachmentName = fileName;
+      _attachmentSize = fileSize;
       _attachmentError = null;
     });
   }

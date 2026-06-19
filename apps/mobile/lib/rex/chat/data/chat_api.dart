@@ -2,10 +2,12 @@ import 'dart:convert';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:clarity/core/rex/rex_api_client.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
+import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 
 class ChatApiException implements Exception {
@@ -200,8 +202,9 @@ class ChatApi {
     request.files.add(
       http.MultipartFile.fromBytes(
         'file',
-        await attachment.readAsBytes(),
+        await _attachmentBytes(attachment),
         filename: fileName,
+        contentType: _attachmentMediaType(fileName),
       ),
     );
 
@@ -251,11 +254,31 @@ class ChatApi {
     request.files.add(
       http.MultipartFile.fromBytes(
         'file',
-        await attachment.readAsBytes(),
+        await _attachmentBytes(attachment),
         filename: fileName,
+        contentType: _attachmentMediaType(fileName),
       ),
     );
     return request;
+  }
+
+  Future<List<int>> _attachmentBytes(XFile attachment) async {
+    try {
+      return await attachment.readAsBytes();
+    } on Object {
+      throw const ChatApiException(
+        'Could not read selected file before upload.',
+        type: ChatApiErrorType.upload,
+      );
+    }
+  }
+
+  MediaType? _attachmentMediaType(String fileName) {
+    final contentType = chatAttachmentContentType(fileName);
+    if (contentType == null) {
+      return null;
+    }
+    return MediaType.parse(contentType);
   }
 
   Stream<ChatStreamEvent> _eventsFromSse(Stream<List<int>> byteStream) async* {

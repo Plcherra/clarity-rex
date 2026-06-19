@@ -22,7 +22,7 @@ part 'financial_dashboard_summary_sections.dart';
 part 'financial_dashboard_cards.dart';
 
 const double _sectionGap = 20.0;
-const double _cardRadius = 18.0;
+const double _cardRadius = 14.0;
 const List<String> _monthAbbreviations = [
   'Jan',
   'Feb',
@@ -51,7 +51,7 @@ Color _dashboardOutline(BuildContext context) {
 }
 
 Color _dashboardSelected(BuildContext context) {
-  return RexUiTokens.accent.withValues(alpha: 0.16);
+  return RexUiTokens.accent.withValues(alpha: 0.12);
 }
 
 Color _balanceColor(BuildContext context, double v) {
