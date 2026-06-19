@@ -799,8 +799,6 @@ class ChatContextService:
                 "double checked",
                 "double-checked",
                 "pretty sure",
-                "i told you",
-                "already told",
                 "have access to the chat",
             )
         ):
@@ -1032,14 +1030,20 @@ class ChatContextService:
             "check chats",
             "did i mention",
             "did i say",
+            "did i tell",
             "do you know anything",
             "do you know about",
+            "do you know if i mention",
+            "do you know if i mentioned",
             "do you remember",
             "find chats",
             "from chats",
+            "have i ever",
             "have i mentioned",
             "have i said",
             "have i told you",
+            "i mentioned",
+            "i told you",
             "old chat",
             "old chats",
             "previous chat",
@@ -1060,6 +1064,10 @@ class ChatContextService:
             return True
 
         if re.search(r"\bwhat\s+.+\b(?:did|do)\s+i\s+(?:play|buy|want|mention|say|tell)", normalized):
+            return True
+        if re.search(r"\b(?:did|do|have)\s+i\s+.+\b(?:mention|mentioned|say|said|tell|told|buy|send|sent)", normalized):
+            return True
+        if re.search(r"\bi\s+(?:would|was|am|m|'m)\s+.+\b(?:buy|buying|send|sending|sent)", normalized):
             return True
 
         if conversation_history and any(

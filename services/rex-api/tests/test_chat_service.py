@@ -403,7 +403,7 @@ async def test_chat_service_stream_downgrades_no_memory_claim_when_memory_is_deg
 
 
 @pytest.mark.asyncio
-async def test_chat_service_allows_old_chat_answer_when_evidence_is_loaded():
+async def test_chat_service_allows_old_chat_answer_when_chat_search_is_loaded():
     ai_service = FakeAIService(
         response="I found an old chat mention that your mom's birthday is June 18."
     )

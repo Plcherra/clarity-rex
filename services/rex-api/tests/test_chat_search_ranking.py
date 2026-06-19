@@ -19,10 +19,18 @@ def test_chat_search_builds_subject_and_expanded_queries():
     assert [query.mode for query in queries] == [
         "exact",
         "expanded_keywords",
-        "subject",
+        "keyword",
+        "keyword",
+        "keyword",
+        "keyword",
     ]
     assert queries[1].query == "mom mother mum mama"
-    assert queries[2].query == "mom"
+    assert [query.query for query in queries[2:6]] == [
+        "mom",
+        "mother",
+        "mum",
+        "mama",
+    ]
 
 
 def test_chat_search_keeps_full_query_terms_when_subject_exists():

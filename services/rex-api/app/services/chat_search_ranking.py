@@ -66,6 +66,9 @@ CHAT_SEARCH_TERM_ALIASES = {
     "give": ("give", "giving", "gift", "gifts", "present", "send", "sent"),
     "giving": ("give", "giving", "gift", "gifts", "present", "send", "sent"),
     "money": ("money", "send", "sent", "cash", "gift"),
+    "send": ("send", "sending", "sent"),
+    "sending": ("send", "sending", "sent"),
+    "sent": ("send", "sending", "sent"),
     "purchase": ("purchase", "purchases", "buy", "buying", "bought"),
     "purchases": ("purchase", "purchases", "buy", "buying", "bought"),
     "buy": ("purchase", "purchases", "buy", "buying", "bought"),
@@ -121,6 +124,11 @@ class ChatSearchRanking:
         expanded_query = " ".join(self.unique_terms(expanded_terms)[:max_terms])
         if expanded_query:
             queries.append(ChatSearchQuery(expanded_query, "expanded_keywords"))
+        for keyword_query in self.atomic_keyword_queries(
+            normalized,
+            max_queries=max_terms,
+        ):
+            queries.append(ChatSearchQuery(keyword_query, "keyword"))
         if subject_query:
             queries.append(ChatSearchQuery(subject_query, "subject"))
 
@@ -131,6 +139,37 @@ class ChatSearchRanking:
                 seen.add(item.query)
                 unique.append(item)
         return unique
+
+    def atomic_keyword_queries(
+        self,
+        query: str,
+        *,
+        max_queries: int = 10,
+    ) -> list[str]:
+        """Small recall probes beat one broad query for old-chat search."""
+
+        normalized = self.normalize_text(query)
+        terms = self.expand_terms(normalized, max_terms=max_queries * 2)
+        content_terms = list(self.content_terms(normalized))
+        subject = self.subject_only_query(normalized)
+        if subject:
+            terms = [*self.expand_terms(subject, max_terms=max_queries), *terms]
+            content_terms = [*self.content_terms(subject), *content_terms]
+
+        probes: list[str] = []
+        if "pc" in terms and "game" in terms:
+            probes.append("pc game")
+        if "send" in terms and "money" in terms:
+            probes.append("send money")
+
+        for term in [*content_terms, *terms]:
+            if term in CHAT_SEARCH_STOP_WORDS:
+                continue
+            if len(term) < 3 and term not in {"pc"}:
+                continue
+            probes.append(term)
+
+        return self.unique_terms(probes)[:max_queries]
 
     def expand_terms(self, query: str, *, max_terms: int = 10) -> list[str]:
         raw_terms = [self.normalize_term(term) for term in self.raw_terms(query)]

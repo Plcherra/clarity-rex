@@ -33,7 +33,7 @@ If Rex saves anything, it is memory. There should be no such thing as saving som
 
 There should be no automatic or hidden saving of chat content into memory.
 
-Old chat messages are not saved memory. Rex should not treat old chat messages as evidence or saved memory unless the user explicitly asks to save them.
+Old chat messages are not saved memory. Rex should not treat old chat messages as saved memory or confirmed Clarity knowledge unless the user explicitly asks to save them.
 
 Rex can search chats when the user asks recall questions, but search results remain chat history unless the user explicitly saves something as memory.
 

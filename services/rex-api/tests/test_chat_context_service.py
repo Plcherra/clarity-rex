@@ -206,7 +206,7 @@ async def test_chat_context_fetches_and_deduplicates_prompt_context():
         {"query": "remember my preferences", "limit": 8},
         {"query": PROFILE_MEMORY_QUERY, "limit": 4},
     ]
-    assert store.search_message_queries == [
+    assert store.search_message_queries[:2] == [
         {
             "query": "remember my preferences",
             "limit": 200,
@@ -218,6 +218,10 @@ async def test_chat_context_fetches_and_deduplicates_prompt_context():
             "exclude_conversation_id": None,
         },
     ]
+    assert any(
+        item["query"] == "preferences"
+        for item in store.search_message_queries
+    )
 
 
 @pytest.mark.asyncio
@@ -1025,6 +1029,95 @@ async def test_chat_context_searches_short_pc_subject():
     assert result["id"] == "chat-conversation-pc"
     assert "first PC game" in result["content"]
     assert "Legacy of Kain" in result["content"]
+
+
+@pytest.mark.asyncio
+async def test_chat_context_keeps_factual_i_told_you_recall_messages():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "pc-game",
+            "conversation_id": "conversation-pc",
+            "role": "user",
+            "content": "Awesome. I'm going to buy my first PC game.",
+            "timestamp": "2026-06-15T08:05:00Z",
+        },
+        {
+            "id": "legacy",
+            "conversation_id": "conversation-pc",
+            "role": "user",
+            "content": "It's Legacy of Kain.",
+            "timestamp": "2026-06-15T08:07:00Z",
+        },
+        {
+            "id": "pc-complaint-with-fact",
+            "conversation_id": "conversation-pc",
+            "role": "user",
+            "content": "Didn't I told you that I would buy a PC game?",
+            "timestamp": "2026-06-18T08:09:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Did I tell you I would buy a PC game?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.CASUAL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-pc"
+    assert "first PC game" in result["content"]
+    assert "Legacy of Kain" in result["content"]
+    assert "would buy a PC game" in result["content"]
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert "keyword" in status["query_modes"]
+    assert any(item["query"] == "pc game" for item in status["queries"])
+
+
+@pytest.mark.asyncio
+async def test_chat_context_searches_send_money_with_atomic_terms():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "mom-birthday",
+            "conversation_id": "conversation-old",
+            "role": "user",
+            "content": "It's not next week, but on the eighteenth, it's my mom's birthday.",
+            "timestamp": "2026-06-12T18:48:00Z",
+        },
+        {
+            "id": "mom-money",
+            "conversation_id": "conversation-old",
+            "role": "user",
+            "content": "Ten to send her around.",
+            "timestamp": "2026-06-12T18:49:00Z",
+        },
+        {
+            "id": "mom-money-reply",
+            "conversation_id": "conversation-old",
+            "role": "assistant",
+            "content": "Got it, you intend to send something around the 18th for her birthday.",
+            "timestamp": "2026-06-12T18:49:10Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Do you know if I mentioned sending money to someone?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.CASUAL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-old"
+    assert "mom's birthday" in result["content"]
+    assert "send her around" in result["content"]
+    assert "send something around the 18th" in result["content"]
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert "keyword" in status["query_modes"]
+    assert any(item["query"] == "send money" for item in status["queries"])
+    assert any(item["query"] == "send" for item in status["queries"])
 
 
 @pytest.mark.asyncio
