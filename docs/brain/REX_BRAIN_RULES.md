@@ -136,11 +136,16 @@ Rex must not invent balances, budgets, spending totals, account names, merchants
 
 - Building two Rex Brains.
 - Making MVP routing too complex.
+- Creating god files, especially in context or recall services.
 - Spending tokens on context the user did not ask for.
+- Sending financial context on non-financial turns.
 - Searching only recent messages and calling that memory.
 - Treating old chat messages as saved memory.
 - Saving chat content automatically or secretly.
+- Letting Knows tab and Rex recall drift from each other.
+- Accumulating heuristic patches instead of building one clear pipeline.
 - Saying "I do not know" when search failed or was not checked.
 - Hiding degraded memory, chat, or financial context.
 - Letting Rex and the UI use different data truth.
 - Letting voice and chat behave like different assistants.
+- Letting documentation grow too large or redundant.

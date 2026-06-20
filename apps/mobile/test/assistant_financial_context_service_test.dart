@@ -7,6 +7,45 @@ import 'package:clarity/features/transactions/domain/transaction_resolution.dart
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('assistant financial context intent gate skips casual and recall turns', () {
+    expect(shouldAttachAssistantFinancialContext('Hey Rex'), isFalse);
+    expect(
+      shouldAttachAssistantFinancialContext(
+        'Search old chats about Legacy of Kain',
+      ),
+      isFalse,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext(
+        'What do you know about my mom?',
+      ),
+      isFalse,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext('Search chats about money'),
+      isFalse,
+    );
+  });
+
+  test('assistant financial context intent gate allows finance turns', () {
+    expect(
+      shouldAttachAssistantFinancialContext('How much did I spend this week?'),
+      isTrue,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext('What is my bank balance?'),
+      isTrue,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext('Show my Plaid transactions'),
+      isTrue,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext('Search my transactions'),
+      isTrue,
+    );
+  });
+
   test('Rex transaction context stays bounded and keeps newest rows', () {
     final records = [
       for (var i = 0; i < 150; i += 1)

@@ -58,6 +58,12 @@ feature/
 - Financial read models are the single source of truth for Dashboard, Budgets, Transactions, and Rex.
 - Durable actions (saving, updating, deleting) must be confirmed by the backend before Rex or UI claims success.
 - All user data must be properly scoped to the authenticated user.
+- No god files. Split files before they exceed roughly 400 lines. Context fetching, recall, and prompt building must stay small and focused.
+- Financial context must only be included when the user intent is clearly financial.
+- Saved knowledge in Knows and Rex recall must share one unified source of truth.
+- Memory must prefer entity-based organization, such as People, Places, Events, Goals, and Preferences, over many flat items.
+- Keep brain-related documents short and non-overlapping. Avoid documentation sprawl.
+- When adding behavior, ask whether it makes the system simpler or more complex.
 
 ## 7. Key Features Rules
 

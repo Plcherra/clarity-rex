@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+import re
 from typing import Optional
 
 
@@ -20,6 +21,7 @@ class RexIntentDecision:
     reasons: tuple[str, ...] = ()
     has_file: bool = False
     has_financial_context: bool = False
+    finance_relevant: bool = False
     user_requested_deep_thinking: bool = False
     load_structured_memory_override: Optional[bool] = None
 
@@ -64,15 +66,7 @@ class RexIntentDecision:
 
     @property
     def should_use_financial_context(self) -> bool:
-        return (
-            self.intent
-            in {
-                RexIntent.FINANCE,
-                RexIntent.GOAL_OR_COMMITMENT,
-                RexIntent.DEEP_REASONING,
-            }
-            or self.has_financial_context
-        )
+        return self.finance_relevant
 
 
 class RexIntentRouter:
@@ -294,6 +288,7 @@ class RexIntentRouter:
     ) -> RexIntentDecision:
         normalized = " ".join(message.lower().split())
         reasons: list[str] = []
+        finance_relevant = self._has_finance_language(normalized)
 
         if user_requested_deep_thinking or self._contains(normalized, self.DEEP_TERMS):
             reasons.append("deep_reasoning_requested")
@@ -302,6 +297,7 @@ class RexIntentRouter:
                 reasons,
                 has_file,
                 has_financial_context,
+                finance_relevant,
                 user_requested_deep_thinking,
             )
 
@@ -312,6 +308,7 @@ class RexIntentRouter:
                 reasons,
                 has_file,
                 has_financial_context,
+                False,
                 user_requested_deep_thinking,
             )
 
@@ -322,6 +319,7 @@ class RexIntentRouter:
                 reasons,
                 has_file,
                 has_financial_context,
+                False,
                 user_requested_deep_thinking,
             )
 
@@ -332,6 +330,7 @@ class RexIntentRouter:
                 reasons,
                 has_file,
                 has_financial_context,
+                False,
                 user_requested_deep_thinking,
             )
 
@@ -342,6 +341,7 @@ class RexIntentRouter:
                 reasons,
                 has_file,
                 has_financial_context,
+                False,
                 user_requested_deep_thinking,
             )
 
@@ -357,27 +357,19 @@ class RexIntentRouter:
                 reasons,
                 has_file,
                 has_financial_context,
+                finance_relevant,
                 user_requested_deep_thinking,
                 load_structured_memory_override=load_structured_memory_override,
             )
 
-        if has_financial_context:
-            reasons.append("financial_context_supplied")
-            return self._decision(
-                RexIntent.FINANCE,
-                reasons,
-                has_file,
-                has_financial_context,
-                user_requested_deep_thinking,
-            )
-
-        if self._contains(normalized, self.FINANCE_TERMS):
+        if finance_relevant:
             reasons.append("finance_language")
             return self._decision(
                 RexIntent.FINANCE,
                 reasons,
                 has_file,
                 has_financial_context,
+                True,
                 user_requested_deep_thinking,
             )
 
@@ -391,6 +383,7 @@ class RexIntentRouter:
                 reasons,
                 has_file,
                 has_financial_context,
+                False,
                 user_requested_deep_thinking,
             )
 
@@ -400,6 +393,7 @@ class RexIntentRouter:
             reasons,
             has_file,
             has_financial_context,
+            False,
             user_requested_deep_thinking,
         )
 
@@ -409,6 +403,7 @@ class RexIntentRouter:
         reasons: list[str],
         has_file: bool,
         has_financial_context: bool,
+        finance_relevant: bool,
         user_requested_deep_thinking: bool,
         load_structured_memory_override: Optional[bool] = None,
     ) -> RexIntentDecision:
@@ -417,12 +412,26 @@ class RexIntentRouter:
             reasons=tuple(reasons),
             has_file=has_file,
             has_financial_context=has_financial_context,
+            finance_relevant=finance_relevant,
             user_requested_deep_thinking=user_requested_deep_thinking,
             load_structured_memory_override=load_structured_memory_override,
         )
 
     def _contains(self, normalized_message: str, terms: tuple[str, ...]) -> bool:
         return any(term in normalized_message for term in terms)
+
+    def _has_finance_language(self, normalized_message: str) -> bool:
+        if self._contains(normalized_message, self.FINANCE_TERMS):
+            return True
+        return (
+            re.search(
+                r"\b(?:account|accounts|balance|balances|merchant|merchants|"
+                r"plaid|subscription|subscriptions)\b",
+                normalized_message,
+            )
+            is not None
+            or re.search(r"\bcash(?:\s|-)?flow\b", normalized_message) is not None
+        )
 
     def _looks_like_memory_recall_question(self, normalized_message: str) -> bool:
         if self._contains(normalized_message, self.MEMORY_RECALL_QUESTION_TERMS):
@@ -446,7 +455,7 @@ class RexIntentRouter:
         )
 
     def _is_finance_first_query(self, normalized_message: str) -> bool:
-        if not self._contains(normalized_message, self.FINANCE_TERMS):
+        if not self._has_finance_language(normalized_message):
             return False
         return not self._contains(normalized_message, self.MEMORY_STORE_TERMS)
 

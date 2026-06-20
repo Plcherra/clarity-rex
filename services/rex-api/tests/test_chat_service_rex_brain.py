@@ -54,6 +54,56 @@ async def test_simple_rex_brain_keeps_chat_ai_call_unchanged():
 
 
 @pytest.mark.asyncio
+async def test_attached_financial_context_is_ignored_for_casual_chat():
+    ai_service = FakeAIService(response="Rex response")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+    )
+
+    await chat_service.send_message(
+        "Hey Rex",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "cash_flow": {"spent_this_month": 100},
+        },
+    )
+
+    system_prompt = ai_service.messages[0]["content"]
+    assert "Clarity financial summary" not in system_prompt
+    assert "spent_this_month" not in system_prompt
+
+
+@pytest.mark.asyncio
+async def test_attached_financial_context_is_ignored_for_streaming_recall():
+    ai_service = FakeAIService(stream_tokens=["Rex response"])
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+    )
+
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "Search old chats about Legacy of Kain",
+            financial_context={
+                "schema": "clarity_unified_financial_context_v1",
+                "cash_flow": {"spent_this_month": 100},
+            },
+        )
+    ]
+
+    system_prompt = ai_service.messages[0]["content"]
+    assert "Clarity financial summary" not in system_prompt
+    assert "spent_this_month" not in system_prompt
+    assert any(event.get("event") == "done" for event in events)
+
+
+@pytest.mark.asyncio
 async def test_experimental_rex_brain_settings_do_not_change_mvp_flow():
     ai_service = FakeAIService(response="Rex response")
     memory_service = FakeMemoryService()

@@ -155,8 +155,11 @@ Future improvements should stay inside the same simple flow:
 - Better intent checks
 - Better search ranking
 - Hybrid Chat Search for arbitrary user recall
+- Entity-based memory enhancements for People, Places, Events, Goals, and Preferences
 - Better prompt budgeting
 - Better source status tracking
 - Better truth checks
+
+Keep future improvements, including Hybrid Chat Search and entity memory, inside the same simple flow. They must not create a second brain, a separate memory system, or large context/prompt god files.
 
 The MVP architecture stays simple.

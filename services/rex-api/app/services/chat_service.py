@@ -110,6 +110,10 @@ class ChatService(ChatVoiceMetadataMixin):
             has_financial_context=financial_context is not None,
             user_requested_deep_thinking=user_requested_deep_thinking,
         )
+        financial_context = self._financial_context_for_intent(
+            intent_decision,
+            financial_context,
+        )
         turn_context = await self.chat_turn_context_service.prepare(
             message=message,
             conversation_id=conversation_id,
@@ -241,6 +245,10 @@ class ChatService(ChatVoiceMetadataMixin):
             has_file=file is not None,
             has_financial_context=financial_context is not None,
             user_requested_deep_thinking=user_requested_deep_thinking,
+        )
+        financial_context = self._financial_context_for_intent(
+            intent_decision,
+            financial_context,
         )
         turn_context = await self.chat_turn_context_service.prepare(
             message=message,
@@ -428,6 +436,15 @@ class ChatService(ChatVoiceMetadataMixin):
             ]
             return updated_messages
         return updated_messages
+
+    def _financial_context_for_intent(
+        self,
+        intent_decision,
+        financial_context: Optional[dict],
+    ) -> Optional[dict]:
+        if intent_decision.should_use_financial_context:
+            return financial_context
+        return None
 
     def _truthful_generated_response(
         self,

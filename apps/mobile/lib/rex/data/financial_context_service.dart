@@ -15,6 +15,84 @@ export 'rex_financial_transaction_policy.dart';
 final assistantFinancialContextServiceProvider =
     Provider<AssistantFinancialContextService?>((ref) => null);
 
+bool shouldAttachAssistantFinancialContext(String message) {
+  final normalized = _normalizedAssistantFinanceIntentText(message);
+  if (normalized.isEmpty) {
+    return false;
+  }
+  final financeRelevant = _assistantFinanceIntentPatterns.any(
+    (pattern) => pattern.hasMatch(normalized),
+  );
+  if (!financeRelevant) {
+    return false;
+  }
+  return !_looksLikePastChatRecall(normalized);
+}
+
+String _normalizedAssistantFinanceIntentText(String message) {
+  return message.toLowerCase().split(RegExp(r'\s+')).join(' ').trim();
+}
+
+bool _looksLikePastChatRecall(String normalized) {
+  final mentionsChatHistory = _assistantChatRecallPatterns.any(
+    (pattern) => pattern.hasMatch(normalized),
+  );
+  if (!mentionsChatHistory) {
+    return false;
+  }
+  return _assistantMemoryStorePatterns.any(
+    (pattern) => pattern.hasMatch(normalized),
+  );
+}
+
+final _assistantFinanceIntentPatterns = <RegExp>[
+  RegExp(r'\baccount(?:s)?\b'),
+  RegExp(r'\bbalance(?:s)?\b'),
+  RegExp(r'\bbank(?:ing)?\b'),
+  RegExp(r'\bbudget(?:s|ing)?\b'),
+  RegExp(r'\bcash(?:\s|-)?flow\b'),
+  RegExp(r'\bcash\b'),
+  RegExp(r'\bdebt\b'),
+  RegExp(r'\bexpense(?:s)?\b'),
+  RegExp(r'\bfinancial(?:ly)?\b'),
+  RegExp(r'\bfinance(?:s)?\b'),
+  RegExp(r'\bincome\b'),
+  RegExp(r'\bmerchant(?:s)?\b'),
+  RegExp(r'\bmoney\b'),
+  RegExp(r'\bpayroll\b'),
+  RegExp(r'\bplaid\b'),
+  RegExp(r'\brent\b'),
+  RegExp(r'\bsaving(?:s)?\b'),
+  RegExp(r'\bspend(?:ing)?\b'),
+  RegExp(r'\bspent\b'),
+  RegExp(r'\bsubscription(?:s)?\b'),
+  RegExp(r'\btransaction(?:s)?\b'),
+  RegExp(r'\$'),
+];
+
+final _assistantChatRecallPatterns = <RegExp>[
+  RegExp(r'\bchat(?:s)?\b'),
+  RegExp(r'\bconversation(?:s)?\b'),
+  RegExp(r'\bold chat(?:s)?\b'),
+  RegExp(r'\bpast chat(?:s)?\b'),
+  RegExp(r'\bprevious chat(?:s)?\b'),
+  RegExp(r'\btalked about\b'),
+  RegExp(r'\btold you\b'),
+  RegExp(r'\bwhat did i (?:say|tell)\b'),
+  RegExp(r'\bwhat have i told you\b'),
+];
+
+final _assistantMemoryStorePatterns = <RegExp>[
+  RegExp(r'\bchat(?:s)?\b'),
+  RegExp(r'\bconversation(?:s)?\b'),
+  RegExp(r'\bmemory\b'),
+  RegExp(r'\bmemories\b'),
+  RegExp(r'\bremember\b'),
+  RegExp(r'\bsearch\b'),
+  RegExp(r'\btalked\b'),
+  RegExp(r'\btold you\b'),
+];
+
 final class AssistantFinancialContextService {
   const AssistantFinancialContextService({
     required Future<FinancialReadModel> Function() loadFinancialReadModel,

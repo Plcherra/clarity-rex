@@ -233,7 +233,7 @@ class ChatController extends Notifier<ChatState> {
   }) async {
     try {
       final api = ref.read(chatApiProvider);
-      final financialContext = await _financialContext();
+      final financialContext = await _financialContext(message);
       final result = await api.sendMessage(
         message,
         conversationId: state.conversationId,
@@ -281,7 +281,7 @@ class ChatController extends Notifier<ChatState> {
 
     try {
       final api = ref.read(chatApiProvider);
-      final financialContext = await _financialContext();
+      final financialContext = await _financialContext(message);
       await for (final event in api.streamMessage(
         message,
         conversationId: state.conversationId,
@@ -350,7 +350,10 @@ class ChatController extends Notifier<ChatState> {
     }
   }
 
-  Future<Map<String, dynamic>?> _financialContext() async {
+  Future<Map<String, dynamic>?> _financialContext(String message) async {
+    if (!shouldAttachAssistantFinancialContext(message)) {
+      return null;
+    }
     final service = ref.read(assistantFinancialContextServiceProvider);
     if (service == null) {
       return AssistantFinancialContextService.unavailableSummary(

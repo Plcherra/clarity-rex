@@ -33,13 +33,9 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
 
     final StreamingVoiceSession session;
     try {
-      final financialContext = await _financialContext();
       session = await ref
           .read(streamingVoiceApiProvider)
-          .connect(
-            conversationId: state.conversationId,
-            financialContext: financialContext,
-          );
+          .connect(conversationId: state.conversationId);
       _activeStreamingSession = session;
       unawaited(_handleStreamingEvents(session, generation));
     } on StreamingVoiceApiException catch (error) {
@@ -63,7 +59,12 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         return;
       }
       utteranceEndSent = true;
-      session.endUtterance();
+      unawaited(
+        _financialContext(state.currentTranscript).then(
+          (financialContext) =>
+              session.endUtterance(financialContext: financialContext),
+        ),
+      );
     }
 
     final bool capturedAudio;
@@ -221,7 +222,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
             audio: recording.file,
             inputMimeType: recording.inputMimeType,
             conversationId: state.conversationId,
-            financialContext: await _financialContext(),
+            financialContext: await _financialContext(state.currentTranscript),
           );
       if (!_isCurrentCall(generation)) {
         return;
@@ -456,7 +457,11 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     }
   }
 
-  Future<Map<String, dynamic>?> _financialContext() async {
+  Future<Map<String, dynamic>?> _financialContext([String? transcript]) async {
+    if (transcript == null ||
+        !shouldAttachAssistantFinancialContext(transcript)) {
+      return null;
+    }
     final service = ref.read(assistantFinancialContextServiceProvider);
     if (service == null) {
       return AssistantFinancialContextService.unavailableSummary(

@@ -50,7 +50,7 @@ def test_router_memory_recall_beats_attached_financial_context():
     assert decision.should_load_long_term_memory
     assert decision.should_load_profile_memory
     assert decision.should_load_structured_memory
-    assert decision.should_use_financial_context
+    assert not decision.should_use_financial_context
 
 
 def test_router_memory_information_question_beats_attached_financial_context():
@@ -62,7 +62,7 @@ def test_router_memory_information_question_beats_attached_financial_context():
     assert decision.intent == RexIntent.MEMORY_RECALL
     assert decision.should_load_long_term_memory
     assert decision.should_load_structured_memory
-    assert decision.should_use_financial_context
+    assert not decision.should_use_financial_context
 
 
 @pytest.mark.parametrize(
@@ -85,7 +85,7 @@ def test_router_classifies_generic_memory_recall_questions(message):
     assert decision.intent == RexIntent.MEMORY_RECALL
     assert decision.should_load_long_term_memory
     assert decision.should_load_structured_memory
-    assert decision.should_use_financial_context
+    assert not decision.should_use_financial_context
 
 
 @pytest.mark.parametrize(
@@ -115,7 +115,7 @@ def test_router_memory_save_beats_attached_financial_context():
 
     assert decision.intent == RexIntent.MEMORY_SAVE
     assert not decision.should_load_long_term_memory
-    assert decision.should_use_financial_context
+    assert not decision.should_use_financial_context
 
 
 @pytest.mark.parametrize(

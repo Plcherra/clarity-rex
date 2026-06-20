@@ -128,7 +128,7 @@ async def test_chat_prompt_includes_saved_mom_birthday_on_recall_question():
 
 
 @pytest.mark.asyncio
-async def test_chat_prompt_includes_memory_when_financial_context_is_attached():
+async def test_chat_prompt_omits_financial_context_from_recall_when_attached():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     memory_service.long_term_memory.append(_mom_birthday_memory())
@@ -144,7 +144,8 @@ async def test_chat_prompt_includes_memory_when_financial_context_is_attached():
 
     system_content = ai_service.messages[0]["content"]
     assert "- fact: User's mom's birthday is June 18." in system_content
-    assert "Clarity financial summary:" in system_content
+    assert "Clarity financial summary:" not in system_content
+    assert "spent_this_month" not in system_content
 
 
 @pytest.mark.asyncio

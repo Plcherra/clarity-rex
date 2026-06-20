@@ -156,6 +156,11 @@ class VoiceStreamSession(
                     code="turn_in_progress",
                 )
                 return True
+            financial_context = payload.get("financial_context")
+            if isinstance(financial_context, dict):
+                self.financial_context = financial_context
+            else:
+                self.financial_context = None
             await self._cancel_live_endpoint_check()
             if self._live_transcription is not None:
                 self._active_turn_task = asyncio.create_task(
