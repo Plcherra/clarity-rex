@@ -52,6 +52,7 @@ class PersonMemoryMaterializer:
         for memory in memories:
             if isinstance(memory, dict):
                 await self.materialize_from_memory(memory_service, memory)
+        await self._archive_covered_self_source_memories(memory_service, memories)
 
     async def materialize_from_memory(self, memory_service, memory: dict) -> None:
         card = self.person_card_from_memory(memory)
@@ -71,6 +72,7 @@ class PersonMemoryMaterializer:
         )
         if existing is None:
             await create_entity(card)
+            await self._archive_covered_self_source_memories(memory_service, [memory])
             return
         if update_entity is None:
             return
@@ -78,6 +80,7 @@ class PersonMemoryMaterializer:
         updates = self._merge_person_card(existing, card)
         if updates:
             await update_entity(str(existing["id"]), **updates)
+        await self._archive_covered_self_source_memories(memory_service, [memory])
 
     def person_card_from_memory(self, memory: dict) -> Optional[dict[str, Any]]:
         if str(memory.get("memory_type") or "") != "fact":
@@ -275,6 +278,101 @@ class PersonMemoryMaterializer:
             updates["importance"] = card["importance"]
 
         return updates
+
+    async def _archive_covered_self_source_memories(
+        self,
+        memory_service,
+        memories: list[dict],
+    ) -> None:
+        list_entities = getattr(memory_service, "list_entities", None)
+        update_memory = getattr(memory_service, "update_long_term_memory", None)
+        if list_entities is None or update_memory is None:
+            return
+        try:
+            entities = await list_entities(entity_type="person", active=True, limit=100)
+        except Exception:
+            return
+        self_entity = next(
+            (entity for entity in entities if self._is_self_entity(entity)),
+            None,
+        )
+        if self_entity is None:
+            return
+
+        person_metadata = self_entity.get("metadata")
+        if not isinstance(person_metadata, dict):
+            return
+        person_attributes = person_metadata.get("attributes")
+        if not isinstance(person_attributes, dict):
+            return
+
+        covered_ids = self._covered_source_memory_ids(person_metadata)
+        if not covered_ids:
+            return
+
+        for memory in memories:
+            if not isinstance(memory, dict) or memory.get("active", True) is not True:
+                continue
+            memory_id = self._clean_text(memory.get("id"))
+            if not memory_id or memory_id not in covered_ids:
+                continue
+            memory_metadata = memory.get("metadata")
+            if not isinstance(memory_metadata, dict):
+                memory_metadata = {}
+            attributes = self._self_attributes(memory, memory_metadata)
+            if not attributes or not self._person_attributes_cover(
+                person_attributes,
+                attributes,
+            ):
+                continue
+            archived_metadata = {
+                **memory_metadata,
+                "canonical_entity_id": self_entity.get("id"),
+                "canonical_entity_type": "person",
+                "duplicate_archive_reason": "covered_by_self_person_card",
+                "covered_attributes": sorted(attributes),
+            }
+            try:
+                await update_memory(
+                    memory_id,
+                    active=False,
+                    metadata=archived_metadata,
+                )
+            except Exception:
+                continue
+
+    def _covered_source_memory_ids(self, metadata: dict[str, Any]) -> set[str]:
+        covered: set[str] = set()
+        for memory_id in metadata.get("source_memory_ids") or []:
+            text = self._clean_text(memory_id)
+            if text:
+                covered.add(text)
+        attribute_sources = metadata.get("attribute_source_memory_ids")
+        if isinstance(attribute_sources, dict):
+            for values in attribute_sources.values():
+                if not isinstance(values, list):
+                    continue
+                for memory_id in values:
+                    text = self._clean_text(memory_id)
+                    if text:
+                        covered.add(text)
+        return covered
+
+    def _person_attributes_cover(
+        self,
+        person_attributes: dict,
+        memory_attributes: dict[str, str],
+    ) -> bool:
+        for key, value in memory_attributes.items():
+            if key == "notes":
+                continue
+            person_value = self._clean_text(person_attributes.get(key)).casefold()
+            memory_value = self._clean_text(value).casefold()
+            if not memory_value:
+                continue
+            if not person_value or memory_value not in person_value:
+                return False
+        return True
 
     def _merge_metadata(self, existing: object, incoming: object) -> dict[str, Any]:
         existing_dict = existing if isinstance(existing, dict) else {}

@@ -254,7 +254,7 @@ class SupabaseMemoryService(SupabaseMemoryTransport):
             metadata=metadata,
         )
 
-    async def deactivate_long_term_memory(self, memory_id: str) -> bool:
+    async def deactivate_long_term_memory(self, memory_id: str) -> Optional[dict]:
         return (
             await self._get_long_term_memory_repository().deactivate_long_term_memory(
                 memory_id,

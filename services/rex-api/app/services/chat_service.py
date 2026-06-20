@@ -12,6 +12,7 @@ from app.services.action_truth_policy import (
     safe_old_chat_search_response,
     safe_chat_search_capability_response,
     safe_pending_action_response,
+    safe_unexecuted_delete_response,
     safe_unexecuted_memory_response,
     safe_unsupported_action_response,
 )
@@ -202,6 +203,7 @@ class ChatService(ChatVoiceMetadataMixin):
             clarity_action_proposals,
             unsupported_actions=unsupported_actions,
             intent_decision=intent_decision,
+            user_message=message,
             memory_status=structured_context.get("memory_status"),
             chat_search_results_loaded=self._has_chat_search_results(ai_messages),
         )
@@ -368,6 +370,7 @@ class ChatService(ChatVoiceMetadataMixin):
             clarity_action_proposals,
             unsupported_actions=unsupported_actions,
             intent_decision=intent_decision,
+            user_message=message,
             memory_status=structured_context.get("memory_status"),
             chat_search_results_loaded=self._has_chat_search_results(ai_messages),
         )
@@ -453,6 +456,7 @@ class ChatService(ChatVoiceMetadataMixin):
         *,
         unsupported_actions: list[str],
         intent_decision,
+        user_message: str,
         memory_status: object = None,
         chat_search_results_loaded: bool = False,
     ) -> str:
@@ -479,6 +483,10 @@ class ChatService(ChatVoiceMetadataMixin):
             memory_status=memory_status,
         )
         response = safe_chat_search_capability_response(response)
+        response = safe_unexecuted_delete_response(
+            response,
+            user_message=user_message,
+        )
         if intent_decision.intent in {RexIntent.MEMORY_SAVE, RexIntent.MEMORY_UPDATE}:
             return safe_unexecuted_memory_response(response)
         return response

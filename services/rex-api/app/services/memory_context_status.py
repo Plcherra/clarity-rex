@@ -265,4 +265,13 @@ class MemoryContextAssembler:
                 memory_id = str(memory_id or "").strip()
                 if memory_id:
                     source_ids.add(memory_id)
+            attribute_sources = metadata.get("attribute_source_memory_ids")
+            if isinstance(attribute_sources, dict):
+                for values in attribute_sources.values():
+                    if not isinstance(values, list):
+                        continue
+                    for memory_id in values:
+                        memory_id = str(memory_id or "").strip()
+                        if memory_id:
+                            source_ids.add(memory_id)
         return source_ids

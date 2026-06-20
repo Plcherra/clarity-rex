@@ -11,6 +11,15 @@ def test_chat_search_expands_arbitrary_recall_topics():
     assert "buying" in ranking.expand_terms("What was the game I wanted to buy?")
 
 
+def test_chat_search_expands_day_numbers_and_ordinal_words():
+    ranking = ChatSearchRanking()
+
+    assert "18th" in ranking.expand_terms("18")
+    assert "eighteenth" in ranking.expand_terms("18")
+    assert "18" in ranking.expand_terms("eighteenth")
+    assert "18th" in ranking.expand_terms("eighteenth")
+
+
 def test_chat_search_builds_subject_and_expanded_queries():
     ranking = ChatSearchRanking()
 

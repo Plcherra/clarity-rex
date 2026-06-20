@@ -26,6 +26,10 @@ RECALL_TRIGGER_PHRASES = (
     "search chat",
     "search chats",
     "search the chat",
+    "find chat",
+    "find chats",
+    "find old chat",
+    "find old chats",
     "search old",
     "check the chat",
     "check old",
@@ -36,6 +40,8 @@ RECALL_TRIGGER_PHRASES = (
     "said before",
     "do you know about",
     "do you know anything about",
+    "do you have any idea",
+    "have any idea",
     "what do you know about",
     "anything about",
 )
@@ -202,6 +208,12 @@ class RecallIntentHelper:
         if re.search(
             r"\bwhat\s+.+\b(?:did|do)\s+i\s+"
             r"(?:play|buy|want|mention|say|tell)",
+            normalized,
+        ):
+            return True
+        if re.search(
+            r"\bwhat\s+did\s+i\s+"
+            r"(?:play|buy|want|mention|say|tell|talk|discuss)\b",
             normalized,
         ):
             return True

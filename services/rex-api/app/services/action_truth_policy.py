@@ -17,6 +17,11 @@ CHAT_SEARCH_CAPABILITY_FALLBACK = (
     "I can search saved chat history when chat search is available. I won't treat "
     "this visible chat as the only source."
 )
+UNEXECUTED_DELETE_FALLBACK = (
+    "I can help delete saved memory, but I don't have a confirmed backend delete "
+    "from this turn. Tell me the exact saved item to delete and I'll ask for "
+    "confirmation before changing it."
+)
 
 _SUCCESS_TERMS = tuple(
     "saved|updated|fixed|changed|deleted|created|moved|sent|categorized|"
@@ -37,6 +42,9 @@ _NO_RESULT_TERMS = tuple(
     "couldn't find|could not find|found nothing".split("|")
 )
 _SEARCH_TERMS = ("search", "searched", "check", "checked", "looked")
+_DELETE_REQUEST_TERMS = tuple(
+    "delete|remove|archive|drop|forget|erase|get rid of".split("|")
+)
 _CHAT_HISTORY_TERMS = tuple("old chat|old chats|chat history|chats|conversation|conversations".split("|"))
 _LIMITATION_TERMS = tuple(
     "only search the chat history available right here|only search what's here|"
@@ -63,6 +71,7 @@ def response_claims_old_chat_search_result(response: str) -> bool:
     text = _normalized(response)
     return response_claims_no_memory_result(response) and _contains_any(text, _SEARCH_TERMS) and _contains_any(text, _CHAT_HISTORY_TERMS)
 def response_claims_limited_chat_search_capability(response: str) -> bool: return _contains_any(_normalized(response), _LIMITATION_TERMS)
+def request_asks_delete(message: str) -> bool: return _contains_any(_normalized(message), _DELETE_REQUEST_TERMS)
 def memory_status_is_degraded(memory_status: object) -> bool:
     if not isinstance(memory_status, dict):
         return False
@@ -96,6 +105,13 @@ def safe_unexecuted_memory_response(response: str) -> str:
         "I can help with that, but I don't have a confirmed saved change from this "
         "turn. Tell me the exact fact to save or try again."
     )
+def safe_unexecuted_delete_response(response: str, *, user_message: str) -> str:
+    cleaned = response.strip()
+    if not request_asks_delete(user_message):
+        return cleaned
+    if not response_claims_unconfirmed_success(cleaned):
+        return cleaned
+    return UNEXECUTED_DELETE_FALLBACK
 def safe_unsupported_action_response(response: str, unsupported_actions: list[str]) -> str:
     cleaned = response.strip()
     if not unsupported_actions:

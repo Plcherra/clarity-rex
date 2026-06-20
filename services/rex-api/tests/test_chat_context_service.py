@@ -1125,6 +1125,60 @@ async def test_chat_context_keyword_search_finds_manual_cases_without_full_scan(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("message", "expected_text"),
+    [
+        ("Do you have any idea of my mom's birthday?", "mom's birthday"),
+        ("What did I say about games?", "first PC game"),
+        ("Find old chats about Legacy of Kain", "Legacy of Kain"),
+        ("Search chats for the eighteenth", "June 18th"),
+    ],
+)
+async def test_chat_context_natural_recall_phrasing_triggers_old_chat_search(
+    message,
+    expected_text,
+):
+    store = FakeContextMemoryStore()
+    store.list_messages = None
+    store.past_messages = [
+        {
+            "id": "mom-birthday",
+            "conversation_id": "conversation-manual",
+            "role": "user",
+            "content": "My mom's birthday is June 18th.",
+            "timestamp": "2026-06-18T12:00:00Z",
+        },
+        {
+            "id": "pc-game",
+            "conversation_id": "conversation-manual",
+            "role": "user",
+            "content": "Awesome. I'm going to buy my first PC game.",
+            "timestamp": "2026-06-18T12:02:00Z",
+        },
+        {
+            "id": "legacy",
+            "conversation_id": "conversation-manual",
+            "role": "user",
+            "content": "It's Legacy of Kain.",
+            "timestamp": "2026-06-18T12:03:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message=message,
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.CASUAL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert expected_text in result["content"]
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert status["source"] == "chat_search"
+    assert status["result_count"] > 0
+
+
+@pytest.mark.asyncio
 async def test_chat_context_finds_send_money_from_gift_followup():
     store = FakeContextMemoryStore()
     store.messages = [

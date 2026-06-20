@@ -11,12 +11,18 @@ SavedMemoryResults filterSavedMemory({
   final normalizedQuery = query.trim().toLowerCase();
   final showPeopleOnly = quickFilter == MemoryQuickFilter.people;
   final showPreferencesOnly = quickFilter == MemoryQuickFilter.preferences;
+  final coveredSourceMemoryIds = {
+    for (final person in state.people) ...person.sourceMemoryIds,
+  };
 
   List<T> filterList<T>(Iterable<T> items, bool Function(T item) matches) {
     return items.where(matches).toList(growable: false);
   }
 
   final memories = filterList(state.memories, (memory) {
+    if (coveredSourceMemoryIds.contains(memory.id)) {
+      return false;
+    }
     if (showPeopleOnly && memory.memoryGroup != MemoryGroup.people) {
       return false;
     }

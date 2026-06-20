@@ -63,6 +63,7 @@ class FakeMemoryService:
         self.next_message_id = 1
         self.next_memory_id = 1
         self.next_entity_id = 1
+        self.next_entity_event_id = 1
         self.next_plan_id = 1
         self.next_commitment_id = 1
         self.relevant_memory_queries = []
@@ -70,6 +71,7 @@ class FakeMemoryService:
         self.structured_context_queries = []
         self.structured_context = {}
         self.entities = []
+        self.entity_events = []
         self.plans = []
         self.commitments = []
         self.created_plans = []
@@ -291,6 +293,46 @@ class FakeMemoryService:
                 entity["updated_at"] = "2026-05-11T00:00:00Z"
                 return entity
         return None
+
+    async def create_entity_event(self, payload):
+        event = {
+            "id": f"entity-event-{self.next_entity_event_id}",
+            "active": True,
+            "created_at": "2026-05-11T00:00:00Z",
+            "updated_at": "2026-05-11T00:00:00Z",
+            **payload,
+        }
+        self.next_entity_event_id += 1
+        self.entity_events.append(event)
+        return event
+
+    async def list_entity_events(
+        self,
+        *,
+        entity_id=None,
+        event_type=None,
+        active=True,
+        limit=50,
+    ):
+        events = self.entity_events
+        if entity_id is not None:
+            events = [event for event in events if event.get("entity_id") == entity_id]
+        if event_type is not None:
+            events = [event for event in events if event.get("event_type") == event_type]
+        if active is not None:
+            events = [event for event in events if event.get("active", True) is active]
+        return events[:limit]
+
+    async def update_entity_event(self, event_id, **updates):
+        for event in self.entity_events:
+            if event["id"] == event_id:
+                event.update(updates)
+                event["updated_at"] = "2026-05-11T00:00:00Z"
+                return event
+        return None
+
+    async def deactivate_entity_event(self, event_id):
+        return await self.update_entity_event(event_id, active=False)
 
     async def create_plan(self, payload):
         plan = {

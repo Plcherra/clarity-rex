@@ -88,6 +88,51 @@ CHAT_SEARCH_TERM_ALIASES = {
     "visa": ("visa", "immigration", "uscis"),
 }
 
+ORDINAL_WORDS = {
+    "first": "1",
+    "second": "2",
+    "third": "3",
+    "fourth": "4",
+    "fifth": "5",
+    "sixth": "6",
+    "seventh": "7",
+    "eighth": "8",
+    "ninth": "9",
+    "tenth": "10",
+    "eleventh": "11",
+    "twelfth": "12",
+    "thirteenth": "13",
+    "fourteenth": "14",
+    "fifteenth": "15",
+    "sixteenth": "16",
+    "seventeenth": "17",
+    "eighteenth": "18",
+    "nineteenth": "19",
+    "twentieth": "20",
+    "twentyfirst": "21",
+    "twenty-first": "21",
+    "twentysecond": "22",
+    "twenty-second": "22",
+    "twentythird": "23",
+    "twenty-third": "23",
+    "twentyfourth": "24",
+    "twenty-fourth": "24",
+    "twentyfifth": "25",
+    "twenty-fifth": "25",
+    "twentysixth": "26",
+    "twenty-sixth": "26",
+    "twentyseventh": "27",
+    "twenty-seventh": "27",
+    "twentyeighth": "28",
+    "twenty-eighth": "28",
+    "twentyninth": "29",
+    "twenty-ninth": "29",
+    "thirtieth": "30",
+    "thirtyfirst": "31",
+    "thirty-first": "31",
+}
+ORDINAL_NUMBERS = {number: word for word, number in ORDINAL_WORDS.items()}
+
 
 @dataclass(frozen=True)
 class ChatSearchQuery:
@@ -291,8 +336,18 @@ class ChatSearchRanking:
         ordinal_base = self.ordinal_base(term)
         if term.isdigit():
             variants.add(self.ordinal_variant(term))
+            ordinal_word = ORDINAL_NUMBERS.get(str(int(term)))
+            if ordinal_word:
+                variants.add(ordinal_word)
         elif ordinal_base:
             variants.add(ordinal_base)
+            ordinal_word = ORDINAL_NUMBERS.get(str(int(ordinal_base)))
+            if ordinal_word:
+                variants.add(ordinal_word)
+        elif term in ORDINAL_WORDS:
+            number = ORDINAL_WORDS[term]
+            variants.add(number)
+            variants.add(self.ordinal_variant(number))
         elif term.endswith("ies") and len(term) > 4:
             variants.add(f"{term[:-3]}y")
         elif term.endswith("s") and len(term) > 3:
@@ -346,10 +401,22 @@ class ChatSearchRanking:
         )
 
     def numeric_or_ordinal(self, term: str) -> bool:
-        return term.isdigit() or self.ordinal_base(term) is not None
+        return (
+            term.isdigit()
+            or self.ordinal_base(term) is not None
+            or term in ORDINAL_WORDS
+        )
 
     def terms_match(self, expected: str, actual: str) -> bool:
         if expected == actual:
+            return True
+        expected_word_base = ORDINAL_WORDS.get(expected)
+        actual_word_base = ORDINAL_WORDS.get(actual)
+        if expected_word_base and actual == expected_word_base:
+            return True
+        if actual_word_base and expected == actual_word_base:
+            return True
+        if expected_word_base and actual_word_base == expected_word_base:
             return True
         expected_base = self.ordinal_base(expected)
         actual_base = self.ordinal_base(actual)

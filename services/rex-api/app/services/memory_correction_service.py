@@ -87,6 +87,29 @@ class MemoryCorrectionService:
             )
             return report
 
+        remaining_matches = [
+            remaining
+            for remaining in await self.preview_remove_obsolete(old_value)
+            if not (remaining.table == match.table and remaining.id == match.id)
+        ]
+        if remaining_matches:
+            report.errors.append(
+                {
+                    "source": "memory_delete_verification",
+                    "message": "Active saved records still match the delete target.",
+                }
+            )
+            report.affected_records = [
+                CorrectionAffectedRecord(
+                    table=match.table,
+                    id=match.id,
+                    action="archived",
+                    title=match.title,
+                    previous=match.previous,
+                )
+            ]
+            return report
+
         affected_record = CorrectionAffectedRecord(
             table=match.table,
             id=match.id,

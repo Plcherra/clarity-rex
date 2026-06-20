@@ -250,6 +250,7 @@ async def test_conversation_repository_list_messages_stays_user_scoped():
         ("mom", "conversation-family", "mom's birthday"),
         ("June", "conversation-family", "June 18th"),
         ("18", "conversation-family", "June 18th"),
+        ("eighteenth", "conversation-family", "June 18th"),
         ("June 18", "conversation-family", "June 18th"),
         ("PC game", "conversation-pc", "first PC game"),
         ("Legacy of Kain", "conversation-pc", "Legacy of Kain"),

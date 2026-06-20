@@ -93,7 +93,7 @@ class MemoryCorrectionRepository(Protocol):
     ) -> Optional[dict]:
         pass
 
-    async def deactivate_long_term_memory(self, memory_id: str) -> bool:
+    async def deactivate_long_term_memory(self, memory_id: str) -> Optional[dict]:
         pass
 
     async def list_entities(

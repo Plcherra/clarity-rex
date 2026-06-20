@@ -7,6 +7,7 @@ from app.services.action_truth_policy import (
     safe_empty_recall_search_response,
     safe_old_chat_search_response,
     safe_pending_action_response,
+    safe_unexecuted_delete_response,
     safe_unexecuted_memory_response,
     safe_unsupported_action_response,
 )
@@ -40,6 +41,15 @@ def test_unexecuted_memory_success_claim_is_blocked():
         "I can help with that, but I don't have a confirmed saved change from this "
         "turn. Tell me the exact fact to save or try again."
     )
+
+
+def test_unexecuted_delete_success_claim_is_blocked():
+    response = safe_unexecuted_delete_response(
+        "Done, I deleted it.",
+        user_message="Can you delete?",
+    )
+
+    assert "don't have a confirmed backend delete" in response
 
 
 def test_degraded_recall_uses_canonical_fallback():

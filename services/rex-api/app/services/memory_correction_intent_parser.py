@@ -25,7 +25,7 @@ class MemoryCorrectionIntentParser:
 
         removal = re.search(
             (
-                r"\b(?:delete|remove|archive|drop)\s+"
+                r"\b(?:delete|remove|archive|drop|forget|erase|clear)\s+"
                 r"(?:any\s+)?"
                 r"(?:mention|mentions|memory|memories|record|records)\s*"
                 r"(?:of|about|for)?\s+(.+)$"
@@ -35,7 +35,13 @@ class MemoryCorrectionIntentParser:
         )
         if removal is None:
             removal = re.search(
-                r"\b(?:delete|remove|archive|drop)\s+(.+)$",
+                r"\b(?:delete|remove|archive|drop|forget|erase|clear)\s+(.+)$",
+                cleaned,
+                flags=re.IGNORECASE,
+            )
+        if removal is None:
+            removal = re.search(
+                r"\bget\s+rid\s+of\s+(.+)$",
                 cleaned,
                 flags=re.IGNORECASE,
             )
@@ -128,7 +134,7 @@ def trim_text(value: str) -> str:
 def trim_removal_target(value: str) -> str:
     value = trim_text(value)
     value = re.sub(
-        r"^(?:please\s+)?(?:that|this|the)\s+",
+        r"^(?:please\s+)?(?:about\s+)?(?:that|this|the)\s+",
         "",
         value,
         flags=re.IGNORECASE,

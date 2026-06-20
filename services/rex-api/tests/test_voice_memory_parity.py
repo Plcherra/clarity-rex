@@ -164,7 +164,7 @@ def test_voice_updates_location_and_recall_loads_updated_fact(client):
     assert recalled["response_text"] == "You live in Somerville, Massachusetts."
     assert ai_service.stream_calls == 1
     prompt_text = "\n".join(str(message["content"]) for message in ai_service.messages)
-    assert "User lives in Somerville, Massachusetts." in prompt_text
+    assert "Somerville, Massachusetts" in prompt_text
 
 
 def test_voice_saves_and_recalls_mom_birthday_without_pending_cards(client):

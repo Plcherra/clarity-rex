@@ -31,6 +31,12 @@ Future<void> openFirstMemoryActions(WidgetTester tester) async {
 
 Future<void> openMemoryActionsForText(WidgetTester tester, String text) async {
   final label = listTileText(text);
+  await tester.scrollUntilVisible(
+    label,
+    120,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
   await tester.ensureVisible(label);
   await tester.pumpAndSettle();
   final tile = find.ancestor(of: label, matching: find.byType(GestureDetector));

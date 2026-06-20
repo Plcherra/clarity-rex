@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,6 +14,7 @@ import 'package:clarity/rex/chat/application/chat_memory_change_parser.dart';
 import 'package:clarity/rex/chat/application/chat_response_text.dart';
 import 'package:clarity/rex/chat/application/chat_state.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
+import 'package:clarity/rex/memory/application/memory_controller.dart';
 
 export 'package:clarity/rex/chat/application/chat_state.dart';
 
@@ -145,6 +148,7 @@ class ChatController extends Notifier<ChatState> {
         ),
       );
     }
+    unawaited(_refreshSavedMemoryOverviewIfNeeded(memoryChanges));
   }
 
   Future<void> loadConversation(String conversationId) async {
@@ -260,6 +264,7 @@ class ChatController extends Notifier<ChatState> {
         isLoading: false,
         clearError: true,
       );
+      await _refreshSavedMemoryOverviewIfNeeded(result.memoryChanges);
       return assistantTextFromApiResponse(result) ??
           latestAssistantContent(state.messages);
     } on ChatApiException catch (error) {
@@ -318,6 +323,7 @@ class ChatController extends Notifier<ChatState> {
             isLoading: false,
             clearError: true,
           );
+          await _refreshSavedMemoryOverviewIfNeeded(response.memoryChanges);
           return assistantTextFromApiResponse(response) ??
               latestAssistantContent(state.messages);
         }
@@ -370,6 +376,42 @@ class ChatController extends Notifier<ChatState> {
         error: error,
       );
     }
+  }
+
+  Future<void> _refreshSavedMemoryOverviewIfNeeded(
+    Map<String, dynamic>? memoryChanges,
+  ) async {
+    if (!_memoryChangesRequireSavedOverviewRefresh(memoryChanges)) {
+      return;
+    }
+    await ref.read(memoryProvider.notifier).loadSavedOverview();
+  }
+
+  bool _memoryChangesRequireSavedOverviewRefresh(
+    Map<String, dynamic>? memoryChanges,
+  ) {
+    if (memoryChanges == null) {
+      return false;
+    }
+    for (final key in const ['created', 'updated', 'archived', 'merged']) {
+      final value = memoryChanges[key];
+      if (value is num && value > 0) {
+        return true;
+      }
+    }
+    final records = memoryChanges['records'];
+    return records is List &&
+        records.any((record) {
+          if (record is! Map) {
+            return false;
+          }
+          return const {
+            'direct_saved',
+            'direct_updated',
+            'archived_superseded',
+            'direct_archived',
+          }.contains(record['action']);
+        });
   }
 
   List<ChatMessage> _messagesWithStreamedToken(

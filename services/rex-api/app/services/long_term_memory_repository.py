@@ -148,9 +148,8 @@ class LongTermMemoryRepository:
             empty_detail="At least one memory field must be provided.",
         )
 
-    async def deactivate_long_term_memory(self, memory_id: str) -> bool:
-        memory = await self.update_long_term_memory(memory_id, active=False)
-        return memory is not None
+    async def deactivate_long_term_memory(self, memory_id: str) -> Optional[dict]:
+        return await self.update_long_term_memory(memory_id, active=False)
 
     def memory_from_message_text(self, message: str) -> Optional[dict]:
         text = " ".join(message.strip().split())

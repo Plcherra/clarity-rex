@@ -67,6 +67,18 @@ class PersonMemoryItem {
     );
   }
 
+  List<String> get sourceMemoryIds {
+    final ids = <String>{};
+    ids.addAll(_flexibleStringList(metadata['source_memory_ids']));
+    final attributeSources = metadata['attribute_source_memory_ids'];
+    if (attributeSources is Map) {
+      for (final value in attributeSources.values) {
+        ids.addAll(_flexibleStringList(value));
+      }
+    }
+    return ids.toList(growable: false);
+  }
+
   List<String> get safeAliases {
     return aliases
         .where((alias) => !_isUnsafeAlias(alias))
@@ -76,14 +88,14 @@ class PersonMemoryItem {
   List<String> get searchableFields {
     return [
       displayName,
-      if (relationship != null) relationship!,
-      if (summary != null) summary!,
-      if (fullName != null) fullName!,
-      if (location != null) location!,
-      if (birthday != null) birthday!,
-      if (job != null) job!,
-      if (workplace != null) workplace!,
-      if (notes != null) notes!,
+      ?relationship,
+      ?summary,
+      ?fullName,
+      ?location,
+      ?birthday,
+      ?job,
+      ?workplace,
+      ?notes,
       ...importantDates,
       'Importance $importance',
       status,
