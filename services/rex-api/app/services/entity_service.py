@@ -11,6 +11,7 @@ from app.models.entity import (
 )
 from app.services.entity_normalization_service import EntityNormalizationService
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
+from app.services.person_memory_materializer import PersonMemoryMaterializer
 
 ENTITY_DESCRIPTOR_PREFIXES = (
     "the girl ",
@@ -52,6 +53,7 @@ class EntityService:
     def __init__(self, memory_service: SupabaseMemoryService) -> None:
         self.memory_service = memory_service
         self.normalization_service = EntityNormalizationService()
+        self.person_memory_materializer = PersonMemoryMaterializer()
 
     async def create_entity(self, request: EntityCreateRequest) -> dict[str, Any]:
         payload = _payload(request)
@@ -130,6 +132,10 @@ class EntityService:
         limit: int = 50,
     ) -> list[dict[str, Any]]:
         try:
+            if active is not False and entity_type in {None, "person"}:
+                await self.person_memory_materializer.materialize_from_active_memories(
+                    self.memory_service,
+                )
             return await self.memory_service.list_entities(
                 entity_type=entity_type,
                 normalized_name=(

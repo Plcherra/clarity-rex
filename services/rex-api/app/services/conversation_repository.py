@@ -193,6 +193,8 @@ class ConversationRepository:
                 timestamp=str(conversation.get("timestamp") or ""),
                 title_match=True,
             )
+            if score.score <= 0:
+                continue
             results.append(
                 {
                     "conversation_id": conversation_id,
@@ -238,6 +240,8 @@ class ConversationRepository:
                 timestamp=str(message.get("timestamp") or ""),
                 repeated_mentions=repeated_counts.get(conversation_id, 1),
             )
+            if score.score <= 0:
+                continue
             results.append(
                 {
                     "conversation_id": conversation_id,
@@ -346,6 +350,8 @@ class ConversationRepository:
                 role=str(row.get("role") or ""),
                 timestamp=str(row.get("timestamp") or ""),
             )
+            if score.score <= 0:
+                continue
             ranked.append(
                 {
                     **row,

@@ -27,6 +27,33 @@ void main() {
     expect(requests.single.method, 'DELETE');
     expect(requests.single.url.path, '/memory/memory-1');
   });
+
+  test('MemoryApi passes active filters only when requested', () async {
+    final requests = <http.Request>[];
+    final api = MemoryApi(
+      apiClient: RexApiClient(
+        baseUrl: 'https://clarity.example.com',
+        authHeaders: const RexAuthHeaders(
+          accessTokenProvider: _testAccessToken,
+        ),
+        httpClient: MockClient((request) async {
+          requests.add(request);
+          return http.Response('[]', 200);
+        }),
+      ),
+    );
+
+    await api.getMemories(active: true);
+    await api.getPeople(active: true);
+    await api.getPeople();
+
+    expect(requests[0].url.path, '/memory');
+    expect(requests[0].url.queryParameters['active'], 'true');
+    expect(requests[1].url.path, '/entities');
+    expect(requests[1].url.queryParameters['active'], 'true');
+    expect(requests[2].url.path, '/entities');
+    expect(requests[2].url.queryParameters.containsKey('active'), isFalse);
+  });
 }
 
 String? _testAccessToken() => 'test-token';

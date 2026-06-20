@@ -122,3 +122,108 @@ class MemoryTurnSummaries:
                 }
             ],
         }
+
+    def _delete_confirmation_summary(self, target: str, match) -> dict:
+        return {
+            "created": 0,
+            "updated": 0,
+            "archived": 0,
+            "merged": 0,
+            "skipped": 0,
+            "confirmation_required": 1,
+            "records": [
+                {
+                    "kind": match.table,
+                    "type": "memory_delete",
+                    "action": "delete_confirmation_required",
+                    "id": match.id,
+                    "title": match.title or target,
+                    "metadata": {
+                        "delete_target": target,
+                        "backend_confirmed": False,
+                    },
+                }
+            ],
+        }
+
+    def _delete_archived_summary(self, affected_records: list) -> dict:
+        return {
+            "created": 0,
+            "updated": 0,
+            "archived": len(affected_records),
+            "merged": 0,
+            "skipped": 0,
+            "confirmation_required": 0,
+            "records": [
+                {
+                    "kind": record.table,
+                    "type": "memory_delete",
+                    "action": "direct_archived",
+                    "id": record.id,
+                    "title": record.title,
+                    "metadata": {
+                        "backend_confirmed": True,
+                        "archive_strategy": "soft_delete_inactive",
+                    },
+                }
+                for record in affected_records
+            ],
+        }
+
+    def _delete_not_found_summary(self, target: str) -> dict:
+        return self._delete_skipped_summary(
+            target,
+            action="delete_not_found",
+            reason="No active saved memory matched the delete request.",
+        )
+
+    def _delete_ambiguous_summary(self, target: str, matches: list) -> dict:
+        summary = self._delete_skipped_summary(
+            target,
+            action="delete_ambiguous",
+            reason="Multiple active saved memories matched the delete request.",
+        )
+        summary["records"][0]["metadata"]["match_count"] = len(matches)
+        summary["records"][0]["metadata"]["matches"] = [
+            {"kind": match.table, "id": match.id, "title": match.title}
+            for match in matches[:5]
+        ]
+        return summary
+
+    def _delete_failed_summary(self, target: str, report: dict) -> dict:
+        summary = self._delete_skipped_summary(
+            target,
+            action="delete_failed",
+            reason="Backend archive was not confirmed.",
+        )
+        summary["records"][0]["metadata"]["correction_report"] = report
+        return summary
+
+    def _delete_rejected_summary(self) -> dict:
+        return self._delete_skipped_summary(
+            "",
+            action="delete_rejected",
+            reason="User rejected the pending delete confirmation.",
+        )
+
+    def _delete_skipped_summary(self, target: str, *, action: str, reason: str) -> dict:
+        return {
+            "created": 0,
+            "updated": 0,
+            "archived": 0,
+            "merged": 0,
+            "skipped": 1,
+            "confirmation_required": 0,
+            "records": [
+                {
+                    "kind": "memory_delete",
+                    "type": "memory_delete",
+                    "action": action,
+                    "title": target,
+                    "metadata": {
+                        "backend_confirmed": False,
+                        "reason": reason,
+                    },
+                }
+            ],
+        }

@@ -46,6 +46,66 @@ class MemoryCorrectionService:
     def detect_correction_intent(self, text: str) -> CorrectionIntent:
         return self.intent_parser.detect_correction_intent(text)
 
+    async def preview_remove_obsolete(
+        self,
+        old_value: str,
+    ) -> list[CorrectionAffectedRecord]:
+        return await self._records_matching_removal(old_value)
+
+    async def apply_confirmed_remove_obsolete(
+        self,
+        old_value: str,
+        *,
+        source_conversation_id: Optional[str] = None,
+        source_message_id: Optional[str] = None,
+    ) -> CorrectionReport:
+        intent = CorrectionIntent(
+            CorrectionIntentType.REMOVE_OBSOLETE,
+            old_value=old_value,
+            new_value="[archived]",
+            confidence=0.9,
+        )
+        report = CorrectionReport(intent=intent)
+        matches = await self.preview_remove_obsolete(old_value)
+        if len(matches) != 1:
+            report.requires_confirmation = len(matches) > 1
+            if len(matches) > 1:
+                report.confirmation_payload = {
+                    **confirmation_payload(intent),
+                    "affected_count": len(matches),
+                }
+            return report
+
+        match = matches[0]
+        archived = await self._safe_archive(spec_for_table(match.table), match.id)
+        if not archived:
+            report.errors.append(
+                {
+                    "source": match.table,
+                    "message": "Archive was not confirmed by the backend.",
+                }
+            )
+            return report
+
+        affected_record = CorrectionAffectedRecord(
+            table=match.table,
+            id=match.id,
+            action="archived",
+            title=match.title,
+            previous=match.previous,
+        )
+        report.affected_records = [affected_record]
+        report.applied = True
+        correction = await self._record_correction(
+            intent,
+            affected_record,
+            source_conversation_id=source_conversation_id,
+            source_message_id=source_message_id,
+        )
+        if correction:
+            report.corrections.append(correction)
+        return report
+
     async def apply_correction(
         self,
         text: str,
@@ -245,24 +305,49 @@ class MemoryCorrectionService:
         if not old_value:
             return []
         affected: list[CorrectionAffectedRecord] = []
+        for match in await self._records_matching_removal(old_value):
+            archived = await self._safe_archive(spec_for_table(match.table), match.id)
+            if not archived:
+                continue
+            affected.append(
+                CorrectionAffectedRecord(
+                    table=match.table,
+                    id=match.id,
+                    action="archived",
+                    title=match.title,
+                    previous=match.previous,
+                )
+            )
+        return affected
+
+    async def _records_matching_removal(
+        self,
+        old_value: str,
+    ) -> list[CorrectionAffectedRecord]:
+        exact_matches: list[CorrectionAffectedRecord] = []
+        fuzzy_matches: list[CorrectionAffectedRecord] = []
+        terms = removal_match_terms(old_value)
         for spec in TABLE_SPECS:
             records = await self._safe_list(spec)
             for record in records:
-                if not record_contains(record, spec, old_value):
-                    continue
-                archived = await self._safe_archive(spec, str(record["id"]))
-                if not archived:
-                    continue
-                affected.append(
-                    CorrectionAffectedRecord(
-                        table=spec.table,
-                        id=str(record["id"]),
-                        action="archived",
-                        title=record_title(record),
-                        previous=record,
-                    )
-                )
-        return affected
+                if record_contains(record, spec, old_value):
+                    exact_matches.append(self._affected_preview(spec, record))
+                elif terms and record_contains_all_terms(record, spec, terms):
+                    fuzzy_matches.append(self._affected_preview(spec, record))
+        return dedupe_affected(exact_matches or fuzzy_matches)
+
+    def _affected_preview(
+        self,
+        spec: TableSpec,
+        record: dict[str, Any],
+    ) -> CorrectionAffectedRecord:
+        return CorrectionAffectedRecord(
+            table=spec.table,
+            id=str(record["id"]),
+            action="would_archive",
+            title=record_title(record),
+            previous=record,
+        )
 
     async def _archive_superseded_entities(
         self,
@@ -398,6 +483,66 @@ class MemoryCorrectionService:
         if method is None:
             return False
         try:
-            return bool(await method(record_id))
+            archived = await method(record_id)
         except Exception:
             return False
+        return await self._archive_was_confirmed(spec, record_id, archived)
+
+    async def _archive_was_confirmed(
+        self,
+        spec: TableSpec,
+        record_id: str,
+        archived: object,
+    ) -> bool:
+        if isinstance(archived, dict):
+            return archived.get("active") is False
+        if not archived:
+            return False
+        active_records = await self._safe_list(spec)
+        return all(str(record.get("id") or "") != record_id for record in active_records)
+
+
+REMOVAL_MATCH_STOP_WORDS = {
+    "a",
+    "about",
+    "an",
+    "any",
+    "event",
+    "fact",
+    "for",
+    "it",
+    "memory",
+    "memories",
+    "mention",
+    "mentions",
+    "of",
+    "plan",
+    "planning",
+    "plans",
+    "record",
+    "records",
+    "saved",
+    "that",
+    "the",
+    "this",
+    "to",
+}
+
+
+def removal_match_terms(value: str) -> set[str]:
+    return {
+        term
+        for term in normalize_key(value).split()
+        if len(term) >= 3 and term not in REMOVAL_MATCH_STOP_WORDS
+    }
+
+
+def record_contains_all_terms(
+    record: dict[str, Any],
+    spec: TableSpec,
+    terms: set[str],
+) -> bool:
+    if not terms:
+        return False
+    haystack = normalize_key([record.get(field_name) for field_name in spec.text_fields])
+    return all(term in haystack for term in terms)

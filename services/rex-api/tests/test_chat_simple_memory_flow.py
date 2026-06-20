@@ -344,6 +344,97 @@ async def test_personal_plan_updates_keep_exact_title_and_single_memory():
 
 
 @pytest.mark.asyncio
+async def test_delete_saved_tonight_plan_requires_confirmation_and_archives_memory():
+    ai_service = FakeAIService(response="Rex normal recall")
+    memory_service = FakeMemoryService()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-tonight-plan",
+            "memory_type": "event",
+            "content": "User plans to watch it tonight.",
+            "importance": 4,
+            "active": True,
+            "metadata": {
+                "fact_kind": "personal_plan",
+                "topic_fingerprint": "event:personal_plan:watch:it",
+            },
+        }
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    requested = await chat_service.send_message("Can you delete that tonight plan?")
+
+    assert "Just to confirm" in requested["response"]
+    assert requested["memory_changes"]["confirmation_required"] == 1
+    assert memory_service.long_term_memory[0]["active"] is True
+    assert ai_service.messages == []
+
+    confirmed = await chat_service.send_message("Yes", requested["conversation_id"])
+
+    assert "removed from active saved memory" in confirmed["response"]
+    assert confirmed["memory_changes"]["archived"] == 1
+    assert confirmed["memory_changes"]["records"][0]["action"] == "direct_archived"
+    assert confirmed["memory_changes"]["records"][0]["metadata"][
+        "backend_confirmed"
+    ] is True
+    assert memory_service.long_term_memory[0]["active"] is False
+    assert memory_service.memory_corrections[0]["target_id"] == "memory-tonight-plan"
+    assert ai_service.messages == []
+
+    await chat_service.send_message(
+        "What else do you know?",
+        requested["conversation_id"],
+    )
+
+    assert "saved_knowledge=empty count=0" in ai_service.messages[0]["content"]
+
+
+@pytest.mark.asyncio
+async def test_delete_saved_memory_does_not_claim_success_without_backend_confirmation():
+    class UnconfirmedDeleteMemoryService(FakeMemoryService):
+        async def deactivate_long_term_memory(self, memory_id):
+            return True
+
+    ai_service = FakeAIService(response="Rex normal recall")
+    memory_service = UnconfirmedDeleteMemoryService()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-tonight-plan",
+            "memory_type": "event",
+            "content": "User plans to watch it tonight.",
+            "importance": 4,
+            "active": True,
+            "metadata": {"fact_kind": "personal_plan"},
+        }
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    requested = await chat_service.send_message("Can you delete that tonight plan?")
+    confirmed = await chat_service.send_message("Yes", requested["conversation_id"])
+
+    assert "couldn't confirm" in confirmed["response"]
+    assert "removed from active saved memory" not in confirmed["response"]
+    assert confirmed["memory_changes"]["archived"] == 0
+    assert confirmed["memory_changes"]["records"][0]["action"] == "delete_failed"
+    assert confirmed["memory_changes"]["records"][0]["metadata"][
+        "backend_confirmed"
+    ] is False
+    assert memory_service.long_term_memory[0]["active"] is True
+    assert memory_service.memory_corrections == []
+    assert ai_service.messages == []
+
+
+@pytest.mark.asyncio
 async def test_simple_memory_rejection_does_not_create_durable_memory():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
@@ -440,6 +531,64 @@ async def test_person_memory_card_merges_multiple_high_confidence_facts():
     assert memory_service.entities[0]["metadata"]["attributes"]["birthday"] == (
         "June 18"
     )
+
+
+@pytest.mark.asyncio
+async def test_self_person_card_aggregates_high_confidence_facts_with_flat_fallback():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    name = await chat_service.send_message("My name is Pedro Martins.")
+    location = await chat_service.send_message(
+        "I live in Somerville.",
+        name["conversation_id"],
+    )
+    birthday = await chat_service.send_message(
+        "My birthday is June 18.",
+        name["conversation_id"],
+    )
+    work = await chat_service.send_message(
+        "I work at Bom Dough.",
+        name["conversation_id"],
+    )
+    await chat_service.send_message(
+        "What does Clarity know about me?",
+        name["conversation_id"],
+    )
+
+    assert [turn["memory_changes"]["created"] for turn in [name, location, birthday, work]] == [
+        1,
+        1,
+        1,
+        1,
+    ]
+    assert len(memory_service.long_term_memory) == 4
+    assert all(memory["active"] for memory in memory_service.long_term_memory)
+    assert len(memory_service.entities) == 1
+
+    person = memory_service.entities[0]
+    attributes = person["metadata"]["attributes"]
+    source_ids = person["metadata"]["source_memory_ids"]
+    assert person["display_name"] == "Pedro Martins"
+    assert person["relationship"] == "self"
+    assert attributes["full_name"] == "Pedro Martins"
+    assert attributes["location"] == "Somerville"
+    assert attributes["birthday"] == "June 18"
+    assert attributes["workplace"] == "Bom Dough"
+    assert set(source_ids) == {memory["id"] for memory in memory_service.long_term_memory}
+    assert "Bank of America" not in person["aliases"]
+    assert "- saved knowledge/person Pedro Martins - self" in ai_service.messages[0][
+        "content"
+    ]
+    assert "- fact: User's name is Pedro Martins." not in ai_service.messages[0][
+        "content"
+    ]
 
 
 @pytest.mark.asyncio

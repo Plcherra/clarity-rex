@@ -24,7 +24,7 @@ router = APIRouter(prefix="/plans", tags=["plans"])
 async def list_plans(
     plan_type: Optional[PlanType] = Query(default=None),
     status: Optional[PlanStatus] = Query(default=None),
-    active: Optional[bool] = Query(default=True),
+    active: Optional[bool] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
     plan_service: PlanService = Depends(get_plan_service),
 ) -> list[PlanResponse]:
@@ -85,7 +85,7 @@ async def deactivate_plan(
 async def list_milestones(
     plan_id: str,
     status: Optional[MilestoneStatus] = Query(default=None),
-    active: Optional[bool] = Query(default=True),
+    active: Optional[bool] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
     plan_service: PlanService = Depends(get_plan_service),
 ) -> list[PlanMilestoneResponse]:

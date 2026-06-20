@@ -226,7 +226,7 @@ class LongTermMemoryRepository:
 
         fact_kind = str(metadata.get("fact_kind") or "").lower()
         lowered = content.lower()
-        if fact_kind in {"name"}:
+        if fact_kind in {"name", "work"}:
             return "People"
         if fact_kind in {"birthday"}:
             return "Events"

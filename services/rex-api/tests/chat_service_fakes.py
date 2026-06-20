@@ -74,6 +74,7 @@ class FakeMemoryService:
         self.commitments = []
         self.created_plans = []
         self.created_commitments = []
+        self.memory_corrections = []
 
     async def create_conversation(self):
         conversation_id = f"conversation-{self.next_conversation_id}"
@@ -182,7 +183,24 @@ class FakeMemoryService:
 
     async def get_relevant_memories(self, query, limit=8):
         self.relevant_memory_queries.append({"query": query, "limit": limit})
-        return self.long_term_memory[-limit:]
+        memories = [
+            memory
+            for memory in self.long_term_memory
+            if memory.get("active", True) is True
+        ]
+        return memories[-limit:]
+
+    async def deactivate_long_term_memory(self, memory_id):
+        memory = await self.update_long_term_memory(memory_id, active=False)
+        return memory is not None
+
+    async def create_memory_correction(self, correction):
+        row = {
+            "id": f"correction-{len(self.memory_corrections) + 1}",
+            **correction,
+        }
+        self.memory_corrections.append(row)
+        return row
 
     async def search_messages(
         self,

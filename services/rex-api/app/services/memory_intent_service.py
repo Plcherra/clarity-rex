@@ -37,6 +37,11 @@ class MemoryIntentService:
         r"(?P<person>mom|mother|mum|mama|dad|father|papa)\s*(?:'s)?\s+birthday\b",
         re.IGNORECASE,
     )
+    _self_birthday_pattern = re.compile(
+        r"\bmy\s+birthday\s+(?:is|falls on|will be|on)\s+"
+        r"(?P<date>[^,.!?]{2,60})",
+        re.IGNORECASE,
+    )
     _remember_that_pattern = re.compile(
         r"\bremember\s+that\s+(?P<fact>[^.!?]+)",
         re.IGNORECASE,
@@ -59,6 +64,10 @@ class MemoryIntentService:
         r"(?P<old_place>[A-Za-z][A-Za-z\s,.'-]{1,80})\b.*?"
         r"(?:\bit(?:'s| is)\b|\bi\s+live\s+in\b)\s+"
         r"(?P<place>[A-Za-z][A-Za-z\s,.'-]{1,120})",
+        re.IGNORECASE,
+    )
+    _work_at_pattern = re.compile(
+        r"\bi\s+work\s+(?:at|for)\s+(?P<workplace>[^.!?;,]{2,100})",
         re.IGNORECASE,
     )
     _preference_pattern = re.compile(
@@ -105,6 +114,10 @@ class MemoryIntentService:
         identity_intent = self._detect_identity_fact(message)
         if identity_intent is not None:
             return identity_intent
+
+        work_intent = self._detect_work_fact(message)
+        if work_intent is not None:
+            return work_intent
 
         preference_intent = self._detect_preference(message)
         if preference_intent is not None:
@@ -338,6 +351,15 @@ class MemoryIntentService:
         *,
         time_context: Optional[dict],
     ) -> Optional[SimpleMemoryIntent]:
+        self_match = self._self_birthday_pattern.search(message)
+        if self_match is not None:
+            date_text = self._normalize_date_phrase(
+                self_match.group("date"),
+                time_context=time_context,
+            )
+            if date_text:
+                return self._birthday_intent("self", date_text)
+
         match = self._birthday_pattern.search(message)
         if match is None:
             match = self._birthday_correction_pattern.search(message)
@@ -368,7 +390,15 @@ class MemoryIntentService:
         person: str,
         date_text: str,
     ) -> SimpleMemoryIntent:
-        content = f"User's {person}'s birthday is {date_text}."
+        normalized_person = self._clean_person(person)
+        if normalized_person in {"self", "user", "me", "myself"}:
+            content = f"User's birthday is {date_text}."
+            entity_label = "self"
+            topic = "fact:birthday:self"
+        else:
+            content = f"User's {person}'s birthday is {date_text}."
+            entity_label = person
+            topic = f"fact:birthday:{person.lower()}"
         return SimpleMemoryIntent(
             memory_type="fact",
             content=content,
@@ -376,9 +406,9 @@ class MemoryIntentService:
             metadata={
                 "fact_kind": "birthday",
                 "memory_category": "Events",
-                "entity_label": person,
+                "entity_label": entity_label,
                 "normalized_date": date_text,
-                "topic_fingerprint": f"fact:birthday:{person.lower()}",
+                "topic_fingerprint": topic,
             },
         )
 
@@ -445,6 +475,25 @@ class MemoryIntentService:
         if len(place) < 2:
             return None
         return self._location_intent(place)
+
+    def _detect_work_fact(self, message: str) -> Optional[SimpleMemoryIntent]:
+        match = self._work_at_pattern.search(message)
+        if match is None:
+            return None
+        workplace = self._clean_fact(match.group("workplace"))
+        if len(workplace) < 2:
+            return None
+        return SimpleMemoryIntent(
+            memory_type="fact",
+            content=f"User works at {workplace}.",
+            importance=4,
+            metadata={
+                "fact_kind": "work",
+                "memory_category": "People",
+                "workplace": workplace,
+                "topic_fingerprint": "fact:identity:work",
+            },
+        )
 
     def _detect_contextual_location_memory(
         self,

@@ -16,69 +16,55 @@ SavedMemoryResults filterSavedMemory({
     return items.where(matches).toList(growable: false);
   }
 
-  final memories = showPeopleOnly
-      ? const <MemoryItem>[]
-      : filterList(state.memories, (memory) {
-          if (showPreferencesOnly &&
-              memory.memoryType != MemoryType.preference) {
-            return false;
-          }
-          return _matchesQuery(normalizedQuery, [
-            memory.content,
-            memory.memoryType.label,
-            memory.categoryLabel,
-            'Importance ${memory.importance}',
-          ]);
-        });
+  final memories = filterList(state.memories, (memory) {
+    if (showPeopleOnly && memory.memoryGroup != MemoryGroup.people) {
+      return false;
+    }
+    if (showPreferencesOnly && memory.memoryType != MemoryType.preference) {
+      return false;
+    }
+    return _matchesQuery(normalizedQuery, [
+      memory.content,
+      memory.memoryType.label,
+      memory.categoryLabel,
+      'Importance ${memory.importance}',
+    ]);
+  });
 
   return SavedMemoryResults(
     facts: showPreferencesOnly || showPeopleOnly
         ? const []
         : memories
-              .where(
-                (memory) => memory.memoryGroup == MemoryGroup.facts,
-              )
+              .where((memory) => memory.memoryGroup == MemoryGroup.facts)
               .toList(growable: false),
     preferences: showPeopleOnly
         ? const []
         : memories
-              .where(
-                (memory) => memory.memoryGroup == MemoryGroup.preferences,
-              )
+              .where((memory) => memory.memoryGroup == MemoryGroup.preferences)
               .toList(growable: false),
     peopleMemories: showPreferencesOnly
         ? const []
         : memories
-              .where(
-                (memory) => memory.memoryGroup == MemoryGroup.people,
-              )
+              .where((memory) => memory.memoryGroup == MemoryGroup.people)
               .toList(growable: false),
     people: showPreferencesOnly
         ? const []
         : filterList(
             state.people,
-            (person) => _matchesQuery(normalizedQuery, [
-              person.displayName,
-              person.relationship,
-              person.summary,
-              person.aliases.join(' '),
-              'Importance ${person.importance}',
-              person.status.memoryRecordLabel,
-            ]),
+            (person) => _matchesQuery(
+              normalizedQuery,
+              person.searchableFields.map((field) => field.memoryRecordLabel),
+            ),
           ),
     places: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories
-              .where(
-                (memory) => memory.memoryGroup == MemoryGroup.places,
-              )
+              .where((memory) => memory.memoryGroup == MemoryGroup.places)
               .toList(growable: false),
     goalMemories: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories
-              .where(
-                (memory) => memory.memoryGroup == MemoryGroup.goals,
-              )
+              .where((memory) => memory.memoryGroup == MemoryGroup.goals)
               .toList(growable: false),
     rules: showPeopleOnly || showPreferencesOnly
         ? const []
@@ -121,16 +107,12 @@ SavedMemoryResults filterSavedMemory({
     events: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories
-              .where(
-                (memory) => memory.memoryGroup == MemoryGroup.events,
-              )
+              .where((memory) => memory.memoryGroup == MemoryGroup.events)
               .toList(growable: false),
     other: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories
-              .where(
-                (memory) => memory.memoryGroup == MemoryGroup.other,
-              )
+              .where((memory) => memory.memoryGroup == MemoryGroup.other)
               .toList(growable: false),
   );
 }

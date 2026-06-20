@@ -26,6 +26,7 @@ class FakeEntityService:
     def __init__(self, error=None):
         self.error = error
         self.list_call = None
+        self.event_list_call = None
         self.created_event = None
 
     def _raise_if_configured(self):
@@ -64,6 +65,12 @@ class FakeEntityService:
         self, *, entity_id=None, event_type=None, active=True, limit=50
     ):
         self._raise_if_configured()
+        self.event_list_call = {
+            "entity_id": entity_id,
+            "event_type": event_type,
+            "active": active,
+            "limit": limit,
+        }
         return [_entity_event_row(entity_id=entity_id)]
 
     async def create_entity_event(self, request):
@@ -87,6 +94,7 @@ class FakeEntityService:
 class FakeRuleService:
     def __init__(self, error=None):
         self.error = error
+        self.list_call = None
 
     def _raise_if_configured(self):
         if self.error is not None:
@@ -94,6 +102,12 @@ class FakeRuleService:
 
     async def list_rules(self, *, rule_type=None, status=None, active=True, limit=50):
         self._raise_if_configured()
+        self.list_call = {
+            "rule_type": rule_type,
+            "status": status,
+            "active": active,
+            "limit": limit,
+        }
         return [_rule_row(rule_type=rule_type or "finance")]
 
     async def create_rule(self, request):
@@ -116,6 +130,8 @@ class FakeRuleService:
 class FakePlanService:
     def __init__(self, error=None):
         self.error = error
+        self.list_call = None
+        self.milestone_list_call = None
 
     def _raise_if_configured(self):
         if self.error is not None:
@@ -123,6 +139,12 @@ class FakePlanService:
 
     async def list_plans(self, *, plan_type=None, status=None, active=True, limit=50):
         self._raise_if_configured()
+        self.list_call = {
+            "plan_type": plan_type,
+            "status": status,
+            "active": active,
+            "limit": limit,
+        }
         return [_plan_row(plan_type=plan_type or "finance")]
 
     async def create_plan(self, request):
@@ -141,6 +163,12 @@ class FakePlanService:
         self, *, plan_id=None, status=None, active=True, limit=50
     ):
         self._raise_if_configured()
+        self.milestone_list_call = {
+            "plan_id": plan_id,
+            "status": status,
+            "active": active,
+            "limit": limit,
+        }
         return [_milestone_row(plan_id=plan_id)]
 
     async def create_milestone(self, request):
@@ -163,6 +191,7 @@ class FakePlanService:
 class FakeCommitmentService:
     def __init__(self, error=None):
         self.error = error
+        self.list_call = None
 
     def _raise_if_configured(self):
         if self.error is not None:
@@ -172,6 +201,13 @@ class FakeCommitmentService:
         self, *, commitment_type=None, milestone_id=None, status=None, active=True, limit=50
     ):
         self._raise_if_configured()
+        self.list_call = {
+            "commitment_type": commitment_type,
+            "milestone_id": milestone_id,
+            "status": status,
+            "active": active,
+            "limit": limit,
+        }
         return [_commitment_row(commitment_type=commitment_type or "task")]
 
     async def create_commitment(self, request):
@@ -211,6 +247,31 @@ def test_list_entities_uses_filters_and_response_model(client):
         "active": True,
         "limit": 10,
     }
+
+
+def test_structured_list_routes_default_to_all_active_states(client):
+    entity_service = FakeEntityService()
+    rule_service = FakeRuleService()
+    plan_service = FakePlanService()
+    commitment_service = FakeCommitmentService()
+    app.dependency_overrides[get_entity_service] = lambda: entity_service
+    app.dependency_overrides[get_rule_service] = lambda: rule_service
+    app.dependency_overrides[get_plan_service] = lambda: plan_service
+    app.dependency_overrides[get_commitment_service] = lambda: commitment_service
+
+    assert client.get("/entities?entity_type=person").status_code == 200
+    assert client.get("/entities/entity-1/events").status_code == 200
+    assert client.get("/rules").status_code == 200
+    assert client.get("/plans").status_code == 200
+    assert client.get("/plans/plan-1/milestones").status_code == 200
+    assert client.get("/commitments").status_code == 200
+
+    assert entity_service.list_call["active"] is None
+    assert entity_service.event_list_call["active"] is None
+    assert rule_service.list_call["active"] is None
+    assert plan_service.list_call["active"] is None
+    assert plan_service.milestone_list_call["active"] is None
+    assert commitment_service.list_call["active"] is None
 
 
 def test_create_entity_event_rejects_entity_id_mismatch(client):

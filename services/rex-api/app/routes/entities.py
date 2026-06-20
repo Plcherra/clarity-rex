@@ -23,7 +23,7 @@ router = APIRouter(prefix="/entities", tags=["entities"])
 async def list_entities(
     entity_type: Optional[EntityType] = Query(default=None),
     normalized_name: Optional[str] = Query(default=None),
-    active: Optional[bool] = Query(default=True),
+    active: Optional[bool] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
     entity_service: EntityService = Depends(get_entity_service),
 ) -> list[EntityResponse]:
@@ -84,7 +84,7 @@ async def deactivate_entity(
 async def list_entity_events(
     entity_id: str,
     event_type: Optional[EntityEventType] = Query(default=None),
-    active: Optional[bool] = Query(default=True),
+    active: Optional[bool] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
     entity_service: EntityService = Depends(get_entity_service),
 ) -> list[EntityEventResponse]:

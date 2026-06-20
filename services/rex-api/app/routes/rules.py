@@ -20,7 +20,7 @@ router = APIRouter(prefix="/rules", tags=["rules"])
 async def list_rules(
     rule_type: Optional[RuleType] = Query(default=None),
     status: Optional[RuleStatus] = Query(default=None),
-    active: Optional[bool] = Query(default=True),
+    active: Optional[bool] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
     rule_service: RuleService = Depends(get_rule_service),
 ) -> list[PersonalRuleResponse]:

@@ -1068,6 +1068,63 @@ async def test_chat_context_full_scan_fallback_finds_manual_recall_examples():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("message", "expected_text"),
+    [
+        ("Search chats for mom", "mom's birthday"),
+        ("Search chats for June", "June 18th"),
+        ("Search chats for 18", "June 18th"),
+        ("Search chats for June 18", "June 18th"),
+        ("Search chats for PC game", "first PC game"),
+        ("Search chats for Legacy of Kain", "Legacy of Kain"),
+    ],
+)
+async def test_chat_context_keyword_search_finds_manual_cases_without_full_scan(
+    message,
+    expected_text,
+):
+    store = FakeContextMemoryStore()
+    store.list_messages = None
+    store.past_messages = [
+        {
+            "id": "mom-birthday",
+            "conversation_id": "conversation-manual",
+            "role": "user",
+            "content": "My mom's birthday is June 18th.",
+            "timestamp": "2026-06-18T12:00:00Z",
+        },
+        {
+            "id": "pc-game",
+            "conversation_id": "conversation-manual",
+            "role": "user",
+            "content": "Awesome. I'm going to buy my first PC game.",
+            "timestamp": "2026-06-18T12:02:00Z",
+        },
+        {
+            "id": "legacy",
+            "conversation_id": "conversation-manual",
+            "role": "user",
+            "content": "It's Legacy of Kain.",
+            "timestamp": "2026-06-18T12:03:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message=message,
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-manual"
+    assert expected_text in result["content"]
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert status["full_scan_used"] is False
+    assert status["source"] == "chat_search"
+
+
+@pytest.mark.asyncio
 async def test_chat_context_finds_send_money_from_gift_followup():
     store = FakeContextMemoryStore()
     store.messages = [

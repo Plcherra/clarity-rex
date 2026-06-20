@@ -24,14 +24,25 @@ class MemoryCorrectionIntentParser:
             return CorrectionIntent(CorrectionIntentType.UNKNOWN, confidence=0)
 
         removal = re.search(
-            r"\b(?:delete|remove|archive|drop)\s+(?:any\s+)?(?:mention|mentions|memory|memories|record|records)?\s*(?:of|about|for)?\s+(.+)$",
+            (
+                r"\b(?:delete|remove|archive|drop)\s+"
+                r"(?:any\s+)?"
+                r"(?:mention|mentions|memory|memories|record|records)\s*"
+                r"(?:of|about|for)?\s+(.+)$"
+            ),
             cleaned,
             flags=re.IGNORECASE,
         )
+        if removal is None:
+            removal = re.search(
+                r"\b(?:delete|remove|archive|drop)\s+(.+)$",
+                cleaned,
+                flags=re.IGNORECASE,
+            )
         if removal:
             return CorrectionIntent(
                 CorrectionIntentType.REMOVE_OBSOLETE,
-                old_value=trim_text(removal.group(1)),
+                old_value=trim_removal_target(removal.group(1)),
                 new_value="[archived]",
                 confidence=0.9,
             )
@@ -112,3 +123,24 @@ def trim_text(value: str) -> str:
     value = clean_text(value)
     value = re.sub(r"[.!?]+$", "", value).strip()
     return value.strip("\"'")
+
+
+def trim_removal_target(value: str) -> str:
+    value = trim_text(value)
+    value = re.sub(
+        r"^(?:please\s+)?(?:that|this|the)\s+",
+        "",
+        value,
+        flags=re.IGNORECASE,
+    )
+    value = re.sub(
+        (
+            r"^(?:saved\s+)?"
+            r"(?:mention|mentions|memory|memories|record|records)\s*"
+            r"(?:of|about|for)?\s+"
+        ),
+        "",
+        value,
+        flags=re.IGNORECASE,
+    )
+    return value.strip()

@@ -78,6 +78,43 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Chats search submits backend query and renders backend results',
+    (tester) async {
+      final conversationApi = _FakeConversationApi(
+        searchResults: [
+          ConversationSearchResult(
+            conversationId: 'conversation-mom',
+            matchType: 'message',
+            preview: "My mom's birthday is June 18th.",
+            conversationTitle: 'Family dates',
+            conversationTimestamp: DateTime.utc(2026, 6, 18),
+            matchedTerms: const ['18', '18th'],
+          ),
+        ],
+      );
+      await _pumpAssistantNavigation(tester, conversationApi: conversationApi);
+
+      await tester.tap(find.byKey(AssistantTab.chats.key));
+      await tester.pumpAndSettle();
+
+      final searchField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.hintText == 'Search chats',
+      );
+      expect(searchField, findsOneWidget);
+
+      await tester.enterText(searchField, '18');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+
+      expect(conversationApi.searchQueries, ['18']);
+      expect(find.text('Family dates'), findsOneWidget);
+      expect(find.text("My mom's birthday is June 18th."), findsOneWidget);
+    },
+  );
+
   testWidgets('Assistant navigation excludes unrelated global actions', (
     tester,
   ) async {
@@ -128,12 +165,15 @@ void main() {
 Future<void> _pumpAssistantNavigation(
   WidgetTester tester, {
   _FakeVoiceCallController? voiceController,
+  _FakeConversationApi? conversationApi,
   Key? rootKey,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        conversationApiProvider.overrideWithValue(_FakeConversationApi()),
+        conversationApiProvider.overrideWithValue(
+          conversationApi ?? _FakeConversationApi(),
+        ),
         memoryApiProvider.overrideWithValue(_FakeMemoryApi()),
         if (voiceController != null)
           voiceCallProvider.overrideWith(() => voiceController),
@@ -145,6 +185,11 @@ Future<void> _pumpAssistantNavigation(
 }
 
 class _FakeConversationApi extends ConversationApi {
+  _FakeConversationApi({this.searchResults = const []});
+
+  final List<ConversationSearchResult> searchResults;
+  final List<String> searchQueries = [];
+
   @override
   Future<List<Conversation>> getConversations() async => const [];
 
@@ -153,6 +198,14 @@ class _FakeConversationApi extends ConversationApi {
     String conversationId,
   ) async {
     return const [];
+  }
+
+  @override
+  Future<List<ConversationSearchResult>> searchConversations(
+    String query,
+  ) async {
+    searchQueries.add(query);
+    return searchResults;
   }
 }
 

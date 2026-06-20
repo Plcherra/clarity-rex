@@ -21,7 +21,7 @@ async def list_commitments(
     commitment_type: Optional[CommitmentType] = Query(default=None),
     milestone_id: Optional[str] = Query(default=None),
     status: Optional[CommitmentStatus] = Query(default=None),
-    active: Optional[bool] = Query(default=True),
+    active: Optional[bool] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
     commitment_service: CommitmentService = Depends(get_commitment_service),
 ) -> list[CommitmentResponse]:

@@ -61,6 +61,23 @@ class InMemoryRetrievalService(SupabaseMemoryService):
             ]
         return records[:limit]
 
+    async def create_entity(self, payload):
+        row = {
+            "id": f"entity-{len(self.entities) + 1}",
+            "status": "active",
+            "active": True,
+            **payload,
+        }
+        self.entities.append(row)
+        return row
+
+    async def update_entity(self, entity_id, **updates):
+        for entity in self.entities:
+            if entity.get("id") == entity_id:
+                entity.update(updates)
+                return entity
+        return None
+
     async def list_entity_events(
         self,
         limit=50,
@@ -703,6 +720,68 @@ async def test_get_structured_memory_context_ranks_records_and_links_children():
         "commitment-visa-docs"
     ]
     assert "clara" in context["entities"][0]["relevance_reason"]
+
+
+@pytest.mark.asyncio
+async def test_structured_context_materializes_self_person_from_safe_flat_facts():
+    service = InMemoryRetrievalService(
+        [
+            {
+                "id": "memory-location",
+                "memory_type": "fact",
+                "content": "User lives in Somerville.",
+                "importance": 4,
+                "active": True,
+                "metadata": {"fact_kind": "location"},
+            },
+            {
+                "id": "memory-name-work",
+                "memory_type": "fact",
+                "content": (
+                    "My name is Pedro Martins, I work at Bom Dough LLC with "
+                    "regular payroll deposits, and I have a Bank of America "
+                    "checking account with Zelle activity."
+                ),
+                "importance": 5,
+                "active": True,
+                "metadata": {"fact_kind": "name"},
+            },
+            {
+                "id": "memory-birthday",
+                "memory_type": "fact",
+                "content": "User's birthday is June 18.",
+                "importance": 5,
+                "active": True,
+                "metadata": {
+                    "fact_kind": "birthday",
+                    "entity_label": "self",
+                    "normalized_date": "June 18",
+                },
+            },
+        ]
+    )
+
+    context = await service.get_structured_memory_context(
+        "What does Clarity know about me?"
+    )
+
+    assert len(service.entities) == 1
+    person = context["entities"][0]
+    attributes = person["metadata"]["attributes"]
+    assert person["display_name"] == "Pedro Martins"
+    assert person["relationship"] == "self"
+    assert attributes["full_name"] == "Pedro Martins"
+    assert attributes["location"] == "Somerville"
+    assert attributes["birthday"] == "June 18"
+    assert attributes["workplace"] == "Bom Dough LLC"
+    assert "Bank of America" not in person["aliases"]
+    assert "Zelle" not in person["aliases"]
+    assert set(person["metadata"]["source_memory_ids"]) == {
+        "memory-name-work",
+        "memory-location",
+        "memory-birthday",
+    }
+    assert [memory["active"] for memory in service.memories] == [True, True, True]
 
 
 @pytest.mark.asyncio

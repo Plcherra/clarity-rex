@@ -213,7 +213,7 @@ class PromptStructuredContextMixin:
             return None
 
         labels = []
-        for key in ("birthday", "location", "job", "notes"):
+        for key in ("full_name", "birthday", "location", "job", "workplace", "notes"):
             value = attributes.get(key)
             if value:
                 labels.append(f"{key}: {value}")

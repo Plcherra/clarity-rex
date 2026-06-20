@@ -8,6 +8,7 @@ from app.services.memory_retrieval_ranker import (
     STRUCTURED_MEMORY_SCAN_LIMIT,
     MemoryRetrievalRanker,
 )
+from app.services.person_memory_materializer import PersonMemoryMaterializer
 
 
 class MemoryRetrievalService:
@@ -18,6 +19,7 @@ class MemoryRetrievalService:
     ) -> None:
         self.memory_store = memory_store
         self.ranker = ranker or MemoryRetrievalRanker()
+        self.person_memory_materializer = PersonMemoryMaterializer()
 
     async def get_long_term_memory(
         self,
@@ -63,6 +65,9 @@ class MemoryRetrievalService:
         return scored_memories[:limit]
 
     async def get_structured_memory_context(self, query: str) -> dict:
+        await self.person_memory_materializer.materialize_from_active_memories(
+            self.memory_store,
+        )
         (
             entities,
             entity_events,
@@ -106,6 +111,10 @@ class MemoryRetrievalService:
             weight_field="importance",
             status_values={"active"},
             limit=STRUCTURED_MEMORY_DIRECT_LIMIT,
+        )
+        selected_entities = self.ranker.merge_related_records(
+            selected_entities,
+            self._self_profile_entities(entities, query),
         )
         selected_rules = self.ranker.rank_structured_records(
             personal_rules,
@@ -208,3 +217,53 @@ class MemoryRetrievalService:
             "plan_milestones": related_milestones,
             "commitments": selected_commitments,
         }
+
+    def _self_profile_entities(self, entities: list[dict], query: str) -> list[dict]:
+        if not self._is_self_profile_query(query):
+            return []
+        matches = []
+        for entity in entities:
+            if not self._is_self_entity(entity):
+                continue
+            matches.append(
+                {
+                    **entity,
+                    "relevance_reason": "Included self profile structured memory.",
+                }
+            )
+        matches.sort(
+            key=lambda entity: (
+                int(entity.get("importance") or 0),
+                str(entity.get("updated_at") or entity.get("created_at") or ""),
+            ),
+            reverse=True,
+        )
+        return matches[:1]
+
+    def _is_self_profile_query(self, query: str) -> bool:
+        normalized = f" {query.lower()} "
+        normalized = " ".join(normalized.split())
+        return any(
+            phrase in normalized
+            for phrase in (
+                "about me",
+                "about myself",
+                "know about me",
+                "know about myself",
+                "clarity know about me",
+                "clarity knows about me",
+                "what do you know about me",
+                "what does clarity know about me",
+            )
+        )
+
+    def _is_self_entity(self, entity: dict) -> bool:
+        if entity.get("entity_type") != "person":
+            return False
+        if str(entity.get("relationship") or "").strip().lower() == "self":
+            return True
+        metadata = entity.get("metadata")
+        return (
+            isinstance(metadata, dict)
+            and str(metadata.get("entity_direction") or "").strip().lower() == "self"
+        )

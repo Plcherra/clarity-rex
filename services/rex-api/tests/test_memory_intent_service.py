@@ -321,7 +321,9 @@ def test_simple_memory_intents_cover_allowed_categories():
     cases = [
         ("My name is Pedro Martins.", "People"),
         ("My mom's birthday is June 18.", "Events"),
+        ("My birthday is June 18.", "Events"),
         ("I live in Somerville.", "Places"),
+        ("I work at Bom Dough.", "People"),
         ("I prefer tea over coffee.", "Preferences"),
         (
             "Today, they released the Masters of the Universe movie and I plan to watch.",

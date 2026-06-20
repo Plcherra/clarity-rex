@@ -45,6 +45,50 @@ class PersonMemoryItem {
     final value = metadata['attributes'];
     return value is Map<String, dynamic> ? value : const <String, dynamic>{};
   }
+
+  String? get fullName => _attributeText(attributes['full_name']);
+
+  String? get location => _attributeText(attributes['location']);
+
+  String? get birthday => _attributeText(attributes['birthday']);
+
+  String? get job => _attributeText(attributes['job']);
+
+  String? get workplace => _attributeText(attributes['workplace']);
+
+  String? get notes => _attributeText(attributes['notes']);
+
+  List<String> get importantDates {
+    return _flexibleStringList(
+      attributes['important_dates'] ??
+          attributes['importantDates'] ??
+          metadata['important_dates'] ??
+          metadata['importantDates'],
+    );
+  }
+
+  List<String> get safeAliases {
+    return aliases
+        .where((alias) => !_isUnsafeAlias(alias))
+        .toList(growable: false);
+  }
+
+  List<String> get searchableFields {
+    return [
+      displayName,
+      if (relationship != null) relationship!,
+      if (summary != null) summary!,
+      if (fullName != null) fullName!,
+      if (location != null) location!,
+      if (birthday != null) birthday!,
+      if (job != null) job!,
+      if (workplace != null) workplace!,
+      if (notes != null) notes!,
+      ...importantDates,
+      'Importance $importance',
+      status,
+    ];
+  }
 }
 
 String? _string(Object? value) => value is String ? value : null;
@@ -68,6 +112,33 @@ List<String> _stringList(Object? value) {
   return value.whereType<String>().toList(growable: false);
 }
 
+List<String> _flexibleStringList(Object? value) {
+  if (value is List) {
+    return value
+        .map(_attributeText)
+        .whereType<String>()
+        .toList(growable: false);
+  }
+  if (value is Map) {
+    return value.entries
+        .map((entry) {
+          final label = _attributeText(entry.key);
+          final text = _attributeText(entry.value);
+          if (label == null) {
+            return text;
+          }
+          if (text == null) {
+            return label;
+          }
+          return '$label: $text';
+        })
+        .whereType<String>()
+        .toList(growable: false);
+  }
+  final text = _attributeText(value);
+  return text == null ? const [] : [text];
+}
+
 Map<String, dynamic> _map(Object? value) {
   if (value is Map<String, dynamic>) {
     return value;
@@ -84,3 +155,31 @@ DateTime? _dateTime(Object? value) {
   }
   return DateTime.tryParse(value);
 }
+
+String? _attributeText(Object? value) {
+  final text = value?.toString().trim();
+  return text == null || text.isEmpty ? null : text;
+}
+
+bool _isUnsafeAlias(String value) {
+  final normalized = value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ');
+  final tokens = normalized
+      .split(' ')
+      .where((token) => token.isNotEmpty)
+      .toSet();
+  return tokens.intersection(_unsafeAliasTerms).isNotEmpty ||
+      normalized.contains('bank of america');
+}
+
+const _unsafeAliasTerms = {
+  'account',
+  'bank',
+  'checking',
+  'credit',
+  'debit',
+  'deposit',
+  'deposits',
+  'merchant',
+  'payroll',
+  'zelle',
+};

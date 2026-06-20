@@ -160,7 +160,7 @@ class ChatSearchRanking:
         for term in [*content_terms, *terms]:
             if term in CHAT_SEARCH_STOP_WORDS:
                 continue
-            if len(term) < 3 and term not in {"pc"}:
+            if not self.is_searchable_short_term(term):
                 continue
             probes.append(term)
 
@@ -172,7 +172,7 @@ class ChatSearchRanking:
         for term in raw_terms:
             if term in CHAT_SEARCH_STOP_WORDS:
                 continue
-            if len(term) < 3 and term not in CHAT_SEARCH_TERM_ALIASES:
+            if not self.is_searchable_short_term(term):
                 continue
             expanded_terms.extend(CHAT_SEARCH_TERM_ALIASES.get(term, (term,)))
             expanded_terms.extend(self.simple_term_variants(term))
@@ -234,10 +234,10 @@ class ChatSearchRanking:
 
         score = 0.0
         reasons = []
-        if normalized_query in normalized_text:
+        if self.phrase_in_text(normalized_query, normalized_text):
             score += 5.0
             reasons.append("exact phrase")
-        if subject and subject in normalized_text:
+        if subject and self.phrase_in_text(subject, normalized_text):
             score += 4.0
             reasons.append("subject phrase")
         if matched_exact:
@@ -261,7 +261,7 @@ class ChatSearchRanking:
         score += self.recency_score(timestamp)
 
         matched = (*matched_exact, *matched_expanded)
-        if not matched and normalized_query not in normalized_text:
+        if not matched and not self.phrase_in_text(normalized_query, normalized_text):
             return ChatSearchScore(0.0, "No matching terms.", ())
 
         return ChatSearchScore(
@@ -288,7 +288,12 @@ class ChatSearchRanking:
 
     def simple_term_variants(self, term: str) -> tuple[str, ...]:
         variants = {term}
-        if term.endswith("ies") and len(term) > 4:
+        ordinal_base = self.ordinal_base(term)
+        if term.isdigit():
+            variants.add(self.ordinal_variant(term))
+        elif ordinal_base:
+            variants.add(ordinal_base)
+        elif term.endswith("ies") and len(term) > 4:
             variants.add(f"{term[:-3]}y")
         elif term.endswith("s") and len(term) > 3:
             variants.add(term[:-1])
@@ -300,7 +305,76 @@ class ChatSearchRanking:
         return " ".join(str(text or "").lower().split())
 
     def term_in_text(self, term: str, text: str) -> bool:
+        normalized_term = self.normalize_term(term)
+        if self.numeric_or_ordinal(normalized_term):
+            return any(
+                self.terms_match(normalized_term, token)
+                for token in self.normalized_tokens(text)
+            )
         return bool(re.search(rf"\b{re.escape(term)}\b", text))
+
+    def phrase_in_text(self, phrase: str, text: str) -> bool:
+        phrase_terms = self.normalized_tokens(phrase)
+        if not phrase_terms:
+            return False
+        text_terms = self.normalized_tokens(text)
+        if len(phrase_terms) > len(text_terms):
+            return False
+        for start in range(0, len(text_terms) - len(phrase_terms) + 1):
+            candidate = text_terms[start : start + len(phrase_terms)]
+            if all(
+                self.terms_match(expected, actual)
+                for expected, actual in zip(phrase_terms, candidate)
+            ):
+                return True
+        return False
+
+    def normalized_tokens(self, text: str) -> list[str]:
+        return [
+            self.normalize_term(term)
+            for term in self.raw_terms(text)
+            if self.normalize_term(term)
+        ]
+
+    def is_searchable_short_term(self, term: str) -> bool:
+        return (
+            len(term) >= 3
+            or term in CHAT_SEARCH_TERM_ALIASES
+            or term == "pc"
+            or term.isdigit()
+            or self.ordinal_base(term) is not None
+        )
+
+    def numeric_or_ordinal(self, term: str) -> bool:
+        return term.isdigit() or self.ordinal_base(term) is not None
+
+    def terms_match(self, expected: str, actual: str) -> bool:
+        if expected == actual:
+            return True
+        expected_base = self.ordinal_base(expected)
+        actual_base = self.ordinal_base(actual)
+        if expected.isdigit() and actual_base == expected:
+            return True
+        if expected_base is not None and actual == expected_base:
+            return True
+        if expected_base is not None and actual_base == expected_base:
+            return True
+        return False
+
+    def ordinal_base(self, term: str) -> Optional[str]:
+        match = re.fullmatch(r"(\d{1,2})(?:st|nd|rd|th)", term)
+        return match.group(1) if match else None
+
+    def ordinal_variant(self, term: str) -> str:
+        try:
+            number = int(term)
+        except ValueError:
+            return term
+        if 10 <= number % 100 <= 20:
+            suffix = "th"
+        else:
+            suffix = {1: "st", 2: "nd", 3: "rd"}.get(number % 10, "th")
+        return f"{number}{suffix}"
 
     def recency_score(self, timestamp: Optional[str]) -> float:
         if not timestamp:

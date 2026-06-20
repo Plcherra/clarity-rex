@@ -4,10 +4,13 @@ from app.services.memory_failure_reporting import (
     log_memory_failure,
     memory_degraded_metadata,
 )
+from app.services.memory_correction_service import MemoryCorrectionService
+from app.services.memory_correction_types import CorrectionIntentType
 from app.services.memory_intent_service import MemoryIntentService, SimpleMemoryIntent
 from app.services.memory_path_policy import (
     direct_save_metadata,
 )
+from app.services.memory_turn_delete_helpers import MemoryTurnDeleteHelpers
 from app.services.memory_turn_direct_helpers import MemoryTurnDirectHelpers
 from app.services.memory_turn_summaries import MemoryTurnSummaries
 from app.services.person_memory_materializer import PersonMemoryMaterializer
@@ -58,7 +61,11 @@ class MemoryTurnStore(Protocol):
         pass
 
 
-class MemoryTurnService(MemoryTurnDirectHelpers, MemoryTurnSummaries):
+class MemoryTurnService(
+    MemoryTurnDeleteHelpers,
+    MemoryTurnDirectHelpers,
+    MemoryTurnSummaries,
+):
     """Handles direct low-risk memory saves before AI generation."""
 
     def __init__(
@@ -69,6 +76,7 @@ class MemoryTurnService(MemoryTurnDirectHelpers, MemoryTurnSummaries):
         self.memory_service = memory_service
         self.memory_intent_service = memory_intent_service or MemoryIntentService()
         self.person_memory_materializer = PersonMemoryMaterializer()
+        self.memory_correction_service = MemoryCorrectionService(memory_service)
 
     async def handle_turn(
         self,
@@ -79,6 +87,36 @@ class MemoryTurnService(MemoryTurnDirectHelpers, MemoryTurnSummaries):
         conversation_history: list[dict],
         time_context: dict,
     ) -> Optional[dict]:
+        delete_confirmation = self._pending_delete_request_for_confirmation(
+            message,
+            conversation_history,
+        )
+        if delete_confirmation is not None:
+            if self._is_delete_confirmation(message):
+                return await self._apply_confirmed_delete(
+                    delete_confirmation,
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                )
+            if self._is_delete_rejection(message):
+                return await self._reject_confirmed_delete(
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                )
+
+        delete_intent = self.memory_correction_service.detect_correction_intent(
+            message,
+        )
+        if (
+            delete_intent.intent_type == CorrectionIntentType.REMOVE_OBSOLETE
+            and delete_intent.old_value
+        ):
+            return await self._ask_delete_confirmation(
+                delete_intent.old_value,
+                conversation_id=conversation_id,
+                user_message=user_message,
+            )
+
         intent = self.memory_intent_service.detect_simple_memory(
             message,
             time_context=time_context,

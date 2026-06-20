@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_meta_chip.dart';
-import 'package:clarity/rex/presentation/rex_surfaces.dart';
-import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/rex/memory/presentation/widgets/saved_memory_tile_shell.dart';
 
 class MemoryTile extends StatelessWidget {
   const MemoryTile({
@@ -19,14 +18,14 @@ class MemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SavedMemoryTileShell(
+    return SavedMemoryTileShell(
       icon: _iconForGroup(memory.memoryGroup),
       active: memory.active,
       title: memory.content,
-      chips: _baseChips(
+      chips: baseMemoryChips(
         typeLabel: memory.categoryLabel,
         active: memory.active,
-        savedAt: _savedDate(memory.updatedAt, memory.createdAt),
+        savedAt: savedMemoryDate(memory.updatedAt, memory.createdAt),
       ),
       onEdit: onEdit,
       onDeactivate: onDeactivate,
@@ -78,12 +77,10 @@ class PersonMemoryTile extends StatelessWidget {
         if (person.relationship != null)
           MemoryMetaChip(label: person.relationship!.memoryRecordLabel),
         ..._attributeChips(person),
-        if (person.aliases.isNotEmpty)
-          MemoryMetaChip(label: 'Also ${person.aliases.join(', ')}'),
-        if (_savedDate(person.updatedAt, person.createdAt) != null)
+        if (savedMemoryDate(person.updatedAt, person.createdAt) != null)
           MemoryMetaChip(
             label:
-                'Updated ${_shortDate(_savedDate(person.updatedAt, person.createdAt)!)}',
+                'Updated ${shortMemoryDate(savedMemoryDate(person.updatedAt, person.createdAt)!)}',
           ),
         if (!person.active) const MemoryMetaChip(label: 'Inactive'),
       ],
@@ -94,29 +91,19 @@ class PersonMemoryTile extends StatelessWidget {
 
   List<Widget> _attributeChips(PersonMemoryItem person) {
     return [
-      for (final entry in person.attributes.entries)
-        if (_personAttributeLabel(entry.key, entry.value) != null)
-          MemoryMetaChip(label: _personAttributeLabel(entry.key, entry.value)!),
+      if (person.fullName != null)
+        MemoryMetaChip(label: 'Name: ${person.fullName}'),
+      if (person.location != null)
+        MemoryMetaChip(label: 'Location: ${person.location}'),
+      if (person.birthday != null)
+        MemoryMetaChip(label: 'Birthday: ${person.birthday}'),
+      if (person.job != null) MemoryMetaChip(label: 'Job: ${person.job}'),
+      if (person.workplace != null)
+        MemoryMetaChip(label: 'Workplace: ${person.workplace}'),
+      if (person.notes != null) MemoryMetaChip(label: 'Notes: ${person.notes}'),
+      for (final date in person.importantDates)
+        MemoryMetaChip(label: 'Important date: $date'),
     ];
-  }
-
-  String? _personAttributeLabel(String key, Object? value) {
-    final text = value?.toString().trim();
-    if (text == null || text.isEmpty) {
-      return null;
-    }
-    switch (key) {
-      case 'birthday':
-        return 'Birthday $text';
-      case 'location':
-        return 'Location $text';
-      case 'job':
-        return 'Job $text';
-      case 'notes':
-        return text.memoryRecordLabel;
-      default:
-        return null;
-    }
   }
 }
 
@@ -141,10 +128,10 @@ class RuleMemoryTile extends StatelessWidget {
       subtitle: rule.ruleText,
       chips: [
         MemoryMetaChip(label: rule.ruleType.memoryRecordLabel),
-        if (_savedDate(rule.updatedAt, rule.createdAt) != null)
+        if (savedMemoryDate(rule.updatedAt, rule.createdAt) != null)
           MemoryMetaChip(
             label:
-                'Updated ${_shortDate(_savedDate(rule.updatedAt, rule.createdAt)!)}',
+                'Updated ${shortMemoryDate(savedMemoryDate(rule.updatedAt, rule.createdAt)!)}',
           ),
         if (rule.triggerKeywords.isNotEmpty)
           MemoryMetaChip(label: rule.triggerKeywords.join(', ')),
@@ -178,11 +165,11 @@ class PlanMemoryTile extends StatelessWidget {
       chips: [
         MemoryMetaChip(label: plan.planType.memoryRecordLabel),
         if (plan.targetDate != null)
-          MemoryMetaChip(label: 'Target ${_shortDate(plan.targetDate!)}'),
-        if (_savedDate(plan.updatedAt, plan.createdAt) != null)
+          MemoryMetaChip(label: 'Target ${shortMemoryDate(plan.targetDate!)}'),
+        if (savedMemoryDate(plan.updatedAt, plan.createdAt) != null)
           MemoryMetaChip(
             label:
-                'Updated ${_shortDate(_savedDate(plan.updatedAt, plan.createdAt)!)}',
+                'Updated ${shortMemoryDate(savedMemoryDate(plan.updatedAt, plan.createdAt)!)}',
           ),
         if (!plan.active) const MemoryMetaChip(label: 'Inactive'),
       ],
@@ -214,11 +201,11 @@ class CommitmentMemoryTile extends StatelessWidget {
       chips: [
         MemoryMetaChip(label: commitment.commitmentType.memoryRecordLabel),
         if (commitment.dueAt != null)
-          MemoryMetaChip(label: 'Due ${_shortDate(commitment.dueAt!)}'),
-        if (_savedDate(commitment.updatedAt, commitment.createdAt) != null)
+          MemoryMetaChip(label: 'Due ${shortMemoryDate(commitment.dueAt!)}'),
+        if (savedMemoryDate(commitment.updatedAt, commitment.createdAt) != null)
           MemoryMetaChip(
             label:
-                'Updated ${_shortDate(_savedDate(commitment.updatedAt, commitment.createdAt)!)}',
+                'Updated ${shortMemoryDate(savedMemoryDate(commitment.updatedAt, commitment.createdAt)!)}',
           ),
         if (!commitment.active) const MemoryMetaChip(label: 'Inactive'),
       ],
@@ -226,255 +213,4 @@ class CommitmentMemoryTile extends StatelessWidget {
       onDeactivate: onDeactivate,
     );
   }
-}
-
-class StructuredMemoryTile extends StatelessWidget {
-  const StructuredMemoryTile({
-    required this.icon,
-    required this.active,
-    required this.title,
-    required this.subtitle,
-    required this.chips,
-    required this.onEdit,
-    required this.onDeactivate,
-    super.key,
-  });
-
-  final IconData icon;
-  final bool active;
-  final String title;
-  final String subtitle;
-  final List<Widget> chips;
-  final VoidCallback onEdit;
-  final VoidCallback? onDeactivate;
-
-  @override
-  Widget build(BuildContext context) {
-    return _SavedMemoryTileShell(
-      icon: icon,
-      active: active,
-      title: title,
-      subtitle: subtitle,
-      chips: chips,
-      onEdit: onEdit,
-      onDeactivate: onDeactivate,
-    );
-  }
-}
-
-class _SavedMemoryTileShell extends StatelessWidget {
-  const _SavedMemoryTileShell({
-    required this.icon,
-    required this.active,
-    required this.title,
-    required this.chips,
-    required this.onEdit,
-    required this.onDeactivate,
-    this.subtitle,
-  });
-
-  final IconData icon;
-  final bool active;
-  final String title;
-  final String? subtitle;
-  final List<Widget> chips;
-  final VoidCallback onEdit;
-  final VoidCallback? onDeactivate;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        RexUiTokens.space16,
-        RexUiTokens.space4,
-        RexUiTokens.space16,
-        RexUiTokens.space8,
-      ),
-      child: RexSurface(
-        color: active ? RexUiTokens.surface : RexUiTokens.surfaceSoft,
-        borderColor: active
-            ? RexUiTokens.border
-            : RexUiTokens.border.withValues(alpha: 0.55),
-        radius: RexUiTokens.radiusMedium,
-        padding: const EdgeInsets.all(RexUiTokens.space16),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onEdit,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _MemoryIcon(icon: icon, active: active),
-              const SizedBox(width: RexUiTokens.space12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: active
-                            ? RexUiTokens.text
-                            : RexUiTokens.textSubtle,
-                        fontWeight: FontWeight.w700,
-                        height: 1.3,
-                      ),
-                    ),
-                    if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-                      const SizedBox(height: RexUiTokens.space8),
-                      Text(
-                        subtitle!,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: active
-                              ? RexUiTokens.textMuted
-                              : RexUiTokens.textSubtle,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                    if (chips.isNotEmpty) ...[
-                      const SizedBox(height: RexUiTokens.space12),
-                      Wrap(
-                        spacing: RexUiTokens.space8,
-                        runSpacing: RexUiTokens.space8,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: chips,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: RexUiTokens.space8),
-              _MemoryActionsMenu(onEdit: onEdit, onDeactivate: onDeactivate),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MemoryIcon extends StatelessWidget {
-  const _MemoryIcon({required this.icon, required this.active});
-
-  final IconData icon;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: active
-            ? RexUiTokens.accent.withValues(alpha: 0.18)
-            : RexUiTokens.surfaceRaised,
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-      ),
-      child: SizedBox.square(
-        dimension: 44,
-        child: Icon(
-          icon,
-          color: active ? RexUiTokens.accent : RexUiTokens.textSubtle,
-          size: 22,
-        ),
-      ),
-    );
-  }
-}
-
-List<Widget> _baseChips({
-  required String typeLabel,
-  required bool active,
-  required DateTime? savedAt,
-}) {
-  return [
-    MemoryMetaChip(label: typeLabel),
-    if (savedAt != null)
-      MemoryMetaChip(label: 'Updated ${_shortDate(savedAt)}'),
-    if (!active) const MemoryMetaChip(label: 'Inactive'),
-  ];
-}
-
-class _MemoryActionsMenu extends StatelessWidget {
-  const _MemoryActionsMenu({required this.onEdit, required this.onDeactivate});
-
-  final VoidCallback onEdit;
-  final VoidCallback? onDeactivate;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<_MemoryAction>(
-      tooltip: 'Memory actions',
-      color: RexUiTokens.surfaceRaised,
-      iconColor: RexUiTokens.textMuted,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-        side: const BorderSide(color: RexUiTokens.border),
-      ),
-      onSelected: (action) {
-        switch (action) {
-          case _MemoryAction.edit:
-            onEdit();
-          case _MemoryAction.archive:
-            onDeactivate?.call();
-        }
-      },
-      itemBuilder: (context) => [
-        const PopupMenuItem(
-          value: _MemoryAction.edit,
-          child: _MemoryMenuItem(icon: Icons.edit_outlined, label: 'Edit'),
-        ),
-        if (onDeactivate != null)
-          const PopupMenuItem(
-            value: _MemoryAction.archive,
-            child: _MemoryMenuItem(
-              icon: Icons.visibility_off_outlined,
-              label: 'Archive',
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _MemoryMenuItem extends StatelessWidget {
-  const _MemoryMenuItem({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: RexUiTokens.textMuted, size: 20),
-        const SizedBox(width: RexUiTokens.space12),
-        Text(
-          label,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: RexUiTokens.text,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-enum _MemoryAction { edit, archive }
-
-String _shortDate(DateTime value) {
-  final local = value.toLocal();
-  final month = local.month.toString().padLeft(2, '0');
-  final day = local.day.toString().padLeft(2, '0');
-  return '$month/$day/${local.year}';
-}
-
-DateTime? _savedDate(DateTime? updatedAt, DateTime? createdAt) {
-  return updatedAt ?? createdAt;
 }
