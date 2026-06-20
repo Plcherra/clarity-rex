@@ -200,6 +200,26 @@ def test_voice_saves_and_recalls_mom_birthday_without_pending_cards(client):
     assert "User's mom's birthday is June 18." in prompt_text
 
 
+def test_voice_unclear_transcript_asks_before_saving_memory(client):
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat = _chat_service(ai_service, memory_service)
+
+    done, events, _ = _voice_turn(
+        client,
+        chat,
+        "Please remember that the transcript is unclear.",
+    )
+
+    assert done["memory_changes"]["created"] == 0
+    assert done["memory_changes"]["records"][0]["action"] == "clarification_required"
+    assert done["response_text"].startswith("I couldn't read that clearly")
+    assert memory_service.long_term_memory == []
+    assert ai_service.generate_calls == 0
+    assert ai_service.stream_calls == 0
+    assert "saved" not in _event_text(events).lower()
+
+
 @pytest.mark.parametrize(
     ("question", "memory_content", "answer"),
     [

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:audio_session/audio_session.dart';
+import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/audio_playback_service.dart';
@@ -331,6 +332,33 @@ void main() {
         'audio_content_type': 'audio/mpeg',
         'text': 'Use weekly launch plans.',
       });
+      streamingApi.socket.emit({
+        'event': 'messages.updated',
+        'conversation_id': 'conversation-voice',
+        'messages': [
+          {
+            'id': 'user-message-1',
+            'conversation_id': 'conversation-voice',
+            'role': 'user',
+            'content': 'Plan my launch week',
+            'timestamp': '2026-06-01T12:00:00Z',
+          },
+          {
+            'id': 'assistant-message-1',
+            'conversation_id': 'conversation-voice',
+            'role': 'assistant',
+            'content': 'Use weekly launch plans.',
+            'timestamp': '2026-06-01T12:00:01Z',
+          },
+        ],
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        container.read(chatProvider).conversationId,
+        'conversation-voice',
+      );
+      expect(container.read(chatProvider).messages.length, 2);
 
       await playbackService.playStarted.future;
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);

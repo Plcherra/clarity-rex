@@ -1,17 +1,13 @@
 import re
 from typing import Optional
 
+from app.services.memory_categories import (
+    VALID_MEMORY_CATEGORIES,
+    normalize_memory_category,
+)
 from app.services.memory_errors import MemoryServiceError
 
 VALID_MEMORY_TYPES = {"fact", "preference", "event"}
-VALID_MEMORY_CATEGORIES = {
-    "People",
-    "Events",
-    "Places",
-    "Goals",
-    "Preferences",
-    "Facts",
-}
 LONG_TERM_MEMORY_SELECT = (
     "id,memory_type,content,source_conversation_id,source_message_id,"
     "importance,active,superseded_by,confidence,correction_group,metadata,"
@@ -35,9 +31,10 @@ class LongTermMemoryRepository:
         metadata: Optional[dict] = None,
     ) -> dict:
         memory_metadata = dict(metadata or {})
-        memory_metadata.setdefault(
-            "memory_category",
-            self.infer_memory_category(memory_type, content, memory_metadata),
+        memory_metadata["memory_category"] = self.infer_memory_category(
+            memory_type,
+            content,
+            memory_metadata,
         )
         rows = await self.store._request(
             "POST",
@@ -129,7 +126,19 @@ class LongTermMemoryRepository:
         if correction_group is not None:
             updates["correction_group"] = correction_group
         if metadata is not None:
-            updates["metadata"] = metadata
+            memory_metadata = dict(metadata)
+            if memory_type is not None or content is not None:
+                memory_metadata["memory_category"] = self.infer_memory_category(
+                    memory_type or "",
+                    content or "",
+                    memory_metadata,
+                )
+            else:
+                memory_metadata["memory_category"] = normalize_memory_category(
+                    memory_metadata.get("memory_category"),
+                    default="Other",
+                )
+            updates["metadata"] = memory_metadata
 
         return await self.store._update_record(
             self.store.settings.supabase_long_term_memory_table,
@@ -207,8 +216,12 @@ class LongTermMemoryRepository:
         metadata: Optional[dict] = None,
     ) -> str:
         metadata = metadata or {}
-        existing = metadata.get("memory_category")
-        if isinstance(existing, str) and existing in VALID_MEMORY_CATEGORIES:
+        existing_raw = metadata.get("memory_category")
+        existing = normalize_memory_category(
+            existing_raw,
+            default="Other",
+        )
+        if existing != "Other" or self._explicit_other_category(existing_raw):
             return existing
 
         fact_kind = str(metadata.get("fact_kind") or "").lower()
@@ -225,9 +238,17 @@ class LongTermMemoryRepository:
             return "Goals" if fact_kind == "personal_plan" else "Events"
         if any(word in lowered for word in ("birthday", "anniversary")):
             return "Events"
-        if any(word in lowered for word in ("live in", "location", "city")):
+        if any(
+            word in lowered
+            for word in ("live in", "lives in", "location", "city")
+        ):
             return "Places"
         return "Facts"
+
+    def _explicit_other_category(self, value: object) -> bool:
+        if not isinstance(value, str):
+            return False
+        return value.strip().lower().replace("_", " ").replace("-", " ") == "other"
 
     def validate_memory_type(self, memory_type: Optional[str]) -> None:
         if memory_type is not None and memory_type not in VALID_MEMORY_TYPES:

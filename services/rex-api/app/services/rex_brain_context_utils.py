@@ -1,3 +1,8 @@
+"""Experimental layered Rex Brain context utilities.
+
+MVP production chat and voice use ChatService + SimpleRexBrain.
+"""
+
 from copy import deepcopy
 from typing import Any
 

@@ -150,7 +150,7 @@ def test_prompt_shape_contains_required_time_aware_founder_context():
     assert "private, voice-first AI companion" in system_content
     assert "Answer casual turns fast and briefly" in system_content
     assert "Memory/action rules:" in system_content
-    assert "Newer or corrected facts override older ones" in system_content
+    assert "Saved memory is not chat history" in system_content
     assert "- Clock: Tuesday afternoon (15:30 America/New_York (EDT))" in (
         system_content
     )

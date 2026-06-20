@@ -26,7 +26,7 @@ from app.services.google_tts_service import (
     estimate_tts_duration_ms,
 )
 from app.services.memory_service import MemoryServiceError
-from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.rex_channel import RexBrainChannel
 from app.services.usage_tracking_service import UsageTrackingService
 from app.services.voice_stream_session import (
     VOICE_RESPONSE_INSTRUCTIONS,

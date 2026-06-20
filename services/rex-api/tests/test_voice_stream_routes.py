@@ -112,6 +112,18 @@ def test_voice_stream_completes_streaming_turn(client, caplog):
 
         messages = receive_until(websocket, "messages.updated")
         assert messages["conversation_id"] == "conversation-existing"
+        assert [message["conversation_id"] for message in messages["messages"]] == [
+            "conversation-existing",
+            "conversation-existing",
+        ]
+        assert [message["role"] for message in messages["messages"]] == [
+            "user",
+            "assistant",
+        ]
+        assert [message["content"] for message in messages["messages"]] == [
+            "Hey Rex",
+            "Rex streaming response.",
+        ]
         assert messages["voice_metadata"]["record"]["id"] == "voice-turn-stream"
 
         done = receive_until(websocket, "assistant.done")

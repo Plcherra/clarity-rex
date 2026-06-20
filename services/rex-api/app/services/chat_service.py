@@ -32,9 +32,7 @@ from app.services.goal_command_service import GoalCommandService
 from app.services.memory_intent_service import MemoryIntentService
 from app.services.memory_turn_service import MemoryTurnService
 from app.services.prompt_service import PromptService
-from app.services.rex_brain_contracts import (
-    RexBrainChannel,
-)
+from app.services.rex_channel import RexBrainChannel
 from app.services.rex_intent_router import RexIntent, RexIntentRouter
 from app.services.simple_rex_brain import SimpleRexBrain
 from app.services.time_context_service import TimeContextService
@@ -471,7 +469,7 @@ class ChatService(ChatVoiceMetadataMixin):
     def _has_chat_search_results(self, messages: list[dict]) -> bool:
         for message in messages:
             content = message.get("content")
-            if isinstance(content, str) and "Relevant chat search results:" in content:
+            if isinstance(content, str) and "Chat history, not saved memory:" in content:
                 return True
         return False
 

@@ -1,3 +1,8 @@
+"""Experimental layered Rex Brain context selection.
+
+MVP production chat and voice use ChatService + SimpleRexBrain.
+"""
+
 from typing import Any, Optional
 
 from app.services.rex_brain_context_models import (

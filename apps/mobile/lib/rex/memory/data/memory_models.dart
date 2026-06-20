@@ -107,6 +107,8 @@ MemoryGroup? _memoryCategoryFromMetadata(Map<String, dynamic> metadata) {
       return MemoryGroup.preferences;
     case 'facts':
       return MemoryGroup.facts;
+    case 'other':
+      return MemoryGroup.other;
     default:
       return null;
   }

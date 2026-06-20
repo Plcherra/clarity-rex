@@ -1,7 +1,7 @@
 from typing import Optional
 
 from app.services.chat_context_service import ChatContextService
-from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.rex_channel import RexBrainChannel
 from app.services.rex_intent_router import RexIntentDecision, RexIntentRouter
 
 

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from app.services.google_tts_service import estimate_tts_duration_ms
-from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.rex_channel import RexBrainChannel
 from app.services.voice_stream_config import (
     VOICE_RESPONSE_INSTRUCTIONS,
     voice_response_max_tokens,

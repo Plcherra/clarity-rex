@@ -108,7 +108,7 @@ class PromptMemoryContextMixin:
             if not content:
                 continue
 
-            line = f"- chat_history: {content}"
+            line = f"- Chat history, not saved memory: {content}"
             age_label = self._chat_search_age_label(result, time_context)
             if age_label:
                 line = f"{line} ({age_label})"

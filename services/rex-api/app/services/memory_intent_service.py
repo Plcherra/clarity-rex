@@ -237,6 +237,32 @@ class MemoryIntentService:
         place = self._clean_place(location_correction.group("place"), message)
         return not self._is_valid_location_place(place)
 
+    def needs_unclear_memory_clarification(self, message: str) -> bool:
+        normalized = self._normalize_reply(message)
+        if not normalized:
+            return False
+        if not any(
+            token in normalized.split()
+            for token in {
+                "remember",
+                "save",
+                "keep",
+                "note",
+                "change",
+                "correct",
+                "update",
+                "fix",
+            }
+        ):
+            return False
+        return self._looks_like_transcript_noise(normalized)
+
+    def unclear_memory_clarification_response(self) -> str:
+        return (
+            "I couldn't read that clearly enough to save it. "
+            "Please send the exact detail you want me to remember."
+        )
+
     def is_memory_lookup_or_topic_shift(self, message: str) -> bool:
         """Protect recall/search turns from the direct memory write path."""
 
@@ -362,6 +388,8 @@ class MemoryIntentService:
             return None
 
         fact = self._clean_fact(match.group("fact"))
+        if self._looks_like_transcript_noise(self._normalize_reply(fact)):
+            return None
         if len(fact) < 8:
             return None
 

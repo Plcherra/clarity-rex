@@ -395,6 +395,18 @@ def test_voice_turn_completes_full_non_streaming_pipeline(client):
     assert data["voice_name"] == "en-US-Neural2-J"
     assert data["language_code"] == "en-US"
     assert len(data["messages"]) == 2
+    assert [message["conversation_id"] for message in data["messages"]] == [
+        "conversation-existing",
+        "conversation-existing",
+    ]
+    assert [message["role"] for message in data["messages"]] == [
+        "user",
+        "assistant",
+    ]
+    assert [message["content"] for message in data["messages"]] == [
+        "Hey Rex",
+        "Rex voice response",
+    ]
     assert data["voice_metadata"]["record"]["id"] == "voice-turn-1"
     assert fake_deepgram_service.calls[0]["audio_bytes"] == b"audio-bytes"
     assert fake_chat_service.calls == [

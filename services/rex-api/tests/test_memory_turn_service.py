@@ -309,6 +309,30 @@ async def test_memory_turn_service_rejects_unclear_transcript_city_correction():
 
 
 @pytest.mark.asyncio
+async def test_memory_turn_service_rejects_unclear_transcript_memory_save():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "Please remember that the transcript is unclear.",
+        conversation_id="conversation-1",
+        user_message={
+            "id": "message-unclear",
+            "content": "Please remember that the transcript is unclear.",
+        },
+        conversation_history=[],
+        time_context={"date": "2026-06-13"},
+    )
+
+    assert result is not None
+    assert result["response"].startswith("I couldn't read that clearly")
+    assert result["memory_changes"]["records"][0]["action"] == (
+        "clarification_required"
+    )
+    assert store.long_term_memory == []
+
+
+@pytest.mark.asyncio
 async def test_memory_turn_service_archives_duplicate_bad_location_memory():
     store = FakeMemoryTurnStore()
     store.long_term_memory.extend(

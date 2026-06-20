@@ -321,8 +321,8 @@ async def test_chat_service_downgrades_old_chat_no_result_claim_after_partial_se
     )
 
     assert result["response"] == (
-        "I don't have a reliable chat search result for that right now. I can't "
-        "confidently say it was never mentioned unless chat search completes."
+        "Memory search is temporarily unavailable right now. I can't confidently "
+        "say what I remember until it's working again."
     )
     assert result["memory_changes"] is None
 
@@ -446,7 +446,7 @@ async def test_chat_service_allows_old_chat_answer_when_chat_search_is_loaded():
     assert result["response"] == (
         "I found an old chat mention that your mom's birthday is June 18."
     )
-    assert "Relevant chat search results:" in ai_service.messages[0]["content"]
+    assert "Chat history, not saved memory:" in ai_service.messages[0]["content"]
 
 
 @pytest.mark.asyncio
@@ -465,10 +465,8 @@ async def test_chat_service_blocks_false_current_chat_only_search_claim():
     )
 
     assert result["response"] == (
-        "I should be able to search across your saved chat history, not only this "
-        "current chat. If a search does not return results, that means the chat "
-        "search path needs fixing or the source is unavailable; it is not a limit "
-        "you can fix from your side."
+        "I can search saved chat history when chat search is available. I won't "
+        "treat this visible chat as the only source."
     )
 
 

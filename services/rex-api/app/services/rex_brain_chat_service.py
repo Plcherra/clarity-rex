@@ -1,3 +1,9 @@
+"""Experimental layered Rex Brain chat planner.
+
+MVP production chat and voice use ChatService + SimpleRexBrain directly. This
+module is retained only for future advanced routing work and compatibility tests.
+"""
+
 import logging
 from typing import Optional
 

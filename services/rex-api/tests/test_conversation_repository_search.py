@@ -131,3 +131,14 @@ async def test_conversation_repository_prefers_repeated_user_conversation_over_n
 
     assert message_results[0]["conversation_id"] == "conversation-immigration"
     assert message_results[0]["relevance_score"] > message_results[-1]["relevance_score"]
+
+
+@pytest.mark.asyncio
+async def test_conversation_repository_list_messages_stays_user_scoped():
+    repository = ConversationRepository(_SearchStore(user_id="user-123"))
+
+    results = await repository.list_messages(limit=200)
+
+    assert results
+    assert all(message["user_id"] == "user-123" for message in results)
+    assert all(message["conversation_id"] != "conversation-other-user" for message in results)

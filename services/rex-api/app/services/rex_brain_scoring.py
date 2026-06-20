@@ -1,3 +1,8 @@
+"""Experimental layered Rex Brain scoring.
+
+MVP production chat and voice use ChatService + SimpleRexBrain.
+"""
+
 from dataclasses import dataclass
 
 from app.services.rex_brain_config import RexThinkingRouterConfig

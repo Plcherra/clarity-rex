@@ -1,3 +1,8 @@
+"""Experimental layered Rex Brain prompt contracts.
+
+MVP production chat and voice use ChatService + SimpleRexBrain.
+"""
+
 from dataclasses import dataclass, field
 from typing import Any
 

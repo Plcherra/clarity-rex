@@ -1,3 +1,8 @@
+"""Experimental layered Rex Brain config.
+
+MVP production chat and voice use ChatService + SimpleRexBrain.
+"""
+
 from dataclasses import dataclass
 
 

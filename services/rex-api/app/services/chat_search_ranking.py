@@ -146,7 +146,7 @@ class ChatSearchRanking:
         *,
         max_queries: int = 10,
     ) -> list[str]:
-        """Small recall probes beat one broad query for old-chat search."""
+        """Small generic recall probes beat one broad query for old-chat search."""
 
         normalized = self.normalize_text(query)
         terms = self.expand_terms(normalized, max_terms=max_queries * 2)
@@ -157,11 +157,6 @@ class ChatSearchRanking:
             content_terms = [*self.content_terms(subject), *content_terms]
 
         probes: list[str] = []
-        if "pc" in terms and "game" in terms:
-            probes.append("pc game")
-        if "send" in terms and "money" in terms:
-            probes.append("send money")
-
         for term in [*content_terms, *terms]:
             if term in CHAT_SEARCH_STOP_WORDS:
                 continue

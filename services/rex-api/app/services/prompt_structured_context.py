@@ -7,7 +7,12 @@ from app.services.prompt_constants import (
 
 
 class PromptStructuredContextMixin:
-    def _structured_memory_section(self, structured_context: dict) -> Optional[str]:
+    def _structured_memory_section(
+        self,
+        structured_context: dict,
+        *,
+        saved_memory_count: int = 0,
+    ) -> Optional[str]:
         if not structured_context:
             return None
 
@@ -19,7 +24,10 @@ class PromptStructuredContextMixin:
         used_characters = self._append_structured_line(
             lines,
             used_characters,
-            self._memory_status_line(structured_context.get("memory_status")),
+            self._recall_status_line(
+                structured_context.get("memory_status"),
+                saved_memory_count=saved_memory_count,
+            ),
         )
         for entity in structured_context.get("entities") or []:
             used_characters = self._append_structured_line(
@@ -84,15 +92,15 @@ class PromptStructuredContextMixin:
         lines.append(line)
         return used_characters + len(line) + 1
 
-    def _memory_status_line(self, status: object) -> Optional[str]:
+    def _recall_status_line(
+        self,
+        status: object,
+        *,
+        saved_memory_count: int,
+    ) -> Optional[str]:
         if not isinstance(status, dict):
             return None
-        state = str(status.get("state") or "ready")
-
-        message = str(
-            status.get("message") or "Some memory sources could not be searched."
-        )
-        failure_sources = []
+        failure_sources: list[str] = []
         failures = status.get("failures")
         if isinstance(failures, list):
             for failure in failures:
@@ -101,60 +109,78 @@ class PromptStructuredContextMixin:
                 source = failure.get("source")
                 if source:
                     failure_sources.append(str(source))
-        source_text = (
-            f" Failed sources: {', '.join(sorted(set(failure_sources)))}."
-            if failure_sources
-            else ""
-        )
-        if state != "ready":
-            return (
-                f"- memory_status/{state}: {message}{source_text} "
-                "If memory status is degraded, say memory search is temporarily "
-                "unavailable instead of claiming nothing was found."
-            )
-        return self._chat_search_status_line(status)
 
-    def _chat_search_status_line(self, status: dict) -> Optional[str]:
+        attempted_sources = status.get("attempted_sources")
+        saved_attempted = False
+        if isinstance(attempted_sources, dict):
+            saved_attempted = any(
+                attempted_sources.get(source)
+                for source in (
+                    "long_term_memory",
+                    "profile_memory",
+                    "structured_memory",
+                )
+            )
+        saved_failures = [
+            source for source in failure_sources if source != "chat_search"
+        ]
+        if saved_failures:
+            saved_state = "degraded"
+        elif saved_memory_count > 0:
+            saved_state = "found"
+        elif saved_attempted:
+            saved_state = "empty"
+        else:
+            saved_state = "not_requested"
+
+        chat_state = "not_requested"
+        chat_count = 0
         source_statuses = status.get("source_statuses")
-        if not isinstance(source_statuses, list):
+        if isinstance(source_statuses, list):
+            for source_status in source_statuses:
+                if not isinstance(source_status, dict):
+                    continue
+                if source_status.get("source") != "chat_search":
+                    continue
+                if source_status.get("attempted") is not True:
+                    break
+                chat_count = int(source_status.get("result_count") or 0)
+                if (
+                    source_status.get("succeeded") is not True
+                    or source_status.get("partial") is True
+                    or "chat_search" in failure_sources
+                ):
+                    chat_state = "degraded"
+                elif chat_count > 0:
+                    chat_state = "found"
+                else:
+                    chat_state = "empty"
+                break
+        elif "chat_search" in failure_sources:
+            chat_state = "degraded"
+
+        if saved_state == "not_requested" and chat_state == "not_requested":
             return None
 
-        for source_status in source_statuses:
-            if not isinstance(source_status, dict):
-                continue
-            if source_status.get("source") != "chat_search":
-                continue
-            if source_status.get("attempted") is not True:
-                return None
-            if source_status.get("succeeded") is not True:
-                return (
-                    "- chat_search_status/degraded: old chat search was attempted "
-                    "but is unavailable. Say chat search is temporarily unavailable "
-                    "instead of claiming nothing was found."
-                )
-            if source_status.get("partial") is True:
-                return (
-                    "- chat_search_status/partial: old chat search ran but may be "
-                    "incomplete. Do not claim the user never mentioned something."
-                )
-
-            result_count = int(source_status.get("result_count") or 0)
-            raw_match_count = int(source_status.get("raw_match_count") or 0)
-            if result_count > 0:
-                return (
-                    "- chat_search_status/found: old chat search found "
-                    f"{result_count} relevant conversation result(s). Use the "
-                    "Relevant chat search results section as chat history, not saved "
-                    "memory."
-                )
-            return (
-                "- chat_search_status/empty: old chat search ran across saved chat "
-                f"history and found no relevant conversation results "
-                f"({raw_match_count} raw message match(es)). If answering no, say "
-                "you searched saved memory and old chats but could not find "
-                "anything about that."
+        line = (
+            "- recall_status: "
+            f"saved_memory={saved_state} count={saved_memory_count}; "
+            f"chat_search={chat_state} count={chat_count}."
+        )
+        if chat_state == "found":
+            line = f"{line} Use chat results as chat history, not saved memory."
+        if saved_state == "degraded" or chat_state == "degraded":
+            failed = ", ".join(sorted(set(failure_sources))) or "unknown"
+            line = (
+                f"{line} Failed sources: {failed}. Say search is temporarily "
+                "unavailable instead of claiming nothing was found."
             )
-        return None
+        elif chat_state == "empty":
+            line = (
+                f"{line} If answering no, say you searched saved memory and "
+                "old chats but could not find anything about that."
+            )
+        return line
 
     def _entity_line(self, entity: dict) -> Optional[str]:
         name = entity.get("display_name") or entity.get("normalized_name")

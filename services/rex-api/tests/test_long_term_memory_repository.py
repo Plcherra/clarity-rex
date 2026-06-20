@@ -27,6 +27,29 @@ class FakeStore:
     def _first_row(self, rows):
         return rows[0]
 
+    async def _update_record(
+        self,
+        table,
+        record_id,
+        *,
+        updates,
+        select,
+        empty_detail,
+    ):
+        self.requests.append(
+            {
+                "method": "PATCH",
+                "table": table,
+                "id": record_id,
+                "updates": updates,
+                "select": select,
+                "empty_detail": empty_detail,
+            }
+        )
+        if not updates:
+            return None
+        return {**updates, "id": record_id, "active": updates.get("active", True)}
+
 
 @pytest.mark.asyncio
 async def test_save_long_term_memory_adds_category_metadata():
@@ -41,6 +64,36 @@ async def test_save_long_term_memory_adds_category_metadata():
 
     assert memory["metadata"]["memory_category"] == "Places"
     assert store.requests[0]["body"]["metadata"]["memory_category"] == "Places"
+
+
+@pytest.mark.asyncio
+async def test_save_long_term_memory_preserves_explicit_other_category():
+    store = FakeStore()
+    repository = LongTermMemoryRepository(store)
+
+    memory = await repository.save_long_term_memory(
+        memory_type="fact",
+        content="User shared a custom saved detail.",
+        metadata={"memory_category": "Other"},
+    )
+
+    assert memory["metadata"]["memory_category"] == "Other"
+
+
+@pytest.mark.asyncio
+async def test_update_long_term_memory_normalizes_category_metadata():
+    store = FakeStore()
+    repository = LongTermMemoryRepository(store)
+
+    memory = await repository.update_long_term_memory(
+        "memory-1",
+        memory_type="fact",
+        content="User lives in Cambridge.",
+        metadata={"memory_category": "invalid"},
+    )
+
+    assert memory is not None
+    assert memory["metadata"]["memory_category"] == "Places"
 
 
 @pytest.mark.asyncio

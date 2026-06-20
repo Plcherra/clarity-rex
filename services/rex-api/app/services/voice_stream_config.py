@@ -1,10 +1,9 @@
 VOICE_RESPONSE_INSTRUCTIONS = (
     "Voice mode: reply in 1-2 short spoken sentences. Be warm, direct, and natural. "
     "Start with the answer, avoid filler, and keep wording easy to speak. "
-    "Avoid lists or long explanations unless asked. Memory saves and corrections work in voice; "
-    "acknowledge successful saves briefly. Do not emit clarity_action blocks. "
-    "Never claim reminders, events, notifications, or financial changes completed unless "
-    "execution metadata confirms success."
+    "If the transcript sounds unclear or garbled, ask one quick clarification before "
+    "saving memory or making a correction. Use the same Rex Brain truth rules as chat. "
+    "Do not emit clarity_action blocks."
 )
 VOICE_RESPONSE_MAX_TOKENS = 120
 VOICE_DEEP_RESPONSE_MAX_TOKENS = 320

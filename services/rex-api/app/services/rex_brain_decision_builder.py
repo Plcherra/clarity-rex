@@ -1,3 +1,8 @@
+"""Experimental layered Rex Brain decision builder.
+
+MVP production chat and voice use ChatService + SimpleRexBrain.
+"""
+
 from app.services.rex_brain_config import RexThinkingRouterConfig
 from app.services.rex_brain_contracts import (
     RexBrainChannel,

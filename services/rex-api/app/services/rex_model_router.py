@@ -1,3 +1,9 @@
+"""Experimental model routing for future layered Rex Brain work.
+
+MVP production chat and voice use the configured Grok model through
+ChatService + SimpleRexBrain, not this router.
+"""
+
 from dataclasses import dataclass, field
 from typing import Optional
 

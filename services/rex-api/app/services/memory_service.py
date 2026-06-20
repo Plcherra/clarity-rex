@@ -102,6 +102,18 @@ class SupabaseMemoryService(SupabaseMemoryTransport):
             limit=limit,
         )
 
+    async def list_messages(
+        self,
+        limit: int = 200,
+        offset: int = 0,
+        exclude_conversation_id: Optional[str] = None,
+    ) -> list[dict]:
+        return await self._get_conversation_repository().list_messages(
+            limit=limit,
+            offset=offset,
+            exclude_conversation_id=exclude_conversation_id,
+        )
+
     async def search_messages(
         self,
         query: str,

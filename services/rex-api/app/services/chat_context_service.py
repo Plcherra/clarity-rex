@@ -62,6 +62,45 @@ CHAT_SEARCH_NO_RESULT_MARKERS = (
 )
 CONTEXT_ERROR_KEY = "_context_error"
 CONTEXT_STATUS_KEY = "_context_status"
+RECALL_TRIGGER_PHRASES = (
+    "do you remember",
+    "what do you remember",
+    "remember when",
+    "old chat",
+    "old chats",
+    "chat history",
+    "past chat",
+    "past chats",
+    "previous chat",
+    "previous chats",
+    "search chat",
+    "search chats",
+    "search the chat",
+    "search old",
+    "check the chat",
+    "check old",
+    "look through chat",
+    "talked about",
+    "mentioned",
+    "told you",
+    "said before",
+    "do you know about",
+    "do you know anything about",
+    "what do you know about",
+    "anything about",
+)
+RECALL_FOLLOWUP_TERMS = (
+    "that",
+    "there",
+    "it",
+    "her",
+    "him",
+    "them",
+    "this",
+    "the chat",
+    "old chat",
+    "old chats",
+)
 
 
 @dataclass(frozen=True)
@@ -106,10 +145,11 @@ class ChatContextService:
         timings_ms: dict[str, int] = {}
         memory_failures: list[dict] = []
         context_statuses: list[dict] = []
-        recall_request = self.should_force_chat_recall_search(
+        recall_query = self.recall_search_query(
             message,
             conversation_history=[],
         )
+        recall_request = recall_query is not None
         load_long_term_memory = (
             self._load_long_term_memory(intent_decision) or recall_request
         )
@@ -117,7 +157,7 @@ class ChatContextService:
         load_profile_memory = self._load_profile_memory(intent_decision)
         load_structured_memory = self._load_structured_memory(intent_decision)
         load_goal_context = self._load_goal_context(intent_decision)
-        memory_query = self.memory_retrieval_query(
+        memory_query = recall_query or self.memory_retrieval_query(
             message,
             conversation_history=[],
         )
@@ -242,15 +282,16 @@ class ChatContextService:
             conversation_history,
             memory_failures,
         )
-        recall_request = self.should_force_chat_recall_search(
+        recall_query = self.recall_search_query(
             message,
             conversation_history=conversation_history,
         )
+        recall_request = recall_query is not None
         load_long_term_memory = load_long_term_memory or recall_request
         load_chat_search = recall_request
 
         if load_long_term_memory:
-            memory_query = self.memory_retrieval_query(
+            memory_query = recall_query or self.memory_retrieval_query(
                 message,
                 conversation_history=conversation_history,
             )
@@ -260,7 +301,7 @@ class ChatContextService:
                 timings_ms,
             )
         else:
-            memory_query = self.memory_retrieval_query(
+            memory_query = recall_query or self.memory_retrieval_query(
                 message,
                 conversation_history=conversation_history,
             )
@@ -392,19 +433,25 @@ class ChatContextService:
         exclude_conversation_id: Optional[str],
     ) -> list[dict]:
         search_messages = getattr(self.memory_service, "search_messages", None)
-        if search_messages is None:
+        list_messages = getattr(self.memory_service, "list_messages", None)
+        if search_messages is None and list_messages is None:
             return [
                 ContextFetchError(
                     source="chat_search",
                     message="Past chat search is unavailable.",
                 ).as_dict()
             ]
-        try:
-            messages_by_id: dict[str, dict] = {}
-            query_modes: set[str] = set()
-            attempted_queries: list[dict] = []
-            scanned_messages = 0
-            for search_query, query_mode in self.past_chat_search_queries(query):
+
+        messages_by_id: dict[str, dict] = {}
+        query_modes: set[str] = set()
+        attempted_queries: list[dict] = []
+        scanned_messages = 0
+        partial = False
+        failures: list[str] = []
+        search_queries = self.past_chat_search_queries(query)
+
+        if search_messages is not None:
+            for search_query, query_mode in search_queries:
                 query_modes.add(query_mode)
                 attempted_queries.append(
                     {
@@ -412,39 +459,66 @@ class ChatContextService:
                         "mode": query_mode,
                     }
                 )
-                offset = 0
-                while True:
-                    messages = await search_messages(
-                        search_query,
-                        limit=PAST_CHAT_SEARCH_PAGE_LIMIT,
-                        exclude_conversation_id=exclude_conversation_id,
-                        offset=offset,
-                    )
-                    scanned_messages += len(messages)
-                    for message in messages:
-                        message_id = str(message.get("id") or "")
-                        if not message_id:
-                            continue
-                        scored_message = self.scored_chat_message(
-                            query,
-                            message,
-                            query_mode=query_mode,
+                try:
+                    offset = 0
+                    while True:
+                        messages = await search_messages(
+                            search_query,
+                            limit=PAST_CHAT_SEARCH_PAGE_LIMIT,
+                            exclude_conversation_id=exclude_conversation_id,
+                            offset=offset,
                         )
-                        existing = messages_by_id.get(message_id)
-                        if existing is None or (
-                            scored_message.get("_chat_search_score", 0)
-                            > existing.get("_chat_search_score", 0)
-                        ):
-                            messages_by_id[message_id] = scored_message
-                    if len(messages) < PAST_CHAT_SEARCH_PAGE_LIMIT:
-                        break
-                    offset += PAST_CHAT_SEARCH_PAGE_LIMIT
-        except Exception as exc:
-            LOGGER.warning("rex_memory_fetch_failed source=chat_search")
+                        scanned_messages += len(messages)
+                        for message in messages:
+                            message_id = str(message.get("id") or "")
+                            if not message_id:
+                                continue
+                            scored_message = self.scored_chat_message(
+                                query,
+                                message,
+                                query_mode=query_mode,
+                            )
+                            existing = messages_by_id.get(message_id)
+                            if existing is None or (
+                                scored_message.get("_chat_search_score", 0)
+                                > existing.get("_chat_search_score", 0)
+                            ):
+                                messages_by_id[message_id] = scored_message
+                        if len(messages) < PAST_CHAT_SEARCH_PAGE_LIMIT:
+                            break
+                        offset += PAST_CHAT_SEARCH_PAGE_LIMIT
+                except Exception as exc:
+                    partial = True
+                    failures.append(self.safe_error_message(exc))
+                    LOGGER.warning("rex_memory_fetch_failed source=chat_search")
+                    break
+
+        full_scan_used = False
+        if list_messages is not None:
+            full_scan_used = True
+            query_modes.add("full_scan")
+            full_scan_messages, full_scan_count = await self.full_chat_scan_matches(
+                query=query,
+                exclude_conversation_id=exclude_conversation_id,
+                search_queries=search_queries,
+            )
+            scanned_messages += full_scan_count
+            if full_scan_messages:
+                for message in full_scan_messages:
+                    message_id = str(message.get("id") or "")
+                    if not message_id:
+                        continue
+                    existing = messages_by_id.get(message_id)
+                    if existing is None or (
+                        message.get("_chat_search_score", 0)
+                        > existing.get("_chat_search_score", 0)
+                    ):
+                        messages_by_id[message_id] = message
+        elif failures:
             return [
                 ContextFetchError(
                     source="chat_search",
-                    message=self.safe_error_message(exc),
+                    message=failures[0],
                 ).as_dict()
             ]
 
@@ -461,12 +535,77 @@ class ChatContextService:
                 "result_count": len(excerpts),
                 "raw_match_count": len(messages_by_id),
                 "scanned_messages": scanned_messages,
-                "partial": False,
+                "partial": partial,
+                "full_scan_used": full_scan_used,
                 "query_modes": sorted(query_modes),
                 "queries": attempted_queries,
+                "failures": [
+                    {"source": "chat_search", "message": failure}
+                    for failure in failures
+                ],
+                "status": "found" if excerpts else "empty",
             },
             *excerpts,
         ]
+
+    async def full_chat_scan_matches(
+        self,
+        *,
+        query: str,
+        exclude_conversation_id: Optional[str],
+        search_queries: Optional[list[tuple[str, str]]] = None,
+    ) -> tuple[list[dict], int]:
+        list_messages = getattr(self.memory_service, "list_messages", None)
+        if list_messages is None:
+            return [], 0
+
+        best_by_id: dict[str, dict] = {}
+        scanned_messages = 0
+        search_queries = search_queries or self.past_chat_search_queries(query)
+        offset = 0
+        while True:
+            try:
+                messages = await list_messages(
+                    limit=PAST_CHAT_SEARCH_PAGE_LIMIT,
+                    offset=offset,
+                    exclude_conversation_id=exclude_conversation_id,
+                )
+            except Exception:
+                LOGGER.warning("rex_memory_fetch_failed source=chat_search_full_scan")
+                return [], scanned_messages
+            scanned_messages += len(messages)
+            for message in messages:
+                if self.is_chat_search_no_result_message(message):
+                    continue
+                scored = self.best_scored_chat_message(
+                    query,
+                    message,
+                    search_queries=search_queries,
+                )
+                if float(scored.get("_chat_search_score") or 0) <= 0:
+                    continue
+                message_id = str(scored.get("id") or "")
+                if not message_id:
+                    continue
+                existing = best_by_id.get(message_id)
+                if existing is None or (
+                    scored.get("_chat_search_score", 0)
+                    > existing.get("_chat_search_score", 0)
+                ):
+                    best_by_id[message_id] = scored
+            if len(messages) < PAST_CHAT_SEARCH_PAGE_LIMIT:
+                break
+            offset += PAST_CHAT_SEARCH_PAGE_LIMIT
+
+        ranked = sorted(
+            best_by_id.values(),
+            key=lambda item: (
+                float(item.get("_chat_search_score") or 0),
+                str(item.get("timestamp") or ""),
+            ),
+            reverse=True,
+        )
+        return ranked[: PAST_CHAT_SEARCH_PAGE_LIMIT], scanned_messages
 
     def past_chat_search_queries(self, query: str) -> list[tuple[str, str]]:
         return [
@@ -498,6 +637,31 @@ class ChatContextService:
             "_chat_search_query_mode": query_mode,
             "_chat_search_matched_terms": list(score.matched_terms),
         }
+
+    def best_scored_chat_message(
+        self,
+        query: str,
+        message: dict,
+        *,
+        search_queries: list[tuple[str, str]],
+    ) -> dict:
+        best_message = self.scored_chat_message(
+            query,
+            message,
+            query_mode="full_scan",
+        )
+        for search_query, query_mode in search_queries:
+            scored = self.scored_chat_message(
+                search_query,
+                message,
+                query_mode=f"full_scan:{query_mode}",
+            )
+            if scored.get("_chat_search_score", 0) > best_message.get(
+                "_chat_search_score",
+                0,
+            ):
+                best_message = scored
+        return best_message
 
     def recall_search_terms(self, query: str, *, max_terms: int) -> list[str]:
         return self.chat_search_ranking.expand_terms(query, max_terms=max_terms)
@@ -881,16 +1045,29 @@ class ChatContextService:
         if not failures and not any(attempted_memory_sources.values()):
             return structured_context
 
+        source_statuses = source_statuses or []
+        partial_sources = [
+            source_status
+            for source_status in source_statuses
+            if source_status.get("partial") is True
+        ]
+        source_failures = [
+            failure
+            for source_status in partial_sources
+            for failure in source_status.get("failures", [])
+            if isinstance(failure, dict)
+        ]
+        all_failures = [*failures, *source_failures]
         status = {
-            "state": "degraded" if failures else "ready",
+            "state": "degraded" if all_failures or partial_sources else "ready",
             "message": (
                 "Some memory sources could not be searched."
-                if failures
+                if all_failures or partial_sources
                 else "Memory sources searched successfully."
             ),
             "attempted_sources": attempted_sources,
-            "failures": failures,
-            "source_statuses": source_statuses or [],
+            "failures": all_failures,
+            "source_statuses": source_statuses,
         }
         existing = structured_context.get("memory_status")
         if isinstance(existing, dict):
@@ -934,6 +1111,22 @@ class ChatContextService:
             if subject:
                 return f"{subject} {message}".strip()
         return message
+
+    def recall_search_query(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+    ) -> Optional[str]:
+        if not self.should_force_chat_recall_search(
+            message,
+            conversation_history=conversation_history,
+        ):
+            return None
+        return self.memory_retrieval_query(
+            message,
+            conversation_history=conversation_history,
+        )
 
     def is_memory_inventory_query(self, normalized_message: str) -> bool:
         broad_inventory_questions = {
@@ -1028,92 +1221,35 @@ class ChatContextService:
         if self.is_contextual_memory_followup(normalized):
             return True
 
-        recall_phrases = (
-            "all chats",
-            "any chats",
-            "anything about",
-            "chat history",
-            "can you find",
-            "can you search",
-            "check chat",
-            "check chats",
-            "did i ever",
-            "did i mention",
-            "did i say",
-            "did i tell",
-            "do you know anything",
-            "do you know about",
-            "do you know if i mention",
-            "do you know if i mentioned",
-            "do you remember",
-            "find chats",
-            "from chats",
-            "have i ever",
-            "have i mentioned",
-            "have i said",
-            "have i told you",
-            "have we discussed",
-            "have we talked about",
-            "history",
-            "i mentioned",
-            "i told you",
-            "look into chat",
-            "look into chats",
-            "look into the chat",
-            "look into the chats",
-            "old chat",
-            "old chats",
-            "previous chat",
-            "previous chats",
-            "remember when",
-            "search chat",
-            "search chats",
-            "talked about",
-            "what did i say",
-            "what did i tell you",
-            "what did we",
-            "what do you know about",
-            "what do you remember about",
-            "what games do i play",
-            "what have i said",
-            "what have i told you",
-            "what was the",
-            "what were the",
-        )
-        if any(phrase in normalized for phrase in recall_phrases):
+        if any(phrase in normalized for phrase in RECALL_TRIGGER_PHRASES):
             return True
 
-        if re.search(r"\bwhat\s+.+\b(?:did|do)\s+i\s+(?:play|buy|want|mention|say|tell)", normalized):
-            return True
-        if re.search(r"\b(?:did|do|have)\s+i\s+.+\b(?:mention|mentioned|say|said|tell|told|buy|send|sent)", normalized):
-            return True
         if re.search(
-            r"\b(?:did|do|have|had|when|what|who|where)\s+(?:i|we)\b"
+            r"\b(?:did|do|have|had)\s+(?:i|we)\b"
             r".*\b(?:mention|mentioned|say|said|tell|told|talk|talked|"
-            r"discuss|discussed|buy|bought|send|sent|play|played)\b",
+            r"discuss|discussed|play|played|buy|bought|send|sent)\b",
             normalized,
         ):
             return True
         if re.search(
-            r"\b(?:past|previous|earlier|before|history|remember when|did i ever|"
-            r"have we ever)\b",
+            r"\bwhat\s+.+\b(?:did|do)\s+i\s+"
+            r"(?:play|buy|want|mention|say|tell)",
             normalized,
         ):
             return True
-        if re.search(r"\bi\s+(?:would|was|am|m|'m)\s+.+\b(?:buy|buying|send|sending|sent)", normalized):
+        if re.search(
+            r"\bwhat\s+(?:was|were)\b.*\b(?:i|we|my|our)\b",
+            normalized,
+        ):
+            return True
+        if re.search(
+            r"\b(?:past|previous|earlier|before|history)\b",
+            normalized,
+        ):
             return True
 
         if conversation_history and any(
-            term in normalized
-            for term in (
-                "that",
-                "else",
-                "it",
-                "her",
-                "him",
-                "them",
-                "this",
-            )
+            term in normalized for term in RECALL_FOLLOWUP_TERMS
         ):
             return bool(self.recent_memory_subject(conversation_history))
 

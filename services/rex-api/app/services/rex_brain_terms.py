@@ -1,3 +1,8 @@
+"""Experimental layered Rex Brain term helpers.
+
+MVP production chat and voice use ChatService + SimpleRexBrain.
+"""
+
 import re
 
 

@@ -106,8 +106,8 @@ def test_prompt_service_injects_time_conversation_memory_and_file_context():
     assert system_content.startswith(PERSONALITY_CONTEXT_PREFIX)
     assert "warm, direct, honest, practical, and natural" in system_content
     assert "Memory/action rules:" in system_content
-    assert "execution metadata confirms success" in system_content
-    assert "do not say saved, updated, fixed, noted, or remembered" in system_content
+    assert "backend-confirmed saves, updates, or deletes" in system_content
+    assert "Saved memory is not chat history" in system_content
     assert "Current time context:" in system_content
     assert "- Clock: Tuesday afternoon" in system_content
     assert "- Previous message delta: earlier today" in system_content
@@ -574,9 +574,10 @@ def test_prompt_service_surfaces_degraded_memory_status():
 
     system_content = messages[0]["content"]
     assert STRUCTURED_MEMORY_PREFIX in system_content
-    assert "memory_status/degraded" in system_content
+    assert "recall_status" in system_content
+    assert "chat_search=degraded" in system_content
     assert "Failed sources: chat_search" in system_content
-    assert "memory search is temporarily unavailable" in system_content
+    assert "search is temporarily unavailable" in system_content
 
 
 def test_prompt_service_surfaces_empty_chat_search_status():
@@ -604,8 +605,8 @@ def test_prompt_service_surfaces_empty_chat_search_status():
 
     system_content = messages[0]["content"]
     assert STRUCTURED_MEMORY_PREFIX in system_content
-    assert "chat_search_status/empty" in system_content
-    assert "old chat search ran across saved chat history" in system_content
+    assert "recall_status" in system_content
+    assert "chat_search=empty count=0" in system_content
     assert "searched saved memory and old chats" in system_content
     assert "anything about that" in system_content
 
@@ -640,6 +641,77 @@ def test_prompt_service_surfaces_found_chat_search_status():
     )
 
     system_content = messages[0]["content"]
-    assert "chat_search_status/found" in system_content
-    assert "Relevant chat search results:" in system_content
-    assert "Use the Relevant chat search results section as chat history" in system_content
+    assert "recall_status" in system_content
+    assert "chat_search=found count=2" in system_content
+    assert "Chat history, not saved memory:" in system_content
+    assert "- Chat history, not saved memory: user: I am buying Legacy" in system_content
+
+
+def test_prompt_service_phase3_prompt_shapes_are_labeled_and_compact():
+    service = PromptService()
+
+    normal_messages = service.build_messages(user_message="Hey Rex")
+    assert normal_messages[0]["content"] == BASE_SYSTEM_PROMPT
+    assert "recall_status" not in normal_messages[0]["content"]
+    assert "Chat history, not saved memory:" not in normal_messages[0]["content"]
+    assert FINANCIAL_CONTEXT_PREFIX not in normal_messages[0]["content"]
+
+    recall_messages = service.build_messages(
+        user_message="What did I say about Legacy of Kain?",
+        relevant_memories=[
+            {
+                "memory_type": "preference",
+                "content": "I like concise answers.",
+            }
+        ],
+        structured_context={
+            "memory_status": {
+                "attempted_sources": {
+                    "long_term_memory": True,
+                    "chat_search": True,
+                },
+                "source_statuses": [
+                    {
+                        "source": "chat_search",
+                        "attempted": True,
+                        "succeeded": True,
+                        "result_count": 1,
+                    }
+                ],
+            },
+            "chat_search_results": [
+                {
+                    "content": "user: I am buying Legacy of Kain on PC.",
+                }
+            ],
+        },
+    )
+    recall_prompt = recall_messages[0]["content"]
+    assert "recall_status: saved_memory=found count=1; chat_search=found count=1" in (
+        recall_prompt
+    )
+    assert LONG_TERM_MEMORY_PREFIX in recall_prompt
+    assert "Chat history, not saved memory:" in recall_prompt
+    assert "- Chat history, not saved memory: user: I am buying Legacy" in recall_prompt
+    assert "chat_search_status/" not in recall_prompt
+
+    finance_messages = service.build_messages(
+        user_message="How am I doing financially?",
+        financial_context={
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "freshness": {"state": "fresh"},
+            "cash_flow": {"total_balance": 100},
+        },
+    )
+    finance_prompt = finance_messages[0]["content"]
+    assert FINANCIAL_CONTEXT_PREFIX in finance_prompt
+    assert "Cash flow: balance=100" in finance_prompt
+    assert "recall_status" not in finance_prompt
+    assert "Chat history, not saved memory:" not in finance_prompt
+
+    voice_messages = service.build_messages(user_message="Voice hello")
+    assert voice_messages[0]["content"] == BASE_SYSTEM_PROMPT

@@ -109,6 +109,28 @@ class ConversationRepository:
 
         return await self.get_recent_messages(conversation_id, limit=limit)
 
+    async def list_messages(
+        self,
+        limit: int = 200,
+        offset: int = 0,
+        exclude_conversation_id: Optional[str] = None,
+    ) -> list[dict]:
+        query_params = {
+            "select": MESSAGE_SELECT,
+            "order": "timestamp.desc",
+            "limit": str(limit),
+        }
+        if offset > 0:
+            query_params["offset"] = str(offset)
+        if exclude_conversation_id:
+            query_params["conversation_id"] = f"neq.{exclude_conversation_id}"
+
+        return await self.store._request(
+            "GET",
+            self.store.settings.supabase_messages_table,
+            query=query_params,
+        )
+
     async def search_messages(
         self,
         query: str,

@@ -1,11 +1,14 @@
+"""Experimental layered Rex Brain contracts.
+
+MVP production chat and voice use ChatService + SimpleRexBrain. This module is
+kept for experimental routing tests and future advanced brain work only.
+"""
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
-
-class RexBrainChannel(str, Enum):
-    CHAT = "chat"
-    VOICE = "voice"
+from app.services.rex_channel import RexBrainChannel
 
 
 class RexThinkingLayer(str, Enum):

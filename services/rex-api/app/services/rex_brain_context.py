@@ -1,3 +1,8 @@
+"""Experimental layered Rex Brain context builder.
+
+MVP production chat and voice use ChatService + SimpleRexBrain.
+"""
+
 from typing import Any, Optional
 
 from app.services.rex_brain_context_budgeting import _enforce_total_budget

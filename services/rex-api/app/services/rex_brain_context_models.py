@@ -1,3 +1,8 @@
+"""Experimental layered Rex Brain context models.
+
+MVP production chat and voice use ChatService + SimpleRexBrain.
+"""
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional

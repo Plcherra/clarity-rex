@@ -313,3 +313,27 @@ def test_ignores_messages_without_simple_memory_intent():
 
     assert service.detect_simple_memory("Can you help me plan today?") is None
     assert service.detect_simple_memory("Remember.") is None
+
+
+def test_simple_memory_intents_cover_allowed_categories():
+    service = MemoryIntentService()
+
+    cases = [
+        ("My name is Pedro Martins.", "People"),
+        ("My mom's birthday is June 18.", "Events"),
+        ("I live in Somerville.", "Places"),
+        ("I prefer tea over coffee.", "Preferences"),
+        (
+            "Today, they released the Masters of the Universe movie and I plan to watch.",
+            "Goals",
+        ),
+        ("Please remember that I work best in the morning.", "Facts"),
+    ]
+
+    for message, expected_category in cases:
+        intent = service.detect_simple_memory(
+            message,
+            time_context={"date": "2026-06-01"},
+        )
+        assert intent is not None
+        assert intent.metadata["memory_category"] == expected_category

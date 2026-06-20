@@ -1,3 +1,9 @@
+"""Experimental layered Rex Brain router.
+
+MVP production chat and voice use ChatService + SimpleRexBrain. This module is
+kept outside the production path for future advanced routing work.
+"""
+
 from typing import Optional
 
 from app.services.rex_brain_config import RexThinkingRouterConfig

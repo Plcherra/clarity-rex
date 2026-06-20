@@ -36,6 +36,14 @@ class MemoryService(Protocol):
     ) -> Optional[list[dict]]:
         pass
 
+    async def list_messages(
+        self,
+        limit: int = 200,
+        offset: int = 0,
+        exclude_conversation_id: Optional[str] = None,
+    ) -> list[dict]:
+        pass
+
     async def save_long_term_memory(
         self,
         memory_type: str,

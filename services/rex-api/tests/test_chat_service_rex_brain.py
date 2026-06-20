@@ -199,6 +199,7 @@ async def test_mvp_flow_preserves_memory_status_in_prompt_context():
     await chat_service.send_message("Do you know anything about my mom?")
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "memory_status/degraded" in system_prompt
+    assert "recall_status" in system_prompt
+    assert "chat_search=degraded" in system_prompt
     assert "Failed sources: chat_search" in system_prompt
-    assert "memory search is temporarily unavailable" in system_prompt
+    assert "search is temporarily unavailable" in system_prompt

@@ -66,6 +66,20 @@ void main() {
       expect(goal.categoryLabel, 'Goals');
     });
 
+    test('saved memory category metadata supports Other grouping', () {
+      final other = MemoryItem.fromJson({
+        'id': 'memory-other',
+        'memory_type': 'fact',
+        'content': 'Pedro saved a custom detail.',
+        'importance': 2,
+        'active': true,
+        'metadata': {'memory_category': 'Other'},
+      });
+
+      expect(other.memoryGroup, MemoryGroup.other);
+      expect(other.categoryLabel, 'Other');
+    });
+
     test('cleans raw type prefixes from memory preview text', () {
       expect(
         memoryPreviewWithRecordType('long_term_memory: Pedro prefers email'),

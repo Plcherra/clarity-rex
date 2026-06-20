@@ -109,7 +109,10 @@ class PromptService(
         if conversation_section:
             sections.append(conversation_section)
 
-        structured_section = self._structured_memory_section(structured_context)
+        structured_section = self._structured_memory_section(
+            structured_context,
+            saved_memory_count=len(relevant_memories),
+        )
         if structured_section:
             sections.append(structured_section)
 

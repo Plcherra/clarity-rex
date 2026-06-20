@@ -87,6 +87,11 @@ class MemoryTurnService(MemoryTurnDirectHelpers, MemoryTurnSummaries):
                     conversation_id=conversation_id,
                     user_message=user_message,
                 )
+            if self.memory_intent_service.needs_unclear_memory_clarification(message):
+                return await self._clarify_unclear_memory(
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                )
 
             intent = self.memory_intent_service.detect_contextual_memory(
                 message,
@@ -288,6 +293,47 @@ class MemoryTurnService(MemoryTurnDirectHelpers, MemoryTurnSummaries):
             "assistant_message": self.public_message(assistant_message),
             "memory_correction": None,
             "memory_changes": self._simple_memory_saved_summary(intent, record),
+            "messages": await self.recent_public_messages(conversation_id),
+        }
+
+    async def _clarify_unclear_memory(
+        self,
+        *,
+        conversation_id: str,
+        user_message: dict,
+    ) -> dict:
+        response = self.memory_intent_service.unclear_memory_clarification_response()
+        assistant_message = await self.memory_service.save_message(
+            conversation_id,
+            "assistant",
+            response,
+        )
+        return {
+            "conversation_id": conversation_id,
+            "response": response,
+            "user_message": user_message,
+            "assistant_message": self.public_message(assistant_message),
+            "memory_correction": None,
+            "memory_changes": {
+                "created": 0,
+                "updated": 0,
+                "archived": 0,
+                "merged": 0,
+                "skipped": 1,
+                "confirmation_required": 0,
+                "records": [
+                    {
+                        "kind": "simple_memory",
+                        "type": "fact",
+                        "action": "clarification_required",
+                        "title": "Memory save needs a clear transcript.",
+                        "metadata": {
+                            "memory_path": "direct_save_guard",
+                            "review_required": False,
+                        },
+                    }
+                ],
+            },
             "messages": await self.recent_public_messages(conversation_id),
         }
 
