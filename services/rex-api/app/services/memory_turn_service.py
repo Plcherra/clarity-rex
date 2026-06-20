@@ -10,6 +10,7 @@ from app.services.memory_path_policy import (
 )
 from app.services.memory_turn_direct_helpers import MemoryTurnDirectHelpers
 from app.services.memory_turn_summaries import MemoryTurnSummaries
+from app.services.person_memory_materializer import PersonMemoryMaterializer
 
 
 class MemoryTurnStore(Protocol):
@@ -67,6 +68,7 @@ class MemoryTurnService(MemoryTurnDirectHelpers, MemoryTurnSummaries):
     ) -> None:
         self.memory_service = memory_service
         self.memory_intent_service = memory_intent_service or MemoryIntentService()
+        self.person_memory_materializer = PersonMemoryMaterializer()
 
     async def handle_turn(
         self,
@@ -281,6 +283,7 @@ class MemoryTurnService(MemoryTurnDirectHelpers, MemoryTurnSummaries):
             }
 
         response = self.memory_intent_service.saved_response(intent)
+        await self._materialize_person_card(record)
         assistant_message = await self.memory_service.save_message(
             conversation_id,
             "assistant",
@@ -336,6 +339,15 @@ class MemoryTurnService(MemoryTurnDirectHelpers, MemoryTurnSummaries):
             },
             "messages": await self.recent_public_messages(conversation_id),
         }
+
+    async def _materialize_person_card(self, memory: dict) -> None:
+        try:
+            await self.person_memory_materializer.materialize_from_memory(
+                self.memory_service,
+                memory,
+            )
+        except Exception:
+            return
 
     async def _reject_simple_memory(
         self,

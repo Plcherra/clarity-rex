@@ -8,6 +8,10 @@ For MVP, Rex Brain should be simple. Its job is to give Grok the right context, 
 
 Rex Brain is not a second app and not a heavy reasoning engine. Grok provides most of the intelligence. Clarity provides the data truth.
 
+Launch production path: typed chat and voice both use `ChatService` with `SimpleRexBrain`. Layered `rex_brain_*` services are non-production experiments for future advanced routing.
+
+Pre-launch cleanup is tracked in `docs/brain/REX_BRAIN_FINAL_RESET.md`. Larger deferred work, including richer entity migration, rich cards, hybrid search, and advanced routing, belongs in `docs/brain/REX_BRAIN_POST_LAUNCH.md`.
+
 ## 2. Core Rules
 
 - Keep Rex Brain as small as possible.
@@ -26,6 +30,8 @@ Rex Brain is not a second app and not a heavy reasoning engine. Grok provides mo
 Only things that Rex explicitly saves with backend confirmation become durable memory.
 
 These saved memories must be organized into clear categories, such as People, Events, Places, Goals, Preferences, Facts, and other useful Clarity memory groups.
+
+The direction is entity-first saved knowledge, especially People. Basic Person cards are launch-supported; flat memories remain a backward-compatible fallback until post-launch migration is proven.
 
 Only properly saved and categorized memories should appear in the "What Clarity Knows" / Knows page.
 

@@ -1,5 +1,7 @@
 """Experimental layered Rex Brain chat planner.
 
+NON-PRODUCTION FOR LAUNCH.
+
 MVP production chat and voice use ChatService + SimpleRexBrain directly. This
 module is retained only for future advanced routing work and compatibility tests.
 """

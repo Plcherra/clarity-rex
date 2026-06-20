@@ -240,7 +240,7 @@ async def test_chat_service_includes_structured_memory_context():
     assert memory_service.structured_context_queries == ["I saw Clara today."]
     assert ai_service.messages[0]["role"] == "system"
     assert STRUCTURED_MEMORY_PREFIX in ai_service.messages[0]["content"]
-    assert "- entity/person Clara - dating interest from work" in (
+    assert "- saved knowledge/person Clara - dating interest from work" in (
         ai_service.messages[0]["content"]
     )
 

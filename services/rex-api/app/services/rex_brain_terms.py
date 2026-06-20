@@ -1,5 +1,7 @@
 """Experimental layered Rex Brain term helpers.
 
+NON-PRODUCTION FOR LAUNCH.
+
 MVP production chat and voice use ChatService + SimpleRexBrain.
 """
 

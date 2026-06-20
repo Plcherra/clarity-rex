@@ -95,6 +95,7 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
         importance: 3,
         status: 'active',
         active: true,
+        metadata: const {},
         createdAt: DateTime.utc(2026, 5, 30),
         updatedAt: DateTime.utc(2026, 5, 31, 12),
       ),

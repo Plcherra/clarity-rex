@@ -8,6 +8,7 @@ class PersonMemoryItem {
     required this.importance,
     required this.status,
     required this.active,
+    required this.metadata,
     this.createdAt,
     this.updatedAt,
   });
@@ -22,6 +23,7 @@ class PersonMemoryItem {
       importance: _int(json['importance']) ?? 3,
       status: _string(json['status']) ?? 'active',
       active: _bool(json['active']) ?? true,
+      metadata: _map(json['metadata']),
       createdAt: _dateTime(json['created_at']),
       updatedAt: _dateTime(json['updated_at']),
     );
@@ -35,8 +37,14 @@ class PersonMemoryItem {
   final int importance;
   final String status;
   final bool active;
+  final Map<String, dynamic> metadata;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  Map<String, dynamic> get attributes {
+    final value = metadata['attributes'];
+    return value is Map<String, dynamic> ? value : const <String, dynamic>{};
+  }
 }
 
 String? _string(Object? value) => value is String ? value : null;
@@ -58,6 +66,16 @@ List<String> _stringList(Object? value) {
     return const [];
   }
   return value.whereType<String>().toList(growable: false);
+}
+
+Map<String, dynamic> _map(Object? value) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+  if (value is Map) {
+    return value.map((key, value) => MapEntry(key.toString(), value));
+  }
+  return const <String, dynamic>{};
 }
 
 DateTime? _dateTime(Object? value) {

@@ -1,5 +1,7 @@
 """Experimental layered Rex Brain context selection.
 
+NON-PRODUCTION FOR LAUNCH.
+
 MVP production chat and voice use ChatService + SimpleRexBrain.
 """
 

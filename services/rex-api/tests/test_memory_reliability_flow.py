@@ -85,9 +85,11 @@ async def test_memory_reliability_mom_birthday_saves_and_recalls_directly():
         saved["conversation_id"],
     )
 
+    assert "- saved knowledge/person Mom - mother" in ai_service.messages[0]["content"]
+    assert "birthday: June 18" in ai_service.messages[0]["content"]
     assert (
         "- fact: User's mom's birthday is June 18."
-        in ai_service.messages[0]["content"]
+        not in ai_service.messages[0]["content"]
     )
 
 
@@ -206,10 +208,8 @@ async def test_memory_reliability_voice_stream_saves_and_recalls_memory():
     assert saved_events[-1]["response"] == "Got it, your mom's birthday is June 18."
     assert saved_events[-1]["memory_changes"]["created"] == 1
     assert recall_events[-1]["event"] == "done"
-    assert (
-        "- fact: User's mom's birthday is June 18."
-        in ai_service.messages[0]["content"]
-    )
+    assert "- saved knowledge/person Mom - mother" in ai_service.messages[0]["content"]
+    assert "birthday: June 18" in ai_service.messages[0]["content"]
 
 
 @pytest.mark.asyncio

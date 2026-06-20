@@ -1,5 +1,7 @@
 """Experimental layered Rex Brain router.
 
+NON-PRODUCTION FOR LAUNCH.
+
 MVP production chat and voice use ChatService + SimpleRexBrain. This module is
 kept outside the production path for future advanced routing work.
 """

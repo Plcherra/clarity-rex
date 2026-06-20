@@ -42,6 +42,22 @@ class SavedMemoryGroupList extends StatelessWidget {
       }
     }
 
+    addGroup(MemoryGroup.people, [
+      ...saved.people.map(
+        (person) => PersonMemoryTile(
+          person: person,
+          onEdit: () => onEditPerson(person),
+          onDeactivate: person.active
+              ? () => onArchiveStructuredMemory(
+                  MemoryLayer.people,
+                  person.id,
+                  'person',
+                )
+              : null,
+        ),
+      ),
+      ...saved.peopleMemories.map(_memoryTile),
+    ]);
     addGroup(
       MemoryGroup.facts,
       saved.facts.map(_memoryTile).toList(growable: false),
@@ -49,26 +65,6 @@ class SavedMemoryGroupList extends StatelessWidget {
     addGroup(
       MemoryGroup.preferences,
       saved.preferences.map(_memoryTile).toList(growable: false),
-    );
-    addGroup(
-      MemoryGroup.people,
-      [
-        ...saved.peopleMemories.map(_memoryTile),
-        ...saved.people
-          .map(
-            (person) => PersonMemoryTile(
-              person: person,
-              onEdit: () => onEditPerson(person),
-              onDeactivate: person.active
-                  ? () => onArchiveStructuredMemory(
-                      MemoryLayer.people,
-                      person.id,
-                      'person',
-                    )
-                  : null,
-            ),
-          )
-      ],
     );
     addGroup(
       MemoryGroup.places,

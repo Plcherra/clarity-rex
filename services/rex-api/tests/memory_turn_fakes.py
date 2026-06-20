@@ -11,8 +11,10 @@ class FakeMemoryTurnStore:
         self.fail_update_memory = fail_update_memory
         self.messages = []
         self.long_term_memory = []
+        self.entities = []
         self.next_message_id = 1
         self.next_memory_id = 1
+        self.next_entity_id = 1
 
     async def save_message(self, conversation_id, role, content):
         message = {
@@ -59,6 +61,49 @@ class FakeMemoryTurnStore:
         self.next_memory_id += 1
         self.long_term_memory.append(memory)
         return memory
+
+    async def create_entity(self, payload):
+        entity = {
+            "id": f"entity-{self.next_entity_id}",
+            **payload,
+        }
+        self.next_entity_id += 1
+        self.entities.append(entity)
+        return entity
+
+    async def list_entities(
+        self,
+        *,
+        entity_type=None,
+        normalized_name=None,
+        active=True,
+        limit=50,
+    ):
+        entities = self.entities
+        if entity_type is not None:
+            entities = [
+                entity
+                for entity in entities
+                if entity.get("entity_type") == entity_type
+            ]
+        if normalized_name is not None:
+            entities = [
+                entity
+                for entity in entities
+                if entity.get("normalized_name") == normalized_name
+            ]
+        if active is not None:
+            entities = [
+                entity for entity in entities if entity.get("active", True) is active
+            ]
+        return entities[:limit]
+
+    async def update_entity(self, entity_id, **updates):
+        for entity in self.entities:
+            if entity["id"] == entity_id:
+                entity.update(updates)
+                return entity
+        return None
 
     async def list_long_term_memory(self, limit=50, memory_type=None, active=None):
         memories = self.long_term_memory

@@ -26,7 +26,10 @@ class PromptStructuredContextMixin:
             used_characters,
             self._recall_status_line(
                 structured_context.get("memory_status"),
-                saved_memory_count=saved_memory_count,
+                saved_knowledge_count=(
+                    saved_memory_count
+                    + self._saved_entity_count(structured_context)
+                ),
             ),
         )
         for entity in structured_context.get("entities") or []:
@@ -96,7 +99,7 @@ class PromptStructuredContextMixin:
         self,
         status: object,
         *,
-        saved_memory_count: int,
+        saved_knowledge_count: int,
     ) -> Optional[str]:
         if not isinstance(status, dict):
             return None
@@ -126,7 +129,7 @@ class PromptStructuredContextMixin:
         ]
         if saved_failures:
             saved_state = "degraded"
-        elif saved_memory_count > 0:
+        elif saved_knowledge_count > 0:
             saved_state = "found"
         elif saved_attempted:
             saved_state = "empty"
@@ -164,7 +167,7 @@ class PromptStructuredContextMixin:
 
         line = (
             "- recall_status: "
-            f"saved_memory={saved_state} count={saved_memory_count}; "
+            f"saved_knowledge={saved_state} count={saved_knowledge_count}; "
             f"chat_search={chat_state} count={chat_count}."
         )
         if chat_state == "found":
@@ -187,14 +190,42 @@ class PromptStructuredContextMixin:
         if not name:
             return None
 
-        parts = [f"- entity/{entity.get('entity_type') or 'unknown'} {name}"]
+        parts = [
+            f"- saved knowledge/{entity.get('entity_type') or 'unknown'} {name}"
+        ]
         relationship = entity.get("relationship")
         if relationship:
             parts.append(str(relationship))
         summary = entity.get("summary")
         if summary:
             parts.append(str(summary))
+        attributes = self._entity_attributes(entity)
+        if attributes:
+            parts.append(attributes)
         return self._with_relevance(" - ".join(parts), entity)
+
+    def _entity_attributes(self, entity: dict) -> Optional[str]:
+        metadata = entity.get("metadata")
+        if not isinstance(metadata, dict):
+            return None
+        attributes = metadata.get("attributes")
+        if not isinstance(attributes, dict):
+            return None
+
+        labels = []
+        for key in ("birthday", "location", "job", "notes"):
+            value = attributes.get(key)
+            if value:
+                labels.append(f"{key}: {value}")
+        if not labels:
+            return None
+        return "; ".join(labels)
+
+    def _saved_entity_count(self, structured_context: dict) -> int:
+        entities = structured_context.get("entities")
+        if not isinstance(entities, list):
+            return 0
+        return sum(1 for entity in entities if isinstance(entity, dict))
 
     def _entity_event_line(
         self,

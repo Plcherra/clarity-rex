@@ -458,7 +458,9 @@ def test_prompt_service_injects_structured_memory_before_generic_memory():
     assert system_content.index(STRUCTURED_MEMORY_PREFIX) < system_content.index(
         LONG_TERM_MEMORY_PREFIX
     )
-    assert "- entity/person Clara - dating interest from work" in system_content
+    assert (
+        "- saved knowledge/person Clara - dating interest from work" in system_content
+    )
     assert "Clara touched my arm and matters to the dating story." in system_content
     assert "- entity_event/interaction for Clara: Clara touched my arm" in (
         system_content
@@ -687,8 +689,9 @@ def test_prompt_service_phase3_prompt_shapes_are_labeled_and_compact():
         },
     )
     recall_prompt = recall_messages[0]["content"]
-    assert "recall_status: saved_memory=found count=1; chat_search=found count=1" in (
-        recall_prompt
+    assert (
+        "recall_status: saved_knowledge=found count=1; chat_search=found count=1"
+        in recall_prompt
     )
     assert LONG_TERM_MEMORY_PREFIX in recall_prompt
     assert "Chat history, not saved memory:" in recall_prompt

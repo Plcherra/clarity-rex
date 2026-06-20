@@ -1,12 +1,17 @@
 # REX_BRAIN_FINAL_RESET.md
 
+**Status: Launch-complete.**
+
+This remains the active pre-launch cleanup record. All five phases are complete;
+larger/deferred work now belongs in `docs/brain/REX_BRAIN_POST_LAUNCH.md`.
+
 ## 1. Purpose
 
-This is the active pre-launch Rex Brain cleanup plan.
+This is the active pre-launch Rex Brain cleanup plan and completion record.
 
 It only includes work that should be completed before launch on the 25th. Larger memory, Knows, migration, hybrid search, and advanced brain work belongs in `docs/brain/REX_BRAIN_POST_LAUNCH.md`.
 
-The goal is to make the current MVP safer and easier to debug without changing the product shape or creating another brain.
+The goal was to make the current MVP safer and easier to debug without changing the product shape or creating another brain.
 
 ## 2. Current Launch Reality
 
@@ -18,7 +23,7 @@ Rex Brain is mostly on the right production path:
 - Chat search results are labeled separately from saved memory.
 - Recall source status exists and is included in prompts.
 
-The remaining launch risks are practical:
+The launch risks addressed by this reset were practical:
 
 - Financial context is attached too broadly and can pollute non-finance turns.
 - Financial prompt budget is much larger than memory and recall context.
@@ -38,7 +43,7 @@ The remaining launch risks are practical:
 
 ## 4. Pre-Launch Phases
 
-### Phase 1: Gate Financial Context
+### Phase 1: Gate Financial Context - Complete
 
 **Goal**
 
@@ -70,7 +75,7 @@ Prevent financial data from being sent or prompted on casual, memory, and old-ch
 - Finance questions still get the same Clarity/Plaid/Supabase-backed data.
 - Rex says when financial data is unavailable only on finance-relevant turns.
 
-### Phase 2: Trim Prompt Budgets
+### Phase 2: Trim Prompt Budgets - Complete
 
 **Goal**
 
@@ -100,7 +105,7 @@ Keep prompts short and prevent financial context from crowding out memory or rec
 - Finance prompts include financial context only when finance intent allows it.
 - Prompt tests prove financial context cannot dominate memory recall turns.
 
-### Phase 3: Split The Riskiest Context God-File Pieces
+### Phase 3: Split The Riskiest Context God-File Pieces - Complete
 
 **Goal**
 
@@ -130,7 +135,7 @@ Make context fetching easier to inspect without changing behavior.
 - `chat_context_service.py` is smaller and easier to scan.
 - A developer can trace recall context fetching without reading the whole file.
 
-### Phase 4: Stabilize Recall Status And Labels
+### Phase 4: Stabilize Recall Status And Labels - Complete
 
 **Goal**
 
@@ -162,7 +167,7 @@ Make the existing recall behavior reliable enough for launch without redesigning
 - Degraded search is reported as degraded, not as "I know nothing."
 - Tests continue covering mom, games, Legacy of Kain, money, immigration, payroll, and arbitrary topics.
 
-### Phase 5: Clarify Docs And Experimental Brain Code
+### Phase 5: Clarify Docs And Experimental Brain Code - Complete
 
 **Goal**
 
@@ -209,3 +214,13 @@ Make it obvious what is production for launch.
 - `chat_context_service.py` no longer contains the riskiest recall/status tangles.
 - Experimental brain code is clearly non-production.
 - Larger entity-memory and hybrid-search work is tracked in `REX_BRAIN_POST_LAUNCH.md`.
+
+## 6. Completion Summary
+
+- Financial context is gated to finance-relevant turns.
+- Prompt budgets are launch-safe and recall prompts stay labeled.
+- `ChatContextService` is now an orchestration facade around small recall/status services.
+- Recall follows one inspectable path: saved knowledge, compatible flat memory, old-chat search, source status, answer.
+- Saved People are moving entity-first; flat memories remain backward-compatible fallback.
+- Layered `rex_brain_*` services are explicitly non-production for launch.
+- Post-launch entity migration, richer cards, hybrid search, and advanced routing are tracked in `REX_BRAIN_POST_LAUNCH.md`.

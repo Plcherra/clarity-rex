@@ -11,13 +11,18 @@ void main() {
 
     expect(find.text('What Clarity Knows'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
-    expect(find.text('People'), findsOneWidget);
+    expect(find.text('People'), findsWidgets);
     expect(find.text('Pending'), findsNothing);
     expect(find.text('Corrections'), findsNothing);
     expect(find.text('Facts'), findsWidgets);
     expect(find.text('Preferences'), findsWidgets);
-    expect(find.text('Pedro prefers email updates.'), findsOneWidget);
+    expect(listTileText('Ana'), findsOneWidget);
     expect(find.text('Updated 05/31/2026'), findsWidgets);
+
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -250));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pedro prefers email updates.'), findsOneWidget);
 
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
     await tester.pumpAndSettle();

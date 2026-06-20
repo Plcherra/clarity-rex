@@ -8,6 +8,10 @@ The goal is not to build a complex brain system. The goal is to give Grok the ri
 
 Grok does the reasoning. Rex Brain handles context, backend-confirmed actions, and truth boundaries.
 
+Launch production path: `ChatService` uses `SimpleRexBrain` for both typed chat and voice. Layered `rex_brain_*` modules are non-production experiments and must not be treated as the launch brain.
+
+Pre-launch cleanup is recorded in `REX_BRAIN_FINAL_RESET.md`; larger entity migration, richer cards, hybrid search, and advanced routing live in `REX_BRAIN_POST_LAUNCH.md`.
+
 ## 2. MVP Flow
 
 ```text
@@ -121,6 +125,7 @@ This check is a safety net. It should not become a large second brain.
 Saved memory:
 - Explicitly saved and backend-confirmed memory record
 - Categorized as People, Events, Places, Goals, Preferences, Facts, or another clear memory group
+- Moving entity-first, with basic Person cards supported at launch and flat memories retained as fallback
 - User-visible in "What Clarity Knows"
 - Editable and deletable
 - Treated as Clarity knowledge

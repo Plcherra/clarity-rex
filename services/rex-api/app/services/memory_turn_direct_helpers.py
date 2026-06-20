@@ -343,6 +343,7 @@ class MemoryTurnDirectHelpers:
             }
 
         updated_record = updated
+        await self._materialize_person_card(updated_record)
         archived_related = await self._archive_stale_location_memories(
             intent,
             updated_record,

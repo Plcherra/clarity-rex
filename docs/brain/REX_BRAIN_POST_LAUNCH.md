@@ -8,6 +8,8 @@ The active pre-launch plan lives in `docs/brain/REX_BRAIN_FINAL_RESET.md`. Do no
 
 Post-launch work should still follow the MVP architecture: one production Rex Brain, one saved-memory truth, one chat-search path, and no hidden memory saves.
 
+Launch already includes the first low-risk entity-first step: Person cards can be prompted as saved knowledge and flat memories remain a fallback. This file owns the larger deferred work: broad migration, richer cards, Places/Events/Goals/Preferences expansion, hybrid search, and any advanced routing.
+
 ## 2. Post-Launch Themes
 
 - Make Knows and Rex recall share one coherent saved-knowledge model.

@@ -1,5 +1,11 @@
 # REX_BRAIN_ALIGNMENT_PLAN.md
 
+**Historical / launch-complete.**
+
+This alignment plan has been superseded by `docs/brain/REX_BRAIN_FINAL_RESET.md`
+for pre-launch cleanup and `docs/brain/REX_BRAIN_POST_LAUNCH.md` for deferred
+work. Keep it as archive context only; do not use it as the active plan.
+
 ## 1. Vision Alignment Summary
 
 Rex Brain is partially aligned with the MVP vision, but not fully. The active production path is mostly one shared chat/voice flow, memory truth is mostly protected, and backend confirmation rules are moving in the right direction. The biggest remaining gap is old chat recall: the current retrieval layer has become too complex, patched, and difficult to reason about. To reach the official vision, Rex Brain must return to a small, inspectable MVP flow: simple intent check, minimal context fetch, deterministic backend actions, short prompt to Grok, and light truth enforcement. Old chat recall must reliably search all user chats, clearly label results as chat history, and either return real context or honestly say nothing was found.

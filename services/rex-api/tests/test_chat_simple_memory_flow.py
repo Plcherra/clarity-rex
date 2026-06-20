@@ -50,6 +50,12 @@ async def test_simple_memory_saves_durable_memory_directly():
     assert memory_service.long_term_memory[0]["content"] == (
         "User's mom's birthday is June 18."
     )
+    assert len(memory_service.entities) == 1
+    assert memory_service.entities[0]["display_name"] == "Mom"
+    assert memory_service.entities[0]["relationship"] == "mother"
+    assert memory_service.entities[0]["metadata"]["attributes"] == {
+        "birthday": "June 18",
+    }
 
     await chat_service.send_message(
         "Do you remember my mom's birthday?",
@@ -57,8 +63,11 @@ async def test_simple_memory_saves_durable_memory_directly():
     )
 
     assert (
-        "- fact: User's mom's birthday is June 18." in ai_service.messages[0]["content"]
+        "- fact: User's mom's birthday is June 18."
+        not in ai_service.messages[0]["content"]
     )
+    assert "- saved knowledge/person Mom - mother" in ai_service.messages[0]["content"]
+    assert "birthday: June 18" in ai_service.messages[0]["content"]
 
 
 @pytest.mark.asyncio
@@ -225,8 +234,10 @@ async def test_simple_memory_direct_save_works_in_voice_stream():
 
     assert follow_up_events[-1]["event"] == "done"
     assert (
-        "- fact: User's mom's birthday is June 18." in ai_service.messages[0]["content"]
+        "- fact: User's mom's birthday is June 18."
+        not in ai_service.messages[0]["content"]
     )
+    assert "- saved knowledge/person Mom - mother" in ai_service.messages[0]["content"]
 
 
 @pytest.mark.asyncio
@@ -403,6 +414,32 @@ async def test_simple_memory_repeated_fact_does_not_save_duplicate_memory():
     assert repeated["memory_changes"]["skipped"] == 1
     assert repeated["memory_changes"]["records"][0]["action"] == "already_saved"
     assert len(memory_service.long_term_memory) == 1
+    assert len(memory_service.entities) == 1
+
+
+@pytest.mark.asyncio
+async def test_person_memory_card_merges_multiple_high_confidence_facts():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    saved = await chat_service.send_message("My mom's birthday is June 18")
+    repeated = await chat_service.send_message(
+        "It's not next week, but on the eighteenth, it's my mom's birthday.",
+        saved["conversation_id"],
+    )
+
+    assert repeated["memory_changes"]["skipped"] == 1
+    assert len(memory_service.entities) == 1
+    assert memory_service.entities[0]["display_name"] == "Mom"
+    assert memory_service.entities[0]["metadata"]["attributes"]["birthday"] == (
+        "June 18"
+    )
 
 
 @pytest.mark.asyncio

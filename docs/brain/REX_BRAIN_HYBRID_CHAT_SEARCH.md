@@ -8,6 +8,8 @@ Its job is to help Rex find relevant user chat history across arbitrary topics, 
 
 This is not a second brain. It is an improved retrieval layer inside the same Rex Brain flow.
 
+This is post-launch direction. Launch uses the simpler keyword recall path documented in `REX_BRAIN_FINAL_RESET.md`; broader hybrid retrieval work belongs in `REX_BRAIN_POST_LAUNCH.md`.
+
 ## 2. Product Goal
 
 Users should be able to ask Rex about anything they have discussed before.

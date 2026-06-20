@@ -1,5 +1,7 @@
 """Experimental layered Rex Brain context budgeting.
 
+NON-PRODUCTION FOR LAUNCH.
+
 MVP production chat and voice use ChatService + SimpleRexBrain.
 """
 
@@ -219,4 +221,3 @@ def _drop_last_structured_record(
             next_context.pop(key, None)
         break
     return next_context
-

@@ -77,6 +77,7 @@ class PersonMemoryTile extends StatelessWidget {
       chips: [
         if (person.relationship != null)
           MemoryMetaChip(label: person.relationship!.memoryRecordLabel),
+        ..._attributeChips(person),
         if (person.aliases.isNotEmpty)
           MemoryMetaChip(label: 'Also ${person.aliases.join(', ')}'),
         if (_savedDate(person.updatedAt, person.createdAt) != null)
@@ -89,6 +90,33 @@ class PersonMemoryTile extends StatelessWidget {
       onEdit: onEdit,
       onDeactivate: onDeactivate,
     );
+  }
+
+  List<Widget> _attributeChips(PersonMemoryItem person) {
+    return [
+      for (final entry in person.attributes.entries)
+        if (_personAttributeLabel(entry.key, entry.value) != null)
+          MemoryMetaChip(label: _personAttributeLabel(entry.key, entry.value)!),
+    ];
+  }
+
+  String? _personAttributeLabel(String key, Object? value) {
+    final text = value?.toString().trim();
+    if (text == null || text.isEmpty) {
+      return null;
+    }
+    switch (key) {
+      case 'birthday':
+        return 'Birthday $text';
+      case 'location':
+        return 'Location $text';
+      case 'job':
+        return 'Job $text';
+      case 'notes':
+        return text.memoryRecordLabel;
+      default:
+        return null;
+    }
   }
 }
 

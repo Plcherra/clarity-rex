@@ -197,7 +197,8 @@ def test_voice_saves_and_recalls_mom_birthday_without_pending_cards(client):
     assert recalled["response_text"] == "Your mom's birthday is June 18."
     assert ai_service.stream_calls == 1
     prompt_text = "\n".join(str(message["content"]) for message in ai_service.messages)
-    assert "User's mom's birthday is June 18." in prompt_text
+    assert "- saved knowledge/person Mom - mother" in prompt_text
+    assert "birthday: June 18" in prompt_text
 
 
 def test_voice_unclear_transcript_asks_before_saving_memory(client):

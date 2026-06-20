@@ -1,5 +1,7 @@
 """Experimental layered Rex Brain contracts.
 
+NON-PRODUCTION FOR LAUNCH.
+
 MVP production chat and voice use ChatService + SimpleRexBrain. This module is
 kept for experimental routing tests and future advanced brain work only.
 """

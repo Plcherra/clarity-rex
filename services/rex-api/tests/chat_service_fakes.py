@@ -62,12 +62,14 @@ class FakeMemoryService:
         self.next_conversation_id = 1
         self.next_message_id = 1
         self.next_memory_id = 1
+        self.next_entity_id = 1
         self.next_plan_id = 1
         self.next_commitment_id = 1
         self.relevant_memory_queries = []
         self.search_message_queries = []
         self.structured_context_queries = []
         self.structured_context = {}
+        self.entities = []
         self.plans = []
         self.commitments = []
         self.created_plans = []
@@ -220,7 +222,57 @@ class FakeMemoryService:
 
     async def get_structured_memory_context(self, query):
         self.structured_context_queries.append(query)
+        if self.structured_context:
+            return self.structured_context
+        if self.entities:
+            return {"entities": list(self.entities)}
         return self.structured_context
+
+    async def create_entity(self, payload):
+        entity = {
+            "id": f"entity-{self.next_entity_id}",
+            "created_at": "2026-05-11T00:00:00Z",
+            "updated_at": "2026-05-11T00:00:00Z",
+            **payload,
+        }
+        self.next_entity_id += 1
+        self.entities.append(entity)
+        return entity
+
+    async def list_entities(
+        self,
+        *,
+        entity_type=None,
+        normalized_name=None,
+        active=True,
+        limit=50,
+    ):
+        entities = self.entities
+        if entity_type is not None:
+            entities = [
+                entity
+                for entity in entities
+                if entity.get("entity_type") == entity_type
+            ]
+        if normalized_name is not None:
+            entities = [
+                entity
+                for entity in entities
+                if entity.get("normalized_name") == normalized_name
+            ]
+        if active is not None:
+            entities = [
+                entity for entity in entities if entity.get("active", True) is active
+            ]
+        return entities[:limit]
+
+    async def update_entity(self, entity_id, **updates):
+        for entity in self.entities:
+            if entity["id"] == entity_id:
+                entity.update(updates)
+                entity["updated_at"] = "2026-05-11T00:00:00Z"
+                return entity
+        return None
 
     async def create_plan(self, payload):
         plan = {
