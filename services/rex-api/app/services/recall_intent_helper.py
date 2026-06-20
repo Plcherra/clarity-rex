@@ -57,6 +57,74 @@ RECALL_FOLLOWUP_TERMS = (
     "old chat",
     "old chats",
 )
+RECALL_TOPIC_TERMS = (
+    "birthday",
+    "important date",
+    "important dates",
+    "location",
+    "preference",
+    "preferences",
+    "relationship",
+    "relationships",
+    "family",
+    "friend",
+    "friends",
+    "plan",
+    "plans",
+)
+ROUTER_RECALL_QUESTION_TERMS = (
+    "anything about me",
+    "do you know anything",
+    "do you know my",
+    "do you know where",
+    "do you remember",
+    "what information do you have",
+    "what information",
+    "what do you remember",
+    "what do you know",
+    "what are my plans",
+    "what city",
+    "what rex knows",
+    "what is my",
+    "where i am",
+    "where i'm",
+    "where i'm located",
+    "where do i live",
+    "where am i",
+)
+ROUTER_RECALL_ACTION_TERMS = (
+    "chat",
+    "chats",
+    "conversation",
+    "conversations",
+    "do you have",
+    "do you know",
+    "do you remember",
+    "have i told you",
+    "have we talked",
+    "remember",
+    "search",
+    "talked about",
+    "tell me what",
+    "what did i tell you",
+    "what do you have",
+    "what do you know",
+    "what do you remember",
+    "what have i told you",
+    "what have we talked",
+    "what information",
+)
+USER_SCOPED_RECALL_TERMS = (
+    " about me",
+    " about my ",
+    " i ",
+    " i'm ",
+    " me ",
+    " my ",
+    " our ",
+    " us ",
+    " we ",
+)
 
 
 class RecallIntentHelper:
@@ -101,6 +169,30 @@ class RecallIntentHelper:
             message,
             conversation_history=conversation_history,
         )
+
+    def is_router_memory_recall_request(self, message: str) -> bool:
+        normalized = self.normalized_recall_text(message)
+        if self.is_recall_request(normalized, conversation_history=[]):
+            return True
+        if any(term in normalized for term in ROUTER_RECALL_QUESTION_TERMS):
+            return True
+        if not any(term in normalized for term in ROUTER_RECALL_ACTION_TERMS):
+            return False
+
+        padded = f" {normalized} "
+        return (
+            any(term in padded for term in USER_SCOPED_RECALL_TERMS)
+            or "anything" in normalized
+            or "information" in normalized
+            or "chat" in normalized
+            or "conversation" in normalized
+            or "what do you know" in normalized
+            or "what do you remember" in normalized
+        )
+
+    def has_recall_topic_language(self, message: str) -> bool:
+        normalized = self.normalized_recall_text(message)
+        return any(term in normalized for term in RECALL_TOPIC_TERMS)
 
     def is_memory_inventory_query(self, normalized_message: str) -> bool:
         broad_inventory_questions = {

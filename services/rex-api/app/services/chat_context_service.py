@@ -9,15 +9,17 @@ from app.services.chat_recall_service import (
     CHAT_SEARCH_RESULTS_LIMIT,
     ChatRecallService,
 )
+from app.services.chat_context_fetcher import ChatContextLoadPlanner
+from app.services.chat_context_recall import ChatContextRecallPolicy
+from app.services.chat_prompt_context_builder import ChatPromptContextBuilder
 from app.services.chat_search_ranking import ChatSearchRanking
 from app.services.goal_context_service import GoalContextService
 from app.services.memory_context_status import MemoryContextAssembler
 from app.services.prompt_service import PromptService
 from app.services.recall_intent_helper import (
     MEMORY_INVENTORY_QUERY,
-    PROFILE_MEMORY_QUERY,
     PROFILE_MEMORY_LIMIT,
-    RecallIntentHelper,
+    PROFILE_MEMORY_QUERY,
 )
 from app.services.rex_intent_router import RexIntentDecision
 from app.services.time_context_service import TimeContextService
@@ -43,8 +45,13 @@ class ChatContextService:
         self.accountability_service = accountability_service or AccountabilityService()
         self.goal_context_service = goal_context_service or GoalContextService()
         self.chat_search_ranking = chat_search_ranking or ChatSearchRanking()
-        self.recall_intent = RecallIntentHelper()
+        self.recall_policy = ChatContextRecallPolicy()
+        self.load_planner = ChatContextLoadPlanner(self.recall_policy)
         self.memory_context = MemoryContextAssembler()
+        self.prompt_context_builder = ChatPromptContextBuilder(
+            memory_context=self.memory_context,
+            prompt_service=self.prompt_service,
+        )
         self.chat_recall_service = ChatRecallService(
             memory_service,
             chat_search_ranking=self.chat_search_ranking,
@@ -59,42 +66,26 @@ class ChatContextService:
     ) -> tuple[list[dict], list[dict], dict]:
         fetch_started = time.perf_counter()
         timings_ms: dict[str, int] = {}
-        recall_query = self.recall_intent.recall_search_query(
-            message,
-            conversation_history=[],
+        initial_plan = self.load_planner.initial_plan(
+            message=message,
+            intent_decision=intent_decision,
         )
-        recall_request = recall_query is not None
-        load_long_term_memory = (
-            self._load_long_term_memory(intent_decision) or recall_request
-        )
-        load_chat_search = recall_request
-        load_profile_memory = self._load_profile_memory(intent_decision)
-        load_structured_memory = (
-            self._load_structured_memory(intent_decision) or recall_request
-        )
-        load_goal_context = self._load_goal_context(intent_decision)
-        memory_query = recall_query or self.recall_intent.memory_retrieval_query(
-            message,
-            conversation_history=[],
-        )
-        load_profile_memory = load_profile_memory and memory_query not in {
-            PROFILE_MEMORY_QUERY,
-            MEMORY_INVENTORY_QUERY,
-        }
+        load_plan = initial_plan
 
         long_term_memory_task = None
-        if load_long_term_memory and conversation_id is None:
+        if load_plan.load_long_term_memory and conversation_id is None:
             long_term_memory_task = self.timed_fetch(
                 "long_term_memory",
                 self.memory_context.fetch_relevant_memories(
                     self.memory_service,
-                    query=memory_query,
+                    query=load_plan.memory_query,
                     limit=8,
                 ),
                 timings_ms,
             )
-        profile_memory_task = (
-            self.timed_fetch(
+        profile_memory_task = None
+        if load_plan.load_profile_memory:
+            profile_memory_task = self.timed_fetch(
                 "profile_memory",
                 self.memory_context.fetch_relevant_memories(
                     self.memory_service,
@@ -104,15 +95,12 @@ class ChatContextService:
                 ),
                 timings_ms,
             )
-            if load_profile_memory
-            else self.empty_list()
-        )
         chat_search_results_task = None
-        if load_chat_search and conversation_id is None:
+        if load_plan.load_chat_search and conversation_id is None:
             chat_search_results_task = self.timed_fetch(
                 "chat_search",
                 self.chat_recall_service.fetch_relevant_chat_excerpts(
-                    query=memory_query,
+                    query=load_plan.memory_query,
                     limit=CHAT_SEARCH_RESULTS_LIMIT,
                     exclude_conversation_id=None,
                 ),
@@ -125,8 +113,8 @@ class ChatContextService:
                     self.memory_service,
                     self.goal_context_service,
                     message,
-                    include_structured_memory=load_structured_memory,
-                    include_goal_context=load_goal_context,
+                    include_structured_memory=load_plan.load_structured_memory,
+                    include_goal_context=load_plan.load_goal_context,
                 ),
                 timings_ms,
             )
@@ -137,7 +125,7 @@ class ChatContextService:
                 structured_context,
             ) = await asyncio.gather(
                 long_term_memory_task or self.empty_list(),
-                profile_memory_task,
+                profile_memory_task or self.empty_list(),
                 chat_search_results_task or self.empty_list(),
                 structured_context_task,
             )
@@ -151,17 +139,10 @@ class ChatContextService:
                 conversation_id=None,
                 loaded={
                     "recent_messages": False,
-                    "long_term_memory": load_long_term_memory,
-                    "profile_memory": load_profile_memory,
-                    "chat_search": load_chat_search,
-                    "structured_memory": load_structured_memory,
-                    "goal_context": load_goal_context,
+                    **load_plan.loaded,
                 },
                 attempted_sources={
-                    "long_term_memory": load_long_term_memory,
-                    "profile_memory": load_profile_memory,
-                    "chat_search": load_chat_search,
-                    "structured_memory": load_structured_memory,
+                    **load_plan.attempted_sources,
                 },
                 timings_ms=timings_ms,
                 fetch_started=fetch_started,
@@ -181,17 +162,11 @@ class ChatContextService:
             conversation_history,
             memory_failures,
         )
-        recall_query = self.recall_intent.recall_search_query(
-            message,
+        load_plan = self.load_planner.after_history_plan(
+            message=message,
             conversation_history=conversation_history,
-        )
-        recall_request = recall_query is not None
-        load_long_term_memory = load_long_term_memory or recall_request
-        load_chat_search = recall_request
-        load_structured_memory = load_structured_memory or recall_request
-        memory_query = recall_query or self.recall_intent.memory_retrieval_query(
-            message,
-            conversation_history=conversation_history,
+            intent_decision=intent_decision,
+            initial_plan=initial_plan,
         )
 
         long_term_memory_task = (
@@ -199,25 +174,25 @@ class ChatContextService:
                 "long_term_memory",
                 self.memory_context.fetch_relevant_memories(
                     self.memory_service,
-                    query=memory_query,
+                    query=load_plan.memory_query,
                     limit=8,
                 ),
                 timings_ms,
             )
-            if load_long_term_memory
+            if load_plan.load_long_term_memory
             else self.empty_list()
         )
         chat_search_results_task = (
             self.timed_fetch(
                 "chat_search",
                 self.chat_recall_service.fetch_relevant_chat_excerpts(
-                    query=memory_query,
+                    query=load_plan.memory_query,
                     limit=CHAT_SEARCH_RESULTS_LIMIT,
                     exclude_conversation_id=None,
                 ),
                 timings_ms,
             )
-            if load_chat_search
+            if load_plan.load_chat_search
             else self.empty_list()
         )
         structured_context_task = self.timed_fetch(
@@ -226,8 +201,8 @@ class ChatContextService:
                 self.memory_service,
                 self.goal_context_service,
                 message,
-                include_structured_memory=load_structured_memory,
-                include_goal_context=load_goal_context,
+                include_structured_memory=load_plan.load_structured_memory,
+                include_goal_context=load_plan.load_goal_context,
             ),
             timings_ms,
         )
@@ -239,7 +214,7 @@ class ChatContextService:
             structured_context,
         ) = await asyncio.gather(
             long_term_memory_task,
-            profile_memory_task,
+            profile_memory_task or self.empty_list(),
             chat_search_results_task,
             structured_context_task,
         )
@@ -253,18 +228,11 @@ class ChatContextService:
             conversation_id=conversation_id,
             loaded={
                 "recent_messages": True,
-                "long_term_memory": load_long_term_memory,
-                "profile_memory": load_profile_memory,
-                "chat_search": load_chat_search,
-                "structured_memory": load_structured_memory,
-                "goal_context": load_goal_context,
+                **load_plan.loaded,
             },
             attempted_sources={
                 "recent_messages": True,
-                "long_term_memory": load_long_term_memory,
-                "profile_memory": load_profile_memory,
-                "chat_search": load_chat_search,
-                "structured_memory": load_structured_memory,
+                **load_plan.attempted_sources,
             },
             timings_ms=timings_ms,
             fetch_started=fetch_started,
@@ -287,56 +255,20 @@ class ChatContextService:
         fetch_started: float,
         initial_failures: Optional[list[dict]] = None,
     ) -> tuple[list[dict], list[dict], dict]:
-        memory_failures = list(initial_failures or [])
-        context_statuses: list[dict] = []
-        long_term_memory = self.memory_context.context_items(
-            raw_long_term_memory,
-            memory_failures,
-        )
-        profile_memory = self.memory_context.context_items(
-            raw_profile_memory,
-            memory_failures,
-        )
-        chat_search_results = self.memory_context.context_items(
-            raw_chat_search_results,
-            memory_failures,
-            context_statuses,
-        )
-        structured_context = self.memory_context.with_memory_status(
-            structured_context,
-            memory_failures,
-            attempted_sources=attempted_sources,
-            source_statuses=context_statuses,
-        )
-        structured_context = self.memory_context.with_chat_search_results(
-            structured_context,
-            chat_search_results,
-        )
-        merged_memory = self.memory_context.merge_memories(
-            long_term_memory,
-            profile_memory,
-        )
-        merged_memory = self.memory_context.prefer_entities_over_flat_memories(
-            merged_memory,
-            structured_context,
-        )
-        self.log_context_fetch(
+        return self.prompt_context_builder.assemble_prompt_context(
+            conversation_history=conversation_history,
+            raw_long_term_memory=raw_long_term_memory,
+            raw_profile_memory=raw_profile_memory,
+            raw_chat_search_results=raw_chat_search_results,
+            structured_context=structured_context,
             intent_decision=intent_decision,
             conversation_id=conversation_id,
             loaded=loaded,
-            counts={
-                "recent_messages": len(conversation_history),
-                "long_term_memory": len(merged_memory),
-                "chat_search_results": len(chat_search_results),
-                "structured_context_keys": len(structured_context),
-            },
+            attempted_sources=attempted_sources,
             timings_ms=timings_ms,
-            total_ms=self.elapsed_ms(fetch_started),
-        )
-        return (
-            conversation_history,
-            merged_memory,
-            structured_context,
+            fetch_started=fetch_started,
+            log_context_fetch=self.log_context_fetch,
+            initial_failures=initial_failures,
         )
 
     async def empty_list(self) -> list[dict]:
@@ -362,19 +294,14 @@ class ChatContextService:
         financial_context: Optional[dict],
         max_context_characters: Optional[int] = None,
     ) -> list[dict]:
-        last_message_timestamp = self.last_message_timestamp(conversation_history)
-        return self.prompt_service.build_messages(
-            user_message=message,
-            recent_messages=conversation_history,
-            relevant_memories=long_term_memory,
+        return self.prompt_context_builder.build_prompt_messages(
+            message=message,
+            conversation_id=conversation_id,
+            conversation_history=conversation_history,
+            long_term_memory=long_term_memory,
             structured_context=structured_context,
             accountability_signals=accountability_signals,
-            file_context=file_text,
-            conversation_metadata={
-                "id": conversation_id,
-                "timestamp": self.conversation_timestamp(conversation_history),
-                "last_message_timestamp": last_message_timestamp,
-            },
+            file_text=file_text,
             time_context=time_context,
             financial_context=financial_context,
             max_context_characters=max_context_characters,
@@ -447,54 +374,12 @@ class ChatContextService:
     def elapsed_ms(self, started: float) -> int:
         return int((time.perf_counter() - started) * 1000)
 
-    def _load_long_term_memory(
-        self,
-        intent_decision: Optional[RexIntentDecision],
-    ) -> bool:
-        return (
-            True
-            if intent_decision is None
-            else intent_decision.should_load_long_term_memory
-        )
-
-    def _load_profile_memory(
-        self,
-        intent_decision: Optional[RexIntentDecision],
-    ) -> bool:
-        return (
-            True
-            if intent_decision is None
-            else intent_decision.should_load_profile_memory
-        )
-
-    def _load_structured_memory(
-        self,
-        intent_decision: Optional[RexIntentDecision],
-    ) -> bool:
-        return (
-            True
-            if intent_decision is None
-            else intent_decision.should_load_structured_memory
-        )
-
-    def _load_goal_context(
-        self,
-        intent_decision: Optional[RexIntentDecision],
-    ) -> bool:
-        return (
-            True
-            if intent_decision is None
-            else intent_decision.should_load_goal_context
-        )
-
     def last_message_timestamp(self, conversation_history: list[dict]) -> Optional[str]:
-        if not conversation_history:
-            return None
-        timestamp = conversation_history[-1].get("timestamp")
-        return str(timestamp) if timestamp else None
+        return self.prompt_context_builder.last_message_timestamp(
+            conversation_history,
+        )
 
     def conversation_timestamp(self, conversation_history: list[dict]) -> Optional[str]:
-        if not conversation_history:
-            return None
-        timestamp = conversation_history[0].get("timestamp")
-        return str(timestamp) if timestamp else None
+        return self.prompt_context_builder.conversation_timestamp(
+            conversation_history,
+        )

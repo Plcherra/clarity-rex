@@ -3,6 +3,8 @@ from enum import Enum
 import re
 from typing import Optional
 
+from app.services.recall_intent_helper import RecallIntentHelper
+
 
 class RexIntent(str, Enum):
     CASUAL = "casual"
@@ -70,6 +72,9 @@ class RexIntentDecision:
 
 
 class RexIntentRouter:
+    def __init__(self, recall_intent: Optional[RecallIntentHelper] = None) -> None:
+        self.recall_intent = recall_intent or RecallIntentHelper()
+
     DEEP_TERMS = (
         "deep think",
         "think deeply",
@@ -112,63 +117,6 @@ class RexIntentRouter:
         "i like",
         "i hate",
     )
-    MEMORY_RECALL_TERMS = (
-        "birthday",
-        "important date",
-        "important dates",
-        "location",
-        "preference",
-        "preferences",
-        "relationship",
-        "relationships",
-        "family",
-        "friend",
-        "friends",
-        "plan",
-        "plans",
-    )
-    MEMORY_RECALL_QUESTION_TERMS = (
-        "anything about me",
-        "do you know anything",
-        "do you know my",
-        "do you know where",
-        "do you remember",
-        "what information do you have",
-        "what information",
-        "what do you remember",
-        "what do you know",
-        "what are my plans",
-        "what city",
-        "what rex knows",
-        "what is my",
-        "where i am",
-        "where i'm",
-        "where i'm located",
-        "where do i live",
-        "where am i",
-    )
-    MEMORY_RECALL_ACTION_TERMS = (
-        "chat",
-        "chats",
-        "conversation",
-        "conversations",
-        "do you have",
-        "do you know",
-        "do you remember",
-        "have i told you",
-        "have we talked",
-        "remember",
-        "search",
-        "talked about",
-        "tell me what",
-        "what did i tell you",
-        "what do you have",
-        "what do you know",
-        "what do you remember",
-        "what have i told you",
-        "what have we talked",
-        "what information",
-    )
     MEMORY_STORE_TERMS = (
         "chat",
         "chats",
@@ -180,17 +128,6 @@ class RexIntentRouter:
         "saved",
         "talked",
         "told you",
-    )
-    USER_SCOPED_TERMS = (
-        " about me",
-        " about my ",
-        " i ",
-        " i'm ",
-        " me ",
-        " my ",
-        " our ",
-        " us ",
-        " we ",
     )
     GOAL_TERMS = (
         "accountability",
@@ -334,7 +271,7 @@ class RexIntentRouter:
                 user_requested_deep_thinking,
             )
 
-        if self._contains(normalized, self.MEMORY_RECALL_TERMS):
+        if self.recall_intent.has_recall_topic_language(normalized):
             reasons.append("memory_recall_language")
             return self._decision(
                 RexIntent.MEMORY_RECALL,
@@ -434,24 +371,11 @@ class RexIntentRouter:
         )
 
     def _looks_like_memory_recall_question(self, normalized_message: str) -> bool:
-        if self._contains(normalized_message, self.MEMORY_RECALL_QUESTION_TERMS):
-            return not self._is_finance_first_query(normalized_message)
-
-        if not self._contains(normalized_message, self.MEMORY_RECALL_ACTION_TERMS):
-            return False
-
         if self._is_finance_first_query(normalized_message):
             return False
 
-        padded = f" {normalized_message} "
-        return (
-            self._contains(padded, self.USER_SCOPED_TERMS)
-            or "anything" in normalized_message
-            or "information" in normalized_message
-            or "chat" in normalized_message
-            or "conversation" in normalized_message
-            or "what do you know" in normalized_message
-            or "what do you remember" in normalized_message
+        return self.recall_intent.is_router_memory_recall_request(
+            normalized_message,
         )
 
     def _is_finance_first_query(self, normalized_message: str) -> bool:

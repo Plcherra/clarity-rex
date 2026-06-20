@@ -1,5 +1,7 @@
 """Experimental model routing for future layered Rex Brain work.
 
+NON-PRODUCTION FOR LAUNCH.
+
 MVP production chat and voice use the configured Grok model through
 ChatService + SimpleRexBrain, not this router.
 """
