@@ -69,7 +69,7 @@ def response_claims_unconfirmed_success(response: str) -> bool:
 def response_claims_no_memory_result(response: str) -> bool: return _contains_any(_normalized(response), _NO_RESULT_TERMS)
 def response_claims_old_chat_search_result(response: str) -> bool:
     text = _normalized(response)
-    return response_claims_no_memory_result(response) and _contains_any(text, _SEARCH_TERMS) and _contains_any(text, _CHAT_HISTORY_TERMS)
+    return response_claims_no_memory_result(response) and _contains_any(text, _CHAT_HISTORY_TERMS)
 def response_claims_limited_chat_search_capability(response: str) -> bool: return _contains_any(_normalized(response), _LIMITATION_TERMS)
 def request_asks_delete(message: str) -> bool: return _contains_any(_normalized(message), _DELETE_REQUEST_TERMS)
 def memory_status_is_degraded(memory_status: object) -> bool:

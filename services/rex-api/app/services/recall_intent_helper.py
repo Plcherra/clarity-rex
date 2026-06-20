@@ -30,6 +30,8 @@ RECALL_TRIGGER_PHRASES = (
     "find chats",
     "find old chat",
     "find old chats",
+    "find mentions",
+    "find any mentions",
     "search old",
     "check the chat",
     "check old",
@@ -137,7 +139,10 @@ class RecallIntentHelper:
         normalized = self.normalized_recall_text(message)
         if self.is_memory_inventory_query(normalized):
             return MEMORY_INVENTORY_QUERY
-        if self.is_contextual_memory_followup(normalized):
+        is_followup = self.is_contextual_memory_followup(
+            normalized,
+        ) or self.is_about_recall_followup(normalized)
+        if is_followup:
             subject = self.recent_memory_subject(conversation_history)
             if subject:
                 return f"{subject} {message}".strip()
@@ -289,6 +294,12 @@ class RecallIntentHelper:
 
         if any(phrase in normalized for phrase in RECALL_TRIGGER_PHRASES):
             return True
+        if re.search(
+            r"\b(?:find|search|check|look\s+(?:for|through|into))\b"
+            r".*\bmentions?\b.*\b(?:chat|chats|conversation|conversations)\b",
+            normalized,
+        ):
+            return True
 
         if re.search(
             r"\b(?:did|do|have|had)\s+(?:i|we)\b"
@@ -324,12 +335,18 @@ class RecallIntentHelper:
             term in normalized for term in RECALL_FOLLOWUP_TERMS
         ):
             return bool(self.recent_memory_subject(conversation_history))
+        if conversation_history and self.is_about_recall_followup(normalized):
+            return bool(self.recent_memory_subject(conversation_history))
 
         return False
 
     def normalized_recall_text(self, message: str) -> str:
         normalized = " ".join(str(message or "").lower().split())
         return re.sub(r"\bchet\b", "chat", normalized)
+
+    def is_about_recall_followup(self, normalized_message: str) -> bool:
+        stripped = self.normalized_recall_text(normalized_message).strip("?.! ")
+        return re.fullmatch(r"about\s+[a-z0-9'\s]{2,80}", stripped) is not None
 
     def recent_memory_subject(self, conversation_history: list[dict]) -> str:
         for message in reversed(conversation_history[-8:]):
@@ -348,6 +365,8 @@ class RecallIntentHelper:
                     "do you remember",
                     "did i mention",
                     "did i say",
+                    "find any mentions",
+                    "find mentions",
                     "anything about",
                     "talking about",
                     "information about",

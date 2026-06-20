@@ -395,6 +395,54 @@ async def test_delete_saved_tonight_plan_requires_confirmation_and_archives_memo
 
 
 @pytest.mark.asyncio
+async def test_delete_it_resolves_recently_listed_saved_memory():
+    ai_service = FakeAIService(response="Rex normal recall")
+    memory_service = FakeMemoryService()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-tonight-plan",
+            "memory_type": "event",
+            "content": "User plans to watch it tonight.",
+            "importance": 4,
+            "active": True,
+            "metadata": {
+                "fact_kind": "personal_plan",
+                "topic_fingerprint": "event:personal_plan:watch:it",
+            },
+        }
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+    conversation_id = await memory_service.create_conversation()
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        (
+            "Clarity has this saved about you:\n\n"
+            'Plus one older saved note: "User plans to watch it tonight" '
+            "(from about 2 weeks ago). That's all the durable saved knowledge."
+        ),
+    )
+
+    requested = await chat_service.send_message(
+        "Is it a note or a memory? I see it as a event memory, can you delete it?",
+        conversation_id,
+    )
+    confirmed = await chat_service.send_message("Yes", conversation_id)
+
+    assert "Just to confirm" in requested["response"]
+    assert "User plans to watch it tonight" in requested["response"]
+    assert confirmed["memory_changes"]["archived"] == 1
+    assert memory_service.long_term_memory[0]["active"] is False
+    assert memory_service.memory_corrections[0]["target_id"] == "memory-tonight-plan"
+    assert ai_service.messages == []
+
+
+@pytest.mark.asyncio
 async def test_delete_saved_memory_accepts_get_rid_of_wording():
     ai_service = FakeAIService(response="Rex normal recall")
     memory_service = FakeMemoryService()

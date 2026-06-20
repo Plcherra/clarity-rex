@@ -11,7 +11,12 @@ class MemoryTurnDeleteHelpers:
         *,
         conversation_id: str,
         user_message: dict,
+        conversation_history: Optional[list[dict]] = None,
     ) -> dict:
+        target = await self._resolved_delete_target(
+            target,
+            conversation_history=conversation_history or [],
+        )
         matches = await self.memory_correction_service.preview_remove_obsolete(target)
         if not matches:
             response = (
@@ -133,11 +138,13 @@ class MemoryTurnDeleteHelpers:
             return None
 
         saw_delete_confirmation = False
+        confirmation_target: Optional[str] = None
         for past_message in reversed(conversation_history[-8:]):
             role = past_message.get("role")
             content = str(past_message.get("content") or "")
             if role == "assistant" and self._looks_like_delete_confirmation(content):
                 saw_delete_confirmation = True
+                confirmation_target = self._delete_confirmation_target(content)
                 continue
             if saw_delete_confirmation and role == "user":
                 intent = self.memory_correction_service.detect_correction_intent(
@@ -147,7 +154,7 @@ class MemoryTurnDeleteHelpers:
                     intent.intent_type == CorrectionIntentType.REMOVE_OBSOLETE
                     and intent.old_value
                 ):
-                    return intent.old_value
+                    return confirmation_target or intent.old_value
         return None
 
     def _looks_like_delete_confirmation(self, message: str) -> bool:
@@ -181,3 +188,73 @@ class MemoryTurnDeleteHelpers:
     def _normalize_delete_text(self, message: str) -> str:
         normalized = re.sub(r"[^a-z0-9']+", " ", str(message or "").lower())
         return re.sub(r"\s+", " ", normalized).strip()
+
+    async def _resolved_delete_target(
+        self,
+        target: str,
+        *,
+        conversation_history: list[dict],
+    ) -> str:
+        if not self._is_contextual_delete_target(target):
+            return target
+
+        candidates = self._recent_quoted_saved_items(conversation_history)
+        confirmed_targets = []
+        for candidate in candidates:
+            matches = await self.memory_correction_service.preview_remove_obsolete(
+                candidate,
+            )
+            if len(matches) == 1:
+                confirmed_targets.append(candidate)
+
+        unique_targets = []
+        for candidate in confirmed_targets:
+            if candidate not in unique_targets:
+                unique_targets.append(candidate)
+        return unique_targets[0] if len(unique_targets) == 1 else target
+
+    def _is_contextual_delete_target(self, target: str) -> bool:
+        normalized = self._normalize_delete_text(target)
+        return normalized in {
+            "it",
+            "that",
+            "this",
+            "that memory",
+            "this memory",
+            "that saved memory",
+            "this saved memory",
+            "that event",
+            "this event",
+            "that event memory",
+            "this event memory",
+            "that note",
+            "this note",
+            "that saved note",
+            "this saved note",
+        }
+
+    def _recent_quoted_saved_items(self, conversation_history: list[dict]) -> list[str]:
+        candidates = []
+        for past_message in reversed(conversation_history[-8:]):
+            if past_message.get("role") != "assistant":
+                continue
+            content = str(past_message.get("content") or "")
+            lowered = content.lower()
+            if "saved" not in lowered and "clarity knows" not in lowered:
+                continue
+            for match in re.finditer(r'"([^"\n]{3,240})"', content):
+                candidate = match.group(1).strip()
+                if candidate and candidate not in candidates:
+                    candidates.append(candidate)
+        return candidates
+
+    def _delete_confirmation_target(self, message: str) -> Optional[str]:
+        match = re.search(
+            r"delete this saved memory:\s*(.+?)(?:\n|$)",
+            message,
+            flags=re.IGNORECASE,
+        )
+        if match is None:
+            return None
+        target = match.group(1).strip()
+        return target or None

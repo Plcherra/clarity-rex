@@ -1129,6 +1129,7 @@ async def test_chat_context_keyword_search_finds_manual_cases_without_full_scan(
     ("message", "expected_text"),
     [
         ("Do you have any idea of my mom's birthday?", "mom's birthday"),
+        ("Can you find any mentions about my mom on the chats?", "mom's birthday"),
         ("What did I say about games?", "first PC game"),
         ("Find old chats about Legacy of Kain", "Legacy of Kain"),
         ("Search chats for the eighteenth", "June 18th"),
@@ -1173,6 +1174,48 @@ async def test_chat_context_natural_recall_phrasing_triggers_old_chat_search(
 
     result = structured_context["chat_search_results"][0]
     assert expected_text in result["content"]
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert status["source"] == "chat_search"
+    assert status["result_count"] > 0
+
+
+@pytest.mark.asyncio
+async def test_chat_context_treats_about_date_as_recall_followup():
+    store = FakeContextMemoryStore()
+    store.list_messages = None
+    store.messages = [
+        {
+            "id": "message-1",
+            "role": "user",
+            "content": "Can you find any mentions about my mom on the chats?",
+            "timestamp": "2026-06-18T12:10:00Z",
+        },
+        {
+            "id": "message-2",
+            "role": "assistant",
+            "content": "No mentions of your mom in the chats.",
+            "timestamp": "2026-06-18T12:10:10Z",
+        },
+    ]
+    store.past_messages = [
+        {
+            "id": "mom-birthday",
+            "conversation_id": "conversation-manual",
+            "role": "user",
+            "content": "My mom's birthday is June 18th.",
+            "timestamp": "2026-06-18T12:00:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="About june 18?",
+        conversation_id="conversation-current",
+        intent_decision=RexIntentDecision(RexIntent.CASUAL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert "mom's birthday is June 18th" in result["content"]
     status = structured_context["memory_status"]["source_statuses"][0]
     assert status["source"] == "chat_search"
     assert status["result_count"] > 0

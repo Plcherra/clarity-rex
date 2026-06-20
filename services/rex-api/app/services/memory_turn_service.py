@@ -115,6 +115,7 @@ class MemoryTurnService(
                 delete_intent.old_value,
                 conversation_id=conversation_id,
                 user_message=user_message,
+                conversation_history=conversation_history,
             )
 
         intent = self.memory_intent_service.detect_simple_memory(

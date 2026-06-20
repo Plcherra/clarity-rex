@@ -81,6 +81,16 @@ def test_partial_chat_search_uses_canonical_degraded_fallback():
     assert response == DEGRADED_RECALL_FALLBACK
 
 
+def test_chat_no_mentions_claim_without_search_is_blocked():
+    response = safe_old_chat_search_response(
+        "No mentions of your mom in the chats.",
+        chat_search_results_loaded=False,
+        memory_status=None,
+    )
+
+    assert response == DEGRADED_RECALL_FALLBACK
+
+
 def test_complete_empty_recall_uses_canonical_no_results_fallback():
     response = safe_empty_recall_search_response(
         "No, I don't have anything about your mom saved.",
