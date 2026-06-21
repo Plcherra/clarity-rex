@@ -27,7 +27,6 @@ CHAT_SEARCH_NO_RESULT_MARKERS = (
     "didn't find",
     "no mentions",
     "no mention",
-    "not saved",
 )
 
 
@@ -50,6 +49,8 @@ def is_chat_search_user_content_message(message: dict) -> bool:
         return False
     content = str(message.get("content") or "").strip().lower()
     if not content or is_chat_search_no_result_message(message):
+        return False
+    if is_memory_rejection_message(message):
         return False
     if any(
         marker in content

@@ -301,7 +301,12 @@ class ChatRecallService:
 
         excerpts = []
         for conversation_id, matches in grouped.items():
-            if await self.chat_cluster_was_rejected(matches):
+            matches = [
+                message
+                for message in matches
+                if not await self.chat_excerpt_was_rejected_by_user(message)
+            ]
+            if not matches:
                 continue
             context_messages = await self.conversation_cluster_context(
                 conversation_id,
@@ -356,8 +361,6 @@ class ChatRecallService:
             content = self.chat_excerpt_content(context_messages)
             if not content:
                 continue
-            if await self.chat_excerpt_was_rejected(message):
-                continue
             if not self.chat_excerpt_has_user_content(context_messages):
                 continue
             excerpts.append(
@@ -380,14 +383,6 @@ class ChatRecallService:
             if len(excerpts) >= limit:
                 break
         return excerpts
-
-    async def chat_cluster_was_rejected(self, matched_messages: list[dict]) -> bool:
-        for message in matched_messages:
-            if not is_chat_search_user_content_message(message):
-                continue
-            if await self.chat_excerpt_was_rejected(message):
-                return True
-        return False
 
     async def conversation_cluster_context(
         self, conversation_id: str, matched_messages: list[dict]
@@ -440,6 +435,10 @@ class ChatRecallService:
                     continue
                 if is_chat_search_no_result_message(message):
                     continue
+                if is_memory_rejection_message(message):
+                    continue
+                if await self.chat_excerpt_was_rejected_by_user(message):
+                    continue
                 if message_id:
                     seen_ids.add(message_id)
                 context_messages.append(message)
@@ -476,7 +475,10 @@ class ChatRecallService:
     def chat_excerpt_content(self, messages: list[dict]) -> str:
         lines = []
         for message in messages:
-            if is_chat_search_no_result_message(message):
+            if (
+                is_chat_search_no_result_message(message)
+                or is_memory_rejection_message(message)
+            ):
                 continue
             content = str(message.get("content") or "").strip()
             if not content:
@@ -498,7 +500,9 @@ class ChatRecallService:
             is_chat_search_user_content_message(message) for message in messages
         )
 
-    async def chat_excerpt_was_rejected(self, message: dict) -> bool:
+    async def chat_excerpt_was_rejected_by_user(self, message: dict) -> bool:
+        if str(message.get("role") or "") != "user":
+            return False
         conversation_id = str(message.get("conversation_id") or "")
         message_id = str(message.get("id") or "")
         if not conversation_id or not message_id:
@@ -519,9 +523,13 @@ class ChatRecallService:
         if message_index is None:
             return False
 
-        following_messages = conversation_messages[message_index + 1 : message_index + 7]
+        following_messages = conversation_messages[
+            message_index + 1 : message_index + 7
+        ]
         return any(
-            is_memory_rejection_message(item) for item in following_messages
+            str(item.get("role") or "") == "user"
+            and is_memory_rejection_message(item)
+            for item in following_messages
         )
 
     def message_index(

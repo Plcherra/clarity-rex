@@ -296,17 +296,6 @@ class RexIntentRouter:
                 user_requested_deep_thinking,
             )
 
-        if self.recall_intent.has_recall_topic_language(normalized):
-            reasons.append("memory_recall_language")
-            return self._decision(
-                RexIntent.MEMORY_RECALL,
-                reasons,
-                has_file,
-                has_financial_context,
-                False,
-                user_requested_deep_thinking,
-            )
-
         if self._contains(normalized, self.GOAL_TERMS):
             if self._contains(normalized, self.ACCOUNTABILITY_STRUCTURED_TERMS):
                 reasons.append("accountability_structured_language")
@@ -412,6 +401,24 @@ class RexIntentRouter:
         if normalized_message.startswith(("do you remember", "what do you remember")):
             return False
         if normalized_message.startswith("remember what"):
+            return False
+        if normalized_message.startswith(
+            ("remember any", "remember if", "remember whether")
+        ):
+            return False
+        if normalized_message.startswith("remember ") and self._contains(
+            normalized_message,
+            (
+                "anything",
+                "chat",
+                "conversation",
+                "mentioned",
+                "old",
+                "search",
+                "talked about",
+                "what",
+            ),
+        ):
             return False
         if normalized_message.startswith("remember "):
             return True

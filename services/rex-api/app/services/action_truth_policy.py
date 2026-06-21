@@ -1,14 +1,17 @@
 ACTION_TRUTH_POLICY_PROMPT = "\n".join([
     "Action truth policy:",
     "- Never claim durable changes without backend success metadata.",
-    "- If recall search is degraded, say it is unavailable.",
+    (
+        "- If recall search has an issue, say the search had trouble and ask "
+        "for a retry."
+    ),
     "- If recall search completed empty, use the standard no-results answer.",
     "- Do not claim Rex can only search the current visible chat.",
 ])
 
 DEGRADED_RECALL_FALLBACK = (
-    "Memory search is temporarily unavailable right now. I can't confidently "
-    "say what I remember until it's working again."
+    "I tried to search saved memory and old chats, but the search had trouble. "
+    "Try again with a keyword or phrase and I'll search broadly."
 )
 EMPTY_RECALL_FALLBACK = (
     "I searched my saved memory and old chats but couldn't find anything about that."

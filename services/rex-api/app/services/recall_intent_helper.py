@@ -13,39 +13,45 @@ MEMORY_INVENTORY_QUERY = (
 )
 PROFILE_MEMORY_LIMIT = 4
 RECALL_TRIGGER_PHRASES = (
+    "any mention",
+    "anything about",
+    "chat history",
+    "check",
+    "conversation history",
+    "did i mention",
+    "did i say",
+    "do you know about",
+    "do you know anything about",
     "do you remember",
-    "what do you remember",
-    "remember when",
+    "find",
+    "have any idea",
+    "have i told you",
+    "have we talked",
+    "look for",
+    "look into",
+    "look through",
+    "mention",
+    "mentioned",
     "old chat",
     "old chats",
-    "chat history",
     "past chat",
     "past chats",
     "previous chat",
     "previous chats",
-    "search chat",
-    "search chats",
-    "search the chat",
-    "find chat",
-    "find chats",
-    "find old chat",
-    "find old chats",
-    "find mentions",
-    "find any mentions",
-    "search old",
-    "check the chat",
-    "check old",
-    "look through chat",
-    "talked about",
-    "mentioned",
-    "told you",
+    "remember anything",
+    "remember what",
+    "remember when",
     "said before",
-    "do you know about",
-    "do you know anything about",
-    "do you have any idea",
-    "have any idea",
+    "search",
+    "talked about",
+    "talking about",
+    "told you",
+    "what did i say",
+    "what did i tell",
+    "what did we say",
     "what do you know about",
-    "anything about",
+    "what do you remember",
+    "what have i told",
 )
 RECALL_FOLLOWUP_TERMS = (
     "that",
@@ -55,24 +61,13 @@ RECALL_FOLLOWUP_TERMS = (
     "him",
     "them",
     "this",
+    "details",
+    "mention",
+    "mentioned",
     "the chat",
     "old chat",
     "old chats",
-)
-RECALL_TOPIC_TERMS = (
-    "birthday",
-    "important date",
-    "important dates",
-    "location",
-    "preference",
-    "preferences",
-    "relationship",
-    "relationships",
-    "family",
-    "friend",
-    "friends",
-    "plan",
-    "plans",
+    "what else",
 )
 ROUTER_RECALL_QUESTION_TERMS = (
     "anything about me",
@@ -126,6 +121,37 @@ USER_SCOPED_RECALL_TERMS = (
     " our ",
     " us ",
     " we ",
+)
+FINANCE_ONLY_TERMS = (
+    "account",
+    "accounts",
+    "balance",
+    "balances",
+    "bank",
+    "budget",
+    "budgets",
+    "merchant",
+    "merchants",
+    "plaid",
+    "spend",
+    "spending",
+    "spent",
+    "transaction",
+    "transactions",
+)
+CHAT_SCOPE_TERMS = (
+    "chat",
+    "chats",
+    "conversation",
+    "conversations",
+    "history",
+    "mentioned",
+    "old",
+    "past",
+    "previous",
+    "said",
+    "talked",
+    "told",
 )
 
 
@@ -197,7 +223,10 @@ class RecallIntentHelper:
 
     def has_recall_topic_language(self, message: str) -> bool:
         normalized = self.normalized_recall_text(message)
-        return any(term in normalized for term in RECALL_TOPIC_TERMS)
+        return self.should_force_chat_recall_search(
+            normalized,
+            conversation_history=[],
+        )
 
     def is_memory_inventory_query(self, normalized_message: str) -> bool:
         broad_inventory_questions = {
@@ -287,6 +316,8 @@ class RecallIntentHelper:
         stripped = normalized.strip("?.! ")
         if not stripped:
             return False
+        if self.is_finance_only_request(normalized):
+            return False
         if self.is_memory_inventory_query(normalized):
             return True
         if self.is_contextual_memory_followup(normalized):
@@ -294,41 +325,16 @@ class RecallIntentHelper:
 
         if any(phrase in normalized for phrase in RECALL_TRIGGER_PHRASES):
             return True
-        if re.search(
-            r"\b(?:find|search|check|look\s+(?:for|through|into))\b"
-            r".*\bmentions?\b.*\b(?:chat|chats|conversation|conversations)\b",
+        has_question_language = re.search(
+            r"\b(?:did|do|have|had|what|when|where|who)\b",
             normalized,
-        ):
-            return True
-
-        if re.search(
-            r"\b(?:did|do|have|had)\s+(?:i|we)\b"
-            r".*\b(?:mention|mentioned|say|said|tell|told|talk|talked|"
+        )
+        has_recall_verb = re.search(
+            r"\b(?:mention|mentioned|say|said|tell|told|talk|talked|"
             r"discuss|discussed|play|played|buy|bought|send|sent)\b",
             normalized,
-        ):
-            return True
-        if re.search(
-            r"\bwhat\s+.+\b(?:did|do)\s+i\s+"
-            r"(?:play|buy|want|mention|say|tell)",
-            normalized,
-        ):
-            return True
-        if re.search(
-            r"\bwhat\s+did\s+i\s+"
-            r"(?:play|buy|want|mention|say|tell|talk|discuss)\b",
-            normalized,
-        ):
-            return True
-        if re.search(
-            r"\bwhat\s+(?:was|were)\b.*\b(?:i|we|my|our)\b",
-            normalized,
-        ):
-            return True
-        if re.search(
-            r"\b(?:past|previous|earlier|before|history)\b",
-            normalized,
-        ):
+        )
+        if has_question_language and has_recall_verb:
             return True
 
         if conversation_history and any(
@@ -339,6 +345,11 @@ class RecallIntentHelper:
             return bool(self.recent_memory_subject(conversation_history))
 
         return False
+
+    def is_finance_only_request(self, normalized_message: str) -> bool:
+        if not any(term in normalized_message for term in FINANCE_ONLY_TERMS):
+            return False
+        return not any(term in normalized_message for term in CHAT_SCOPE_TERMS)
 
     def normalized_recall_text(self, message: str) -> str:
         normalized = " ".join(str(message or "").lower().split())

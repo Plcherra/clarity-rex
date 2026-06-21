@@ -175,8 +175,8 @@ class PromptStructuredContextMixin:
         if saved_state == "degraded" or chat_state == "degraded":
             failed = ", ".join(sorted(set(failure_sources))) or "unknown"
             line = (
-                f"{line} Failed sources: {failed}. Say search is temporarily "
-                "unavailable instead of claiming nothing was found."
+                f"{line} Failed sources: {failed}. Say the search had trouble "
+                "and ask for a retry instead of claiming nothing was found."
             )
         elif chat_state == "empty":
             line = (

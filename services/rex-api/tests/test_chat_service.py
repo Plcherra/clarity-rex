@@ -8,6 +8,7 @@ from chat_service_fakes import (
     FakeUpload,
 )
 from app.config import Settings
+from app.services.action_truth_policy import DEGRADED_RECALL_FALLBACK
 from app.services import file_service as file_service_module
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
@@ -320,10 +321,7 @@ async def test_chat_service_downgrades_old_chat_no_result_claim_after_partial_se
         "Can you check the old chats for my mom?"
     )
 
-    assert result["response"] == (
-        "Memory search is temporarily unavailable right now. I can't confidently "
-        "say what I remember until it's working again."
-    )
+    assert result["response"] == DEGRADED_RECALL_FALLBACK
     assert result["memory_changes"] is None
 
 
@@ -347,10 +345,7 @@ async def test_chat_service_downgrades_no_memory_claim_when_memory_is_degraded()
 
     result = await chat_service.send_message("Do you know anything about my mom?")
 
-    assert result["response"] == (
-        "Memory search is temporarily unavailable right now. I can't confidently "
-        "say what I remember until it's working again."
-    )
+    assert result["response"] == DEGRADED_RECALL_FALLBACK
     assert result["memory_changes"] is None
 
 
@@ -378,10 +373,7 @@ async def test_chat_service_degraded_memory_status_overrides_old_chat_no_result_
         "Can you check the old chats for my mom?"
     )
 
-    assert result["response"] == (
-        "Memory search is temporarily unavailable right now. I can't confidently "
-        "say what I remember until it's working again."
-    )
+    assert result["response"] == DEGRADED_RECALL_FALLBACK
     assert result["memory_changes"] is None
 
 
@@ -413,10 +405,7 @@ async def test_chat_service_stream_downgrades_no_memory_claim_when_memory_is_deg
     ]
 
     done = next(event for event in events if event["event"] == "done")
-    assert done["response"] == (
-        "Memory search is temporarily unavailable right now. I can't confidently "
-        "say what I remember until it's working again."
-    )
+    assert done["response"] == DEGRADED_RECALL_FALLBACK
     assert done["memory_changes"] is None
 
 

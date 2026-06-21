@@ -1180,6 +1180,8 @@ async def test_chat_context_uses_conversation_search_when_message_search_misses(
         ("What did I say about games?", "first PC game"),
         ("Find old chats about Legacy of Kain", "Legacy of Kain"),
         ("Search chats for the eighteenth", "June 18th"),
+        ("Can you search for June 18?", "June 18th"),
+        ("Right. But what does it mention about PC?", "first PC game"),
     ],
 )
 async def test_chat_context_natural_recall_phrasing_triggers_old_chat_search(

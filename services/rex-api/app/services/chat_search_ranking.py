@@ -161,19 +161,13 @@ class ChatSearchRanking:
             return [ChatSearchQuery(cleaned_query, "inventory")]
 
         queries = [ChatSearchQuery(cleaned_query, "exact")]
-        subject_query = self.subject_only_query(normalized)
-        expanded_terms = self.expand_terms(normalized, max_terms=max_terms)
-        subject_terms = self.expand_terms(subject_query, max_terms=max_terms)
-        if subject_terms:
-            expanded_terms = [*subject_terms, *expanded_terms]
-        expanded_query = " ".join(self.unique_terms(expanded_terms)[:max_terms])
+        search_terms = self.search_terms(normalized, max_terms=max_terms)
+        expanded_query = " ".join(search_terms)
         if expanded_query:
             queries.append(ChatSearchQuery(expanded_query, "expanded_keywords"))
-        for keyword_query in self.atomic_keyword_queries(
-            normalized,
-            max_queries=max_terms,
-        ):
+        for keyword_query in search_terms[:max_terms]:
             queries.append(ChatSearchQuery(keyword_query, "keyword"))
+        subject_query = self.subject_only_query(normalized)
         if subject_query:
             queries.append(ChatSearchQuery(subject_query, "subject"))
 
@@ -194,22 +188,24 @@ class ChatSearchRanking:
         """Small generic recall probes beat one broad query for old-chat search."""
 
         normalized = self.normalize_text(query)
-        terms = self.expand_terms(normalized, max_terms=max_queries * 2)
-        content_terms = list(self.content_terms(normalized))
+        return self.search_terms(normalized, max_terms=max_queries)
+
+    def search_terms(self, query: str, *, max_terms: int = 10) -> list[str]:
+        normalized = self.normalize_text(query)
         subject = self.subject_only_query(normalized)
-        if subject:
-            terms = [*self.expand_terms(subject, max_terms=max_queries), *terms]
-            content_terms = [*self.content_terms(subject), *content_terms]
-
         probes: list[str] = []
-        for term in [*content_terms, *terms]:
-            if term in CHAT_SEARCH_STOP_WORDS:
-                continue
-            if not self.is_searchable_short_term(term):
-                continue
-            probes.append(term)
-
-        return self.unique_terms(probes)[:max_queries]
+        if subject:
+            probes.extend(self.expand_terms(subject, max_terms=max_terms))
+        probes.extend(self.expand_terms(normalized, max_terms=max_terms * 2))
+        probes.extend(self.content_terms(subject or normalized))
+        return self.unique_terms(
+            [
+                term
+                for term in probes
+                if term not in CHAT_SEARCH_STOP_WORDS
+                and self.is_searchable_short_term(term)
+            ]
+        )[:max_terms]
 
     def expand_terms(self, query: str, *, max_terms: int = 10) -> list[str]:
         raw_terms = [self.normalize_term(term) for term in self.raw_terms(query)]
@@ -237,7 +233,8 @@ class ChatSearchRanking:
 
     def subject_only_query(self, normalized_query: str) -> str:
         match = re.search(
-            r"\b(?:about|for|with)\s+(?:my\s+)?(?P<subject>[a-z0-9'\s]{3,80})",
+            r"\b(?:about|for|with|mention(?:ed)?(?:\s+of)?|search(?:\s+for)?)\s+"
+            r"(?:my\s+)?(?P<subject>[a-z0-9'\s]{2,80})",
             normalized_query,
         )
         if match is None:

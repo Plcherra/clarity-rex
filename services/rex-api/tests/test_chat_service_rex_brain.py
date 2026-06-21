@@ -252,4 +252,4 @@ async def test_mvp_flow_preserves_memory_status_in_prompt_context():
     assert "recall_status" in system_prompt
     assert "chat_search=degraded" in system_prompt
     assert "Failed sources: chat_search" in system_prompt
-    assert "search is temporarily unavailable" in system_prompt
+    assert "search had trouble" in system_prompt

@@ -579,7 +579,7 @@ def test_prompt_service_surfaces_degraded_memory_status():
     assert "recall_status" in system_content
     assert "chat_search=degraded" in system_content
     assert "Failed sources: chat_search" in system_content
-    assert "search is temporarily unavailable" in system_content
+    assert "search had trouble" in system_content
 
 
 def test_prompt_service_surfaces_empty_chat_search_status():
