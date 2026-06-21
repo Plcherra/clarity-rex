@@ -133,6 +133,15 @@ class RexIntentRouter:
         "talked",
         "told you",
     )
+    MEMORY_DELETE_TERMS = (
+        "archive",
+        "clear",
+        "delete",
+        "erase",
+        "forget",
+        "get rid of",
+        "remove",
+    )
     GOAL_TERMS = (
         "accountability",
         "behind",
@@ -262,6 +271,18 @@ class RexIntentRouter:
                 has_financial_context,
                 False,
                 user_requested_deep_thinking,
+            )
+
+        if self._looks_like_memory_delete(normalized):
+            reasons.append("memory_delete_language")
+            return self._decision(
+                RexIntent.MEMORY_UPDATE,
+                reasons,
+                has_file,
+                has_financial_context,
+                False,
+                user_requested_deep_thinking,
+                load_structured_memory_override=True,
             )
 
         if self._looks_like_memory_recall_question(normalized):
@@ -413,4 +434,18 @@ class RexIntentRouter:
         return self._contains(
             normalized_message,
             tuple(term for term in self.MEMORY_SAVE_TERMS if term != "remember"),
+        )
+
+    def _looks_like_memory_delete(self, normalized_message: str) -> bool:
+        if not self._contains(normalized_message, self.MEMORY_DELETE_TERMS):
+            return False
+        if self._is_finance_first_query(normalized_message):
+            return False
+        return (
+            self._contains(normalized_message, self.MEMORY_STORE_TERMS)
+            or re.search(
+                r"\b(?:card|event|fact|item|knows|knowledge|note|person|people|record|that|this|it)\b",
+                normalized_message,
+            )
+            is not None
         )

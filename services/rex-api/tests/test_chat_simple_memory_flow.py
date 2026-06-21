@@ -395,6 +395,42 @@ async def test_delete_saved_tonight_plan_requires_confirmation_and_archives_memo
 
 
 @pytest.mark.asyncio
+async def test_delete_that_event_resolves_visible_knows_event_memory():
+    ai_service = FakeAIService(response="Rex normal recall")
+    memory_service = FakeMemoryService()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-visible-event",
+            "memory_type": "event",
+            "content": "User plans to watch it tonight.",
+            "importance": 4,
+            "active": True,
+            "metadata": {
+                "fact_kind": "personal_plan",
+                "memory_category": "events",
+                "topic_fingerprint": "event:personal_plan:watch:it",
+            },
+        }
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    requested = await chat_service.send_message("Can you delete that event?")
+    confirmed = await chat_service.send_message("Yes", requested["conversation_id"])
+
+    assert "Just to confirm" in requested["response"]
+    assert "User plans to watch it tonight." in requested["response"]
+    assert confirmed["memory_changes"]["archived"] == 1
+    assert memory_service.long_term_memory[0]["active"] is False
+    assert memory_service.memory_corrections[0]["target_id"] == "memory-visible-event"
+    assert ai_service.messages == []
+
+
+@pytest.mark.asyncio
 async def test_delete_it_resolves_recently_listed_saved_memory():
     ai_service = FakeAIService(response="Rex normal recall")
     memory_service = FakeMemoryService()

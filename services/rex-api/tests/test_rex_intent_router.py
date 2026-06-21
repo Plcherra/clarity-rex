@@ -31,6 +31,15 @@ def test_router_classifies_memory_correction_with_memory_context():
     assert decision.should_load_structured_memory
 
 
+def test_router_classifies_memory_delete_with_structured_memory_context():
+    decision = RexIntentRouter().classify("Can you delete that event?")
+
+    assert decision.intent == RexIntent.MEMORY_UPDATE
+    assert decision.should_load_long_term_memory
+    assert decision.should_load_profile_memory
+    assert decision.should_load_structured_memory
+
+
 def test_router_classifies_memory_recall_with_memory_context():
     decision = RexIntentRouter().classify("Do you remember my mom's birthday?")
 
@@ -168,6 +177,14 @@ def test_router_classifies_finance_without_memory_context():
     assert not decision.should_load_long_term_memory
     assert not decision.should_load_structured_memory
     assert not decision.should_load_goal_context
+
+
+def test_router_keeps_financial_delete_on_finance_path():
+    decision = RexIntentRouter().classify("Delete that transaction")
+
+    assert decision.intent == RexIntent.FINANCE
+    assert decision.should_use_financial_context
+    assert not decision.should_load_long_term_memory
 
 
 def test_router_classifies_deep_reasoning_as_explicit():

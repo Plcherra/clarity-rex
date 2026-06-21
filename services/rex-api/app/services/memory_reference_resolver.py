@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from app.services.entity_normalization_service import EntityNormalizationService
@@ -5,6 +6,18 @@ from app.services.memory_text_normalization import (
     clean_text,
     normalized_text,
 )
+
+
+@dataclass(frozen=True)
+class KnowsReferenceMatch:
+    table: str
+    id: str
+    title: str
+    record: dict[str, Any]
+    action: str = "would_archive"
+    attribute_key: Optional[str] = None
+    attribute_value: Optional[str] = None
+    source_memory_ids: tuple[str, ...] = ()
 
 
 class MemoryReferenceResolver:
@@ -162,3 +175,298 @@ class MemoryReferenceResolver:
             if target == normalized_text(plan.get("title")):
                 return plan
         return None
+
+    async def resolve_knows_delete_reference(
+        self,
+        reference: str,
+        *,
+        limit: int = 250,
+    ) -> list[KnowsReferenceMatch]:
+        """Resolve user wording against records and fields visible in Knows."""
+
+        reference_key = normalized_text(reference)
+        if not reference_key:
+            return []
+
+        visible_items = await self._visible_knows_items(limit=limit)
+        matches = [
+            item
+            for item in visible_items
+            if self._reference_matches_visible_item(reference_key, item)
+        ]
+        return self._dedupe_knows_matches(matches)
+
+    async def _visible_knows_items(self, *, limit: int) -> list[KnowsReferenceMatch]:
+        items: list[KnowsReferenceMatch] = []
+        items.extend(await self._long_term_memory_items(limit=limit))
+        items.extend(await self._entity_event_items(limit=limit))
+        items.extend(await self._entity_items(limit=limit))
+        return items
+
+    async def _long_term_memory_items(
+        self,
+        *,
+        limit: int,
+    ) -> list[KnowsReferenceMatch]:
+        method = getattr(self.memory_service, "list_long_term_memory", None)
+        if method is None:
+            return []
+        try:
+            records = await method(active=True, limit=limit)
+        except TypeError:
+            try:
+                records = await method(limit=limit)
+            except Exception:
+                return []
+        except Exception:
+            return []
+
+        items: list[KnowsReferenceMatch] = []
+        for record in records:
+            record_id = clean_text(record.get("id"))
+            title = clean_text(record.get("content"))
+            if not record_id or not title:
+                continue
+            items.append(
+                KnowsReferenceMatch(
+                    table="long_term_memory",
+                    id=record_id,
+                    title=title,
+                    record=record,
+                )
+            )
+        return items
+
+    async def _entity_event_items(
+        self,
+        *,
+        limit: int,
+    ) -> list[KnowsReferenceMatch]:
+        method = getattr(self.memory_service, "list_entity_events", None)
+        if method is None:
+            return []
+        try:
+            records = await method(active=True, limit=limit)
+        except TypeError:
+            try:
+                records = await method(limit=limit)
+            except Exception:
+                return []
+        except Exception:
+            return []
+
+        items: list[KnowsReferenceMatch] = []
+        for record in records:
+            record_id = clean_text(record.get("id"))
+            title = clean_text(record.get("title") or record.get("content"))
+            if not record_id or not title:
+                continue
+            items.append(
+                KnowsReferenceMatch(
+                    table="entity_events",
+                    id=record_id,
+                    title=title,
+                    record=record,
+                )
+            )
+        return items
+
+    async def _entity_items(self, *, limit: int) -> list[KnowsReferenceMatch]:
+        method = getattr(self.memory_service, "list_entities", None)
+        if method is None:
+            return []
+        try:
+            records = await method(active=True, limit=limit)
+        except TypeError:
+            try:
+                records = await method(limit=limit)
+            except Exception:
+                return []
+        except Exception:
+            return []
+
+        items: list[KnowsReferenceMatch] = []
+        for record in records:
+            record_id = clean_text(record.get("id"))
+            title = clean_text(record.get("display_name"))
+            if not record_id or not title:
+                continue
+            items.append(
+                KnowsReferenceMatch(
+                    table="entities",
+                    id=record_id,
+                    title=title,
+                    record=record,
+                )
+            )
+            items.extend(self._entity_attribute_items(record, record_id))
+        return items
+
+    def _entity_attribute_items(
+        self,
+        record: dict[str, Any],
+        record_id: str,
+    ) -> list[KnowsReferenceMatch]:
+        metadata = record.get("metadata")
+        if not isinstance(metadata, dict):
+            return []
+        attributes = metadata.get("attributes")
+        if not isinstance(attributes, dict):
+            return []
+
+        source_map = metadata.get("attribute_source_memory_ids")
+        if not isinstance(source_map, dict):
+            source_map = {}
+
+        items: list[KnowsReferenceMatch] = []
+        for key, value in attributes.items():
+            attribute_key = clean_text(key)
+            attribute_value = clean_text(value)
+            if not attribute_key or not attribute_value:
+                continue
+            source_memory_ids = tuple(
+                item
+                for item in (clean_text(source) for source in source_map.get(key) or [])
+                if item
+            )
+            items.append(
+                KnowsReferenceMatch(
+                    table="entities",
+                    id=record_id,
+                    title=f"{_display_attribute_label(attribute_key)}: {attribute_value}",
+                    record=record,
+                    action="would_remove_attribute",
+                    attribute_key=attribute_key,
+                    attribute_value=attribute_value,
+                    source_memory_ids=source_memory_ids,
+                )
+            )
+        return items
+
+    def _reference_matches_visible_item(
+        self,
+        reference_key: str,
+        item: KnowsReferenceMatch,
+    ) -> bool:
+        searchable_values = [
+            item.title,
+            *_record_kind_labels(item.table, item.record),
+            *_record_visible_text_fields(item.table, item.record),
+        ]
+        if item.attribute_key and item.attribute_value:
+            searchable_values.extend(
+                [
+                    item.attribute_key,
+                    item.attribute_value,
+                    f"{_display_attribute_label(item.attribute_key)} {item.attribute_value}",
+                ]
+            )
+        haystack = normalized_text(searchable_values)
+        if not haystack:
+            return False
+        if reference_key in haystack:
+            return True
+        terms = [term for term in reference_key.split() if term not in GENERIC_REFERENCE_TERMS]
+        return bool(terms) and all(term in haystack for term in terms)
+
+    def _dedupe_knows_matches(
+        self,
+        matches: list[KnowsReferenceMatch],
+    ) -> list[KnowsReferenceMatch]:
+        deduped: list[KnowsReferenceMatch] = []
+        seen: set[tuple[str, str, str, str]] = set()
+        for match in matches:
+            key = (
+                match.table,
+                match.id,
+                match.action,
+                match.attribute_key or "",
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(match)
+        return deduped
+
+
+GENERIC_REFERENCE_TERMS = {
+    "a",
+    "an",
+    "card",
+    "delete",
+    "inside",
+    "item",
+    "memory",
+    "note",
+    "record",
+    "saved",
+    "that",
+    "the",
+    "this",
+}
+
+
+def _record_kind_labels(table: str, record: dict[str, Any]) -> list[str]:
+    labels: list[str] = []
+    if table == "long_term_memory":
+        labels.extend(
+            _memory_kind_labels(
+                record.get("memory_type"),
+                record.get("metadata"),
+            )
+        )
+    elif table == "entity_events":
+        labels.extend(["event", "events", "entity event"])
+        labels.append(clean_text(record.get("event_type")))
+    elif table == "entities":
+        entity_type = clean_text(record.get("entity_type"))
+        if entity_type:
+            labels.extend([entity_type, f"{entity_type} card"])
+            if entity_type == "person":
+                labels.append("people")
+        labels.append(clean_text(record.get("relationship")))
+    return [label for label in labels if label]
+
+
+def _memory_kind_labels(memory_type: object, metadata: object) -> list[str]:
+    labels = [clean_text(memory_type)]
+    if isinstance(metadata, dict):
+        labels.append(clean_text(metadata.get("memory_category")))
+        labels.append(clean_text(metadata.get("category")))
+        labels.append(clean_text(metadata.get("fact_kind")))
+    normalized = {normalized_text(label) for label in labels if label}
+    if normalized & {"event", "events", "personal plan"}:
+        labels.extend(["event", "events"])
+    if normalized & {"fact", "facts"}:
+        labels.extend(["fact", "facts"])
+    if normalized & {"preference", "preferences"}:
+        labels.extend(["preference", "preferences"])
+    if normalized & {"people", "person"}:
+        labels.extend(["person", "people"])
+    return [label for label in labels if label]
+
+
+def _record_visible_text_fields(table: str, record: dict[str, Any]) -> list[str]:
+    if table == "long_term_memory":
+        return [clean_text(record.get("content"))]
+    if table == "entity_events":
+        return [
+            clean_text(record.get("title")),
+            clean_text(record.get("content")),
+        ]
+    if table == "entities":
+        return [
+            clean_text(record.get("display_name")),
+            clean_text(record.get("normalized_name")),
+            clean_text(record.get("relationship")),
+            clean_text(record.get("summary")),
+            *[
+                clean_text(alias)
+                for alias in record.get("aliases") or []
+            ],
+        ]
+    return []
+
+
+def _display_attribute_label(attribute_key: str) -> str:
+    return attribute_key.replace("_", " ").title()

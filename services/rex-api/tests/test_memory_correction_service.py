@@ -236,6 +236,86 @@ async def test_apply_remove_correction_archives_matching_active_records():
 
 
 @pytest.mark.asyncio
+async def test_apply_confirmed_remove_resolves_single_visible_event_category():
+    repo = FakeMemoryCorrectionRepository()
+    repo.memories.append(
+        {
+            "id": "memory-tonight-plan",
+            "memory_type": "event",
+            "content": "User plans to watch it tonight.",
+            "active": True,
+            "metadata": {"fact_kind": "personal_plan"},
+        }
+    )
+
+    preview = await MemoryCorrectionService(repo).preview_remove_obsolete("event")
+    report = await MemoryCorrectionService(repo).apply_confirmed_remove_obsolete("event")
+
+    assert len(preview) == 1
+    assert preview[0].id == "memory-tonight-plan"
+    assert report.applied is True
+    assert repo.memories[0]["active"] is False
+    assert repo.corrections[0]["target_id"] == "memory-tonight-plan"
+
+
+@pytest.mark.asyncio
+async def test_apply_confirmed_remove_resolves_single_visible_entity_event_category():
+    repo = FakeMemoryCorrectionRepository()
+    repo.entity_events.append(
+        {
+            "id": "entity-event-tonight-plan",
+            "title": "User plans to watch it tonight.",
+            "content": "User plans to watch it tonight.",
+            "event_type": "personal_plan",
+            "active": True,
+            "metadata": {},
+        }
+    )
+
+    report = await MemoryCorrectionService(repo).apply_confirmed_remove_obsolete("event")
+
+    assert report.applied is True
+    assert repo.entity_events[0]["active"] is False
+    assert repo.corrections[0]["target_table"] == "entity_events"
+
+
+@pytest.mark.asyncio
+async def test_apply_confirmed_remove_deletes_person_card_attribute_only():
+    repo = FakeMemoryCorrectionRepository()
+    repo.entities.append(
+        {
+            "id": "entity-self",
+            "entity_type": "person",
+            "display_name": "Pedro Martins",
+            "normalized_name": "pedro martins",
+            "relationship": "self",
+            "summary": "Full name: Pedro Martins. Lives in Somerville.",
+            "aliases": [],
+            "active": True,
+            "metadata": {
+                "attributes": {
+                    "full_name": "Pedro Martins",
+                    "location": "Somerville",
+                },
+                "attribute_source_memory_ids": {
+                    "location": ["memory-location"],
+                },
+            },
+        }
+    )
+
+    report = await MemoryCorrectionService(repo).apply_confirmed_remove_obsolete(
+        "Location: Somerville"
+    )
+
+    assert report.applied is True
+    assert repo.entities[0]["active"] is True
+    assert "location" not in repo.entities[0]["metadata"]["attributes"]
+    assert "Somerville" not in repo.entities[0]["summary"]
+    assert report.affected_records[0].action == "updated"
+
+
+@pytest.mark.asyncio
 async def test_apply_person_fact_correction_updates_lara_and_removes_stephanie_fired_fact():
     repo = FakeMemoryCorrectionRepository()
     repo.entities.extend(

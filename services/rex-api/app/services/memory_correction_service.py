@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Optional
 
 from app.services.memory_correction_intent_parser import MemoryCorrectionIntentParser
@@ -28,6 +29,7 @@ from app.services.memory_correction_types import (
     MemoryCorrectionRepository,
     TableSpec,
 )
+from app.services.memory_reference_resolver import KnowsReferenceMatch, MemoryReferenceResolver
 
 
 class MemoryCorrectionService:
@@ -42,6 +44,7 @@ class MemoryCorrectionService:
         self.memory_service = memory_service
         self.scan_limit = scan_limit
         self.intent_parser = MemoryCorrectionIntentParser()
+        self.reference_resolver = MemoryReferenceResolver(memory_service)
 
     def detect_correction_intent(self, text: str) -> CorrectionIntent:
         return self.intent_parser.detect_correction_intent(text)
@@ -77,12 +80,12 @@ class MemoryCorrectionService:
             return report
 
         match = matches[0]
-        archived = await self._safe_archive(spec_for_table(match.table), match.id)
-        if not archived:
+        affected_record = await self._apply_single_delete_match(match)
+        if affected_record is None:
             report.errors.append(
                 {
                     "source": match.table,
-                    "message": "Archive was not confirmed by the backend.",
+                    "message": "Delete was not confirmed by the backend.",
                 }
             )
             return report
@@ -99,24 +102,9 @@ class MemoryCorrectionService:
                     "message": "Active saved records still match the delete target.",
                 }
             )
-            report.affected_records = [
-                CorrectionAffectedRecord(
-                    table=match.table,
-                    id=match.id,
-                    action="archived",
-                    title=match.title,
-                    previous=match.previous,
-                )
-            ]
+            report.affected_records = [affected_record]
             return report
 
-        affected_record = CorrectionAffectedRecord(
-            table=match.table,
-            id=match.id,
-            action="archived",
-            title=match.title,
-            previous=match.previous,
-        )
         report.affected_records = [affected_record]
         report.applied = True
         correction = await self._record_correction(
@@ -329,18 +317,10 @@ class MemoryCorrectionService:
             return []
         affected: list[CorrectionAffectedRecord] = []
         for match in await self._records_matching_removal(old_value):
-            archived = await self._safe_archive(spec_for_table(match.table), match.id)
-            if not archived:
+            affected_record = await self._apply_single_delete_match(match)
+            if affected_record is None:
                 continue
-            affected.append(
-                CorrectionAffectedRecord(
-                    table=match.table,
-                    id=match.id,
-                    action="archived",
-                    title=match.title,
-                    previous=match.previous,
-                )
-            )
+            affected.append(affected_record)
         return affected
 
     async def _records_matching_removal(
@@ -357,7 +337,16 @@ class MemoryCorrectionService:
                     exact_matches.append(self._affected_preview(spec, record))
                 elif terms and record_contains_all_terms(record, spec, terms):
                     fuzzy_matches.append(self._affected_preview(spec, record))
-        return dedupe_affected(exact_matches or fuzzy_matches)
+        if exact_matches or fuzzy_matches:
+            return dedupe_affected(exact_matches or fuzzy_matches)
+
+        knows_matches = await self.reference_resolver.resolve_knows_delete_reference(
+            old_value,
+            limit=self.scan_limit,
+        )
+        return dedupe_affected(
+            [self._affected_preview_for_knows_match(match) for match in knows_matches]
+        )
 
     def _affected_preview(
         self,
@@ -371,6 +360,137 @@ class MemoryCorrectionService:
             title=record_title(record),
             previous=record,
         )
+
+    def _affected_preview_for_knows_match(
+        self,
+        match: KnowsReferenceMatch,
+    ) -> CorrectionAffectedRecord:
+        previous = dict(match.record)
+        if match.attribute_key:
+            previous["__delete_resolution"] = {
+                "action": match.action,
+                "attribute_key": match.attribute_key,
+                "attribute_value": match.attribute_value,
+                "source_memory_ids": list(match.source_memory_ids),
+            }
+        return CorrectionAffectedRecord(
+            table=match.table,
+            id=match.id,
+            action=match.action,
+            title=match.title,
+            previous=previous,
+        )
+
+    async def _apply_single_delete_match(
+        self,
+        match: CorrectionAffectedRecord,
+    ) -> Optional[CorrectionAffectedRecord]:
+        if match.action == "would_remove_attribute":
+            updated = await self._safe_remove_entity_attribute(match)
+            if updated is None:
+                return None
+            return CorrectionAffectedRecord(
+                table=match.table,
+                id=match.id,
+                action="updated",
+                title=match.title,
+                previous=match.previous,
+                updated=updated,
+            )
+
+        archived = await self._safe_archive(spec_for_table(match.table), match.id)
+        if not archived:
+            return None
+        return CorrectionAffectedRecord(
+            table=match.table,
+            id=match.id,
+            action="archived",
+            title=match.title,
+            previous=match.previous,
+        )
+
+    async def _safe_remove_entity_attribute(
+        self,
+        match: CorrectionAffectedRecord,
+    ) -> Optional[dict[str, Any]]:
+        resolution = match.previous.get("__delete_resolution")
+        if not isinstance(resolution, dict):
+            return None
+        attribute_key = str(resolution.get("attribute_key") or "").strip()
+        if not attribute_key:
+            return None
+
+        previous = {
+            key: value
+            for key, value in match.previous.items()
+            if key != "__delete_resolution"
+        }
+        metadata = previous.get("metadata")
+        if not isinstance(metadata, dict):
+            return None
+        updated_metadata = dict(metadata)
+        attributes = dict(updated_metadata.get("attributes") or {})
+        if attribute_key not in attributes:
+            return None
+
+        attribute_value = str(attributes.pop(attribute_key) or "").strip()
+        updated_metadata["attributes"] = attributes
+
+        attribute_sources = updated_metadata.get("attribute_source_memory_ids")
+        if isinstance(attribute_sources, dict):
+            updated_sources = dict(attribute_sources)
+            updated_sources.pop(attribute_key, None)
+            updated_metadata["attribute_source_memory_ids"] = updated_sources
+
+        summary = _summary_without_attribute(
+            str(previous.get("summary") or ""),
+            attribute_key,
+            attribute_value,
+        )
+
+        updated = await self._safe_update(
+            spec_for_table("entities"),
+            match.id,
+            {
+                "metadata": updated_metadata,
+                "summary": summary,
+            },
+        )
+        if updated is None:
+            return None
+
+        active_sources = await self._active_source_memories(
+            resolution.get("source_memory_ids") or [],
+        )
+        for source_memory in active_sources:
+            archived = await self._safe_archive(
+                spec_for_table("long_term_memory"),
+                str(source_memory["id"]),
+            )
+            if not archived:
+                return None
+
+        if _entity_attribute_still_present(updated, attribute_key, attribute_value):
+            return None
+        return updated
+
+    async def _active_source_memories(
+        self,
+        source_memory_ids: list,
+    ) -> list[dict[str, Any]]:
+        source_ids = {
+            str(source_id).strip()
+            for source_id in source_memory_ids
+            if str(source_id).strip()
+        }
+        if not source_ids:
+            return []
+        active_memories = await self._safe_list(spec_for_table("long_term_memory"))
+        return [
+            memory
+            for memory in active_memories
+            if str(memory.get("id") or "") in source_ids
+        ]
 
     async def _archive_superseded_entities(
         self,
@@ -588,3 +708,40 @@ def record_contains_all_terms(
         return False
     haystack = normalize_key([record.get(field_name) for field_name in spec.text_fields])
     return all(term in haystack for term in terms)
+
+
+def _summary_without_attribute(
+    summary: str,
+    attribute_key: str,
+    attribute_value: str,
+) -> str:
+    if not summary or not attribute_value:
+        return summary
+    value_key = normalize_key(attribute_value)
+    attribute_label = normalize_key(attribute_key.replace("_", " "))
+    kept_sentences = []
+    for sentence in re.split(r"(?<=[.!?])\s+", summary):
+        sentence_key = normalize_key(sentence)
+        if value_key and value_key in sentence_key:
+            continue
+        if attribute_label and sentence_key.startswith(attribute_label):
+            continue
+        kept_sentences.append(sentence.strip())
+    return " ".join(sentence for sentence in kept_sentences if sentence).strip()
+
+
+def _entity_attribute_still_present(
+    entity: dict[str, Any],
+    attribute_key: str,
+    attribute_value: str,
+) -> bool:
+    metadata = entity.get("metadata")
+    if not isinstance(metadata, dict):
+        return False
+    attributes = metadata.get("attributes")
+    if not isinstance(attributes, dict):
+        return False
+    if attribute_key in attributes:
+        return True
+    value_key = normalize_key(attribute_value)
+    return bool(value_key and value_key in normalize_key(attributes))
