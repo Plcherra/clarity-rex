@@ -544,6 +544,43 @@ async def test_delete_saved_memory_does_not_claim_success_without_backend_confir
 
 
 @pytest.mark.asyncio
+async def test_delete_saved_memory_rechecks_active_listing_before_success():
+    class StaleActiveDeleteMemoryService(FakeMemoryService):
+        async def deactivate_long_term_memory(self, memory_id):
+            return {"id": memory_id, "active": False}
+
+    ai_service = FakeAIService(response="Rex normal recall")
+    memory_service = StaleActiveDeleteMemoryService()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-tonight-plan",
+            "memory_type": "event",
+            "content": "User plans to watch it tonight.",
+            "importance": 4,
+            "active": True,
+            "metadata": {"fact_kind": "personal_plan"},
+        }
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    requested = await chat_service.send_message("Can you delete that tonight plan?")
+    confirmed = await chat_service.send_message("Yes", requested["conversation_id"])
+
+    assert "couldn't confirm" in confirmed["response"]
+    assert "removed from active saved memory" not in confirmed["response"]
+    assert confirmed["memory_changes"]["archived"] == 0
+    assert confirmed["memory_changes"]["records"][0]["action"] == "delete_failed"
+    assert memory_service.long_term_memory[0]["active"] is True
+    assert memory_service.memory_corrections == []
+    assert ai_service.messages == []
+
+
+@pytest.mark.asyncio
 async def test_delete_success_claim_without_backend_action_is_blocked():
     ai_service = FakeAIService(response="Done, I deleted it.")
     memory_service = FakeMemoryService()

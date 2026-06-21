@@ -35,8 +35,9 @@ class ChatRecallService:
         self, *, query: str, limit: int, exclude_conversation_id: Optional[str]
     ) -> list[dict]:
         search_messages = getattr(self.memory_service, "search_messages", None)
+        search_conversations = getattr(self.memory_service, "search_conversations", None)
         list_messages = getattr(self.memory_service, "list_messages", None)
-        if search_messages is None and list_messages is None:
+        if search_messages is None and search_conversations is None and list_messages is None:
             return [
                 ContextFetchError(
                     source="chat_search",
@@ -88,6 +89,45 @@ class ChatRecallService:
                     partial = True
                     failures.append(safe_error_message(exc))
                     LOGGER.warning("rex_memory_fetch_failed source=chat_search")
+                    break
+
+        if search_conversations is not None:
+            for search_query, query_mode in search_queries:
+                query_modes.add("conversation_search")
+                attempted_queries.append(
+                    {
+                        "query": search_query,
+                        "mode": f"conversation_search:{query_mode}",
+                    }
+                )
+                try:
+                    conversation_results = await search_conversations(
+                        search_query,
+                        limit=PAST_CHAT_SEARCH_PAGE_LIMIT,
+                    )
+                    scanned_messages += len(conversation_results)
+                    for result in conversation_results:
+                        message = result.get("message")
+                        if not isinstance(message, dict):
+                            continue
+                        message_id = str(message.get("id") or "")
+                        if not message_id:
+                            continue
+                        scored_message = self.scored_chat_message(
+                            query,
+                            message,
+                            query_mode=f"conversation_search:{query_mode}",
+                        )
+                        existing = messages_by_id.get(message_id)
+                        if existing is None or (
+                            scored_message.get("_chat_search_score", 0)
+                            > existing.get("_chat_search_score", 0)
+                        ):
+                            messages_by_id[message_id] = scored_message
+                except Exception as exc:
+                    partial = True
+                    failures.append(safe_error_message(exc))
+                    LOGGER.warning("rex_memory_fetch_failed source=conversation_search")
                     break
 
         full_scan_used = False

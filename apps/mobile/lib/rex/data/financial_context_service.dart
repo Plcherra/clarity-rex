@@ -73,11 +73,13 @@ final _assistantFinanceIntentPatterns = <RegExp>[
 final _assistantChatRecallPatterns = <RegExp>[
   RegExp(r'\bchat(?:s)?\b'),
   RegExp(r'\bconversation(?:s)?\b'),
+  RegExp(r'\bdid i (?:ever )?mention\b'),
   RegExp(r'\bold chat(?:s)?\b'),
   RegExp(r'\bpast chat(?:s)?\b'),
   RegExp(r'\bprevious chat(?:s)?\b'),
   RegExp(r'\btalked about\b'),
   RegExp(r'\btold you\b'),
+  RegExp(r'\bhave we talked about\b'),
   RegExp(r'\bwhat did i (?:say|tell)\b'),
   RegExp(r'\bwhat have i told you\b'),
 ];
@@ -87,6 +89,7 @@ final _assistantMemoryStorePatterns = <RegExp>[
   RegExp(r'\bconversation(?:s)?\b'),
   RegExp(r'\bmemory\b'),
   RegExp(r'\bmemories\b'),
+  RegExp(r'\bmention(?:ed)?\b'),
   RegExp(r'\bremember\b'),
   RegExp(r'\bsearch\b'),
   RegExp(r'\btalked\b'),

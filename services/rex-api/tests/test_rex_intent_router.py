@@ -69,6 +69,7 @@ def test_router_memory_information_question_beats_attached_financial_context():
     "message",
     [
         "Do you know anything about my friend Lara?",
+        "Did I mention sending money?",
         "Have we talked about my immigration plan?",
         "What did I tell you about my sister?",
         "Can you search our chats for my birthday?",

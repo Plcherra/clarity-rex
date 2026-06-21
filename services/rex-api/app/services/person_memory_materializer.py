@@ -52,7 +52,6 @@ class PersonMemoryMaterializer:
         for memory in memories:
             if isinstance(memory, dict):
                 await self.materialize_from_memory(memory_service, memory)
-        await self._archive_covered_self_source_memories(memory_service, memories)
 
     async def materialize_from_memory(self, memory_service, memory: dict) -> None:
         card = self.person_card_from_memory(memory)

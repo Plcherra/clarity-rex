@@ -517,12 +517,31 @@ class MemoryCorrectionService:
         record_id: str,
         archived: object,
     ) -> bool:
-        if isinstance(archived, dict):
-            return archived.get("active") is False
         if not archived:
             return False
-        active_records = await self._safe_list(spec)
+        if isinstance(archived, dict) and archived.get("active") is not False:
+            return False
+        active_records = await self._verified_active_list(spec)
+        if active_records is None:
+            return False
         return all(str(record.get("id") or "") != record_id for record in active_records)
+
+    async def _verified_active_list(
+        self,
+        spec: TableSpec,
+    ) -> Optional[list[dict[str, Any]]]:
+        method = getattr(self.memory_service, spec.list_method, None)
+        if method is None:
+            return None
+        try:
+            return await method(active=True, limit=self.scan_limit)
+        except TypeError:
+            try:
+                return await method(limit=self.scan_limit)
+            except Exception:
+                return None
+        except Exception:
+            return None
 
 
 REMOVAL_MATCH_STOP_WORDS = {

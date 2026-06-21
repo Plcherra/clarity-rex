@@ -112,6 +112,25 @@ async def deactivate_memory(
         )
         raise HTTPException(status_code=404, detail="Memory not found.")
 
+    try:
+        active_memories = await memory_service.list_long_term_memory(
+            limit=100,
+            active=True,
+        )
+    except MemoryServiceError as error:
+        raise _memory_http_error("archive_memory_verify", error, memory_id=memory_id) from error
+    if any(str(memory.get("id") or "") == memory_id for memory in active_memories):
+        _memory_observer.log_failure(
+            operation="archive_memory",
+            error=MemoryServiceError("Memory archive was not confirmed.", 409),
+            memory_id=memory_id,
+            status_code=409,
+        )
+        raise HTTPException(
+            status_code=409,
+            detail="Memory archive was not confirmed.",
+        )
+
     return Response(status_code=204)
 
 

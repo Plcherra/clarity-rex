@@ -292,6 +292,20 @@ def test_delete_memory_deactivates_memory(client):
     assert fake_memory_service.memories[0]["active"] is False
 
 
+def test_delete_memory_returns_409_when_active_row_remains(client):
+    class StaleDeleteMemoryService(FakeMemoryManagementService):
+        async def deactivate_long_term_memory(self, memory_id):
+            self._raise_if_configured()
+            return True
+
+    override_memory_service(StaleDeleteMemoryService())
+
+    response = client.delete("/memory/memory-1")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Memory archive was not confirmed."
+
+
 def test_delete_memory_returns_404_for_missing_memory(client):
     override_memory_service(FakeMemoryManagementService())
 

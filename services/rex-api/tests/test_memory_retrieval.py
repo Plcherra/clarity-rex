@@ -36,6 +36,13 @@ class InMemoryRetrievalService(SupabaseMemoryService):
             ]
         return memories[:limit]
 
+    async def update_long_term_memory(self, memory_id, **updates):
+        for memory in self.memories:
+            if memory["id"] == memory_id:
+                memory.update(updates)
+                return memory
+        return None
+
     async def list_entities(
         self,
         limit=50,
@@ -781,7 +788,12 @@ async def test_structured_context_materializes_self_person_from_safe_flat_facts(
         "memory-location",
         "memory-birthday",
     }
-    assert [memory["active"] for memory in service.memories] == [True, True, True]
+    assert [memory["active"] for memory in service.memories] == [False, False, False]
+    assert all(
+        memory["metadata"]["duplicate_archive_reason"]
+        == "covered_by_self_person_card"
+        for memory in service.memories
+    )
 
 
 @pytest.mark.asyncio

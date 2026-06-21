@@ -25,6 +25,16 @@ void main() {
       shouldAttachAssistantFinancialContext('Search chats about money'),
       isFalse,
     );
+    expect(
+      shouldAttachAssistantFinancialContext('Did I mention sending money?'),
+      isFalse,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext(
+        'Have we talked about Bom Dough payroll?',
+      ),
+      isFalse,
+    );
   });
 
   test('assistant financial context intent gate allows finance turns', () {

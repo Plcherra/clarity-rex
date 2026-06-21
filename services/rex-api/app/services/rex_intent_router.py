@@ -124,8 +124,12 @@ class RexIntentRouter:
         "conversations",
         "memory",
         "memories",
+        "mention",
+        "mentioned",
         "remember",
+        "said",
         "saved",
+        "say",
         "talked",
         "told you",
     )

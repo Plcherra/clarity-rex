@@ -1125,6 +1125,53 @@ async def test_chat_context_keyword_search_finds_manual_cases_without_full_scan(
 
 
 @pytest.mark.asyncio
+async def test_chat_context_uses_conversation_search_when_message_search_misses():
+    class ChatsTabSearchStore(FakeContextMemoryStore):
+        async def search_conversations(self, query, limit=50):
+            self.search_message_queries.append(
+                {
+                    "query": query,
+                    "limit": limit,
+                    "source": "conversation_search",
+                }
+            )
+            return [
+                {
+                    "conversation_id": "conversation-manual",
+                    "conversation_title": "Family dates",
+                    "conversation_timestamp": "2026-06-18T12:00:00Z",
+                    "message": {
+                        "id": "mom-birthday",
+                        "conversation_id": "conversation-manual",
+                        "role": "user",
+                        "content": "My mom's birthday is June 18th.",
+                        "timestamp": "2026-06-18T12:00:00Z",
+                    },
+                    "match_type": "message",
+                    "preview": "My mom's birthday is June 18th.",
+                    "relevance_score": 8.0,
+                }
+            ]
+
+    store = ChatsTabSearchStore(force_empty_search_messages=True)
+    store.list_messages = None
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Search chats for June 18",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-manual"
+    assert "mom's birthday is June 18th" in result["content"]
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert "conversation_search" in status["query_modes"]
+    assert status["result_count"] == 1
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("message", "expected_text"),
     [
