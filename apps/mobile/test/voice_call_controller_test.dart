@@ -161,6 +161,9 @@ void main() {
           streamingAudioCaptureServiceProvider.overrideWithValue(
             captureService,
           ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
           voiceCallSpeechStartTimeoutProvider.overrideWithValue(
             const Duration(milliseconds: 10),
           ),
@@ -206,6 +209,9 @@ void main() {
           streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
           streamingAudioCaptureServiceProvider.overrideWithValue(
             captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
           ),
           voiceCallNoSpeechTimeoutProvider.overrideWithValue(
             const Duration(milliseconds: 10),
@@ -254,6 +260,9 @@ void main() {
           streamingAudioCaptureServiceProvider.overrideWithValue(
             captureService,
           ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
           voiceCallNoSpeechTimeoutProvider.overrideWithValue(
             const Duration(milliseconds: 10),
           ),
@@ -277,6 +286,21 @@ void main() {
       expect(state.currentTranscript, isEmpty);
     },
   );
+
+  test('voice defaults are tuned for walking use', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(container.read(voiceCallBargeInEnabledProvider), isTrue);
+    expect(
+      container.read(voiceCallTranscriptIdleTimeoutProvider),
+      const Duration(seconds: 5),
+    );
+    expect(
+      container.read(voiceCallNoSpeechTimeoutProvider),
+      const Duration(seconds: 24),
+    );
+  });
 
   test(
     'streaming voice waits for playback before returning to listening',
@@ -305,6 +329,9 @@ void main() {
           streamingVoiceApiProvider.overrideWithValue(streamingApi),
           streamingAudioCaptureServiceProvider.overrideWithValue(
             captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
           ),
         ],
       );
@@ -354,10 +381,7 @@ void main() {
       });
       await Future<void>.delayed(Duration.zero);
 
-      expect(
-        container.read(chatProvider).conversationId,
-        'conversation-voice',
-      );
+      expect(container.read(chatProvider).conversationId, 'conversation-voice');
       expect(container.read(chatProvider).messages.length, 2);
 
       await playbackService.playStarted.future;
@@ -387,6 +411,55 @@ void main() {
     },
   );
 
+  test('barge-in interrupts speaking and returns to listening', () async {
+    final captureService = _ScriptedStreamingAudioCaptureService();
+    final playbackService = _ControlledAudioPlaybackService();
+    final bargeInService = _ControlledBargeInDetectionService();
+    final cloudVoiceApi = _FakeCloudVoiceApi();
+    final container = ProviderContainer(
+      overrides: [
+        microphonePermissionProvider.overrideWithValue(
+          const _GrantedMicrophonePermissionService(),
+        ),
+        voiceAudioSessionServiceProvider.overrideWithValue(
+          const _NoopVoiceAudioSessionService(),
+        ),
+        backgroundVoiceServiceProvider.overrideWithValue(
+          const _NoopBackgroundVoiceService(),
+        ),
+        audioCaptureServiceProvider.overrideWithValue(
+          const _NoopAudioCaptureService(),
+        ),
+        audioPlaybackServiceProvider.overrideWithValue(playbackService),
+        streamingVoiceEnabledProvider.overrideWithValue(true),
+        nativeIosVoiceEnabledProvider.overrideWithValue(false),
+        streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+        streamingAudioCaptureServiceProvider.overrideWithValue(captureService),
+        bargeInDetectionServiceProvider.overrideWithValue(bargeInService),
+        cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(voiceCallProvider.notifier);
+
+    expect(await controller.startCall(), isTrue);
+    await captureService.readyAt(0);
+
+    unawaited(
+      controller.speakTypedAssistantResponse('Rex is still answering.'),
+    );
+    await playbackService.playStarted.future;
+    await bargeInService.started.future;
+    bargeInService.trigger();
+    await captureService.readyAt(1);
+
+    final state = container.read(voiceCallProvider);
+    expect(state.phase, VoiceCallPhase.listening);
+    expect(playbackService.stopCount, greaterThanOrEqualTo(1));
+    expect(bargeInService.stopCount, 1);
+  });
+
   test(
     'streaming transcript does not duplicate partial and final text',
     () async {
@@ -414,6 +487,9 @@ void main() {
           streamingVoiceApiProvider.overrideWithValue(streamingApi),
           streamingAudioCaptureServiceProvider.overrideWithValue(
             captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
           ),
         ],
       );
@@ -482,6 +558,9 @@ void main() {
           streamingAudioCaptureServiceProvider.overrideWithValue(
             captureService,
           ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
           voiceCallNoSpeechTimeoutProvider.overrideWithValue(
             const Duration(milliseconds: 10),
           ),
@@ -534,6 +613,9 @@ void main() {
           streamingAudioCaptureServiceProvider.overrideWithValue(
             captureService,
           ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -583,6 +665,9 @@ void main() {
           streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
           streamingAudioCaptureServiceProvider.overrideWithValue(
             captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
           ),
           cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
         ],
@@ -647,6 +732,9 @@ void main() {
         nativeIosVoiceEnabledProvider.overrideWithValue(false),
         streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
         streamingAudioCaptureServiceProvider.overrideWithValue(captureService),
+        bargeInDetectionServiceProvider.overrideWithValue(
+          const _NoopBargeInDetectionService(),
+        ),
         cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
       ],
     );

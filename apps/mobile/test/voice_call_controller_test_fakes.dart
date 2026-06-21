@@ -296,6 +296,46 @@ class _ControlledAudioPlaybackService implements AudioPlaybackService {
   }
 }
 
+class _NoopBargeInDetectionService implements BargeInDetectionService {
+  const _NoopBargeInDetectionService();
+
+  @override
+  Future<void> start({
+    required VoiceCaptureConfig config,
+    required BargeInCallback onBargeIn,
+  }) async {}
+
+  @override
+  Future<void> stop() async {}
+}
+
+class _ControlledBargeInDetectionService implements BargeInDetectionService {
+  final started = Completer<void>();
+  BargeInCallback? _onBargeIn;
+  var stopCount = 0;
+
+  @override
+  Future<void> start({
+    required VoiceCaptureConfig config,
+    required BargeInCallback onBargeIn,
+  }) async {
+    _onBargeIn = onBargeIn;
+    if (!started.isCompleted) {
+      started.complete();
+    }
+  }
+
+  void trigger() {
+    _onBargeIn?.call();
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCount++;
+    _onBargeIn = null;
+  }
+}
+
 class _FakeCloudVoiceApi extends CloudVoiceApi {
   _FakeCloudVoiceApi() : super(baseUrl: 'http://localhost');
 

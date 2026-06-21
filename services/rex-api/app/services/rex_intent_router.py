@@ -133,6 +133,21 @@ class RexIntentRouter:
         "talked",
         "told you",
     )
+    RECALL_BEFORE_UPDATE_TERMS = (
+        "chat",
+        "chats",
+        "conversation",
+        "conversations",
+        "do you remember",
+        "find",
+        "mention",
+        "mentioned",
+        "said",
+        "search",
+        "talked",
+        "told",
+        "what did i say",
+    )
     MEMORY_DELETE_TERMS = (
         "archive",
         "clear",
@@ -248,6 +263,20 @@ class RexIntentRouter:
                 has_file,
                 has_financial_context,
                 finance_relevant,
+                user_requested_deep_thinking,
+            )
+
+        if self._looks_like_memory_recall_question(normalized) and self._contains(
+            normalized,
+            self.RECALL_BEFORE_UPDATE_TERMS,
+        ):
+            reasons.append("memory_recall_question")
+            return self._decision(
+                RexIntent.MEMORY_RECALL,
+                reasons,
+                has_file,
+                has_financial_context,
+                False,
                 user_requested_deep_thinking,
             )
 

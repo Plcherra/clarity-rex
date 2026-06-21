@@ -32,6 +32,12 @@ class InlineVoiceCallPanel extends StatelessWidget {
     final error = state.errorMessage?.trim();
     final statusColor = isFailed ? RexUiTokens.danger : RexUiTokens.accent;
     final statusLabel = _voiceStatusLabel(state);
+    final helperText = _voiceHelperText(state);
+    final visibleText = isFailed && error != null
+        ? error
+        : transcript.isNotEmpty
+        ? transcript
+        : helperText;
 
     return Material(
       color: RexUiTokens.background,
@@ -54,7 +60,7 @@ class InlineVoiceCallPanel extends StatelessWidget {
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+              padding: const EdgeInsets.fromLTRB(14, 10, 10, 12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,17 +89,29 @@ class InlineVoiceCallPanel extends StatelessWidget {
                           onPressed: onOpenSettings,
                           icon: const Icon(Icons.settings_rounded),
                           tooltip: 'Open app settings',
+                          constraints: const BoxConstraints(
+                            minWidth: 44,
+                            minHeight: 44,
+                          ),
                         ),
                         IconButton(
                           onPressed: onRetry,
                           icon: const Icon(Icons.refresh_rounded),
                           tooltip: 'Try again',
+                          constraints: const BoxConstraints(
+                            minWidth: 44,
+                            minHeight: 44,
+                          ),
                         ),
                       ] else ...[
                         IconButton(
                           onPressed: canInterrupt ? onInterrupt : null,
                           icon: const Icon(Icons.front_hand_rounded),
-                          tooltip: 'Interrupt Rex',
+                          tooltip: 'Interrupt Rex and listen',
+                          constraints: const BoxConstraints(
+                            minWidth: 44,
+                            minHeight: 44,
+                          ),
                         ),
                         IconButton(
                           onPressed: onToggleMute,
@@ -103,6 +121,10 @@ class InlineVoiceCallPanel extends StatelessWidget {
                                 : Icons.mic_rounded,
                           ),
                           tooltip: state.isMuted ? 'Unmute mic' : 'Mute mic',
+                          constraints: const BoxConstraints(
+                            minWidth: 44,
+                            minHeight: 44,
+                          ),
                         ),
                       ],
                       TextButton.icon(
@@ -115,23 +137,25 @@ class InlineVoiceCallPanel extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 8),
-                          minimumSize: const Size(0, 36),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          minimumSize: const Size(44, 44),
                         ),
                       ),
                     ],
                   ),
-                  if (transcript.isNotEmpty || (isFailed && error != null)) ...[
+                  if (visibleText.isNotEmpty) ...[
                     const SizedBox(height: RexUiTokens.space4),
-                    Text(
-                      isFailed && error != null ? error : transcript,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: isFailed
-                            ? RexUiTokens.text
-                            : RexUiTokens.textMuted,
-                        height: 1.35,
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 72),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          visibleText,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: isFailed
+                                ? RexUiTokens.text
+                                : RexUiTokens.textMuted,
+                            height: 1.35,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -150,10 +174,28 @@ class InlineVoiceCallPanel extends StatelessWidget {
     }
     return switch (state.phase) {
       VoiceCallPhase.idle => 'Voice ready',
-      VoiceCallPhase.listening => 'Listening',
+      VoiceCallPhase.listening =>
+        state.isCapturingSpeech
+            ? 'Listening to you...'
+            : 'Listening - you can speak',
       VoiceCallPhase.thinking => 'Rex is thinking...',
-      VoiceCallPhase.speaking => 'Speaking',
+      VoiceCallPhase.speaking => 'Rex is speaking',
       VoiceCallPhase.failed => 'Voice paused',
+    };
+  }
+
+  String _voiceHelperText(VoiceCallState state) {
+    if (state.isMuted && state.phase == VoiceCallPhase.listening) {
+      return 'Mic is muted. Tap the mic when you want to talk again.';
+    }
+    return switch (state.phase) {
+      VoiceCallPhase.idle => '',
+      VoiceCallPhase.listening =>
+        'Ready. Keep the phone in your pocket and talk naturally.',
+      VoiceCallPhase.thinking => 'Got it. Rex is working on the reply.',
+      VoiceCallPhase.speaking =>
+        'You can interrupt by talking or tapping the hand button.',
+      VoiceCallPhase.failed => 'Tap retry when you are ready to continue.',
     };
   }
 }

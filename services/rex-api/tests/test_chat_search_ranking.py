@@ -42,6 +42,20 @@ def test_chat_search_builds_subject_and_expanded_queries():
     ]
 
 
+def test_chat_search_prioritizes_subject_query_for_old_chat_dates():
+    ranking = ChatSearchRanking()
+
+    queries = ranking.build_queries("Can you search in old chats for June 18?")
+    query_pairs = [(query.query, query.mode) for query in queries]
+
+    assert ("june 18", "subject") in query_pairs
+    assert query_pairs.index(("june 18", "subject")) < query_pairs.index(
+        ("june", "keyword")
+    )
+    assert "18th" in queries[1].query.split()
+    assert "eighteenth" in queries[1].query.split()
+
+
 def test_chat_search_keeps_full_query_terms_when_subject_exists():
     ranking = ChatSearchRanking()
 

@@ -57,7 +57,7 @@ final bargeInDetectionServiceProvider = Provider<BargeInDetectionService>(
   (ref) => PackageBargeInDetectionService(),
 );
 
-final voiceCallBargeInEnabledProvider = Provider<bool>((ref) => false);
+final voiceCallBargeInEnabledProvider = Provider<bool>((ref) => true);
 
 final streamingVoiceApiProvider = Provider<StreamingVoiceApi>(
   (ref) => StreamingVoiceApi(),
@@ -98,7 +98,7 @@ final voiceCallThinkingTimeoutProvider = Provider<Duration>(
 );
 
 final voiceCallTranscriptIdleTimeoutProvider = Provider<Duration>(
-  (ref) => const Duration(seconds: 4),
+  (ref) => const Duration(seconds: 5),
 );
 
 final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(
@@ -106,5 +106,5 @@ final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(
 );
 
 final voiceCallNoSpeechTimeoutProvider = Provider<Duration>(
-  (ref) => const Duration(seconds: 12),
+  (ref) => const Duration(seconds: 24),
 );

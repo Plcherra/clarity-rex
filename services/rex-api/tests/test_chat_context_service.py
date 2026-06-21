@@ -1172,6 +1172,69 @@ async def test_chat_context_uses_conversation_search_when_message_search_misses(
 
 
 @pytest.mark.asyncio
+async def test_chat_context_uses_chats_tab_title_matches_as_recall_context():
+    class ChatsTabTitleSearchStore(FakeContextMemoryStore):
+        async def search_conversations(self, query, limit=50):
+            self.search_message_queries.append(
+                {
+                    "query": query,
+                    "limit": limit,
+                    "source": "conversation_search",
+                }
+            )
+            if "june" not in query.lower() and "18" not in query:
+                return []
+            return [
+                {
+                    "conversation_id": "conversation-family",
+                    "conversation_title": "June 18",
+                    "conversation_timestamp": "2026-06-18T12:00:00Z",
+                    "message": None,
+                    "match_type": "title",
+                    "preview": "June 18",
+                    "relevance_score": 8.5,
+                    "search_reason": "conversation title",
+                    "matched_terms": ["june", "18"],
+                }
+            ]
+
+    store = ChatsTabTitleSearchStore(force_empty_search_messages=True)
+    store.list_messages = None
+    store.past_messages = [
+        {
+            "id": "mom-birthday",
+            "conversation_id": "conversation-family",
+            "role": "user",
+            "content": "My mom's birthday is June 18th.",
+            "timestamp": "2026-06-18T12:00:00Z",
+        },
+        {
+            "id": "mom-money",
+            "conversation_id": "conversation-family",
+            "role": "user",
+            "content": "I want to send money to my mama around the 18th.",
+            "timestamp": "2026-06-18T12:01:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Can you search in old chats for June 18?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-family"
+    assert "mom's birthday is June 18th" in result["content"]
+    assert "send money to my mama" in result["content"]
+    assert {"18", "june"}.issubset(set(result["matched_terms"]))
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert "conversation_search" in status["query_modes"]
+    assert status["result_count"] == 1
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("message", "expected_text"),
     [

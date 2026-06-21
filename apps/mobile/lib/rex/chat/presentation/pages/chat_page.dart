@@ -61,8 +61,17 @@ class _ChatPageState extends ConsumerState<ChatPage>
       if ((previous?.listeningReadySignal ?? 0) != next.listeningReadySignal &&
           next.phase == VoiceCallPhase.listening &&
           !next.isMuted) {
-        HapticFeedback.lightImpact();
-        SystemSound.play(SystemSoundType.alert);
+        _signalVoicePhase(next.phase, isReadyToSpeak: true);
+        return;
+      }
+
+      final previousPhase = previous?.phase;
+      if (previousPhase == next.phase || next.isMuted) {
+        return;
+      }
+      if (next.phase == VoiceCallPhase.thinking ||
+          next.phase == VoiceCallPhase.speaking) {
+        _signalVoicePhase(next.phase);
       }
     });
   }
@@ -257,6 +266,26 @@ class _ChatPageState extends ConsumerState<ChatPage>
       return;
     }
     _scrollToBottom();
+  }
+
+  void _signalVoicePhase(VoiceCallPhase phase, {bool isReadyToSpeak = false}) {
+    switch (phase) {
+      case VoiceCallPhase.listening:
+        HapticFeedback.mediumImpact();
+        if (isReadyToSpeak) {
+          SystemSound.play(SystemSoundType.alert);
+        }
+        break;
+      case VoiceCallPhase.thinking:
+        HapticFeedback.selectionClick();
+        break;
+      case VoiceCallPhase.speaking:
+        HapticFeedback.lightImpact();
+        break;
+      case VoiceCallPhase.idle:
+      case VoiceCallPhase.failed:
+        break;
+    }
   }
 
   void _scrollToBottom() {

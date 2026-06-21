@@ -165,10 +165,12 @@ class ChatSearchRanking:
         expanded_query = " ".join(search_terms)
         if expanded_query:
             queries.append(ChatSearchQuery(expanded_query, "expanded_keywords"))
+        subject_query = self.subject_only_query(normalized)
+        if subject_query and " " in subject_query:
+            queries.append(ChatSearchQuery(subject_query, "subject"))
         for keyword_query in search_terms[:max_terms]:
             queries.append(ChatSearchQuery(keyword_query, "keyword"))
-        subject_query = self.subject_only_query(normalized)
-        if subject_query:
+        if subject_query and " " not in subject_query:
             queries.append(ChatSearchQuery(subject_query, "subject"))
 
         unique: list[ChatSearchQuery] = []
@@ -240,8 +242,9 @@ class ChatSearchRanking:
         if match is None:
             return ""
         subject = re.sub(
-            r"\b(?:old|past|previous|chat|chats|conversation|conversations|"
-            r"anything|information|details|memory|memories|saved|know|remember)\b",
+            r"\b(?:about|for|in|my|old|on|our|past|previous|the|your|chat|"
+            r"chats|conversation|conversations|anything|information|details|"
+            r"memory|memories|saved|know|remember)\b",
             " ",
             match.group("subject"),
         )
