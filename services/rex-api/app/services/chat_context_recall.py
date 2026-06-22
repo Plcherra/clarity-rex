@@ -27,7 +27,7 @@ class ChatContextRecallPolicy:
         conversation_history: list[dict],
         recall_query: Optional[str] = None,
     ) -> str:
-        return recall_query or self.recall_intent.memory_retrieval_query(
+        return self.recall_intent.memory_retrieval_query(
             message,
             conversation_history=conversation_history,
         )

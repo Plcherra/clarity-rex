@@ -3,13 +3,11 @@ from typing import Optional
 
 
 PROFILE_MEMORY_QUERY = (
-    "user profile location timezone where I live state city home current time "
-    "important identity facts birthdays family important dates preferences"
+    "user profile identity facts preferences saved knowledge personal details"
 )
 MEMORY_INVENTORY_QUERY = (
-    f"{PROFILE_MEMORY_QUERY} people relationships parents mom mother dad father "
-    "sibling friend birthday plans goals commitments personal rules memories "
-    "chats conversations preferences"
+    f"{PROFILE_MEMORY_QUERY} people relationships plans goals commitments "
+    "personal rules memories chats conversations"
 )
 PROFILE_MEMORY_LIMIT = 4
 RECALL_TRIGGER_PHRASES = (
@@ -185,10 +183,15 @@ class RecallIntentHelper:
             conversation_history=conversation_history,
         ):
             return None
-        return self.memory_retrieval_query(
-            message,
-            conversation_history=conversation_history,
-        )
+        normalized = self.normalized_recall_text(message)
+        is_followup = self.is_contextual_memory_followup(
+            normalized,
+        ) or self.is_about_recall_followup(normalized)
+        if is_followup:
+            subject = self.recent_memory_subject(conversation_history)
+            if subject:
+                return f"{subject} {message}".strip()
+        return message
 
     def is_recall_request(
         self,
@@ -331,10 +334,12 @@ class RecallIntentHelper:
         )
         has_recall_verb = re.search(
             r"\b(?:mention|mentioned|say|said|tell|told|talk|talked|"
-            r"discuss|discussed|play|played|buy|bought|send|sent)\b",
+            r"discuss|discussed)\b",
             normalized,
         )
         if has_question_language and has_recall_verb:
+            return True
+        if has_question_language and self.has_user_scoped_past_reference(normalized):
             return True
 
         if conversation_history and any(
@@ -350,6 +355,18 @@ class RecallIntentHelper:
         if not any(term in normalized_message for term in FINANCE_ONLY_TERMS):
             return False
         return not any(term in normalized_message for term in CHAT_SCOPE_TERMS)
+
+    def has_user_scoped_past_reference(self, normalized_message: str) -> bool:
+        padded = f" {normalized_message} "
+        if not any(term in padded for term in USER_SCOPED_RECALL_TERMS):
+            return False
+        return bool(
+            re.search(
+                r"\b(?:was|were|had|wanted|needed|planned|would|"
+                r"going to|used to)\b",
+                normalized_message,
+            )
+        )
 
     def normalized_recall_text(self, message: str) -> str:
         normalized = " ".join(str(message or "").lower().split())

@@ -6,7 +6,7 @@ from app.services.recall_intent_helper import (
     MEMORY_INVENTORY_QUERY,
     PROFILE_MEMORY_QUERY,
 )
-from app.services.rex_intent_router import RexIntentDecision
+from app.services.rex_intent_router import RexIntent, RexIntentDecision
 
 
 @dataclass(frozen=True)
@@ -70,7 +70,8 @@ class ChatContextLoadPlanner:
             message,
             conversation_history=conversation_history,
         )
-        recall_request = recall_query is not None
+        recall_request = recall_query is not None or self._force_recall(intent_decision)
+        recall_query = recall_query or (message if recall_request else None)
         memory_query = self.recall_policy.memory_query(
             message,
             conversation_history=conversation_history,
@@ -102,7 +103,8 @@ class ChatContextLoadPlanner:
             message,
             conversation_history=conversation_history,
         )
-        recall_request = recall_query is not None
+        recall_request = recall_query is not None or self._force_recall(intent_decision)
+        recall_query = recall_query or (message if recall_request else None)
         memory_query = self.recall_policy.memory_query(
             message,
             conversation_history=conversation_history,
@@ -167,3 +169,6 @@ class ChatContextLoadPlanner:
             if intent_decision is None
             else intent_decision.should_load_goal_context
         )
+
+    def _force_recall(self, intent_decision: Optional[RexIntentDecision]) -> bool:
+        return bool(intent_decision and intent_decision.intent == RexIntent.MEMORY_RECALL)

@@ -27,6 +27,7 @@ CHAT_SEARCH_STOP_WORDS = STOP_WORDS | {
     "memory",
     "mention",
     "mentioned",
+    "my",
     "old",
     "our",
     "past",
@@ -45,48 +46,8 @@ CHAT_SEARCH_STOP_WORDS = STOP_WORDS | {
     "were",
 }
 
-CHAT_SEARCH_TERM_ALIASES = {
-    "mom": ("mom", "mother", "mum", "mama"),
-    "mother": ("mom", "mother", "mum", "mama"),
-    "mum": ("mom", "mother", "mum", "mama"),
-    "mama": ("mom", "mother", "mum", "mama"),
-    "dad": ("dad", "father", "papa"),
-    "father": ("dad", "father", "papa"),
-    "papa": ("dad", "father", "papa"),
-    "parent": ("parent", "parents", "mom", "mother", "dad", "father"),
-    "parents": ("parent", "parents", "mom", "mother", "dad", "father"),
-    "family": ("family", "mom", "mother", "dad", "father", "parent"),
-    "birthday": ("birthday", "birthdays", "birthdate", "date", "event"),
-    "game": ("game", "games", "gaming", "play", "played"),
-    "games": ("game", "games", "gaming", "play", "played"),
-    "gaming": ("game", "games", "gaming", "play", "played"),
-    "pc": ("pc", "computer", "game", "games"),
-    "gift": ("gift", "gifts", "present", "send", "sent"),
-    "gifts": ("gift", "gifts", "present", "send", "sent"),
-    "give": ("give", "giving", "gift", "gifts", "present", "send", "sent"),
-    "giving": ("give", "giving", "gift", "gifts", "present", "send", "sent"),
-    "money": ("money", "send", "sent", "cash", "gift"),
-    "send": ("send", "sending", "sent"),
-    "sending": ("send", "sending", "sent"),
-    "sent": ("send", "sending", "sent"),
-    "purchase": ("purchase", "purchases", "buy", "buying", "bought"),
-    "purchases": ("purchase", "purchases", "buy", "buying", "bought"),
-    "buy": ("purchase", "purchases", "buy", "buying", "bought"),
-    "buying": ("purchase", "purchases", "buy", "buying", "bought"),
-    "bought": ("purchase", "purchases", "buy", "buying", "bought"),
-    "wanted": ("want", "wanted", "buy", "buying", "purchase"),
-    "payroll": ("payroll", "paycheck", "income", "work"),
-    "job": ("job", "work", "company"),
-    "work": ("work", "job", "company", "payroll"),
-    "place": ("place", "places", "city", "home", "live", "lived"),
-    "places": ("place", "places", "city", "home", "live", "lived"),
-    "preference": ("preference", "preferences", "prefer", "like", "likes"),
-    "preferences": ("preference", "preferences", "prefer", "like", "likes"),
-    "goal": ("goal", "goals", "plan", "plans"),
-    "goals": ("goal", "goals", "plan", "plans"),
-    "immigration": ("immigration", "ead", "uscis", "visa", "green"),
-    "visa": ("visa", "immigration", "uscis"),
-}
+MIN_PARTIAL_TERM_LENGTH = 4
+MAX_SHORT_TOKEN_LENGTH = 2
 
 ORDINAL_WORDS = {
     "first": "1",
@@ -217,7 +178,6 @@ class ChatSearchRanking:
                 continue
             if not self.is_searchable_short_term(term):
                 continue
-            expanded_terms.extend(CHAT_SEARCH_TERM_ALIASES.get(term, (term,)))
             expanded_terms.extend(self.simple_term_variants(term))
 
         unique_terms: list[str] = []
@@ -323,50 +283,99 @@ class ChatSearchRanking:
         return tuple(terms)
 
     def raw_terms(self, query: str) -> list[str]:
-        return re.findall(r"[a-z0-9']+", str(query or "").lower())
+        return re.findall(r"[a-z0-9']+(?:-[a-z0-9']+)*", str(query or "").lower())
 
     def normalize_term(self, term: str) -> str:
-        normalized = term.strip("'")
+        normalized = str(term or "").lower().strip("'")
         if normalized.endswith("'s"):
             normalized = normalized[:-2]
         return normalized
 
     def simple_term_variants(self, term: str) -> tuple[str, ...]:
-        variants = {term}
+        term = self.normalize_term(term)
+        if not term:
+            return ()
+        variants = [term]
         ordinal_base = self.ordinal_base(term)
         if term.isdigit():
-            variants.add(self.ordinal_variant(term))
-            ordinal_word = ORDINAL_NUMBERS.get(str(int(term)))
+            number = str(int(term))
+            variants.extend([number, self.ordinal_variant(number)])
+            ordinal_word = ORDINAL_NUMBERS.get(number)
             if ordinal_word:
-                variants.add(ordinal_word)
+                variants.append(ordinal_word)
         elif ordinal_base:
-            variants.add(ordinal_base)
+            variants.append(ordinal_base)
             ordinal_word = ORDINAL_NUMBERS.get(str(int(ordinal_base)))
             if ordinal_word:
-                variants.add(ordinal_word)
+                variants.append(ordinal_word)
         elif term in ORDINAL_WORDS:
             number = ORDINAL_WORDS[term]
-            variants.add(number)
-            variants.add(self.ordinal_variant(number))
-        elif term.endswith("ies") and len(term) > 4:
+            variants.extend([number, self.ordinal_variant(number)])
+
+        variants.extend(sorted(self.inflection_variants(term)))
+        return tuple(
+            variant
+            for variant in self.unique_terms(variants)
+            if variant and self.is_searchable_variant(variant)
+        )
+
+    def inflection_variants(self, term: str) -> set[str]:
+        variants: set[str] = set()
+        if len(term) < 4 or self.numeric_or_ordinal(term):
+            return variants
+        if term.endswith("ies") and len(term) > 4:
             variants.add(f"{term[:-3]}y")
+        elif term.endswith("ves") and len(term) > 4:
+            variants.add(f"{term[:-3]}f")
+            variants.add(f"{term[:-3]}fe")
+        elif term.endswith("es") and len(term) > 4:
+            variants.add(term[:-2])
+            variants.add(term[:-1])
         elif term.endswith("s") and len(term) > 3:
             variants.add(term[:-1])
-        elif len(term) > 3:
+        else:
             variants.add(f"{term}s")
-        return tuple(variants)
+            if (
+                term.endswith("y")
+                and len(term) > 3
+                and term[-2] not in {"a", "e", "i", "o", "u"}
+            ):
+                variants.add(f"{term[:-1]}ies")
+
+        if term.endswith("ing") and len(term) > 5:
+            base = term[:-3]
+            variants.add(base)
+            if len(base) > 3 and base[-1] == base[-2]:
+                variants.add(base[:-1])
+            if len(base) >= 3:
+                variants.add(f"{base}e")
+        if term.endswith("ed") and len(term) > 4:
+            base = term[:-2]
+            variants.add(base)
+            if len(base) > 3 and base[-1] == base[-2]:
+                variants.add(base[:-1])
+            if len(base) >= 3:
+                variants.add(f"{base}e")
+            if base.endswith("i"):
+                variants.add(f"{base[:-1]}y")
+        return variants
 
     def normalize_text(self, text: str) -> str:
         return " ".join(str(text or "").lower().split())
 
     def term_in_text(self, term: str, text: str) -> bool:
         normalized_term = self.normalize_term(term)
+        if not normalized_term:
+            return False
         if self.numeric_or_ordinal(normalized_term):
             return any(
                 self.terms_match(normalized_term, token)
                 for token in self.normalized_tokens(text)
             )
-        return bool(re.search(rf"\b{re.escape(term)}\b", text))
+        return any(
+            self.terms_match(normalized_term, token)
+            for token in self.normalized_tokens(text)
+        )
 
     def phrase_in_text(self, phrase: str, text: str) -> bool:
         phrase_terms = self.normalized_tokens(phrase)
@@ -392,13 +401,19 @@ class ChatSearchRanking:
         ]
 
     def is_searchable_short_term(self, term: str) -> bool:
+        normalized = self.normalize_term(term)
         return (
-            len(term) >= 3
-            or term in CHAT_SEARCH_TERM_ALIASES
-            or term == "pc"
-            or term.isdigit()
-            or self.ordinal_base(term) is not None
+            len(normalized) >= 3
+            or self.is_acronym_like(normalized)
+            or normalized.isdigit()
+            or self.ordinal_base(normalized) is not None
         )
+
+    def is_searchable_variant(self, term: str) -> bool:
+        return self.is_searchable_short_term(term) or term in ORDINAL_WORDS
+
+    def is_acronym_like(self, term: str) -> bool:
+        return term.isalnum() and 1 < len(term) <= MAX_SHORT_TOKEN_LENGTH
 
     def numeric_or_ordinal(self, term: str) -> bool:
         return (
@@ -408,6 +423,8 @@ class ChatSearchRanking:
         )
 
     def terms_match(self, expected: str, actual: str) -> bool:
+        expected = self.normalize_term(expected)
+        actual = self.normalize_term(actual)
         if expected == actual:
             return True
         expected_word_base = ORDINAL_WORDS.get(expected)
@@ -425,6 +442,18 @@ class ChatSearchRanking:
         if expected_base is not None and actual == expected_base:
             return True
         if expected_base is not None and actual_base == expected_base:
+            return True
+        if self.numeric_or_ordinal(expected) or self.numeric_or_ordinal(actual):
+            return False
+        expected_variants = self.simple_term_variants(expected)
+        actual_variants = self.simple_term_variants(actual)
+        if expected in actual_variants or actual in expected_variants:
+            return True
+        if (
+            len(expected) >= MIN_PARTIAL_TERM_LENGTH
+            and len(actual) >= MIN_PARTIAL_TERM_LENGTH
+            and (expected.startswith(actual) or actual.startswith(expected))
+        ):
             return True
         return False
 

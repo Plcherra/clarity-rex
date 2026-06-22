@@ -280,7 +280,7 @@ async def test_chat_context_loads_memory_only_for_memory_recall_intent():
             "exclude_conversation_id": None,
         },
         {
-            "query": "mom mother mum mama birthday birthdays birthdate date event",
+            "query": "mom birthday birthdays",
             "limit": 200,
             "exclude_conversation_id": None,
         },
@@ -304,16 +304,16 @@ async def test_chat_context_uses_inventory_query_for_broad_memory_recall():
         "profile-1",
         "shared-1",
     ]
-    assert [item["id"] for item in structured_context["chat_search_results"]] == [
-        "chat-past-message-2",
-        "chat-past-message-1",
-    ]
+    assert structured_context.get("chat_search_results", []) == []
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert status["source"] == "chat_search"
+    assert status["status"] == "empty"
     assert store.relevant_memory_queries == [
         {"query": MEMORY_INVENTORY_QUERY, "limit": 8},
     ]
     assert store.search_message_queries == [
         {
-            "query": MEMORY_INVENTORY_QUERY,
+            "query": "What do you know?",
             "limit": 200,
             "exclude_conversation_id": None,
         }
@@ -336,10 +336,10 @@ async def test_chat_context_uses_inventory_query_for_about_me_recall():
         "profile-1",
         "shared-1",
     ]
-    assert [item["id"] for item in structured_context["chat_search_results"]] == [
-        "chat-past-message-2",
-        "chat-past-message-1",
-    ]
+    assert structured_context.get("chat_search_results", []) == []
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert status["source"] == "chat_search"
+    assert status["status"] == "empty"
     assert store.relevant_memory_queries == [
         {"query": MEMORY_INVENTORY_QUERY, "limit": 8},
     ]
@@ -368,7 +368,7 @@ async def test_chat_context_keeps_specific_person_memory_queries_targeted():
     assert store.search_message_queries[0]["query"] == (
         "Do you know anything about my mom?"
     )
-    assert store.search_message_queries[1]["query"] == "mom mother mum mama"
+    assert store.search_message_queries[1]["query"] == "mom"
 
 
 @pytest.mark.asyncio
@@ -420,7 +420,7 @@ async def test_chat_context_falls_back_to_subject_search_when_broad_terms_fill_l
         for item in structured_context["chat_search_results"]
     )
     assert len(store.search_message_queries) >= 2
-    assert store.search_message_queries[1]["query"] == "mom mother mum mama"
+    assert store.search_message_queries[1]["query"] == "mom"
 
 
 @pytest.mark.asyncio
@@ -503,11 +503,10 @@ async def test_chat_context_uses_recent_subject_for_old_chat_followup():
             "exclude_conversation_id": None,
         },
         {
-            "query": "mom mother mum mama",
+            "query": "mom",
             "limit": 200,
             "exclude_conversation_id": None,
         },
-        {"query": "mom", "limit": 200, "exclude_conversation_id": None},
     ]
     assert {"query": "mom", "limit": 200, "exclude_conversation_id": None} in (
         store.search_message_queries

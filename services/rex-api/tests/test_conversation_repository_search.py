@@ -21,47 +21,47 @@ class _SearchStore:
                 "user_id": "user-123",
                 "conversation_id": "conversation-noise",
                 "role": "assistant",
-                "content": "I checked chats, but nothing about immigration came up.",
+                "content": "I checked chats, but nothing about Lara came up.",
                 "timestamp": "2026-06-11T10:00:00Z",
             },
             {
-                "id": "message-ead",
+                "id": "message-lara",
                 "user_id": "user-123",
-                "conversation_id": "conversation-immigration",
+                "conversation_id": "conversation-lara",
                 "role": "user",
-                "content": "My EAD renewal and USCIS paperwork are due soon.",
+                "content": "Lara recommended the Somerville coffee place.",
                 "timestamp": "2026-06-10T10:00:00Z",
             },
             {
-                "id": "message-immigration",
+                "id": "message-somerville",
                 "user_id": "user-123",
-                "conversation_id": "conversation-immigration",
+                "conversation_id": "conversation-lara",
                 "role": "user",
-                "content": "I need to check my immigration status before the trip.",
+                "content": "I moved the meetup to Somerville for Thursday.",
                 "timestamp": "2026-06-10T10:01:00Z",
             },
             {
-                "id": "message-mom-birthday",
+                "id": "message-deadline",
                 "user_id": "user-123",
-                "conversation_id": "conversation-family",
+                "conversation_id": "conversation-deadline",
                 "role": "user",
-                "content": "My mom's birthday is June 18th.",
+                "content": "The paperwork deadline is on the 24th.",
                 "timestamp": "2026-06-09T10:01:00Z",
             },
             {
-                "id": "message-pc-game",
+                "id": "message-notebook",
                 "user_id": "user-123",
-                "conversation_id": "conversation-pc",
+                "conversation_id": "conversation-notes",
                 "role": "user",
-                "content": "Awesome. I'm going to buy my first PC game.",
+                "content": "I prefer blue notebooks for planning.",
                 "timestamp": "2026-06-08T10:01:00Z",
             },
             {
-                "id": "message-legacy",
+                "id": "message-qr",
                 "user_id": "user-123",
-                "conversation_id": "conversation-pc",
+                "conversation_id": "conversation-notes",
                 "role": "user",
-                "content": "It's Legacy of Kain.",
+                "content": "The QR code is printed on the notebook cover.",
                 "timestamp": "2026-06-08T10:02:00Z",
             },
             {
@@ -69,7 +69,7 @@ class _SearchStore:
                 "user_id": "user-123",
                 "conversation_id": "conversation-year",
                 "role": "user",
-                "content": "The archive from 2018 is not the birthday date.",
+                "content": "The archive from 2024 is not the deadline date.",
                 "timestamp": "2026-06-07T10:01:00Z",
             },
             {
@@ -77,27 +77,27 @@ class _SearchStore:
                 "user_id": "user-999",
                 "conversation_id": "conversation-other-user",
                 "role": "user",
-                "content": "My immigration case has a green card interview tomorrow.",
+                "content": "Lara sent a private note for another user.",
                 "timestamp": "2026-06-12T10:01:00Z",
             },
         ]
         self.conversations = {
-            "conversation-immigration": {
-                "id": "conversation-immigration",
+            "conversation-lara": {
+                "id": "conversation-lara",
                 "user_id": "user-123",
-                "title": "Immigration planning",
+                "title": "Lara planning",
                 "timestamp": "2026-06-10T10:00:00Z",
             },
-            "conversation-family": {
-                "id": "conversation-family",
+            "conversation-deadline": {
+                "id": "conversation-deadline",
                 "user_id": "user-123",
-                "title": "Family dates",
+                "title": "Paperwork deadline",
                 "timestamp": "2026-06-09T10:00:00Z",
             },
-            "conversation-pc": {
-                "id": "conversation-pc",
+            "conversation-notes": {
+                "id": "conversation-notes",
                 "user_id": "user-123",
-                "title": "PC games",
+                "title": "Notebook planning",
                 "timestamp": "2026-06-08T10:00:00Z",
             },
             "conversation-year": {
@@ -115,7 +115,7 @@ class _SearchStore:
             "conversation-other-user": {
                 "id": "conversation-other-user",
                 "user_id": "user-999",
-                "title": "Other user immigration",
+                "title": "Other user Lara",
                 "timestamp": "2026-06-12T10:00:00Z",
             },
         }
@@ -193,14 +193,14 @@ class _SearchStore:
 async def test_conversation_repository_ranks_user_matches_and_exposes_metadata():
     repository = ConversationRepository(_SearchStore())
 
-    results = await repository.search_conversations("What did I say about immigration?")
+    results = await repository.search_conversations("What did I say about Lara?")
 
-    assert results[0]["conversation_id"] == "conversation-immigration"
+    assert results[0]["conversation_id"] == "conversation-lara"
     assert results[0]["match_type"] == "title"
     assert results[0]["relevance_score"] > 0
-    assert "immigration" in results[0]["matched_terms"]
+    assert "lara" in results[0]["matched_terms"]
     assert any(
-        result["message"] and result["message"]["id"] == "message-ead"
+        result["message"] and result["message"]["id"] == "message-lara"
         for result in results
     )
     assert all("search_reason" in result for result in results)
@@ -210,7 +210,7 @@ async def test_conversation_repository_ranks_user_matches_and_exposes_metadata()
 async def test_conversation_repository_ranked_search_does_not_leak_other_users():
     repository = ConversationRepository(_SearchStore(user_id="user-123"))
 
-    results = await repository.search_conversations("immigration green card")
+    results = await repository.search_conversations("Lara private note")
 
     assert results
     assert all(result["conversation_id"] != "conversation-other-user" for result in results)
@@ -225,10 +225,10 @@ async def test_conversation_repository_ranked_search_does_not_leak_other_users()
 async def test_conversation_repository_prefers_repeated_user_conversation_over_noise():
     repository = ConversationRepository(_SearchStore(user_id="user-123"))
 
-    results = await repository.search_conversations("What did I say about immigration?")
+    results = await repository.search_conversations("What did I say about Lara?")
     message_results = [result for result in results if result["match_type"] == "message"]
 
-    assert message_results[0]["conversation_id"] == "conversation-immigration"
+    assert message_results[0]["conversation_id"] == "conversation-lara"
     assert message_results[0]["relevance_score"] > message_results[-1]["relevance_score"]
 
 
@@ -247,13 +247,13 @@ async def test_conversation_repository_list_messages_stays_user_scoped():
 @pytest.mark.parametrize(
     ("query", "conversation_id", "expected_preview"),
     [
-        ("mom", "conversation-family", "mom's birthday"),
-        ("June", "conversation-family", "June 18th"),
-        ("18", "conversation-family", "June 18th"),
-        ("eighteenth", "conversation-family", "June 18th"),
-        ("June 18", "conversation-family", "June 18th"),
-        ("PC game", "conversation-pc", "first PC game"),
-        ("Legacy of Kain", "conversation-pc", "Legacy of Kain"),
+        ("Lara", "conversation-lara", "Lara recommended"),
+        ("Somerville", "conversation-lara", "Somerville"),
+        ("24", "conversation-deadline", "24th"),
+        ("twenty-fourth", "conversation-deadline", "24th"),
+        ("notebooks", "conversation-notes", "blue notebooks"),
+        ("QR code", "conversation-notes", "QR code"),
+        ("Lara Somerville", "conversation-lara", "Somerville"),
     ],
 )
 async def test_conversation_repository_searches_manual_keyword_cases(
@@ -276,7 +276,7 @@ async def test_conversation_repository_searches_manual_keyword_cases(
 async def test_conversation_repository_numeric_search_rejects_year_substrings():
     repository = ConversationRepository(_SearchStore(user_id="user-123"))
 
-    results = await repository.search_conversations("18")
+    results = await repository.search_conversations("24")
 
-    assert any(result["conversation_id"] == "conversation-family" for result in results)
+    assert any(result["conversation_id"] == "conversation-deadline" for result in results)
     assert all(result["conversation_id"] != "conversation-year" for result in results)

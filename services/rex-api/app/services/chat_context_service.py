@@ -100,7 +100,7 @@ class ChatContextService:
             chat_search_results_task = self.timed_fetch(
                 "chat_search",
                 self.chat_recall_service.fetch_relevant_chat_excerpts(
-                    query=load_plan.memory_query,
+                    query=load_plan.recall_query or message,
                     limit=CHAT_SEARCH_RESULTS_LIMIT,
                     exclude_conversation_id=None,
                 ),
@@ -186,7 +186,7 @@ class ChatContextService:
             self.timed_fetch(
                 "chat_search",
                 self.chat_recall_service.fetch_relevant_chat_excerpts(
-                    query=load_plan.memory_query,
+                    query=load_plan.recall_query or message,
                     limit=CHAT_SEARCH_RESULTS_LIMIT,
                     exclude_conversation_id=None,
                 ),

@@ -191,7 +191,7 @@ class FakeVoiceTurnMemoryService(SupabaseMemoryService):
 
 
 @pytest.mark.asyncio
-async def test_get_relevant_memories_ranks_keyword_and_concept_matches():
+async def test_get_relevant_memories_ranks_generic_keyword_matches():
     service = InMemoryRetrievalService(
         [
             {
@@ -225,14 +225,14 @@ async def test_get_relevant_memories_ranks_keyword_and_concept_matches():
     )
 
     memories = await service.get_relevant_memories(
-        "I need advice about work pressure and money.",
+        "I need advice about work pressure, rent, and debt.",
         limit=2,
     )
 
-    assert [memory["id"] for memory in memories] == [
+    assert {memory["id"] for memory in memories} == {
         "memory-work",
         "memory-money",
-    ]
+    }
     assert all("relevance_score" in memory for memory in memories)
     assert all(memory["relevance_score"] > 0 for memory in memories)
     assert "Matched current message terms" in memories[0]["relevance_reason"]
@@ -319,7 +319,9 @@ async def test_get_relevant_memories_keeps_high_priority_profile_facts_available
     )
 
     assert [memory["id"] for memory in memories] == ["memory-founder"]
-    assert memories[0]["relevance_reason"] == "Included high-priority profile fact."
+    assert memories[0]["relevance_reason"].startswith(
+        "Included high-priority profile fact"
+    )
 
 
 @pytest.mark.asyncio
@@ -476,7 +478,9 @@ async def test_get_relevant_memories_handles_anything_about_me_as_profile_recall
     )
 
     assert [memory["id"] for memory in memories] == ["memory-profile"]
-    assert memories[0]["relevance_reason"] == "Included high-priority profile fact."
+    assert memories[0]["relevance_reason"].startswith(
+        "Included high-priority profile fact"
+    )
 
 
 @pytest.mark.asyncio

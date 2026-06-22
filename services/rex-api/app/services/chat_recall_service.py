@@ -13,7 +13,6 @@ from app.services.memory_context_status import (
     ContextFetchError,
     safe_error_message,
 )
-from app.services.recall_intent_helper import MEMORY_INVENTORY_QUERY
 
 
 CHAT_SEARCH_RESULTS_LIMIT = 12
@@ -86,9 +85,11 @@ class ChatRecallService:
                             messages_by_id[message_id] = scored_message
                 except Exception as exc:
                     partial = True
-                    failures.append(safe_error_message(exc))
+                    failure = safe_error_message(exc)
+                    if failure not in failures:
+                        failures.append(failure)
                     LOGGER.warning("rex_memory_fetch_failed source=conversation_search")
-                    break
+                    continue
 
         if search_messages is not None:
             for search_query, query_mode in search_queries:
@@ -124,9 +125,11 @@ class ChatRecallService:
                         offset += PAST_CHAT_SEARCH_PAGE_LIMIT
                 except Exception as exc:
                     partial = True
-                    failures.append(safe_error_message(exc))
+                    failure = safe_error_message(exc)
+                    if failure not in failures:
+                        failures.append(failure)
                     LOGGER.warning("rex_memory_fetch_failed source=chat_search")
-                    break
+                    continue
 
         full_scan_used = False
         if list_messages is not None:
@@ -169,6 +172,8 @@ class ChatRecallService:
                 "succeeded": True,
                 "result_count": len(excerpts),
                 "raw_match_count": len(messages_by_id),
+                "filtered_match_count": max(0, len(messages_by_id) - len(excerpts)),
+                "filtered_all_matches": bool(messages_by_id) and not excerpts,
                 "scanned_messages": scanned_messages,
                 "partial": partial,
                 "full_scan_used": full_scan_used,
@@ -232,8 +237,9 @@ class ChatRecallService:
         ranked = sorted(
             best_by_id.values(),
             key=lambda item: (
-                float(item.get("_chat_search_score") or 0),
+                self.recency_ranked_score(item.get("_chat_search_score")),
                 str(item.get("timestamp") or ""),
+                float(item.get("_chat_search_score") or 0),
             ),
             reverse=True,
         )
@@ -244,7 +250,6 @@ class ChatRecallService:
             (item.query, item.mode)
             for item in self.chat_search_ranking.build_queries(
                 query,
-                inventory_query=MEMORY_INVENTORY_QUERY,
                 max_terms=10,
             )
         ]
@@ -353,11 +358,17 @@ class ChatRecallService:
         sorted_groups = sorted(
             grouped.items(),
             key=lambda item: (
+                self.recency_ranked_score(
+                    max(
+                        float(message.get("_chat_search_score") or 0)
+                        for message in item[1]
+                    )
+                ),
+                max(str(message.get("timestamp") or "") for message in item[1]),
                 max(
                     float(message.get("_chat_search_score") or 0)
                     for message in item[1]
                 ),
-                max(str(message.get("timestamp") or "") for message in item[1]),
             ),
             reverse=True,
         )
@@ -575,6 +586,9 @@ class ChatRecallService:
             if str(message.get("timestamp") or "")
         ]
         return max(timestamps) if timestamps else None
+
+    def recency_ranked_score(self, score: object) -> int:
+        return round(float(score or 0) * 2)
 
     def chat_excerpt_has_user_content(self, messages: list[dict]) -> bool:
         return any(

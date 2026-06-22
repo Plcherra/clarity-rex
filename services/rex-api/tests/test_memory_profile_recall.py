@@ -176,9 +176,7 @@ async def test_chat_prompt_includes_past_chat_when_mom_fact_was_not_saved():
         "limit": 200,
         "exclude_conversation_id": None,
     }
-    assert memory_service.search_message_queries[1]["query"] == (
-        "mom mother mum mama"
-    )
+    assert memory_service.search_message_queries[1]["query"] == "mom"
 
 
 @pytest.mark.asyncio

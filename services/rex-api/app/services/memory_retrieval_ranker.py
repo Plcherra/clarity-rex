@@ -37,6 +37,7 @@ class MemoryRetrievalRanker:
             and int(memory.get("importance") or 0) >= 4
             and is_profile_context_query
         )
+        is_profile_answer_match = self.profile_answer_match(memory, query_terms)
 
         if not query_terms:
             has_direct_match = True
@@ -44,11 +45,18 @@ class MemoryRetrievalRanker:
             not has_direct_match
             and not is_high_priority_preference
             and not is_high_priority_profile_fact
+            and not is_profile_answer_match
         ):
             return None
 
         overlap_score = (
-            len(matched_terms) / max(len(query_terms), 1) if query_terms else 0.2
+            len(matched_terms) / max(len(query_terms), 1)
+            if matched_terms
+            else 0.22
+            if is_profile_answer_match
+            else 0.2
+            if not query_terms
+            else 0
         )
         importance_score = max(1, min(int(memory.get("importance") or 3), 5)) / 5
         recency_score = self.recency_score(memory)
@@ -64,12 +72,22 @@ class MemoryRetrievalRanker:
         if relevance_score < RELEVANT_MEMORY_MINIMUM_SCORE:
             return None
 
-        if matched_terms:
+        specific_matched_terms = [
+            term for term in matched_terms if term not in PROFILE_CONTEXT_TERMS
+        ]
+        if specific_matched_terms:
+            reason = (
+                "Matched current message terms: "
+                f"{', '.join(specific_matched_terms[:6])}"
+            )
+        elif is_high_priority_profile_fact and is_profile_context_query:
+            reason = self.profile_fact_reason(memory)
+        elif matched_terms:
             reason = f"Matched current message terms: {', '.join(matched_terms[:6])}"
         elif is_high_priority_preference:
             reason = "Included high-priority user preference."
-        elif is_high_priority_profile_fact:
-            reason = "Included high-priority profile fact."
+        elif is_profile_answer_match:
+            reason = "Included location/profile fact that appears to answer the recall question."
         else:
             reason = "Included as recent important context."
         if correction_pairs:
@@ -95,6 +113,39 @@ class MemoryRetrievalRanker:
                 if value:
                     metadata_values.append(str(value))
         return " ".join([str(memory.get("content") or ""), *metadata_values])
+
+    def profile_answer_match(self, memory: dict, query_terms: set[str]) -> bool:
+        if memory.get("memory_type") != "fact":
+            return False
+        if int(memory.get("importance") or 0) < 3:
+            return False
+        if not query_terms & {
+            "city",
+            "live",
+            "lives",
+            "locat",
+            "located",
+            "state",
+            "timezone",
+        }:
+            return False
+        content = str(memory.get("content") or "")
+        metadata_text = self.memory_text(memory).lower()
+        if any(term in metadata_text for term in ("location", "timezone")):
+            return True
+        return bool(
+            re.search(
+                r"\b(?:i am|i'm|user is|user lives|live|lives|located|in|from)\s+"
+                r"(?:[A-Z][A-Za-z'.-]+(?:\s+[A-Z][A-Za-z'.-]+){0,3})",
+                content,
+            )
+        )
+
+    def profile_fact_reason(self, memory: dict) -> str:
+        metadata = memory.get("metadata")
+        if isinstance(metadata, dict) and metadata.get("fact_kind"):
+            return f"Included high-priority profile fact: {metadata['fact_kind']}."
+        return "Included high-priority profile fact."
 
     def rank_structured_records(
         self,
