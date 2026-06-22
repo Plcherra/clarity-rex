@@ -209,7 +209,10 @@ extension VoiceCallControllerTimers on VoiceCallController {
 
     unawaited(_streamingCaptureService.cancel());
     endpointUtterance();
-    streamingSession.endUtterance();
+    _sendStreamingUtteranceEndIfNeeded(
+      streamingSession,
+      _streamingTurnSequence,
+    );
   }
 
   void _recoverFromStuckThinking(int generation) {

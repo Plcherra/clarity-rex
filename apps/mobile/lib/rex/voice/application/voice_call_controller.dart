@@ -62,6 +62,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _isUsingNativeVoice = false;
   var _warnedLegacyNativeVoiceFlag = false;
   var _isAwaitingFollowUpSpeech = false;
+  var _streamingUtteranceEndSent = false;
+  var _streamingTurnSequence = 0;
   Timer? _thinkingTimeoutTimer;
   Timer? _listeningEndpointTimer;
   Timer? _noSpeechTimeoutTimer;
@@ -94,6 +96,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
         unawaited(streamingCaptureService.cancel());
       }
       if (streamingSession != null) {
+        _activeStreamingSession = null;
+        _activeStreamingEventsTask = null;
         unawaited(streamingSession.endSession());
       }
       if (nativeVoiceSubscription != null) {

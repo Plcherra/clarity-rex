@@ -71,25 +71,13 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
       session = existingSession;
     }
 
+    final turnSequence = ++_streamingTurnSequence;
+    _streamingUtteranceEndSent = false;
     for (final chunk in initialAudioChunks) {
       session.sendAudioChunk(chunk);
     }
     if (initialAudioChunks.isNotEmpty) {
       startCapturingSpeech();
-    }
-
-    var utteranceEndSent = false;
-    void sendUtteranceEndIfNeeded() {
-      if (utteranceEndSent) {
-        return;
-      }
-      utteranceEndSent = true;
-      unawaited(
-        _financialContext(state.currentTranscript).then(
-          (financialContext) =>
-              session.endUtterance(financialContext: financialContext),
-        ),
-      );
     }
 
     final bool capturedAudio;
@@ -113,7 +101,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
           if (_isCurrentCall(generation) &&
               state.phase == VoiceCallPhase.listening) {
             endpointUtterance();
-            sendUtteranceEndIfNeeded();
+            _sendStreamingUtteranceEndIfNeeded(session, turnSequence);
           }
         },
         onAudioChunk: (chunk) async {
@@ -152,7 +140,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     }
 
     endpointUtterance();
-    sendUtteranceEndIfNeeded();
+    _sendStreamingUtteranceEndIfNeeded(session, turnSequence);
   }
 
   Future<void> _fallbackToCloudVoiceCapture(
@@ -313,6 +301,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     DateTime? assistantStartedAt;
     DateTime? firstAudioChunkAt;
     DateTime? lastAudioChunkStartedAt;
+    var streamEndedCleanly = false;
     bool isActiveSession() =>
         identical(_activeStreamingSession, session) && state.isCallActive;
 
@@ -369,14 +358,22 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
           case 'session.started':
             break;
           case 'transcript.partial':
-            updateTranscript(event.transcript ?? state.currentTranscript);
+            if (state.phase == VoiceCallPhase.listening) {
+              updateTranscript(event.transcript ?? state.currentTranscript);
+            }
           case 'transcript.final':
             if (event.speechFinal) {
               assistantText = '';
               responseAudioStarted = false;
               startThinking(finalTranscript: event.transcript);
+              _sendStreamingUtteranceEndIfNeeded(
+                session,
+                _streamingTurnSequence,
+              );
               unawaited(_activeStreamingCaptureService?.cancel());
-            } else {
+            } else if (state.phase == VoiceCallPhase.thinking) {
+              startThinking(finalTranscript: event.transcript);
+            } else if (state.phase == VoiceCallPhase.listening) {
               updateTranscript(
                 event.transcript ?? state.currentTranscript,
                 isFinal: true,
@@ -457,6 +454,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
               }
             }
           case 'session.ended':
+            streamEndedCleanly = true;
             return;
           case 'session.interrupted':
             break;
@@ -490,8 +488,31 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         debugPrint('rex_voice_stream listener_detached');
         _activeStreamingSession = null;
         _activeStreamingEventsTask = null;
+        if (!streamEndedCleanly && state.isCallActive) {
+          fail('Assistant voice stream disconnected. Try voice again.');
+        }
       }
     }
+  }
+
+  void _sendStreamingUtteranceEndIfNeeded(
+    StreamingVoiceSession session,
+    int turnSequence,
+  ) {
+    if (_streamingUtteranceEndSent) {
+      return;
+    }
+    _streamingUtteranceEndSent = true;
+    unawaited(
+      _financialContext(state.currentTranscript).then((financialContext) {
+        if (turnSequence != _streamingTurnSequence ||
+            !identical(_activeStreamingSession, session) ||
+            !state.isCallActive) {
+          return;
+        }
+        session.endUtterance(financialContext: financialContext);
+      }),
+    );
   }
 
   Future<Map<String, dynamic>?> _financialContext([String? transcript]) async {

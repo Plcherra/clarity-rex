@@ -357,8 +357,15 @@ class _FakeCloudVoiceApi extends CloudVoiceApi {
 class _FakeStreamingVoiceApi extends StreamingVoiceApi {
   _FakeStreamingVoiceApi() : super(baseUrl: 'http://localhost');
 
-  final socket = _FakeVoiceWebSocket();
+  final sockets = <_FakeVoiceWebSocket>[];
   var connectCount = 0;
+
+  _FakeVoiceWebSocket get socket {
+    if (sockets.isEmpty) {
+      sockets.add(_FakeVoiceWebSocket());
+    }
+    return sockets.last;
+  }
 
   @override
   Future<StreamingVoiceSession> connect({
@@ -369,6 +376,9 @@ class _FakeStreamingVoiceApi extends StreamingVoiceApi {
     Map<String, dynamic>? financialContext,
   }) async {
     connectCount++;
+    if (sockets.isEmpty || sockets.last.isClosed) {
+      sockets.add(_FakeVoiceWebSocket());
+    }
     return StreamingVoiceSession(socket);
   }
 }
@@ -379,11 +389,19 @@ class _FakeVoiceWebSocket implements VoiceWebSocket {
   final sentAudioChunks = <Uint8List>[];
   var closeCount = 0;
 
+  bool get isClosed => _events.isClosed;
+
   @override
   Stream<dynamic> get stream => _events.stream;
 
   void emit(Map<String, dynamic> event) {
     _events.add(jsonEncode(event));
+  }
+
+  Future<void> closeFromServer() async {
+    if (!_events.isClosed) {
+      await _events.close();
+    }
   }
 
   @override

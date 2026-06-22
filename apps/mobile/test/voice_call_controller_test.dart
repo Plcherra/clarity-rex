@@ -179,10 +179,59 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 30));
 
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
-      expect(streamingApi.socket.sentEvents, contains('utterance.end'));
+      expect(
+        streamingApi.socket.sentEvents.where(
+          (event) => event == 'utterance.end',
+        ),
+        hasLength(1),
+      );
       expect(captureService.cancelled, isTrue);
     },
   );
+
+  test('unexpected streaming socket close fails instead of hanging', () async {
+    final captureService = _ScriptedStreamingAudioCaptureService();
+    final streamingApi = _FakeStreamingVoiceApi();
+    final container = ProviderContainer(
+      overrides: [
+        microphonePermissionProvider.overrideWithValue(
+          const _GrantedMicrophonePermissionService(),
+        ),
+        voiceAudioSessionServiceProvider.overrideWithValue(
+          const _NoopVoiceAudioSessionService(),
+        ),
+        backgroundVoiceServiceProvider.overrideWithValue(
+          const _NoopBackgroundVoiceService(),
+        ),
+        audioCaptureServiceProvider.overrideWithValue(
+          const _NoopAudioCaptureService(),
+        ),
+        audioPlaybackServiceProvider.overrideWithValue(
+          const _NoopAudioPlaybackService(),
+        ),
+        streamingVoiceEnabledProvider.overrideWithValue(true),
+        nativeIosVoiceEnabledProvider.overrideWithValue(false),
+        streamingVoiceApiProvider.overrideWithValue(streamingApi),
+        streamingAudioCaptureServiceProvider.overrideWithValue(captureService),
+        bargeInDetectionServiceProvider.overrideWithValue(
+          const _NoopBargeInDetectionService(),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(voiceCallProvider.notifier);
+
+    expect(await controller.startCall(), isTrue);
+    await captureService.readyAt(0);
+
+    await streamingApi.socket.closeFromServer();
+    await Future<void>.delayed(Duration.zero);
+
+    final state = container.read(voiceCallProvider);
+    expect(state.phase, VoiceCallPhase.failed);
+    expect(state.errorMessage, contains('disconnected'));
+  });
 
   test(
     'streaming voice keeps listening quietly when no speech arrives',
@@ -300,6 +349,10 @@ void main() {
     expect(
       container.read(voiceCallNoSpeechTimeoutProvider),
       const Duration(seconds: 24),
+    );
+    expect(
+      container.read(voiceCallThinkingTimeoutProvider),
+      const Duration(seconds: 30),
     );
   });
 
@@ -440,11 +493,10 @@ void main() {
   );
 
   test(
-    'barge-in does not start while Rex is thinking',
+    'streaming speech-final transcript closes the utterance for backend processing',
     () async {
       final captureService = _ScriptedStreamingAudioCaptureService();
       final streamingApi = _FakeStreamingVoiceApi();
-      final bargeInService = _ControlledBargeInDetectionService();
       final container = ProviderContainer(
         overrides: [
           microphonePermissionProvider.overrideWithValue(
@@ -468,8 +520,9 @@ void main() {
           streamingAudioCaptureServiceProvider.overrideWithValue(
             captureService,
           ),
-          bargeInDetectionServiceProvider.overrideWithValue(bargeInService),
-          voiceCallBargeInEnabledProvider.overrideWithValue(true),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -479,19 +532,91 @@ void main() {
       expect(await controller.startCall(), isTrue);
       await captureService.readyAt(0);
 
-      controller.startThinking(finalTranscript: 'Tell me about my day.');
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'Hey. How are you doing?',
+        'speech_final': true,
+      });
       await Future<void>.delayed(Duration.zero);
 
-      final state = container.read(voiceCallProvider);
-      expect(state.phase, VoiceCallPhase.thinking);
-      expect(bargeInService.started.isCompleted, isFalse);
-      expect(streamingApi.socket.sentEvents, isNot(contains('user.interrupt')));
-      expect(streamingApi.socket.sentEvents, isNot(contains('session.end')));
-      expect(streamingApi.connectCount, 1);
-      expect(streamingApi.socket.closeCount, 0);
-      expect(bargeInService.stopCount, 0);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      expect(
+        streamingApi.socket.sentEvents.where(
+          (event) => event == 'utterance.end',
+        ),
+        hasLength(1),
+      );
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Hey. How are you doing?',
+      });
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'Hey. How are you doing?',
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        streamingApi.socket.sentEvents.where(
+          (event) => event == 'utterance.end',
+        ),
+        hasLength(1),
+      );
     },
   );
+
+  test('barge-in does not start while Rex is thinking', () async {
+    final captureService = _ScriptedStreamingAudioCaptureService();
+    final streamingApi = _FakeStreamingVoiceApi();
+    final bargeInService = _ControlledBargeInDetectionService();
+    final container = ProviderContainer(
+      overrides: [
+        microphonePermissionProvider.overrideWithValue(
+          const _GrantedMicrophonePermissionService(),
+        ),
+        voiceAudioSessionServiceProvider.overrideWithValue(
+          const _NoopVoiceAudioSessionService(),
+        ),
+        backgroundVoiceServiceProvider.overrideWithValue(
+          const _NoopBackgroundVoiceService(),
+        ),
+        audioCaptureServiceProvider.overrideWithValue(
+          const _NoopAudioCaptureService(),
+        ),
+        audioPlaybackServiceProvider.overrideWithValue(
+          const _NoopAudioPlaybackService(),
+        ),
+        streamingVoiceEnabledProvider.overrideWithValue(true),
+        nativeIosVoiceEnabledProvider.overrideWithValue(false),
+        streamingVoiceApiProvider.overrideWithValue(streamingApi),
+        streamingAudioCaptureServiceProvider.overrideWithValue(captureService),
+        bargeInDetectionServiceProvider.overrideWithValue(bargeInService),
+        voiceCallBargeInEnabledProvider.overrideWithValue(true),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(voiceCallProvider.notifier);
+
+    expect(await controller.startCall(), isTrue);
+    await captureService.readyAt(0);
+
+    controller.startThinking(finalTranscript: 'Tell me about my day.');
+    await Future<void>.delayed(Duration.zero);
+
+    final state = container.read(voiceCallProvider);
+    expect(state.phase, VoiceCallPhase.thinking);
+    expect(bargeInService.started.isCompleted, isFalse);
+    expect(streamingApi.socket.sentEvents, isNot(contains('user.interrupt')));
+    expect(streamingApi.socket.sentEvents, isNot(contains('session.end')));
+    expect(streamingApi.connectCount, 1);
+    expect(streamingApi.socket.closeCount, 0);
+    expect(bargeInService.stopCount, 0);
+  });
 
   test(
     'streaming empty audio error restarts listening instead of failing call',

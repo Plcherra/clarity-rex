@@ -94,7 +94,7 @@ typedef VoiceCallNow = DateTime Function();
 final voiceCallNowProvider = Provider<VoiceCallNow>((ref) => DateTime.now);
 
 final voiceCallThinkingTimeoutProvider = Provider<Duration>(
-  (ref) => const Duration(seconds: 45),
+  (ref) => const Duration(seconds: 30),
 );
 
 final voiceCallTranscriptIdleTimeoutProvider = Provider<Duration>(
