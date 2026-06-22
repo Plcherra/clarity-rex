@@ -180,7 +180,7 @@ class InlineVoiceCallPanel extends StatelessWidget {
         'Ready. Keep the phone in your pocket and talk naturally.',
       VoiceCallPhase.thinking => 'Got it. Rex is working on the reply.',
       VoiceCallPhase.speaking =>
-        'You can interrupt by speaking.',
+        'Rex is replying. End Voice if you need to stop.',
       VoiceCallPhase.failed => 'Tap retry when you are ready to continue.',
     };
   }

@@ -57,7 +57,7 @@ final bargeInDetectionServiceProvider = Provider<BargeInDetectionService>(
   (ref) => PackageBargeInDetectionService(),
 );
 
-final voiceCallBargeInEnabledProvider = Provider<bool>((ref) => true);
+final voiceCallBargeInEnabledProvider = Provider<bool>((ref) => false);
 
 final streamingVoiceApiProvider = Provider<StreamingVoiceApi>(
   (ref) => StreamingVoiceApi(),

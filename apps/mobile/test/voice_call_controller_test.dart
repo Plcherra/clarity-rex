@@ -341,7 +341,7 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    expect(container.read(voiceCallBargeInEnabledProvider), isTrue);
+    expect(container.read(voiceCallBargeInEnabledProvider), isFalse);
     expect(
       container.read(voiceCallTranscriptIdleTimeoutProvider),
       const Duration(seconds: 5),
@@ -377,7 +377,10 @@ void main() {
     );
 
     expect(find.byIcon(Icons.front_hand_rounded), findsNothing);
-    expect(find.text('You can interrupt by speaking.'), findsOneWidget);
+    expect(
+      find.text('Rex is replying. End Voice if you need to stop.'),
+      findsOneWidget,
+    );
   });
 
   test(
@@ -617,6 +620,58 @@ void main() {
     expect(streamingApi.socket.closeCount, 0);
     expect(bargeInService.stopCount, 0);
   });
+
+  test(
+    'barge-in monitoring stays off by default during Rex playback',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final playbackService = _ControlledAudioPlaybackService();
+      final bargeInService = _ControlledBargeInDetectionService();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(bargeInService),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      unawaited(controller.speakTypedAssistantResponse('Rex is speaking now.'));
+      await playbackService.playStarted.future;
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+      expect(bargeInService.started.isCompleted, isFalse);
+
+      playbackService.complete();
+      await captureService.readyAt(1);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+    },
+  );
 
   test(
     'streaming empty audio error restarts listening instead of failing call',

@@ -33,9 +33,9 @@ abstract class BargeInDetectionService {
 }
 
 class PackageBargeInDetectionService implements BargeInDetectionService {
-  static const _bargeInGracePeriod = Duration(milliseconds: 250);
-  static const _bargeInMinimumSpeechDuration = Duration(milliseconds: 160);
-  static const _bargeInSpeechThresholdDb = -34.0;
+  static const _bargeInGracePeriod = Duration(milliseconds: 1600);
+  static const _bargeInMinimumSpeechDuration = Duration(milliseconds: 650);
+  static const _bargeInSpeechThresholdDb = -24.0;
   static const _bargeInPreRollBytes = 16000;
 
   PackageBargeInDetectionService({
@@ -76,22 +76,24 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
         if (_notified) {
           return;
         }
-        _rememberPreRollChunk(chunk);
 
         final startedAt = _startedAt;
         final now = _now();
         if (startedAt == null ||
             now.difference(startedAt) < _bargeInGracePeriod) {
+          _preRollChunks.clear();
           return;
         }
 
         final currentDb = _pcm16Decibels(chunk);
         if (currentDb < _bargeInSpeechThresholdDb) {
           _speechStartedAt = null;
+          _preRollChunks.clear();
           return;
         }
 
         _speechStartedAt ??= now;
+        _rememberPreRollChunk(chunk);
         if (now.difference(_speechStartedAt!) >=
             _bargeInMinimumSpeechDuration) {
           _notified = true;
