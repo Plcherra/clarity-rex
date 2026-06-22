@@ -128,16 +128,7 @@ class StreamingVoiceSession {
       );
     }
 
-    final event = VoiceStreamEvent.fromJson(decoded);
-    if (event.name == 'error') {
-      if (event.errorCode == 'turn_in_progress') {
-        return event;
-      }
-      throw StreamingVoiceApiException(
-        event.detail ?? 'Assistant voice stream failed.',
-      );
-    }
-    return event;
+    return VoiceStreamEvent.fromJson(decoded);
   }
 }
 

@@ -371,6 +371,36 @@ async def test_voice_stream_live_transcript_idle_starts_turn(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_voice_stream_live_blank_transcription_recovers_as_empty_audio():
+    class BlankLiveTranscription:
+        async def finish(self):
+            return {
+                "transcript": "   ",
+                "confidence": 0.2,
+                "duration_seconds": 0.1,
+                "metadata": {"transport": "websocket-live"},
+            }
+
+    websocket = FakeWebSocket()
+    chat = FakeChatService()
+    tts = FakeGoogleTTSService()
+    session = VoiceStreamSession(
+        websocket=websocket,
+        deepgram_streaming_service=FakeLiveDeepgramStreamingService(),
+        chat_service=chat,
+        google_tts_service=tts,
+    )
+    session._live_transcription = BlankLiveTranscription()
+
+    await session._process_live_utterance()
+
+    assert websocket.events[-1]["event"] == "error"
+    assert websocket.events[-1]["code"] == "empty_audio"
+    assert chat.stream_calls == []
+    assert tts.calls == []
+
+
+@pytest.mark.asyncio
 async def test_voice_stream_live_transcript_idle_uses_timing_contract(monkeypatch):
     delays = []
 
@@ -510,6 +540,31 @@ def test_voice_stream_rejects_empty_utterance(client):
         assert event["detail"] == "I did not catch any audio."
 
 
+def test_voice_stream_rejects_blank_transcription_as_empty_audio(client):
+    deepgram = FakeDeepgramStreamingService(transcript="   ", partial_transcript="")
+    chat = FakeChatService()
+    tts = FakeGoogleTTSService()
+    override_services(
+        deepgram_streaming_service=deepgram,
+        chat_service=chat,
+        google_tts_service=tts,
+    )
+
+    with client.websocket_connect("/voice/stream") as websocket:
+        websocket.send_json({"event": "session.start"})
+        websocket.receive_json()
+        websocket.send_bytes(b"pcm-frame")
+        websocket.receive_json()
+        websocket.send_json({"event": "utterance.end"})
+
+        event = receive_until(websocket, "error")
+        assert event["code"] == "empty_audio"
+        assert event["detail"] == "I did not catch any audio."
+
+    assert chat.stream_calls == []
+    assert tts.calls == []
+
+
 def test_voice_stream_interrupts_active_turn(client):
     deepgram = SlowDeepgramStreamingService()
     chat = FakeChatService()
@@ -527,6 +582,28 @@ def test_voice_stream_interrupts_active_turn(client):
         assert interrupted["event"] == "session.interrupted"
 
     assert chat.stream_calls == []
+
+
+@pytest.mark.asyncio
+async def test_voice_stream_ignores_trailing_audio_before_assistant_audio():
+    websocket = FakeWebSocket()
+    session = VoiceStreamSession(
+        websocket=websocket,
+        deepgram_streaming_service=FakeDeepgramStreamingService(),
+        chat_service=FakeChatService(),
+        google_tts_service=FakeGoogleTTSService(),
+    )
+    session._active_turn_task = asyncio.create_task(asyncio.sleep(30))
+    session._assistant_audio_started = False
+
+    await session._receive_audio_chunk(b"late-capture-frame")
+
+    assert websocket.events == []
+    assert session._audio_chunks == []
+    assert session._audio_bytes == 0
+    assert session._audio_chunks_received == 0
+
+    await session._cancel_active_turn()
 
 
 class SequencedDeepgramStreamingService:
@@ -606,7 +683,10 @@ class PausingFirstTurnChatService:
                 "loaded_context": {},
             }
         if len(self.stream_calls) == 1:
-            yield {"event": "token", "token": "Old "}
+            yield {
+                "event": "token",
+                "token": "Old response is still being spoken now while Rex continues.",
+            }
             await asyncio.sleep(30)
             return
 
@@ -639,6 +719,102 @@ class PausingFirstTurnChatService:
         return {"id": "voice-turn-barge-in", **kwargs}
 
 
+class LongTokenChatService:
+    def __init__(self):
+        self.stream_calls = []
+        self.metadata_calls = []
+
+    async def stream_message(
+        self,
+        message,
+        conversation_id=None,
+        file=None,
+        response_instructions=None,
+        max_response_tokens=None,
+        financial_context=None,
+        channel=None,
+        include_turn_trace=False,
+    ):
+        self.stream_calls.append(
+            {
+                "message": message,
+                "conversation_id": conversation_id,
+                "file": file,
+                "response_instructions": response_instructions,
+                "max_response_tokens": max_response_tokens,
+                "financial_context": financial_context,
+                "channel": channel,
+                "include_turn_trace": include_turn_trace,
+            }
+        )
+        yield {"event": "conversation", "conversation_id": "conversation-interrupt"}
+        if include_turn_trace:
+            yield {
+                "event": "turn.trace",
+                "intent": "casual",
+                "channel": "voice",
+                "loaded_context": {},
+            }
+        yield {
+            "event": "token",
+            "token": "This response will be interrupted before audio can be sent.",
+        }
+        yield {
+            "event": "done",
+            "conversation_id": "conversation-interrupt",
+            "response": "This response will be interrupted before audio can be sent.",
+            "messages": [],
+        }
+
+    async def save_voice_turn_metadata(self, **kwargs):
+        self.metadata_calls.append(kwargs)
+        return {"id": "voice-turn-interrupt", **kwargs}
+
+
+class SlowGoogleTTSService:
+    def __init__(self):
+        self.calls = []
+        self.started = asyncio.Event()
+
+    async def synthesize_speech(self, text):
+        self.calls.append(text)
+        self.started.set()
+        await asyncio.sleep(30)
+        return {
+            "audio_content_type": "audio/mpeg",
+            "audio_base64": "bXAzLWJ5dGVz",
+            "audio_encoding": "MP3",
+            "voice_name": "en-US-Neural2-J",
+            "language_code": "en-US",
+            "metadata": {"vendor": "google_tts"},
+        }
+
+
+@pytest.mark.asyncio
+async def test_voice_stream_interrupt_cancels_pending_tts_audio():
+    websocket = FakeWebSocket()
+    tts = SlowGoogleTTSService()
+    session = VoiceStreamSession(
+        websocket=websocket,
+        deepgram_streaming_service=FakeDeepgramStreamingService(),
+        chat_service=LongTokenChatService(),
+        google_tts_service=tts,
+    )
+
+    await session._receive_audio_chunk(b"pcm-frame")
+    await session._receive_text_event('{"event":"utterance.end"}')
+    await asyncio.wait_for(tts.started.wait(), timeout=1)
+
+    await session._receive_text_event('{"event":"user.interrupt"}')
+
+    assert [event["event"] for event in websocket.events].count(
+        "assistant.audio_chunk"
+    ) == 0
+    assert any(event["event"] == "session.interrupted" for event in websocket.events)
+    assert session._active_tts_tasks == set()
+    assert session._active_audio_flush_tasks == set()
+
+
 def test_voice_stream_audio_barge_in_cancels_active_turn_and_starts_next(client):
     deepgram = SequencedDeepgramStreamingService(
         [
@@ -662,7 +838,13 @@ def test_voice_stream_audio_barge_in_cancels_active_turn_and_starts_next(client)
         assert websocket.receive_json()["event"] == "audio.received"
         websocket.send_json({"event": "utterance.end"})
         token = receive_until(websocket, "assistant.token")
-        assert token["token"] == "Old "
+        assert token["token"] == (
+            "Old response is still being spoken now while Rex continues."
+        )
+        old_audio = receive_until(websocket, "assistant.audio_chunk")
+        assert old_audio["text"] == (
+            "Old response is still being spoken now while Rex continues."
+        )
 
         websocket.send_bytes(b"barge-in-audio")
         interrupted = receive_until(websocket, "session.interrupted")
@@ -694,7 +876,10 @@ def test_voice_stream_audio_barge_in_cancels_active_turn_and_starts_next(client)
     ]
     assert len(chat.metadata_calls) == 1
     assert chat.metadata_calls[0]["user_message_id"] == "user-message-2"
-    assert tts.calls == ["Fresh response."]
+    assert tts.calls == [
+        "Old response is still being spoken now while Rex continues.",
+        "Fresh response.",
+    ]
 
 
 def test_voice_response_max_tokens_keeps_normal_turns_short_and_deep_turns_larger():

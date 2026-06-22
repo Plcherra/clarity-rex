@@ -10,7 +10,6 @@ class InlineVoiceCallPanel extends StatelessWidget {
     required this.onRetry,
     required this.onEnd,
     required this.onToggleMute,
-    required this.onInterrupt,
     required this.onOpenSettings,
   });
 
@@ -18,16 +17,12 @@ class InlineVoiceCallPanel extends StatelessWidget {
   final VoidCallback onRetry;
   final VoidCallback onEnd;
   final VoidCallback onToggleMute;
-  final VoidCallback onInterrupt;
   final VoidCallback onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isFailed = state.phase == VoiceCallPhase.failed;
-    final canInterrupt =
-        state.phase == VoiceCallPhase.speaking ||
-        state.phase == VoiceCallPhase.thinking;
     final transcript = state.currentTranscript.trim();
     final error = state.errorMessage?.trim();
     final statusColor = isFailed ? RexUiTokens.danger : RexUiTokens.accent;
@@ -104,15 +99,6 @@ class InlineVoiceCallPanel extends StatelessWidget {
                           ),
                         ),
                       ] else ...[
-                        IconButton(
-                          onPressed: canInterrupt ? onInterrupt : null,
-                          icon: const Icon(Icons.front_hand_rounded),
-                          tooltip: 'Interrupt Rex and listen',
-                          constraints: const BoxConstraints(
-                            minWidth: 44,
-                            minHeight: 44,
-                          ),
-                        ),
                         IconButton(
                           onPressed: onToggleMute,
                           icon: Icon(
@@ -194,7 +180,7 @@ class InlineVoiceCallPanel extends StatelessWidget {
         'Ready. Keep the phone in your pocket and talk naturally.',
       VoiceCallPhase.thinking => 'Got it. Rex is working on the reply.',
       VoiceCallPhase.speaking =>
-        'You can interrupt by talking or tapping the hand button.',
+        'You can interrupt by speaking.',
       VoiceCallPhase.failed => 'Tap retry when you are ready to continue.',
     };
   }

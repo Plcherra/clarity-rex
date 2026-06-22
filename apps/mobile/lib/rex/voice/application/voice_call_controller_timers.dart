@@ -257,8 +257,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
     if (_isBargeInMonitoring ||
         !ref.read(voiceCallBargeInEnabledProvider) ||
         !_isCurrentCall(generation) ||
-        (state.phase != VoiceCallPhase.thinking &&
-            state.phase != VoiceCallPhase.speaking) ||
+        state.phase != VoiceCallPhase.speaking ||
         state.isMuted) {
       return;
     }
@@ -270,9 +269,11 @@ extension VoiceCallControllerTimers on VoiceCallController {
             config: ref.read(voiceCaptureConfigProvider),
             onBargeIn: (audioChunks) {
               if (_isCurrentCall(generation) &&
-                  (state.phase == VoiceCallPhase.thinking ||
-                      state.phase == VoiceCallPhase.speaking) &&
+                  state.phase == VoiceCallPhase.speaking &&
                   !state.isMuted) {
+                debugPrint(
+                  'rex_voice_barge_in detected chunks=${audioChunks.length}',
+                );
                 interruptAndListen(initialAudioChunks: audioChunks);
               }
             },

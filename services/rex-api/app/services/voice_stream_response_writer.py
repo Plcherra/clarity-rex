@@ -28,6 +28,8 @@ class VoiceStreamResponseWriterMixin:
         transcript: str,
         transcription: dict[str, Any],
         timings: dict[str, int],
+        *,
+        turn_generation: int,
     ) -> str:
         response_parts: list[str] = []
         speech_buffer = ""
@@ -67,10 +69,20 @@ class VoiceStreamResponseWriterMixin:
             task = asyncio.create_task(flush_ready_audio_chunks())
             audio_flush_tasks.add(task)
             task.add_done_callback(audio_flush_tasks.discard)
+            active_audio_flush_tasks = getattr(
+                self,
+                "_active_audio_flush_tasks",
+                None,
+            )
+            if isinstance(active_audio_flush_tasks, set):
+                active_audio_flush_tasks.add(task)
+                task.add_done_callback(active_audio_flush_tasks.discard)
 
         async def flush_ready_audio_chunks() -> None:
             try:
                 await send_ready_audio_chunks(block=False)
+            except asyncio.CancelledError:
+                return
             except Exception:
                 # The main streaming path awaits pending chunks too, where errors
                 # are surfaced through the normal turn error handling.
@@ -80,10 +92,14 @@ class VoiceStreamResponseWriterMixin:
             nonlocal first_audio_at, last_audio_sent_at
             async with audio_send_lock:
                 while pending_audio_chunks:
+                    if not self._is_current_voice_turn(turn_generation):
+                        return
                     pending = pending_audio_chunks[0]
                     if not block and not pending.task.done():
                         return
                     synthesis = await pending.task
+                    if not self._is_current_voice_turn(turn_generation):
+                        return
                     pending_audio_chunks.pop(0)
                     now = time.perf_counter()
                     if last_audio_sent_at is not None:
@@ -99,7 +115,11 @@ class VoiceStreamResponseWriterMixin:
                         timings["tts_first_audio_turn_ms"] = self._elapsed_ms(
                             chat_started_at
                         )
-                    await self._send_audio_chunk_event(pending.text, synthesis)
+                    await self._send_audio_chunk_event(
+                        pending.text,
+                        synthesis,
+                        turn_generation=turn_generation,
+                    )
 
         async for event in self.chat_service.stream_message(
             transcript,
@@ -218,7 +238,11 @@ class VoiceStreamResponseWriterMixin:
         self,
         text: str,
         synthesis: dict[str, Any],
+        *,
+        turn_generation: int,
     ) -> None:
+        if not self._is_current_voice_turn(turn_generation):
+            return
         await self._send_event(
             "assistant.audio_chunk",
             text=text,
@@ -229,6 +253,11 @@ class VoiceStreamResponseWriterMixin:
             language_code=synthesis["language_code"],
             metadata=synthesis.get("metadata") or {},
         )
+        if self._is_current_voice_turn(turn_generation):
+            self._assistant_audio_started = True
+
+    def _is_current_voice_turn(self, turn_generation: int) -> bool:
+        return getattr(self, "_turn_generation", turn_generation) == turn_generation
 
     def _safe_turn_trace(self, event: dict[str, Any]) -> dict[str, Any]:
         return {

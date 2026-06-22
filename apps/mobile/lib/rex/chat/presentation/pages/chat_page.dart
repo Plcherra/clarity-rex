@@ -367,9 +367,6 @@ class _ChatPageState extends ConsumerState<ChatPage>
                 onRetry: _startVoiceCall,
                 onEnd: voiceController.endCall,
                 onToggleMute: voiceController.toggleMuted,
-                onInterrupt: () => voiceController.interruptAndListen(
-                  reason: 'Rex was interrupted.',
-                ),
                 onOpenSettings: voiceController.openVoiceSettings,
               ),
             ChatInputBar(

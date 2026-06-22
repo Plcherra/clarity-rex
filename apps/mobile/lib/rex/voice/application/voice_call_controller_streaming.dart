@@ -465,6 +465,14 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
               _handleTurnInProgressEvent();
               break;
             }
+            if (event.errorCode == 'empty_audio' ||
+                _isNoAudioError(event.detail ?? '')) {
+              debugPrint('rex_voice_stream empty_audio_recovered');
+              _recoverFromEmptyVoiceTurn(
+                'I did not catch that. I am listening again.',
+              );
+              break;
+            }
             fail(event.detail ?? 'Assistant voice stream failed.');
             return;
         }
@@ -479,6 +487,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
       }
     } finally {
       if (identical(_activeStreamingSession, session)) {
+        debugPrint('rex_voice_stream listener_detached');
         _activeStreamingSession = null;
         _activeStreamingEventsTask = null;
       }
