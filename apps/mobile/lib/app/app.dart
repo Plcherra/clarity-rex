@@ -239,7 +239,7 @@ final class ClarityApp extends StatelessWidget {
     if (authController.isMfaRequired) {
       return MfaVerificationScreen(controller: authController);
     }
-    if (profileController.isLoading) {
+    if (profileController.isLoading && profileController.profile == null) {
       return const _AppLoadingScreen();
     }
     if (!profileController.hasCompleteProfile) {

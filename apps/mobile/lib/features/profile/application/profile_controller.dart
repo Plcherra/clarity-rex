@@ -33,7 +33,8 @@ final class ProfileController extends ChangeNotifier {
   }
 
   Future<void> hydrateProfileForCurrentUser() async {
-    isLoading = true;
+    final shouldBlockUi = profile == null;
+    isLoading = shouldBlockUi;
     errorMessage = null;
     notifyListeners();
 
@@ -57,7 +58,9 @@ final class ProfileController extends ChangeNotifier {
       profile = null;
     } catch (e) {
       errorMessage = e.toString();
-      profile = null;
+      if (shouldBlockUi) {
+        profile = null;
+      }
     } finally {
       isLoading = false;
       notifyListeners();

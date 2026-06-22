@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 
@@ -29,6 +30,8 @@ class FakeContextMemoryStore:
         self.fail_structured_context = fail_structured_context
         self.relevant_memory_queries = []
         self.search_message_queries = []
+        self.list_message_queries = []
+        self.conversation_message_queries = []
         self.structured_context_queries = []
         self.plan_calls = []
         self.milestone_calls = []
@@ -107,6 +110,9 @@ class FakeContextMemoryStore:
         return self.messages[-limit:]
 
     async def get_conversation_messages(self, conversation_id, limit=100):
+        self.conversation_message_queries.append(
+            {"conversation_id": conversation_id, "limit": limit}
+        )
         messages = [
             message
             for message in self.past_messages
@@ -164,6 +170,13 @@ class FakeContextMemoryStore:
         offset=0,
         exclude_conversation_id=None,
     ):
+        self.list_message_queries.append(
+            {
+                "limit": limit,
+                "offset": offset,
+                "exclude_conversation_id": exclude_conversation_id,
+            }
+        )
         matches = []
         for message in reversed(self.past_messages):
             if (
@@ -1008,6 +1021,27 @@ async def test_chat_context_broad_past_phrases_always_trigger_chat_search(
 
 
 @pytest.mark.asyncio
+async def test_chat_context_keyword_hit_skips_full_scan_when_search_succeeds():
+    store = FakeContextMemoryStore()
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Search chats for mom",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert any(
+        "mom's birthday" in item["content"]
+        for item in structured_context["chat_search_results"]
+    )
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert status["full_scan_used"] is False
+    assert "full_scan" not in status["query_modes"]
+    assert store.list_message_queries == []
+
+
+@pytest.mark.asyncio
 async def test_chat_context_full_scan_fallback_finds_manual_recall_examples():
     store = FakeContextMemoryStore(force_empty_search_messages=True)
     store.past_messages = [
@@ -1064,6 +1098,90 @@ async def test_chat_context_full_scan_fallback_finds_manual_recall_examples():
     status = structured_context["memory_status"]["source_statuses"][0]
     assert status["full_scan_used"] is True
     assert "full_scan" in status["query_modes"]
+    assert len(store.list_message_queries) == 1
+
+
+@pytest.mark.asyncio
+async def test_chat_context_chat_search_timeout_returns_degraded_status(monkeypatch):
+    class SlowSearchStore(FakeContextMemoryStore):
+        async def search_messages(
+            self,
+            query,
+            limit=50,
+            exclude_conversation_id=None,
+            offset=0,
+        ):
+            await asyncio.sleep(0.05)
+            return await super().search_messages(
+                query,
+                limit=limit,
+                exclude_conversation_id=exclude_conversation_id,
+                offset=offset,
+            )
+
+    monkeypatch.setattr(
+        "app.services.chat_context_service.CHAT_SEARCH_TIMEOUT_SECONDS",
+        0.01,
+    )
+    store = SlowSearchStore()
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Search chats for mom",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    memory_status = structured_context["memory_status"]
+    assert memory_status["state"] == "degraded"
+    assert memory_status["failures"][0]["source"] == "chat_search"
+    assert "timed out" in memory_status["failures"][0]["message"]
+
+
+@pytest.mark.asyncio
+async def test_chat_context_caches_conversation_fetches_for_excerpt_building():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "mom-birthday",
+            "conversation_id": "conversation-old",
+            "role": "user",
+            "content": "My mom's birthday is June 18.",
+            "timestamp": "2026-06-12T18:48:00Z",
+        },
+        {
+            "id": "mom-money",
+            "conversation_id": "conversation-old",
+            "role": "user",
+            "content": "I want to send money to my mom around the 18th.",
+            "timestamp": "2026-06-12T18:49:00Z",
+        },
+        {
+            "id": "mom-dinner",
+            "conversation_id": "conversation-old",
+            "role": "user",
+            "content": "I also mentioned planning dinner for mom.",
+            "timestamp": "2026-06-12T18:50:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="What did I say about mom?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert structured_context["chat_search_results"][0]["id"] == "chat-conversation-old"
+    conversation_fetches = [
+        query
+        for query in store.conversation_message_queries
+        if query["conversation_id"] == "conversation-old"
+    ]
+    assert conversation_fetches == [
+        {"conversation_id": "conversation-old", "limit": 40},
+        {"conversation_id": "conversation-old", "limit": 500},
+    ]
 
 
 @pytest.mark.asyncio

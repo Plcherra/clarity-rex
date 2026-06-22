@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -10,8 +11,10 @@ final class RexApiClient {
     http.Client? httpClient,
     String? baseUrl,
     RexAuthHeaders? authHeaders,
+    Duration requestTimeout = const Duration(seconds: 60),
   }) : _httpClient = httpClient ?? http.Client(),
        _authHeaders = authHeaders ?? const RexAuthHeaders(),
+       _requestTimeout = requestTimeout,
        _baseUrl = (baseUrl ?? RexConfig.backendBaseUrl).replaceAll(
          RegExp(r'/$'),
          '',
@@ -19,6 +22,7 @@ final class RexApiClient {
 
   final http.Client _httpClient;
   final RexAuthHeaders _authHeaders;
+  final Duration _requestTimeout;
   final String _baseUrl;
 
   Uri uri(String path, [Map<String, String>? query]) {
@@ -54,35 +58,49 @@ final class RexApiClient {
   }
 
   Future<http.Response> get(String path, {Map<String, String>? query}) {
-    return _httpClient.get(uri(path, query), headers: _authHeaders.headers());
+    return _withTimeout(
+      _httpClient.get(uri(path, query), headers: _authHeaders.headers()),
+    );
   }
 
   Future<http.Response> postJson(String path, Map<String, dynamic> body) {
-    return _httpClient.post(
-      uri(path),
-      headers: _authHeaders.headers({'Content-Type': 'application/json'}),
-      body: jsonEncode(body),
+    return _withTimeout(
+      _httpClient.post(
+        uri(path),
+        headers: _authHeaders.headers({'Content-Type': 'application/json'}),
+        body: jsonEncode(body),
+      ),
     );
   }
 
   Future<http.Response> post(String path) {
-    return _httpClient.post(uri(path), headers: _authHeaders.headers());
+    return _withTimeout(
+      _httpClient.post(uri(path), headers: _authHeaders.headers()),
+    );
   }
 
   Future<http.Response> patchJson(String path, Map<String, dynamic> body) {
-    return _httpClient.patch(
-      uri(path),
-      headers: _authHeaders.headers({'Content-Type': 'application/json'}),
-      body: jsonEncode(body),
+    return _withTimeout(
+      _httpClient.patch(
+        uri(path),
+        headers: _authHeaders.headers({'Content-Type': 'application/json'}),
+        body: jsonEncode(body),
+      ),
     );
   }
 
   Future<http.Response> delete(String path) {
-    return _httpClient.delete(uri(path), headers: _authHeaders.headers());
+    return _withTimeout(
+      _httpClient.delete(uri(path), headers: _authHeaders.headers()),
+    );
   }
 
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     request.headers.addAll(_authHeaders.headers());
-    return _httpClient.send(request);
+    return _withTimeout(_httpClient.send(request));
+  }
+
+  Future<T> _withTimeout<T>(Future<T> request) {
+    return request.timeout(_requestTimeout);
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
@@ -96,6 +97,38 @@ void main() {
     expect(requests.single.body, contains('"spent_this_month":1200.5'));
     expect(requests.single.body, contains('"transactions"'));
     expect(requests.single.body, contains('"Coffee Shop"'));
+  });
+
+  test('ChatApi maps request timeouts to retryable Assistant errors', () async {
+    final chatApi = ChatApi(
+      apiClient: RexApiClient(
+        baseUrl: 'https://clarity.example.com',
+        authHeaders: const RexAuthHeaders(
+          accessTokenProvider: _testAccessToken,
+        ),
+        requestTimeout: const Duration(milliseconds: 5),
+        httpClient: MockClient((request) async {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          return http.Response(
+            '{"conversation_id":"conversation-1","response":"ok","messages":[]}',
+            200,
+          );
+        }),
+      ),
+    );
+
+    await expectLater(
+      chatApi.sendMessage('Do you remember Jessica?'),
+      throwsA(
+        isA<ChatApiException>()
+            .having((error) => error.type, 'type', ChatApiErrorType.timeout)
+            .having(
+              (error) => error.message,
+              'message',
+              contains('too long'),
+            ),
+      ),
+    );
   });
 
   test('ChatApi sends PDF attachments with filename and content type', () async {

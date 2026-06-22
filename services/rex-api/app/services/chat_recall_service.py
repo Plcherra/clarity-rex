@@ -1,4 +1,6 @@
 import logging
+import time
+from datetime import datetime, timezone
 from typing import Optional
 
 from app.services.chat_recall_filters import (
@@ -17,6 +19,11 @@ from app.services.memory_context_status import (
 
 CHAT_SEARCH_RESULTS_LIMIT = 12
 PAST_CHAT_SEARCH_PAGE_LIMIT = 200
+PAST_CHAT_SEARCH_MAX_PAGES = 3
+PAST_CHAT_FULL_SCAN_MAX_PAGES = 3
+PAST_CHAT_FULL_SCAN_MAX_MESSAGES = (
+    PAST_CHAT_SEARCH_PAGE_LIMIT * PAST_CHAT_FULL_SCAN_MAX_PAGES
+)
 CHAT_EXCERPT_CONTEXT_BEFORE = 6
 CHAT_EXCERPT_CONTEXT_AFTER = 8
 CHAT_EXCERPT_CONVERSATION_LIMIT = 500
@@ -34,6 +41,7 @@ class ChatRecallService:
     async def fetch_relevant_chat_excerpts(
         self, *, query: str, limit: int, exclude_conversation_id: Optional[str]
     ) -> list[dict]:
+        recall_started = time.perf_counter()
         search_messages = getattr(self.memory_service, "search_messages", None)
         search_conversations = getattr(self.memory_service, "search_conversations", None)
         list_messages = getattr(self.memory_service, "list_messages", None)
@@ -52,9 +60,18 @@ class ChatRecallService:
         partial = False
         failures: list[str] = []
         search_queries = self.past_chat_search_queries(query)
+        target_match_count = self.target_match_count(limit)
+        self.log_recall_phase(
+            "fetch_relevant_chat_excerpts_start",
+            query_length=len(query or ""),
+            query_count=len(search_queries),
+            limit=limit,
+            target_match_count=target_match_count,
+        )
 
         if search_conversations is not None:
             for search_query, query_mode in search_queries:
+                phase_started = time.perf_counter()
                 query_modes.add("conversation_search")
                 attempted_queries.append(
                     {
@@ -83,6 +100,21 @@ class ChatRecallService:
                             > existing.get("_chat_search_score", 0)
                         ):
                             messages_by_id[message_id] = scored_message
+                    self.log_recall_phase(
+                        "conversation_search",
+                        phase_started,
+                        mode=query_mode,
+                        result_count=len(conversation_results),
+                        raw_match_count=len(messages_by_id),
+                    )
+                    if self.viable_match_count(messages_by_id) >= target_match_count:
+                        self.log_recall_phase(
+                            "conversation_search_early_stop",
+                            raw_match_count=len(messages_by_id),
+                            viable_match_count=self.viable_match_count(messages_by_id),
+                            target_match_count=target_match_count,
+                        )
+                        break
                 except Exception as exc:
                     partial = True
                     failure = safe_error_message(exc)
@@ -91,13 +123,18 @@ class ChatRecallService:
                     LOGGER.warning("rex_memory_fetch_failed source=conversation_search")
                     continue
 
-        if search_messages is not None:
+        if (
+            search_messages is not None
+            and self.viable_match_count(messages_by_id) < target_match_count
+        ):
             for search_query, query_mode in search_queries:
                 query_modes.add(query_mode)
                 attempted_queries.append({"query": search_query, "mode": query_mode})
                 try:
                     offset = 0
-                    while True:
+                    page_count = 0
+                    while page_count < PAST_CHAT_SEARCH_MAX_PAGES:
+                        phase_started = time.perf_counter()
                         messages = await search_messages(
                             search_query,
                             limit=PAST_CHAT_SEARCH_PAGE_LIMIT,
@@ -106,6 +143,8 @@ class ChatRecallService:
                         )
                         scanned_messages += len(messages)
                         for message in messages:
+                            if is_chat_search_no_result_message(message):
+                                continue
                             message_id = str(message.get("id") or "")
                             if not message_id:
                                 continue
@@ -120,9 +159,31 @@ class ChatRecallService:
                                 > existing.get("_chat_search_score", 0)
                             ):
                                 messages_by_id[message_id] = scored_message
+                        self.log_recall_phase(
+                            "search_messages_page",
+                            phase_started,
+                            mode=query_mode,
+                            offset=offset,
+                            page_count=page_count + 1,
+                            result_count=len(messages),
+                            raw_match_count=len(messages_by_id),
+                        )
+                        if self.viable_match_count(messages_by_id) >= target_match_count:
+                            self.log_recall_phase(
+                                "search_messages_early_stop",
+                                raw_match_count=len(messages_by_id),
+                                viable_match_count=self.viable_match_count(
+                                    messages_by_id
+                                ),
+                                target_match_count=target_match_count,
+                            )
+                            break
                         if len(messages) < PAST_CHAT_SEARCH_PAGE_LIMIT:
                             break
                         offset += PAST_CHAT_SEARCH_PAGE_LIMIT
+                        page_count += 1
+                    if self.viable_match_count(messages_by_id) >= target_match_count:
+                        break
                 except Exception as exc:
                     partial = True
                     failure = safe_error_message(exc)
@@ -132,13 +193,19 @@ class ChatRecallService:
                     continue
 
         full_scan_used = False
-        if list_messages is not None:
+        should_run_full_scan = (
+            list_messages is not None
+            and self.viable_match_count(messages_by_id) == 0
+        )
+        if should_run_full_scan:
             full_scan_used = True
             query_modes.add("full_scan")
+            phase_started = time.perf_counter()
             full_scan_messages, full_scan_count = await self.full_chat_scan_matches(
                 query=query,
                 exclude_conversation_id=exclude_conversation_id,
                 search_queries=search_queries,
+                target_match_count=target_match_count,
             )
             scanned_messages += full_scan_count
             if full_scan_messages:
@@ -152,6 +219,18 @@ class ChatRecallService:
                         > existing.get("_chat_search_score", 0)
                     ):
                         messages_by_id[message_id] = message
+            self.log_recall_phase(
+                "full_scan_complete",
+                phase_started,
+                scanned_messages=full_scan_count,
+                raw_match_count=len(messages_by_id),
+            )
+        elif list_messages is not None:
+            self.log_recall_phase(
+                "full_scan_skipped",
+                raw_match_count=len(messages_by_id),
+                target_match_count=target_match_count,
+            )
         elif failures:
             return [
                 ContextFetchError(
@@ -160,9 +239,25 @@ class ChatRecallService:
                 ).as_dict()
             ]
 
+        excerpt_started = time.perf_counter()
         excerpts = await self.chat_conversation_excerpts(
             list(messages_by_id.values()),
             limit=limit,
+        )
+        self.log_recall_phase(
+            "chat_conversation_excerpts",
+            excerpt_started,
+            excerpt_count=len(excerpts),
+            raw_match_count=len(messages_by_id),
+        )
+        self.log_recall_phase(
+            "fetch_relevant_chat_excerpts_complete",
+            recall_started,
+            result_count=len(excerpts),
+            raw_match_count=len(messages_by_id),
+            scanned_messages=scanned_messages,
+            full_scan_used=full_scan_used,
+            partial=partial,
         )
         return [
             {
@@ -191,6 +286,7 @@ class ChatRecallService:
     async def full_chat_scan_matches(
         self, *, query: str, exclude_conversation_id: Optional[str],
         search_queries: Optional[list[tuple[str, str]]] = None,
+        target_match_count: int = CHAT_SEARCH_RESULTS_LIMIT,
     ) -> tuple[list[dict], int]:
         list_messages = getattr(self.memory_service, "list_messages", None)
         if list_messages is None:
@@ -200,7 +296,12 @@ class ChatRecallService:
         scanned_messages = 0
         search_queries = search_queries or self.past_chat_search_queries(query)
         offset = 0
-        while True:
+        page_count = 0
+        while (
+            page_count < PAST_CHAT_FULL_SCAN_MAX_PAGES
+            and scanned_messages < PAST_CHAT_FULL_SCAN_MAX_MESSAGES
+        ):
+            phase_started = time.perf_counter()
             try:
                 messages = await list_messages(
                     limit=PAST_CHAT_SEARCH_PAGE_LIMIT,
@@ -230,9 +331,26 @@ class ChatRecallService:
                     > existing.get("_chat_search_score", 0)
                 ):
                     best_by_id[message_id] = scored
+            self.log_recall_phase(
+                "full_scan_page",
+                phase_started,
+                offset=offset,
+                page_count=page_count + 1,
+                result_count=len(messages),
+                scanned_messages=scanned_messages,
+                raw_match_count=len(best_by_id),
+            )
+            if len(best_by_id) >= target_match_count:
+                self.log_recall_phase(
+                    "full_scan_early_stop",
+                    raw_match_count=len(best_by_id),
+                    target_match_count=target_match_count,
+                )
+                break
             if len(messages) < PAST_CHAT_SEARCH_PAGE_LIMIT:
                 break
             offset += PAST_CHAT_SEARCH_PAGE_LIMIT
+            page_count += 1
 
         ranked = sorted(
             best_by_id.values(),
@@ -253,6 +371,39 @@ class ChatRecallService:
                 max_terms=10,
             )
         ]
+
+    def target_match_count(self, limit: int) -> int:
+        return max(limit, min(PAST_CHAT_SEARCH_PAGE_LIMIT, limit * 2))
+
+    def is_viable_chat_match(self, message: dict) -> bool:
+        if is_chat_search_no_result_message(message):
+            return False
+        return float(message.get("_chat_search_score") or 0) > 0
+
+    def viable_match_count(self, messages_by_id: dict[str, dict]) -> int:
+        return sum(
+            1 for message in messages_by_id.values() if self.is_viable_chat_match(message)
+        )
+
+    def log_recall_phase(
+        self,
+        phase: str,
+        started: Optional[float] = None,
+        **fields,
+    ) -> None:
+        elapsed = {}
+        if started is not None:
+            elapsed["elapsed_ms"] = round((time.perf_counter() - started) * 1000)
+        parts = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "phase": phase,
+            **elapsed,
+            **fields,
+        }
+        LOGGER.info(
+            "rex_chat_recall_timing %s",
+            " ".join(f"{key}={value}" for key, value in parts.items()),
+        )
 
     def scored_chat_message(self, query: str, message: dict, *, query_mode: str) -> dict:
         score = self.chat_search_ranking.score_text(
@@ -345,6 +496,7 @@ class ChatRecallService:
     async def chat_conversation_excerpts(
         self, matched_messages: list[dict], *, limit: int
     ) -> list[dict]:
+        conversation_messages_cache: dict[tuple[str, int], list[dict]] = {}
         grouped: dict[str, list[dict]] = {}
         without_conversation = []
         for message in sorted(matched_messages, key=chat_search_candidate_rank):
@@ -376,13 +528,17 @@ class ChatRecallService:
             matches = [
                 message
                 for message in matches
-                if not await self.chat_excerpt_was_rejected_by_user(message)
+                if not await self.chat_excerpt_was_rejected_by_user(
+                    message,
+                    conversation_messages_cache=conversation_messages_cache,
+                )
             ]
             if not matches:
                 continue
             context_messages = await self.conversation_cluster_context(
                 conversation_id,
                 matches,
+                conversation_messages_cache=conversation_messages_cache,
             )
             content = self.chat_excerpt_content(context_messages)
             if not content or not self.chat_excerpt_has_user_content(context_messages):
@@ -429,7 +585,10 @@ class ChatRecallService:
         for message in without_conversation:
             if is_chat_search_no_result_message(message):
                 continue
-            context_messages = await self.chat_excerpt_context(message)
+            context_messages = await self.chat_excerpt_context(
+                message,
+                conversation_messages_cache=conversation_messages_cache,
+            )
             content = self.chat_excerpt_content(context_messages)
             if not content:
                 continue
@@ -457,19 +616,17 @@ class ChatRecallService:
         return excerpts
 
     async def conversation_cluster_context(
-        self, conversation_id: str, matched_messages: list[dict]
+        self,
+        conversation_id: str,
+        matched_messages: list[dict],
+        *,
+        conversation_messages_cache: Optional[dict[tuple[str, int], list[dict]]] = None,
     ) -> list[dict]:
-        get_messages = getattr(self.memory_service, "get_conversation_messages", None)
-        if get_messages is None:
-            return matched_messages
-
-        try:
-            conversation_messages = await get_messages(
-                conversation_id,
-                limit=CHAT_EXCERPT_CONVERSATION_LIMIT,
-            )
-        except Exception:
-            return matched_messages
+        conversation_messages = await self.cached_conversation_messages(
+            conversation_id,
+            limit=CHAT_EXCERPT_CONVERSATION_LIMIT,
+            conversation_messages_cache=conversation_messages_cache,
+        )
         if not conversation_messages:
             return matched_messages
 
@@ -511,7 +668,10 @@ class ChatRecallService:
                     continue
                 if is_memory_rejection_message(message):
                     continue
-                if await self.chat_excerpt_was_rejected_by_user(message):
+                if await self.chat_excerpt_was_rejected_by_user(
+                    message,
+                    conversation_messages=conversation_messages,
+                ):
                     continue
                 if message_id:
                     seen_ids.add(message_id)
@@ -536,23 +696,60 @@ class ChatRecallService:
             return filtered
         return filtered[:CHAT_TITLE_MATCH_CONTEXT_LIMIT]
 
+    async def cached_conversation_messages(
+        self,
+        conversation_id: str,
+        *,
+        limit: int,
+        conversation_messages_cache: Optional[dict[tuple[str, int], list[dict]]] = None,
+    ) -> list[dict]:
+        if not conversation_id:
+            return []
+        cache_key = (conversation_id, limit)
+        if conversation_messages_cache is not None and cache_key in conversation_messages_cache:
+            self.log_recall_phase(
+                "conversation_messages_cache_hit",
+                conversation_id=conversation_id,
+                limit=limit,
+            )
+            return conversation_messages_cache[cache_key]
+
+        get_messages = getattr(self.memory_service, "get_conversation_messages", None)
+        if get_messages is None:
+            return []
+
+        phase_started = time.perf_counter()
+        try:
+            conversation_messages = await get_messages(conversation_id, limit=limit)
+        except Exception:
+            return []
+        self.log_recall_phase(
+            "conversation_messages_fetch",
+            phase_started,
+            conversation_id=conversation_id,
+            limit=limit,
+            result_count=len(conversation_messages or []),
+        )
+        conversation_messages = conversation_messages or []
+        if conversation_messages_cache is not None:
+            conversation_messages_cache[cache_key] = conversation_messages
+        return conversation_messages
+
     async def chat_excerpt_context(
         self, message: dict, *, before: int = CHAT_EXCERPT_CONTEXT_BEFORE,
         after: int = CHAT_EXCERPT_CONTEXT_AFTER,
+        conversation_messages_cache: Optional[dict[tuple[str, int], list[dict]]] = None,
     ) -> list[dict]:
         conversation_id = str(message.get("conversation_id") or "")
         message_id = str(message.get("id") or "")
         if not conversation_id or not message_id:
             return [message]
 
-        get_messages = getattr(self.memory_service, "get_conversation_messages", None)
-        if get_messages is None:
-            return [message]
-
-        try:
-            conversation_messages = await get_messages(conversation_id, limit=80)
-        except Exception:
-            return [message]
+        conversation_messages = await self.cached_conversation_messages(
+            conversation_id,
+            limit=80,
+            conversation_messages_cache=conversation_messages_cache,
+        )
         if not conversation_messages:
             return [message]
 
@@ -595,7 +792,13 @@ class ChatRecallService:
             is_chat_search_user_content_message(message) for message in messages
         )
 
-    async def chat_excerpt_was_rejected_by_user(self, message: dict) -> bool:
+    async def chat_excerpt_was_rejected_by_user(
+        self,
+        message: dict,
+        *,
+        conversation_messages: Optional[list[dict]] = None,
+        conversation_messages_cache: Optional[dict[tuple[str, int], list[dict]]] = None,
+    ) -> bool:
         if str(message.get("role") or "") != "user":
             return False
         conversation_id = str(message.get("conversation_id") or "")
@@ -603,14 +806,12 @@ class ChatRecallService:
         if not conversation_id or not message_id:
             return False
 
-        get_messages = getattr(self.memory_service, "get_conversation_messages", None)
-        if get_messages is None:
-            return False
-
-        try:
-            conversation_messages = await get_messages(conversation_id, limit=40)
-        except Exception:
-            return False
+        if conversation_messages is None:
+            conversation_messages = await self.cached_conversation_messages(
+                conversation_id,
+                limit=40,
+                conversation_messages_cache=conversation_messages_cache,
+            )
         if not conversation_messages:
             return False
 

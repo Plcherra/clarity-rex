@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cross_file/cross_file.dart';
@@ -23,12 +24,15 @@ class ChatApiException implements Exception {
 enum ChatApiErrorType {
   backendValidation,
   network,
+  timeout,
   upload,
   invalidResponse,
   unknown,
 }
 
 class ChatApi {
+  static const _chatStreamIdleTimeout = Duration(seconds: 60);
+
   ChatApi({
     http.Client? client,
     String? baseUrl,
@@ -75,6 +79,15 @@ class ChatApi {
       );
     } on ChatApiException {
       rethrow;
+    } on TimeoutException {
+      throw ChatApiException(
+        attachment == null
+            ? 'Assistant took too long to respond. Please try again.'
+            : 'The upload took too long. Please try again.',
+        type: attachment == null
+            ? ChatApiErrorType.timeout
+            : ChatApiErrorType.upload,
+      );
     } on http.ClientException {
       throw ChatApiException(
         attachment == null
@@ -127,7 +140,9 @@ class ChatApi {
         );
       }
 
-      await for (final event in _eventsFromSse(response.stream)) {
+      await for (final event in _eventsFromSse(
+        response.stream.timeout(_chatStreamIdleTimeout),
+      )) {
         yield event;
       }
     } on RexAuthException catch (error) {
@@ -137,6 +152,15 @@ class ChatApi {
       );
     } on ChatApiException {
       rethrow;
+    } on TimeoutException {
+      throw ChatApiException(
+        attachment == null
+            ? 'Assistant took too long to respond. Please try again.'
+            : 'The upload took too long. Please try again.',
+        type: attachment == null
+            ? ChatApiErrorType.timeout
+            : ChatApiErrorType.upload,
+      );
     } on http.ClientException {
       throw ChatApiException(
         attachment == null
@@ -379,6 +403,9 @@ class ChatApi {
   }
 
   ChatApiErrorType _errorTypeForStatusCode(int statusCode) {
+    if (statusCode == 408 || statusCode == 504) {
+      return ChatApiErrorType.timeout;
+    }
     if (statusCode == 400 ||
         statusCode == 413 ||
         statusCode == 415 ||

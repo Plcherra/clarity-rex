@@ -31,7 +31,9 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
-  int _idx = 0;
+  static int _lastSelectedIndex = 0;
+
+  int _idx = _lastSelectedIndex;
   int _manageCategoriesRequest = 0;
 
   @override
@@ -55,7 +57,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   void _openCategoryManagement() {
     setState(() {
-      _idx = 2;
+      _selectIndex(2);
       _manageCategoriesRequest++;
     });
   }
@@ -103,7 +105,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       surface: 'dashboard_empty',
       action: ConnectBankEntryAction.importCsvInstead,
     );
-    setState(() => _idx = 1);
+    setState(() => _selectIndex(1));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
@@ -164,7 +166,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           indicatorColor: cs.surfaceContainerHighest.withValues(alpha: 0.7),
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           selectedIndex: _idx,
-          onDestinationSelected: (i) => setState(() => _idx = i),
+          onDestinationSelected: (i) => setState(() => _selectIndex(i)),
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.dashboard_outlined),
@@ -195,5 +197,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         ),
       ),
     );
+  }
+
+  void _selectIndex(int index) {
+    _idx = index;
+    _lastSelectedIndex = index;
   }
 }

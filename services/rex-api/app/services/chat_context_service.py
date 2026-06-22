@@ -14,7 +14,7 @@ from app.services.chat_context_recall import ChatContextRecallPolicy
 from app.services.chat_prompt_context_builder import ChatPromptContextBuilder
 from app.services.chat_search_ranking import ChatSearchRanking
 from app.services.goal_context_service import GoalContextService
-from app.services.memory_context_status import MemoryContextAssembler
+from app.services.memory_context_status import ContextFetchError, MemoryContextAssembler
 from app.services.prompt_service import PromptService
 from app.services.recall_intent_helper import (
     MEMORY_INVENTORY_QUERY,
@@ -26,6 +26,7 @@ from app.services.time_context_service import TimeContextService
 
 
 LOGGER = logging.getLogger("rex.context")
+CHAT_SEARCH_TIMEOUT_SECONDS = 4.0
 
 
 class ChatContextService:
@@ -99,7 +100,7 @@ class ChatContextService:
         if load_plan.load_chat_search and conversation_id is None:
             chat_search_results_task = self.timed_fetch(
                 "chat_search",
-                self.chat_recall_service.fetch_relevant_chat_excerpts(
+                self.fetch_chat_search_with_timeout(
                     query=load_plan.recall_query or message,
                     limit=CHAT_SEARCH_RESULTS_LIMIT,
                     exclude_conversation_id=None,
@@ -185,7 +186,7 @@ class ChatContextService:
         chat_search_results_task = (
             self.timed_fetch(
                 "chat_search",
-                self.chat_recall_service.fetch_relevant_chat_excerpts(
+                self.fetch_chat_search_with_timeout(
                     query=load_plan.recall_query or message,
                     limit=CHAT_SEARCH_RESULTS_LIMIT,
                     exclude_conversation_id=None,
@@ -273,6 +274,38 @@ class ChatContextService:
 
     async def empty_list(self) -> list[dict]:
         return []
+
+    async def fetch_chat_search_with_timeout(
+        self,
+        *,
+        query: str,
+        limit: int,
+        exclude_conversation_id: Optional[str],
+    ) -> list[dict]:
+        try:
+            return await asyncio.wait_for(
+                self.chat_recall_service.fetch_relevant_chat_excerpts(
+                    query=query,
+                    limit=limit,
+                    exclude_conversation_id=exclude_conversation_id,
+                ),
+                timeout=CHAT_SEARCH_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            LOGGER.warning(
+                "rex_memory_fetch_failed source=chat_search reason=timeout "
+                "timeout_seconds=%s",
+                CHAT_SEARCH_TIMEOUT_SECONDS,
+            )
+            return [
+                ContextFetchError(
+                    source="chat_search",
+                    message=(
+                        "Past chat search timed out before it finished. "
+                        "Tell the user chat search is degraded right now."
+                    ),
+                ).as_dict()
+            ]
 
     async def timed_fetch(self, name: str, awaitable, timings_ms: dict[str, int]):
         started = time.perf_counter()
