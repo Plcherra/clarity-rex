@@ -139,8 +139,8 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
 
 class PackageStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
-  static const _minimumStreamingSilenceAfterSpeech = Duration(
-    milliseconds: 3200,
+  static const _maximumStreamingSilenceAfterSpeech = Duration(
+    milliseconds: 950,
   );
   static const _minimumStreamingSpeechDuration = Duration(milliseconds: 260);
   static const _streamingSpeechStartThresholdDb = -50.0;
@@ -263,7 +263,7 @@ class PackageStreamingAudioCaptureService
 
   VoiceCaptureConfig _streamingEndpointConfig(VoiceCaptureConfig config) {
     // Live PCM chunks are bursty on mobile, but calls should feel responsive.
-    // Keep a short silence floor and let the server handle final STT quality.
+    // Cap endpoint silence so voice mode can hand off to STT quickly.
     return VoiceCaptureConfig(
       amplitudeInterval: config.amplitudeInterval,
       speechStartThresholdDb: min(
@@ -274,9 +274,9 @@ class PackageStreamingAudioCaptureService
         config.silenceThresholdDb,
         _streamingSilenceThresholdDb,
       ),
-      silenceAfterSpeech: _longerDuration(
+      silenceAfterSpeech: _shorterDuration(
         config.silenceAfterSpeech,
-        _minimumStreamingSilenceAfterSpeech,
+        _maximumStreamingSilenceAfterSpeech,
       ),
       noSpeechTimeout: config.noSpeechTimeout,
       maxUtteranceDuration: config.maxUtteranceDuration,
@@ -289,6 +289,10 @@ class PackageStreamingAudioCaptureService
 
   Duration _longerDuration(Duration value, Duration minimum) {
     return value.compareTo(minimum) >= 0 ? value : minimum;
+  }
+
+  Duration _shorterDuration(Duration value, Duration maximum) {
+    return value.compareTo(maximum) <= 0 ? value : maximum;
   }
 
   double _pcm16Decibels(Uint8List chunk) {

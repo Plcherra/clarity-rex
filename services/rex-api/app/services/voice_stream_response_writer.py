@@ -11,8 +11,8 @@ from app.services.voice_stream_config import (
     voice_response_max_tokens,
 )
 
-_MIN_SPEAKABLE_CHUNK_CHARS = 36
-_MIN_SINGLE_SENTENCE_CHUNK_CHARS = 67
+_MIN_SPEAKABLE_CHUNK_CHARS = 24
+_MIN_SINGLE_SENTENCE_CHUNK_CHARS = 44
 _MAX_SPEAKABLE_CHUNK_CHARS = 140
 
 
@@ -41,39 +41,59 @@ class VoiceStreamResponseWriterMixin:
         self._last_turn_trace = {}
         chat_started_at = time.perf_counter()
         pending_audio_chunks: list[_PendingVoiceAudioChunk] = []
+        audio_send_lock = asyncio.Lock()
+        audio_flush_tasks: set[asyncio.Task[Any]] = set()
         last_audio_sent_at: Optional[float] = None
 
         def queue_audio_chunk(text: str) -> None:
+            task = asyncio.create_task(
+                self._synthesize_audio_chunk(text, timings),
+            )
             pending_audio_chunks.append(
                 _PendingVoiceAudioChunk(
                     text=text,
-                    task=asyncio.create_task(
-                        self._synthesize_audio_chunk(text, timings),
-                    ),
+                    task=task,
                 )
             )
+            task.add_done_callback(lambda _: schedule_ready_audio_flush())
+
+        def schedule_ready_audio_flush() -> None:
+            task = asyncio.create_task(flush_ready_audio_chunks())
+            audio_flush_tasks.add(task)
+            task.add_done_callback(audio_flush_tasks.discard)
+
+        async def flush_ready_audio_chunks() -> None:
+            try:
+                await send_ready_audio_chunks(block=False)
+            except Exception:
+                # The main streaming path awaits pending chunks too, where errors
+                # are surfaced through the normal turn error handling.
+                return
 
         async def send_ready_audio_chunks(*, block: bool) -> None:
             nonlocal first_audio_at, last_audio_sent_at
-            while pending_audio_chunks:
-                pending = pending_audio_chunks[0]
-                if not block and not pending.task.done():
-                    return
-                synthesis = await pending.task
-                pending_audio_chunks.pop(0)
-                now = time.perf_counter()
-                if last_audio_sent_at is not None:
-                    gap_ms = self._elapsed_ms(last_audio_sent_at)
-                    timings["tts_last_chunk_gap_ms"] = gap_ms
-                    timings["tts_max_chunk_gap_ms"] = max(
-                        timings.get("tts_max_chunk_gap_ms", 0),
-                        gap_ms,
-                    )
-                last_audio_sent_at = now
-                if first_audio_at is None:
-                    first_audio_at = now
-                    timings["tts_first_audio_turn_ms"] = self._elapsed_ms(chat_started_at)
-                await self._send_audio_chunk_event(pending.text, synthesis)
+            async with audio_send_lock:
+                while pending_audio_chunks:
+                    pending = pending_audio_chunks[0]
+                    if not block and not pending.task.done():
+                        return
+                    synthesis = await pending.task
+                    pending_audio_chunks.pop(0)
+                    now = time.perf_counter()
+                    if last_audio_sent_at is not None:
+                        gap_ms = self._elapsed_ms(last_audio_sent_at)
+                        timings["tts_last_chunk_gap_ms"] = gap_ms
+                        timings["tts_max_chunk_gap_ms"] = max(
+                            timings.get("tts_max_chunk_gap_ms", 0),
+                            gap_ms,
+                        )
+                    last_audio_sent_at = now
+                    if first_audio_at is None:
+                        first_audio_at = now
+                        timings["tts_first_audio_turn_ms"] = self._elapsed_ms(
+                            chat_started_at
+                        )
+                    await self._send_audio_chunk_event(pending.text, synthesis)
 
         async for event in self.chat_service.stream_message(
             transcript,
@@ -117,6 +137,8 @@ class VoiceStreamResponseWriterMixin:
         if speech_buffer.strip():
             queue_audio_chunk(speech_buffer.strip())
         await send_ready_audio_chunks(block=True)
+        if audio_flush_tasks:
+            await asyncio.gather(*audio_flush_tasks, return_exceptions=True)
 
         metadata_record = await self.chat_service.save_voice_turn_metadata(
             conversation_id=self.conversation_id or "",

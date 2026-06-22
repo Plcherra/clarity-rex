@@ -65,6 +65,7 @@ class VoiceStreamSession(
         self._last_live_transcript_at: Optional[float] = None
         self._turn_audio_bytes = 0
         self._turn_audio_chunks = 0
+        self._send_lock = asyncio.Lock()
 
     async def run(self) -> None:
         await self.websocket.accept()
@@ -383,7 +384,8 @@ class VoiceStreamSession(
         self._active_turn_task = None
 
     async def _send_event(self, event: str, **payload: Any) -> None:
-        await self.websocket.send_json({"event": event, **payload})
+        async with self._send_lock:
+            await self.websocket.send_json({"event": event, **payload})
 
     async def _send_error(
         self,

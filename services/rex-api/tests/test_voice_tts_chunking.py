@@ -11,8 +11,8 @@ class _ChunkProbe(VoiceStreamResponseWriterMixin):
 
 
 class _StreamingWriterProbe(VoiceStreamResponseWriterMixin):
-    def __init__(self, *, tts_delay: float = 0.02):
-        self.chat_service = _FakeStreamingChatService()
+    def __init__(self, *, tts_delay: float = 0.02, chat_service=None):
+        self.chat_service = chat_service or _FakeStreamingChatService()
         self.google_tts_service = _DelayedTTSService(tts_delay)
         self.conversation_id = "conversation-1"
         self.financial_context = None
@@ -52,6 +52,29 @@ class _FakeStreamingChatService:
         return {"id": "voice-turn-1"}
 
 
+class _PausingStreamingChatService:
+    def __init__(self):
+        self.release = asyncio.Event()
+
+    async def stream_message(self, *args, **kwargs):
+        yield {"event": "conversation", "conversation_id": "conversation-1"}
+        text = "Sure. I can take care of that right now. "
+        for token in text.split(" "):
+            await asyncio.sleep(0)
+            yield {"event": "token", "token": f"{token} "}
+        await self.release.wait()
+        yield {"event": "token", "token": "What changed?"}
+        yield {
+            "event": "done",
+            "conversation_id": "conversation-1",
+            "messages": [],
+            "memory_changes": None,
+        }
+
+    async def save_voice_turn_metadata(self, **kwargs):
+        return {"id": "voice-turn-1"}
+
+
 class _DelayedTTSService:
     def __init__(self, delay: float):
         self.delay = delay
@@ -72,13 +95,13 @@ class _DelayedTTSService:
         }
 
 
-def test_voice_chunker_does_not_split_short_sentence_fragments():
+def test_voice_chunker_does_not_split_tiny_sentence_fragments():
     probe = _ChunkProbe()
 
-    chunk, rest = probe._next_speakable_chunk("Cool. I can help with that. ")
+    chunk, rest = probe._next_speakable_chunk("Cool. Yep. ")
 
     assert chunk is None
-    assert rest == "Cool. I can help with that. "
+    assert rest == "Cool. Yep. "
 
 
 def test_voice_chunker_splits_at_substantial_sentence_boundary():
@@ -103,7 +126,7 @@ def test_voice_chunker_uses_word_boundary_for_long_text_without_punctuation():
     chunk, rest = probe._next_speakable_chunk(text)
 
     assert chunk is not None
-    assert 36 <= len(chunk) <= 140
+    assert 24 <= len(chunk) <= 140
     assert rest.strip().startswith("steady")
 
 
@@ -117,7 +140,7 @@ def test_voice_chunker_starts_audio_after_short_voice_sentence():
     assert rest == ""
 
 
-def test_voice_chunker_uses_fewer_chunks_for_short_two_sentence_reply():
+def test_voice_chunker_can_start_audio_on_short_two_sentence_reply():
     probe = _ChunkProbe()
     text = (
         "Capital One savings has monthly interest as the last May activity. "
@@ -134,7 +157,43 @@ def test_voice_chunker_uses_fewer_chunks_for_short_two_sentence_reply():
     if buffer.strip():
         chunks.append(buffer.strip())
 
-    assert chunks == [text]
+    assert chunks == [
+        "Capital One savings has monthly interest as the last May activity.",
+        "No other recent transactions are showing in the data.",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_voice_stream_sends_first_audio_when_tts_finishes_before_next_token():
+    chat_service = _PausingStreamingChatService()
+    writer = _StreamingWriterProbe(tts_delay=0.01, chat_service=chat_service)
+    timings = {}
+
+    stream_task = asyncio.create_task(
+        writer._stream_chat_and_audio(
+            "Can you handle it?",
+            {"confidence": 0.95, "duration_seconds": 1.2},
+            timings,
+        )
+    )
+
+    async def first_audio_event():
+        while True:
+            if any(
+                event["event"] == "assistant.audio_chunk"
+                for event in writer.sent_events
+            ):
+                return
+            await asyncio.sleep(0)
+
+    await asyncio.wait_for(first_audio_event(), timeout=1)
+    assert not stream_task.done()
+
+    chat_service.release.set()
+    response = await stream_task
+
+    assert response.startswith("Sure. I can take care")
+    assert "tts_first_audio_turn_ms" in timings
 
 
 @pytest.mark.asyncio
