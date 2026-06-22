@@ -365,6 +365,7 @@ class _FakeStreamingVoiceApi extends StreamingVoiceApi {
     String? conversationId,
     String inputMimeType = 'audio/linear16',
     int sampleRate = 16000,
+    String client = 'flutter_streaming',
     Map<String, dynamic>? financialContext,
   }) async {
     connectCount++;

@@ -423,7 +423,11 @@ async def test_voice_stream_live_transcript_idle_uses_timing_contract(monkeypatc
 
 
 @pytest.mark.asyncio
-async def test_voice_stream_native_ios_waits_for_explicit_utterance_end(monkeypatch):
+@pytest.mark.parametrize("client_name", ["ios_native", "flutter_streaming"])
+async def test_voice_stream_client_waits_for_explicit_utterance_end(
+    monkeypatch,
+    client_name,
+):
     async def instant_sleep(_delay):
         return None
 
@@ -436,7 +440,7 @@ async def test_voice_stream_native_ios_waits_for_explicit_utterance_end(monkeypa
         chat_service=chat,
         google_tts_service=FakeGoogleTTSService(),
     )
-    session.client = "ios_native"
+    session.client = client_name
     session.conversation_id = "conversation-existing"
     session._live_transcription = FakeLiveTranscription()
 

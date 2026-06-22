@@ -147,6 +147,7 @@ class StreamingVoiceApi {
     String? conversationId,
     String inputMimeType = 'audio/linear16',
     int sampleRate = 16000,
+    String client = 'flutter_streaming',
     Map<String, dynamic>? financialContext,
   }) async {
     final socket = await _connector(
@@ -157,6 +158,7 @@ class StreamingVoiceApi {
       'event': 'session.start',
       'input_mime_type': inputMimeType,
       'sample_rate': sampleRate,
+      'client': client,
     };
     if (conversationId != null) {
       payload['conversation_id'] = conversationId;

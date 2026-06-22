@@ -41,6 +41,7 @@ void main() {
         'event': 'session.start',
         'input_mime_type': 'audio/linear16',
         'sample_rate': 16000,
+        'client': 'flutter_streaming',
         'conversation_id': 'conversation-1',
       });
     },

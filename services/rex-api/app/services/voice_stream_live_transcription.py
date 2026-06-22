@@ -79,7 +79,7 @@ class VoiceStreamLiveTranscriptionMixin:
         self._active_turn_task = asyncio.create_task(self._process_live_utterance())
 
     def _requires_explicit_utterance_end(self) -> bool:
-        return self.client == "ios_native"
+        return self.client in {"flutter_streaming", "ios_native"}
 
     async def _cancel_live_endpoint_check(self) -> None:
         task = self._live_endpoint_task
