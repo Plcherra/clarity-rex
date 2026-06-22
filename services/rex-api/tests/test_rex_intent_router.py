@@ -14,6 +14,28 @@ def test_router_classifies_casual_chat_without_context_loads():
     assert not decision.should_load_accountability
 
 
+@pytest.mark.parametrize(
+    "message",
+    [
+        "It's so hot up here.",
+        "Yeah. Midsummer.",
+        "So what can you do?",
+        "I worked with two new employees, Aaron and Jessica.",
+        "It went amazing because it was a pretty big, busy day.",
+        "Everyone got a good heart.",
+        "I meant Aaron.",
+    ],
+)
+def test_router_keeps_normal_voice_chat_off_finance_path(message):
+    decision = RexIntentRouter().classify(
+        message,
+        has_financial_context=True,
+    )
+
+    assert decision.intent != RexIntent.FINANCE
+    assert not decision.should_use_financial_context
+
+
 def test_router_classifies_simple_memory_save_without_context_loads():
     decision = RexIntentRouter().classify("My mom's birthday is June 18")
 
@@ -185,6 +207,23 @@ def test_router_classifies_finance_without_memory_context():
     assert not decision.should_load_long_term_memory
     assert not decision.should_load_structured_memory
     assert not decision.should_load_goal_context
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Can I afford rent this month?",
+        "Did payroll hit my account?",
+        "How much money did I spend today?",
+        "Show my savings account balance.",
+        "Did I send Jessica money?",
+    ],
+)
+def test_router_classifies_clear_money_action_turns_as_finance(message):
+    decision = RexIntentRouter().classify(message)
+
+    assert decision.intent == RexIntent.FINANCE
+    assert decision.should_use_financial_context
 
 
 def test_router_keeps_financial_delete_on_finance_path():

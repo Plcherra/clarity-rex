@@ -7,35 +7,58 @@ import 'package:clarity/features/transactions/domain/transaction_resolution.dart
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('assistant financial context intent gate skips casual and recall turns', () {
-    expect(shouldAttachAssistantFinancialContext('Hey Rex'), isFalse);
-    expect(
-      shouldAttachAssistantFinancialContext(
-        'Search old chats about Legacy of Kain',
-      ),
-      isFalse,
-    );
-    expect(
-      shouldAttachAssistantFinancialContext(
-        'What do you know about my mom?',
-      ),
-      isFalse,
-    );
-    expect(
-      shouldAttachAssistantFinancialContext('Search chats about money'),
-      isFalse,
-    );
-    expect(
-      shouldAttachAssistantFinancialContext('Did I mention sending money?'),
-      isFalse,
-    );
-    expect(
-      shouldAttachAssistantFinancialContext(
-        'Have we talked about Bom Dough payroll?',
-      ),
-      isFalse,
-    );
-  });
+  test(
+    'assistant financial context intent gate skips casual and recall turns',
+    () {
+      expect(shouldAttachAssistantFinancialContext('Hey Rex'), isFalse);
+      expect(
+        shouldAttachAssistantFinancialContext("It's so hot up here."),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext('Yeah. Midsummer.'),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext('So what can you do?'),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'I worked with two new employees, Aaron and Jessica.',
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext('Everyone got a good heart.'),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'Search old chats about Legacy of Kain',
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext('What do you know about my mom?'),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext('Search chats about money'),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext('Did I mention sending money?'),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'Have we talked about Bom Dough payroll?',
+        ),
+        isFalse,
+      );
+    },
+  );
 
   test('assistant financial context intent gate allows finance turns', () {
     expect(
@@ -52,6 +75,18 @@ void main() {
     );
     expect(
       shouldAttachAssistantFinancialContext('Search my transactions'),
+      isTrue,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext('Can I afford rent this month?'),
+      isTrue,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext('Did payroll hit my account?'),
+      isTrue,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext('Did I send Jessica money?'),
       isTrue,
     );
   });

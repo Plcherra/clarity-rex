@@ -21,6 +21,7 @@ class AccountsScreen extends StatefulWidget {
     required this.transactionController,
     required this.budgetController,
     required this.importJobStatusController,
+    required this.isActive,
   });
 
   final AccountUiController controller;
@@ -28,6 +29,7 @@ class AccountsScreen extends StatefulWidget {
   final TransactionUiController transactionController;
   final BudgetUiController budgetController;
   final ImportJobStatusController importJobStatusController;
+  final bool isActive;
 
   @override
   State<AccountsScreen> createState() => _AccountsScreenState();
@@ -53,7 +55,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
     super.initState();
     _dataNotifier = AccountsDataNotifier();
     widget.controller.addListener(_handleControllerChanged);
-    _loadData();
+    if (widget.isActive) {
+      _loadData();
+    }
   }
 
   @override
@@ -62,6 +66,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_handleControllerChanged);
       widget.controller.addListener(_handleControllerChanged);
+    }
+    if (widget.isActive &&
+        (oldWidget.controller != widget.controller || !oldWidget.isActive)) {
       _loadData();
     }
   }
@@ -74,7 +81,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   void _handleControllerChanged() {
-    _loadData();
+    if (widget.isActive) {
+      _loadData();
+    }
   }
 
   Future<void> _loadData() async {

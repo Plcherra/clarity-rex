@@ -134,6 +134,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         transactionController: widget.ui.transactions,
         budgetController: widget.ui.budgets,
         importJobStatusController: widget.ui.importJobStatus,
+        isActive: _idx == 1,
       ),
       BudgetsScreen(
         controller: widget.ui.budgets,

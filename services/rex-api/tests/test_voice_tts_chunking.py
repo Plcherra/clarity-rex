@@ -4,6 +4,7 @@ import time
 import pytest
 
 from app.services.voice_stream_response_writer import VoiceStreamResponseWriterMixin
+from app.services.voice_stream_session import VoiceStreamSession
 
 
 class _ChunkProbe(VoiceStreamResponseWriterMixin):
@@ -93,6 +94,10 @@ class _DelayedTTSService:
             "language_code": "en-US",
             "metadata": {},
         }
+
+
+async def _never_finishes():
+    await asyncio.Future()
 
 
 def test_voice_chunker_does_not_split_tiny_sentence_fragments():
@@ -217,3 +222,24 @@ async def test_voice_stream_prefetches_tts_chunks_before_previous_audio_finishes
     first_finished_at = writer.google_tts_service.finished[0][1]
     second_started_at = writer.google_tts_service.started[1][1]
     assert second_started_at < first_finished_at
+
+
+@pytest.mark.asyncio
+async def test_voice_session_interrupt_cancels_pending_tts_tasks():
+    session = VoiceStreamSession(
+        websocket=object(),
+        deepgram_streaming_service=object(),
+        chat_service=object(),
+        google_tts_service=object(),
+    )
+    turn_task = asyncio.create_task(_never_finishes())
+    tts_task = asyncio.create_task(_never_finishes())
+    session._active_turn_task = turn_task
+    session._active_tts_tasks.add(tts_task)
+
+    await session._cancel_active_turn()
+
+    assert turn_task.cancelled()
+    assert tts_task.cancelled()
+    assert session._active_turn_task is None
+    assert session._active_tts_tasks == set()

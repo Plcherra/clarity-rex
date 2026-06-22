@@ -32,8 +32,8 @@ abstract class BargeInDetectionService {
 }
 
 class PackageBargeInDetectionService implements BargeInDetectionService {
-  static const _bargeInGracePeriod = Duration(milliseconds: 800);
-  static const _bargeInMinimumSpeechDuration = Duration(milliseconds: 260);
+  static const _bargeInGracePeriod = Duration(milliseconds: 250);
+  static const _bargeInMinimumSpeechDuration = Duration(milliseconds: 160);
   static const _bargeInSpeechThresholdDb = -34.0;
 
   PackageBargeInDetectionService({

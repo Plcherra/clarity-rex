@@ -200,21 +200,26 @@ class RexIntentRouter:
     )
     FINANCE_TERMS = (
         "account balance",
-        "bank",
+        "available balance",
+        "bank balance",
         "budget",
-        "cash",
+        "cash flow",
+        "credit card",
+        "debit card",
         "debt",
         "expense",
         "expenses",
         "finance",
         "financial",
         "income",
-        "money",
-        "rent",
-        "saving",
+        "merchant",
+        "merchants",
+        "plaid",
         "spend",
         "spent",
         "spending",
+        "subscription",
+        "subscriptions",
         "transaction",
         "transactions",
         "$",
@@ -403,14 +408,28 @@ class RexIntentRouter:
     def _has_finance_language(self, normalized_message: str) -> bool:
         if self._contains(normalized_message, self.FINANCE_TERMS):
             return True
+        if (
+            re.search(r"\b(?:account|accounts|balance|balances)\b", normalized_message)
+            is not None
+        ):
+            return True
+        money_nouns = r"(?:money|cash|rent|bill|bills|dollar|dollars|paycheck|payroll|savings?)"
+        money_actions = (
+            r"(?:afford|balance|bank|budget|charge|cost|deposit|earn|earned|"
+            r"owe|owed|paid|pay|paying|save|saved|saving|send|sending|sent|"
+            r"spend|spending|spent|transfer|withdraw)"
+        )
         return (
             re.search(
-                r"\b(?:account|accounts|balance|balances|merchant|merchants|"
-                r"plaid|subscription|subscriptions)\b",
+                rf"\b{money_actions}\b.{{0,40}}\b{money_nouns}\b",
                 normalized_message,
             )
             is not None
-            or re.search(r"\bcash(?:\s|-)?flow\b", normalized_message) is not None
+            or re.search(
+                rf"\b{money_nouns}\b.{{0,40}}\b{money_actions}\b",
+                normalized_message,
+            )
+            is not None
         )
 
     def _looks_like_memory_recall_question(self, normalized_message: str) -> bool:

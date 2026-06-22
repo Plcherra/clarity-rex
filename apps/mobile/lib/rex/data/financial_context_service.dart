@@ -20,13 +20,10 @@ bool shouldAttachAssistantFinancialContext(String message) {
   if (normalized.isEmpty) {
     return false;
   }
-  final financeRelevant = _assistantFinanceIntentPatterns.any(
-    (pattern) => pattern.hasMatch(normalized),
-  );
-  if (!financeRelevant) {
+  if (_looksLikePastChatRecall(normalized)) {
     return false;
   }
-  return !_looksLikePastChatRecall(normalized);
+  return _hasAssistantFinanceIntent(normalized);
 }
 
 String _normalizedAssistantFinanceIntentText(String message) {
@@ -45,29 +42,45 @@ bool _looksLikePastChatRecall(String normalized) {
   );
 }
 
-final _assistantFinanceIntentPatterns = <RegExp>[
+bool _hasAssistantFinanceIntent(String normalized) {
+  if (_assistantDirectFinanceIntentPatterns.any(
+    (pattern) => pattern.hasMatch(normalized),
+  )) {
+    return true;
+  }
+  return _assistantContextualMoneyIntentPatterns.any(
+    (pattern) => pattern.hasMatch(normalized),
+  );
+}
+
+final _assistantDirectFinanceIntentPatterns = <RegExp>[
   RegExp(r'\baccount(?:s)?\b'),
   RegExp(r'\bbalance(?:s)?\b'),
-  RegExp(r'\bbank(?:ing)?\b'),
   RegExp(r'\bbudget(?:s|ing)?\b'),
   RegExp(r'\bcash(?:\s|-)?flow\b'),
-  RegExp(r'\bcash\b'),
+  RegExp(r'\bcredit card(?:s)?\b'),
+  RegExp(r'\bdebit card(?:s)?\b'),
   RegExp(r'\bdebt\b'),
   RegExp(r'\bexpense(?:s)?\b'),
   RegExp(r'\bfinancial(?:ly)?\b'),
   RegExp(r'\bfinance(?:s)?\b'),
   RegExp(r'\bincome\b'),
   RegExp(r'\bmerchant(?:s)?\b'),
-  RegExp(r'\bmoney\b'),
-  RegExp(r'\bpayroll\b'),
   RegExp(r'\bplaid\b'),
-  RegExp(r'\brent\b'),
-  RegExp(r'\bsaving(?:s)?\b'),
   RegExp(r'\bspend(?:ing)?\b'),
   RegExp(r'\bspent\b'),
   RegExp(r'\bsubscription(?:s)?\b'),
   RegExp(r'\btransaction(?:s)?\b'),
   RegExp(r'\$'),
+];
+
+final _assistantContextualMoneyIntentPatterns = <RegExp>[
+  RegExp(
+    r'\b(?:afford|balance|bank|budget|charge|cost|deposit|earn|earned|owe|owed|paid|pay|paying|save|saved|saving|send|sending|sent|transfer|withdraw)\b.{0,40}\b(?:money|cash|rent|bill|bills|dollar|dollars|paycheck|payroll|savings?)\b',
+  ),
+  RegExp(
+    r'\b(?:money|cash|rent|bill|bills|dollar|dollars|paycheck|payroll|savings?)\b.{0,40}\b(?:afford|balance|bank|budget|charge|cost|deposit|earn|earned|owe|owed|paid|pay|paying|save|saved|saving|send|sending|sent|transfer|withdraw)\b',
+  ),
 ];
 
 final _assistantChatRecallPatterns = <RegExp>[

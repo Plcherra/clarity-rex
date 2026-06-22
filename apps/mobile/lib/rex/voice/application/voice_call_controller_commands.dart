@@ -55,6 +55,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     );
     _cancelListeningEndpointTimeout();
     _armThinkingTimeout(_callGeneration);
+    _startBargeInMonitoring(_callGeneration);
   }
 
   void startTranscribing() {
@@ -71,6 +72,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     );
     _cancelListeningEndpointTimeout();
     _armThinkingTimeout(_callGeneration);
+    _startBargeInMonitoring(_callGeneration);
   }
 
   void startThinking({String? finalTranscript}) {
@@ -92,6 +94,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     );
     _cancelListeningEndpointTimeout();
     _armThinkingTimeout(_callGeneration);
+    _startBargeInMonitoring(_callGeneration);
   }
 
   void beginTypedTextTurn(String text) {
@@ -126,6 +129,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
       clearError: true,
     );
     _armThinkingTimeout(generation);
+    _startBargeInMonitoring(generation);
   }
 
   Future<void> speakTypedAssistantResponse(String responseText) async {

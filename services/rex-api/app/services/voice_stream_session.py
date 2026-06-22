@@ -66,6 +66,7 @@ class VoiceStreamSession(
         self._turn_audio_bytes = 0
         self._turn_audio_chunks = 0
         self._send_lock = asyncio.Lock()
+        self._active_tts_tasks: set[asyncio.Task[Any]] = set()
 
     async def run(self) -> None:
         await self.websocket.accept()
@@ -377,11 +378,22 @@ class VoiceStreamSession(
         task = self._active_turn_task
         if task is None or task.done():
             self._active_turn_task = None
+            await self._cancel_active_tts_tasks()
             return
         task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await task
         self._active_turn_task = None
+        await self._cancel_active_tts_tasks()
+
+    async def _cancel_active_tts_tasks(self) -> None:
+        tasks = list(self._active_tts_tasks)
+        if not tasks:
+            return
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        self._active_tts_tasks.clear()
 
     async def _send_event(self, event: str, **payload: Any) -> None:
         async with self._send_lock:

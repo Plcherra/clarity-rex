@@ -287,11 +287,11 @@ void main() {
     },
   );
 
-  test('voice defaults are tuned for reliable walking playback', () {
+  test('voice defaults are tuned for interruptible walking playback', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    expect(container.read(voiceCallBargeInEnabledProvider), isFalse);
+    expect(container.read(voiceCallBargeInEnabledProvider), isTrue);
     expect(
       container.read(voiceCallTranscriptIdleTimeoutProvider),
       const Duration(seconds: 5),
@@ -408,6 +408,60 @@ void main() {
       expect(state.errorMessage, isNull);
       expect(state.lastAssistantResponse, 'Use weekly launch plans.');
       expect(playbackService.stopCount, 0);
+    },
+  );
+
+  test(
+    'barge-in interrupts thinking and starts a fresh listening turn',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final bargeInService = _ControlledBargeInDetectionService();
+      final playbackService = _ControlledAudioPlaybackService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(bargeInService),
+          voiceCallBargeInEnabledProvider.overrideWithValue(true),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      controller.startThinking(finalTranscript: 'Tell me about my day.');
+      await bargeInService.started.future;
+
+      bargeInService.trigger();
+      await captureService.readyAt(1);
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(state.currentTranscript, isEmpty);
+      expect(streamingApi.socket.sentEvents, contains('user.interrupt'));
+      expect(playbackService.stopCount, greaterThanOrEqualTo(1));
+      expect(bargeInService.stopCount, 1);
     },
   );
 

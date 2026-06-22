@@ -132,6 +132,25 @@ async def test_chat_service_handles_normal_chat():
 
 
 @pytest.mark.asyncio
+async def test_chat_service_omits_attached_financial_context_for_normal_chat():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    await chat_service.send_message(
+        "I worked with two new employees, Aaron and Jessica.",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "cash_flow": {"spent_this_month": 100},
+        },
+    )
+
+    system_content = ai_service.messages[0]["content"]
+    assert "Clarity financial summary:" not in system_content
+    assert "spent_this_month" not in system_content
+
+
+@pytest.mark.asyncio
 async def test_chat_service_extracts_clarity_action_proposal():
     ai_service = FakeAIService(
         response=(

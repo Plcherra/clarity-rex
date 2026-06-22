@@ -49,6 +49,10 @@ class VoiceStreamResponseWriterMixin:
             task = asyncio.create_task(
                 self._synthesize_audio_chunk(text, timings),
             )
+            active_tts_tasks = getattr(self, "_active_tts_tasks", None)
+            if isinstance(active_tts_tasks, set):
+                active_tts_tasks.add(task)
+                task.add_done_callback(active_tts_tasks.discard)
             pending_audio_chunks.append(
                 _PendingVoiceAudioChunk(
                     text=text,
