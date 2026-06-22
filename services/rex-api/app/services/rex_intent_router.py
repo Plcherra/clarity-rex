@@ -201,9 +201,14 @@ class RexIntentRouter:
     FINANCE_TERMS = (
         "account balance",
         "available balance",
+        "bank account",
+        "bank accounts",
         "bank balance",
         "budget",
+        "budgeting",
         "cash flow",
+        "checking account",
+        "checking accounts",
         "credit card",
         "debit card",
         "debt",
@@ -215,6 +220,8 @@ class RexIntentRouter:
         "merchant",
         "merchants",
         "plaid",
+        "savings account",
+        "savings accounts",
         "spend",
         "spent",
         "spending",
@@ -222,7 +229,6 @@ class RexIntentRouter:
         "subscriptions",
         "transaction",
         "transactions",
-        "$",
     )
     CASUAL_EXACT = {
         "hey",
@@ -408,14 +414,24 @@ class RexIntentRouter:
     def _has_finance_language(self, normalized_message: str) -> bool:
         if self._contains(normalized_message, self.FINANCE_TERMS):
             return True
-        if (
-            re.search(r"\b(?:account|accounts|balance|balances)\b", normalized_message)
-            is not None
+        if re.search(
+            r"\$\s*\d|\b\d+(?:\.\d{2})?\s*(?:bucks|dollars)\b",
+            normalized_message,
+        ):
+            return True
+        if re.search(
+            r"\b(?:what|which|show|list|display|see|view)\b.{0,30}\baccounts\b",
+            normalized_message,
+        ):
+            return True
+        if re.search(
+            r"\baccounts?\b.{0,30}\b(?:balance|balances|connected|plaid|sync|synced)\b",
+            normalized_message,
         ):
             return True
         money_nouns = r"(?:money|cash|rent|bill|bills|dollar|dollars|paycheck|payroll|savings?)"
         money_actions = (
-            r"(?:afford|balance|bank|budget|charge|cost|deposit|earn|earned|"
+            r"(?:afford|balance|bank|budget|charge|cost|deposit|earn|earned|hit|"
             r"owe|owed|paid|pay|paying|save|saved|saving|send|sending|sent|"
             r"spend|spending|spent|transfer|withdraw)"
         )

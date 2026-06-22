@@ -24,6 +24,10 @@ def test_router_classifies_casual_chat_without_context_loads():
         "It went amazing because it was a pretty big, busy day.",
         "Everyone got a good heart.",
         "I meant Aaron.",
+        "Can you help me balance work and rest?",
+        "I saved that note for later.",
+        "What is my Clarity account email?",
+        "I was listening to $uicideboy$ earlier.",
     ],
 )
 def test_router_keeps_normal_voice_chat_off_finance_path(message):
@@ -101,6 +105,7 @@ def test_router_memory_information_question_beats_attached_financial_context():
     [
         "Do you know anything about my friend Lara?",
         "Did I mention sending money?",
+        "What did I say about money?",
         "Have we talked about my immigration plan?",
         "What did I tell you about my sister?",
         "Can you search our chats for my birthday?",
@@ -217,6 +222,8 @@ def test_router_classifies_finance_without_memory_context():
         "How much money did I spend today?",
         "Show my savings account balance.",
         "Did I send Jessica money?",
+        "What accounts do I have?",
+        "Do I have $20 for gas?",
     ],
 )
 def test_router_classifies_clear_money_action_turns_as_finance(message):

@@ -608,6 +608,32 @@ async def test_chat_service_voice_stream_uses_one_llm_call():
 
 
 @pytest.mark.asyncio
+async def test_chat_service_voice_stream_omits_attached_financial_context_for_normal_chat():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "Tell me about my day",
+            financial_context={
+                "schema": "clarity_unified_financial_context_v1",
+                "cash_flow": {"spent_this_month": 100},
+            },
+            channel=RexBrainChannel.VOICE,
+            include_turn_trace=True,
+        )
+    ]
+
+    turn_trace = next(event for event in events if event["event"] == "turn.trace")
+    system_content = ai_service.messages[0]["content"]
+    assert turn_trace["loaded_context"]["financial_context"] is False
+    assert "Clarity financial summary:" not in system_content
+    assert "spent_this_month" not in system_content
+
+
+@pytest.mark.asyncio
 async def test_chat_service_uses_direct_memory_path_after_successful_response():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

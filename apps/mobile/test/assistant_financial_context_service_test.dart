@@ -57,6 +57,32 @@ void main() {
         ),
         isFalse,
       );
+      expect(
+        shouldAttachAssistantFinancialContext('What did I say about money?'),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'Can you help me balance work and rest?',
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext('I saved that note for later.'),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'What is my Clarity account email?',
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAttachAssistantFinancialContext(
+          'I was listening to \$uicideboy\$ earlier.',
+        ),
+        isFalse,
+      );
     },
   );
 
@@ -87,6 +113,14 @@ void main() {
     );
     expect(
       shouldAttachAssistantFinancialContext('Did I send Jessica money?'),
+      isTrue,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext('What accounts do I have?'),
+      isTrue,
+    );
+    expect(
+      shouldAttachAssistantFinancialContext('Do I have \$20 for gas?'),
       isTrue,
     );
   });

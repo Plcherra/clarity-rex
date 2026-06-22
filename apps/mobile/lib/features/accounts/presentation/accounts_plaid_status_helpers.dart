@@ -25,3 +25,14 @@ Set<String> connectedPlaidItemIdsFrom(List<AccountOverviewItem> accounts) {
       if (item.account.isPlaidConnected) item.account.plaidItemId!,
   };
 }
+
+Map<String, PlaidItemStatus> knownPlaidStatusesForAccounts(
+  Map<String, PlaidItemStatus> currentStatuses,
+  List<AccountOverviewItem> accounts,
+) {
+  final connectedItemIds = connectedPlaidItemIdsFrom(accounts);
+  return {
+    for (final entry in currentStatuses.entries)
+      if (connectedItemIds.contains(entry.key)) entry.key: entry.value,
+  };
+}

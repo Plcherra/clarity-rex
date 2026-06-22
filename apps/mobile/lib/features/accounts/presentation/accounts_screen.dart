@@ -56,7 +56,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     _dataNotifier = AccountsDataNotifier();
     widget.controller.addListener(_handleControllerChanged);
     if (widget.isActive) {
-      _loadData();
+      _loadData(refreshPlaidStatuses: true);
     }
   }
 
@@ -69,7 +69,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     }
     if (widget.isActive &&
         (oldWidget.controller != widget.controller || !oldWidget.isActive)) {
-      _loadData();
+      _loadData(refreshPlaidStatuses: true);
     }
   }
 
@@ -86,11 +86,13 @@ class _AccountsScreenState extends State<AccountsScreen> {
     }
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData({bool refreshPlaidStatuses = false}) async {
     _dataNotifier.setLoading();
     try {
       final accounts = await widget.controller.accountOverviewItems;
-      final statuses = await loadPlaidStatuses(widget.controller, accounts);
+      final statuses = refreshPlaidStatuses
+          ? await loadPlaidStatuses(widget.controller, accounts)
+          : knownPlaidStatusesForAccounts(_plaidStatuses, accounts);
       if (!mounted) return;
       setState(() => _plaidStatuses = statuses);
       _dataNotifier.setData(accounts);

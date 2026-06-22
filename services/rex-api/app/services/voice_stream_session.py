@@ -133,9 +133,6 @@ class VoiceStreamSession(
         event = payload.get("event")
         if event == "session.start":
             self.conversation_id = payload.get("conversation_id") or self.conversation_id
-            financial_context = payload.get("financial_context")
-            if isinstance(financial_context, dict):
-                self.financial_context = financial_context
             self.input_mime_type = payload.get("input_mime_type") or self.input_mime_type
             self.client = str(payload.get("client") or self.client or "")
             sample_rate = payload.get("sample_rate")

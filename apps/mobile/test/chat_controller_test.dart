@@ -81,6 +81,48 @@ void main() {
       expect(chatApi.financialContexts, [isNull]);
     },
   );
+
+  test(
+    'ChatController does not build financial context for money recall',
+    () async {
+      final chatApi = _FakeChatApi(
+        response: const ChatApiResponse(
+          conversationId: 'conversation-1',
+          response: 'I found that in chat history.',
+          messages: [],
+        ),
+      );
+      var buildSummaryCalls = 0;
+      final financialContextService = AssistantFinancialContextService(
+        loadFinancialReadModel: () async {
+          buildSummaryCalls += 1;
+          throw StateError('financial context should not load');
+        },
+        spendReference: DateTime.now,
+        notifyDataChanged: () {},
+      );
+      final container = ProviderContainer(
+        overrides: [
+          chatApiProvider.overrideWithValue(chatApi),
+          assistantFinancialContextServiceProvider.overrideWithValue(
+            financialContextService,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final response = await container
+          .read(chatProvider.notifier)
+          .sendMessageForAssistantResponse(
+            'What did I say about money?',
+            stream: false,
+          );
+
+      expect(response, 'I found that in chat history.');
+      expect(buildSummaryCalls, 0);
+      expect(chatApi.financialContexts, [isNull]);
+    },
+  );
 }
 
 class _FakeChatApi extends ChatApi {
