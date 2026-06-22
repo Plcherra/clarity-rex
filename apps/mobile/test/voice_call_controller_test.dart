@@ -534,6 +534,104 @@ void main() {
   );
 
   test(
+    'streaming voice synthesizes fallback audio when done has text but no audio chunk',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      captureService.finishCurrentWithSpeech();
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'I finished my plan tonight',
+        'speech_final': true,
+      });
+      streamingApi.socket.emit({'event': 'assistant.started'});
+      streamingApi.socket.emit({
+        'event': 'assistant.token',
+        'token':
+            "I understood that commitment, but I couldn't save it just now.",
+      });
+      streamingApi.socket.emit({
+        'event': 'messages.updated',
+        'conversation_id': 'conversation-voice',
+        'messages': [
+          {
+            'id': 'user-message-1',
+            'conversation_id': 'conversation-voice',
+            'role': 'user',
+            'content': 'I finished my plan tonight',
+            'timestamp': '2026-06-01T12:00:00Z',
+          },
+          {
+            'id': 'assistant-message-1',
+            'conversation_id': 'conversation-voice',
+            'role': 'assistant',
+            'content':
+                "I understood that commitment, but I couldn't save it just now.",
+            'timestamp': '2026-06-01T12:00:01Z',
+          },
+        ],
+      });
+      streamingApi.socket.emit({
+        'event': 'assistant.done',
+        'conversation_id': 'conversation-voice',
+        'response_text':
+            "I understood that commitment, but I couldn't save it just now.",
+      });
+
+      await captureService.readyAt(1).timeout(const Duration(seconds: 1));
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(state.errorMessage, isNull);
+      expect(
+        state.lastAssistantResponse,
+        "I understood that commitment, but I couldn't save it just now.",
+      );
+      expect(cloudVoiceApi.synthesizedTexts, [
+        "I understood that commitment, but I couldn't save it just now.",
+      ]);
+      expect(container.read(chatProvider).messages.length, 2);
+    },
+  );
+
+  test(
     'streaming speech-final transcript closes the utterance for backend processing',
     () async {
       final captureService = _ScriptedStreamingAudioCaptureService();

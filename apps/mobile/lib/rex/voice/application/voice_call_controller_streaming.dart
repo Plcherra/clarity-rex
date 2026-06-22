@@ -427,6 +427,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
             }
           case 'assistant.done':
             _cancelThinkingTimeout();
+            final completedText = (event.responseText ?? assistantText).trim();
             beginStreamingAudioIfNeeded();
             debugPrint(
               'rex_voice_playback assistant_done timings=${event.data['timings']}',
@@ -434,7 +435,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
             if (event.conversationId != null) {
               state = state.copyWith(
                 conversationId: event.conversationId,
-                lastAssistantResponse: event.responseText ?? assistantText,
+                lastAssistantResponse: completedText,
                 clearError: true,
               );
             }
@@ -444,6 +445,17 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
             await _streamingPlaybackQueue.waitUntilIdle();
             _stopBargeInMonitoring();
             if (isActiveSession()) {
+              if (firstAudioChunkAt == null &&
+                  completedText.isNotEmpty &&
+                  !state.isMuted) {
+                final fallbackStarted = await _playSynthesizedStreamingFallback(
+                  completedText,
+                  _callGeneration,
+                );
+                if (fallbackStarted) {
+                  break;
+                }
+              }
               if (state.phase == VoiceCallPhase.speaking) {
                 completeSpeaking();
                 debugPrint('rex_voice_playback listening_resumed');
@@ -492,6 +504,62 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
           fail('Assistant voice stream disconnected. Try voice again.');
         }
       }
+    }
+  }
+
+  Future<bool> _playSynthesizedStreamingFallback(
+    String responseText,
+    int generation,
+  ) async {
+    if (!_isCurrentCall(generation) || !state.isCallActive) {
+      return false;
+    }
+    debugPrint(
+      'rex_voice_playback fallback_synthesize text_chars=${responseText.length}',
+    );
+
+    try {
+      final response = await ref
+          .read(cloudVoiceApiProvider)
+          .synthesize(responseText);
+      if (!_isCurrentCall(generation) || !state.isCallActive) {
+        return true;
+      }
+      if (response.audioBase64.isEmpty) {
+        fail('Could not play Rex voice for this reply.');
+        return true;
+      }
+
+      startSpeaking(responseText);
+      _startBargeInMonitoring(generation);
+      await _audioSessionService.preferLoudSpeaker();
+      await _playbackService.playBase64Audio(
+        response.audioBase64,
+        contentType: response.audioContentType,
+        onComplete: () {
+          if (_isCurrentCall(generation)) {
+            _stopBargeInMonitoring();
+            completeSpeaking();
+          }
+        },
+        onError: (message) {
+          if (_isCurrentCall(generation)) {
+            _stopBargeInMonitoring();
+            fail(message);
+          }
+        },
+      );
+      return true;
+    } on CloudVoiceApiException catch (error) {
+      if (_isCurrentCall(generation)) {
+        fail(error.message);
+      }
+      return true;
+    } on Object {
+      if (_isCurrentCall(generation)) {
+        fail('Could not play Rex voice for this reply.');
+      }
+      return true;
     }
   }
 
