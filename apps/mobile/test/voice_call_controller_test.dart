@@ -287,11 +287,11 @@ void main() {
     },
   );
 
-  test('voice defaults are tuned for walking use', () {
+  test('voice defaults are tuned for reliable walking playback', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    expect(container.read(voiceCallBargeInEnabledProvider), isTrue);
+    expect(container.read(voiceCallBargeInEnabledProvider), isFalse);
     expect(
       container.read(voiceCallTranscriptIdleTimeoutProvider),
       const Duration(seconds: 5),
@@ -436,6 +436,7 @@ void main() {
         streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
         streamingAudioCaptureServiceProvider.overrideWithValue(captureService),
         bargeInDetectionServiceProvider.overrideWithValue(bargeInService),
+        voiceCallBargeInEnabledProvider.overrideWithValue(true),
         cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
       ],
     );
