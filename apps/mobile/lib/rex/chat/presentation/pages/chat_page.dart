@@ -30,8 +30,11 @@ class ChatPage extends ConsumerStatefulWidget {
 
 class _ChatPageState extends ConsumerState<ChatPage>
     with AutomaticKeepAliveClientMixin<ChatPage> {
+  static const _voicePanelFallbackHeight = 132.0;
+
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  double _voicePanelHeight = _voicePanelFallbackHeight;
   XFile? _attachment;
   String? _attachmentName;
   int? _attachmentSize;
@@ -302,6 +305,13 @@ class _ChatPageState extends ConsumerState<ChatPage>
     });
   }
 
+  void _handleVoicePanelHeightChanged(double height) {
+    if ((height - _voicePanelHeight).abs() < 0.5) {
+      return;
+    }
+    setState(() => _voicePanelHeight = height);
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -341,34 +351,49 @@ class _ChatPageState extends ConsumerState<ChatPage>
         child: Column(
           children: [
             Expanded(
-              child: ChatTranscript(
-                messages: chat.messages,
-                isLoading: chat.isLoading,
-                errorMessage: chat.errorMessage,
-                hasStreamingAssistant: hasStreamingAssistant,
-                scrollController: _scrollController,
-                onPromptSelected: (prompt) {
-                  _messageController.text = prompt;
-                  _messageController.selection = TextSelection.collapsed(
-                    offset: prompt.length,
-                  );
-                },
-                onConfirmClarityAction: (action) => ref
-                    .read(chatProvider.notifier)
-                    .executeClarityAction(action),
-                onDismissClarityAction: (action) => ref
-                    .read(chatProvider.notifier)
-                    .dismissClarityAction(action),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ChatTranscript(
+                      messages: chat.messages,
+                      isLoading: chat.isLoading,
+                      errorMessage: chat.errorMessage,
+                      hasStreamingAssistant: hasStreamingAssistant,
+                      scrollController: _scrollController,
+                      bottomPadding: voiceCall.isIdle ? 0 : _voicePanelHeight,
+                      onPromptSelected: (prompt) {
+                        _messageController.text = prompt;
+                        _messageController.selection = TextSelection.collapsed(
+                          offset: prompt.length,
+                        );
+                      },
+                      onConfirmClarityAction: (action) => ref
+                          .read(chatProvider.notifier)
+                          .executeClarityAction(action),
+                      onDismissClarityAction: (action) => ref
+                          .read(chatProvider.notifier)
+                          .dismissClarityAction(action),
+                    ),
+                  ),
+                  if (!voiceCall.isIdle)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: _MeasuredVoicePanel(
+                        onHeightChanged: _handleVoicePanelHeightChanged,
+                        child: InlineVoiceCallPanel(
+                          state: voiceCall,
+                          onRetry: _startVoiceCall,
+                          onEnd: voiceController.endCall,
+                          onToggleMute: voiceController.toggleMuted,
+                          onOpenSettings: voiceController.openVoiceSettings,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-            if (!voiceCall.isIdle)
-              InlineVoiceCallPanel(
-                state: voiceCall,
-                onRetry: _startVoiceCall,
-                onEnd: voiceController.endCall,
-                onToggleMute: voiceController.toggleMuted,
-                onOpenSettings: voiceController.openVoiceSettings,
-              ),
             ChatInputBar(
               controller: _messageController,
               onSend: chat.isLoading || _attachmentError != null
@@ -387,5 +412,31 @@ class _ChatPageState extends ConsumerState<ChatPage>
         ),
       ),
     );
+  }
+}
+
+class _MeasuredVoicePanel extends StatelessWidget {
+  const _MeasuredVoicePanel({
+    required this.child,
+    required this.onHeightChanged,
+  });
+
+  final Widget child;
+  final ValueChanged<double> onHeightChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) {
+        return;
+      }
+      final renderObject = context.findRenderObject();
+      if (renderObject is! RenderBox || !renderObject.hasSize) {
+        return;
+      }
+      onHeightChanged(renderObject.size.height);
+    });
+
+    return child;
   }
 }

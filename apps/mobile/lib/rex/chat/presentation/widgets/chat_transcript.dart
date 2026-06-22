@@ -15,6 +15,7 @@ class ChatTranscript extends StatelessWidget {
     required this.onPromptSelected,
     required this.onConfirmClarityAction,
     required this.onDismissClarityAction,
+    this.bottomPadding = 0,
   });
 
   final List<ChatMessage> messages;
@@ -25,6 +26,7 @@ class ChatTranscript extends StatelessWidget {
   final ValueChanged<String> onPromptSelected;
   final ValueChanged<ClarityActionCard> onConfirmClarityAction;
   final ValueChanged<ClarityActionCard> onDismissClarityAction;
+  final double bottomPadding;
 
   static const _welcomeMessage =
       "I'm Rex. Tell me what's happening, what changed, or what you want me to remember.";
@@ -32,6 +34,9 @@ class ChatTranscript extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasMessages = messages.isNotEmpty;
+    final baseBottomPadding = MediaQuery.viewInsetsOf(context).bottom > 0
+        ? RexUiTokens.space12
+        : RexUiTokens.space24;
 
     return Scrollbar(
       controller: scrollController,
@@ -47,9 +52,7 @@ class ChatTranscript extends StatelessWidget {
               RexUiTokens.space16,
               RexUiTokens.space8,
               RexUiTokens.space16,
-              MediaQuery.viewInsetsOf(context).bottom > 0
-                  ? RexUiTokens.space12
-                  : RexUiTokens.space24,
+              baseBottomPadding + bottomPadding,
             ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([

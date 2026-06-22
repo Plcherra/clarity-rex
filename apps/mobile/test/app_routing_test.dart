@@ -165,7 +165,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Assistant'));
+    await tester.tap(find.byIcon(Icons.psychology_alt_outlined));
     await tester.pump();
 
     expect(find.byType(AssistantScreen), findsOneWidget);
@@ -201,10 +201,10 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Assistant'));
+    await tester.tap(find.byIcon(Icons.psychology_alt_outlined));
     await tester.pump();
     await tester.tap(find.byKey(AssistantTab.chats.key));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(find.text('Chats'), findsWidgets);
     expect(find.byTooltip('Conversations'), findsNothing);
@@ -270,7 +270,7 @@ void main() {
 
     expect(voiceController.startCount, 1);
     expect(voiceController.lastConversationId, 'conversation-1');
-    expect(find.text('Listening'), findsOneWidget);
+    expect(find.text('Listening - you can speak'), findsOneWidget);
     expect(find.text('End Voice'), findsOneWidget);
   });
 }

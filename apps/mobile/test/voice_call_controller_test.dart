@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
+import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/audio_playback_service.dart';
@@ -381,6 +382,43 @@ void main() {
       find.text('Rex is replying. End Voice if you need to stop.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('inline voice panel shows recoverable retry action on failure', (
+    tester,
+  ) async {
+    var retryCount = 0;
+    var settingsCount = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: InlineVoiceCallPanel(
+            state: VoiceCallState(
+              phase: VoiceCallPhase.failed,
+              errorMessage: 'Assistant voice stream disconnected.',
+              callStartedAt: DateTime(2026),
+            ),
+            onRetry: () => retryCount++,
+            onEnd: () {},
+            onToggleMute: () {},
+            onOpenSettings: () => settingsCount++,
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.text('Voice connection dropped. Tap Try again to reconnect.'),
+      findsOneWidget,
+    );
+    expect(find.text('Try again'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    await tester.tap(find.text('Settings'));
+
+    expect(retryCount, 1);
+    expect(settingsCount, 1);
   });
 
   test(
@@ -1066,6 +1104,197 @@ void main() {
       final state = container.read(voiceCallProvider);
       expect(state.phase, VoiceCallPhase.listening);
       expect(state.errorMessage, isNull);
+    },
+  );
+
+  test(
+    'voice call survives 5 consecutive mixed spoken and typed turns',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      final chatController = container.read(chatProvider.notifier);
+      final apiMessages = <Map<String, dynamic>>[];
+      var messageSequence = 0;
+      var captureIndex = 0;
+
+      void expectListeningAfterTurn(String expectedAssistantResponse) {
+        final voice = container.read(voiceCallProvider);
+        final chat = container.read(chatProvider);
+        expect(voice.phase, VoiceCallPhase.listening);
+        expect(voice.errorMessage, isNull);
+        expect(voice.conversationId, 'conversation-mixed');
+        expect(voice.lastAssistantResponse, expectedAssistantResponse);
+        expect(chat.conversationId, 'conversation-mixed');
+        expect(chat.messages.last.content, expectedAssistantResponse);
+      }
+
+      void appendApiMessage(String role, String content) {
+        messageSequence++;
+        apiMessages.add({
+          'id': 'message-$messageSequence',
+          'conversation_id': 'conversation-mixed',
+          'role': role,
+          'content': content,
+          'timestamp':
+              '2026-06-01T12:00:${messageSequence.toString().padLeft(2, '0')}Z',
+        });
+      }
+
+      void appendLocalMessage(ChatMessageRole role, String content) {
+        messageSequence++;
+        final messageId = 'local-message-$messageSequence';
+        final timestamp = DateTime.utc(2026, 6, 1, 12, 0, messageSequence);
+        apiMessages.add({
+          'id': messageId,
+          'conversation_id': 'conversation-mixed',
+          'role': role == ChatMessageRole.user ? 'user' : 'assistant',
+          'content': content,
+          'timestamp': timestamp.toIso8601String(),
+        });
+        chatController.addMessage(
+          ChatMessage(
+            id: messageId,
+            role: role,
+            content: content,
+            timestamp: timestamp,
+          ),
+        );
+      }
+
+      Future<void> completeSpokenTurn({
+        required String userText,
+        required String assistantText,
+      }) async {
+        final nextCaptureIndex = captureIndex + 1;
+        appendApiMessage('user', userText);
+        appendApiMessage('assistant', assistantText);
+
+        captureService.finishCurrentWithSpeech();
+        final socket = streamingApi.socket;
+        socket.emit({
+          'event': 'transcript.final',
+          'transcript': userText,
+          'speech_final': true,
+        });
+        socket.emit({'event': 'assistant.started'});
+        socket.emit({'event': 'assistant.token', 'token': assistantText});
+        socket.emit({
+          'event': 'assistant.audio_chunk',
+          'audio_base64': base64Encode([1, 2, 3]),
+          'audio_content_type': 'audio/mpeg',
+          'text': assistantText,
+        });
+        socket.emit({
+          'event': 'messages.updated',
+          'conversation_id': 'conversation-mixed',
+          'messages': [...apiMessages],
+        });
+        socket.emit({
+          'event': 'assistant.done',
+          'conversation_id': 'conversation-mixed',
+          'response_text': assistantText,
+        });
+
+        await captureService
+            .readyAt(nextCaptureIndex)
+            .timeout(const Duration(seconds: 1));
+        captureIndex = nextCaptureIndex;
+        expectListeningAfterTurn(assistantText);
+      }
+
+      Future<void> completeTypedTurn({
+        required String userText,
+        required String assistantText,
+      }) async {
+        final nextCaptureIndex = captureIndex + 1;
+
+        controller.beginTypedTextTurn(userText);
+        expect(
+          container.read(voiceCallProvider).phase,
+          VoiceCallPhase.thinking,
+        );
+        expect(container.read(voiceCallProvider).currentTranscript, userText);
+
+        appendLocalMessage(ChatMessageRole.user, userText);
+        appendLocalMessage(ChatMessageRole.assistant, assistantText);
+        await controller.speakTypedAssistantResponse(assistantText);
+
+        await captureService
+            .readyAt(nextCaptureIndex)
+            .timeout(const Duration(seconds: 1));
+        captureIndex = nextCaptureIndex;
+        expectListeningAfterTurn(assistantText);
+      }
+
+      expect(
+        await controller.startCall(conversationId: 'conversation-mixed'),
+        isTrue,
+      );
+      await captureService.readyAt(captureIndex);
+
+      await completeSpokenTurn(
+        userText: 'Voice turn one',
+        assistantText: 'Voice reply one.',
+      );
+      await completeTypedTurn(
+        userText: 'Typed turn two',
+        assistantText: 'Typed reply two.',
+      );
+      await completeSpokenTurn(
+        userText: 'Voice turn three',
+        assistantText: 'Voice reply three.',
+      );
+      await completeTypedTurn(
+        userText: 'Typed turn four',
+        assistantText: 'Typed reply four.',
+      );
+      await completeSpokenTurn(
+        userText: 'Voice turn five',
+        assistantText: 'Voice reply five.',
+      );
+
+      expect(cloudVoiceApi.synthesizedTexts, [
+        'Typed reply two.',
+        'Typed reply four.',
+      ]);
+      expect(
+        container.read(chatProvider).messages.length,
+        greaterThanOrEqualTo(10),
+      );
+      expect(streamingApi.connectCount, greaterThanOrEqualTo(1));
     },
   );
 

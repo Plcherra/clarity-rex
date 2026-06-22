@@ -28,14 +28,14 @@ class InlineVoiceCallPanel extends StatelessWidget {
     final statusColor = isFailed ? RexUiTokens.danger : RexUiTokens.accent;
     final statusLabel = _voiceStatusLabel(state);
     final helperText = _voiceHelperText(state);
-    final visibleText = isFailed && error != null
-        ? error
+    final visibleText = isFailed
+        ? _voiceFailureMessage(error)
         : transcript.isNotEmpty
         ? transcript
         : helperText;
 
     return Material(
-      color: RexUiTokens.background,
+      color: Colors.transparent,
       elevation: 0,
       child: SafeArea(
         top: false,
@@ -79,26 +79,7 @@ class InlineVoiceCallPanel extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (isFailed) ...[
-                        IconButton(
-                          onPressed: onOpenSettings,
-                          icon: const Icon(Icons.settings_rounded),
-                          tooltip: 'Open app settings',
-                          constraints: const BoxConstraints(
-                            minWidth: 44,
-                            minHeight: 44,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: onRetry,
-                          icon: const Icon(Icons.refresh_rounded),
-                          tooltip: 'Try again',
-                          constraints: const BoxConstraints(
-                            minWidth: 44,
-                            minHeight: 44,
-                          ),
-                        ),
-                      ] else ...[
+                      if (!isFailed) ...[
                         IconButton(
                           onPressed: onToggleMute,
                           icon: Icon(
@@ -128,21 +109,55 @@ class InlineVoiceCallPanel extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (visibleText.isNotEmpty) ...[
-                    const SizedBox(height: RexUiTokens.space4),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 72),
-                      child: SingleChildScrollView(
-                        child: Text(
-                          visibleText,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: isFailed
-                                ? RexUiTokens.text
-                                : RexUiTokens.textMuted,
-                            height: 1.35,
-                          ),
+                  const SizedBox(height: RexUiTokens.space4),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 72),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        visibleText,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isFailed
+                              ? RexUiTokens.text
+                              : RexUiTokens.textMuted,
+                          height: 1.35,
                         ),
                       ),
+                    ),
+                  ),
+                  if (isFailed) ...[
+                    const SizedBox(height: RexUiTokens.space8),
+                    Row(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: onOpenSettings,
+                          icon: const Icon(Icons.settings_rounded, size: 18),
+                          label: const Text('Settings'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: RexUiTokens.textMuted,
+                            side: BorderSide(
+                              color: RexUiTokens.border.withValues(alpha: 0.85),
+                            ),
+                            textStyle: theme.textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: RexUiTokens.space8),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: onRetry,
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: const Text('Try again'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: RexUiTokens.accent,
+                              foregroundColor: RexUiTokens.background,
+                              textStyle: theme.textTheme.labelMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],
@@ -183,6 +198,31 @@ class InlineVoiceCallPanel extends StatelessWidget {
         'Rex is replying. End Voice if you need to stop.',
       VoiceCallPhase.failed => 'Tap retry when you are ready to continue.',
     };
+  }
+
+  String _voiceFailureMessage(String? error) {
+    final message = error?.toLowerCase() ?? '';
+    if (message.contains('permission') ||
+        message.contains('microphone access') ||
+        message.contains('settings')) {
+      return 'Microphone access is needed for voice. Check Settings, then try again.';
+    }
+    if (message.contains('empty_audio') ||
+        message.contains('no audio') ||
+        message.contains('did not catch') ||
+        message.contains('blank transcript')) {
+      return "I didn't catch that. Tap Try again when you are ready.";
+    }
+    if (message.contains('disconnect') ||
+        message.contains('connection') ||
+        message.contains('socket') ||
+        message.contains('stream')) {
+      return 'Voice connection dropped. Tap Try again to reconnect.';
+    }
+    if (message.contains('transcript')) {
+      return "I couldn't read that transcript. Tap Try again and say it once more.";
+    }
+    return 'Voice paused. Tap Try again when you are ready to continue.';
   }
 }
 
