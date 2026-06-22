@@ -68,6 +68,9 @@ class ChatPromptContextBuilder:
             merged_memory,
             structured_context,
         )
+        memory_status = structured_context.get("memory_status")
+        if isinstance(memory_status, dict):
+            memory_status["saved_knowledge_count"] = len(merged_memory)
         log_context_fetch(
             intent_decision=intent_decision,
             conversation_id=conversation_id,

@@ -24,6 +24,7 @@ PAST_CHAT_FULL_SCAN_MAX_PAGES = 3
 PAST_CHAT_FULL_SCAN_MAX_MESSAGES = (
     PAST_CHAT_SEARCH_PAGE_LIMIT * PAST_CHAT_FULL_SCAN_MAX_PAGES
 )
+PAST_CHAT_FULL_SCAN_TIME_BUDGET_SECONDS = 6.0
 CHAT_EXCERPT_CONTEXT_BEFORE = 6
 CHAT_EXCERPT_CONTEXT_AFTER = 8
 CHAT_EXCERPT_CONVERSATION_LIMIT = 500
@@ -295,12 +296,25 @@ class ChatRecallService:
         best_by_id: dict[str, dict] = {}
         scanned_messages = 0
         search_queries = search_queries or self.past_chat_search_queries(query)
+        full_scan_started = time.perf_counter()
         offset = 0
         page_count = 0
         while (
             page_count < PAST_CHAT_FULL_SCAN_MAX_PAGES
             and scanned_messages < PAST_CHAT_FULL_SCAN_MAX_MESSAGES
         ):
+            if (
+                page_count > 0
+                and time.perf_counter() - full_scan_started
+                >= PAST_CHAT_FULL_SCAN_TIME_BUDGET_SECONDS
+            ):
+                self.log_recall_phase(
+                    "full_scan_soft_budget_stop",
+                    scanned_messages=scanned_messages,
+                    raw_match_count=len(best_by_id),
+                    time_budget_seconds=PAST_CHAT_FULL_SCAN_TIME_BUDGET_SECONDS,
+                )
+                break
             phase_started = time.perf_counter()
             try:
                 messages = await list_messages(
@@ -378,7 +392,9 @@ class ChatRecallService:
     def is_viable_chat_match(self, message: dict) -> bool:
         if is_chat_search_no_result_message(message):
             return False
-        return float(message.get("_chat_search_score") or 0) > 0
+        if float(message.get("_chat_search_score") or 0) > 0:
+            return True
+        return bool(str(message.get("content") or "").strip())
 
     def viable_match_count(self, messages_by_id: dict[str, dict]) -> int:
         return sum(

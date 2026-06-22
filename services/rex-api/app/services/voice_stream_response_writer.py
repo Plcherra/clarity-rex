@@ -31,6 +31,8 @@ class VoiceStreamResponseWriterMixin:
     ) -> str:
         response_parts: list[str] = []
         speech_buffer = ""
+        final_response_text = ""
+        delay_audio_until_done = False
         first_token_at: Optional[float] = None
         first_audio_at: Optional[float] = None
         user_message_id: Optional[str] = None
@@ -117,6 +119,10 @@ class VoiceStreamResponseWriterMixin:
                 )
             elif event_name == "turn.trace":
                 self._last_turn_trace = self._safe_turn_trace(event)
+                delay_audio_until_done = (
+                    str(event.get("intent") or "").strip().lower()
+                    == "memory_recall"
+                )
             elif event_name == "token":
                 token = str(event.get("token") or "")
                 if not token:
@@ -125,20 +131,24 @@ class VoiceStreamResponseWriterMixin:
                     first_token_at = time.perf_counter()
                     timings["grok_first_token_ms"] = self._elapsed_ms(chat_started_at)
                 response_parts.append(token)
-                speech_buffer += token
                 await self._send_event("assistant.token", token=token)
-                chunk, speech_buffer = self._next_speakable_chunk(speech_buffer)
-                if chunk:
-                    queue_audio_chunk(chunk)
-                await send_ready_audio_chunks(block=False)
+                if not delay_audio_until_done:
+                    speech_buffer += token
+                    chunk, speech_buffer = self._next_speakable_chunk(speech_buffer)
+                    if chunk:
+                        queue_audio_chunk(chunk)
+                    await send_ready_audio_chunks(block=False)
             elif event_name == "done":
                 self.conversation_id = event.get("conversation_id") or self.conversation_id
+                final_response_text = str(event.get("response") or "").strip()
                 messages = event.get("messages") or []
                 memory_changes = event.get("memory_changes")
                 user_message_id, assistant_message_id = self._message_ids(messages)
 
-        response_text = "".join(response_parts).strip()
-        if speech_buffer.strip():
+        response_text = final_response_text or "".join(response_parts).strip()
+        if delay_audio_until_done and response_text:
+            queue_audio_chunk(response_text)
+        elif speech_buffer.strip():
             queue_audio_chunk(speech_buffer.strip())
         await send_ready_audio_chunks(block=True)
         if audio_flush_tasks:

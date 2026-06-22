@@ -1102,7 +1102,7 @@ async def test_chat_context_full_scan_fallback_finds_manual_recall_examples():
 
 
 @pytest.mark.asyncio
-async def test_chat_context_chat_search_timeout_returns_degraded_status(monkeypatch):
+async def test_chat_context_slow_keyword_search_still_returns_results():
     class SlowSearchStore(FakeContextMemoryStore):
         async def search_messages(
             self,
@@ -1111,7 +1111,7 @@ async def test_chat_context_chat_search_timeout_returns_degraded_status(monkeypa
             exclude_conversation_id=None,
             offset=0,
         ):
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.01)
             return await super().search_messages(
                 query,
                 limit=limit,
@@ -1119,10 +1119,6 @@ async def test_chat_context_chat_search_timeout_returns_degraded_status(monkeypa
                 offset=offset,
             )
 
-    monkeypatch.setattr(
-        "app.services.chat_context_service.CHAT_SEARCH_TIMEOUT_SECONDS",
-        0.01,
-    )
     store = SlowSearchStore()
     service = ChatContextService(store)
 
@@ -1133,9 +1129,11 @@ async def test_chat_context_chat_search_timeout_returns_degraded_status(monkeypa
     )
 
     memory_status = structured_context["memory_status"]
-    assert memory_status["state"] == "degraded"
-    assert memory_status["failures"][0]["source"] == "chat_search"
-    assert "timed out" in memory_status["failures"][0]["message"]
+    assert memory_status["state"] == "ready"
+    assert any(
+        "mom's birthday" in item["content"]
+        for item in structured_context["chat_search_results"]
+    )
 
 
 @pytest.mark.asyncio

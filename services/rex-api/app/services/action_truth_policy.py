@@ -79,13 +79,31 @@ def memory_status_is_degraded(memory_status: object) -> bool:
     if not isinstance(memory_status, dict):
         return False
     state = str(memory_status.get("state") or "").strip().lower()
-    return state == "degraded" or any(status.get("partial") is True for status in _chat_search_statuses(memory_status))
-def chat_search_completed_without_results(memory_status: object) -> bool:
-    if not isinstance(memory_status, dict) or memory_status_is_degraded(memory_status):
+    return state == "degraded" or any(
+        status.get("partial") is True
+        for status in _chat_search_statuses(memory_status)
+    )
+
+
+def memory_status_has_saved_knowledge(memory_status: object) -> bool:
+    if not isinstance(memory_status, dict):
         return False
-    return any(status.get("attempted") is True and status.get("succeeded") is True
-               and int(status.get("result_count") or 0) == 0
-               for status in _chat_search_statuses(memory_status))
+    return int(memory_status.get("saved_knowledge_count") or 0) > 0
+
+
+def chat_search_completed_without_results(memory_status: object) -> bool:
+    if (
+        not isinstance(memory_status, dict)
+        or memory_status_is_degraded(memory_status)
+        or memory_status_has_saved_knowledge(memory_status)
+    ):
+        return False
+    return any(
+        status.get("attempted") is True
+        and status.get("succeeded") is True
+        and int(status.get("result_count") or 0) == 0
+        for status in _chat_search_statuses(memory_status)
+    )
 def safe_pending_action_response(response: str, proposals: list[dict]) -> str:
     cleaned = response.strip()
     if not proposals or not response_claims_unconfirmed_success(cleaned):
@@ -132,12 +150,20 @@ def safe_unsupported_action_response(response: str, unsupported_actions: list[st
     )
 def safe_degraded_memory_search_response(response: str, *, memory_status: object) -> str:
     cleaned = response.strip()
-    return DEGRADED_RECALL_FALLBACK if memory_status_is_degraded(memory_status) and response_claims_no_memory_result(cleaned) else cleaned
+    if (
+        memory_status_is_degraded(memory_status)
+        and not memory_status_has_saved_knowledge(memory_status)
+        and response_claims_no_memory_result(cleaned)
+    ):
+        return DEGRADED_RECALL_FALLBACK
+    return cleaned
 def safe_old_chat_search_response(
     response: str, *, chat_search_results_loaded: bool, memory_status: object = None,
 ) -> str:
     cleaned = response.strip()
     if chat_search_results_loaded or not response_claims_old_chat_search_result(cleaned):
+        return cleaned
+    if memory_status_has_saved_knowledge(memory_status):
         return cleaned
     return cleaned if chat_search_completed_without_results(memory_status) else DEGRADED_RECALL_FALLBACK
 def safe_empty_recall_search_response(response: str, *, memory_status: object = None) -> str:

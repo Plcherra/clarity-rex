@@ -76,6 +76,26 @@ class _PausingStreamingChatService:
         return {"id": "voice-turn-1"}
 
 
+class _MemoryRecallStreamingChatService:
+    async def stream_message(self, *args, **kwargs):
+        yield {"event": "conversation", "conversation_id": "conversation-1"}
+        yield {"event": "turn.trace", "intent": "memory_recall"}
+        raw_text = "I could not find anything about Jessica."
+        for token in raw_text.split(" "):
+            await asyncio.sleep(0)
+            yield {"event": "token", "token": f"{token} "}
+        yield {
+            "event": "done",
+            "conversation_id": "conversation-1",
+            "response": "From saved memory, Jessica works with you.",
+            "messages": [],
+            "memory_changes": None,
+        }
+
+    async def save_voice_turn_metadata(self, **kwargs):
+        return {"id": "voice-turn-1"}
+
+
 class _DelayedTTSService:
     def __init__(self, delay: float):
         self.delay = delay
@@ -222,6 +242,29 @@ async def test_voice_stream_prefetches_tts_chunks_before_previous_audio_finishes
     first_finished_at = writer.google_tts_service.finished[0][1]
     second_started_at = writer.google_tts_service.started[1][1]
     assert second_started_at < first_finished_at
+
+
+@pytest.mark.asyncio
+async def test_voice_memory_recall_speaks_final_truth_checked_response():
+    writer = _StreamingWriterProbe(
+        tts_delay=0.01,
+        chat_service=_MemoryRecallStreamingChatService(),
+    )
+    timings = {}
+
+    response = await writer._stream_chat_and_audio(
+        "What do you know about Jessica?",
+        {"confidence": 0.95, "duration_seconds": 1.2},
+        timings,
+    )
+
+    audio_events = [
+        event for event in writer.sent_events if event["event"] == "assistant.audio_chunk"
+    ]
+    assert response == "From saved memory, Jessica works with you."
+    assert len(audio_events) == 1
+    assert audio_events[0]["text"] == response
+    assert writer.google_tts_service.started[0][0] == response
 
 
 @pytest.mark.asyncio

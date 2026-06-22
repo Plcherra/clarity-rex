@@ -61,6 +61,34 @@ def test_degraded_recall_uses_canonical_fallback():
     assert response == DEGRADED_RECALL_FALLBACK
 
 
+def test_degraded_chat_search_does_not_override_saved_memory_answer():
+    response = safe_degraded_memory_search_response(
+        "Your saved memory says Jessica works with you.",
+        memory_status={"state": "degraded", "saved_knowledge_count": 1},
+    )
+
+    assert response == "Your saved memory says Jessica works with you."
+
+
+def test_empty_chat_search_does_not_override_saved_memory_answer():
+    response = safe_empty_recall_search_response(
+        "Your saved memory says Jessica works with you.",
+        memory_status={
+            "saved_knowledge_count": 1,
+            "source_statuses": [
+                {
+                    "source": "chat_search",
+                    "attempted": True,
+                    "succeeded": True,
+                    "result_count": 0,
+                }
+            ],
+        },
+    )
+
+    assert response == "Your saved memory says Jessica works with you."
+
+
 def test_partial_chat_search_uses_canonical_degraded_fallback():
     response = safe_old_chat_search_response(
         "I checked the old chats and found no mentions of your mom.",
