@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -526,6 +527,174 @@ def test_voice_stream_interrupts_active_turn(client):
         assert interrupted["event"] == "session.interrupted"
 
     assert chat.stream_calls == []
+
+
+class SequencedDeepgramStreamingService:
+    def __init__(self, transcripts):
+        self.transcripts = transcripts
+        self.calls = []
+
+    async def transcribe_audio_stream(
+        self,
+        audio_chunks,
+        content_type: str,
+        sample_rate: int = 16000,
+        on_transcript=None,
+    ):
+        chunks = []
+        async for chunk in audio_chunks:
+            chunks.append(chunk)
+        self.calls.append(
+            {
+                "audio_chunks": chunks,
+                "content_type": content_type,
+                "sample_rate": sample_rate,
+            }
+        )
+        transcript = self.transcripts[len(self.calls) - 1]
+        if on_transcript is not None:
+            await on_transcript(
+                {
+                    "event": "transcript.partial",
+                    "transcript": transcript["partial"],
+                    "confidence": 0.7,
+                    "metadata": {"vendor": "deepgram"},
+                }
+            )
+        return {
+            "transcript": transcript["transcript"],
+            "confidence": 0.94,
+            "duration_seconds": 0.8,
+            "metadata": {"request_id": f"stream-request-{len(self.calls)}"},
+        }
+
+
+class PausingFirstTurnChatService:
+    def __init__(self):
+        self.stream_calls = []
+        self.metadata_calls = []
+
+    async def stream_message(
+        self,
+        message,
+        conversation_id=None,
+        file=None,
+        response_instructions=None,
+        max_response_tokens=None,
+        financial_context=None,
+        channel=None,
+        include_turn_trace=False,
+    ):
+        self.stream_calls.append(
+            {
+                "message": message,
+                "conversation_id": conversation_id,
+                "file": file,
+                "response_instructions": response_instructions,
+                "max_response_tokens": max_response_tokens,
+                "financial_context": financial_context,
+                "channel": channel,
+                "include_turn_trace": include_turn_trace,
+            }
+        )
+        yield {"event": "conversation", "conversation_id": "conversation-barge-in"}
+        if include_turn_trace:
+            yield {
+                "event": "turn.trace",
+                "intent": "casual",
+                "channel": "voice",
+                "loaded_context": {},
+            }
+        if len(self.stream_calls) == 1:
+            yield {"event": "token", "token": "Old "}
+            await asyncio.sleep(30)
+            return
+
+        yield {"event": "token", "token": "Fresh "}
+        yield {"event": "token", "token": "response."}
+        yield {
+            "event": "done",
+            "conversation_id": "conversation-barge-in",
+            "response": "Fresh response.",
+            "messages": [
+                {
+                    "id": "user-message-2",
+                    "conversation_id": "conversation-barge-in",
+                    "role": "user",
+                    "content": message,
+                    "timestamp": "2026-05-17T00:00:02Z",
+                },
+                {
+                    "id": "assistant-message-2",
+                    "conversation_id": "conversation-barge-in",
+                    "role": "assistant",
+                    "content": "Fresh response.",
+                    "timestamp": "2026-05-17T00:00:03Z",
+                },
+            ],
+        }
+
+    async def save_voice_turn_metadata(self, **kwargs):
+        self.metadata_calls.append(kwargs)
+        return {"id": "voice-turn-barge-in", **kwargs}
+
+
+def test_voice_stream_audio_barge_in_cancels_active_turn_and_starts_next(client):
+    deepgram = SequencedDeepgramStreamingService(
+        [
+            {"transcript": "First turn", "partial": "First"},
+            {"transcript": "Second turn", "partial": "Second"},
+        ]
+    )
+    chat = PausingFirstTurnChatService()
+    tts = FakeGoogleTTSService()
+    override_services(
+        deepgram_streaming_service=deepgram,
+        chat_service=chat,
+        google_tts_service=tts,
+    )
+
+    with client.websocket_connect("/voice/stream") as websocket:
+        websocket.send_json({"event": "session.start"})
+        assert websocket.receive_json()["event"] == "session.started"
+
+        websocket.send_bytes(b"first-audio")
+        assert websocket.receive_json()["event"] == "audio.received"
+        websocket.send_json({"event": "utterance.end"})
+        token = receive_until(websocket, "assistant.token")
+        assert token["token"] == "Old "
+
+        websocket.send_bytes(b"barge-in-audio")
+        interrupted = receive_until(websocket, "session.interrupted")
+        assert interrupted["reason"] == "barge_in_audio"
+        received = receive_until(websocket, "audio.received")
+        assert received["chunk_count"] == 1
+
+        websocket.send_json({"event": "utterance.end"})
+        final = receive_until(websocket, "transcript.final")
+        assert final["transcript"] == "Second turn"
+        done = receive_until(websocket, "assistant.done")
+        assert done["response_text"] == "Fresh response."
+
+    assert [call["message"] for call in chat.stream_calls] == [
+        "First turn",
+        "Second turn",
+    ]
+    assert deepgram.calls == [
+        {
+            "audio_chunks": [b"first-audio"],
+            "content_type": "audio/linear16",
+            "sample_rate": 16000,
+        },
+        {
+            "audio_chunks": [b"barge-in-audio"],
+            "content_type": "audio/linear16",
+            "sample_rate": 16000,
+        },
+    ]
+    assert len(chat.metadata_calls) == 1
+    assert chat.metadata_calls[0]["user_message_id"] == "user-message-2"
+    assert tts.calls == ["Fresh response."]
 
 
 def test_voice_response_max_tokens_keeps_normal_turns_short_and_deep_turns_larger():

@@ -90,9 +90,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
       unawaited(_streamingCaptureService.cancel());
       _stopBargeInMonitoring();
       final streamingSession = _activeStreamingSession;
-      _activeStreamingSession = null;
       streamingSession?.interrupt();
-      unawaited(streamingSession?.endSession());
       state = state.copyWith(
         phase: VoiceCallPhase.listening,
         isCapturingSpeech: false,
@@ -112,9 +110,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
     unawaited(_streamingCaptureService.cancel());
     _stopBargeInMonitoring();
     final streamingSession = _activeStreamingSession;
-    _activeStreamingSession = null;
     streamingSession?.interrupt();
-    unawaited(streamingSession?.endSession());
 
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
@@ -240,6 +236,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
     _stopBargeInMonitoring();
     final streamingSession = _activeStreamingSession;
     _activeStreamingSession = null;
+    _activeStreamingEventsTask = null;
     streamingSession?.interrupt();
     unawaited(_streamingPlaybackQueue.cancel());
     unawaited(streamingSession?.endSession());
@@ -271,12 +268,12 @@ extension VoiceCallControllerTimers on VoiceCallController {
       _bargeInDetectionService
           .start(
             config: ref.read(voiceCaptureConfigProvider),
-            onBargeIn: () {
+            onBargeIn: (audioChunks) {
               if (_isCurrentCall(generation) &&
                   (state.phase == VoiceCallPhase.thinking ||
                       state.phase == VoiceCallPhase.speaking) &&
                   !state.isMuted) {
-                interruptAndListen();
+                interruptAndListen(initialAudioChunks: audioChunks);
               }
             },
           )

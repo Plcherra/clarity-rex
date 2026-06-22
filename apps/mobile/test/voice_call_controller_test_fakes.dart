@@ -325,8 +325,8 @@ class _ControlledBargeInDetectionService implements BargeInDetectionService {
     }
   }
 
-  void trigger() {
-    _onBargeIn?.call();
+  void trigger([List<Uint8List> audioChunks = const []]) {
+    _onBargeIn?.call(audioChunks);
   }
 
   @override
@@ -358,6 +358,7 @@ class _FakeStreamingVoiceApi extends StreamingVoiceApi {
   _FakeStreamingVoiceApi() : super(baseUrl: 'http://localhost');
 
   final socket = _FakeVoiceWebSocket();
+  var connectCount = 0;
 
   @override
   Future<StreamingVoiceSession> connect({
@@ -366,6 +367,7 @@ class _FakeStreamingVoiceApi extends StreamingVoiceApi {
     int sampleRate = 16000,
     Map<String, dynamic>? financialContext,
   }) async {
+    connectCount++;
     return StreamingVoiceSession(socket);
   }
 }
@@ -373,6 +375,8 @@ class _FakeStreamingVoiceApi extends StreamingVoiceApi {
 class _FakeVoiceWebSocket implements VoiceWebSocket {
   final _events = StreamController<dynamic>.broadcast();
   final sentEvents = <String>[];
+  final sentAudioChunks = <Uint8List>[];
+  var closeCount = 0;
 
   @override
   Stream<dynamic> get stream => _events.stream;
@@ -390,11 +394,15 @@ class _FakeVoiceWebSocket implements VoiceWebSocket {
       }
     } else if (data is Uint8List) {
       sentEvents.add('audio.chunk');
+      sentAudioChunks.add(Uint8List.fromList(data));
     }
   }
 
   @override
   Future<void> close() async {
-    await _events.close();
+    closeCount++;
+    if (!_events.isClosed) {
+      await _events.close();
+    }
   }
 }

@@ -116,6 +116,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
       _stopBargeInMonitoring();
       final streamingSession = _activeStreamingSession;
       _activeStreamingSession = null;
+      _activeStreamingEventsTask = null;
       streamingSession?.interrupt();
       unawaited(_streamingPlaybackQueue.cancel());
       unawaited(streamingSession?.endSession());
@@ -205,10 +206,8 @@ extension VoiceCallControllerCommands on VoiceCallController {
     unawaited(_streamingCaptureService.cancel());
     _stopBargeInMonitoring();
     final streamingSession = _activeStreamingSession;
-    _activeStreamingSession = null;
     streamingSession?.interrupt();
     unawaited(_streamingPlaybackQueue.cancel());
-    unawaited(streamingSession?.endSession());
     unawaited(_playbackService.stop());
 
     state = state.copyWith(
@@ -216,6 +215,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
       isCapturingSpeech: false,
       errorMessage: reason,
     );
+    _startListeningCycle(_callGeneration);
   }
 
   void resumeListening() {
@@ -254,6 +254,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     _stopBargeInMonitoring();
     final streamingSession = _activeStreamingSession;
     _activeStreamingSession = null;
+    _activeStreamingEventsTask = null;
     streamingSession?.interrupt();
     unawaited(_streamingPlaybackQueue.cancel());
     unawaited(streamingSession?.endSession());

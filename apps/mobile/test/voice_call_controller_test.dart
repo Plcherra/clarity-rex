@@ -408,6 +408,9 @@ void main() {
       expect(state.errorMessage, isNull);
       expect(state.lastAssistantResponse, 'Use weekly launch plans.');
       expect(playbackService.stopCount, 0);
+      expect(streamingApi.connectCount, 1);
+      expect(streamingApi.socket.sentEvents, isNot(contains('session.end')));
+      expect(streamingApi.socket.closeCount, 0);
     },
   );
 
@@ -453,13 +456,19 @@ void main() {
       controller.startThinking(finalTranscript: 'Tell me about my day.');
       await bargeInService.started.future;
 
-      bargeInService.trigger();
+      final preRollChunk = Uint8List.fromList([9, 8, 7]);
+      bargeInService.trigger([preRollChunk]);
       await captureService.readyAt(1);
 
       final state = container.read(voiceCallProvider);
       expect(state.phase, VoiceCallPhase.listening);
       expect(state.currentTranscript, isEmpty);
       expect(streamingApi.socket.sentEvents, contains('user.interrupt'));
+      expect(streamingApi.socket.sentEvents, contains('audio.chunk'));
+      expect(streamingApi.socket.sentEvents, isNot(contains('session.end')));
+      expect(streamingApi.socket.sentAudioChunks.single, preRollChunk);
+      expect(streamingApi.connectCount, 1);
+      expect(streamingApi.socket.closeCount, 0);
       expect(playbackService.stopCount, greaterThanOrEqualTo(1));
       expect(bargeInService.stopCount, 1);
     },
@@ -470,6 +479,7 @@ void main() {
     final playbackService = _ControlledAudioPlaybackService();
     final bargeInService = _ControlledBargeInDetectionService();
     final cloudVoiceApi = _FakeCloudVoiceApi();
+    final streamingApi = _FakeStreamingVoiceApi();
     final container = ProviderContainer(
       overrides: [
         microphonePermissionProvider.overrideWithValue(
@@ -487,7 +497,7 @@ void main() {
         audioPlaybackServiceProvider.overrideWithValue(playbackService),
         streamingVoiceEnabledProvider.overrideWithValue(true),
         nativeIosVoiceEnabledProvider.overrideWithValue(false),
-        streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+        streamingVoiceApiProvider.overrideWithValue(streamingApi),
         streamingAudioCaptureServiceProvider.overrideWithValue(captureService),
         bargeInDetectionServiceProvider.overrideWithValue(bargeInService),
         voiceCallBargeInEnabledProvider.overrideWithValue(true),
@@ -506,11 +516,18 @@ void main() {
     );
     await playbackService.playStarted.future;
     await bargeInService.started.future;
-    bargeInService.trigger();
+    final preRollChunk = Uint8List.fromList([5, 4, 3]);
+    bargeInService.trigger([preRollChunk]);
     await captureService.readyAt(1);
 
     final state = container.read(voiceCallProvider);
     expect(state.phase, VoiceCallPhase.listening);
+    expect(streamingApi.socket.sentEvents, contains('user.interrupt'));
+    expect(streamingApi.socket.sentEvents, contains('audio.chunk'));
+    expect(streamingApi.socket.sentEvents, isNot(contains('session.end')));
+    expect(streamingApi.socket.sentAudioChunks.single, preRollChunk);
+    expect(streamingApi.connectCount, 1);
+    expect(streamingApi.socket.closeCount, 0);
     expect(playbackService.stopCount, greaterThanOrEqualTo(1));
     expect(bargeInService.stopCount, 1);
   });

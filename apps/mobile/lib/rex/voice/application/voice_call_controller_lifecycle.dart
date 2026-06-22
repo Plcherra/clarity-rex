@@ -33,6 +33,7 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
       _stopBargeInMonitoring();
       final streamingSession = _activeStreamingSession;
       _activeStreamingSession = null;
+      _activeStreamingEventsTask = null;
       streamingSession?.interrupt();
       unawaited(streamingSession?.endSession());
 

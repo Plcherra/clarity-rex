@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -8,7 +9,7 @@ import 'package:clarity/rex/voice/data/audio_capture_service.dart';
 
 typedef AudioChunkCallback = Future<void> Function(Uint8List chunk);
 typedef SpeechEndCallback = void Function();
-typedef BargeInCallback = void Function();
+typedef BargeInCallback = void Function(List<Uint8List> audioChunks);
 
 abstract class StreamingAudioCaptureService {
   Future<bool> streamUtterance({
@@ -35,6 +36,7 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
   static const _bargeInGracePeriod = Duration(milliseconds: 250);
   static const _bargeInMinimumSpeechDuration = Duration(milliseconds: 160);
   static const _bargeInSpeechThresholdDb = -34.0;
+  static const _bargeInPreRollBytes = 16000;
 
   PackageBargeInDetectionService({
     AudioRecorder? recorder,
@@ -45,6 +47,7 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
   final AudioRecorder _recorder;
   final DateTime Function() _now;
   StreamSubscription<Uint8List>? _streamSubscription;
+  final Queue<Uint8List> _preRollChunks = Queue<Uint8List>();
   DateTime? _startedAt;
   DateTime? _speechStartedAt;
   var _notified = false;
@@ -58,6 +61,7 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
     _startedAt = _now();
     _speechStartedAt = null;
     _notified = false;
+    _preRollChunks.clear();
 
     final stream = await _recorder.startStream(
       const RecordConfig(
@@ -72,6 +76,7 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
         if (_notified) {
           return;
         }
+        _rememberPreRollChunk(chunk);
 
         final startedAt = _startedAt;
         final now = _now();
@@ -90,7 +95,7 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
         if (now.difference(_speechStartedAt!) >=
             _bargeInMinimumSpeechDuration) {
           _notified = true;
-          onBargeIn();
+          onBargeIn(_preRollSnapshot());
           unawaited(stop());
         }
       },
@@ -108,6 +113,7 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
     _startedAt = null;
     _speechStartedAt = null;
     _notified = false;
+    _preRollChunks.clear();
     try {
       await _recorder.cancel();
     } on Object {
@@ -134,6 +140,26 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
 
     final rms = sqrt(sumSquares / sampleCount);
     return 20 * log(rms) / ln10;
+  }
+
+  void _rememberPreRollChunk(Uint8List chunk) {
+    if (chunk.isEmpty) {
+      return;
+    }
+    _preRollChunks.add(Uint8List.fromList(chunk));
+    var totalBytes = _preRollChunks.fold<int>(
+      0,
+      (total, item) => total + item.length,
+    );
+    while (totalBytes > _bargeInPreRollBytes && _preRollChunks.isNotEmpty) {
+      totalBytes -= _preRollChunks.removeFirst().length;
+    }
+  }
+
+  List<Uint8List> _preRollSnapshot() {
+    return _preRollChunks
+        .map((chunk) => Uint8List.fromList(chunk))
+        .toList(growable: false);
   }
 }
 

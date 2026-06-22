@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,6 +44,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   AudioCaptureService? _activeCaptureService;
   StreamingAudioCaptureService? _activeStreamingCaptureService;
   StreamingVoiceSession? _activeStreamingSession;
+  Future<void>? _activeStreamingEventsTask;
   AudioPlaybackService? _activePlaybackService;
   SpeechToTextService? _activeInterimSpeechToTextService;
   StreamingAudioPlaybackQueue? _activeStreamingPlaybackQueue;
@@ -260,7 +262,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _startListeningCycle(_callGeneration);
   }
 
-  void interruptAndListen({String? reason}) {
+  void interruptAndListen({
+    String? reason,
+    List<Uint8List> initialAudioChunks = const [],
+  }) {
     if (!state.isCallActive) {
       return;
     }
@@ -285,10 +290,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
     unawaited(_streamingCaptureService.cancel());
     _stopBargeInMonitoring();
     final streamingSession = _activeStreamingSession;
-    _activeStreamingSession = null;
     streamingSession?.interrupt();
     unawaited(_streamingPlaybackQueue.cancel());
-    unawaited(streamingSession?.endSession());
     unawaited(_playbackService.stop());
 
     state = state.copyWith(
@@ -298,7 +301,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       clearError: true,
     );
     _clearVisibleTranscript();
-    _startListeningCycle(generation);
+    _startListeningCycle(generation, initialAudioChunks: initialAudioChunks);
   }
 
   void setMuted(bool isMuted) {
@@ -322,6 +325,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       _stopBargeInMonitoring();
       final streamingSession = _activeStreamingSession;
       _activeStreamingSession = null;
+      _activeStreamingEventsTask = null;
       streamingSession?.interrupt();
       unawaited(_streamingPlaybackQueue.cancel());
       unawaited(streamingSession?.endSession());
@@ -347,6 +351,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _stopBargeInMonitoring();
     final streamingSession = _activeStreamingSession;
     _activeStreamingSession = null;
+    _activeStreamingEventsTask = null;
     streamingSession?.interrupt();
     unawaited(_streamingPlaybackQueue.cancel());
     unawaited(streamingSession?.endSession());
@@ -380,6 +385,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _stopBargeInMonitoring();
     final streamingSession = _activeStreamingSession;
     _activeStreamingSession = null;
+    _activeStreamingEventsTask = null;
     streamingSession?.interrupt();
     unawaited(_streamingPlaybackQueue.cancel());
     unawaited(streamingSession?.endSession());

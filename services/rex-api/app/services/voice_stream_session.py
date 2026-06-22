@@ -107,7 +107,7 @@ class VoiceStreamSession(
         if not chunk:
             return
         if self._active_turn_task is not None and not self._active_turn_task.done():
-            return
+            await self._interrupt_active_turn(reason="barge_in_audio")
         self._audio_bytes += len(chunk)
         self._audio_chunks_received += 1
         if self._audio_started_at is None:
@@ -170,12 +170,7 @@ class VoiceStreamSession(
             return True
 
         if event == "user.interrupt":
-            self._audio_chunks.clear()
-            self._audio_started_at = None
-            await self._cancel_live_endpoint_check()
-            await self._close_live_transcription()
-            await self._cancel_active_turn()
-            await self._send_event("session.interrupted", session_id=self._session_id)
+            await self._interrupt_active_turn(reason="user_interrupt")
             return True
 
         if event == "session.end":
@@ -382,6 +377,20 @@ class VoiceStreamSession(
             await task
         self._active_turn_task = None
         await self._cancel_active_tts_tasks()
+
+    async def _interrupt_active_turn(self, *, reason: str) -> None:
+        self._audio_chunks.clear()
+        self._audio_started_at = None
+        self._audio_bytes = 0
+        self._audio_chunks_received = 0
+        await self._cancel_live_endpoint_check()
+        await self._close_live_transcription()
+        await self._cancel_active_turn()
+        await self._send_event(
+            "session.interrupted",
+            session_id=self._session_id,
+            reason=reason,
+        )
 
     async def _cancel_active_tts_tasks(self) -> None:
         tasks = list(self._active_tts_tasks)

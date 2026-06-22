@@ -3,7 +3,10 @@
 part of 'voice_call_controller.dart';
 
 extension VoiceCallControllerStreamingTurn on VoiceCallController {
-  void _startListeningCycle(int generation) {
+  void _startListeningCycle(
+    int generation, {
+    List<Uint8List> initialAudioChunks = const [],
+  }) {
     if (_isUsingNativeVoice) {
       return;
     }
@@ -18,39 +21,61 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     }
 
     if (ref.read(streamingVoiceEnabledProvider)) {
-      unawaited(_streamNextUtterance(generation));
+      unawaited(
+        _streamNextUtterance(
+          generation,
+          initialAudioChunks: initialAudioChunks,
+        ),
+      );
     } else {
       unawaited(_captureNextUtterance(generation));
     }
   }
 
-  Future<void> _streamNextUtterance(int generation) async {
+  Future<void> _streamNextUtterance(
+    int generation, {
+    List<Uint8List> initialAudioChunks = const [],
+  }) async {
     if (!_isCurrentCall(generation) ||
         state.phase != VoiceCallPhase.listening ||
         state.isMuted) {
       return;
     }
 
-    final StreamingVoiceSession session;
-    try {
-      session = await ref
-          .read(streamingVoiceApiProvider)
-          .connect(conversationId: state.conversationId);
-      _activeStreamingSession = session;
-      unawaited(_handleStreamingEvents(session, generation));
-    } on StreamingVoiceApiException catch (error) {
-      if (_isCurrentCall(generation)) {
-        await _fallbackToCloudVoiceCapture(generation, error.message);
+    late final StreamingVoiceSession session;
+    final existingSession = _activeStreamingSession;
+    if (existingSession == null) {
+      try {
+        final connectedSession = await ref
+            .read(streamingVoiceApiProvider)
+            .connect(conversationId: state.conversationId);
+        session = connectedSession;
+        _activeStreamingSession = connectedSession;
+        _activeStreamingEventsTask = _handleStreamingEvents(connectedSession);
+        unawaited(_activeStreamingEventsTask);
+      } on StreamingVoiceApiException catch (error) {
+        if (_isCurrentCall(generation)) {
+          await _fallbackToCloudVoiceCapture(generation, error.message);
+        }
+        return;
+      } on Object {
+        if (_isCurrentCall(generation)) {
+          await _fallbackToCloudVoiceCapture(
+            generation,
+            'Could not open Assistant voice stream.',
+          );
+        }
+        return;
       }
-      return;
-    } on Object {
-      if (_isCurrentCall(generation)) {
-        await _fallbackToCloudVoiceCapture(
-          generation,
-          'Could not open Assistant voice stream.',
-        );
-      }
-      return;
+    } else {
+      session = existingSession;
+    }
+
+    for (final chunk in initialAudioChunks) {
+      session.sendAudioChunk(chunk);
+    }
+    if (initialAudioChunks.isNotEmpty) {
+      startCapturingSpeech();
     }
 
     var utteranceEndSent = false;
@@ -105,12 +130,16 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
           _deferBackgroundStreamingRestart(session);
         }
       }
-      unawaited(session.endSession());
+      if (!identical(_activeStreamingSession, session)) {
+        unawaited(session.endSession());
+      }
       return;
     }
 
     if (!_isCurrentCall(generation) || !state.isCallActive) {
-      unawaited(session.endSession());
+      if (!identical(_activeStreamingSession, session)) {
+        unawaited(session.endSession());
+      }
       return;
     }
     if (!capturedAudio) {
@@ -118,7 +147,6 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
           state.phase == VoiceCallPhase.speaking) {
         return;
       }
-      unawaited(session.endSession());
       _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
       return;
     }
@@ -147,6 +175,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
   void _deferBackgroundStreamingRestart(StreamingVoiceSession session) {
     if (identical(_activeStreamingSession, session)) {
       _activeStreamingSession = null;
+      _activeStreamingEventsTask = null;
     }
     _cancelThinkingTimeout();
     state = state.copyWith(
@@ -278,15 +307,15 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     }
   }
 
-  Future<void> _handleStreamingEvents(
-    StreamingVoiceSession session,
-    int generation,
-  ) async {
+  Future<void> _handleStreamingEvents(StreamingVoiceSession session) async {
     var assistantText = '';
     var responseAudioStarted = false;
     DateTime? assistantStartedAt;
     DateTime? firstAudioChunkAt;
     DateTime? lastAudioChunkStartedAt;
+    bool isActiveSession() =>
+        identical(_activeStreamingSession, session) && state.isCallActive;
+
     void beginStreamingAudioIfNeeded() {
       if (responseAudioStarted) {
         return;
@@ -299,7 +328,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     StreamingAudioPlaybackCallbacks playbackCallbacks() {
       return StreamingAudioPlaybackCallbacks(
         onChunkStarted: (chunk) {
-          if (_isCurrentCall(generation)) {
+          if (isActiveSession()) {
             final now = DateTime.now();
             firstAudioChunkAt ??= now;
             final previousChunkAt = lastAudioChunkStartedAt;
@@ -311,7 +340,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
               'text_chars=${chunk.text.length}',
             );
             startSpeaking(assistantText);
-            _startBargeInMonitoring(generation);
+            _startBargeInMonitoring(_callGeneration);
           }
         },
         onQueueDrained: () {
@@ -323,7 +352,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         },
         onError: (message) {
           _stopBargeInMonitoring();
-          if (_isCurrentCall(generation)) {
+          if (isActiveSession()) {
             fail(message);
           }
         },
@@ -332,7 +361,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
 
     try {
       await for (final event in session.events) {
-        if (!_isCurrentCall(generation) || !state.isCallActive) {
+        if (!isActiveSession()) {
           return;
         }
 
@@ -364,11 +393,11 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
             if (state.phase != VoiceCallPhase.thinking) {
               startThinking(finalTranscript: state.currentTranscript);
             }
-            _armThinkingTimeout(generation);
+            _armThinkingTimeout(_callGeneration);
             beginStreamingAudioIfNeeded();
           case 'assistant.token':
             assistantText += event.token ?? '';
-            _armThinkingTimeout(generation);
+            _armThinkingTimeout(_callGeneration);
             state = state.copyWith(lastAssistantResponse: assistantText);
           case 'assistant.audio_chunk':
             final audioBase64 = event.audioBase64;
@@ -417,7 +446,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
             );
             await _streamingPlaybackQueue.waitUntilIdle();
             _stopBargeInMonitoring();
-            if (_isCurrentCall(generation) && state.isCallActive) {
+            if (isActiveSession()) {
               if (state.phase == VoiceCallPhase.speaking) {
                 completeSpeaking();
                 debugPrint('rex_voice_playback listening_resumed');
@@ -427,8 +456,6 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
                 debugPrint('rex_voice_playback listening_resumed');
               }
             }
-            unawaited(session.endSession());
-            return;
           case 'session.ended':
             return;
           case 'session.interrupted':
@@ -443,16 +470,17 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         }
       }
     } on StreamingVoiceApiException catch (error) {
-      if (_isCurrentCall(generation)) {
+      if (isActiveSession()) {
         fail(error.message);
       }
     } on Object {
-      if (_isCurrentCall(generation)) {
+      if (isActiveSession()) {
         fail('Assistant voice stream failed.');
       }
     } finally {
       if (identical(_activeStreamingSession, session)) {
         _activeStreamingSession = null;
+        _activeStreamingEventsTask = null;
       }
     }
   }
