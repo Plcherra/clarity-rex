@@ -5,10 +5,14 @@ class FakeMemoryTurnStore:
         fail_save_memory=False,
         return_empty_save_memory=False,
         fail_update_memory=False,
+        hide_saved_memory_from_list=False,
+        hide_updated_memory_from_list=False,
     ):
         self.fail_save_memory = fail_save_memory
         self.return_empty_save_memory = return_empty_save_memory
         self.fail_update_memory = fail_update_memory
+        self.hide_saved_memory_from_list = hide_saved_memory_from_list
+        self.hide_updated_memory_from_list = hide_updated_memory_from_list
         self.messages = []
         self.long_term_memory = []
         self.entities = []
@@ -58,6 +62,8 @@ class FakeMemoryTurnStore:
             "importance": importance,
             "metadata": metadata or {},
         }
+        if self.hide_saved_memory_from_list:
+            memory["_hidden_from_list"] = True
         self.next_memory_id += 1
         self.long_term_memory.append(memory)
         return memory
@@ -106,7 +112,11 @@ class FakeMemoryTurnStore:
         return None
 
     async def list_long_term_memory(self, limit=50, memory_type=None, active=None):
-        memories = self.long_term_memory
+        memories = [
+            memory
+            for memory in self.long_term_memory
+            if not memory.get("_hidden_from_list")
+        ]
         if memory_type is not None:
             memories = [
                 memory
@@ -154,5 +164,7 @@ class FakeMemoryTurnStore:
                 memory["correction_group"] = correction_group
             if metadata is not None:
                 memory["metadata"] = metadata
+            if self.hide_updated_memory_from_list:
+                memory["_hidden_from_list"] = True
             return memory
         return None

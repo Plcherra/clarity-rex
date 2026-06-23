@@ -408,6 +408,40 @@ async def test_memory_turn_service_does_not_claim_failed_update_succeeded():
 
 
 @pytest.mark.asyncio
+async def test_memory_turn_service_does_not_claim_update_when_knows_cannot_see_it():
+    store = FakeMemoryTurnStore(hide_updated_memory_from_list=True)
+    store.long_term_memory.append(
+        {
+            "id": "memory-existing",
+            "memory_type": "fact",
+            "content": "User lives in Summerville.",
+            "importance": 4,
+            "metadata": {},
+            "active": True,
+        }
+    )
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "I don't live in Summerville. It's Somerville with one o and one m.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-update", "content": "location correction"},
+        conversation_history=[],
+        time_context={"date": "2026-06-04"},
+    )
+
+    assert result is not None
+    assert result["response"] == (
+        "I understood that correction, but I couldn't confirm it is visible "
+        "in Knows yet. Please try again in a moment."
+    )
+    assert result["memory_changes"]["updated"] == 0
+    assert result["memory_changes"]["records"][0]["action"] == "save_failed"
+    metadata = result["memory_changes"]["records"][0]["metadata"]
+    assert metadata["failure_reason"] == "durable_memory_update_not_visible"
+
+
+@pytest.mark.asyncio
 async def test_memory_turn_service_updates_legacy_name_without_fingerprint():
     store = FakeMemoryTurnStore()
     store.long_term_memory.append(
@@ -1000,3 +1034,33 @@ async def test_memory_turn_service_does_not_claim_success_when_save_returns_no_r
     assert metadata["degraded"] is True
     assert metadata["failure_reason"] == "durable_memory_save_missing"
     assert store.long_term_memory == []
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_does_not_claim_save_when_knows_cannot_see_it():
+    store = FakeMemoryTurnStore(hide_saved_memory_from_list=True)
+    service = MemoryTurnService(store)
+    user_message = {
+        "id": "message-1",
+        "conversation_id": "conversation-1",
+        "role": "user",
+        "content": "My mom's birthday is June 18",
+    }
+
+    result = await service.handle_turn(
+        "My mom's birthday is June 18",
+        conversation_id="conversation-1",
+        user_message=user_message,
+        conversation_history=[],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert result is not None
+    assert result["response"] == (
+        "I understood that, but I couldn't confirm it is visible in Knows "
+        "yet. Please try again in a moment."
+    )
+    assert result["memory_changes"]["created"] == 0
+    assert result["memory_changes"]["records"][0]["action"] == "save_failed"
+    metadata = result["memory_changes"]["records"][0]["metadata"]
+    assert metadata["failure_reason"] == "durable_memory_save_not_visible"

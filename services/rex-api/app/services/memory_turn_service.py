@@ -321,6 +321,45 @@ class MemoryTurnService(
                 "messages": await self.recent_public_messages(conversation_id),
             }
 
+        confirmed_record = await self._confirmed_visible_active_memory(record)
+        if confirmed_record is None:
+            failure_metadata = memory_degraded_metadata(
+                intent.metadata,
+                operation="save_long_term_memory_verify",
+                failure_reason="durable_memory_save_not_visible",
+                user_visible=True,
+            )
+            log_memory_failure(
+                "direct_save_not_visible",
+                operation="save_long_term_memory_verify",
+                error=RuntimeError("saved memory was not visible in active memory"),
+                conversation_id=conversation_id,
+                memory_type=intent.memory_type,
+                metadata=failure_metadata,
+            )
+            response = (
+                "I understood that, but I couldn't confirm it is visible in Knows "
+                "yet. Please try again in a moment."
+            )
+            assistant_message = await self.memory_service.save_message(
+                conversation_id,
+                "assistant",
+                response,
+            )
+            return {
+                "conversation_id": conversation_id,
+                "response": response,
+                "user_message": user_message,
+                "assistant_message": self.public_message(assistant_message),
+                "memory_correction": None,
+                "memory_changes": self._simple_memory_failed_summary(
+                    intent,
+                    metadata=failure_metadata,
+                ),
+                "messages": await self.recent_public_messages(conversation_id),
+            }
+
+        record = confirmed_record
         response = self.memory_intent_service.saved_response(intent)
         await self._materialize_person_card(record)
         assistant_message = await self.memory_service.save_message(

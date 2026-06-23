@@ -73,6 +73,34 @@ class MemoryTurnDirectHelpers:
         except Exception:
             return []
 
+    async def _confirmed_visible_active_memory(self, record: dict) -> Optional[dict]:
+        record_id = str(record.get("id") or "")
+        if not record_id:
+            return None
+
+        list_memory = getattr(self.memory_service, "list_long_term_memory", None)
+        if list_memory is None:
+            return None
+
+        try:
+            memories = await list_memory(
+                limit=100,
+                memory_type=record.get("memory_type"),
+                active=True,
+            )
+        except TypeError:
+            try:
+                memories = await list_memory(limit=100, active=True)
+            except Exception:
+                return None
+        except Exception:
+            return None
+
+        for memory in memories:
+            if str(memory.get("id") or "") == record_id:
+                return memory
+        return None
+
     def _memory_matches_intent(
         self,
         memory: dict,
@@ -342,7 +370,45 @@ class MemoryTurnDirectHelpers:
                 "messages": await self.recent_public_messages(conversation_id),
             }
 
-        updated_record = updated
+        confirmed_updated = await self._confirmed_visible_active_memory(updated)
+        if confirmed_updated is None:
+            failure_metadata = memory_degraded_metadata(
+                intent.metadata,
+                operation="update_long_term_memory_verify",
+                failure_reason="durable_memory_update_not_visible",
+                user_visible=True,
+            )
+            log_memory_failure(
+                "direct_update_not_visible",
+                operation="update_long_term_memory_verify",
+                error=RuntimeError("updated memory was not visible in active memory"),
+                conversation_id=conversation_id,
+                memory_type=intent.memory_type,
+                metadata=failure_metadata,
+            )
+            response = (
+                "I understood that correction, but I couldn't confirm it is visible "
+                "in Knows yet. Please try again in a moment."
+            )
+            assistant_message = await self.memory_service.save_message(
+                conversation_id,
+                "assistant",
+                response,
+            )
+            return {
+                "conversation_id": conversation_id,
+                "response": response,
+                "user_message": user_message,
+                "assistant_message": self.public_message(assistant_message),
+                "memory_correction": None,
+                "memory_changes": self._simple_memory_failed_summary(
+                    intent,
+                    metadata=failure_metadata,
+                ),
+                "messages": await self.recent_public_messages(conversation_id),
+            }
+
+        updated_record = confirmed_updated
         await self._materialize_person_card(updated_record)
         archived_related = await self._archive_stale_location_memories(
             intent,

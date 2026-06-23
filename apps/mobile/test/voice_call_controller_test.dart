@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:audio_session/audio_session.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
+import 'package:clarity/rex/memory/data/memory_api.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/audio_playback_service.dart';
@@ -19,6 +20,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'memory_page_test_helpers.dart';
 
 part 'voice_call_controller_test_fakes.dart';
 
@@ -113,6 +116,22 @@ void main() {
       now: startedAt.add(const Duration(seconds: 42)),
     );
     expect(endpoint.endpointReached, isTrue);
+  });
+
+  test('CloudVoiceTurnResponse parses memory changes', () {
+    final response = CloudVoiceTurnResponse.fromJson({
+      'conversation_id': 'conversation-1',
+      'transcript': 'Remember my mom birthday',
+      'response_text': 'Got it.',
+      'audio_content_type': 'audio/mpeg',
+      'audio_base64': '',
+      'audio_encoding': 'MP3',
+      'voice_name': 'test-voice',
+      'language_code': 'en-US',
+      'memory_changes': {'created': 1},
+    });
+
+    expect(response.memoryChanges, {'created': 1});
   });
 
   test('voice audio session asks native iOS to prefer loud speaker', () async {
@@ -428,6 +447,7 @@ void main() {
       final streamingApi = _FakeStreamingVoiceApi();
       final playbackService = _ControlledAudioPlaybackService();
       final audioSessionService = _CountingVoiceAudioSessionService();
+      final memoryApi = MemoryPageFakeMemoryApi();
       final container = ProviderContainer(
         overrides: [
           microphonePermissionProvider.overrideWithValue(
@@ -452,6 +472,7 @@ void main() {
           bargeInDetectionServiceProvider.overrideWithValue(
             const _NoopBargeInDetectionService(),
           ),
+          memoryApiProvider.overrideWithValue(memoryApi),
         ],
       );
       addTearDown(container.dispose);
@@ -481,6 +502,7 @@ void main() {
       streamingApi.socket.emit({
         'event': 'messages.updated',
         'conversation_id': 'conversation-voice',
+        'memory_changes': {'created': 1},
         'messages': [
           {
             'id': 'user-message-1',
@@ -502,6 +524,8 @@ void main() {
 
       expect(container.read(chatProvider).conversationId, 'conversation-voice');
       expect(container.read(chatProvider).messages.length, 2);
+      expect(memoryApi.memoryActiveFilters.last, isTrue);
+      expect(memoryApi.peopleActiveFilters.last, isTrue);
 
       await playbackService.playStarted.future;
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);

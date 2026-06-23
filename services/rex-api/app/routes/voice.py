@@ -227,6 +227,7 @@ async def voice_turn(
         voice_name=synthesis["voice_name"],
         language_code=synthesis["language_code"],
         messages=chat_result.get("messages") or [],
+        memory_changes=chat_result.get("memory_changes"),
         voice_metadata=voice_metadata,
     )
 

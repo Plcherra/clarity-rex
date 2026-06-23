@@ -255,6 +255,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
             conversationId: response.conversationId,
             messages: response.messages,
             fallbackAssistantResponse: response.responseText,
+            memoryChanges: response.memoryChanges,
           );
 
       _clearVisibleTranscript();
@@ -423,6 +424,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
                     conversationId: event.conversationId!,
                     messages: messages,
                     fallbackAssistantResponse: assistantText,
+                    memoryChanges: event.memoryChanges,
                   );
             }
           case 'assistant.done':

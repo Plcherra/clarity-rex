@@ -61,6 +61,11 @@ class VoiceStreamEvent {
 
   String? get responseText => data['response_text'] as String?;
 
+  Map<String, dynamic>? get memoryChanges {
+    final value = data['memory_changes'];
+    return value is Map<String, dynamic> ? value : null;
+  }
+
   String? get audioBase64 => data['audio_base64'] as String?;
 
   String get audioContentType =>

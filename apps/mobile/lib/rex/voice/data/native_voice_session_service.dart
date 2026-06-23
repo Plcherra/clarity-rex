@@ -54,6 +54,11 @@ class NativeVoiceEvent {
 
   String? get responseText => data['response_text'] as String?;
 
+  Map<String, dynamic>? get memoryChanges {
+    final value = data['memory_changes'];
+    return value is Map<String, dynamic> ? value : null;
+  }
+
   String? get detail => data['detail'] as String?;
 }
 

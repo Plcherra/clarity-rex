@@ -182,6 +182,7 @@ extension VoiceCallControllerNativeSession on VoiceCallController {
           conversationId: conversationId,
           messages: messages,
           fallbackAssistantResponse: _nativeAssistantText,
+          memoryChanges: event.memoryChanges,
         );
   }
 

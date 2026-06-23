@@ -46,6 +46,15 @@ void main() {
       });
     },
   );
+
+  test('VoiceStreamEvent exposes memory changes', () {
+    final event = VoiceStreamEvent.fromJson({
+      'event': 'messages.updated',
+      'memory_changes': {'created': 1},
+    });
+
+    expect(event.memoryChanges, {'created': 1});
+  });
 }
 
 class _FakeVoiceWebSocket implements VoiceWebSocket {

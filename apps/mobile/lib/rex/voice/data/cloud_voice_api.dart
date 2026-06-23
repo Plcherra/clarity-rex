@@ -200,6 +200,7 @@ class CloudVoiceTurnResponse {
     required this.voiceName,
     required this.languageCode,
     this.messages = const [],
+    this.memoryChanges,
     this.voiceMetadata = const {},
   });
 
@@ -221,6 +222,7 @@ class CloudVoiceTurnResponse {
                 .map(ChatApiMessage.fromJson)
                 .toList(growable: false)
           : const [],
+      memoryChanges: _nullableMapFromJson(json['memory_changes']),
       voiceMetadata: _mapFromJson(json['voice_metadata']),
     );
   }
@@ -235,7 +237,15 @@ class CloudVoiceTurnResponse {
   final String voiceName;
   final String languageCode;
   final List<ChatApiMessage> messages;
+  final Map<String, dynamic>? memoryChanges;
   final Map<String, dynamic> voiceMetadata;
+}
+
+Map<String, dynamic>? _nullableMapFromJson(Object? value) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+  return null;
 }
 
 Map<String, dynamic> _mapFromJson(Object? value) {

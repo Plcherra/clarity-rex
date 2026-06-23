@@ -34,4 +34,5 @@ class VoiceTurnResponse(BaseModel):
     voice_name: str
     language_code: str
     messages: list[dict[str, Any]] = Field(default_factory=list)
+    memory_changes: Optional[dict[str, Any]] = None
     voice_metadata: dict[str, Any] = Field(default_factory=dict)
