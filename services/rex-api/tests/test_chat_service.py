@@ -10,7 +10,10 @@ from chat_service_fakes import (
 from app.config import Settings
 from app.services.action_truth_policy import DEGRADED_RECALL_FALLBACK
 from app.services import file_service as file_service_module
-from app.services.chat_service import ChatService
+from app.services.chat_service import (
+    FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE,
+    ChatService,
+)
 from app.services.file_service import FileService
 from app.services.memory_service import SupabaseMemoryService, MemoryServiceError
 from app.services.rex_brain_contracts import RexBrainChannel
@@ -148,6 +151,89 @@ async def test_chat_service_omits_attached_financial_context_for_normal_chat():
     system_content = ai_service.messages[0]["content"]
     assert "Clarity financial summary:" not in system_content
     assert "spent_this_month" not in system_content
+
+
+@pytest.mark.asyncio
+async def test_chat_service_refuses_finance_answer_without_financial_context():
+    ai_service = FakeAIService(response="You spent $42 on groceries.")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("How much did I spend on groceries?")
+
+    assert result["response"] == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
+    assert ai_service.generate_calls == 0
+    assert result["messages"][-1]["content"] == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
+
+
+@pytest.mark.asyncio
+async def test_chat_service_refuses_finance_answer_with_degraded_context():
+    ai_service = FakeAIService(response="Your balance is $500.")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message(
+        "What is my checking account balance?",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "data_status": {
+                "state": "degraded",
+                "financial_context_complete": False,
+                "load_errors": [
+                    {
+                        "source": "financial_read_model",
+                        "message": "load failed",
+                    }
+                ],
+            },
+            "integration": {"full_financial_context_included": False},
+        },
+    )
+
+    assert result["response"] == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
+    assert ai_service.generate_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_chat_service_refuses_finance_answer_with_unverified_context_shape():
+    ai_service = FakeAIService(response="You spent $25.")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message(
+        "How much did I spend on groceries?",
+        financial_context={"cash_flow": {"spent_this_month": 25}},
+    )
+
+    assert result["response"] == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
+    assert ai_service.generate_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_chat_service_allows_finance_answer_with_ready_context():
+    ai_service = FakeAIService(response="You spent $25 on groceries.")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message(
+        "How much did I spend on groceries?",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "integration": {"full_financial_context_included": True},
+            "cash_flow": {"spent_this_month": 25},
+        },
+    )
+
+    assert result["response"] == "You spent $25 on groceries."
+    assert ai_service.generate_calls == 1
+    system_content = ai_service.messages[0]["content"]
+    assert "Clarity financial summary:" in system_content
+    assert "spent_this_month=25" in system_content
 
 
 @pytest.mark.asyncio
@@ -499,7 +585,7 @@ async def test_chat_service_normal_chat_uses_one_llm_call():
     memory_service = FakeMemoryService()
     chat_service = ChatService(ai_service, FileService(), memory_service)
 
-    result = await chat_service.send_message("Add $5k income under Europe plan")
+    result = await chat_service.send_message("Add Europe plan note to the draft")
 
     assert result["response"] == "Rex response"
     assert result["memory_changes"] is None
@@ -585,6 +671,34 @@ async def test_chat_service_stream_uses_one_llm_call():
     assert events[-1]["event"] == "done"
     assert events[-1]["response"] == "Rex stream"
     assert ai_service.stream_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_chat_service_stream_refuses_finance_answer_without_context():
+    ai_service = FakeAIService(stream_tokens=["You spent ", "$42."])
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "How much did I spend on groceries?",
+            channel=RexBrainChannel.VOICE,
+            include_turn_trace=True,
+        )
+    ]
+
+    assert events[0] == {"event": "conversation", "conversation_id": "conversation-1"}
+    assert events[1]["event"] == "turn.trace"
+    assert events[1]["loaded_context"]["financial_context"] is True
+    assert events[2] == {
+        "event": "token",
+        "token": FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE,
+    }
+    assert events[-1]["event"] == "done"
+    assert events[-1]["response"] == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
+    assert ai_service.stream_calls == 0
+    assert memory_service.messages[-1]["content"] == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
 
 
 @pytest.mark.asyncio

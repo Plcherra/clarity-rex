@@ -5,7 +5,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.services.chat_service import ChatService
+from app.services.chat_service import (
+    FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE,
+    ChatService,
+)
 from app.services.file_service import FileService
 from app.services.time_context_service import TimeContextService
 from chat_service_fakes import FakeAIService, FakeMemoryService
@@ -80,6 +83,24 @@ def _voice_turn(client, chat, transcript, conversation_id=None):
 
 def _event_text(events):
     return "\n".join(str(event) for event in events)
+
+
+def test_voice_refuses_finance_answer_without_financial_context(client):
+    ai_service = FakeAIService(stream_tokens=["You spent ", "$42."])
+    memory_service = FakeMemoryService()
+    chat = _chat_service(ai_service, memory_service)
+
+    done, events, tts = _voice_turn(
+        client,
+        chat,
+        "How much did I spend on groceries?",
+    )
+
+    assert done["response_text"] == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
+    assert ai_service.generate_calls == 0
+    assert ai_service.stream_calls == 0
+    assert " ".join(tts.calls) == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
+    assert "without guessing" in _event_text(events)
 
 
 def test_voice_saves_exact_movie_plan_and_updates_same_memory(client):

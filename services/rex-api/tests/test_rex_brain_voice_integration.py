@@ -104,7 +104,15 @@ async def test_voice_channel_uses_standard_model_for_normal_financial_question()
         async for event in chat_service.stream_message(
             "How much did I spend on restaurants?",
             conversation_id="conversation-voice",
-            financial_context={"cash_flow": {"spending": 100}},
+            financial_context={
+                "data_status": {
+                    "state": "ready",
+                    "financial_context_complete": True,
+                    "load_errors": [],
+                },
+                "integration": {"full_financial_context_included": True},
+                "cash_flow": {"spending": 100},
+            },
             max_response_tokens=VOICE_RESPONSE_MAX_TOKENS,
             channel=RexBrainChannel.VOICE,
         )
@@ -134,7 +142,15 @@ async def test_voice_channel_can_escalate_explicit_deep_thinking_to_reasoning():
     await chat_service.send_message(
         "Deep think and analyze thoroughly why my spending is up",
         conversation_id="conversation-voice",
-        financial_context={"cash_flow": {"spending": 1200}},
+        financial_context={
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "integration": {"full_financial_context_included": True},
+            "cash_flow": {"spending": 1200},
+        },
         max_response_tokens=VOICE_DEEP_RESPONSE_MAX_TOKENS,
         channel=RexBrainChannel.VOICE,
     )

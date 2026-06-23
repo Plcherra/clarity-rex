@@ -116,6 +116,31 @@ class _DelayedTTSService:
         }
 
 
+class _PrefetchProbeTTSService:
+    def __init__(self):
+        self.started = []
+        self.finished = []
+        self._second_chunk_started = asyncio.Event()
+
+    async def synthesize_speech(self, text: str):
+        chunk_index = len(self.started)
+        self.started.append((text, time.perf_counter()))
+        if chunk_index == 0:
+            await asyncio.wait_for(self._second_chunk_started.wait(), timeout=1)
+        elif chunk_index == 1:
+            self._second_chunk_started.set()
+        await asyncio.sleep(0)
+        self.finished.append((text, time.perf_counter()))
+        return {
+            "audio_content_type": "audio/mpeg",
+            "audio_base64": f"audio:{len(self.started)}",
+            "audio_encoding": "MP3",
+            "voice_name": "test",
+            "language_code": "en-US",
+            "metadata": {},
+        }
+
+
 async def _never_finishes():
     await asyncio.Future()
 
@@ -199,6 +224,7 @@ async def test_voice_stream_sends_first_audio_when_tts_finishes_before_next_toke
             "Can you handle it?",
             {"confidence": 0.95, "duration_seconds": 1.2},
             timings,
+            turn_generation=1,
         )
     )
 
@@ -224,12 +250,17 @@ async def test_voice_stream_sends_first_audio_when_tts_finishes_before_next_toke
 @pytest.mark.asyncio
 async def test_voice_stream_prefetches_tts_chunks_before_previous_audio_finishes():
     writer = _StreamingWriterProbe(tts_delay=0.03)
+    writer.google_tts_service = _PrefetchProbeTTSService()
     timings = {}
 
-    response = await writer._stream_chat_and_audio(
-        "What is recent on my Capital One savings?",
-        {"confidence": 0.95, "duration_seconds": 1.2},
-        timings,
+    response = await asyncio.wait_for(
+        writer._stream_chat_and_audio(
+            "What is recent on my Capital One savings?",
+            {"confidence": 0.95, "duration_seconds": 1.2},
+            timings,
+            turn_generation=1,
+        ),
+        timeout=1,
     )
 
     audio_events = [
@@ -241,7 +272,7 @@ async def test_voice_stream_prefetches_tts_chunks_before_previous_audio_finishes
     assert "tts_first_audio_turn_ms" in timings
     first_finished_at = writer.google_tts_service.finished[0][1]
     second_started_at = writer.google_tts_service.started[1][1]
-    assert second_started_at < first_finished_at
+    assert second_started_at <= first_finished_at
 
 
 @pytest.mark.asyncio
@@ -256,6 +287,7 @@ async def test_voice_memory_recall_speaks_final_truth_checked_response():
         "What do you know about Jessica?",
         {"confidence": 0.95, "duration_seconds": 1.2},
         timings,
+        turn_generation=1,
     )
 
     audio_events = [

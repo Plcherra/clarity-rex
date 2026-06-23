@@ -116,6 +116,12 @@ async def test_experimental_rex_brain_settings_do_not_change_mvp_flow():
     await chat_service.send_message(
         "Analyze my spending and compare it to my budget",
         financial_context={
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "integration": {"full_financial_context_included": True},
             "cash_flow": {"income": 4000, "spending": 3100},
             "transactions": [{"merchant": "Coffee", "amount": 42}],
         },
@@ -197,7 +203,17 @@ async def test_base_prompt_contains_launch_safety_guards():
     chat_service = _routed_chat_service(ai_service, memory_service)
 
     await chat_service.send_message(
-        "Simulate my budget and alert me when anything changes"
+        "Simulate my budget and alert me when anything changes",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "integration": {"full_financial_context_included": True},
+            "cash_flow": {"spent_this_month": 100},
+        },
     )
 
     system_prompt = ai_service.messages[0]["content"]

@@ -33,14 +33,14 @@ async def test_send_message_records_one_llm_usage_event_for_normal_chat_turn():
     usage = FakeUsageTrackingService()
     chat = _chat_service(usage_service=usage)
 
-    result = await chat.send_message("How is my budget?", channel=RexBrainChannel.CHAT)
+    result = await chat.send_message("How is my day?", channel=RexBrainChannel.CHAT)
 
     assert result["response"] == "Sure thing."
     assert len(usage.llm_turns) == 1
     assert usage.llm_turns[0]["surface"] == "assistant"
     assert usage.llm_turns[0]["channel"] == "chat"
     assert usage.llm_turns[0]["status"] == "success"
-    assert "How is my budget?" not in str(usage.llm_turns[0])
+    assert "How is my day?" not in str(usage.llm_turns[0])
 
 
 @pytest.mark.asyncio

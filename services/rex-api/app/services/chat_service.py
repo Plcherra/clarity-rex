@@ -40,6 +40,13 @@ from app.services.time_context_service import TimeContextService
 from app.services.usage_tracking_service import UsageTrackingService
 
 
+FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE = (
+    "I don't have reliable Clarity financial data available for this turn, so I "
+    "can't answer that without guessing. Please refresh your financial data or "
+    "try again in a moment."
+)
+
+
 class ChatService(ChatVoiceMetadataMixin):
     def __init__(
         self,
@@ -148,6 +155,16 @@ class ChatService(ChatVoiceMetadataMixin):
         )
         if goal_command_turn:
             return goal_command_turn
+        finance_guard_response = self._financial_context_guard_response(
+            intent_decision,
+            financial_context,
+        )
+        if finance_guard_response:
+            return await self._guarded_turn_response(
+                conversation_id=conversation_id,
+                response=finance_guard_response,
+                user_message=user_message,
+            )
         conversation_history = self.memory_turn_service.public_messages(
             conversation_history
         )
@@ -306,6 +323,28 @@ class ChatService(ChatVoiceMetadataMixin):
                 "assistant_message": goal_command_turn["assistant_message"],
             }
             return
+        finance_guard_response = self._financial_context_guard_response(
+            intent_decision,
+            financial_context,
+        )
+        if finance_guard_response:
+            yield {"event": "token", "token": finance_guard_response}
+            assistant_message = await self.memory_service.save_message(
+                conversation_id,
+                "assistant",
+                finance_guard_response,
+            )
+            yield {
+                "event": "done",
+                "conversation_id": conversation_id,
+                "response": finance_guard_response,
+                "messages": await self.memory_turn_service.recent_public_messages(
+                    conversation_id
+                ),
+                "memory_changes": None,
+                "assistant_message": assistant_message,
+            }
+            return
         conversation_history = self.memory_turn_service.public_messages(
             conversation_history
         )
@@ -448,6 +487,75 @@ class ChatService(ChatVoiceMetadataMixin):
         if intent_decision.should_use_financial_context:
             return financial_context
         return None
+
+    def _financial_context_guard_response(
+        self,
+        intent_decision,
+        financial_context: Optional[dict],
+    ) -> Optional[str]:
+        if not intent_decision.should_use_financial_context:
+            return None
+        if self._financial_context_is_reliable(financial_context):
+            return None
+        return FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
+
+    def _financial_context_is_reliable(self, financial_context: Optional[dict]) -> bool:
+        if not isinstance(financial_context, dict) or not financial_context:
+            return False
+
+        data_status = financial_context.get("data_status")
+        status = data_status if isinstance(data_status, dict) else {}
+        state = str(
+            status.get("state") or status.get("status") or data_status or ""
+        ).strip().lower()
+        if not state:
+            return False
+        if state in {"unavailable", "degraded", "partial", "error", "failed"}:
+            return False
+        if state != "ready":
+            return False
+
+        complete = status.get("financial_context_complete")
+        if complete is False or str(complete).strip().lower() == "false":
+            return False
+
+        load_errors = status.get("load_errors")
+        if load_errors is None:
+            load_errors = financial_context.get("load_errors")
+        if load_errors:
+            return False
+
+        integration = financial_context.get("integration")
+        if isinstance(integration, dict):
+            full_context = integration.get("full_financial_context_included")
+            if full_context is False or str(full_context).strip().lower() == "false":
+                return False
+
+        return True
+
+    async def _guarded_turn_response(
+        self,
+        *,
+        conversation_id: str,
+        response: str,
+        user_message: dict,
+    ) -> dict:
+        assistant_message = await self.memory_service.save_message(
+            conversation_id,
+            "assistant",
+            response,
+        )
+        return {
+            "conversation_id": conversation_id,
+            "response": response,
+            "user_message": user_message,
+            "assistant_message": assistant_message,
+            "memory_correction": None,
+            "memory_changes": None,
+            "messages": await self.memory_turn_service.recent_public_messages(
+                conversation_id
+            ),
+        }
 
     def _truthful_generated_response(
         self,
