@@ -60,7 +60,7 @@ async def test_memory_service_attaches_user_id_to_inserts(monkeypatch):
     calls = []
 
     async def fake_request(method, url, headers=None, json=None):
-        calls.append({"method": method, "url": url, "json": json})
+        calls.append({"method": method, "url": url, "headers": headers, "json": json})
         return FakeSupabaseRestResponse()
 
     monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
@@ -95,7 +95,7 @@ async def test_memory_service_overrides_untrusted_user_id_on_inserts(monkeypatch
     calls = []
 
     async def fake_request(method, url, headers=None, json=None):
-        calls.append({"method": method, "url": url, "json": json})
+        calls.append({"method": method, "url": url, "headers": headers, "json": json})
         return FakeSupabaseRestResponse()
 
     monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
@@ -169,7 +169,7 @@ async def test_memory_service_scopes_message_search(monkeypatch):
     calls = []
 
     async def fake_request(method, url, headers=None, json=None):
-        calls.append({"method": method, "url": url, "json": json})
+        calls.append({"method": method, "url": url, "headers": headers, "json": json})
         return FakeSupabaseRestResponse()
 
     monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
@@ -186,10 +186,13 @@ async def test_memory_service_scopes_message_search(monkeypatch):
 
     await service.search_messages("mom birthday")
 
-    assert calls[0]["method"] == "GET"
-    assert "/messages?" in calls[0]["url"]
-    assert "user_id=eq.user-123" in calls[0]["url"]
-    assert "or=" in calls[0]["url"]
+    assert calls[0]["method"] == "POST"
+    assert "/rpc/search_user_chat_messages" in calls[0]["url"]
+    assert calls[0]["headers"]["apikey"] == "anon-key"
+    assert calls[0]["headers"]["Authorization"] == "Bearer access-token"
+    assert calls[0]["json"]["search_query"] == "mom birthday"
+    assert "mom" in calls[0]["json"]["search_terms"]
+    assert "user_id" not in calls[0]["json"]
 
 
 @pytest.mark.asyncio
@@ -197,7 +200,7 @@ async def test_memory_service_scopes_conversation_search(monkeypatch):
     calls = []
 
     async def fake_request(method, url, headers=None, json=None):
-        calls.append({"method": method, "url": url, "json": json})
+        calls.append({"method": method, "url": url, "headers": headers, "json": json})
         return FakeSupabaseRestResponse()
 
     monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
@@ -214,10 +217,13 @@ async def test_memory_service_scopes_conversation_search(monkeypatch):
 
     await service.search_conversations("work")
 
-    assert calls[0]["method"] == "GET"
-    assert "/conversations?" in calls[0]["url"]
-    assert "user_id=eq.user-123" in calls[0]["url"]
-    assert "or=" in calls[0]["url"]
+    assert calls[0]["method"] == "POST"
+    assert "/rpc/search_user_chat_messages" in calls[0]["url"]
+    assert calls[0]["headers"]["apikey"] == "anon-key"
+    assert calls[0]["headers"]["Authorization"] == "Bearer access-token"
+    assert calls[0]["json"]["search_query"] == "work"
+    assert calls[0]["json"]["search_terms"] == ["work", "works"]
+    assert "user_id" not in calls[0]["json"]
 
 
 @pytest.mark.asyncio

@@ -70,6 +70,13 @@ class MemoryIntentService:
         r"\bi\s+work\s+(?:at|for)\s+(?P<workplace>[^.!?;,]{2,100})",
         re.IGNORECASE,
     )
+    _device_fact_pattern = re.compile(
+        r"\b(?:i\s+(?:have|own|use)|it(?:'s| is)|that(?:'s| is))\s+"
+        r"(?:an?\s+|the\s+)?(?P<device>[^.!?]{2,90}?"
+        r"(?:\bpc\b|\bcomputer\b|\blaptop\b|\bdesktop\b|\bphone\b|\btablet\b|"
+        r"\bconsole\b|\b[A-Za-z][A-Za-z0-9 -]*\d{1,4}\s*[A-Za-z]{0,3}\b))",
+        re.IGNORECASE,
+    )
     _preference_pattern = re.compile(
         r"\bi\s+prefer\s+(?P<preferred>[^.!?]{2,80}?)\s+"
         r"(?:over|to|more\s+than|instead\s+of)\s+(?P<other>[^.!?]{2,80})",
@@ -119,6 +126,10 @@ class MemoryIntentService:
         if work_intent is not None:
             return work_intent
 
+        device_intent = self._detect_device_fact(message)
+        if device_intent is not None:
+            return device_intent
+
         preference_intent = self._detect_preference(message)
         if preference_intent is not None:
             return preference_intent
@@ -154,6 +165,13 @@ class MemoryIntentService:
         )
         if contextual_birthday is not None:
             return contextual_birthday
+
+        contextual_save_proposal = self._detect_contextual_save_proposal_memory(
+            message,
+            conversation_history=conversation_history,
+        )
+        if contextual_save_proposal is not None:
+            return contextual_save_proposal
 
         personal_plan = self._detect_personal_plan(
             message,
@@ -191,7 +209,25 @@ class MemoryIntentService:
     def is_contextual_memory_save_request(self, message: str) -> bool:
         normalized = self._normalize_reply(message)
         is_recall = normalized.startswith(("do you remember", "did you remember"))
-        return not is_recall and bool(
+        if is_recall:
+            return False
+        if normalized in {
+            "yes",
+            "yes please",
+            "yep",
+            "yeah",
+            "sure",
+            "please",
+            "please do",
+            "do it",
+            "save it",
+            "save that",
+            "save this",
+        }:
+            return True
+        if re.search(r"\b(?:save|remember|keep|note)\s+(?:it|that|this)\b", normalized):
+            return True
+        return bool(
             self._explicit_save_request_pattern.search(normalized)
         )
 
@@ -495,6 +531,59 @@ class MemoryIntentService:
             },
         )
 
+    def _detect_device_fact(self, message: str) -> Optional[SimpleMemoryIntent]:
+        if self.is_memory_lookup_or_topic_shift(message):
+            return None
+        match = self._device_fact_pattern.search(message)
+        if match is None:
+            return None
+
+        device = self._clean_device_model(match.group("device"))
+        if len(device) < 4:
+            return None
+        article = "an" if device[:1].lower() in {"a", "e", "i", "o", "u"} else "a"
+        return SimpleMemoryIntent(
+            memory_type="fact",
+            content=f"User has {article} {device}.",
+            importance=4,
+            metadata={
+                "fact_kind": "device",
+                "memory_category": "Facts",
+                "device_model": device,
+            },
+        )
+
+    def _detect_contextual_save_proposal_memory(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+    ) -> Optional[SimpleMemoryIntent]:
+        if not self.is_contextual_memory_save_request(message):
+            return None
+        for item in reversed(conversation_history[-8:]):
+            if item.get("role") != "assistant":
+                continue
+            content = str(item.get("content") or "")
+            normalized = self._normalize_reply(content)
+            if not any(
+                phrase in normalized
+                for phrase in (
+                    "want me to save",
+                    "would you like me to save",
+                    "should i save",
+                    "save that",
+                    "save this",
+                    "saving that",
+                )
+            ):
+                continue
+            candidate = re.sub(r"\byou\b", "I", content, flags=re.IGNORECASE)
+            intent = self._detect_device_fact(candidate)
+            if intent is not None:
+                return intent
+        return None
+
     def _detect_contextual_location_memory(
         self,
         message: str,
@@ -713,6 +802,25 @@ class MemoryIntentService:
                 return "Somerville, Massachusetts"
             return "Somerville"
         return cleaned
+
+    def _clean_device_model(self, value: str) -> str:
+        cleaned = self._clean_fact(value)
+        cleaned = re.sub(r"^(?:an?|the)\s+", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\b(\d{1,4})\s+([A-Za-z]{1,3})\b", r"\1\2", cleaned)
+        cleaned = re.sub(r"\bpc\b", "PC", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(
+            r"\b(?:cpu|gpu|ram|ssd|hdd|usb|vr|ai)\b",
+            lambda match: match.group(0).upper(),
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        cleaned = " ".join(
+            token.upper() if re.fullmatch(r"\d{1,4}[a-z]{1,3}", token.lower()) else token
+            for token in cleaned.split()
+        )
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        return cleaned
+
 
     def _recent_location_correction_context(
         self,

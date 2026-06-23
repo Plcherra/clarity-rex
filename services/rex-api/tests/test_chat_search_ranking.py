@@ -20,6 +20,15 @@ def test_chat_search_expands_day_numbers_and_ordinal_words():
     assert "18th" in ranking.expand_terms("eighteenth")
 
 
+def test_chat_search_normalizes_generic_model_number_forms():
+    ranking = ChatSearchRanking()
+
+    assert ranking.normalize_text("forty five") == "45"
+    assert "45" in ranking.expand_terms("45L")
+    assert ranking.term_in_text("45L", "It was an Omen PC forty five.")
+    assert ranking.term_in_text("45 l", "The model is 45L.")
+
+
 def test_chat_search_builds_subject_and_expanded_queries():
     ranking = ChatSearchRanking()
 

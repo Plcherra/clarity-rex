@@ -10,6 +10,9 @@ VOICE_TURN_SELECT = (
     "transcript_confidence,audio_duration_seconds,input_mime_type,"
     "output_audio_encoding,stt_vendor,tts_vendor,metadata,created_at"
 )
+CHAT_SEARCH_RPC = "search_user_chat_messages"
+
+
 class ConversationRepository:
     def __init__(self, store: object) -> None:
         self.store = store
@@ -138,6 +141,19 @@ class ConversationRepository:
         exclude_conversation_id: Optional[str] = None,
         offset: int = 0,
     ) -> list[dict]:
+        rpc_rows = await self._ranked_chat_search_rows(
+            query,
+            limit=limit,
+            exclude_conversation_id=exclude_conversation_id,
+            offset=offset,
+        )
+        if rpc_rows is not None:
+            return [
+                message
+                for row in rpc_rows[offset : offset + limit]
+                if (message := self._message_from_ranked_search_row(row)) is not None
+            ]
+
         terms = self._search_terms(query)
         if not terms:
             return []
@@ -160,7 +176,23 @@ class ConversationRepository:
         )
         return self._rank_messages(query, rows)
 
-    async def search_conversations(self, query: str, limit: int = 50) -> list[dict]:
+    async def search_conversations(
+        self,
+        query: str,
+        limit: int = 50,
+        exclude_conversation_id: Optional[str] = None,
+    ) -> list[dict]:
+        rpc_rows = await self._ranked_chat_search_rows(
+            query,
+            limit=limit,
+            exclude_conversation_id=exclude_conversation_id,
+        )
+        if rpc_rows is not None:
+            return [
+                self._conversation_result_from_ranked_row(row)
+                for row in rpc_rows[:limit]
+            ]
+
         terms = self._search_terms(query)
         if not terms:
             return []
@@ -264,6 +296,18 @@ class ConversationRepository:
         )
         return results[:limit]
 
+    async def search_chat_history(
+        self,
+        query: str,
+        limit: int = 50,
+        exclude_conversation_id: Optional[str] = None,
+    ) -> list[dict]:
+        return await self.search_conversations(
+            query,
+            limit=limit,
+            exclude_conversation_id=exclude_conversation_id,
+        )
+
     async def delete_conversation(self, conversation_id: str) -> bool:
         if not await self.conversation_exists(conversation_id):
             return False
@@ -340,6 +384,73 @@ class ConversationRepository:
 
     def _simple_term_variants(self, term: str) -> tuple[str, ...]:
         return self.search_ranking.simple_term_variants(term)
+
+    async def _ranked_chat_search_rows(
+        self,
+        query: str,
+        *,
+        limit: int,
+        exclude_conversation_id: Optional[str] = None,
+        offset: int = 0,
+    ) -> Optional[list[dict]]:
+        rpc = getattr(self.store, "_rpc", None)
+        if rpc is None:
+            return None
+
+        search_terms = self.search_ranking.search_terms(
+            query,
+            max_terms=20,
+        )
+        if not search_terms:
+            search_terms = list(self.search_ranking.content_terms(query))
+        if not search_terms:
+            return []
+
+        rows = await rpc(
+            CHAT_SEARCH_RPC,
+            {
+                "search_query": query,
+                "search_terms": search_terms,
+                "match_count": min(max(limit + offset, limit), 200),
+                "exclude_conversation_id": exclude_conversation_id,
+            },
+        )
+        return rows
+
+    def _message_from_ranked_search_row(self, row: dict) -> Optional[dict]:
+        message_id = str(row.get("message_id") or "").strip()
+        if not message_id:
+            return None
+        return {
+            "id": message_id,
+            "conversation_id": row.get("conversation_id"),
+            "role": row.get("role") or "message",
+            "content": row.get("content") or "",
+            "timestamp": row.get("message_timestamp"),
+            "relevance_score": float(row.get("rank") or 0),
+            "search_reason": row.get("search_reason") or "indexed chat search match",
+            "matched_terms": list(row.get("matched_terms") or []),
+        }
+
+    def _conversation_result_from_ranked_row(self, row: dict) -> dict:
+        message = self._message_from_ranked_search_row(row)
+        match_type = str(row.get("match_type") or "message")
+        preview = str(
+            row.get("content")
+            or row.get("conversation_title")
+            or "Matched conversation."
+        ).strip()
+        return {
+            "conversation_id": row.get("conversation_id"),
+            "conversation_title": row.get("conversation_title"),
+            "conversation_timestamp": row.get("conversation_timestamp"),
+            "message": message,
+            "match_type": match_type,
+            "preview": preview,
+            "relevance_score": float(row.get("rank") or 0),
+            "search_reason": row.get("search_reason") or "indexed chat search match",
+            "matched_terms": list(row.get("matched_terms") or []),
+        }
 
     def _rank_messages(self, query: str, rows: list[dict]) -> list[dict]:
         ranked = []

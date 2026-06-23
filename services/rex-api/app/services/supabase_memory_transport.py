@@ -73,6 +73,57 @@ class SupabaseMemoryTransport:
 
         return f"eq.{value}"
 
+    async def _rpc(
+        self,
+        function_name: str,
+        body: Optional[dict] = None,
+    ) -> list[dict]:
+        rest_url = self.settings.supabase_rest_url
+        api_key = self._supabase_api_key()
+        auth_token = self._supabase_auth_token()
+        if not rest_url or not api_key or not auth_token:
+            raise MemoryServiceError("Supabase memory is not configured.")
+
+        url = f"{rest_url}/rpc/{quote(function_name)}"
+        headers = {
+            "apikey": api_key,
+            "Authorization": f"Bearer {auth_token}",
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+
+        try:
+            response = await request_with_retries(
+                "POST",
+                url,
+                headers=headers,
+                json=body or {},
+            )
+            response.raise_for_status()
+            raw_response = response.text
+        except httpx.HTTPStatusError as error:
+            raise MemoryServiceError("Supabase memory returned an error.") from error
+        except (httpx.RequestError, TimeoutError) as error:
+            raise MemoryServiceError("Cannot reach Supabase memory.") from error
+
+        if not raw_response:
+            return []
+
+        try:
+            data = json.loads(raw_response)
+        except json.JSONDecodeError as error:
+            raise MemoryServiceError(
+                "Supabase memory returned an unreadable response.",
+                status_code=500,
+            ) from error
+
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict):
+            return [data]
+
+        raise MemoryServiceError("Supabase memory returned an unreadable response.")
+
     async def _request(
         self,
         method: str,

@@ -1532,6 +1532,117 @@ async def test_chat_context_searches_short_pc_subject():
 
 
 @pytest.mark.asyncio
+async def test_chat_context_pc_model_search_skips_echo_and_finds_omen_chat():
+    store = FakeContextMemoryStore()
+    query = "Can you look what kind PC I have? I said the model in all the chats."
+    store.past_messages = [
+        {
+            "id": "current-question-echo",
+            "conversation_id": "conversation-current",
+            "role": "user",
+            "content": query,
+            "timestamp": "2026-06-23T21:51:00Z",
+        },
+        {
+            "id": "omen-pc-model",
+            "conversation_id": "conversation-omen",
+            "role": "user",
+            "content": (
+                "I want you to say that me, Pedro, I own an Omen. "
+                "It's an Omen PC forty five."
+            ),
+            "timestamp": "2026-06-23T21:13:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message=query,
+        conversation_id="conversation-current",
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-omen"
+    assert "Omen PC forty five" in result["content"]
+    assert "current-question-echo" not in result.get("matched_message_ids", [])
+
+
+@pytest.mark.asyncio
+async def test_chat_context_uses_ranked_chat_history_search_when_available():
+    class RankedSearchStore(FakeContextMemoryStore):
+        def __init__(self):
+            super().__init__()
+            self.ranked_search_queries = []
+            self.past_messages = [
+                {
+                    "id": "omen-pc-model",
+                    "conversation_id": "conversation-omen",
+                    "role": "user",
+                    "content": "I own an Omen PC forty five.",
+                    "timestamp": "2026-06-23T21:13:00Z",
+                }
+            ]
+
+        async def search_chat_history(
+            self,
+            query,
+            limit=50,
+            exclude_conversation_id=None,
+        ):
+            self.ranked_search_queries.append(
+                {
+                    "query": query,
+                    "limit": limit,
+                    "exclude_conversation_id": exclude_conversation_id,
+                }
+            )
+            return [
+                {
+                    "conversation_id": "conversation-omen",
+                    "conversation_title": "PC details",
+                    "conversation_timestamp": "2026-06-23T21:13:00Z",
+                    "message": {
+                        "id": "omen-pc-model",
+                        "conversation_id": "conversation-omen",
+                        "role": "user",
+                        "content": "I own an Omen PC forty five.",
+                        "timestamp": "2026-06-23T21:13:00Z",
+                    },
+                    "match_type": "message",
+                    "preview": "I own an Omen PC forty five.",
+                    "relevance_score": 12.5,
+                    "search_reason": "Matched message content with indexed chat search.",
+                    "matched_terms": ["pc", "45"],
+                }
+            ]
+
+    store = RankedSearchStore()
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Can you look what kind PC I have?",
+        conversation_id="conversation-current",
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-omen"
+    assert "Omen PC forty five" in result["content"]
+    assert store.ranked_search_queries == [
+        {
+            "query": "Can you look what kind PC I have?",
+            "limit": 24,
+            "exclude_conversation_id": None,
+        }
+    ]
+    assert store.search_message_queries == []
+    assert store.list_message_queries == []
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert "indexed_search" in status["query_modes"]
+
+
+@pytest.mark.asyncio
 async def test_chat_context_treats_old_chet_as_old_chat_recall():
     store = FakeContextMemoryStore()
     store.past_messages = [

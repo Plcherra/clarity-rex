@@ -222,6 +222,28 @@ def test_voice_saves_and_recalls_mom_birthday_without_pending_cards(client):
     assert "birthday: June 18" in prompt_text
 
 
+def test_voice_direct_device_model_save_is_spoken_and_confirmed(client):
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat = _chat_service(ai_service, memory_service)
+
+    done, events, tts = _voice_turn(
+        client,
+        chat,
+        "It's a Omen 45 l.",
+    )
+
+    assert done["response_text"] == "Got it, you have an Omen 45L."
+    assert done["memory_changes"]["created"] == 1
+    assert memory_service.long_term_memory[0]["content"] == (
+        "User has an Omen 45L."
+    )
+    assert tts.calls == ["Got it, you have an Omen 45L."]
+    assert any(event["event"] == "assistant.audio_chunk" for event in events)
+    assert ai_service.generate_calls == 0
+    assert ai_service.stream_calls == 0
+
+
 def test_voice_unclear_transcript_asks_before_saving_memory(client):
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

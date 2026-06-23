@@ -246,6 +246,16 @@ class MemoryRetrievalService:
         return any(
             phrase in normalized
             for phrase in (
+                "what do you know",
+                "what do you remember",
+                "what does clarity know",
+                "what does clarity remember",
+                "what does rex know",
+                "what does rex remember",
+                "what have you saved",
+                "what do you have saved",
+                "what information do you have",
+                "what information do you know",
                 "about me",
                 "about myself",
                 "know about me",

@@ -189,6 +189,30 @@ class _SearchStore:
         return ordered[offset : offset + limit]
 
 
+class _RpcSearchStore(_SearchStore):
+    def __init__(self, *, user_id: str = "user-123"):
+        super().__init__(user_id=user_id)
+        self.rpc_calls = []
+
+    async def _rpc(self, function_name, body=None):
+        self.rpc_calls.append({"function_name": function_name, "body": body or {}})
+        return [
+            {
+                "message_id": "message-omen",
+                "conversation_id": "conversation-omen",
+                "role": "user",
+                "content": "I own an Omen PC forty five.",
+                "message_timestamp": "2026-06-23T21:13:00Z",
+                "conversation_title": "PC details",
+                "conversation_timestamp": "2026-06-23T21:13:00Z",
+                "match_type": "message",
+                "rank": 12.5,
+                "search_reason": "Matched message content with indexed chat search.",
+                "matched_terms": ["pc", "45"],
+            }
+        ]
+
+
 @pytest.mark.asyncio
 async def test_conversation_repository_ranks_user_matches_and_exposes_metadata():
     repository = ConversationRepository(_SearchStore())
@@ -241,6 +265,38 @@ async def test_conversation_repository_list_messages_stays_user_scoped():
     assert results
     assert all(message["user_id"] == "user-123" for message in results)
     assert all(message["conversation_id"] != "conversation-other-user" for message in results)
+
+
+@pytest.mark.asyncio
+async def test_conversation_repository_uses_ranked_chat_search_rpc_when_available():
+    store = _RpcSearchStore(user_id="user-123")
+    repository = ConversationRepository(store)
+
+    results = await repository.search_conversations("What kind PC do I have?")
+
+    assert store.rpc_calls[0]["function_name"] == "search_user_chat_messages"
+    assert store.rpc_calls[0]["body"]["search_query"] == "What kind PC do I have?"
+    assert "pc" in store.rpc_calls[0]["body"]["search_terms"]
+    assert results[0]["conversation_id"] == "conversation-omen"
+    assert results[0]["message"]["id"] == "message-omen"
+    assert results[0]["matched_terms"] == ["pc", "45"]
+
+
+@pytest.mark.asyncio
+async def test_conversation_repository_passes_exclusion_to_ranked_chat_search_rpc():
+    store = _RpcSearchStore(user_id="user-123")
+    repository = ConversationRepository(store)
+
+    await repository.search_messages(
+        "PC model",
+        limit=12,
+        exclude_conversation_id="conversation-current",
+    )
+
+    assert store.rpc_calls[0]["body"]["match_count"] == 12
+    assert store.rpc_calls[0]["body"]["exclude_conversation_id"] == (
+        "conversation-current"
+    )
 
 
 @pytest.mark.asyncio

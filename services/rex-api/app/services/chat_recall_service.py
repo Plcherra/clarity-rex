@@ -62,6 +62,8 @@ class ChatRecallService:
         failures: list[str] = []
         search_queries = self.past_chat_search_queries(query)
         target_match_count = self.target_match_count(limit)
+        ranked_chat_search = getattr(self.memory_service, "search_chat_history", None)
+        ranked_search_used = False
         self.log_recall_phase(
             "fetch_relevant_chat_excerpts_start",
             query_length=len(query or ""),
@@ -70,7 +72,56 @@ class ChatRecallService:
             target_match_count=target_match_count,
         )
 
-        if search_conversations is not None:
+        if ranked_chat_search is not None:
+            ranked_search_used = True
+            query_modes.add("indexed_search")
+            attempted_queries.append({"query": query, "mode": "indexed_search"})
+            phase_started = time.perf_counter()
+            try:
+                conversation_results = await ranked_chat_search(
+                    query,
+                    limit=target_match_count,
+                    exclude_conversation_id=exclude_conversation_id,
+                )
+                scanned_messages += len(conversation_results)
+                for result in conversation_results:
+                    message = result.get("message")
+                    if isinstance(message, dict) and self.is_current_query_echo(
+                        query,
+                        message,
+                    ):
+                        continue
+                    scored_message = self.scored_conversation_search_result(
+                        query,
+                        result,
+                        query_mode="indexed_search",
+                    )
+                    message_id = str(scored_message.get("id") or "")
+                    if not message_id:
+                        continue
+                    existing = messages_by_id.get(message_id)
+                    if existing is None or (
+                        scored_message.get("_chat_search_score", 0)
+                        > existing.get("_chat_search_score", 0)
+                    ):
+                        messages_by_id[message_id] = scored_message
+                self.log_recall_phase(
+                    "indexed_chat_search",
+                    phase_started,
+                    result_count=len(conversation_results),
+                    raw_match_count=len(messages_by_id),
+                )
+            except Exception as exc:
+                failure = safe_error_message(exc)
+                LOGGER.warning("rex_memory_fetch_failed source=indexed_chat_search")
+                return [
+                    ContextFetchError(
+                        source="chat_search",
+                        message=failure,
+                    ).as_dict()
+                ]
+
+        if search_conversations is not None and not ranked_search_used:
             for search_query, query_mode in search_queries:
                 phase_started = time.perf_counter()
                 query_modes.add("conversation_search")
@@ -87,6 +138,12 @@ class ChatRecallService:
                     )
                     scanned_messages += len(conversation_results)
                     for result in conversation_results:
+                        message = result.get("message")
+                        if isinstance(message, dict) and self.is_current_query_echo(
+                            query,
+                            message,
+                        ):
+                            continue
                         scored_message = self.scored_conversation_search_result(
                             query,
                             result,
@@ -127,6 +184,7 @@ class ChatRecallService:
         if (
             search_messages is not None
             and self.viable_match_count(messages_by_id) < target_match_count
+            and not ranked_search_used
         ):
             for search_query, query_mode in search_queries:
                 query_modes.add(query_mode)
@@ -145,6 +203,8 @@ class ChatRecallService:
                         scanned_messages += len(messages)
                         for message in messages:
                             if is_chat_search_no_result_message(message):
+                                continue
+                            if self.is_current_query_echo(query, message):
                                 continue
                             message_id = str(message.get("id") or "")
                             if not message_id:
@@ -197,6 +257,7 @@ class ChatRecallService:
         should_run_full_scan = (
             list_messages is not None
             and self.viable_match_count(messages_by_id) == 0
+            and not ranked_search_used
         )
         if should_run_full_scan:
             full_scan_used = True
@@ -329,6 +390,8 @@ class ChatRecallService:
             for message in messages:
                 if is_chat_search_no_result_message(message):
                     continue
+                if self.is_current_query_echo(query, message):
+                    continue
                 scored = self.best_scored_chat_message(
                     query,
                     message,
@@ -400,6 +463,15 @@ class ChatRecallService:
         return sum(
             1 for message in messages_by_id.values() if self.is_viable_chat_match(message)
         )
+
+    def is_current_query_echo(self, query: str, message: dict) -> bool:
+        if str(message.get("role") or "") != "user":
+            return False
+        content = str(message.get("content") or "")
+        return self.normalized_echo_text(content) == self.normalized_echo_text(query)
+
+    def normalized_echo_text(self, text: str) -> str:
+        return " ".join(str(text or "").lower().strip().strip(".!?").split())
 
     def log_recall_phase(
         self,

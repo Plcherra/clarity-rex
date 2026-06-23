@@ -43,6 +43,17 @@ def test_unexecuted_memory_success_claim_is_blocked():
     )
 
 
+def test_unexecuted_memory_saving_claim_is_blocked():
+    response = safe_unexecuted_memory_response(
+        "Got it--saving your Omen 45L PC now.",
+    )
+
+    assert response == (
+        "I can help with that, but I don't have a confirmed saved change from this "
+        "turn. Tell me the exact fact to save or try again."
+    )
+
+
 def test_unexecuted_delete_success_claim_is_blocked():
     response = safe_unexecuted_delete_response(
         "Done, I deleted it.",

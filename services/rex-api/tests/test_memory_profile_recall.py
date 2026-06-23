@@ -4,6 +4,7 @@ from chat_service_fakes import FakeAIService, FakeMemoryService
 from app.services.chat_context_service import PROFILE_MEMORY_QUERY
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
+from app.services.memory_retrieval_service import MemoryRetrievalService
 from app.services.memory_service import SupabaseMemoryService
 
 
@@ -22,6 +23,46 @@ class InMemoryProfileRecallService(SupabaseMemoryService):
                 if memory.get("memory_type") == memory_type
             ]
         return memories[:limit]
+
+
+class InMemoryStructuredProfileStore:
+    def __init__(self):
+        self.entities = [
+            {
+                "id": "entity-self",
+                "entity_type": "person",
+                "display_name": "Pedro Martins",
+                "normalized_name": "pedro martins",
+                "relationship": "self",
+                "summary": "Lives in Somerville.",
+                "importance": 4,
+                "status": "active",
+                "active": True,
+                "metadata": {"attributes": {"location": "Somerville"}},
+                "updated_at": "2026-06-20T12:00:00Z",
+            }
+        ]
+
+    async def list_long_term_memory(self, limit=100, active=True):
+        return []
+
+    async def list_entities(self, limit=50, active=True):
+        return self.entities[:limit]
+
+    async def list_entity_events(self, limit=50, active=True):
+        return []
+
+    async def list_personal_rules(self, limit=50, active=True):
+        return []
+
+    async def list_plans(self, limit=50, active=True):
+        return []
+
+    async def list_plan_milestones(self, limit=50, active=True):
+        return []
+
+    async def list_commitments(self, limit=50, active=True):
+        return []
 
 
 def _mom_birthday_memory(**overrides):
@@ -100,6 +141,18 @@ async def test_profile_context_includes_high_importance_birthdays():
     assert [memory["id"] for memory in memories] == ["memory-mom-birthday"]
     assert "birthday" in memories[0]["relevance_reason"]
     assert "profile" in memories[0]["relevance_reason"]
+
+
+@pytest.mark.asyncio
+async def test_broad_inventory_recall_includes_self_profile_card():
+    service = MemoryRetrievalService(InMemoryStructuredProfileStore())
+
+    structured_context = await service.get_structured_memory_context(
+        "What do you know?",
+    )
+
+    assert structured_context["entities"][0]["display_name"] == "Pedro Martins"
+    assert structured_context["entities"][0]["relationship"] == "self"
 
 
 @pytest.mark.asyncio

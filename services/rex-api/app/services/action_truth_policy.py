@@ -27,8 +27,10 @@ UNEXECUTED_DELETE_FALLBACK = (
 )
 
 _SUCCESS_TERMS = tuple(
-    "saved|updated|fixed|changed|deleted|created|moved|sent|categorized|"
-    "recategorized|noted|remembered|completed|done|all set".split("|")
+    "saved|saving|updated|updating|fixed|fixing|changed|changing|deleted|deleting|"
+    "created|creating|moved|moving|sent|sending|categorized|categorizing|"
+    "recategorized|recategorizing|noted|noting|remembered|remembering|"
+    "completed|done|all set".split("|")
 )
 _CONFIRMATION_TERMS = tuple(
     "confirm|approve|should i|want me to|before i|pending|proposal|"

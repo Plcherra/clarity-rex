@@ -588,6 +588,91 @@ async def test_memory_turn_service_saves_specific_preference_directly():
 
 
 @pytest.mark.asyncio
+async def test_memory_turn_service_saves_user_device_model_directly():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+
+    result = await service.handle_turn(
+        "It's a Omen 45 l.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-pc", "content": "It's a Omen 45 l."},
+        conversation_history=[],
+        time_context={"date": "2026-06-23"},
+    )
+
+    assert result is not None
+    assert result["response"] == "Got it, you have an Omen 45L."
+    assert result["memory_changes"]["created"] == 1
+    assert store.long_term_memory[0]["memory_type"] == "fact"
+    assert store.long_term_memory[0]["content"] == "User has an Omen 45L."
+    assert store.long_term_memory[0]["metadata"]["fact_kind"] == "device"
+    assert "topic_fingerprint" not in store.long_term_memory[0]["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_does_not_merge_unrelated_device_facts():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+
+    first = await service.handle_turn(
+        "It's a Omen 45 l.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-pc", "content": "It's a Omen 45 l."},
+        conversation_history=[],
+        time_context={"date": "2026-06-23"},
+    )
+    second = await service.handle_turn(
+        "I have an iPhone 16.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-phone", "content": "I have an iPhone 16."},
+        conversation_history=[],
+        time_context={"date": "2026-06-23"},
+    )
+
+    assert first is not None
+    assert second is not None
+    assert first["memory_changes"]["created"] == 1
+    assert second["memory_changes"]["created"] == 1
+    assert [memory["content"] for memory in store.long_term_memory] == [
+        "User has an Omen 45L.",
+        "User has an iPhone 16.",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_saves_pc_model_from_confirmation_context():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+    history = [
+        {
+            "id": "message-1",
+            "conversation_id": "conversation-1",
+            "role": "user",
+            "content": "It's a Omen 45 l.",
+        },
+        {
+            "id": "message-2",
+            "conversation_id": "conversation-1",
+            "role": "assistant",
+            "content": "Got it--you have an Omen 45L PC. Want me to save that?",
+        },
+    ]
+
+    result = await service.handle_turn(
+        "Yes, please.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-3", "content": "Yes, please."},
+        conversation_history=history,
+        time_context={"date": "2026-06-23"},
+    )
+
+    assert result is not None
+    assert result["response"] == "Got it, you have an Omen 45L PC."
+    assert result["memory_changes"]["created"] == 1
+    assert store.long_term_memory[0]["content"] == "User has an Omen 45L PC."
+
+
+@pytest.mark.asyncio
 async def test_memory_turn_service_saves_contextual_birthday_answer():
     store = FakeMemoryTurnStore()
     service = MemoryTurnService(store)

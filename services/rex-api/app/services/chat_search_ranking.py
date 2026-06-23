@@ -93,6 +93,38 @@ ORDINAL_WORDS = {
     "thirty-first": "31",
 }
 ORDINAL_NUMBERS = {number: word for word, number in ORDINAL_WORDS.items()}
+CARDINAL_ONES = {
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+}
+CARDINAL_TENS = {
+    "twenty": 20,
+    "thirty": 30,
+    "forty": 40,
+    "fifty": 50,
+    "sixty": 60,
+    "seventy": 70,
+    "eighty": 80,
+    "ninety": 90,
+}
 
 
 @dataclass(frozen=True)
@@ -303,6 +335,8 @@ class ChatSearchRanking:
             ordinal_word = ORDINAL_NUMBERS.get(number)
             if ordinal_word:
                 variants.append(ordinal_word)
+        elif self.model_code_base(term):
+            variants.extend(self.model_code_variants(term))
         elif ordinal_base:
             variants.append(ordinal_base)
             ordinal_word = ORDINAL_NUMBERS.get(str(int(ordinal_base)))
@@ -361,10 +395,14 @@ class ChatSearchRanking:
         return variants
 
     def normalize_text(self, text: str) -> str:
-        return " ".join(str(text or "").lower().split())
+        normalized = str(text or "").lower()
+        normalized = normalized.replace("-", " ")
+        normalized = self.normalize_cardinal_number_words(normalized)
+        normalized = re.sub(r"\b(\d+)\s+([a-z])\b", r"\1\2", normalized)
+        return " ".join(normalized.split())
 
     def term_in_text(self, term: str, text: str) -> bool:
-        normalized_term = self.normalize_term(term)
+        normalized_term = self.normalize_term(self.normalize_text(term))
         if not normalized_term:
             return False
         if self.numeric_or_ordinal(normalized_term):
@@ -396,7 +434,7 @@ class ChatSearchRanking:
     def normalized_tokens(self, text: str) -> list[str]:
         return [
             self.normalize_term(term)
-            for term in self.raw_terms(text)
+            for term in self.raw_terms(self.normalize_text(text))
             if self.normalize_term(term)
         ]
 
@@ -427,6 +465,10 @@ class ChatSearchRanking:
         actual = self.normalize_term(actual)
         if expected == actual:
             return True
+        expected_model_parts = self.model_code_variants(expected)
+        actual_model_parts = self.model_code_variants(actual)
+        if expected in actual_model_parts or actual in expected_model_parts:
+            return True
         expected_word_base = ORDINAL_WORDS.get(expected)
         actual_word_base = ORDINAL_WORDS.get(actual)
         if expected_word_base and actual == expected_word_base:
@@ -456,6 +498,81 @@ class ChatSearchRanking:
         ):
             return True
         return False
+
+    def normalize_cardinal_number_words(self, text: str) -> str:
+        tokens = re.findall(r"[a-z0-9']+|[^a-z0-9']+", text)
+        normalized: list[str] = []
+        index = 0
+        while index < len(tokens):
+            token = tokens[index]
+            if not re.fullmatch(r"[a-z0-9']+", token):
+                normalized.append(token)
+                index += 1
+                continue
+            word = token.strip("'")
+            if word in CARDINAL_TENS:
+                next_index = index + 1
+                separator = ""
+                if next_index < len(tokens) and not re.fullmatch(
+                    r"[a-z0-9']+",
+                    tokens[next_index],
+                ):
+                    separator = tokens[next_index]
+                    next_index += 1
+                if (
+                    next_index < len(tokens)
+                    and re.fullmatch(r"[a-z0-9']+", tokens[next_index])
+                    and tokens[next_index].strip("'") in CARDINAL_ONES
+                ):
+                    value = CARDINAL_TENS[word] + CARDINAL_ONES[
+                        tokens[next_index].strip("'")
+                    ]
+                    normalized.append(str(value))
+                    index = next_index + 1
+                    continue
+                if (
+                    next_index < len(tokens)
+                    and re.fullmatch(r"[a-z0-9']+", tokens[next_index])
+                    and tokens[next_index].strip("'") in ORDINAL_WORDS
+                    and int(ORDINAL_WORDS[tokens[next_index].strip("'")]) < 10
+                ):
+                    value = CARDINAL_TENS[word] + int(
+                        ORDINAL_WORDS[tokens[next_index].strip("'")]
+                    )
+                    normalized.append(str(value))
+                    index = next_index + 1
+                    continue
+                normalized.append(str(CARDINAL_TENS[word]))
+                if separator:
+                    normalized.append(separator)
+                    index += 2
+                else:
+                    index += 1
+                continue
+            if word in CARDINAL_ONES:
+                normalized.append(str(CARDINAL_ONES[word]))
+                index += 1
+                continue
+            normalized.append(token)
+            index += 1
+        return "".join(normalized)
+
+    def model_code_base(self, term: str) -> Optional[re.Match[str]]:
+        return re.fullmatch(r"([a-z]+)?(\d{1,4})([a-z]+)?", self.normalize_term(term))
+
+    def model_code_variants(self, term: str) -> tuple[str, ...]:
+        match = self.model_code_base(term)
+        if match is None:
+            return ()
+        prefix, number, suffix = match.groups()
+        variants = [str(int(number))]
+        if prefix:
+            variants.append(prefix)
+            variants.append(f"{prefix}{int(number)}")
+        if suffix:
+            variants.append(suffix)
+            variants.append(f"{int(number)}{suffix}")
+        return tuple(self.unique_terms(variants))
 
     def ordinal_base(self, term: str) -> Optional[str]:
         match = re.fullmatch(r"(\d{1,2})(?:st|nd|rd|th)", term)
