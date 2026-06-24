@@ -1,76 +1,93 @@
-# Clarity UI Theme Plan 2: Primary Screen Migration
+# Clarity UI Theme Plan 2: Assistant And Profile UI Refresh
 
 ## Status
 
 | Area | State |
 |------|-------|
-| Auth + MFA + Onboarding | Done |
-| Dashboard + Accounts shadows/panels | Done |
-| Budgets header styling | Done |
-| Profile | Done (uses shared components) |
-| Assistant/Rex tabs | Done (uses RexUiTokens) |
-| Transaction dropdown shadows | Done |
+| Assistant landing / tab shell | Pending |
+| Assistant prompt chips / empty states | Pending |
+| Conversation list cards | Pending |
+| Profile hierarchy and action rows | Pending |
+| Shared Assistant/Profile surface language | Pending |
 
 **Last updated:** 2026-06-24  
-**Completed:** 2026-06-24
-
-## Screen Checklist
-
-- [x] Auth — `auth_screen.dart` (gradient background, ClarityCard, ClarityButton, clarity_mark)
-- [x] MFA — `mfa_verification_screen.dart` (gradient background, ClarityCard, ClarityButton)
-- [x] Onboarding — `onboarding_screen.dart`
-- [x] Dashboard — financial dashboard panels use ClarityColors + ClarityShadows
-- [x] Accounts — connect/setup cards use ClarityCard
-- [x] Budgets — header panel shadow uses ClarityShadows
-- [x] Profile — ClarityCard sections
-- [x] Assistant/Rex — RexTheme + RexUiTokens aligned with Clarity theme
-- [x] Loading states — ClarityPathLoader / ClarityDiamondLoader in dashboard and buttons
-- [x] Transaction category dropdown — navy-tinted shadow color
+**Source:** `cursor_chat_app_logo_and_splash_screen.json`
 
 ## Goal
 
-Migrate the main app screens to the Clarity dark AI/finance aesthetic using the shared theme and components from Plan 1.
+Upgrade the Assistant and Profile screens that were called out as primitive, while keeping Rex Brain, memory, goals, voice, auth, and profile data behavior unchanged.
 
-## Scope
+This is a visual and presentation refresh only.
 
-- Migrate primary screens in this order:
-  1. Auth and Onboarding.
-  2. Dashboard and Accounts.
-  3. Budgets and Profile.
-  4. Assistant/Rex.
-  5. Shared loading, empty, setup, and error states in those flows.
-- Update loading states, empty states, setup states, and error states where they appear in the main flows.
-- Replace generic Material-looking screen-level styling with shared Clarity components and centralized theme tokens.
-- Use `ClarityCard`, `ClarityButton`, `ClarityDiamondLoader`, and theme constants where they reduce duplication and improve consistency. Do not wrap every widget just to use the new components.
-- Review finance positive/negative colors as a visual-only pass so they remain readable and serious without feeling bright green/mint or playful.
+## Checklist
+
+- [ ] Redesign the Assistant landing/tab shell so it feels intentional and premium.
+- [ ] Refresh prompt chips, tabs, chat list cards, and empty states.
+- [ ] Keep Assistant navigation and tab destinations unchanged.
+- [ ] Make Profile cards feel more premium with clearer hierarchy and spacing.
+- [ ] Improve Profile action rows so they feel less like default Material list tiles.
+- [ ] Unify Assistant/Profile surfaces with Clarity card language without making them visually heavy.
+- [ ] Tighten typography and reduce visual noise.
+
+## Target Areas
+
+Likely files to inspect and update:
+
+- `apps/mobile/lib/rex/presentation/assistant_screen.dart`
+- `apps/mobile/lib/rex/presentation/rex_surfaces.dart`
+- `apps/mobile/lib/rex/presentation/rex_ui_tokens.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/conversation_list_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/pages/chat_page.dart`
+- `apps/mobile/lib/rex/chat/presentation/widgets/chat_input_bar.dart`
+- `apps/mobile/lib/rex/memory/presentation/pages/memory_page.dart`
+- `apps/mobile/lib/rex/accountability/presentation/pages/accountability_page.dart`
+- `apps/mobile/lib/features/profile/presentation/profile_screen.dart`
+- `apps/mobile/lib/features/profile/presentation/usage_summary_screen.dart`
+
+## Requested Changes
+
+### Assistant
+
+Refresh the Assistant area as a presentation surface:
+
+- Improve the landing/shell layout, especially the first impression when opening the Assistant tab.
+- Make tabs feel integrated with the current dark Clarity theme.
+- Give prompt chips and empty states a more modern hierarchy.
+- Improve conversation list cards and loading/empty states so they feel less generic.
+- Preserve the current Assistant tab destinations: chat, memory, goals, and history.
+
+### Profile
+
+Profile should feel more premium without changing account behavior:
+
+- Use softer surfaces and clearer grouping.
+- Improve spacing and hierarchy in the profile header.
+- Make action rows feel custom and calm rather than default list tiles.
+- Keep MFA, voice usage, sign out, and profile-name flows unchanged.
+
+### Shared Visual Direction
+
+- Reuse existing Clarity/Rex tokens where they fit.
+- Avoid heavy glassmorphism or excessive glow.
+- Keep the screens dark, calm, precise, and readable.
+- Use small, local widget extractions only when they reduce repetition.
 
 ## Constraints
 
-- Do not rework business logic.
-- Do not change auth/session/onboarding routing decisions.
-- Do not change tab order or navigation structure.
-- Do not change Plaid, Supabase, finance data, or Rex backend behavior.
-- Do not change transaction/account/budget semantics while reviewing finance colors.
-- Keep financial UI changes under `apps/mobile/lib/features`.
+- Do not change Rex Brain prompts, recall, memory, goals, or backend behavior.
+- Do not change saved memory, chat history, accountability, or voice data contracts.
+- Do not change profile persistence or auth behavior.
 - Keep Rex UI changes under `apps/mobile/lib/rex`.
+- Keep Profile UI changes under `apps/mobile/lib/features/profile`.
+- Do not change navigation structure or tab order.
 - Do not add new product flows.
-- Do not overuse blur, glow, or glassmorphism.
-- Keep performance production-ready.
-- Keep all colors centralized.
 
-## Execution Notes
+## Expected Visual Outcome
 
-- Treat Plan 1 shared components as primitives, not as a mandate to replace every existing domain widget.
-- Preserve existing controllers, view models, repositories, callbacks, and user-scoped data behavior.
-- Prefer small file-by-file migrations that keep each screen reviewable.
-- Add focused widget tests only when a migrated screen changes layout contracts, navigation contracts, or key empty/error state behavior.
-
-## Expected Visual Changes
-
-- Auth and onboarding should feel like the same premium system as the splash.
-- Dashboard, Accounts, Budgets, Assistant, and Profile should share consistent cards, borders, spacing, inputs, buttons, and loading states.
-- Main screens should stay calm, dark, precise, and high-end.
-- Screen-level old warm/gold or generic Material styling should be removed.
+- Assistant no longer feels like a primitive/default tab screen.
+- Chat/history empty states and cards feel modern and aligned with Clarity.
+- Profile feels more premium, calmer, and easier to scan.
+- Typography and spacing feel intentional across both areas.
 
 ## Verification
 
@@ -78,23 +95,16 @@ Run from `apps/mobile`:
 
 ```bash
 flutter analyze
-flutter test test/app_routing_test.dart test/assistant_navigation_test.dart
+flutter test test/assistant_navigation_test.dart
 ```
 
-Add focused widget tests only if a screen migration changes layout assumptions or existing test contracts.
+Manual checks:
+
+- Open Assistant tab and switch between all Assistant sections.
+- Open chat list with empty and populated states.
+- Start a new chat and verify input bar behavior still works.
+- Open Profile, edit profile name, open MFA, open voice usage, and sign out dialog.
 
 ## Completion Report
 
-**Files changed:**
-
-- `apps/mobile/lib/features/dashboard/presentation/financial_dashboard_view.dart`
-- `apps/mobile/lib/features/dashboard/presentation/financial_dashboard_cards.dart`
-- `apps/mobile/lib/features/dashboard/presentation/financial_dashboard_summary_sections.dart`
-- `apps/mobile/lib/features/budgets/presentation/budgets_header.dart`
-- `apps/mobile/lib/features/transactions/presentation/widgets/transaction_category_dropdown.dart`
-
-**Screens migrated:** Auth, MFA, Onboarding (already themed); Dashboard panels; Budgets header; transaction category picker shadow.
-
-**Deferred to Plan 3:** splash finalization, launcher icons, full-device QA.
-
-**Verification:** run `flutter analyze` and targeted routing tests after pull.
+Not implemented yet.
