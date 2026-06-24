@@ -4,11 +4,11 @@
 
 | Area | State |
 |------|-------|
-| Assistant landing / tab shell | Pending |
-| Assistant prompt chips / empty states | Pending |
-| Conversation list cards | Pending |
-| Profile hierarchy and action rows | Pending |
-| Shared Assistant/Profile surface language | Pending |
+| Assistant landing / tab shell | Complete |
+| Assistant prompt chips / empty states | Complete |
+| Conversation list cards | Complete |
+| Profile hierarchy and action rows | Complete |
+| Shared Assistant/Profile surface language | Complete |
 
 **Last updated:** 2026-06-24  
 **Source:** `cursor_chat_app_logo_and_splash_screen.json`
@@ -21,13 +21,13 @@ This is a visual and presentation refresh only.
 
 ## Checklist
 
-- [ ] Redesign the Assistant landing/tab shell so it feels intentional and premium.
-- [ ] Refresh prompt chips, tabs, chat list cards, and empty states.
-- [ ] Keep Assistant navigation and tab destinations unchanged.
-- [ ] Make Profile cards feel more premium with clearer hierarchy and spacing.
-- [ ] Improve Profile action rows so they feel less like default Material list tiles.
-- [ ] Unify Assistant/Profile surfaces with Clarity card language without making them visually heavy.
-- [ ] Tighten typography and reduce visual noise.
+- [x] Redesign the Assistant landing/tab shell so it feels intentional and premium.
+- [x] Refresh prompt chips, tabs, chat list cards, and empty states.
+- [x] Keep Assistant navigation and tab destinations unchanged.
+- [x] Make Profile cards feel more premium with clearer hierarchy and spacing.
+- [x] Improve Profile action rows so they feel less like default Material list tiles.
+- [x] Unify Assistant/Profile surfaces with Clarity card language without making them visually heavy.
+- [x] Tighten typography and reduce visual noise.
 
 ## Target Areas
 
@@ -107,4 +107,16 @@ Manual checks:
 
 ## Completion Report
 
-Not implemented yet.
+Implemented:
+
+- Refreshed the Assistant top surface with a premium compact header and integrated tab bar while preserving tab order and destinations.
+- Upgraded chat empty state, prompt chips, conversation history header, search/filters, empty states, and conversation cards.
+- Softened Memory and Goals tab surfaces for consistency with Rex card language.
+- Reworked Profile into clearer header, grouped custom action rows, and calmer voice usage cards.
+
+Verification:
+
+- `dart format` completed for edited Dart files.
+- IDE lints reported no errors for edited files.
+- `flutter analyze` passed from the IDE terminal before the final compact-layout fixes.
+- `flutter test test/assistant_navigation_test.dart` passed from the IDE terminal after the compact-layout fixes.

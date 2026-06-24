@@ -10,7 +10,7 @@ import 'rex_surfaces.dart';
 import 'rex_ui_tokens.dart';
 
 const _assistantCompactWidth = 360.0;
-const _assistantTabHeight = 50.0;
+const _assistantTabHeight = 46.0;
 
 class AssistantScreen extends ConsumerStatefulWidget {
   const AssistantScreen({super.key});
@@ -51,36 +51,15 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
     return RexTheme(
       child: Builder(
         builder: (context) {
-          final theme = Theme.of(context);
-          final scheme = theme.colorScheme;
-
           return Scaffold(
+            backgroundColor: RexUiTokens.background,
             resizeToAvoidBottomInset: true,
             body: SafeArea(
               top: true,
               bottom: false,
               child: Column(
                 children: [
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      isCompactWidth ? 18 : 22,
-                      8,
-                      isCompactWidth ? 18 : 22,
-                      0,
-                    ),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Assistant',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: scheme.onSurface,
-                          height: 1.05,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _AssistantTabNavigation(
+                  _AssistantTopSurface(
                     controller: _tabController,
                     isCompactWidth: isCompactWidth,
                   ),
@@ -106,8 +85,8 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
   }
 }
 
-class _AssistantTabNavigation extends StatelessWidget {
-  const _AssistantTabNavigation({
+class _AssistantTopSurface extends StatelessWidget {
+  const _AssistantTopSurface({
     required this.controller,
     required this.isCompactWidth,
   });
@@ -122,47 +101,143 @@ class _AssistantTabNavigation extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        isCompactWidth ? 10 : 14,
-        12,
-        isCompactWidth ? 10 : 14,
-        8,
+        isCompactWidth ? 8 : 16,
+        isCompactWidth ? 6 : 8,
+        isCompactWidth ? 8 : 16,
+        isCompactWidth ? 6 : 10,
       ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: RexUiTokens.surface.withValues(alpha: 0.72),
-          borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-          border: Border.all(color: RexUiTokens.border.withValues(alpha: 0.65)),
+      child: RexSurface(
+        padding: EdgeInsets.fromLTRB(
+          isCompactWidth ? 10 : 16,
+          isCompactWidth ? 10 : 14,
+          isCompactWidth ? 10 : 16,
+          isCompactWidth ? 8 : 12,
         ),
-        child: TabBar(
-          controller: controller,
-          dividerColor: Colors.transparent,
-          indicatorSize: TabBarIndicatorSize.tab,
-          indicatorPadding: const EdgeInsets.all(3),
-          indicator: BoxDecoration(
-            color: RexUiTokens.surfaceRaised.withValues(alpha: 0.74),
-            borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-            border: Border.all(
-              color: RexUiTokens.accent.withValues(alpha: 0.18),
+        color: RexUiTokens.surface.withValues(alpha: 0.82),
+        borderColor: RexUiTokens.border.withValues(alpha: 0.72),
+        radius: RexUiTokens.radiusLarge,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (!isCompactWidth) ...[
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: RexUiTokens.accent.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(
+                        RexUiTokens.radiusLarge,
+                      ),
+                      border: Border.all(
+                        color: RexUiTokens.accent.withValues(alpha: 0.28),
+                      ),
+                    ),
+                    child: const SizedBox(
+                      width: 42,
+                      height: 42,
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        color: RexUiTokens.accent,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: RexUiTokens.space12),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Assistant',
+                        style:
+                            (isCompactWidth
+                                    ? theme.textTheme.titleMedium
+                                    : theme.textTheme.titleLarge)
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: scheme.onSurface,
+                                  height: 1.05,
+                                ),
+                      ),
+                      if (!isCompactWidth) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          'Chat, memory, goals, and history in one place.',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: RexUiTokens.textMuted,
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-          labelColor: scheme.onSurface,
-          unselectedLabelColor: RexUiTokens.textSubtle,
-          labelStyle: theme.textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-          unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-          labelPadding: EdgeInsets.zero,
-          tabs: [
-            for (final tab in AssistantTab.values)
-              Tab(
-                key: tab.key,
-                height: _assistantTabHeight,
-                child: _AssistantTabItem(tab: tab),
-              ),
+            SizedBox(
+              height: isCompactWidth ? RexUiTokens.space8 : RexUiTokens.space12,
+            ),
+            _AssistantTabNavigation(
+              controller: controller,
+              isCompactWidth: isCompactWidth,
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AssistantTabNavigation extends StatelessWidget {
+  const _AssistantTabNavigation({
+    required this.controller,
+    required this.isCompactWidth,
+  });
+
+  final TabController controller;
+  final bool isCompactWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: RexUiTokens.background.withValues(alpha: 0.52),
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+        border: Border.all(color: RexUiTokens.border.withValues(alpha: 0.65)),
+      ),
+      child: TabBar(
+        controller: controller,
+        dividerColor: Colors.transparent,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicatorPadding: const EdgeInsets.all(3),
+        indicator: BoxDecoration(
+          color: RexUiTokens.surfaceRaised.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+          border: Border.all(color: RexUiTokens.accent.withValues(alpha: 0.32)),
+        ),
+        labelColor: scheme.onSurface,
+        unselectedLabelColor: RexUiTokens.textSubtle,
+        labelStyle: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w800,
+        ),
+        unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+        labelPadding: EdgeInsets.zero,
+        tabs: [
+          for (final tab in AssistantTab.values)
+            Tab(
+              key: tab.key,
+              height: _assistantTabHeight,
+              child: _AssistantTabItem(tab: tab),
+            ),
+        ],
       ),
     );
   }

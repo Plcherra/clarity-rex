@@ -28,8 +28,9 @@ class _Section extends StatelessWidget {
         const SizedBox(height: RexUiTokens.space8),
         if (children.isEmpty)
           RexSurface(
-            color: RexUiTokens.surfaceSoft.withValues(alpha: 0.6),
+            color: RexUiTokens.surface.withValues(alpha: 0.74),
             borderColor: RexUiTokens.border.withValues(alpha: 0.58),
+            radius: RexUiTokens.radiusLarge,
             padding: const EdgeInsets.all(RexUiTokens.space16),
             child: Row(
               children: [
@@ -83,9 +84,9 @@ class _GoalTileShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RexSurface(
-      color: RexUiTokens.surface,
-      borderColor: RexUiTokens.border.withValues(alpha: 0.78),
-      radius: RexUiTokens.radiusMedium,
+      color: RexUiTokens.surface.withValues(alpha: 0.82),
+      borderColor: RexUiTokens.border.withValues(alpha: 0.72),
+      radius: RexUiTokens.radiusLarge,
       padding: const EdgeInsets.all(RexUiTokens.space16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,11 +275,9 @@ class _InitialLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 320,
-      child: Center(
-        child: ClarityPathLoader(size: 52, label: 'Loading accountability'),
-      ),
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: RexUiTokens.space24),
+      child: Center(child: ClarityPathLoader(size: 52, label: 'Loading goals')),
     );
   }
 }
@@ -289,39 +288,46 @@ class _EmptyAccountabilityState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = MediaQuery.sizeOf(context).height < 650;
 
-    return SizedBox(
-      height: 360,
-      child: Center(
-        child: RexSurface(
-          color: RexUiTokens.surface,
-          padding: const EdgeInsets.all(RexUiTokens.space20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+    return Center(
+      child: RexSurface(
+        color: RexUiTokens.surface.withValues(alpha: 0.78),
+        borderColor: RexUiTokens.border.withValues(alpha: 0.65),
+        radius: RexUiTokens.radiusLarge,
+        padding: EdgeInsets.all(
+          compact ? RexUiTokens.space12 : RexUiTokens.space20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!compact) ...[
               const Icon(
                 Icons.flag_outlined,
                 size: 34,
                 color: RexUiTokens.accent,
               ),
               const SizedBox(height: RexUiTokens.space12),
-              Text(
-                'No goals yet',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: RexUiTokens.text,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: RexUiTokens.space4),
-              Text(
-                'Plans, commitments, and helpful nudges will show up here.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: RexUiTokens.textMuted,
-                ),
-              ),
             ],
-          ),
+            Text(
+              'No goals yet',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: RexUiTokens.text,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: RexUiTokens.space4),
+            Text(
+              'Plans, commitments, and helpful nudges will show up here.',
+              textAlign: TextAlign.center,
+              maxLines: compact ? 2 : 3,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: RexUiTokens.textMuted,
+                height: 1.25,
+              ),
+            ),
+          ],
         ),
       ),
     );

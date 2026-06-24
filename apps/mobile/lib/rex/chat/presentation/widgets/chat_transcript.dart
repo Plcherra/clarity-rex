@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_message_bubble.dart';
+import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 
 class ChatTranscript extends StatelessWidget {
@@ -115,50 +116,100 @@ class _EmptyChatState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = MediaQuery.sizeOf(context).height < 650;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 54, 8, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Rex',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: RexUiTokens.text,
-              fontWeight: FontWeight.w800,
-              height: 1.05,
-            ),
-          ),
-          const SizedBox(height: RexUiTokens.space8),
-          Text(
-            welcomeMessage,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: RexUiTokens.textMuted,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: RexUiTokens.space20),
-          Wrap(
-            spacing: RexUiTokens.space8,
-            runSpacing: RexUiTokens.space8,
-            children: _prompts
-                .map(
-                  (prompt) => ActionChip(
-                    label: Text(prompt),
-                    onPressed: () => onPromptSelected(prompt),
-                    backgroundColor: RexUiTokens.surfaceSoft,
-                    side: BorderSide(
-                      color: RexUiTokens.border.withValues(alpha: 0.75),
-                    ),
-                    labelStyle: theme.textTheme.labelLarge?.copyWith(
-                      color: RexUiTokens.textMuted,
-                      fontWeight: FontWeight.w700,
-                    ),
+      padding: EdgeInsets.fromLTRB(2, compact ? 12 : 34, 2, 14),
+      child: RexSurface(
+        padding: EdgeInsets.all(
+          compact ? RexUiTokens.space12 : RexUiTokens.space20,
+        ),
+        color: RexUiTokens.surface.withValues(alpha: 0.82),
+        borderColor: RexUiTokens.border.withValues(alpha: 0.72),
+        radius: RexUiTokens.radiusLarge,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!compact) ...[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: RexUiTokens.accent.withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
+                  border: Border.all(
+                    color: RexUiTokens.accent.withValues(alpha: 0.28),
                   ),
-                )
-                .toList(growable: false),
-          ),
-        ],
+                ),
+                child: const SizedBox(
+                  width: 46,
+                  height: 46,
+                  child: Icon(
+                    Icons.auto_awesome_rounded,
+                    color: RexUiTokens.accent,
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(height: RexUiTokens.space16),
+            ],
+            Text(
+              'Rex is ready',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: RexUiTokens.text,
+                fontWeight: FontWeight.w900,
+                height: 1.05,
+              ),
+            ),
+            const SizedBox(height: RexUiTokens.space8),
+            Text(
+              welcomeMessage,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: RexUiTokens.textMuted,
+                height: 1.45,
+              ),
+            ),
+            SizedBox(
+              height: compact ? RexUiTokens.space12 : RexUiTokens.space20,
+            ),
+            if (!compact) ...[
+              Text(
+                'Try asking',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: RexUiTokens.textSubtle,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              const SizedBox(height: RexUiTokens.space8),
+            ],
+            Wrap(
+              spacing: RexUiTokens.space8,
+              runSpacing: RexUiTokens.space8,
+              children: _prompts
+                  .map(
+                    (prompt) => ActionChip(
+                      label: Text(prompt),
+                      onPressed: () => onPromptSelected(prompt),
+                      backgroundColor: RexUiTokens.surfaceRaised.withValues(
+                        alpha: 0.72,
+                      ),
+                      side: BorderSide(
+                        color: RexUiTokens.border.withValues(alpha: 0.72),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          RexUiTokens.radiusPill,
+                        ),
+                      ),
+                      labelStyle: theme.textTheme.labelLarge?.copyWith(
+                        color: RexUiTokens.textMuted,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ],
+        ),
       ),
     );
   }

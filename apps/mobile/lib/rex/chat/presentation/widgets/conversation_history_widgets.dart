@@ -78,8 +78,12 @@ class ConversationHistoryTile extends StatelessWidget {
         RexUiTokens.space12,
       ),
       padding: EdgeInsets.zero,
-      color: isSelected ? RexUiTokens.surfaceRaised : RexUiTokens.surface,
-      borderColor: isSelected ? RexUiTokens.accent : RexUiTokens.border,
+      color: isSelected
+          ? RexUiTokens.surfaceRaised.withValues(alpha: 0.92)
+          : RexUiTokens.surface.withValues(alpha: 0.82),
+      borderColor: isSelected
+          ? RexUiTokens.accent.withValues(alpha: 0.78)
+          : RexUiTokens.border.withValues(alpha: 0.72),
       radius: RexUiTokens.radiusLarge,
       child: InkWell(
         borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
@@ -175,8 +179,8 @@ class ConversationSearchResultTile extends StatelessWidget {
         RexUiTokens.space12,
       ),
       padding: EdgeInsets.zero,
-      color: RexUiTokens.surface,
-      borderColor: RexUiTokens.border,
+      color: RexUiTokens.surface.withValues(alpha: 0.82),
+      borderColor: RexUiTokens.border.withValues(alpha: 0.72),
       radius: RexUiTokens.radiusLarge,
       child: InkWell(
         borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
@@ -186,13 +190,22 @@ class ConversationSearchResultTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(
-                width: 42,
-                height: 42,
-                child: Icon(
-                  Icons.manage_search_rounded,
-                  color: RexUiTokens.accent,
-                  size: 24,
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: RexUiTokens.accent.withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+                  border: Border.all(
+                    color: RexUiTokens.accent.withValues(alpha: 0.24),
+                  ),
+                ),
+                child: const SizedBox(
+                  width: 42,
+                  height: 42,
+                  child: Icon(
+                    Icons.manage_search_rounded,
+                    color: RexUiTokens.accent,
+                    size: 23,
+                  ),
                 ),
               ),
               const SizedBox(width: RexUiTokens.space12),
@@ -492,12 +505,12 @@ class _ConversationGlyph extends StatelessWidget {
       decoration: BoxDecoration(
         color: isSelected
             ? RexUiTokens.accent.withValues(alpha: 0.18)
-            : RexUiTokens.surfaceSoft,
+            : RexUiTokens.surfaceRaised.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
         border: Border.all(
           color: isSelected
               ? RexUiTokens.accent.withValues(alpha: 0.7)
-              : RexUiTokens.border,
+              : RexUiTokens.border.withValues(alpha: 0.72),
         ),
       ),
       child: const SizedBox(

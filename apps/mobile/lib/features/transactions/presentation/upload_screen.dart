@@ -29,20 +29,17 @@ class _UploadScreenState extends State<UploadScreen> {
   Future<void> _import() async {
     setState(() => _busy = true);
     try {
-      final result = await FilePicker.pickFiles(
+      final file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['csv'],
-        allowMultiple: false,
-        withData: true,
       );
       if (!mounted) return;
-      if (result == null || result.files.isEmpty) {
+      if (file == null) {
         setState(() => _busy = false);
         return;
       }
 
       widget.controller.showImportPreparationProgress('Reading CSV...');
-      final file = result.files.single;
       final text = await readPickedFileContents(file);
       if (!mounted) return;
       widget.controller.showImportPreparationProgress(

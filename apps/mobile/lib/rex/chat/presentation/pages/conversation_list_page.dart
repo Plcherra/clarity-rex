@@ -241,25 +241,68 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
           if (!widget.showAppBar)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 14, 24, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Chats',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: RexUiTokens.text,
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: RexSurface(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+                  color: RexUiTokens.surface.withValues(alpha: 0.72),
+                  borderColor: RexUiTokens.border.withValues(alpha: 0.65),
+                  radius: RexUiTokens.radiusLarge,
+                  child: Row(
+                    children: [
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: RexUiTokens.accent.withValues(alpha: 0.13),
+                          borderRadius: BorderRadius.circular(
+                            RexUiTokens.radiusMedium,
+                          ),
+                        ),
+                        child: const SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: Icon(
+                            Icons.forum_outlined,
+                            color: RexUiTokens.accent,
+                            size: 21,
+                          ),
                         ),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: state.isLoading ? null : _newConversation,
-                      icon: const Icon(Icons.add_rounded),
-                      tooltip: 'New conversation',
-                      color: RexUiTokens.accent,
-                    ),
-                  ],
+                      const SizedBox(width: RexUiTokens.space12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Chats',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: RexUiTokens.text,
+                                  ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Find old context or start a new thread.',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: RexUiTokens.textMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: state.isLoading ? null : _newConversation,
+                        icon: const Icon(Icons.add_rounded),
+                        tooltip: 'New conversation',
+                        color: RexUiTokens.accent,
+                        style: IconButton.styleFrom(
+                          backgroundColor: RexUiTokens.accent.withValues(
+                            alpha: 0.12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -408,14 +451,18 @@ class _ConversationSearchField extends StatelessWidget {
                 color: RexUiTokens.textSubtle,
               ),
         filled: true,
-        fillColor: RexUiTokens.surface,
+        fillColor: RexUiTokens.surface.withValues(alpha: 0.86),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
-          borderSide: const BorderSide(color: RexUiTokens.border),
+          borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+          borderSide: BorderSide(
+            color: RexUiTokens.border.withValues(alpha: 0.7),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
-          borderSide: const BorderSide(color: RexUiTokens.accent),
+          borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+          borderSide: BorderSide(
+            color: RexUiTokens.accent.withValues(alpha: 0.7),
+          ),
         ),
       ),
     );
@@ -452,11 +499,37 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text(
-              'No chats matched "${state.searchQuery}"$suffix',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: RexUiTokens.textMuted,
-                fontWeight: FontWeight.w700,
+            child: RexSurface(
+              padding: const EdgeInsets.all(RexUiTokens.space20),
+              color: RexUiTokens.surface.withValues(alpha: 0.78),
+              borderColor: RexUiTokens.border.withValues(alpha: 0.65),
+              radius: RexUiTokens.radiusLarge,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.search_off_rounded,
+                    color: RexUiTokens.accent,
+                    size: 30,
+                  ),
+                  const SizedBox(height: RexUiTokens.space12),
+                  Text(
+                    'No matching chats',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: RexUiTokens.text,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: RexUiTokens.space4),
+                  Text(
+                    'No chats matched "${state.searchQuery}"$suffix',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: RexUiTokens.textMuted,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -557,12 +630,14 @@ class _ConversationFilterChip extends StatelessWidget {
         ),
         backgroundColor: selected
             ? RexUiTokens.accent
-            : RexUiTokens.surfaceRaised,
+            : RexUiTokens.surfaceRaised.withValues(alpha: 0.72),
         side: BorderSide(
-          color: selected ? RexUiTokens.accent : RexUiTokens.border,
+          color: selected
+              ? RexUiTokens.accent
+              : RexUiTokens.border.withValues(alpha: 0.72),
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+          borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
         ),
         onPressed: onTap,
       ),
@@ -586,37 +661,65 @@ class _EmptyConversationState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = MediaQuery.sizeOf(context).height < 650;
 
     return RexSurface(
-      padding: const EdgeInsets.all(RexUiTokens.space24),
-      color: RexUiTokens.surface,
+      padding: EdgeInsets.all(
+        compact ? RexUiTokens.space12 : RexUiTokens.space24,
+      ),
+      color: RexUiTokens.surface.withValues(alpha: 0.82),
       radius: RexUiTokens.radiusLarge,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.forum_outlined, color: RexUiTokens.accent, size: 34),
-          const SizedBox(height: RexUiTokens.space16),
+          if (!compact) ...[
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: RexUiTokens.accent.withValues(alpha: 0.13),
+                borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
+                border: Border.all(
+                  color: RexUiTokens.accent.withValues(alpha: 0.25),
+                ),
+              ),
+              child: const SizedBox(
+                width: 52,
+                height: 52,
+                child: Icon(
+                  Icons.forum_outlined,
+                  color: RexUiTokens.accent,
+                  size: 28,
+                ),
+              ),
+            ),
+            const SizedBox(height: RexUiTokens.space16),
+          ],
           Text(
             title,
             style: theme.textTheme.titleMedium?.copyWith(
               color: RexUiTokens.text,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: RexUiTokens.space8),
+          SizedBox(height: compact ? RexUiTokens.space4 : RexUiTokens.space8),
           Text(
             message,
             textAlign: TextAlign.center,
+            maxLines: compact ? 2 : 3,
+            overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: RexUiTokens.textMuted,
-              height: 1.4,
+              height: 1.25,
             ),
           ),
-          const SizedBox(height: RexUiTokens.space20),
+          SizedBox(height: compact ? RexUiTokens.space12 : RexUiTokens.space20),
           FilledButton.icon(
             style: FilledButton.styleFrom(
               backgroundColor: RexUiTokens.accent,
               foregroundColor: RexUiTokens.background,
+              minimumSize: compact ? const Size(0, 40) : null,
+              padding: compact
+                  ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
+                  : null,
             ),
             onPressed: isLoading ? null : onNewConversation,
             icon: const Icon(Icons.add_rounded),

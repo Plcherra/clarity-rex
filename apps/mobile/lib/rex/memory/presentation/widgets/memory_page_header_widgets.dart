@@ -49,18 +49,24 @@ class MemorySearchAndFilters extends StatelessWidget {
                     tooltip: 'Clear search',
                   ),
             filled: true,
-            fillColor: RexUiTokens.surface,
+            fillColor: RexUiTokens.surface.withValues(alpha: 0.86),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-              borderSide: const BorderSide(color: RexUiTokens.border),
+              borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+              borderSide: BorderSide(
+                color: RexUiTokens.border.withValues(alpha: 0.7),
+              ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-              borderSide: const BorderSide(color: RexUiTokens.border),
+              borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+              borderSide: BorderSide(
+                color: RexUiTokens.border.withValues(alpha: 0.7),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-              borderSide: const BorderSide(color: RexUiTokens.accent),
+              borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+              borderSide: BorderSide(
+                color: RexUiTokens.accent.withValues(alpha: 0.72),
+              ),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: RexUiTokens.space16,
@@ -80,7 +86,9 @@ class MemorySearchAndFilters extends StatelessWidget {
                 onSelected: onFilterSelected == null
                     ? null
                     : (_) => onFilterSelected!(filter),
-                backgroundColor: RexUiTokens.surface,
+                backgroundColor: RexUiTokens.surfaceRaised.withValues(
+                  alpha: 0.72,
+                ),
                 selectedColor: RexUiTokens.accent,
                 disabledColor: RexUiTokens.surface,
                 shape: RoundedRectangleBorder(
@@ -114,14 +122,28 @@ class SavedMemoryHeader extends StatelessWidget {
     final theme = Theme.of(context);
 
     return RexSurface(
-      color: RexUiTokens.surface,
-      borderColor: RexUiTokens.border,
-      radius: RexUiTokens.radiusMedium,
+      color: RexUiTokens.surface.withValues(alpha: 0.78),
+      borderColor: RexUiTokens.border.withValues(alpha: 0.68),
+      radius: RexUiTokens.radiusLarge,
       padding: const EdgeInsets.all(RexUiTokens.space16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.psychology_alt_outlined, color: RexUiTokens.accent),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: RexUiTokens.accent.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+            ),
+            child: const SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(
+                Icons.psychology_alt_outlined,
+                color: RexUiTokens.accent,
+                size: 22,
+              ),
+            ),
+          ),
           const SizedBox(width: RexUiTokens.space12),
           Expanded(
             child: Column(
@@ -253,33 +275,64 @@ class _EmptyMemoryShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = MediaQuery.sizeOf(context).height < 650;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(RexUiTokens.space16),
+        padding: EdgeInsets.all(
+          compact ? RexUiTokens.space8 : RexUiTokens.space16,
+        ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: RexUiTokens.textMuted, size: 28),
-              const SizedBox(height: RexUiTokens.space8),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleSmall,
-              ),
-              const SizedBox(height: RexUiTokens.space4),
-              Text(
-                body,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: RexUiTokens.textMuted,
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: RexSurface(
+            padding: EdgeInsets.all(
+              compact ? RexUiTokens.space12 : RexUiTokens.space20,
+            ),
+            color: RexUiTokens.surface.withValues(alpha: 0.78),
+            borderColor: RexUiTokens.border.withValues(alpha: 0.65),
+            radius: RexUiTokens.radiusLarge,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!compact) ...[
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: RexUiTokens.accent.withValues(alpha: 0.13),
+                      borderRadius: BorderRadius.circular(
+                        RexUiTokens.radiusLarge,
+                      ),
+                    ),
+                    child: SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: Icon(icon, color: RexUiTokens.accent, size: 27),
+                    ),
+                  ),
+                  const SizedBox(height: RexUiTokens.space12),
+                ],
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: RexUiTokens.text,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(
+                  height: compact ? RexUiTokens.space2 : RexUiTokens.space4,
+                ),
+                Text(
+                  body,
+                  textAlign: TextAlign.center,
+                  maxLines: compact ? 2 : 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: RexUiTokens.textMuted,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

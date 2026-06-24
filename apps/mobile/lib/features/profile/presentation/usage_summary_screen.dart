@@ -40,8 +40,16 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Voice usage')),
+      backgroundColor: cs.surface,
+      appBar: AppBar(
+        title: const Text('Voice usage'),
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: ListenableBuilder(
         listenable: _controller,
         builder: (context, _) {
@@ -60,6 +68,11 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               children: [
+                _UsageHeader(
+                  totalMinutes: _minutes(totals.monthVoiceSeconds),
+                  totalCalls: totals.monthLlmCalls,
+                ),
+                const SizedBox(height: 16),
                 _UsageStatTile(
                   title: 'Today',
                   minutes: _minutes(totals.todayVoiceSeconds),
@@ -102,9 +115,27 @@ final class _UsageStatTile extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return ClarityCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
+      backgroundColor: cs.surfaceContainerLow.withValues(alpha: 0.56),
+      borderColor: cs.outlineVariant.withValues(alpha: 0.56),
       child: Row(
         children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.11),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(
+                Icons.graphic_eq_rounded,
+                color: cs.primary,
+                size: 21,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,14 +143,15 @@ final class _UsageStatTile extends StatelessWidget {
                 Text(
                   title,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   '$calls Grok calls',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.58),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -129,6 +161,55 @@ final class _UsageStatTile extends StatelessWidget {
             _formatMinutes(minutes),
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w900,
+              color: cs.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+final class _UsageHeader extends StatelessWidget {
+  const _UsageHeader({required this.totalMinutes, required this.totalCalls});
+
+  final double totalMinutes;
+  final int totalCalls;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return ClarityCard(
+      padding: const EdgeInsets.all(20),
+      backgroundColor: cs.surfaceContainerLow.withValues(alpha: 0.74),
+      borderColor: cs.outlineVariant.withValues(alpha: 0.64),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Rex voice activity',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: cs.onSurface.withValues(alpha: 0.52),
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.35,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _formatMinutes(totalMinutes),
+            style: theme.textTheme.displaySmall?.copyWith(
+              color: cs.onSurface,
+              fontWeight: FontWeight.w900,
+              height: 1.02,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$totalCalls Grok calls this month',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+              height: 1.35,
             ),
           ),
         ],

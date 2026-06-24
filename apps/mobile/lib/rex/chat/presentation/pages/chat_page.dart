@@ -160,20 +160,25 @@ class _ChatPageState extends ConsumerState<ChatPage>
   }
 
   Future<void> _pickFileAttachment() async {
-    final result = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: allowedChatAttachmentExtensions.toList(
         growable: false,
       ),
-      allowMultiple: false,
-      withData: true,
     );
-    if (!mounted || result == null || result.files.isEmpty) {
+    if (!mounted || file == null) {
       return;
     }
 
-    final file = result.files.single;
-    if (file.path == null && file.bytes == null) {
+    Uint8List? bytes;
+    try {
+      bytes = await file.readAsBytes();
+    } on Object {
+      bytes = null;
+    }
+    if (!mounted) return;
+
+    if (file.path == null && bytes == null) {
       setState(() {
         _attachment = null;
         _attachmentName = file.name;
@@ -187,12 +192,12 @@ class _ChatPageState extends ConsumerState<ChatPage>
     final attachment = file.path != null
         ? XFile(file.path!, name: file.name, length: file.size)
         : XFile.fromData(
-            file.bytes!,
+            bytes!,
             name: file.name,
             length: file.size,
             path: file.name,
           );
-    await _setPickedAttachment(attachment, bytes: file.bytes);
+    await _setPickedAttachment(attachment, bytes: bytes);
   }
 
   Future<void> _setPickedAttachment(

@@ -301,15 +301,12 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
         if (proceed != true) return;
         if (!context.mounted) return;
       }
-      final result = await FilePicker.pickFiles(
+      final file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: ['csv'],
-        allowMultiple: false,
-        withData: true,
       );
       if (!context.mounted) return;
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.single;
+      if (file == null) return;
       final text = await readPickedFileContents(file);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

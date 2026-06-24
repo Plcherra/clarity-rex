@@ -17,16 +17,18 @@ final class SupabaseService {
   final SupabaseClient? _client;
 
   static const _urlDefine = String.fromEnvironment('SUPABASE_URL');
-  static const _anonKeyDefine = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const _publishableKeyDefine = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+  );
 
   static String get url => _configValue('SUPABASE_URL', _urlDefine);
-  static String get anonKey =>
-      _configValue('SUPABASE_ANON_KEY', _anonKeyDefine);
+  static String get publishableKey =>
+      _configValue('SUPABASE_ANON_KEY', _publishableKeyDefine);
 
-  static bool get hasEnvConfig => url.isNotEmpty && anonKey.isNotEmpty;
+  static bool get hasEnvConfig => url.isNotEmpty && publishableKey.isNotEmpty;
   static String get configSource {
     final hasDartDefine =
-        _urlDefine.trim().isNotEmpty && _anonKeyDefine.trim().isNotEmpty;
+        _urlDefine.trim().isNotEmpty && _publishableKeyDefine.trim().isNotEmpty;
     if (hasDartDefine) return 'dart-define';
     if (hasEnvConfig) return 'env';
     return 'missing';
@@ -39,7 +41,11 @@ final class SupabaseService {
       );
     }
 
-    await Supabase.initialize(url: url, anonKey: anonKey, debug: kDebugMode);
+    await Supabase.initialize(
+      url: url,
+      publishableKey: publishableKey,
+      debug: kDebugMode,
+    );
   }
 
   SupabaseClient get client {
