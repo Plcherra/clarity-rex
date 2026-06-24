@@ -23,7 +23,7 @@ extension MemoryGroupLabel on MemoryGroup {
       case MemoryGroup.goals:
         return 'Goals';
       case MemoryGroup.rules:
-        return 'Preferences';
+        return 'Rules';
       case MemoryGroup.events:
         return 'Events';
       case MemoryGroup.other:

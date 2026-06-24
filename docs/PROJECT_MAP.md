@@ -91,6 +91,18 @@ Rex mobile state is Riverpod-based:
 After backend-confirmed memory changes, chat refreshes the Knows overview so the
 mobile cache does not show stale active records.
 
+## Product Routes
+
+The current user-facing screen and route wiring is tracked in
+`docs/PROJECT_ROUTE_MAP.md`.
+
+Important wiring decisions:
+
+- CSV import uses the account-scoped fallback flow from Accounts or account
+  detail. The old standalone upload screen is not a production route.
+- Transaction review is a production surface reachable from the Dashboard app
+  bar for both global and account-scoped dashboards.
+
 ## Finance Truth
 
 Financial features live under `apps/mobile/lib/features`.
@@ -125,4 +137,5 @@ may have tests for historical contracts, but they are not the launch brain.
 - `docs/brain/REX_BRAIN_RULES.md`
 - `docs/brain/REX_BRAIN_ARCHITECTURE.md`
 - `docs/brain/REX_BRAIN_MEMORY_FIXES.md`
+- `docs/PROJECT_ROUTE_MAP.md`
 - `docs/master-plan.md`

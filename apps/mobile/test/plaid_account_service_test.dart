@@ -16,7 +16,8 @@ void main() {
             "plaid_item_record_id": "item-record-1",
             "status": "active",
             "institution_name": "Bank of Test",
-            "last_synced_at": "2026-06-08T12:00:00Z"
+            "last_synced_at": "2026-06-08T12:00:00Z",
+            "webhook_last_received_at": "2026-06-08T13:00:00Z"
           }
           ''', 200);
       });
@@ -27,9 +28,10 @@ void main() {
       expect(status.status, PlaidAccountConnectionStatus.connected);
       expect(status.institutionName, 'Bank of Test');
       expect(status.lastSyncedAt, isNotNull);
+      expect(status.webhookLastReceivedAt, isNotNull);
     });
 
-    test('maps login-required status to degraded', () async {
+    test('maps login-required status to specific recovery state', () async {
       final service = _serviceWith((request) async {
         return http.Response('''
           {
@@ -41,7 +43,22 @@ void main() {
 
       final status = await service.fetchItemStatus('item-record-1');
 
-      expect(status.status, PlaidAccountConnectionStatus.degraded);
+      expect(status.status, PlaidAccountConnectionStatus.loginRequired);
+    });
+
+    test('maps pending expiration status to specific recovery state', () async {
+      final service = _serviceWith((request) async {
+        return http.Response('''
+          {
+            "plaid_item_record_id": "item-record-1",
+            "status": "pending_expiration"
+          }
+          ''', 200);
+      });
+
+      final status = await service.fetchItemStatus('item-record-1');
+
+      expect(status.status, PlaidAccountConnectionStatus.pendingExpiration);
     });
 
     test('syncs item and returns safe counts', () async {

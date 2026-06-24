@@ -32,7 +32,10 @@ class StructuredMemoryTile extends StatelessWidget {
       active: active,
       title: title,
       subtitle: subtitle,
-      chips: chips,
+      chips: [
+        const MemoryMetaChip(label: 'Structured memory'),
+        ...chips,
+      ],
       onEdit: onEdit,
       onDeactivate: onDeactivate,
     );
@@ -139,6 +142,7 @@ List<Widget> baseMemoryChips({
   required DateTime? savedAt,
 }) {
   return [
+    const MemoryMetaChip(label: 'Saved memory'),
     MemoryMetaChip(label: typeLabel),
     if (savedAt != null)
       MemoryMetaChip(label: 'Updated ${shortMemoryDate(savedAt)}'),

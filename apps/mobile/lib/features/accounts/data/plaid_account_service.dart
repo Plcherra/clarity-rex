@@ -3,14 +3,36 @@ import 'dart:convert';
 import '../../../core/rex/rex_api_client.dart';
 import '../../plaid/application/plaid_connection_models.dart';
 
-enum PlaidAccountConnectionStatus { connected, syncing, degraded, disconnected }
+enum PlaidAccountConnectionStatus {
+  connected,
+  syncing,
+  degraded,
+  loginRequired,
+  pendingExpiration,
+  disconnected,
+}
 
 extension PlaidAccountConnectionStatusLabel on PlaidAccountConnectionStatus {
   String get label => switch (this) {
     PlaidAccountConnectionStatus.connected => 'Connected',
     PlaidAccountConnectionStatus.syncing => 'Syncing',
     PlaidAccountConnectionStatus.degraded => 'Degraded',
+    PlaidAccountConnectionStatus.loginRequired => 'Needs login',
+    PlaidAccountConnectionStatus.pendingExpiration => 'Expiring soon',
     PlaidAccountConnectionStatus.disconnected => 'Disconnected',
+  };
+}
+
+PlaidAccountConnectionStatus plaidConnectionStatusFromBackend(Object? value) {
+  final normalized = value?.toString().trim().toLowerCase() ?? '';
+  return switch (normalized) {
+    'active' || 'connected' => PlaidAccountConnectionStatus.connected,
+    'syncing' => PlaidAccountConnectionStatus.syncing,
+    'disconnected' || 'removed' => PlaidAccountConnectionStatus.disconnected,
+    'login_required' => PlaidAccountConnectionStatus.loginRequired,
+    'pending_expiration' => PlaidAccountConnectionStatus.pendingExpiration,
+    'degraded' || 'error' => PlaidAccountConnectionStatus.degraded,
+    _ => PlaidAccountConnectionStatus.degraded,
   };
 }
 
@@ -30,12 +52,14 @@ final class PlaidItemStatus {
     required this.status,
     this.institutionName,
     this.lastSyncedAt,
+    this.webhookLastReceivedAt,
   });
 
   final String itemId;
   final PlaidAccountConnectionStatus status;
   final String? institutionName;
   final DateTime? lastSyncedAt;
+  final DateTime? webhookLastReceivedAt;
 }
 
 final class PlaidDisconnectSummary {
@@ -74,9 +98,12 @@ final class PlaidAccountService {
       itemId: responseItemId is String && responseItemId.trim().isNotEmpty
           ? responseItemId.trim()
           : normalizedItemId,
-      status: _statusFromBackend(decoded['status']),
+      status: plaidConnectionStatusFromBackend(decoded['status']),
       institutionName: _stringOrNull(decoded['institution_name']),
       lastSyncedAt: _dateTimeOrNull(decoded['last_synced_at']),
+      webhookLastReceivedAt: _dateTimeOrNull(
+        decoded['webhook_last_received_at'],
+      ),
     );
   }
 
@@ -125,23 +152,9 @@ final class PlaidAccountService {
       itemId: responseItemId is String && responseItemId.trim().isNotEmpty
           ? responseItemId.trim()
           : normalizedItemId,
-      status: _statusFromBackend(decoded['status']),
+      status: plaidConnectionStatusFromBackend(decoded['status']),
       institutionName: _stringOrNull(decoded['institution_name']),
     );
-  }
-
-  PlaidAccountConnectionStatus _statusFromBackend(Object? value) {
-    final normalized = value?.toString().trim().toLowerCase() ?? '';
-    return switch (normalized) {
-      'active' || 'connected' => PlaidAccountConnectionStatus.connected,
-      'syncing' => PlaidAccountConnectionStatus.syncing,
-      'disconnected' || 'removed' => PlaidAccountConnectionStatus.disconnected,
-      'degraded' ||
-      'error' ||
-      'login_required' ||
-      'pending_expiration' => PlaidAccountConnectionStatus.degraded,
-      _ => PlaidAccountConnectionStatus.degraded,
-    };
   }
 
   Map<String, dynamic> _safeJsonMap(String body) {

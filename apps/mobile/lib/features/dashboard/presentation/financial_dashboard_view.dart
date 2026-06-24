@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../budgets/domain/budget_models.dart';
+import '../../finance/application/financial_read_model_service.dart';
 import '../domain/dashboard_snapshot.dart';
 import '../domain/dashboard_transaction_groups.dart';
 import '../../../core/formatting/formatting.dart';
@@ -17,6 +18,7 @@ import '../../../widgets/clarity_card.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
 import '../../../widgets/clarity_path_loader.dart';
 import 'month_detail_screen.dart';
+import 'transaction_review_screen.dart';
 
 part 'financial_dashboard_transactions.dart';
 part 'financial_dashboard_transaction_controls.dart';
@@ -266,6 +268,18 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
     }
   }
 
+  Future<void> _openTransactionReview() {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => TransactionReviewScreen(
+          controller: widget.controller,
+          transactionController: widget.transactionController,
+          scope: widget.scope,
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     widget.controller.removeListener(_handleControllerChanged);
@@ -294,6 +308,12 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
               )
             : null,
         actions: [
+          IconButton(
+            tooltip: 'Review transactions',
+            icon: const Icon(Icons.fact_check_outlined),
+            color: cs.onSurface.withValues(alpha: 0.72),
+            onPressed: _openTransactionReview,
+          ),
           if (widget.onUploadTransactions != null)
             IconButton(
               tooltip: 'Import CSV instead',
@@ -352,6 +372,7 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             snapshot: data.snapshot,
             budgetPerformance: data.budgetPerformance,
             transactionCount: data.scopedTransactionCount,
+            loadIssues: data.loadIssues,
           );
           return widget.showBackButton
               ? ImportJobStatusHost(

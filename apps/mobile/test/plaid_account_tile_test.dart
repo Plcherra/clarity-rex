@@ -277,4 +277,118 @@ void main() {
     expect(find.byTooltip('Disconnect bank'), findsNothing);
     expect(find.byTooltip('Disconnected'), findsOneWidget);
   });
+
+  testWidgets('PlaidAccountTile explains login-required recovery', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlaidAccountTile(
+            item: const AccountOverviewItem(
+              account: Account(
+                id: 'account-1',
+                name: 'Everyday Checking',
+                type: AccountType.checking,
+                source: 'plaid',
+                plaidItemId: 'item-1',
+              ),
+              availableThisMonth: 0,
+              incomeThisMonth: 0,
+              spentThisMonth: 0,
+              statementBalance: null,
+              netCashFlow: 0,
+            ),
+            status: PlaidAccountConnectionStatus.loginRequired,
+            lastSyncedAt: null,
+            onResync: () {},
+            onDisconnect: () {},
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Needs login'), findsOneWidget);
+    expect(
+      find.textContaining('Plaid needs you to sign in again'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Login required'), findsOneWidget);
+  });
+
+  testWidgets('PlaidAccountTile explains pending-expiration recovery', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlaidAccountTile(
+            item: const AccountOverviewItem(
+              account: Account(
+                id: 'account-1',
+                name: 'Everyday Checking',
+                type: AccountType.checking,
+                source: 'plaid',
+                plaidItemId: 'item-1',
+              ),
+              availableThisMonth: 0,
+              incomeThisMonth: 0,
+              spentThisMonth: 0,
+              statementBalance: null,
+              netCashFlow: 0,
+            ),
+            status: PlaidAccountConnectionStatus.pendingExpiration,
+            lastSyncedAt: null,
+            onResync: () {},
+            onDisconnect: () {},
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Expiring soon'), findsOneWidget);
+    expect(
+      find.textContaining('This Plaid connection may expire soon'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Expiring soon'), findsOneWidget);
+  });
+
+  testWidgets('PlaidAccountTile explains stale webhook delay', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlaidAccountTile(
+            item: const AccountOverviewItem(
+              account: Account(
+                id: 'account-1',
+                name: 'Everyday Checking',
+                type: AccountType.checking,
+                source: 'plaid',
+                plaidItemId: 'item-1',
+              ),
+              availableThisMonth: 0,
+              incomeThisMonth: 0,
+              spentThisMonth: 0,
+              statementBalance: null,
+              netCashFlow: 0,
+            ),
+            status: PlaidAccountConnectionStatus.connected,
+            lastSyncedAt: DateTime.now(),
+            webhookLastReceivedAt: DateTime.now().subtract(
+              const Duration(days: 2),
+            ),
+            onResync: () {},
+            onDisconnect: () {},
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.textContaining('No recent Plaid webhook'), findsOneWidget);
+    expect(find.textContaining('2d ago'), findsOneWidget);
+  });
 }

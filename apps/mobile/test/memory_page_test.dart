@@ -26,6 +26,7 @@ void main() {
     expect(find.textContaining('payroll'), findsNothing);
 
     expect(find.text('My name is Pedro Martins.'), findsNothing);
+    expect(find.text('Structured memory'), findsWidgets);
     expect(find.text('Updated 05/31/2026'), findsWidgets);
 
     await tester.scrollUntilVisible(
@@ -36,6 +37,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Facts'), findsWidgets);
+    expect(find.text('Saved memory'), findsWidgets);
     expect(find.text('Preferences'), findsWidgets);
 
     await tester.scrollUntilVisible(
@@ -47,15 +49,23 @@ void main() {
 
     expect(find.text('Pedro prefers email updates.'), findsOneWidget);
 
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+    await tester.scrollUntilVisible(
+      find.text('Ship Plaid review'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('Goals'), findsOneWidget);
+    expect(find.text('Ship Plaid review'), findsOneWidget);
 
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+    await tester.scrollUntilVisible(
+      find.text('MFA was enabled successfully.'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('Events'), findsWidgets);
+    expect(find.text('MFA was enabled successfully.'), findsOneWidget);
     expect(find.text('Other'), findsNothing);
   });
 

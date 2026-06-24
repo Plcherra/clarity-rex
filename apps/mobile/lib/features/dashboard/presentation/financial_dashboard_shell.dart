@@ -9,6 +9,7 @@ class _DashboardScrollBody extends StatelessWidget {
     required this.snapshot,
     required this.budgetPerformance,
     required this.transactionCount,
+    required this.loadIssues,
   });
 
   final String title;
@@ -18,6 +19,7 @@ class _DashboardScrollBody extends StatelessWidget {
   final DashboardSnapshot snapshot;
   final BudgetPerformanceSnapshot budgetPerformance;
   final int transactionCount;
+  final List<FinancialReadModelLoadIssue> loadIssues;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,10 @@ class _DashboardScrollBody extends StatelessWidget {
                     const SizedBox(height: 10),
                   ],
                   if (title.trim().isEmpty) const SizedBox(height: 2),
+                  if (loadIssues.isNotEmpty) ...[
+                    _FinancialDataStatusBanner(loadIssues: loadIssues),
+                    const SizedBox(height: 14),
+                  ],
                   _CashFlowSummaryCard(snapshot: snapshot),
                   const SizedBox(height: _sectionGap),
                   _DashboardTransactionsSection(
@@ -70,6 +76,68 @@ class _DashboardScrollBody extends StatelessWidget {
                     transactionCount: transactionCount,
                   ),
                 ]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FinancialDataStatusBanner extends StatelessWidget {
+  const _FinancialDataStatusBanner({required this.loadIssues});
+
+  final List<FinancialReadModelLoadIssue> loadIssues;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final sources =
+        loadIssues
+            .map((issue) => issue.source.trim())
+            .where((source) => source.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
+    final sourceLabel = sources.isEmpty ? 'financial data' : sources.join(', ');
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: ClarityColors.warning.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.info_outline_rounded,
+              color: ClarityColors.warning,
+              size: 21,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Some financial data could not load',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: cs.onSurface,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Clarity is showing the available records, but $sourceLabel may be incomplete. Rex will treat finance answers as degraded until this refreshes.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.68),
+                      height: 1.3,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

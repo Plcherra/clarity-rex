@@ -15,6 +15,7 @@ class PlaidAccountHeader extends StatelessWidget {
     required this.item,
     required this.status,
     required this.lastSyncedAt,
+    required this.webhookLastReceivedAt,
     required this.onResync,
     required this.onDisconnect,
   });
@@ -22,6 +23,7 @@ class PlaidAccountHeader extends StatelessWidget {
   final AccountOverviewItem item;
   final PlaidAccountConnectionStatus status;
   final DateTime? lastSyncedAt;
+  final DateTime? webhookLastReceivedAt;
   final VoidCallback onResync;
   final VoidCallback onDisconnect;
 
@@ -53,6 +55,7 @@ class PlaidAccountHeader extends StatelessWidget {
             item: item,
             status: status,
             lastSyncedAt: lastSyncedAt,
+            webhookLastReceivedAt: webhookLastReceivedAt,
             onResync: onResync,
             onDisconnect: onDisconnect,
           ),
@@ -113,6 +116,7 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
     required this.item,
     required this.status,
     required this.lastSyncedAt,
+    required this.webhookLastReceivedAt,
     required this.onResync,
     required this.onDisconnect,
   });
@@ -121,6 +125,7 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
   final AccountOverviewItem item;
   final PlaidAccountConnectionStatus status;
   final DateTime? lastSyncedAt;
+  final DateTime? webhookLastReceivedAt;
   final VoidCallback onResync;
   final VoidCallback onDisconnect;
 
@@ -150,6 +155,29 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+        if (_statusRecoveryMessage(status) case final message?) ...[
+          const SizedBox(height: 5),
+          Text(
+            message,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: _statusRecoveryColor(cs, status),
+              fontWeight: FontWeight.w700,
+              height: 1.25,
+            ),
+          ),
+        ],
+        if (_webhookFreshnessMessage(status, webhookLastReceivedAt)
+            case final message?) ...[
+          const SizedBox(height: 5),
+          Text(
+            message,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurface.withValues(alpha: 0.60),
+              fontWeight: FontWeight.w600,
+              height: 1.25,
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerRight,
@@ -172,6 +200,72 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
     if (diff.inMinutes < 60) return 'Last synced ${diff.inMinutes}m ago';
     if (diff.inHours < 24) return 'Last synced ${diff.inHours}h ago';
     return 'Last synced ${value.month}/${value.day}/${value.year}';
+  }
+
+  String? _statusRecoveryMessage(PlaidAccountConnectionStatus status) {
+    return switch (status) {
+      PlaidAccountConnectionStatus.connected => null,
+      PlaidAccountConnectionStatus.syncing =>
+        'Refreshing this bank connection now.',
+      PlaidAccountConnectionStatus.degraded =>
+        'Sync needs attention. Try refresh; if it still fails, reconnect this bank in Plaid.',
+      PlaidAccountConnectionStatus.loginRequired =>
+        'Plaid needs you to sign in again. Connect this bank again to resume sync.',
+      PlaidAccountConnectionStatus.pendingExpiration =>
+        'This Plaid connection may expire soon. Refresh now or reconnect if sync stops.',
+      PlaidAccountConnectionStatus.disconnected =>
+        'Future Plaid sync is stopped. Existing account history stays in Clarity.',
+    };
+  }
+
+  Color _statusRecoveryColor(
+    ColorScheme colorScheme,
+    PlaidAccountConnectionStatus status,
+  ) {
+    return switch (status) {
+      PlaidAccountConnectionStatus.connected =>
+        colorScheme.onSurface.withValues(alpha: 0.52),
+      PlaidAccountConnectionStatus.syncing => colorScheme.secondary,
+      PlaidAccountConnectionStatus.degraded => ClarityColors.warning,
+      PlaidAccountConnectionStatus.loginRequired => colorScheme.error,
+      PlaidAccountConnectionStatus.pendingExpiration => ClarityColors.warning,
+      PlaidAccountConnectionStatus.disconnected =>
+        colorScheme.onSurface.withValues(alpha: 0.58),
+    };
+  }
+
+  String? _webhookFreshnessMessage(
+    PlaidAccountConnectionStatus status,
+    DateTime? webhookLastReceivedAt,
+  ) {
+    if (status == PlaidAccountConnectionStatus.disconnected ||
+        status == PlaidAccountConnectionStatus.syncing) {
+      return null;
+    }
+    if (webhookLastReceivedAt == null) {
+      return status == PlaidAccountConnectionStatus.connected
+          ? null
+          : 'No Plaid webhook has arrived yet. Use refresh if transactions look stale.';
+    }
+    final diff = DateTime.now().difference(webhookLastReceivedAt);
+    if (diff.inHours < 24) {
+      return null;
+    }
+    return 'No recent Plaid webhook. Last bank update signal was ${_relativeWebhookLabel(webhookLastReceivedAt)}.';
+  }
+
+  String _relativeWebhookLabel(DateTime value) {
+    final diff = DateTime.now().difference(value);
+    if (diff.inDays >= 1) {
+      return '${diff.inDays}d ago';
+    }
+    if (diff.inHours >= 1) {
+      return '${diff.inHours}h ago';
+    }
+    if (diff.inMinutes >= 1) {
+      return '${diff.inMinutes}m ago';
+    }
+    return 'just now';
   }
 }
 
@@ -213,6 +307,9 @@ class _PlaidAccountNetAndSync extends StatelessWidget {
             IconButton(
               tooltip: switch (status) {
                 PlaidAccountConnectionStatus.syncing => 'Syncing',
+                PlaidAccountConnectionStatus.loginRequired => 'Login required',
+                PlaidAccountConnectionStatus.pendingExpiration =>
+                  'Expiring soon',
                 PlaidAccountConnectionStatus.disconnected => 'Disconnected',
                 _ => 'Resync',
               },

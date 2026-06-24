@@ -9,15 +9,16 @@
 
 ## Folder Structure
 
-`/lib` - All Flutter/Dart code
+`apps/mobile/lib` - All Flutter/Dart code
 
-- `/lib/core` - Theme, constants, shared models
-- `/lib/features` - Main app features (dashboard, accounts, budgets, transactions, profile)
-- `/lib/rex` - Everything related to Rex assistant (chat, voice, memory)
-- `/lib/services` - API calls and external services
-- `/lib/widgets` - Reusable UI components
+- `apps/mobile/lib/app` - App bootstrap, composition root, routing shell glue
+- `apps/mobile/lib/core` - Supabase/Rex config, shared models, formatting, IO
+- `apps/mobile/lib/features` - Main app features (dashboard, accounts, budgets, transactions, profile)
+- `apps/mobile/lib/rex` - Everything related to Rex assistant (chat, voice, memory, goals)
+- `apps/mobile/lib/theme` - Shared Clarity design tokens and Material themes
+- `apps/mobile/lib/widgets` - Reusable UI components
 
-`\services\rex-api` - Python backend
+`services/rex-api` - Python backend
 
 - All FastAPI endpoints, Plaid sync logic, memory handling
 

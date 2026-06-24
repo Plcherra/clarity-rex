@@ -15,11 +15,13 @@ class PlaidAccountTile extends StatelessWidget {
     required this.onResync,
     required this.onDisconnect,
     required this.onTap,
+    this.webhookLastReceivedAt,
   });
 
   final AccountOverviewItem item;
   final PlaidAccountConnectionStatus status;
   final DateTime? lastSyncedAt;
+  final DateTime? webhookLastReceivedAt;
   final VoidCallback onResync;
   final VoidCallback onDisconnect;
   final VoidCallback onTap;
@@ -44,6 +46,7 @@ class PlaidAccountTile extends StatelessWidget {
                 item: item,
                 status: status,
                 lastSyncedAt: lastSyncedAt,
+                webhookLastReceivedAt: webhookLastReceivedAt,
                 onResync: onResync,
                 onDisconnect: onDisconnect,
               ),

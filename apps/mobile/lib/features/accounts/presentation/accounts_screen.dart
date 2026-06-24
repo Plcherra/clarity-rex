@@ -427,7 +427,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       return PlaidAccountConnectionStatus.syncing;
     }
     return _plaidStatuses[itemId]?.status ??
-        PlaidAccountConnectionStatus.connected;
+        plaidConnectionStatusFromBackend(account.syncStatus);
   }
 
   DateTime? _lastSyncedAtFor(Account account) {
@@ -462,7 +462,14 @@ class _AccountsScreenState extends State<AccountsScreen> {
             _disconnectPlaidItem(context, account),
         statusFor: _statusFor,
         lastSyncedAtFor: _lastSyncedAtFor,
+        webhookLastReceivedAtFor: _webhookLastReceivedAtFor,
       ),
     );
+  }
+
+  DateTime? _webhookLastReceivedAtFor(Account account) {
+    final itemId = account.plaidItemId;
+    if (!account.isPlaidConnected || itemId == null) return null;
+    return _plaidStatuses[itemId]?.webhookLastReceivedAt;
   }
 }

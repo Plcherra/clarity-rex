@@ -25,6 +25,7 @@ class AccountsBody extends StatelessWidget {
     required this.onDisconnectPlaidItem,
     required this.statusFor,
     required this.lastSyncedAtFor,
+    required this.webhookLastReceivedAtFor,
   });
 
   final AccountsDataNotifier dataNotifier;
@@ -39,6 +40,7 @@ class AccountsBody extends StatelessWidget {
   final void Function(Account account) onDisconnectPlaidItem;
   final PlaidAccountConnectionStatus Function(Account account) statusFor;
   final DateTime? Function(Account account) lastSyncedAtFor;
+  final DateTime? Function(Account account) webhookLastReceivedAtFor;
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +96,9 @@ class AccountsBody extends StatelessWidget {
                     item: accounts[i],
                     status: statusFor(accounts[i].account),
                     lastSyncedAt: lastSyncedAtFor(accounts[i].account),
+                    webhookLastReceivedAt: webhookLastReceivedAtFor(
+                      accounts[i].account,
+                    ),
                     onResync: () =>
                         onResyncPlaidItem(accounts[i].account.plaidItemId!),
                     onDisconnect: () =>

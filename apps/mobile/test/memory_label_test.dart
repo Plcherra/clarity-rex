@@ -26,6 +26,7 @@ void main() {
       expect(memoryActionStatusLabel('waitingForUser'), 'Waiting For User');
       expect(memoryGroupForTypeLabel('custom_memory_kind'), MemoryGroup.other);
       expect(memoryGroupForTypeLabel('custom_memory_kind').label, 'Other');
+      expect(MemoryGroup.rules.label, 'Rules');
     });
 
     test('unknown durable memory types render as other memories', () {

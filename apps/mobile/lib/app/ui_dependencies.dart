@@ -192,6 +192,7 @@ final class DashboardViewData {
     required this.accountCount,
     required this.scopedStatementImportCount,
     required this.totalStatementImportCount,
+    required this.loadIssues,
   });
 
   final DashboardSnapshot snapshot;
@@ -201,6 +202,7 @@ final class DashboardViewData {
   final int accountCount;
   final int scopedStatementImportCount;
   final int totalStatementImportCount;
+  final List<FinancialReadModelLoadIssue> loadIssues;
 
   bool get isResolvingImportedTransactions {
     return scopedTransactionCount == 0 && scopedStatementImportCount > 0;
@@ -247,6 +249,7 @@ final class DashboardUiController extends _UiController {
       accountCount: model.accounts.length,
       scopedStatementImportCount: model.statementImportsForScope(scope).length,
       totalStatementImportCount: model.statementImports.length,
+      loadIssues: model.loadIssues,
     );
   }
 

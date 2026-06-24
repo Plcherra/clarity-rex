@@ -24,9 +24,19 @@ class PlaidAccountStatusPill extends StatelessWidget {
         border: cs.secondary.withValues(alpha: 0.38),
       ),
       PlaidAccountConnectionStatus.degraded => (
-        bg: cs.primary.withValues(alpha: 0.16),
-        fg: cs.primary,
-        border: cs.primary.withValues(alpha: 0.38),
+        bg: ClarityColors.warning.withValues(alpha: 0.18),
+        fg: ClarityColors.warning,
+        border: ClarityColors.warning.withValues(alpha: 0.42),
+      ),
+      PlaidAccountConnectionStatus.loginRequired => (
+        bg: cs.error.withValues(alpha: 0.14),
+        fg: cs.error,
+        border: cs.error.withValues(alpha: 0.38),
+      ),
+      PlaidAccountConnectionStatus.pendingExpiration => (
+        bg: ClarityColors.warning.withValues(alpha: 0.18),
+        fg: ClarityColors.warning,
+        border: ClarityColors.warning.withValues(alpha: 0.42),
       ),
       PlaidAccountConnectionStatus.disconnected => (
         bg: cs.surfaceContainerHighest,
