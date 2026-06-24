@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../widgets/clarity_path_loader.dart';
+
 class AccountsAppBar extends StatelessWidget implements PreferredSizeWidget {
   const AccountsAppBar({
     super.key,
@@ -27,10 +29,7 @@ class AccountsAppBar extends StatelessWidget implements PreferredSizeWidget {
           tooltip: 'Refresh accounts',
           onPressed: refreshingAccounts ? null : onRefreshAccounts,
           icon: refreshingAccounts
-              ? const SizedBox.square(
-                  dimension: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+              ? const ClarityInlineLoader(size: 20, strokeWidth: 2)
               : const Icon(Icons.sync_rounded),
         ),
         IconButton(

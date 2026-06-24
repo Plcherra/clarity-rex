@@ -4,6 +4,7 @@ import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_bubble_effects.dart'
     show ChatStreamingCursor, ChatTypingDots;
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/widgets/clarity_path_loader.dart';
 
 /// A single chat line: assistant (left) or user (right).
 class ChatMessageBubble extends StatelessWidget {
@@ -312,10 +313,7 @@ class _ClarityActionCard extends StatelessWidget {
                           ? null
                           : () => onConfirm!(action),
                       icon: action.isApplying
-                          ? const SizedBox.square(
-                              dimension: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
+                          ? const ClarityInlineLoader(size: 16, strokeWidth: 2)
                           : const Icon(Icons.check_rounded, size: 16),
                       label: const Text('Confirm'),
                     ),

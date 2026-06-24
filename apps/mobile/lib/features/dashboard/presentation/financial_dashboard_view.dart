@@ -15,6 +15,7 @@ import '../../../theme/clarity_colors.dart';
 import '../../../theme/clarity_radius.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
+import '../../../widgets/clarity_path_loader.dart';
 import 'month_detail_screen.dart';
 
 part 'financial_dashboard_transactions.dart';

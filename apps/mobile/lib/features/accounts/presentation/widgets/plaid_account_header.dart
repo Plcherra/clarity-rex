@@ -4,6 +4,7 @@ import '../../../../app/ui_dependencies.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/models/models.dart';
 import '../../../../theme/clarity_colors.dart';
+import '../../../../widgets/clarity_path_loader.dart';
 import '../../data/plaid_account_service.dart';
 import 'plaid_account_status_pill.dart';
 import 'source_label_chip.dart';
@@ -221,10 +222,7 @@ class _PlaidAccountNetAndSync extends StatelessWidget {
                   ? null
                   : onResync,
               icon: status == PlaidAccountConnectionStatus.syncing
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                  ? const ClarityInlineLoader(size: 18, strokeWidth: 2)
                   : const Icon(Icons.sync_rounded, size: 19),
             ),
             if (status != PlaidAccountConnectionStatus.disconnected)

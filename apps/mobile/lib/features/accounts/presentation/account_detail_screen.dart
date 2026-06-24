@@ -7,6 +7,7 @@ import '../../../app/ui_dependencies.dart';
 import '../../../core/io/file_reader.dart';
 import '../../../core/models/models.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
+import '../../../widgets/clarity_path_loader.dart';
 import '../../budgets/application/budget_cleanup_service.dart';
 import '../../transactions/data/csv_import_service.dart';
 import '../../dashboard/domain/dashboard_snapshot.dart';
@@ -390,11 +391,7 @@ class _CsvUploadDeletingDialog extends StatelessWidget {
       content: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
-          ),
+          ClarityInlineLoader(size: 24, strokeWidth: 2.5),
           SizedBox(width: 20),
           Expanded(child: Text('Deleting CSV upload...')),
         ],

@@ -5,6 +5,7 @@ import '../../../app/ui_dependencies.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
+import '../../../widgets/clarity_path_loader.dart';
 import '../../transactions/data/csv_import_service.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import 'csv_plaid_duplicate_warning.dart';
@@ -298,12 +299,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                               ],
                             ),
                             trailing: importingThisAccount
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
+                                ? const ClarityInlineLoader(
+                                    size: 22,
+                                    strokeWidth: 2,
                                   )
                                 : Icon(
                                     Icons.chevron_right_rounded,
@@ -613,14 +611,7 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
         FilledButton(
           onPressed: _saving ? null : _submit,
           child: _saving
-              ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                )
+              ? const ClarityInlineLoader(size: 20, strokeWidth: 2)
               : const Text('Save'),
         ),
       ],

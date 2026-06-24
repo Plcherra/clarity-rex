@@ -8,6 +8,7 @@ import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/chat/presentation/widgets/conversation_history_widgets.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/widgets/clarity_path_loader.dart';
 
 class ConversationListPage extends ConsumerStatefulWidget {
   const ConversationListPage({
@@ -300,7 +301,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
           else if (state.isLoading && state.conversations.isEmpty)
             const SliverFillRemaining(
               child: Center(
-                child: CircularProgressIndicator(color: RexUiTokens.accent),
+                child: ClarityPathLoader(size: 52, label: 'Loading chats'),
               ),
             )
           else if (filteredConversations.isEmpty)
@@ -398,14 +399,7 @@ class _ConversationSearchField extends StatelessWidget {
         suffixIcon: isSearching
             ? const Padding(
                 padding: EdgeInsets.all(14),
-                child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: RexUiTokens.accent,
-                  ),
-                ),
+                child: ClarityInlineLoader(size: 18, strokeWidth: 2),
               )
             : IconButton(
                 tooltip: 'Clear search',
@@ -444,7 +438,7 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
     if (state.isSearching && state.searchResults.isEmpty) {
       return const SliverFillRemaining(
         child: Center(
-          child: CircularProgressIndicator(color: RexUiTokens.accent),
+          child: ClarityPathLoader(size: 48, label: 'Searching chats'),
         ),
       );
     }

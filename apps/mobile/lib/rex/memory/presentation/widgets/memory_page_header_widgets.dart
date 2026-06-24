@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_quick_filter.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/widgets/clarity_path_loader.dart';
 
 class MemorySearchAndFilters extends StatelessWidget {
   const MemorySearchAndFilters({
@@ -233,10 +234,7 @@ class MemoryLoadingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: CircularProgressIndicator(
-        color: RexUiTokens.accent,
-        strokeWidth: 2.5,
-      ),
+      child: ClarityPathLoader(size: 52, label: 'Loading memory'),
     );
   }
 }
@@ -295,7 +293,9 @@ class MemoryEmptyState extends StatelessWidget {
   final bool activeOnly;
 
   String get _emptyTitle {
-    return activeOnly ? 'Clarity is still learning' : 'No saved information yet';
+    return activeOnly
+        ? 'Clarity is still learning'
+        : 'No saved information yet';
   }
 
   String get _emptyBody {

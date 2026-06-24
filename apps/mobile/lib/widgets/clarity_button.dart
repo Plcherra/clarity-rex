@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'clarity_path_loader.dart';
+
 enum ClarityButtonVariant { filled, outlined, text }
 
 class ClarityButton extends StatelessWidget {
@@ -112,9 +114,6 @@ class _ClarityButtonLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox.square(
-      dimension: 18,
-      child: CircularProgressIndicator(strokeWidth: 2),
-    );
+    return const ClarityInlineLoader(size: 18, strokeWidth: 2);
   }
 }

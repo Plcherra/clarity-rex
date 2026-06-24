@@ -290,20 +290,12 @@ class _CompactUploadButtonState extends State<_CompactUploadButton> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Tooltip(
       message: 'Manual fallback for files from your bank.',
       child: FilledButton.icon(
         onPressed: _busy ? null : _handleTap,
         icon: _busy
-            ? SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: cs.onPrimary,
-                ),
-              )
+            ? const ClarityInlineLoader(size: 18, strokeWidth: 2)
             : const Icon(Icons.upload_file_rounded, size: 18),
         label: Text(_busy ? 'Importing...' : 'Import CSV instead'),
         style: FilledButton.styleFrom(

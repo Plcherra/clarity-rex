@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/widgets/clarity_path_loader.dart';
 
 /// Composer row: text field, optional attachment preview, and send action.
 class ChatInputBar extends StatelessWidget {
@@ -151,12 +152,9 @@ class ChatInputBar extends StatelessWidget {
                                     .withValues(alpha: 0.55),
                               ),
                               icon: isLoading
-                                  ? const SizedBox.square(
-                                      dimension: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: RexUiTokens.background,
-                                      ),
+                                  ? const ClarityInlineLoader(
+                                      size: 18,
+                                      strokeWidth: 2,
                                     )
                                   : const Icon(
                                       Icons.arrow_upward_rounded,

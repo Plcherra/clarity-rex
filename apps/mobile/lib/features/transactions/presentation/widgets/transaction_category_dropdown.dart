@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/ui_dependencies.dart';
 // (rules disabled) keep normalization helpers local to rule subsystem only.
 import '../../../../core/models/models.dart';
+import '../../../../widgets/clarity_path_loader.dart';
 import '../../application/category_workflow_service.dart';
 import '../../domain/spend_categories.dart';
 
@@ -178,14 +179,7 @@ class _TransactionRoleFieldState extends State<TransactionRoleField> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (_saving) ...[
-              SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.8,
-                  color: cs.onSurface.withValues(alpha: 0.55),
-                ),
-              ),
+              const ClarityInlineLoader(size: 12, strokeWidth: 1.8),
               const SizedBox(width: 6),
             ] else ...[
               Icon(

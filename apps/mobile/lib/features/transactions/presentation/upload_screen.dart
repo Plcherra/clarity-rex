@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/io/file_reader.dart';
+import '../../../widgets/clarity_path_loader.dart';
 import '../../accounts/presentation/account_selection_screen.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 
@@ -118,13 +119,9 @@ class _UploadScreenState extends State<UploadScreen> {
                       child: FilledButton(
                         onPressed: _busy ? null : _import,
                         child: _busy
-                            ? SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: theme.colorScheme.onPrimary,
-                                ),
+                            ? const ClarityInlineLoader(
+                                size: 22,
+                                strokeWidth: 2,
                               )
                             : const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,

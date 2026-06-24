@@ -277,7 +277,7 @@ class _InitialLoading extends StatelessWidget {
     return const SizedBox(
       height: 320,
       child: Center(
-        child: CircularProgressIndicator(color: RexUiTokens.accent),
+        child: ClarityPathLoader(size: 52, label: 'Loading accountability'),
       ),
     );
   }

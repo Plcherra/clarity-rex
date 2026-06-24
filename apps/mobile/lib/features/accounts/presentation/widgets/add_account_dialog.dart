@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/models.dart';
+import '../../../../widgets/clarity_path_loader.dart';
 
 class AddAccountDialog extends StatefulWidget {
   const AddAccountDialog({super.key, required this.onCreate});
@@ -121,11 +122,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
         FilledButton(
           onPressed: _saving ? null : _submit,
           child: _saving
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+              ? const ClarityInlineLoader(size: 20, strokeWidth: 2)
               : const Text('Save'),
         ),
       ],
