@@ -20,6 +20,9 @@ class ChatContextRecallPolicy:
             conversation_history=conversation_history,
         )
 
+    def topic_query(self, message: str) -> str:
+        return self.recall_intent.chat_topic_query(message)
+
     def memory_query(
         self,
         message: str,

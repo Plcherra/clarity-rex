@@ -159,6 +159,7 @@ class ConversationRepository:
         limit: int = 50,
         exclude_conversation_id: Optional[str] = None,
     ) -> list[dict]:
+        # Shared product search contract used by the Chats page and Rex recall.
         return await self.chat_search_repository.search_conversations(
             query,
             limit=limit,

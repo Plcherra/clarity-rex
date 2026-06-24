@@ -16,6 +16,11 @@ DEGRADED_RECALL_FALLBACK = (
 EMPTY_RECALL_FALLBACK = (
     "I searched my saved memory and old chats but couldn't find anything about that."
 )
+FILTERED_RECALL_FALLBACK = (
+    "I searched saved memory and old chats, but the only possible chat matches "
+    "were search echoes or unusable no-result messages. I don't have usable "
+    "chat-history evidence for that yet."
+)
 CHAT_SEARCH_CAPABILITY_FALLBACK = (
     "I can search saved chat history when chat search is available. I won't treat "
     "this visible chat as the only source."
@@ -103,6 +108,23 @@ def chat_search_completed_without_results(memory_status: object) -> bool:
     return any(
         status.get("attempted") is True
         and status.get("succeeded") is True
+        and status.get("status") == "empty"
+        and status.get("filtered_all_matches") is not True
+        and int(status.get("result_count") or 0) == 0
+        for status in _chat_search_statuses(memory_status)
+    )
+def chat_search_filtered_without_results(memory_status: object) -> bool:
+    if (
+        not isinstance(memory_status, dict)
+        or memory_status_is_degraded(memory_status)
+        or memory_status_has_saved_knowledge(memory_status)
+    ):
+        return False
+    return any(
+        status.get("attempted") is True
+        and status.get("succeeded") is True
+        and status.get("status") == "filtered"
+        and status.get("filtered_all_matches") is True
         and int(status.get("result_count") or 0) == 0
         for status in _chat_search_statuses(memory_status)
     )
@@ -167,9 +189,16 @@ def safe_old_chat_search_response(
         return cleaned
     if memory_status_has_saved_knowledge(memory_status):
         return cleaned
+    if chat_search_filtered_without_results(memory_status):
+        return FILTERED_RECALL_FALLBACK
     return cleaned if chat_search_completed_without_results(memory_status) else DEGRADED_RECALL_FALLBACK
 def safe_empty_recall_search_response(response: str, *, memory_status: object = None) -> str:
     cleaned = response.strip()
+    if (
+        chat_search_filtered_without_results(memory_status)
+        and response_claims_no_memory_result(cleaned)
+    ):
+        return FILTERED_RECALL_FALLBACK
     return EMPTY_RECALL_FALLBACK if chat_search_completed_without_results(memory_status) and response_claims_no_memory_result(cleaned) else cleaned
 def safe_chat_search_capability_response(response: str) -> str:
     cleaned = response.strip()

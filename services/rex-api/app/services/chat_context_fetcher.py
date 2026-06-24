@@ -71,7 +71,9 @@ class ChatContextLoadPlanner:
             conversation_history=conversation_history,
         )
         recall_request = recall_query is not None or self._force_recall(intent_decision)
-        recall_query = recall_query or (message if recall_request else None)
+        recall_query = recall_query or (
+            self.recall_policy.topic_query(message) if recall_request else None
+        )
         memory_query = self.recall_policy.memory_query(
             message,
             conversation_history=conversation_history,
@@ -104,7 +106,9 @@ class ChatContextLoadPlanner:
             conversation_history=conversation_history,
         )
         recall_request = recall_query is not None or self._force_recall(intent_decision)
-        recall_query = recall_query or (message if recall_request else None)
+        recall_query = recall_query or (
+            self.recall_policy.topic_query(message) if recall_request else None
+        )
         memory_query = self.recall_policy.memory_query(
             message,
             conversation_history=conversation_history,

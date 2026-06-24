@@ -52,6 +52,13 @@ This is enough for MVP if it is reliable, honest, and easy to debug.
 
 MVP recall examples are test coverage, not product logic. Mom, games, PC, payroll, immigration, money, places, and preferences should all use the same retrieval path. If one topic fails, improve query expansion, indexed search, ranking, or conversation excerpts for all topics.
 
+For beta parity, Rex recall and the Chats page should keep using the same shared
+keyword/indexed search contract. In backend code that contract is
+`ConversationRepository.search_conversations`. The hybrid method,
+`ConversationRepository.search_chat_history`, may exist as a scaffold, but it
+should not become a Rex-only production path unless the Chats page/search product
+contract is promoted with it too.
+
 ## 5. Future Hybrid Search
 
 Hybrid search should combine:

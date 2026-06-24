@@ -138,6 +138,45 @@ Pass criteria:
 - Saved memory is labeled separately.
 - Rex does not answer "I do not know" if search failed or was not available.
 
+## P0: Chats Search And Rex Recall Parity
+
+Goal: prove Rex old-chat recall behaves like the Chats page search for arbitrary
+topics while staying user-scoped.
+
+Use a test account with old chats containing at least three of these topics:
+`mom`, `payroll`, `immigration`, `PC`, `Legacy of Kain`, a place name, and one
+random exact phrase.
+
+- `[ ]` Open Chats and search `mom`; confirm matching old chats appear.
+- `[ ]` Start a new chat and ask Rex: `What do you know about my mom?`
+- `[ ]` Confirm Rex uses the same old-chat topic, not only saved memory.
+- `[ ]` Search Chats for `payroll`, then ask Rex: `What did I say about payroll?`
+- `[ ]` Search Chats for `immigration`, then ask Rex: `Anything about immigration?`
+- `[ ]` Search Chats for `PC`, then ask Rex: `Can you look what kind PC I have?`
+- `[ ]` Search Chats for one random exact phrase, then ask Rex about that phrase.
+- `[ ]` Confirm Rex labels each retrieved item as chat history, not saved memory.
+- `[ ]` Sign in as a second user and repeat one search term from the first user.
+- `[ ]` Confirm the second user cannot retrieve the first user's chats.
+- `[ ]` If Supabase access is available, verify the `search_user_chat_messages`
+  RPC returns only rows scoped to the authenticated user.
+
+Optional verifier from `services/rex-api`:
+
+```powershell
+$env:CLARITY_VERIFY_USER_A_TOKEN="<user-a-access-token>"
+$env:CLARITY_VERIFY_USER_B_TOKEN="<user-b-access-token>"
+python scripts/verify_chat_search_rpc.py --query "mom" --query "PC" --leak-query "<unique user A exact phrase>" --empty-query "<phrase neither user has>"
+```
+
+Pass criteria:
+
+- Chats page search and Rex recall find the same topic families.
+- Rex does not require topic-specific wording for mom, payroll, immigration, PC,
+  names, places, or exact phrases.
+- Cross-user search leakage is not possible.
+- If indexed search is unavailable, Rex reports degradation instead of a clean
+  "nothing came up" answer.
+
 ## P0: Finance No-Guessing
 
 Goal: prove the backend finance truth guard works in the app, not only in tests.

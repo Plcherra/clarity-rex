@@ -2,6 +2,7 @@ from app.services.action_truth_policy import (
     CHAT_SEARCH_CAPABILITY_FALLBACK,
     DEGRADED_RECALL_FALLBACK,
     EMPTY_RECALL_FALLBACK,
+    FILTERED_RECALL_FALLBACK,
     safe_chat_search_capability_response,
     safe_degraded_memory_search_response,
     safe_empty_recall_search_response,
@@ -91,6 +92,7 @@ def test_empty_chat_search_does_not_override_saved_memory_answer():
                     "source": "chat_search",
                     "attempted": True,
                     "succeeded": True,
+                    "status": "empty",
                     "result_count": 0,
                 }
             ],
@@ -139,6 +141,7 @@ def test_complete_empty_recall_uses_canonical_no_results_fallback():
                     "source": "chat_search",
                     "attempted": True,
                     "succeeded": True,
+                    "status": "empty",
                     "result_count": 0,
                 }
             ]
@@ -146,6 +149,49 @@ def test_complete_empty_recall_uses_canonical_no_results_fallback():
     )
 
     assert response == EMPTY_RECALL_FALLBACK
+
+
+def test_filtered_only_chat_search_does_not_claim_clean_empty_result():
+    response = safe_empty_recall_search_response(
+        "No, I don't have anything about your mom saved.",
+        memory_status={
+            "source_statuses": [
+                {
+                    "source": "chat_search",
+                    "attempted": True,
+                    "succeeded": True,
+                    "status": "filtered",
+                    "filtered_all_matches": True,
+                    "raw_match_count": 1,
+                    "result_count": 0,
+                }
+            ]
+        },
+    )
+
+    assert response == FILTERED_RECALL_FALLBACK
+
+
+def test_filtered_only_old_chat_no_result_uses_unusable_evidence_fallback():
+    response = safe_old_chat_search_response(
+        "I checked old chats and found nothing about your mom.",
+        chat_search_results_loaded=False,
+        memory_status={
+            "source_statuses": [
+                {
+                    "source": "chat_search",
+                    "attempted": True,
+                    "succeeded": True,
+                    "status": "filtered",
+                    "filtered_all_matches": True,
+                    "raw_match_count": 2,
+                    "result_count": 0,
+                }
+            ]
+        },
+    )
+
+    assert response == FILTERED_RECALL_FALLBACK
 
 
 def test_fake_current_chat_only_limitation_is_blocked():

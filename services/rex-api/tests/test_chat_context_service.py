@@ -30,6 +30,7 @@ class FakeContextMemoryStore:
         self.fail_structured_context = fail_structured_context
         self.relevant_memory_queries = []
         self.search_message_queries = []
+        self.shared_conversation_search_queries = []
         self.list_message_queries = []
         self.conversation_message_queries = []
         self.structured_context_queries = []
@@ -143,6 +144,21 @@ class FakeContextMemoryStore:
         self.search_message_queries.append(query_log)
         if self.fail_search_messages:
             raise RuntimeError("past chat search failed")
+        return self._matching_messages(
+            query,
+            limit=limit,
+            exclude_conversation_id=exclude_conversation_id,
+            offset=offset,
+        )
+
+    def _matching_messages(
+        self,
+        query,
+        *,
+        limit=50,
+        exclude_conversation_id=None,
+        offset=0,
+    ):
         if self.force_empty_search_messages:
             return []
         raw_terms = {
@@ -163,6 +179,46 @@ class FakeContextMemoryStore:
             if any(term in content for term in terms):
                 matches.append(message)
         return matches[offset : offset + limit]
+
+    async def search_conversations(
+        self,
+        query,
+        limit=50,
+        exclude_conversation_id=None,
+    ):
+        self.shared_conversation_search_queries.append(
+            {
+                "query": query,
+                "limit": limit,
+                "exclude_conversation_id": exclude_conversation_id,
+            }
+        )
+        if self.fail_search_messages:
+            raise RuntimeError("past chat search failed")
+        matches = self._matching_messages(
+            query,
+            limit=limit,
+            exclude_conversation_id=exclude_conversation_id,
+        )
+        results = []
+        for message in matches:
+            conversation_id = str(message.get("conversation_id") or "")
+            results.append(
+                {
+                    "conversation_id": conversation_id,
+                    "conversation_title": message.get("conversation_title"),
+                    "conversation_timestamp": message.get("timestamp"),
+                    "message": message,
+                    "match_type": "message",
+                    "preview": str(message.get("content") or "").strip(),
+                    "relevance_score": 6.0,
+                    "search_reason": "Matched message content with shared chat search.",
+                    "matched_terms": list(
+                        self.chat_search_ranking.search_terms(query, max_terms=8)
+                    ),
+                }
+            )
+        return results[:limit]
 
     async def list_messages(
         self,
@@ -236,6 +292,7 @@ async def test_chat_context_fetches_and_deduplicates_prompt_context():
     ]
     assert "chat_search_results" not in structured_context
     assert store.search_message_queries == []
+    assert store.shared_conversation_search_queries == []
     assert store.relevant_memory_queries == [
         {"query": "remember my preferences", "limit": 8},
         {"query": PROFILE_MEMORY_QUERY, "limit": 4},
@@ -286,14 +343,9 @@ async def test_chat_context_loads_memory_only_for_memory_recall_intent():
         {"query": "Do you remember my mom's birthday?", "limit": 8},
         {"query": PROFILE_MEMORY_QUERY, "limit": 4},
     ]
-    assert store.search_message_queries[:2] == [
+    assert store.shared_conversation_search_queries[:1] == [
         {
-            "query": "Do you remember my mom's birthday?",
-            "limit": 200,
-            "exclude_conversation_id": None,
-        },
-        {
-            "query": "mom birthday birthdays",
+            "query": "mom birthday",
             "limit": 200,
             "exclude_conversation_id": None,
         },
@@ -324,13 +376,13 @@ async def test_chat_context_uses_inventory_query_for_broad_memory_recall():
     assert store.relevant_memory_queries == [
         {"query": MEMORY_INVENTORY_QUERY, "limit": 8},
     ]
-    assert store.search_message_queries == [
+    assert store.shared_conversation_search_queries[0] == (
         {
             "query": "What do you know?",
             "limit": 200,
             "exclude_conversation_id": None,
         }
-    ]
+    )
 
 
 @pytest.mark.asyncio
@@ -378,10 +430,7 @@ async def test_chat_context_keeps_specific_person_memory_queries_targeted():
         "query": "Do you know anything about my mom?",
         "limit": 8,
     }
-    assert store.search_message_queries[0]["query"] == (
-        "Do you know anything about my mom?"
-    )
-    assert store.search_message_queries[1]["query"] == "mom"
+    assert store.shared_conversation_search_queries[0]["query"] == "mom"
 
 
 @pytest.mark.asyncio
@@ -432,8 +481,9 @@ async def test_chat_context_falls_back_to_subject_search_when_broad_terms_fill_l
         item["id"] == "chat-mom-1"
         for item in structured_context["chat_search_results"]
     )
-    assert len(store.search_message_queries) >= 2
-    assert store.search_message_queries[1]["query"] == "mom"
+    assert store.shared_conversation_search_queries == [
+        {"query": "mom", "limit": 200, "exclude_conversation_id": None}
+    ]
 
 
 @pytest.mark.asyncio
@@ -478,6 +528,116 @@ async def test_chat_context_ignores_old_failed_search_replies_as_chat_results():
 
 
 @pytest.mark.asyncio
+async def test_chat_context_marks_filtered_only_search_status():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "search-request",
+            "role": "user",
+            "content": "Do you have any information about my mom?",
+            "timestamp": "2026-06-12T19:04:00Z",
+        },
+        {
+            "id": "failed-rex-reply",
+            "role": "assistant",
+            "content": "I checked old chats, but nothing about your mom came up.",
+            "timestamp": "2026-06-12T19:05:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message="Do you know anything about my mom?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
+    assert structured_context.get("chat_search_results", []) == []
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert status["status"] == "filtered"
+    assert status["filtered_all_matches"] is True
+    assert status["raw_match_count"] > 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Do you have any information about my mom?",
+        "Do you have any details on my mom?",
+        "What information do you have regarding my mom?",
+        "Anything about my mom?",
+    ],
+)
+async def test_chat_context_treats_subject_questions_as_old_chat_recall(message):
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "real-fact",
+            "role": "user",
+            "content": "My mom's birthday is June 18.",
+            "timestamp": "2026-06-12T18:48:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message=message,
+        conversation_id=None,
+    )
+
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
+    assert any(
+        item["id"] == "chat-real-fact"
+        for item in structured_context["chat_search_results"]
+    )
+    assert store.shared_conversation_search_queries
+
+
+@pytest.mark.asyncio
+async def test_chat_context_shared_search_ignores_recall_question_noise():
+    store = FakeContextMemoryStore()
+    store.messages = [
+        {
+            "id": "message-1",
+            "role": "user",
+            "content": "Right. Do you have any information about my mom?",
+            "timestamp": "2026-06-12T19:04:00Z",
+        },
+        {
+            "id": "message-2",
+            "role": "assistant",
+            "content": "No, nothing saved about your mom.",
+            "timestamp": "2026-06-12T19:04:10Z",
+        },
+    ]
+    store.past_messages = [
+        {
+            "id": "real-fact",
+            "conversation_id": "conversation-old",
+            "role": "user",
+            "content": "My mom's birthday is June 18.",
+            "timestamp": "2026-06-12T18:48:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message="Can you look into the old chat?",
+        conversation_id="conversation-1",
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
+    assert any(
+        item["id"] == "chat-conversation-old"
+        for item in structured_context["chat_search_results"]
+    )
+    assert store.shared_conversation_search_queries[0]["query"] == "mom"
+
+
+@pytest.mark.asyncio
 async def test_chat_context_uses_recent_subject_for_old_chat_followup():
     store = FakeContextMemoryStore()
     store.messages = [
@@ -507,23 +667,9 @@ async def test_chat_context_uses_recent_subject_for_old_chat_followup():
         item["id"] == "chat-past-message-2"
         for item in structured_context["chat_search_results"]
     )
-    assert store.search_message_queries[:3] == [
-        {
-            "query": (
-                "Do you know anything about my mom? Can you check the old chats?"
-            ),
-            "limit": 200,
-            "exclude_conversation_id": None,
-        },
-        {
-            "query": "mom",
-            "limit": 200,
-            "exclude_conversation_id": None,
-        },
+    assert store.shared_conversation_search_queries[:1] == [
+        {"query": "mom", "limit": 200, "exclude_conversation_id": None}
     ]
-    assert {"query": "mom", "limit": 200, "exclude_conversation_id": None} in (
-        store.search_message_queries
-    )
 
 
 @pytest.mark.asyncio
@@ -573,14 +719,11 @@ async def test_chat_context_uses_recent_subject_for_short_chat_followup():
         item["id"] == "chat-real-fact"
         for item in structured_context["chat_search_results"]
     )
-    assert store.search_message_queries[0] == {
-        "query": "Right. Do you know anything about my mom? The chat.",
+    assert store.shared_conversation_search_queries[0] == {
+        "query": "mom",
         "limit": 200,
         "exclude_conversation_id": None,
     }
-    assert {"query": "mom", "limit": 200, "exclude_conversation_id": None} in (
-        store.search_message_queries
-    )
 
 
 @pytest.mark.asyncio
@@ -620,7 +763,7 @@ async def test_chat_context_searches_past_recent_failed_chat_noise():
     result_ids = [item["id"] for item in structured_context["chat_search_results"]]
     assert "chat-real-fact" in result_ids
     assert not any("failed-rex-reply" in item for item in result_ids)
-    assert store.search_message_queries[0]["limit"] == 200
+    assert store.shared_conversation_search_queries[0]["limit"] == 200
 
 
 @pytest.mark.asyncio
@@ -766,8 +909,8 @@ async def test_chat_context_searches_current_conversation_beyond_recent_window()
         item["id"] == "chat-conversation-1"
         for item in structured_context["chat_search_results"]
     )
-    assert store.search_message_queries[0] == {
-        "query": "Do you know anything about my mom?",
+    assert store.shared_conversation_search_queries[0] == {
+        "query": "mom",
         "limit": 200,
         "exclude_conversation_id": None,
     }
@@ -870,9 +1013,7 @@ async def test_chat_context_uses_recent_subject_for_anything_else_followup():
     assert result["id"] == "chat-conversation-old"
     assert "mom's birthday" in result["content"]
     assert "send her a gift" in result["content"]
-    assert store.search_message_queries[0]["query"] == (
-        "What do you know about my mom? Did I mention anything else about that?"
-    )
+    assert store.shared_conversation_search_queries[0]["query"] == "mom"
 
 
 @pytest.mark.asyncio
@@ -916,12 +1057,8 @@ async def test_chat_context_searches_games_as_generic_conversation_history():
     assert "League of Legends" in result["content"]
     assert "Legacy of Kain" in result["content"]
     status = structured_context["memory_status"]["source_statuses"][0]
-    assert "expanded_keywords" in status["query_modes"]
-    assert any(
-        "game" in item["query"]
-        for item in status["queries"]
-        if item["mode"] == "expanded_keywords"
-    )
+    assert "shared_conversation_search" in status["query_modes"]
+    assert any("games" in item["query"] for item in status["queries"])
 
 
 @pytest.mark.asyncio
@@ -1243,7 +1380,7 @@ async def test_chat_context_keyword_search_finds_manual_cases_without_full_scan(
 async def test_chat_context_uses_conversation_search_when_message_search_misses():
     class ChatsTabSearchStore(FakeContextMemoryStore):
         async def search_conversations(self, query, limit=50):
-            self.search_message_queries.append(
+            self.shared_conversation_search_queries.append(
                 {
                     "query": query,
                     "limit": limit,
@@ -1282,7 +1419,7 @@ async def test_chat_context_uses_conversation_search_when_message_search_misses(
     assert result["id"] == "chat-conversation-manual"
     assert "mom's birthday is June 18th" in result["content"]
     status = structured_context["memory_status"]["source_statuses"][0]
-    assert "conversation_search" in status["query_modes"]
+    assert "shared_conversation_search" in status["query_modes"]
     assert status["result_count"] == 1
 
 
@@ -1290,7 +1427,7 @@ async def test_chat_context_uses_conversation_search_when_message_search_misses(
 async def test_chat_context_uses_chats_tab_title_matches_as_recall_context():
     class ChatsTabTitleSearchStore(FakeContextMemoryStore):
         async def search_conversations(self, query, limit=50):
-            self.search_message_queries.append(
+            self.shared_conversation_search_queries.append(
                 {
                     "query": query,
                     "limit": limit,
@@ -1345,7 +1482,7 @@ async def test_chat_context_uses_chats_tab_title_matches_as_recall_context():
     assert "send money to my mama" in result["content"]
     assert {"18", "june"}.issubset(set(result["matched_terms"]))
     status = structured_context["memory_status"]["source_statuses"][0]
-    assert "conversation_search" in status["query_modes"]
+    assert "shared_conversation_search" in status["query_modes"]
     assert status["result_count"] == 1
 
 
@@ -1569,55 +1706,17 @@ async def test_chat_context_pc_model_search_skips_echo_and_finds_omen_chat():
 
 
 @pytest.mark.asyncio
-async def test_chat_context_uses_ranked_chat_history_search_when_available():
-    class RankedSearchStore(FakeContextMemoryStore):
-        def __init__(self):
-            super().__init__()
-            self.ranked_search_queries = []
-            self.past_messages = [
-                {
-                    "id": "omen-pc-model",
-                    "conversation_id": "conversation-omen",
-                    "role": "user",
-                    "content": "I own an Omen PC forty five.",
-                    "timestamp": "2026-06-23T21:13:00Z",
-                }
-            ]
-
-        async def search_chat_history(
-            self,
-            query,
-            limit=50,
-            exclude_conversation_id=None,
-        ):
-            self.ranked_search_queries.append(
-                {
-                    "query": query,
-                    "limit": limit,
-                    "exclude_conversation_id": exclude_conversation_id,
-                }
-            )
-            return [
-                {
-                    "conversation_id": "conversation-omen",
-                    "conversation_title": "PC details",
-                    "conversation_timestamp": "2026-06-23T21:13:00Z",
-                    "message": {
-                        "id": "omen-pc-model",
-                        "conversation_id": "conversation-omen",
-                        "role": "user",
-                        "content": "I own an Omen PC forty five.",
-                        "timestamp": "2026-06-23T21:13:00Z",
-                    },
-                    "match_type": "message",
-                    "preview": "I own an Omen PC forty five.",
-                    "relevance_score": 12.5,
-                    "search_reason": "Matched message content with indexed chat search.",
-                    "matched_terms": ["pc", "45"],
-                }
-            ]
-
-    store = RankedSearchStore()
+async def test_chat_context_uses_shared_conversation_search_for_recall():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "omen-pc-model",
+            "conversation_id": "conversation-omen",
+            "role": "user",
+            "content": "I own an Omen PC forty five.",
+            "timestamp": "2026-06-23T21:13:00Z",
+        }
+    ]
     service = ChatContextService(store)
 
     _, _, structured_context = await service.fetch_prompt_context(
@@ -1629,69 +1728,33 @@ async def test_chat_context_uses_ranked_chat_history_search_when_available():
     result = structured_context["chat_search_results"][0]
     assert result["id"] == "chat-conversation-omen"
     assert "Omen PC forty five" in result["content"]
-    assert store.ranked_search_queries == [
-        {
-            "query": "Can you look what kind PC I have?",
-            "limit": 24,
-            "exclude_conversation_id": None,
-        }
+    assert store.shared_conversation_search_queries == [
+        {"query": "pc", "limit": 200, "exclude_conversation_id": None}
     ]
-    assert store.search_message_queries == []
     assert store.list_message_queries == []
     status = structured_context["memory_status"]["source_statuses"][0]
-    assert "indexed_search" in status["query_modes"]
+    assert "shared_conversation_search" in status["query_modes"]
 
 
 @pytest.mark.asyncio
-async def test_chat_context_falls_back_when_indexed_search_only_returns_noise():
-    class WeakRankedSearchStore(FakeContextMemoryStore):
-        def __init__(self):
-            super().__init__()
-            self.ranked_search_queries = []
-            self.past_messages = [
-                {
-                    "id": "omen-pc-model",
-                    "conversation_id": "conversation-omen",
-                    "role": "user",
-                    "content": "I own an Omen PC forty five.",
-                    "timestamp": "2026-06-23T21:13:00Z",
-                },
-            ]
-
-        async def search_chat_history(
-            self,
-            query,
-            limit=50,
-            exclude_conversation_id=None,
-        ):
-            self.ranked_search_queries.append(
-                {
-                    "query": query,
-                    "limit": limit,
-                    "exclude_conversation_id": exclude_conversation_id,
-                }
-            )
-            return [
-                {
-                    "conversation_id": "conversation-noise",
-                    "conversation_title": "Failed search",
-                    "conversation_timestamp": "2026-06-23T21:12:00Z",
-                    "message": {
-                        "id": "assistant-no-result",
-                        "conversation_id": "conversation-noise",
-                        "role": "assistant",
-                        "content": "I checked chats, but nothing about your PC came up.",
-                        "timestamp": "2026-06-23T21:12:00Z",
-                    },
-                    "match_type": "message",
-                    "preview": "I checked chats, but nothing about your PC came up.",
-                    "relevance_score": 12.5,
-                    "search_reason": "Matched message content with indexed chat search.",
-                    "matched_terms": ["pc"],
-                }
-            ]
-
-    store = WeakRankedSearchStore()
+async def test_chat_context_shared_search_ignores_no_result_noise():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        {
+            "id": "assistant-no-result",
+            "conversation_id": "conversation-noise",
+            "role": "assistant",
+            "content": "I checked chats, but nothing about your PC came up.",
+            "timestamp": "2026-06-23T21:12:00Z",
+        },
+        {
+            "id": "omen-pc-model",
+            "conversation_id": "conversation-omen",
+            "role": "user",
+            "content": "I own an Omen PC forty five.",
+            "timestamp": "2026-06-23T21:13:00Z",
+        },
+    ]
     service = ChatContextService(store)
 
     _, _, structured_context = await service.fetch_prompt_context(
@@ -1703,12 +1766,84 @@ async def test_chat_context_falls_back_when_indexed_search_only_returns_noise():
     result = structured_context["chat_search_results"][0]
     assert result["id"] == "chat-conversation-omen"
     assert "Omen PC forty five" in result["content"]
-    assert store.search_message_queries
+    assert store.shared_conversation_search_queries
     status = structured_context["memory_status"]["source_statuses"][0]
-    assert "indexed_search" in status["query_modes"]
+    assert "shared_conversation_search" in status["query_modes"]
+
+
+@pytest.mark.asyncio
+async def test_chat_context_falls_back_when_shared_search_returns_weak_match():
+    class WeakSharedSearchStore(FakeContextMemoryStore):
+        async def search_conversations(
+            self,
+            query,
+            limit=50,
+            exclude_conversation_id=None,
+        ):
+            self.shared_conversation_search_queries.append(
+                {
+                    "query": query,
+                    "limit": limit,
+                    "exclude_conversation_id": exclude_conversation_id,
+                }
+            )
+            return [
+                {
+                    "conversation_id": "conversation-weak",
+                    "conversation_title": "Payroll mention",
+                    "conversation_timestamp": "2026-06-20T12:00:00Z",
+                    "message": {
+                        "id": "weak-payroll",
+                        "conversation_id": "conversation-weak",
+                        "role": "user",
+                        "content": "Payroll came up briefly.",
+                        "timestamp": "2026-06-20T12:00:00Z",
+                    },
+                    "match_type": "message",
+                    "preview": "Payroll came up briefly.",
+                    "relevance_score": 2.0,
+                    "search_reason": "Weak shared search match.",
+                    "matched_terms": ["payroll"],
+                }
+            ]
+
+    store = WeakSharedSearchStore()
+    store.past_messages = [
+        {
+            "id": "weak-payroll",
+            "conversation_id": "conversation-weak",
+            "role": "user",
+            "content": "Payroll came up briefly.",
+            "timestamp": "2026-06-20T12:00:00Z",
+        },
+        {
+            "id": "strong-payroll",
+            "conversation_id": "conversation-strong",
+            "role": "user",
+            "content": "Bom Dough payroll usually lands every Friday morning.",
+            "timestamp": "2026-06-21T12:00:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message="What did I say about Bom Dough payroll?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
+    assert store.shared_conversation_search_queries[0]["query"] == "bom dough payroll"
+    assert store.search_message_queries
     assert any(
-        mode.startswith("expanded_keywords") or mode == "keyword"
-        for mode in status["query_modes"]
+        "Friday morning" in result["content"]
+        for result in structured_context["chat_search_results"]
+    )
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert "shared_conversation_search" in status["query_modes"]
+    assert any(
+        mode in status["query_modes"]
+        for mode in ("exact", "expanded_keywords", "keyword", "subject")
     )
 
 
@@ -1873,8 +2008,11 @@ async def test_chat_context_keeps_factual_i_told_you_recall_messages():
     assert "Legacy of Kain" in result["content"]
     assert "would buy a PC game" in result["content"]
     status = structured_context["memory_status"]["source_statuses"][0]
-    assert "keyword" in status["query_modes"]
-    assert any(item["query"] in {"pc", "game", "games"} for item in status["queries"])
+    assert "shared_conversation_search" in status["query_modes"]
+    assert any(
+        "pc" in item["query"] and "game" in item["query"]
+        for item in status["queries"]
+    )
 
 
 @pytest.mark.asyncio
@@ -1917,8 +2055,8 @@ async def test_chat_context_searches_send_money_with_generic_keyword_terms():
     assert "send her around" in result["content"]
     assert "send something around the 18th" in result["content"]
     status = structured_context["memory_status"]["source_statuses"][0]
-    assert "keyword" in status["query_modes"]
-    assert any(item["query"] == "send" for item in status["queries"])
+    assert "shared_conversation_search" in status["query_modes"]
+    assert any("money" in item["query"] for item in status["queries"])
 
 
 @pytest.mark.asyncio
@@ -1979,7 +2117,7 @@ async def test_chat_context_searches_arbitrary_purchase_and_object_topics():
     service = ChatContextService(store)
 
     _, _, structured_context = await service.fetch_prompt_context(
-        message="Search chats for purchases",
+        message="Search chats for chair",
         conversation_id=None,
         intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
     )
@@ -2015,6 +2153,7 @@ async def test_chat_context_loads_goals_without_long_term_memory_for_goal_intent
     assert structured_context["plans"][0]["title"] == "Build emergency fund"
     assert store.relevant_memory_queries == []
     assert store.search_message_queries == []
+    assert store.shared_conversation_search_queries == []
     assert store.structured_context_queries == []
     assert store.plan_calls
 
@@ -2035,6 +2174,7 @@ async def test_chat_context_skips_memory_and_goals_for_finance_intent():
     assert structured_context == {}
     assert store.relevant_memory_queries == []
     assert store.search_message_queries == []
+    assert store.shared_conversation_search_queries == []
     assert store.structured_context_queries == []
     assert store.plan_calls == []
 

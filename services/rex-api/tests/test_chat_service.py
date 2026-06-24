@@ -8,7 +8,10 @@ from chat_service_fakes import (
     FakeUpload,
 )
 from app.config import Settings
-from app.services.action_truth_policy import DEGRADED_RECALL_FALLBACK
+from app.services.action_truth_policy import (
+    DEGRADED_RECALL_FALLBACK,
+    FILTERED_RECALL_FALLBACK,
+)
 from app.services import file_service as file_service_module
 from app.services.chat_service import (
     FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE,
@@ -427,6 +430,38 @@ async def test_chat_service_downgrades_old_chat_no_result_claim_after_partial_se
     )
 
     assert result["response"] == DEGRADED_RECALL_FALLBACK
+    assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
+async def test_chat_service_downgrades_no_memory_claim_after_filtered_chat_search():
+    ai_service = FakeAIService(
+        response="No, I don't have anything about your mom saved."
+    )
+    memory_service = FakeMemoryService()
+    memory_service.structured_context = {
+        "memory_status": {
+            "state": "ready",
+            "message": "Memory sources searched successfully.",
+            "source_statuses": [
+                {
+                    "source": "chat_search",
+                    "attempted": True,
+                    "succeeded": True,
+                    "status": "filtered",
+                    "filtered_all_matches": True,
+                    "result_count": 0,
+                    "raw_match_count": 2,
+                    "partial": False,
+                }
+            ],
+        }
+    }
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Do you know anything about my mom?")
+
+    assert result["response"] == FILTERED_RECALL_FALLBACK
     assert result["memory_changes"] is None
 
 

@@ -66,6 +66,46 @@ class _SearchStore:
                 "timestamp": "2026-06-08T10:02:00Z",
             },
             {
+                "id": "message-mom",
+                "user_id": "user-123",
+                "conversation_id": "conversation-family",
+                "role": "user",
+                "content": "My mom's birthday is June 18.",
+                "timestamp": "2026-06-06T10:01:00Z",
+            },
+            {
+                "id": "message-payroll",
+                "user_id": "user-123",
+                "conversation_id": "conversation-payroll",
+                "role": "user",
+                "content": "Bom Dough payroll should land on Friday.",
+                "timestamp": "2026-06-05T10:01:00Z",
+            },
+            {
+                "id": "message-immigration",
+                "user_id": "user-123",
+                "conversation_id": "conversation-immigration",
+                "role": "user",
+                "content": "I need to check my immigration status before the trip.",
+                "timestamp": "2026-06-04T10:01:00Z",
+            },
+            {
+                "id": "message-pc",
+                "user_id": "user-123",
+                "conversation_id": "conversation-pc",
+                "role": "user",
+                "content": "I own an Omen PC forty five.",
+                "timestamp": "2026-06-03T10:01:00Z",
+            },
+            {
+                "id": "message-random-name",
+                "user_id": "user-123",
+                "conversation_id": "conversation-random-name",
+                "role": "user",
+                "content": "Marisol recommended the quiet study room.",
+                "timestamp": "2026-06-02T10:01:00Z",
+            },
+            {
                 "id": "message-year-noise",
                 "user_id": "user-123",
                 "conversation_id": "conversation-year",
@@ -106,6 +146,36 @@ class _SearchStore:
                 "user_id": "user-123",
                 "title": "Old archive",
                 "timestamp": "2026-06-07T10:00:00Z",
+            },
+            "conversation-family": {
+                "id": "conversation-family",
+                "user_id": "user-123",
+                "title": "Family dates",
+                "timestamp": "2026-06-06T10:00:00Z",
+            },
+            "conversation-payroll": {
+                "id": "conversation-payroll",
+                "user_id": "user-123",
+                "title": "Payroll",
+                "timestamp": "2026-06-05T10:00:00Z",
+            },
+            "conversation-immigration": {
+                "id": "conversation-immigration",
+                "user_id": "user-123",
+                "title": "Immigration planning",
+                "timestamp": "2026-06-04T10:00:00Z",
+            },
+            "conversation-pc": {
+                "id": "conversation-pc",
+                "user_id": "user-123",
+                "title": "PC details",
+                "timestamp": "2026-06-03T10:00:00Z",
+            },
+            "conversation-random-name": {
+                "id": "conversation-random-name",
+                "user_id": "user-123",
+                "title": "Random name",
+                "timestamp": "2026-06-02T10:00:00Z",
             },
             "conversation-noise": {
                 "id": "conversation-noise",
@@ -405,6 +475,19 @@ async def test_conversation_repository_uses_ranked_chat_search_rpc_when_availabl
 
 
 @pytest.mark.asyncio
+async def test_conversation_repository_keeps_shared_search_keyword_only_for_parity():
+    store = _HybridSearchStore(user_id="user-123")
+    repository = ConversationRepository(store)
+
+    await repository.search_conversations("What kind PC do I have?", limit=10)
+
+    assert [call["function_name"] for call in store.rpc_calls] == [
+        "search_user_chat_messages",
+    ]
+    assert store.chat_embedding_service.embedded_queries == []
+
+
+@pytest.mark.asyncio
 async def test_conversation_repository_passes_exclusion_to_ranked_chat_search_rpc():
     store = _RpcSearchStore(user_id="user-123")
     repository = ConversationRepository(store)
@@ -473,6 +556,11 @@ async def test_conversation_repository_saves_message_embedding_when_configured()
         ("notebooks", "conversation-notes", "blue notebooks"),
         ("QR code", "conversation-notes", "QR code"),
         ("Lara Somerville", "conversation-lara", "Somerville"),
+        ("mom", "conversation-family", "mom's birthday"),
+        ("Bom Dough payroll", "conversation-payroll", "payroll should land"),
+        ("immigration", "conversation-immigration", "immigration status"),
+        ("PC", "conversation-pc", "Omen PC"),
+        ("Marisol", "conversation-random-name", "Marisol recommended"),
     ],
 )
 async def test_conversation_repository_searches_manual_keyword_cases(

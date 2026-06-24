@@ -80,6 +80,8 @@ class ChatRecallService:
             full_scan_used=search_result.full_scan_used,
             partial=search_result.partial,
         )
+        filtered_all_matches = bool(search_result.messages_by_id) and not excerpts
+        status = "found" if excerpts else "filtered" if filtered_all_matches else "empty"
         return [
             {
                 CONTEXT_STATUS_KEY: True,
@@ -92,8 +94,7 @@ class ChatRecallService:
                     0,
                     len(search_result.messages_by_id) - len(excerpts),
                 ),
-                "filtered_all_matches": bool(search_result.messages_by_id)
-                and not excerpts,
+                "filtered_all_matches": filtered_all_matches,
                 "scanned_messages": search_result.scanned_messages,
                 "partial": search_result.partial,
                 "full_scan_used": search_result.full_scan_used,
@@ -103,7 +104,7 @@ class ChatRecallService:
                     {"source": "chat_search", "message": failure}
                     for failure in search_result.failures
                 ],
-                "status": "found" if excerpts else "empty",
+                "status": status,
             },
             *excerpts,
         ]

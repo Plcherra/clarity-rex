@@ -20,11 +20,14 @@ CHAT_SEARCH_STOP_WORDS = STOP_WORDS | {
     "does",
     "else",
     "find",
+    "i",
     "info",
     "information",
     "kind",
     "know",
     "knows",
+    "look",
+    "looking",
     "me",
     "memories",
     "memory",
@@ -35,7 +38,9 @@ CHAT_SEARCH_STOP_WORDS = STOP_WORDS | {
     "of",
     "our",
     "past",
+    "phrase",
     "previous",
+    "pull",
     "remember",
     "rex",
     "said",
@@ -45,6 +50,7 @@ CHAT_SEARCH_STOP_WORDS = STOP_WORDS | {
     "tell",
     "told",
     "there",
+    "up",
     "us",
     "was",
     "were",
@@ -107,6 +113,16 @@ class ChatSearchTermBuilder:
         normalized = self.normalize_text(query)
         return self.search_terms(normalized, max_terms=max_queries)
 
+    def assistant_topic_query(self, query: str, *, max_terms: int = 6) -> str:
+        """Convert natural recall language into the query a user would type."""
+
+        normalized = self.normalize_text(query)
+        subject = self.subject_only_query(normalized)
+        if subject:
+            return subject
+        terms = list(self.content_terms(normalized))[:max_terms]
+        return " ".join(terms)
+
     def search_terms(self, query: str, *, max_terms: int = 10) -> list[str]:
         normalized = self.normalize_text(query)
         subject = self.subject_only_query(normalized)
@@ -145,7 +161,8 @@ class ChatSearchTermBuilder:
 
     def subject_only_query(self, normalized_query: str) -> str:
         match = re.search(
-            r"\b(?:about|for|with|mention(?:ed)?(?:\s+of)?|search(?:\s+for)?)\s+"
+            r"\b(?:about|for|of|on|regarding|with|mention(?:ed)?(?:\s+of)?|"
+            r"search(?:\s+for)?)\s+"
             r"(?:my\s+)?(?P<subject>[a-z0-9'\s]{2,80})",
             normalized_query,
         )
@@ -154,7 +171,7 @@ class ChatSearchTermBuilder:
         subject = re.sub(
             r"\b(?:about|for|in|my|old|on|our|past|previous|the|your|chat|"
             r"chats|conversation|conversations|anything|information|details|"
-            r"memory|memories|saved|know|remember)\b",
+            r"exact|memory|memories|phrase|saved|know|remember|words)\b",
             " ",
             match.group("subject"),
         )

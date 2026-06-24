@@ -154,6 +154,8 @@ class PromptStructuredContextMixin:
                     or "chat_search" in failure_sources
                 ):
                     chat_state = "degraded"
+                elif source_status.get("status") == "filtered":
+                    chat_state = "filtered"
                 elif chat_count > 0:
                     chat_state = "found"
                 else:
@@ -177,6 +179,13 @@ class PromptStructuredContextMixin:
             line = (
                 f"{line} Failed sources: {failed}. Say the search had trouble "
                 "and ask for a retry instead of claiming nothing was found."
+            )
+        elif chat_state == "filtered":
+            line = (
+                f"{line} Chat search found possible matches, but all were "
+                "filtered as unusable echoes or no-result messages. If answering "
+                "no, say chat search did not produce usable evidence instead of "
+                "claiming nothing came up."
             )
         elif chat_state == "empty":
             line = (

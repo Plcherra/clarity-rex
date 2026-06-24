@@ -1,3 +1,9 @@
+from app.services.chat_search_scoring import ChatSearchScorer
+
+
+CHAT_SEARCH_SCORER = ChatSearchScorer()
+
+
 MEMORY_REJECTION_MARKERS = (
     "do not remember",
     "do not save",
@@ -51,6 +57,8 @@ def is_chat_search_user_content_message(message: dict) -> bool:
     if not content or is_chat_search_no_result_message(message):
         return False
     if is_memory_rejection_message(message):
+        return False
+    if CHAT_SEARCH_SCORER.is_search_question_text(content):
         return False
     if any(
         marker in content

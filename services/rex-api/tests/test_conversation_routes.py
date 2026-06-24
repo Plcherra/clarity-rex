@@ -18,6 +18,8 @@ class FakeConversationMemoryService:
     def __init__(self, error=None):
         self.error = error
         self.deleted_conversation_ids = []
+        self.search_conversation_calls = []
+        self.search_message_calls = []
         self.conversations = [
             {
                 "id": "conversation-1",
@@ -80,6 +82,7 @@ class FakeConversationMemoryService:
 
     async def search_messages(self, query, limit=50):
         self._raise_if_configured()
+        self.search_message_calls.append({"query": query, "limit": limit})
         normalized_query = query.lower()
         matches = []
         for messages in self.messages.values():
@@ -92,6 +95,7 @@ class FakeConversationMemoryService:
 
     async def search_conversations(self, query, limit=50):
         self._raise_if_configured()
+        self.search_conversation_calls.append({"query": query, "limit": limit})
         normalized_query = query.lower()
         results = []
         for conversation in self.conversations:
@@ -207,7 +211,8 @@ def test_get_conversation_messages_returns_404_for_missing_conversation(client):
 
 
 def test_search_conversation_messages(client):
-    override_memory_service(FakeConversationMemoryService())
+    fake_memory_service = FakeConversationMemoryService()
+    override_memory_service(fake_memory_service)
 
     response = client.get("/conversations/search?q=work")
 
@@ -221,6 +226,21 @@ def test_search_conversation_messages(client):
     assert data[0]["matched_terms"] == ["work"]
     assert data[1]["message"]["id"] == "message-1"
     assert data[1]["preview"] == "I am stressed about work."
+    assert fake_memory_service.search_conversation_calls == [
+        {"query": "work", "limit": 50}
+    ]
+
+
+def test_search_route_uses_shared_conversation_search_contract(client):
+    fake_memory_service = FakeConversationMemoryService()
+    override_memory_service(fake_memory_service)
+
+    response = client.get("/conversations/search?q=work&limit=12")
+
+    assert response.status_code == 200
+    assert fake_memory_service.search_conversation_calls == [
+        {"query": "work", "limit": 12}
+    ]
 
 
 def test_delete_conversation(client):

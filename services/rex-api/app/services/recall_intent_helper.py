@@ -1,6 +1,8 @@
 import re
 from typing import Optional
 
+from app.services.chat_search_terms import ChatSearchTermBuilder
+
 
 PROFILE_MEMORY_QUERY = (
     "user profile identity facts preferences saved knowledge personal details"
@@ -11,45 +13,17 @@ MEMORY_INVENTORY_QUERY = (
 )
 PROFILE_MEMORY_LIMIT = 4
 RECALL_TRIGGER_PHRASES = (
-    "any mention",
-    "anything about",
     "chat history",
-    "check",
     "conversation history",
-    "did i mention",
-    "did i say",
-    "do you know about",
-    "do you know anything about",
-    "do you remember",
-    "find",
-    "have any idea",
-    "have i told you",
-    "have we talked",
-    "look for",
-    "look into",
-    "look through",
-    "mention",
-    "mentioned",
+    "dig up",
+    "look back",
     "old chat",
     "old chats",
     "past chat",
     "past chats",
     "previous chat",
     "previous chats",
-    "remember anything",
-    "remember what",
-    "remember when",
-    "said before",
-    "search",
-    "talked about",
-    "talking about",
-    "told you",
-    "what did i say",
-    "what did i tell",
-    "what did we say",
-    "what do you know about",
-    "what do you remember",
-    "what have i told",
+    "pull up",
 )
 RECALL_FOLLOWUP_TERMS = (
     "that",
@@ -154,6 +128,13 @@ CHAT_SCOPE_TERMS = (
 
 
 class RecallIntentHelper:
+    def __init__(
+        self,
+        *,
+        search_terms: Optional[ChatSearchTermBuilder] = None,
+    ) -> None:
+        self.search_terms = search_terms or ChatSearchTermBuilder()
+
     def memory_retrieval_query(
         self,
         message: str,
@@ -190,8 +171,8 @@ class RecallIntentHelper:
         if is_followup:
             subject = self.recent_memory_subject(conversation_history)
             if subject:
-                return f"{subject} {message}".strip()
-        return message
+                return self.chat_topic_query(f"{subject} {message}") or subject
+        return self.chat_topic_query(message) or message
 
     def is_recall_request(
         self,
@@ -325,6 +306,12 @@ class RecallIntentHelper:
             return True
         if self.is_contextual_memory_followup(normalized):
             return True
+        if self.is_subject_recall_question(normalized):
+            return True
+        if self.is_direct_recall_question(normalized):
+            return True
+        if self.is_search_recall_request(normalized):
+            return True
 
         if any(phrase in normalized for phrase in RECALL_TRIGGER_PHRASES):
             return True
@@ -333,7 +320,7 @@ class RecallIntentHelper:
             normalized,
         )
         has_recall_verb = re.search(
-            r"\b(?:mention|mentioned|say|said|tell|told|talk|talked|"
+            r"\b(?:mention|mentions|mentioned|say|said|tell|told|talk|talked|"
             r"discuss|discussed)\b",
             normalized,
         )
@@ -367,6 +354,58 @@ class RecallIntentHelper:
                 normalized_message,
             )
         )
+
+    def is_subject_recall_question(self, normalized_message: str) -> bool:
+        stripped = normalized_message.strip("?.! ")
+        has_subject = re.search(
+            r"\b(?:about|of|on|regarding|for|with)\s+[a-z0-9'\s]{2,80}",
+            stripped,
+        )
+        if not has_subject:
+            return False
+        if re.match(
+            r"^(?:anything|any info|any information)\s+"
+            r"(?:about|of|on|regarding|for|with)\b",
+            stripped,
+        ):
+            return True
+        has_question_language = re.search(
+            r"\b(?:what|which|do|does|did|have|has|can|could)\b",
+            stripped,
+        )
+        has_recall_language = re.search(
+            r"\b(?:know|remember|have|has|information|info|details|saved|"
+            r"memory|memories|talked|said|mention|mentions|mentioned)\b",
+            stripped,
+        )
+        return bool(has_question_language and has_recall_language)
+
+    def is_direct_recall_question(self, normalized_message: str) -> bool:
+        stripped = normalized_message.strip("?.! ")
+        if not re.search(r"\b(?:did|do|have|had|what|when|where|who)\b", stripped):
+            return False
+        if re.search(
+            r"\b(?:remember|recall|mention|mentions|mentioned|say|said|"
+            r"tell|told|talk|talked|discuss|discussed)\b",
+            stripped,
+        ):
+            return True
+        if re.search(r"\b(?:know|have)\b", stripped):
+            return bool(
+                self.has_user_scoped_past_reference(stripped)
+                or re.search(r"\b(?:about|of|regarding|on|for|with)\b", stripped)
+            )
+        return False
+
+    def is_search_recall_request(self, normalized_message: str) -> bool:
+        if not re.search(r"\bsearch(?:ing)?\b", normalized_message):
+            return False
+        if re.search(r"\b(?:web|internet|online|google|browser)\b", normalized_message):
+            return False
+        return True
+
+    def chat_topic_query(self, message: str) -> str:
+        return self.search_terms.assistant_topic_query(message)
 
     def normalized_recall_text(self, message: str) -> str:
         normalized = " ".join(str(message or "").lower().split())

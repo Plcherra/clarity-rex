@@ -582,6 +582,36 @@ def test_prompt_service_surfaces_degraded_memory_status():
     assert "search had trouble" in system_content
 
 
+def test_prompt_service_treats_partial_chat_search_status_as_degraded():
+    service = PromptService(TimeContextService(timezone_name="America/New_York"))
+
+    messages = service.build_messages(
+        user_message="Do you know anything about my mom?",
+        structured_context={
+            "memory_status": {
+                "state": "ready",
+                "message": "Memory sources searched partially.",
+                "source_statuses": [
+                    {
+                        "source": "chat_search",
+                        "attempted": True,
+                        "succeeded": True,
+                        "result_count": 0,
+                        "raw_match_count": 0,
+                        "partial": True,
+                    }
+                ],
+            }
+        },
+    )
+
+    system_content = messages[0]["content"]
+    assert STRUCTURED_MEMORY_PREFIX in system_content
+    assert "recall_status" in system_content
+    assert "chat_search=degraded count=0" in system_content
+    assert "search had trouble" in system_content
+
+
 def test_prompt_service_surfaces_empty_chat_search_status():
     service = PromptService(TimeContextService(timezone_name="America/New_York"))
 
@@ -611,6 +641,39 @@ def test_prompt_service_surfaces_empty_chat_search_status():
     assert "chat_search=empty count=0" in system_content
     assert "searched saved memory and old chats" in system_content
     assert "anything about that" in system_content
+
+
+def test_prompt_service_surfaces_filtered_chat_search_status():
+    service = PromptService(TimeContextService(timezone_name="America/New_York"))
+
+    messages = service.build_messages(
+        user_message="Do you know anything about my mom?",
+        structured_context={
+            "memory_status": {
+                "state": "ready",
+                "message": "Memory sources searched successfully.",
+                "source_statuses": [
+                    {
+                        "source": "chat_search",
+                        "attempted": True,
+                        "succeeded": True,
+                        "status": "filtered",
+                        "filtered_all_matches": True,
+                        "result_count": 0,
+                        "raw_match_count": 2,
+                        "partial": False,
+                    }
+                ],
+            }
+        },
+    )
+
+    system_content = messages[0]["content"]
+    assert STRUCTURED_MEMORY_PREFIX in system_content
+    assert "recall_status" in system_content
+    assert "chat_search=filtered count=0" in system_content
+    assert "filtered as unusable echoes or no-result messages" in system_content
+    assert "instead of claiming nothing came up" in system_content
 
 
 def test_prompt_service_surfaces_found_chat_search_status():
