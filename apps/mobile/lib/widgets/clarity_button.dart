@@ -126,10 +126,7 @@ class _GradientFilledButton extends StatelessWidget {
         gradient: enabled
             ? ClarityGradients.primary
             : LinearGradient(
-                colors: [
-                  ClarityColors.surfaceSoft,
-                  ClarityColors.surfaceSoft,
-                ],
+                colors: [ClarityColors.surfaceSoft, ClarityColors.surfaceSoft],
               ),
       ),
       child: Material(

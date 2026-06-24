@@ -11,7 +11,7 @@ class ClaritySplashScreen extends StatefulWidget {
     super.key,
     required this.child,
     required this.isReady,
-    this.logoAssetPath = 'assets/brand/splash_logo.png',
+    this.logoAssetPath = 'assets/brand/clarity_splash_screen.png',
     this.fallbackLogoAssetPath = 'assets/brand/clarity_mark.png',
     this.minDuration = const Duration(milliseconds: 600),
     this.fadeDuration = const Duration(milliseconds: 520),
@@ -111,10 +111,18 @@ class _SplashVisual extends StatelessWidget {
         data: ClarityTheme.dark(),
         child: Material(
           color: ClarityColors.appBackground,
-          child: Center(
-            child: _SplashLogo(
-              logoAssetPath: logoAssetPath,
-              fallbackLogoAssetPath: fallbackLogoAssetPath,
+          child: SizedBox.expand(
+            child: Image.asset(
+              logoAssetPath,
+              fit: BoxFit.cover,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (context, error, stackTrace) {
+                return Center(
+                  child: _SplashFallbackLogo(
+                    fallbackLogoAssetPath: fallbackLogoAssetPath,
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -123,13 +131,9 @@ class _SplashVisual extends StatelessWidget {
   }
 }
 
-class _SplashLogo extends StatelessWidget {
-  const _SplashLogo({
-    required this.logoAssetPath,
-    required this.fallbackLogoAssetPath,
-  });
+class _SplashFallbackLogo extends StatelessWidget {
+  const _SplashFallbackLogo({required this.fallbackLogoAssetPath});
 
-  final String logoAssetPath;
   final String fallbackLogoAssetPath;
 
   @override
@@ -141,18 +145,11 @@ class _SplashLogo extends StatelessWidget {
     return SizedBox.square(
       dimension: logoSize,
       child: Image.asset(
-        logoAssetPath,
+        fallbackLogoAssetPath,
         fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
         errorBuilder: (context, error, stackTrace) {
-          return Image.asset(
-            fallbackLogoAssetPath,
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-            errorBuilder: (context, error, stackTrace) {
-              return const ClarityDiamondLoader();
-            },
-          );
+          return const ClarityDiamondLoader();
         },
       ),
     );

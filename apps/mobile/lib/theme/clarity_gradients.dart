@@ -28,9 +28,6 @@ class ClarityGradients {
   static const cardEdge = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      ClarityColors.subtleBlueBorder,
-      ClarityColors.mutedBorder,
-    ],
+    colors: [ClarityColors.subtleBlueBorder, ClarityColors.mutedBorder],
   );
 }

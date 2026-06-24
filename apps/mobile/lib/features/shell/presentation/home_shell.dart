@@ -167,31 +167,31 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               selectedIndex: _idx,
               onDestinationSelected: (i) => setState(() => _selectIndex(i)),
               destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                selectedIcon: Icon(Icons.dashboard_rounded),
-                label: 'Dashboard',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.account_balance_outlined),
-                selectedIcon: Icon(Icons.account_balance_rounded),
-                label: 'Accounts',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.savings_outlined),
-                selectedIcon: Icon(Icons.savings_rounded),
-                label: 'Budgets',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.psychology_alt_outlined),
-                selectedIcon: Icon(Icons.psychology_alt_rounded),
-                label: 'Assistant',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.person_outline_rounded),
-                selectedIcon: Icon(Icons.person_rounded),
-                label: 'Profile',
-              ),
+                NavigationDestination(
+                  icon: Icon(Icons.dashboard_outlined),
+                  selectedIcon: Icon(Icons.dashboard_rounded),
+                  label: 'Dashboard',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.account_balance_outlined),
+                  selectedIcon: Icon(Icons.account_balance_rounded),
+                  label: 'Accounts',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.savings_outlined),
+                  selectedIcon: Icon(Icons.savings_rounded),
+                  label: 'Budgets',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.psychology_alt_outlined),
+                  selectedIcon: Icon(Icons.psychology_alt_rounded),
+                  label: 'Assistant',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.person_outline_rounded),
+                  selectedIcon: Icon(Icons.person_rounded),
+                  label: 'Profile',
+                ),
               ],
             ),
           ],
