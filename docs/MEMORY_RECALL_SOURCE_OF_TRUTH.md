@@ -52,6 +52,37 @@ Fix recall by naming and addressing one of these generic classes:
 | Old chat result | Chat history / found in a past conversation |
 | Failed or unavailable source | Degraded or unavailable; do not say nothing was found |
 
+## Duplicate Suppression
+
+When a flat long-term memory is fully covered by a structured person card, the
+flat memory should be archived instead of shown as a second active Knows item.
+
+Duplicate-save detection must still recognize archived source memories that were
+covered by a structured card, so Rex can say "I already have that saved" instead
+of creating another duplicate flat record.
+
+## Memory Corrections
+
+Memory corrections are backend/internal audit history for MVP.
+
+- The backend route `/memory/corrections` remains available for diagnostics.
+- Knows does not show a Corrections tab in MVP.
+- User-facing Knows stays focused on active/inactive saved knowledge that the
+  user can edit or archive.
+- If correction history becomes user-facing later, it must be added as a memory
+  detail/audit view, not mixed into active saved knowledge.
+
+## Backend Prompt Label Audit
+
+Current backend prompt labeling already separates sources:
+
+- `prompt_memory_context.py` renders old chat hits as
+  `Chat history, not saved memory`.
+- `prompt_structured_context.py` includes `recall_status` with saved knowledge
+  and chat search states.
+- `action_truth_policy.py` provides degraded, filtered, partial, and empty recall
+  fallback responses.
+
 ## Plan 03 Start Status
 
 - Source-of-truth boundaries are documented here.
@@ -59,5 +90,11 @@ Fix recall by naming and addressing one of these generic classes:
 - Knows now labels structured records as `Structured memory`.
 - The `Rules` memory group label is fixed so rules no longer appear under a
   duplicate `Preferences` label.
-- The next implementation step should run targeted recall tests before changing
-  retrieval code.
+- Memory corrections are documented as backend/internal audit history for MVP.
+- Backend prompt source labels were audited and preserve saved-memory vs
+  chat-history separation.
+- Flat memories covered by structured person cards are archived while duplicate
+  detection still recognizes the covered source memory.
+- Targeted recall and memory tests passed for the current behavior.
+- Large memory/recall service splits are deferred as cleanup and do not block
+  Plan 04.

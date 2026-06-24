@@ -801,6 +801,42 @@ async def test_structured_context_materializes_self_person_from_safe_flat_facts(
 
 
 @pytest.mark.asyncio
+async def test_structured_context_archives_non_self_person_source_memory():
+    service = InMemoryRetrievalService(
+        [
+            {
+                "id": "memory-ana-birthday",
+                "memory_type": "fact",
+                "content": "User's cousin ana's birthday is July 9.",
+                "importance": 5,
+                "active": True,
+                "metadata": {
+                    "fact_kind": "birthday",
+                    "memory_category": "Events",
+                    "entity_label": "cousin ana",
+                    "normalized_date": "July 9",
+                    "topic_fingerprint": "fact:birthday:cousin ana",
+                },
+            },
+        ]
+    )
+
+    context = await service.get_structured_memory_context(
+        "What does Clarity know about cousin Ana?"
+    )
+
+    assert len(service.entities) == 1
+    person = context["entities"][0]
+    assert person["display_name"] == "Cousin Ana"
+    assert person["metadata"]["attributes"]["birthday"] == "July 9"
+    assert person["metadata"]["source_memory_ids"] == ["memory-ana-birthday"]
+    assert service.memories[0]["active"] is False
+    assert service.memories[0]["metadata"]["duplicate_archive_reason"] == (
+        "covered_by_person_card"
+    )
+
+
+@pytest.mark.asyncio
 async def test_structured_memory_context_includes_plans_linked_to_selected_person():
     service = InMemoryRetrievalService(
         memories=[],

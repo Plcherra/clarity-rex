@@ -39,6 +39,10 @@ class MemoryTurnDirectHelpers:
         for memory in memories:
             if self._memory_matches_intent(memory, intent):
                 return memory
+        archived_memories = await self._covered_archived_memories_for_intent(intent)
+        for memory in archived_memories:
+            if self._memory_payload_matches_intent(memory, intent):
+                return memory
         return None
 
     async def _find_active_memory_by_topic(
@@ -72,6 +76,27 @@ class MemoryTurnDirectHelpers:
             )
         except Exception:
             return []
+
+    async def _covered_archived_memories_for_intent(
+        self,
+        intent: SimpleMemoryIntent,
+    ) -> list[dict]:
+        list_memory = getattr(self.memory_service, "list_long_term_memory", None)
+        if list_memory is None:
+            return []
+        try:
+            memories = await list_memory(
+                limit=100,
+                memory_type=intent.memory_type,
+                active=False,
+            )
+        except Exception:
+            return []
+        return [
+            memory
+            for memory in memories
+            if self._is_covered_by_structured_memory(memory)
+        ]
 
     async def _confirmed_visible_active_memory(self, record: dict) -> Optional[dict]:
         record_id = str(record.get("id") or "")
@@ -111,6 +136,17 @@ class MemoryTurnDirectHelpers:
         if str(memory.get("memory_type") or "") != intent.memory_type:
             return False
         return self._memory_payload_matches_intent(memory, intent)
+
+    def _is_covered_by_structured_memory(self, memory: dict) -> bool:
+        metadata = memory.get("metadata")
+        if not isinstance(metadata, dict):
+            return False
+        return (
+            metadata.get("canonical_entity_type") == "person"
+            and str(metadata.get("duplicate_archive_reason") or "").startswith(
+                "covered_by_"
+            )
+        )
 
     def _memory_payload_matches_intent(
         self,

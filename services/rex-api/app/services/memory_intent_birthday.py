@@ -168,18 +168,51 @@ class MemoryIntentBirthdayMixin:
     def _recent_birthday_person(
         self, conversation_history: list[dict]
     ) -> Optional[str]:
-        recent_text = " ".join(
-            str(message.get("content") or "")
-            for message in conversation_history[-6:]
-            if message.get("role") in {"user", "assistant"}
-        ).lower()
-        if "birthday" not in recent_text:
-            return None
-        if re.search(r"\b(my\s+)?(mom|mother|mum|mama)\b", recent_text):
-            return "mom"
-        if re.search(r"\b(my\s+)?(dad|father|papa)\b", recent_text):
-            return "dad"
+        for message in reversed(conversation_history[-6:]):
+            if message.get("role") not in {"user", "assistant"}:
+                continue
+            person = self._birthday_person_from_text(
+                str(message.get("content") or "")
+            )
+            if person is not None:
+                return person
         return None
+
+    def _birthday_person_from_text(self, text: str) -> Optional[str]:
+        if "birthday" not in text.lower():
+            return None
+        patterns = (
+            r"\b(?:my|your)\s+(?P<person>[A-Za-z][A-Za-z\s_-]{1,40}?)\s*(?:'s)?\s+birthday\b",
+            r"\b(?P<person>[A-Za-z][A-Za-z\s_-]{1,40}?)'s\s+birthday\b",
+        )
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match is None:
+                continue
+            person = self._clean_birthday_person(match.group("person"))
+            if person in {
+                "birthday",
+                "her",
+                "his",
+                "its",
+                "my",
+                "our",
+                "their",
+                "your",
+            }:
+                continue
+            if person:
+                return person
+        return None
+
+    def _clean_birthday_person(self, person: str) -> str:
+        cleaned = re.split(
+            r"\b(?:and|but|or)\s+(?:her|his|their|your|my)\b",
+            person,
+            maxsplit=1,
+            flags=re.IGNORECASE,
+        )[0]
+        return self._clean_person(cleaned)
 
     def _recent_birthday_save_prompt(self, conversation_history: list[dict]) -> bool:
         for message in reversed(conversation_history[-6:]):

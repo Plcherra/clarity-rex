@@ -23,7 +23,7 @@ class MemoryIntentService(
         re.IGNORECASE,
     )
     _birthday_correction_pattern = re.compile(
-        r"\b(?:no[,\s]+)?(?P<person>mom|mother|mum|mama|dad|father|papa)"
+        r"\b(?:no[,\s]+)?(?:my\s+)?(?P<person>[A-Za-z][A-Za-z\s_-]{1,40}?)"
         r"\s*(?:'s)?\s+birthday\s+(?:is|was|will be)\s+"
         r"(?P<date>[^,.!?]{2,60})",
         re.IGNORECASE,
@@ -32,13 +32,13 @@ class MemoryIntentService(
         r"\b(?:on\s+)?(?:the\s+)?"
         r"(?P<date>[A-Za-z]+(?:\s+\d{1,2}(?:st|nd|rd|th)?)?|\d{1,2}(?:st|nd|rd|th)?)"
         r"\s*,?\s*(?:it(?:'s| is)\s+)?(?:my\s+)?"
-        r"(?P<person>mom|mother|mum|mama|dad|father|papa)\s*(?:'s)?\s+birthday\b",
+        r"(?P<person>[A-Za-z][A-Za-z\s_-]{1,40}?)\s*(?:'s)?\s+birthday\b",
         re.IGNORECASE,
     )
     _date_as_birthday_pattern = re.compile(
         r"\b(?P<date>[A-Za-z]+(?:\s+\d{1,2}(?:st|nd|rd|th)?)?|\d{1,2}(?:st|nd|rd|th)?)"
         r"\s+as\s+(?:my\s+)?"
-        r"(?P<person>mom|mother|mum|mama|dad|father|papa)\s*(?:'s)?\s+birthday\b",
+        r"(?P<person>[A-Za-z][A-Za-z\s_-]{1,40}?)\s*(?:'s)?\s+birthday\b",
         re.IGNORECASE,
     )
     _self_birthday_pattern = re.compile(
@@ -314,25 +314,41 @@ class MemoryIntentService(
             "previous chat",
             "previous chats",
         )
-        topic_terms = (
-            "mom",
-            "mother",
-            "mum",
-            "mama",
-            "dad",
-            "father",
-            "birthday",
-            "family",
-            "parent",
-            "parents",
-            "conversation",
-            "conversations",
-            "chat",
-            "chats",
-        )
         if any(phrase in normalized for phrase in lookup_phrases):
             return True
-        return any(term in normalized.split() for term in topic_terms)
+        lookup_starters = (
+            "can ",
+            "could ",
+            "did ",
+            "do ",
+            "find ",
+            "how ",
+            "look ",
+            "search ",
+            "what ",
+            "when ",
+            "where ",
+            "who ",
+            "why ",
+        )
+        recall_terms = (
+            "chat",
+            "chats",
+            "conversation",
+            "conversations",
+            "information",
+            "know",
+            "mention",
+            "mentions",
+            "memories",
+            "memory",
+            "remember",
+            "said",
+            "told",
+        )
+        return normalized.startswith(lookup_starters) and any(
+            term in normalized.split() for term in recall_terms
+        )
 
     def location_clarification_response(self) -> str:
         return (

@@ -118,6 +118,23 @@ def test_contextual_date_answer_needs_birthday_context():
     )
 
 
+def test_memory_lookup_or_topic_shift_uses_generic_recall_language():
+    service = MemoryIntentService()
+
+    assert service.is_memory_lookup_or_topic_shift(
+        "Do you know anything about my cousin Ana?"
+    )
+    assert service.is_memory_lookup_or_topic_shift(
+        "Search old chats about the blue cactus ledger."
+    )
+    assert not service.is_memory_lookup_or_topic_shift(
+        "My cousin Ana's birthday is July 9."
+    )
+    assert not service.is_memory_lookup_or_topic_shift(
+        "No, cousin Ana's birthday is July 9."
+    )
+
+
 def test_detects_birthday_with_explicit_month():
     service = MemoryIntentService()
 
@@ -160,6 +177,65 @@ def test_detects_family_birthday_correction_without_my_prefix():
             "topic_fingerprint": "fact:birthday:mom",
         },
     )
+
+
+def test_detects_generic_person_birthday_correction_without_my_prefix():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory(
+        "No, cousin Ana's birthday is July 9.",
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert intent == SimpleMemoryIntent(
+        memory_type="fact",
+        content="User's cousin ana's birthday is July 9.",
+        importance=5,
+        metadata={
+            "fact_kind": "birthday",
+            "memory_category": "Events",
+            "entity_label": "cousin ana",
+            "normalized_date": "July 9",
+            "topic_fingerprint": "fact:birthday:cousin ana",
+        },
+    )
+
+
+def test_detects_generic_inverted_birthday_phrase():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory(
+        "On July 9, it's my cousin Ana's birthday.",
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert intent is not None
+    assert intent.content == "User's cousin ana's birthday is July 9."
+    assert intent.metadata["entity_label"] == "cousin ana"
+    assert intent.metadata["topic_fingerprint"] == "fact:birthday:cousin ana"
+
+
+def test_detects_contextual_birthday_date_answer_for_generic_person():
+    service = MemoryIntentService()
+
+    intent = service.detect_contextual_memory(
+        "On July 9.",
+        conversation_history=[
+            {
+                "role": "user",
+                "content": "I need to remember my cousin Ana's birthday.",
+            },
+            {
+                "role": "assistant",
+                "content": "What day is your cousin Ana's birthday?",
+            },
+        ],
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert intent is not None
+    assert intent.content == "User's cousin ana's birthday is July 9."
+    assert intent.metadata["entity_label"] == "cousin ana"
 
 
 def test_detects_negative_location_correction_phrase():

@@ -71,7 +71,7 @@ class PersonMemoryMaterializer:
         )
         if existing is None:
             await create_entity(card)
-            await self._archive_covered_self_source_memories(memory_service, [memory])
+            await self._archive_covered_person_source_memories(memory_service, [memory])
             return
         if update_entity is None:
             return
@@ -79,7 +79,7 @@ class PersonMemoryMaterializer:
         updates = self._merge_person_card(existing, card)
         if updates:
             await update_entity(str(existing["id"]), **updates)
-        await self._archive_covered_self_source_memories(memory_service, [memory])
+        await self._archive_covered_person_source_memories(memory_service, [memory])
 
     def person_card_from_memory(self, memory: dict) -> Optional[dict[str, Any]]:
         if str(memory.get("memory_type") or "") != "fact":
@@ -99,10 +99,10 @@ class PersonMemoryMaterializer:
             return None
 
         label = self._clean_label(metadata.get("entity_label"))
-        relationship = PERSON_RELATIONSHIPS.get(label)
+        relationship = PERSON_RELATIONSHIPS.get(label) or "person"
         birthday = self._clean_text(metadata.get("normalized_date"))
         memory_id = self._clean_text(memory.get("id"))
-        if not label or not relationship or not birthday:
+        if not label or not birthday:
             return None
 
         display_name = self._display_name(label)
@@ -278,7 +278,7 @@ class PersonMemoryMaterializer:
 
         return updates
 
-    async def _archive_covered_self_source_memories(
+    async def _archive_covered_person_source_memories(
         self,
         memory_service,
         memories: list[dict],
@@ -291,44 +291,30 @@ class PersonMemoryMaterializer:
             entities = await list_entities(entity_type="person", active=True, limit=100)
         except Exception:
             return
-        self_entity = next(
-            (entity for entity in entities if self._is_self_entity(entity)),
-            None,
-        )
-        if self_entity is None:
-            return
-
-        person_metadata = self_entity.get("metadata")
-        if not isinstance(person_metadata, dict):
-            return
-        person_attributes = person_metadata.get("attributes")
-        if not isinstance(person_attributes, dict):
-            return
-
-        covered_ids = self._covered_source_memory_ids(person_metadata)
-        if not covered_ids:
-            return
 
         for memory in memories:
             if not isinstance(memory, dict) or memory.get("active", True) is not True:
                 continue
             memory_id = self._clean_text(memory.get("id"))
-            if not memory_id or memory_id not in covered_ids:
+            if not memory_id:
                 continue
             memory_metadata = memory.get("metadata")
             if not isinstance(memory_metadata, dict):
                 memory_metadata = {}
-            attributes = self._self_attributes(memory, memory_metadata)
-            if not attributes or not self._person_attributes_cover(
-                person_attributes,
-                attributes,
-            ):
+            matched = self._person_entity_covering_memory(
+                entities,
+                memory_id=memory_id,
+                memory=memory,
+                memory_metadata=memory_metadata,
+            )
+            if matched is None:
                 continue
+            person, attributes, reason = matched
             archived_metadata = {
                 **memory_metadata,
-                "canonical_entity_id": self_entity.get("id"),
+                "canonical_entity_id": person.get("id"),
                 "canonical_entity_type": "person",
-                "duplicate_archive_reason": "covered_by_self_person_card",
+                "duplicate_archive_reason": reason,
                 "covered_attributes": sorted(attributes),
             }
             try:
@@ -339,6 +325,42 @@ class PersonMemoryMaterializer:
                 )
             except Exception:
                 continue
+
+    def _person_entity_covering_memory(
+        self,
+        entities: list[dict],
+        *,
+        memory_id: str,
+        memory: dict,
+        memory_metadata: dict[str, Any],
+    ) -> Optional[tuple[dict, dict[str, str], str]]:
+        for entity in entities:
+            person_metadata = entity.get("metadata")
+            if not isinstance(person_metadata, dict):
+                continue
+            if memory_id not in self._covered_source_memory_ids(person_metadata):
+                continue
+            person_attributes = person_metadata.get("attributes")
+            if not isinstance(person_attributes, dict):
+                continue
+            if self._is_self_entity(entity):
+                attributes = self._self_attributes(memory, memory_metadata)
+                reason = "covered_by_self_person_card"
+            else:
+                attributes = self._person_memory_attributes(memory_metadata)
+                reason = "covered_by_person_card"
+            if attributes and self._person_attributes_cover(person_attributes, attributes):
+                return entity, attributes, reason
+        return None
+
+    def _person_memory_attributes(
+        self,
+        metadata: dict[str, Any],
+    ) -> dict[str, str]:
+        if metadata.get("fact_kind") != "birthday":
+            return {}
+        birthday = self._clean_text(metadata.get("normalized_date"))
+        return {"birthday": birthday} if birthday else {}
 
     def _covered_source_memory_ids(self, metadata: dict[str, Any]) -> set[str]:
         covered: set[str] = set()

@@ -12,7 +12,7 @@ Make Rex reliably remember, search, label, edit, and explain user context withou
 - Memory creation mainly happens through chat and voice.
 - Backend recall and memory code is real but complex and spread across many modules.
 - Started: `docs/MEMORY_RECALL_SOURCE_OF_TRUTH.md` now records the production
-  memory and recall boundaries.
+memory and recall boundaries.
 
 ## Generic Failure Classes To Fix
 
@@ -46,7 +46,7 @@ Do not add topic-specific logic for one smoke phrase, person, date, game, device
 ### 2. Manual Memory Management Decision
 
 - Current MVP decision pending UX audit: Knows remains read/edit/archive for
-  backend-confirmed memory.
+backend-confirmed memory.
 - Decide if MVP needs manual create in Knows.
 - If yes:
   - Add create flows for people, preferences, facts, rules, plans, and commitments through Rex API.
@@ -67,15 +67,26 @@ Do not add topic-specific logic for one smoke phrase, person, date, game, device
   - Truth/status reporting.
 - Improve ranking and excerpts for arbitrary topics.
 - Add tests with unrelated examples, not only the observed smoke failure.
+- Verification started: prompt labeling, chat search ranking, memory intent, and
+memory reliability tests pass for the current code.
+- Fixed generic failure class: memory intent construction was too narrow for
+birthday corrections and contextual birthday replies. Equivalent people now use
+the same generic birthday path instead of only the original family smoke terms.
+- Fixed generic failure class: memory lookup/topic-shift protection included
+specific family/birthday topic terms. It now uses generic recall/search
+language so arbitrary people can still be saved as memory.
+- Fixed duplicate active memory issue: flat memories covered by structured person
+cards are archived, and duplicate-save detection still recognizes those covered
+archived source records.
 
 ### 4. Memory Corrections
 
-- Decide whether memory correction history is user-facing.
-- If user-facing:
-  - Add Knows correction history or memory detail view.
-  - Surface backend `/memory/corrections`.
-- If backend-only:
-  - Document it as internal audit history.
+- Completed MVP decision: memory correction history is backend/internal audit
+history for now.
+- Backend `/memory/corrections` remains available for diagnostics.
+- Knows should not show a Corrections tab in MVP.
+- If correction history becomes user-facing later, add it as a memory detail or
+audit view, not as active saved knowledge.
 
 ### 5. Entity Memory
 
@@ -85,6 +96,9 @@ Do not add topic-specific logic for one smoke phrase, person, date, game, device
 - Keep entity grouping clear: People, Places, Events, Goals, Preferences, Facts.
 
 ### 6. Cleanup Oversized Services
+
+Deferred from the Plan 03 product gate. These are maintainability refactors, not
+current blockers for Plan 04.
 
 Priority backend modules:
 
@@ -96,7 +110,12 @@ Priority backend modules:
 - `chat_recall_excerpts.py`
 - `memory_retrieval_ranker.py`
 
-Split by responsibility, not by arbitrary helper extraction.
+Split by responsibility, not by arbitrary helper extraction. Handle this as a
+separate cleanup pass after Goals/Accountability work is underway or before a
+dedicated backend hardening pass.
+
+Plan 03 should not mix these large move/split refactors with behavior work unless
+a concrete bug is found in one of the modules.
 
 ## Acceptance Criteria
 
@@ -105,6 +124,7 @@ Split by responsibility, not by arbitrary helper extraction.
 - Knows reflects backend saved memory truth.
 - Recall tests pass for arbitrary people, places, dates, goals, payments, devices, and exact phrases.
 - No production recall logic contains smoke-topic-specific branches.
+- Large service splits are explicitly deferred and do not block Plan 04.
 
 ## Suggested Tests
 
@@ -115,6 +135,17 @@ Split by responsibility, not by arbitrary helper extraction.
 - Voice memory parity tests.
 - Mobile memory page and memory controller tests.
 
+## Verification Log
+
+- `python -m pytest tests/test_prompt_service.py tests/test_chat_search_ranking.py tests/test_memory_intent_service.py tests/test_memory_reliability_flow.py -q`
+  - Result: 54 passed.
+- `python -m pytest tests/test_prompt_service.py tests/test_chat_search_ranking.py tests/test_memory_intent_service.py tests/test_memory_reliability_flow.py tests/test_chat_service_rex_brain.py -q`
+  - Result: 65 passed.
+- `python -m pytest tests/test_prompt_service.py tests/test_chat_search_ranking.py tests/test_memory_intent_service.py tests/test_memory_reliability_flow.py tests/test_chat_service_rex_brain.py tests/test_memory_retrieval.py -q`
+  - Result: 85 passed.
+- `flutter test test/memory_label_test.dart test/memory_api_test.dart test/memory_page_test.dart`
+  - Result: passed after making scroll expectations target unique memory tile content.
+
 ## Manual Smoke
 
 1. Tell Rex a fact and ask it to save it.
@@ -124,3 +155,4 @@ Split by responsibility, not by arbitrary helper extraction.
 5. Confirm Rex labels it as chat history.
 6. Archive memory in Knows.
 7. Confirm Rex no longer treats it as active saved knowledge.
+
