@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../theme/clarity_colors.dart';
+import '../../theme/clarity_gradients.dart';
+
 class ClaritySplashScreen extends StatefulWidget {
   const ClaritySplashScreen({
     super.key,
     required this.child,
     required this.isReady,
-    this.assetPath = 'assets/brand/clarity_source_logo.png',
+    this.assetPath = 'assets/brand/clarity_splash_mark.png',
     this.minDuration = const Duration(milliseconds: 900),
     this.fadeDuration = const Duration(milliseconds: 520),
   });
@@ -92,16 +95,44 @@ class _SplashVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.maybeOf(context)?.size ?? const Size(390, 844);
+    final logoSize = (size.shortestSide * 0.58).clamp(190.0, 280.0);
+
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Material(
-        color: Colors.white,
-        child: Image.asset(
-          assetPath,
-          width: double.infinity,
-          height: double.infinity,
-          fit: BoxFit.cover,
-          filterQuality: FilterQuality.high,
+        color: ClarityColors.appBackground,
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: ClarityGradients.appBackground,
+          ),
+          child: Center(
+            child: SizedBox.square(
+              dimension: logoSize,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: ClarityColors.deepBlue.withValues(alpha: 0.24),
+                      blurRadius: logoSize * 0.28,
+                      spreadRadius: logoSize * 0.02,
+                    ),
+                    BoxShadow(
+                      color: ClarityColors.tealGlow.withValues(alpha: 0.2),
+                      blurRadius: logoSize * 0.34,
+                      spreadRadius: logoSize * 0.01,
+                    ),
+                  ],
+                ),
+                child: Image.asset(
+                  assetPath,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
