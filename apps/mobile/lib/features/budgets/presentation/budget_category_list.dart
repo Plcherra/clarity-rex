@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../theme/clarity_colors.dart';
+import '../../../widgets/clarity_card.dart';
 import 'budget_category_row.dart';
 import 'budgets_viewmodel.dart';
 
@@ -26,19 +28,10 @@ class BudgetCategoryList extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.11)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.20),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+    return ClarityCard(
+      padding: EdgeInsets.zero,
+      backgroundColor: cs.surface,
+      borderColor: cs.outline.withValues(alpha: 0.24),
       child: Column(
         children: [
           Padding(
@@ -93,10 +86,10 @@ class BudgetCategoryList extends StatelessWidget {
                       final indicatorColor = !item.hasBudget
                           ? cs.onSurface.withValues(alpha: 0.32)
                           : item.isOverspent
-                          ? const Color(0xFFC41E3A)
-                          : const Color(0xFF1B7A4C);
+                          ? ClarityColors.financeNegative
+                          : ClarityColors.financePositive;
                       final statusColor = item.isOverspent
-                          ? const Color(0xFFC41E3A)
+                          ? ClarityColors.financeNegative
                           : cs.onSurface.withValues(alpha: 0.58);
                       return BudgetCategoryRowTile(
                         displayLabel: item.displayLabel,

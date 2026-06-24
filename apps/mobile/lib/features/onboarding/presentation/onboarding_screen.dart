@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../theme/clarity_gradients.dart';
+import '../../../widgets/clarity_button.dart';
+import '../../../widgets/clarity_card.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({
@@ -43,15 +46,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final cs = theme.colorScheme;
     return Scaffold(
       body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              cs.surface,
-              cs.surfaceContainerHighest.withValues(alpha: 0.35),
-            ],
-          ),
+        decoration: const BoxDecoration(
+          gradient: ClarityGradients.appBackground,
         ),
         child: SafeArea(
           child: Center(
@@ -59,70 +55,56 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               constraints: const BoxConstraints(maxWidth: 520),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Image.asset(
-                      'assets/brand/clarity_mark.png',
-                      width: 84,
-                      height: 84,
-                    ),
-                    const SizedBox(height: 22),
-                    Text(
-                      'Welcome to Clarity',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
+                child: ClarityCard(
+                  padding: const EdgeInsets.all(26),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Image.asset(
+                        'assets/brand/clarity_mark.png',
+                        width: 84,
+                        height: 84,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Name your Clarity space. Next, you can connect your bank or use CSV as a manual fallback.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurface.withValues(alpha: 0.6),
+                      const SizedBox(height: 22),
+                      Text(
+                        'Welcome to Clarity',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 28),
-                    TextField(
-                      controller: _controller,
-                      enabled: !_saving,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Your name',
-                        hintText: 'Pedro',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Name your Clarity space. Next, you can connect your bank or use CSV as a manual fallback.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: cs.onSurfaceVariant,
+                          height: 1.35,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      onSubmitted: (_) => _submit(),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 56,
-                      child: FilledButton(
+                      const SizedBox(height: 28),
+                      TextField(
+                        controller: _controller,
+                        enabled: !_saving,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: 'Your name',
+                          hintText: 'Pedro',
+                        ),
+                        onSubmitted: (_) => _submit(),
+                      ),
+                      const SizedBox(height: 16),
+                      ClarityButton.filled(
+                        label: 'Continue',
                         onPressed: _saving ? null : _submit,
-                        child: _saving
-                            ? SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: cs.onPrimary,
-                                ),
-                              )
-                            : const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text('Continue'),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward_rounded, size: 20),
-                                ],
-                              ),
+                        icon: const Icon(Icons.arrow_forward_rounded, size: 20),
+                        isLoading: _saving,
+                        expanded: true,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -25,4 +25,9 @@ class ClarityColors {
   static const danger = Color(0xFFFF6B72);
   static const warning = Color(0xFFFFC46B);
   static const positive = Color(0xFF35D6C8);
+
+  // Financial semantic colors stay calmer than the brand teal/alert red.
+  static const financePositive = Color(0xFF36C08A);
+  static const financeNegative = Color(0xFFFF6B72);
+  static const financeSpending = Color(0xFFE6656A);
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/ui_dependencies.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/models/models.dart';
+import '../../../../theme/clarity_colors.dart';
 import '../../data/plaid_account_service.dart';
 import 'plaid_account_status_pill.dart';
 import 'source_label_chip.dart';
@@ -201,9 +202,9 @@ class _PlaidAccountNetAndSync extends StatelessWidget {
               style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w800,
                 color: netCashFlow > 0
-                    ? const Color(0xFF1B7A4C)
+                    ? ClarityColors.financePositive
                     : netCashFlow < 0
-                    ? const Color(0xFFC41E3A)
+                    ? ClarityColors.financeNegative
                     : cs.onSurface,
               ),
             ),

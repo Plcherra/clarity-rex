@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../theme/clarity_gradients.dart';
+import '../../../widgets/clarity_button.dart';
+import '../../../widgets/clarity_card.dart';
 import '../application/auth_controller.dart';
 
 final class AuthScreen extends StatefulWidget {
@@ -58,124 +61,126 @@ final class _AuthScreenState extends State<AuthScreen> {
       listenable: widget.controller,
       builder: (context, _) {
         final theme = Theme.of(context);
+        final cs = theme.colorScheme;
         final error = _localError ?? widget.controller.errorMessage;
         return Scaffold(
-          body: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Image.asset(
-                          'assets/brand/clarity_mark.png',
-                          width: 72,
-                          height: 72,
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      Text(
-                        _isSignUp
-                            ? 'Create your account'
-                            : 'Sign in to Clarity',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _isSignUp
-                            ? 'Use email and password to start your local finance workspace.'
-                            : 'Use your email and password to continue.',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      if (_isSignUp) ...[
-                        TextField(
-                          controller: _fullNameController,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Full name',
-                            border: OutlineInputBorder(),
+          body: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: ClarityGradients.appBackground,
+            ),
+            child: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: ClarityCard(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Image.asset(
+                              'assets/brand/clarity_mark.png',
+                              width: 72,
+                              height: 72,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-                      TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        onSubmitted: (_) => _submit(),
-                        decoration: const InputDecoration(
-                          labelText: 'Password',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      if (error != null && error.isNotEmpty) ...[
-                        const SizedBox(height: 14),
-                        Text(
-                          error,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.error,
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(height: 22),
+                          Text(
+                            _isSignUp
+                                ? 'Create your account'
+                                : 'Sign in to Clarity',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.4,
+                            ),
                           ),
-                        ),
-                      ],
-                      if (widget.controller.infoMessage != null) ...[
-                        const SizedBox(height: 14),
-                        Text(
-                          widget.controller.infoMessage!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(height: 8),
+                          Text(
+                            _isSignUp
+                                ? 'Use email and password to start your local finance workspace.'
+                                : 'Use your email and password to continue.',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: cs.onSurfaceVariant,
+                              height: 1.35,
+                            ),
                           ),
-                        ),
-                      ],
-                      const SizedBox(height: 22),
-                      FilledButton(
-                        onPressed: widget.controller.isLoading ? null : _submit,
-                        child: widget.controller.isLoading
-                            ? const SizedBox.square(
-                                dimension: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(_isSignUp ? 'Create account' : 'Sign in'),
+                          const SizedBox(height: 28),
+                          if (_isSignUp) ...[
+                            TextField(
+                              controller: _fullNameController,
+                              textInputAction: TextInputAction.next,
+                              decoration: const InputDecoration(
+                                labelText: 'Full name',
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                          ],
+                          TextField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          TextField(
+                            controller: _passwordController,
+                            obscureText: true,
+                            onSubmitted: (_) => _submit(),
+                            decoration: const InputDecoration(
+                              labelText: 'Password',
+                            ),
+                          ),
+                          if (error != null && error.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            Text(
+                              error,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: cs.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                          if (widget.controller.infoMessage != null) ...[
+                            const SizedBox(height: 14),
+                            Text(
+                              widget.controller.infoMessage!,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: cs.secondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 22),
+                          ClarityButton.filled(
+                            label: _isSignUp ? 'Create account' : 'Sign in',
+                            onPressed: _submit,
+                            isLoading: widget.controller.isLoading,
+                            expanded: true,
+                          ),
+                          const SizedBox(height: 12),
+                          ClarityButton.text(
+                            label: _isSignUp
+                                ? 'Already have an account? Sign in'
+                                : 'Need an account? Create one',
+                            onPressed: widget.controller.isLoading
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _localError = null;
+                                      _isSignUp = !_isSignUp;
+                                    });
+                                  },
+                            expanded: true,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      TextButton(
-                        onPressed: widget.controller.isLoading
-                            ? null
-                            : () {
-                                setState(() {
-                                  _localError = null;
-                                  _isSignUp = !_isSignUp;
-                                });
-                              },
-                        child: Text(
-                          _isSignUp
-                              ? 'Already have an account? Sign in'
-                              : 'Need an account? Create one',
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),

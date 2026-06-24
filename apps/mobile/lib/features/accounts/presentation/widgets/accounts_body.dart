@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/models/models.dart';
+import '../../../../widgets/clarity_diamond_loader.dart';
 import '../../data/plaid_account_service.dart';
 import 'account_notice_card.dart';
 import 'accounts_data_notifier.dart';
@@ -59,7 +60,9 @@ class AccountsBody extends StatelessWidget {
               ),
             );
           }
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: ClarityDiamondLoader(size: 56, label: 'Loading accounts'),
+          );
         }
 
         if (accounts.isEmpty) {

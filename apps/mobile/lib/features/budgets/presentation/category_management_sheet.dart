@@ -8,6 +8,7 @@ import '../../finance/data/financial_audit_service.dart';
 import '../../transactions/data/merchant_category_rule_service.dart';
 import '../../transactions/domain/merchant_normalization.dart';
 import '../../transactions/domain/spend_categories.dart';
+import '../../../widgets/clarity_diamond_loader.dart';
 
 part 'category_management_sheet_widgets.dart';
 part 'category_management_sheet_sections.dart';

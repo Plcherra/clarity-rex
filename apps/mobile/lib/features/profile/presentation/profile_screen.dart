@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../widgets/clarity_card.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/presentation/mfa_enrollment_screen.dart';
 import '../application/profile_controller.dart';
@@ -181,56 +182,49 @@ final class _ProfileHeader extends StatelessWidget {
     final cs = theme.colorScheme;
     final initial = name.trim().isEmpty ? 'C' : name.trim()[0].toUpperCase();
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.24)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: cs.surfaceContainerHighest,
-              foregroundColor: cs.onSurface.withValues(alpha: 0.82),
-              child: Text(
-                initial,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+    return ClarityCard(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: cs.surfaceContainerHighest,
+            foregroundColor: cs.onSurface.withValues(alpha: 0.82),
+            child: Text(
+              initial,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (email.isNotEmpty) ...[
+                  const SizedBox(height: 3),
                   Text(
-                    name,
+                    email,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
-                  if (email.isNotEmpty) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      email,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
                 ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -257,19 +251,14 @@ final class _ProfileActionTile extends StatelessWidget {
     final cs = theme.colorScheme;
     final color = destructive ? cs.error : cs.onSurface;
 
-    return Material(
-      color: cs.surface,
-      borderRadius: BorderRadius.circular(8),
+    return ClarityCard(
+      padding: EdgeInsets.zero,
       child: ListTile(
         leading: Icon(icon, color: destructive ? cs.error : null),
         title: Text(title),
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: cs.outline.withValues(alpha: 0.24)),
-        ),
         titleTextStyle: theme.textTheme.titleSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.w800,

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../app/ui_dependencies.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
+import '../../../theme/clarity_colors.dart';
+import '../../../widgets/clarity_diamond_loader.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_review.dart';
 import '../../transactions/domain/transaction_resolution.dart';
@@ -271,7 +273,12 @@ class _TransactionReviewScreenState extends State<TransactionReviewScreen> {
             if (_loading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 48),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                  child: ClarityDiamondLoader(
+                    size: 52,
+                    label: 'Loading review queue',
+                  ),
+                ),
               )
             else if (_error != null)
               _ReviewEmptyState(
@@ -418,9 +425,9 @@ class _ReviewTransactionCard extends StatelessWidget {
     final cs = theme.colorScheme;
     final raw = transaction.transaction;
     final amountColor = raw.amount < 0
-        ? const Color(0xFFC41E3A)
+        ? ClarityColors.financeNegative
         : raw.amount > 0
-        ? const Color(0xFF1B7A4C)
+        ? ClarityColors.financePositive
         : cs.onSurface;
     final reasons = transactionReviewReasons(transaction);
     return Container(

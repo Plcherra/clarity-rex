@@ -104,8 +104,8 @@ class _BudgetPerformanceCard extends StatelessWidget {
             'Total overspent ${formatMoney(performance.totalOverspent)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: performance.totalOverspent > 0
-                  ? const Color(0xFFC41E3A)
-                  : const Color(0xFF1B7A4C),
+                  ? ClarityColors.financeNegative
+                  : ClarityColors.financePositive,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -129,7 +129,7 @@ class _BudgetPerformanceCard extends StatelessWidget {
               Text(
                 '${row.displayLabel}: overspent ${formatMoney(row.overspent)}',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFFC41E3A),
+                  color: ClarityColors.financeNegative,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -154,9 +154,9 @@ class _LeakRow extends StatelessWidget {
     final goodTrend = pct != null && pct < 0;
     final badTrend = pct != null && pct > 0;
     final trendColor = goodTrend
-        ? const Color(0xFF1B7A4C)
+        ? ClarityColors.financePositive
         : badTrend
-        ? const Color(0xFFC41E3A)
+        ? ClarityColors.financeNegative
         : cs.onSurface.withValues(alpha: 0.4);
 
     Widget trendWidget;
@@ -320,8 +320,8 @@ class _AccountHealthCard extends StatelessWidget {
               Icon(
                 Icons.health_and_safety_outlined,
                 color: snapshot.availableThisMonth >= 0
-                    ? const Color(0xFF1B7A4C)
-                    : const Color(0xFFC41E3A),
+                    ? ClarityColors.financePositive
+                    : ClarityColors.financeNegative,
                 size: 26,
               ),
               const SizedBox(width: 14),
@@ -354,7 +354,7 @@ class _AccountHealthCard extends StatelessWidget {
             detail: pressureDetail,
             valueColor: topPressure == null
                 ? cs.onSurface.withValues(alpha: 0.55)
-                : const Color(0xFF9B2C2C),
+                : ClarityColors.financeSpending,
           ),
           const SizedBox(height: 14),
           _HealthMetricRow(
@@ -363,7 +363,7 @@ class _AccountHealthCard extends StatelessWidget {
             value: _budgetValue,
             detail: _budgetDetail,
             valueColor: budgetPerformance.totalOverspent > 0
-                ? const Color(0xFFC41E3A)
+                ? ClarityColors.financeNegative
                 : cs.onSurface.withValues(alpha: 0.82),
           ),
         ],

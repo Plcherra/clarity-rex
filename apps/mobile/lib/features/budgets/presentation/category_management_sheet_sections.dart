@@ -86,7 +86,12 @@ class _CategoryManagementContent extends StatelessWidget {
             if (loading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                  child: ClarityDiamondLoader(
+                    size: 52,
+                    label: 'Loading categories',
+                  ),
+                ),
               )
             else if (hasError)
               _CategoryEmptyState(

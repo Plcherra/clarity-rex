@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../../theme/clarity_colors.dart';
+import '../../../widgets/clarity_button.dart';
+import '../../../widgets/clarity_card.dart';
 import '../application/auth_controller.dart';
 import '../application/auth_service.dart';
 
@@ -212,56 +215,49 @@ final class _SecurityStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.24)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: enabled,
-              onChanged: isLoading ? null : onChanged,
-              secondary: Icon(
-                enabled ? Icons.verified_user_rounded : Icons.security_rounded,
-                color: enabled ? const Color(0xFF1B7A4C) : cs.primary,
-              ),
-              title: Text(
-                enabled ? 'MFA is on' : 'MFA is off',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+    return ClarityCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: enabled,
+            onChanged: isLoading ? null : onChanged,
+            secondary: Icon(
+              enabled ? Icons.verified_user_rounded : Icons.security_rounded,
+              color: enabled ? ClarityColors.financePositive : cs.primary,
+            ),
+            title: Text(
+              enabled ? 'MFA is on' : 'MFA is off',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              enabled
-                  ? 'Your account requires an authenticator code after password sign-in.'
-                  : 'Add an authenticator app to protect your financial workspace.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            enabled
+                ? 'Your account requires an authenticator code after password sign-in.'
+                : 'Add an authenticator app to protect your financial workspace.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
             ),
-            const SizedBox(height: 14),
-            if (enabled)
-              OutlinedButton.icon(
-                onPressed: isLoading ? null : onEnroll,
-                icon: const Icon(Icons.add_moderator_outlined),
-                label: const Text('Add another app'),
-              )
-            else
-              FilledButton.icon(
-                onPressed: isLoading ? null : () => onChanged(true),
-                icon: const Icon(Icons.add_moderator_outlined),
-                label: const Text('Turn on MFA'),
-              ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 14),
+          if (enabled)
+            ClarityButton.outlined(
+              label: 'Add another app',
+              onPressed: isLoading ? null : onEnroll,
+              icon: const Icon(Icons.add_moderator_outlined),
+            )
+          else
+            ClarityButton.filled(
+              label: 'Turn on MFA',
+              onPressed: isLoading ? null : () => onChanged(true),
+              icon: const Icon(Icons.add_moderator_outlined),
+            ),
+        ],
       ),
     );
   }
@@ -288,88 +284,75 @@ final class _EnrollmentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.24)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Set up authenticator app',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+    return ClarityCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Set up authenticator app',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Scan this QR code in 1Password, Google Authenticator, Authy, or another TOTP app.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Scan this QR code in 1Password, Google Authenticator, Authy, or another TOTP app.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
             ),
-            const SizedBox(height: 16),
-            Center(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: cs.outlineVariant.withValues(alpha: 0.78),
-                  ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: cs.outlineVariant.withValues(alpha: 0.78),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: QrImageView(
-                    data: enrollment.uri,
-                    version: QrVersions.auto,
-                    size: 220,
-                    backgroundColor: cs.surfaceContainerHighest,
-                    eyeStyle: QrEyeStyle(color: cs.onSurface),
-                    dataModuleStyle: QrDataModuleStyle(color: cs.onSurface),
-                  ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: QrImageView(
+                  data: enrollment.uri,
+                  version: QrVersions.auto,
+                  size: 220,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  eyeStyle: QrEyeStyle(color: cs.onSurface),
+                  dataModuleStyle: QrDataModuleStyle(color: cs.onSurface),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            _SecretRow(secret: enrollment.secret, onCopy: onCopySecret),
-            TextButton.icon(
-              onPressed: onCopyUri,
-              icon: const Icon(Icons.copy_rounded),
-              label: const Text('Copy authenticator URI'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: codeController,
-              keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.done,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(6),
-              ],
-              onSubmitted: (_) => onVerify(),
-              decoration: const InputDecoration(
-                labelText: '6-digit code',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              onPressed: isLoading ? null : onVerify,
-              icon: isLoading
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.verified_rounded),
-              label: const Text('Enable MFA'),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          _SecretRow(secret: enrollment.secret, onCopy: onCopySecret),
+          TextButton.icon(
+            onPressed: onCopyUri,
+            icon: const Icon(Icons.copy_rounded),
+            label: const Text('Copy authenticator URI'),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: codeController,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(6),
+            ],
+            onSubmitted: (_) => onVerify(),
+            decoration: const InputDecoration(labelText: '6-digit code'),
+          ),
+          const SizedBox(height: 14),
+          ClarityButton.filled(
+            label: 'Enable MFA',
+            onPressed: isLoading ? null : onVerify,
+            icon: const Icon(Icons.verified_rounded),
+            isLoading: isLoading,
+            expanded: true,
+          ),
+        ],
       ),
     );
   }
@@ -385,44 +368,40 @@ final class _SecretRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Manual setup key',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
-                    ),
+    return ClarityCard(
+      padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
+      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.45),
+      borderColor: cs.outline.withValues(alpha: 0.24),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Manual setup key',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(height: 4),
-                  SelectableText(
-                    secret,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      fontWeight: FontWeight.w700,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  secret,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            IconButton(
-              tooltip: 'Copy manual setup key',
-              onPressed: onCopy,
-              icon: const Icon(Icons.copy_rounded),
-            ),
-          ],
-        ),
+          ),
+          IconButton(
+            tooltip: 'Copy manual setup key',
+            onPressed: onCopy,
+            icon: const Icon(Icons.copy_rounded),
+          ),
+        ],
       ),
     );
   }
@@ -443,9 +422,8 @@ final class _FactorTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return Material(
-      color: cs.surface,
-      borderRadius: BorderRadius.circular(8),
+    return ClarityCard(
+      padding: EdgeInsets.zero,
       child: ListTile(
         leading: const Icon(Icons.phonelink_lock_rounded),
         title: Text(factor.name),
@@ -454,10 +432,6 @@ final class _FactorTile extends StatelessWidget {
           tooltip: 'Remove authenticator app',
           onPressed: isBusy ? null : onRemove,
           icon: const Icon(Icons.delete_outline_rounded),
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: cs.outline.withValues(alpha: 0.24)),
         ),
         titleTextStyle: theme.textTheme.titleSmall?.copyWith(
           fontWeight: FontWeight.w800,
@@ -475,28 +449,24 @@ final class _RecoveryNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.info_outline_rounded, color: cs.onSurfaceVariant),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Supabase Auth does not provide recovery codes for TOTP. Add a second authenticator app as a backup before removing your only factor.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: cs.onSurfaceVariant,
-                ),
+    return ClarityCard(
+      padding: const EdgeInsets.all(14),
+      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+      borderColor: cs.outline.withValues(alpha: 0.24),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, color: cs.onSurfaceVariant),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Supabase Auth does not provide recovery codes for TOTP. Add a second authenticator app as a backup before removing your only factor.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

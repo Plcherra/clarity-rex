@@ -117,21 +117,11 @@ class _DashboardLoadingBody extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 28),
-              Expanded(
+              const Expanded(
                 child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 18),
-                      Text(
-                        'Loading your financial data...',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                  child: ClarityDiamondLoader(
+                    size: 64,
+                    label: 'Loading your financial data...',
                   ),
                 ),
               ),
@@ -211,37 +201,32 @@ class _DashboardResolvingDataBody extends StatelessWidget {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(28),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _dashboardOutline(context)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Resolving imported transactions',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+            child: ClarityCard(
+              padding: const EdgeInsets.all(22),
+              backgroundColor: cs.surfaceContainerLow,
+              borderColor: _dashboardOutline(context),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const ClarityDiamondLoader(size: 52),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Resolving imported transactions',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Your statement is connected, but the transaction rows are still loading. Values will appear when the read model is complete.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        height: 1.35,
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your statement is connected, but the transaction rows are still loading. Values will appear when the read model is complete.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      height: 1.35,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

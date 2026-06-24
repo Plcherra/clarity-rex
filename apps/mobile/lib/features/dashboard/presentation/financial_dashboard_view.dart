@@ -11,7 +11,10 @@ import '../../shell/presentation/import_job_progress_banner.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
-import '../../../rex/presentation/rex_ui_tokens.dart';
+import '../../../theme/clarity_colors.dart';
+import '../../../theme/clarity_radius.dart';
+import '../../../widgets/clarity_card.dart';
+import '../../../widgets/clarity_diamond_loader.dart';
 import 'month_detail_screen.dart';
 
 part 'financial_dashboard_transactions.dart';
@@ -22,7 +25,7 @@ part 'financial_dashboard_summary_sections.dart';
 part 'financial_dashboard_cards.dart';
 
 const double _sectionGap = 20.0;
-const double _cardRadius = 14.0;
+const double _cardRadius = ClarityRadius.card;
 const List<String> _monthAbbreviations = [
   'Jan',
   'Feb',
@@ -39,24 +42,24 @@ const List<String> _monthAbbreviations = [
 ];
 
 Color _dashboardPanel(BuildContext context) {
-  return RexUiTokens.surface;
+  return ClarityColors.cardFill;
 }
 
 Color _dashboardPanelMuted(BuildContext context) {
-  return RexUiTokens.surfaceSoft;
+  return ClarityColors.surfaceSoft;
 }
 
 Color _dashboardOutline(BuildContext context) {
-  return RexUiTokens.border.withValues(alpha: 0.78);
+  return ClarityColors.mutedBorder.withValues(alpha: 0.78);
 }
 
 Color _dashboardSelected(BuildContext context) {
-  return RexUiTokens.accent.withValues(alpha: 0.12);
+  return ClarityColors.electricBlue.withValues(alpha: 0.12);
 }
 
 Color _balanceColor(BuildContext context, double v) {
-  if (v > 0) return const Color(0xFF1B7A4C);
-  if (v < 0) return const Color(0xFFC41E3A);
+  if (v > 0) return ClarityColors.financePositive;
+  if (v < 0) return ClarityColors.financeNegative;
   return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72);
 }
 

@@ -63,7 +63,7 @@ class _CashFlowSummaryCard extends StatelessWidget {
                 child: _CashFlowSummaryMetric(
                   label: 'Income',
                   value: formatMoney(snapshot.incomeThisMonth),
-                  color: const Color(0xFF1B7A4C),
+                  color: ClarityColors.financePositive,
                 ),
               ),
               const SizedBox(width: 10),
@@ -71,7 +71,7 @@ class _CashFlowSummaryCard extends StatelessWidget {
                 child: _CashFlowSummaryMetric(
                   label: 'Spending',
                   value: formatMoney(snapshot.spentThisMonth),
-                  color: const Color(0xFF9B2C2C),
+                  color: ClarityColors.financeSpending,
                 ),
               ),
             ],
@@ -200,9 +200,9 @@ class _MonthCard extends StatelessWidget {
     final cs = theme.colorScheme;
     final label = formatYearMonthLabel(group.yearMonth);
     final totalColor = group.totalAmount < 0
-        ? const Color(0xFFC41E3A)
+        ? ClarityColors.financeNegative
         : group.totalAmount > 0
-        ? const Color(0xFF1B7A4C)
+        ? ClarityColors.financePositive
         : cs.onSurface;
 
     return Material(

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../app/ui_dependencies.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../../core/formatting/formatting.dart';
+import '../../../theme/clarity_colors.dart';
+import '../../../widgets/clarity_diamond_loader.dart';
 import '../../transactions/presentation/widgets/transaction_category_dropdown.dart';
 import '../domain/month_deletion_policy.dart';
 
@@ -161,7 +163,12 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
           body: lines == null
               ? _dataNotifier.error != null
                     ? const Center(child: Text('Could not load transactions.'))
-                    : const Center(child: CircularProgressIndicator())
+                    : const Center(
+                        child: ClarityDiamondLoader(
+                          size: 56,
+                          label: 'Loading month',
+                        ),
+                      )
               : _MonthDetailBody(
                   lines: lines,
                   monthDeleteProtectionMessage:
@@ -230,9 +237,9 @@ class _MonthDetailBody extends StatelessWidget {
       (sum, e) => sum + e.transaction.amount,
     );
     final totalColor = monthTotal < 0
-        ? const Color(0xFFC41E3A)
+        ? ClarityColors.financeNegative
         : monthTotal > 0
-        ? const Color(0xFF1B7A4C)
+        ? ClarityColors.financePositive
         : colorScheme.onSurface;
 
     return ListView(
@@ -351,8 +358,8 @@ class _LineTile extends StatelessWidget {
     final tx = line.transaction;
     final muted = cs.onSurface.withValues(alpha: 0.42);
     final amountColor = tx.amount < 0
-        ? const Color(0xFFC41E3A)
-        : const Color(0xFF1B7A4C);
+        ? ClarityColors.financeNegative
+        : ClarityColors.financePositive;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),

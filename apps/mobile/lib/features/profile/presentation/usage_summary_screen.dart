@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/supabase/supabase_service.dart';
+import '../../../widgets/clarity_card.dart';
+import '../../../widgets/clarity_diamond_loader.dart';
 import '../application/usage_summary_controller.dart';
 import '../application/usage_summary_service.dart';
 
@@ -44,7 +46,9 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
         listenable: _controller,
         builder: (context, _) {
           if (_controller.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: ClarityDiamondLoader(size: 56, label: 'Loading usage'),
+            );
           }
           final error = _controller.errorMessage;
           if (error != null) {
@@ -97,44 +101,37 @@ final class _UsageStatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.24)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+    return ClarityCard(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '$calls Grok calls',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '$calls Grok calls',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Text(
-              _formatMinutes(minutes),
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
+          ),
+          Text(
+            _formatMinutes(minutes),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w900,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../app/ui_dependencies.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
+import '../../../widgets/clarity_diamond_loader.dart';
 import '../../transactions/data/csv_import_service.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import 'csv_plaid_duplicate_warning.dart';
@@ -180,7 +181,12 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                 if (_dataNotifier.error != null) {
                   return const Center(child: Text('Could not load accounts.'));
                 }
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: ClarityDiamondLoader(
+                    size: 56,
+                    label: 'Loading accounts',
+                  ),
+                );
               }
               if (accounts.isEmpty) {
                 return Center(

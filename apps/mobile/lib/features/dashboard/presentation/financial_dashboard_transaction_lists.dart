@@ -85,7 +85,7 @@ class _CategoryGroupCard extends StatelessWidget {
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: group.spending > 0
-                        ? const Color(0xFF9B2C2C)
+                        ? ClarityColors.financeSpending
                         : cs.onSurface,
                   ),
                 ),

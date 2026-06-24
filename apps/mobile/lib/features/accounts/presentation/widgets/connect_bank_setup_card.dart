@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../widgets/clarity_button.dart';
+import '../../../../widgets/clarity_card.dart';
+
 class ConnectBankSetupCard extends StatelessWidget {
   const ConnectBankSetupCard({
     super.key,
@@ -22,63 +25,59 @@ class ConnectBankSetupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.22)),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(compact ? 20 : 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Icon(
-              Icons.account_balance_rounded,
-              size: compact ? 34 : 42,
-              color: cs.onSurface.withValues(alpha: 0.78),
+    return ClarityCard(
+      padding: EdgeInsets.all(compact ? 20 : 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(
+            Icons.account_balance_rounded,
+            size: compact ? 34 : 42,
+            color: cs.onSurface.withValues(alpha: 0.78),
+          ),
+          SizedBox(height: compact ? 16 : 20),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
             ),
-            SizedBox(height: compact ? 16 : 20),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0,
-              ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            body,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurface.withValues(alpha: 0.62),
+              height: 1.35,
             ),
-            const SizedBox(height: 10),
-            Text(
-              body,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurface.withValues(alpha: 0.62),
-                height: 1.35,
-              ),
+          ),
+          SizedBox(height: compact ? 18 : 24),
+          ClarityButton.filled(
+            label: 'Connect Bank',
+            onPressed: onConnectBank,
+            icon: const Icon(Icons.add_link_rounded, size: 20),
+            expanded: true,
+          ),
+          const SizedBox(height: 10),
+          ClarityButton.outlined(
+            label: 'Import CSV instead',
+            onPressed: onImportCsvInstead,
+            icon: const Icon(Icons.upload_file_rounded, size: 20),
+            expanded: true,
+          ),
+          if (onAddManualAccount != null) ...[
+            const SizedBox(height: 8),
+            ClarityButton.text(
+              label: 'Add manual account',
+              onPressed: onAddManualAccount,
+              icon: const Icon(Icons.add_rounded, size: 19),
+              expanded: true,
             ),
-            SizedBox(height: compact ? 18 : 24),
-            FilledButton.icon(
-              onPressed: onConnectBank,
-              icon: const Icon(Icons.add_link_rounded, size: 20),
-              label: const Text('Connect Bank'),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: onImportCsvInstead,
-              icon: const Icon(Icons.upload_file_rounded, size: 20),
-              label: const Text('Import CSV instead'),
-            ),
-            if (onAddManualAccount != null) ...[
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: onAddManualAccount,
-                icon: const Icon(Icons.add_rounded, size: 19),
-                label: const Text('Add manual account'),
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
   }

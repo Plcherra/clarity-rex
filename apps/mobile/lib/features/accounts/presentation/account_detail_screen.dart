@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../app/ui_dependencies.dart';
 import '../../../core/io/file_reader.dart';
 import '../../../core/models/models.dart';
+import '../../../widgets/clarity_diamond_loader.dart';
 import '../../budgets/application/budget_cleanup_service.dart';
 import '../../transactions/data/csv_import_service.dart';
 import '../../dashboard/domain/dashboard_snapshot.dart';
@@ -349,7 +350,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
             );
           }
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(
+              child: ClarityDiamondLoader(size: 56, label: 'Loading account'),
+            ),
           );
         }
         final account = accounts

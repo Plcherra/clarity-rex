@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../widgets/clarity_card.dart';
 import 'rex_ui_tokens.dart';
 
 class RexTheme extends StatelessWidget {
@@ -61,14 +62,12 @@ class RexSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ClarityCard(
       margin: margin,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: borderColor ?? RexUiTokens.border),
-      ),
+      padding: padding ?? EdgeInsets.zero,
+      backgroundColor: color,
+      borderColor: borderColor ?? RexUiTokens.border,
+      borderRadius: BorderRadius.circular(radius),
       child: child,
     );
   }

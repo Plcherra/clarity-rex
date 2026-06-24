@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../theme/clarity_colors.dart';
 import '../../data/plaid_account_service.dart';
 
 class PlaidAccountStatusPill extends StatelessWidget {
@@ -13,9 +14,9 @@ class PlaidAccountStatusPill extends StatelessWidget {
     final cs = theme.colorScheme;
     final colors = switch (status) {
       PlaidAccountConnectionStatus.connected => (
-        bg: const Color(0xFF1B7A4C).withValues(alpha: 0.18),
-        fg: const Color(0xFF1B7A4C),
-        border: const Color(0xFF1B7A4C).withValues(alpha: 0.42),
+        bg: ClarityColors.financePositive.withValues(alpha: 0.18),
+        fg: ClarityColors.financePositive,
+        border: ClarityColors.financePositive.withValues(alpha: 0.42),
       ),
       PlaidAccountConnectionStatus.syncing => (
         bg: cs.secondary.withValues(alpha: 0.16),

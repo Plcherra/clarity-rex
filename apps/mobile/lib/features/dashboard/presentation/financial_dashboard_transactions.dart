@@ -343,7 +343,12 @@ class _DashboardTransactionsSectionState
         if (_loading)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 28),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(
+              child: ClarityDiamondLoader(
+                size: 52,
+                label: 'Loading transactions',
+              ),
+            ),
           )
         else if (_error != null)
           _InlineEmptyState(

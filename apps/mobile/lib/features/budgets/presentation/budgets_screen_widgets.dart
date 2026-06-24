@@ -94,7 +94,12 @@ class _BudgetsScaffold extends StatelessWidget {
                 if (dataNotifier.error != null) {
                   return const Center(child: Text('Could not load budgets.'));
                 }
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: ClarityDiamondLoader(
+                    size: 56,
+                    label: 'Loading budgets',
+                  ),
+                );
               }
               return _BudgetsLoadedContent(
                 viewModel: viewModel,
@@ -218,13 +223,10 @@ class _BudgetSummaryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
+    return ClarityCard(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.24),
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.08)),
-      ),
+      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.24),
+      borderColor: cs.outline.withValues(alpha: 0.18),
       child: Row(
         children: [
           Expanded(
@@ -252,8 +254,8 @@ class _BudgetSummaryStrip extends StatelessWidget {
                   ? formatMoney(metrics.totalOver)
                   : formatMoney(metrics.totalRemaining),
               valueColor: metrics.totalOver > 0
-                  ? const Color(0xFFC41E3A)
-                  : const Color(0xFF1B7A4C),
+                  ? ClarityColors.financeNegative
+                  : ClarityColors.financePositive,
               alignment: CrossAxisAlignment.end,
             ),
           ),
