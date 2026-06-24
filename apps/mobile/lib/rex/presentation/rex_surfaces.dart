@@ -66,7 +66,7 @@ class RexSurface extends StatelessWidget {
       margin: margin,
       padding: padding ?? EdgeInsets.zero,
       backgroundColor: color,
-      borderColor: borderColor ?? RexUiTokens.border,
+      borderColor: borderColor ?? RexUiTokens.border.withValues(alpha: 0.52),
       borderRadius: BorderRadius.circular(radius),
       child: child,
     );

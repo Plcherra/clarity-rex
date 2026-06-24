@@ -44,10 +44,10 @@ class ChatInputBar extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: RexUiTokens.surface.withValues(alpha: 0.98),
+              color: RexUiTokens.surfaceSoft.withValues(alpha: 0.72),
               borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
               border: Border.all(
-                color: RexUiTokens.border.withValues(alpha: 0.8),
+                color: RexUiTokens.border.withValues(alpha: 0.34),
               ),
             ),
             child: Padding(
@@ -253,12 +253,12 @@ class _AttachmentPreview extends StatelessWidget {
         decoration: BoxDecoration(
           color: hasError
               ? RexUiTokens.danger.withValues(alpha: 0.12)
-              : RexUiTokens.surfaceRaised,
+              : RexUiTokens.background.withValues(alpha: 0.28),
           borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
           border: Border.all(
             color: hasError
                 ? RexUiTokens.danger.withValues(alpha: 0.42)
-                : RexUiTokens.border.withValues(alpha: 0.7),
+                : RexUiTokens.border.withValues(alpha: 0.28),
           ),
         ),
         child: Padding(

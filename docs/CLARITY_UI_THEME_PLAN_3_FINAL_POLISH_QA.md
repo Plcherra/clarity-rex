@@ -4,12 +4,12 @@
 
 | Item | State |
 |------|-------|
-| Minimal ChatGPT/Grok-style voice panel | Pending |
-| Icon-led listening / thinking / speaking states | Pending |
-| Remove heavy voice status/helper text | Pending |
-| Replace `End Voice` text button with compact icon button | Pending |
-| Initial theme-lightening pass | Pending |
-| Manual voice QA | Pending |
+| Minimal ChatGPT/Grok-style voice panel | Complete |
+| Icon-led listening / thinking / speaking states | Complete |
+| Remove heavy voice status/helper text | Complete |
+| Replace `End Voice` text button with compact icon button | Complete |
+| Initial theme-lightening pass | Complete |
+| Manual voice QA | Needs device QA |
 
 **Last updated:** 2026-06-24  
 **Source:** `cursor_chat_app_logo_and_splash_screen.json`
@@ -30,17 +30,17 @@ Redesign the active Rex voice experience so it feels modern, minimal, and closer
 
 ## Checklist
 
-- [ ] Replace the current voice status box with a minimal voice panel.
-- [ ] Use compact icon-led state display where possible.
-- [ ] Listening state uses a wave/equalizer-style icon.
-- [ ] Thinking state uses the animated diamond loader.
-- [ ] Speaking state uses a subtle audio/equalizer indicator.
-- [ ] Remove heavy labels like `Listening to you...`, `Rex is thinking...`, and `Rex is speaking`.
-- [ ] Remove heavy helper text like `Ready. Keep the phone in your pocket and talk naturally.`
-- [ ] Replace `End Voice` text button with a compact end-call icon button.
-- [ ] Preserve mic mute, retry, settings, failure, and end-call behavior.
-- [ ] Start a careful theme-lightening pass: less dense borders, softer cards, cleaner dark surfaces.
-- [ ] Note future light/dark theme support separately if needed.
+- [x] Replace the current voice status box with a minimal voice panel.
+- [x] Use compact icon-led state display where possible.
+- [x] Listening state uses a wave/equalizer-style icon.
+- [x] Thinking state uses the animated diamond loader.
+- [x] Speaking state uses a subtle audio/equalizer indicator.
+- [x] Remove heavy labels like `Listening to you...`, `Rex is thinking...`, and `Rex is speaking`.
+- [x] Remove heavy helper text like `Ready. Keep the phone in your pocket and talk naturally.`
+- [x] Replace `End Voice` text button with a compact end-call icon button.
+- [x] Preserve mic mute, retry, settings, failure, and end-call behavior.
+- [x] Start a careful theme-lightening pass: less dense borders, softer cards, cleaner dark surfaces.
+- [x] Note future light/dark theme support separately if needed.
 
 ## Target Areas
 
@@ -130,6 +130,35 @@ Manual checks:
 - Chat input bar while voice is active.
 - Visual fit on common iPhone widths.
 
+## Manual Device QA Script
+
+Run on a simulator or device with microphone access:
+
+1. Open Assistant > Chat and tap the mic button.
+2. Confirm the voice panel appears as a compact icon-led surface with no default status sentence.
+3. While listening, confirm the equalizer/wave icon animates and the mic mute button remains available.
+4. Mute and unmute the mic; confirm the compact `Muted` chip appears only while muted.
+5. Speak a short message; confirm transcript text appears in the small transcript surface when available.
+6. Wait for Rex to process; confirm the thinking state uses the Clarity diamond loader.
+7. Let Rex reply; confirm speaking uses the subtle equalizer/audio indicator.
+8. Tap the compact end-call icon; confirm voice mode exits and the chat input returns to normal.
+9. Deny or revoke microphone permission, then start voice; confirm Settings and Try again controls still appear.
+10. Check the panel at common iPhone widths for overflow or clipped controls.
+
 ## Completion Report
 
-Not implemented yet.
+Implemented:
+
+- Replaced the text-heavy inline voice status box with a compact, icon-led panel.
+- Kept listening/speaking as equalizer-style visuals and switched thinking to the Clarity diamond loader.
+- Removed default helper/status sentences from the active voice panel while keeping failure messages and transcript text available.
+- Replaced the `End Voice` text button with a compact end-call icon button.
+- Preserved mute, retry, settings, failure, and end-call callbacks.
+- Applied a conservative Rex-only surface lightening pass with softer panel fills and less dense borders.
+
+Verification:
+
+- `dart format` completed for edited Dart files.
+- `dart analyze` reported no issues.
+- `flutter test test/assistant_navigation_test.dart` passed from `apps/mobile` with 6 passing tests.
+- Runtime/manual voice QA still needs to be checked on a device or simulator with microphone access.
