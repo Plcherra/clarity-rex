@@ -117,8 +117,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final cs = Theme.of(context).colorScheme;
 
     final pages = <Widget>[
       DashboardScreen(
@@ -158,42 +157,52 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           onManageCategories: _openCategoryManagement,
           child: IndexedStack(index: _idx, children: pages),
         ),
-        bottomNavigationBar: NavigationBar(
-          backgroundColor: cs.surface,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          height: 68,
-          indicatorColor: cs.surfaceContainerHighest.withValues(alpha: 0.7),
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          selectedIndex: _idx,
-          onDestinationSelected: (i) => setState(() => _selectIndex(i)),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard_rounded),
-              label: 'Dashboard',
+        bottomNavigationBar: DecoratedBox(
+          decoration: BoxDecoration(
+            color: cs.surface,
+            border: Border(
+              top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.72)),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.account_balance_outlined),
-              selectedIcon: Icon(Icons.account_balance_rounded),
-              label: 'Accounts',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.savings_outlined),
-              selectedIcon: Icon(Icons.savings_rounded),
-              label: 'Budgets',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.psychology_alt_outlined),
-              selectedIcon: Icon(Icons.psychology_alt_rounded),
-              label: 'Assistant',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded),
-              label: 'Profile',
-            ),
-          ],
+            boxShadow: [
+              BoxShadow(
+                color: cs.shadow.withValues(alpha: 0.30),
+                blurRadius: 22,
+                spreadRadius: -14,
+                offset: const Offset(0, -8),
+              ),
+            ],
+          ),
+          child: NavigationBar(
+            selectedIndex: _idx,
+            onDestinationSelected: (i) => setState(() => _selectIndex(i)),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.dashboard_outlined),
+                selectedIcon: Icon(Icons.dashboard_rounded),
+                label: 'Dashboard',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.account_balance_outlined),
+                selectedIcon: Icon(Icons.account_balance_rounded),
+                label: 'Accounts',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.savings_outlined),
+                selectedIcon: Icon(Icons.savings_rounded),
+                label: 'Budgets',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.psychology_alt_outlined),
+                selectedIcon: Icon(Icons.psychology_alt_rounded),
+                label: 'Assistant',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline_rounded),
+                selectedIcon: Icon(Icons.person_rounded),
+                label: 'Profile',
+              ),
+            ],
+          ),
         ),
       ),
     );

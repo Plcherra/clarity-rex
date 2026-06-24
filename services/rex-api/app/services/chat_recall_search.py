@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Callable, Optional
@@ -131,18 +132,11 @@ class ChatRecallSearch:
                     )
                     result.error_message = failure
                     return result
-                if self.viable_match_count(result.messages_by_id) >= target_match_count:
-                    self.log(
-                        "shared_conversation_search_target_reached",
-                        raw_match_count=len(result.messages_by_id),
-                        viable_match_count=self.viable_match_count(result.messages_by_id),
-                        target_match_count=target_match_count,
-                    )
-                    break
 
         fallback_search_allowed = (
             not shared_search_used
             or not self.has_strong_shared_search_signal(
+                query,
                 result.messages_by_id,
                 target_match_count=target_match_count,
             )
@@ -177,7 +171,13 @@ class ChatRecallSearch:
 
         should_run_full_scan = (
             list_messages is not None
-            and self.viable_match_count(result.messages_by_id) == 0
+            and (
+                self.viable_match_count(result.messages_by_id) == 0
+                or (
+                    self.query_needs_detail(query)
+                    and self.detail_rich_match_count(result.messages_by_id) == 0
+                )
+            )
             and fallback_search_allowed
         )
         if should_run_full_scan:
@@ -522,6 +522,14 @@ class ChatRecallSearch:
             if is_chat_search_user_content_message(message)
         )
 
+    def detail_rich_match_count(self, messages_by_id: dict[str, dict]) -> int:
+        return sum(
+            1
+            for message in messages_by_id.values()
+            if is_chat_search_user_content_message(message)
+            and self.message_has_recall_detail(message)
+        )
+
     def best_match_score(self, messages_by_id: dict[str, dict]) -> float:
         return max(
             (
@@ -534,16 +542,42 @@ class ChatRecallSearch:
 
     def has_strong_shared_search_signal(
         self,
+        query: str,
         messages_by_id: dict[str, dict],
         *,
         target_match_count: int,
     ) -> bool:
         factual_count = self.factual_user_match_count(messages_by_id)
+        if self.query_needs_detail(query):
+            return self.detail_rich_match_count(messages_by_id) >= min(
+                SHARED_SEARCH_MIN_FACTUAL_MATCHES,
+                target_match_count,
+            )
         if factual_count >= min(SHARED_SEARCH_MIN_FACTUAL_MATCHES, target_match_count):
             return True
         return (
             factual_count >= 2
             and self.best_match_score(messages_by_id) >= SHARED_SEARCH_STRONG_MATCH_SCORE
+        )
+
+    def query_needs_detail(self, query: str) -> bool:
+        text = str(query or "").lower()
+        return bool(
+            re.search(
+                r"\b(?:amount|birthday|date|for what|how much|june|when|why|\d{1,2})\b",
+                text,
+            )
+        )
+
+    def message_has_recall_detail(self, message: dict) -> bool:
+        text = str(message.get("content") or "").lower()
+        if not text:
+            return False
+        return bool(
+            re.search(
+                r"\$\s*\d|\b\d+(?:\.\d{2})?\b|\b(?:birthday|june|model|for\s+her|for\s+his|for\s+their)\b",
+                text,
+            )
         )
 
     def log(

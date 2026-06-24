@@ -3,6 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../core/rex/rex_config.dart';
 import '../core/supabase/supabase_service.dart';
+import '../screens/splash/clarity_splash_screen.dart';
+import '../widgets/clarity_diamond_loader.dart';
 import 'app.dart';
 import 'app_composition.dart';
 
@@ -72,17 +74,19 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
       future: _bootFuture,
       builder: (context, snapshot) {
         final composition = snapshot.data;
-        if (composition != null) {
-          return ClarityApp(
-            ui: composition.ui,
-            authController: composition.authController,
-            profileController: composition.profileController,
-          );
-        }
         if (snapshot.hasError) {
           return _BootErrorApp(error: snapshot.error, retry: _retry);
         }
-        return const _BootLoadingApp();
+        return ClaritySplashScreen(
+          isReady: composition != null,
+          child: composition != null
+              ? ClarityApp(
+                  ui: composition.ui,
+                  authController: composition.authController,
+                  profileController: composition.profileController,
+                )
+              : const _BootLoadingApp(),
+        );
       },
     );
   }
@@ -109,7 +113,11 @@ final class _BootLoadingApp extends StatelessWidget {
       title: 'Clarity',
       debugShowCheckedModeBanner: false,
       theme: ClarityApp.buildTheme(),
-      home: const Scaffold(body: Center(child: CircularProgressIndicator())),
+      home: const Scaffold(
+        body: Center(
+          child: ClarityDiamondLoader(size: 64, label: 'Starting Clarity'),
+        ),
+      ),
     );
   }
 }

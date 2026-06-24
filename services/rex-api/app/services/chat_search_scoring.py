@@ -49,10 +49,29 @@ NO_RESULT_MARKERS = (
     "no mention",
 )
 FACTUAL_STATEMENT_PATTERNS = (
-    r"\bi\s+(?:own|have|bought|want|wanted|prefer|like|live|work|plan|planned|need)\b",
+    r"\bi\s+(?:own|have|bought|want|wanted|prefer|like|live|work|plan|planned|need|intend)\b",
     r"\bmy\s+[a-z0-9'\s]{1,40}\s+(?:is|are|was|were)\b",
     r"\b(?:it|that|this|the\s+[a-z0-9'\s]{1,30})\s+(?:is|was|are|were)\b",
     r"\b(?:model|birthday|deadline|address|name|preference)\s+(?:is|was|are|were)\b",
+    r"\b(?:my|her|his|their)\s+[a-z0-9'\s]{1,40}\s+birthday\b",
+    r"\b(?:send|sending|sent|transfer|transferring|transferred)\b.{0,60}\b(?:money|cash|\$|\d+)\b",
+    r"\b(?:money|cash|\$|\d+)\b.{0,60}\b(?:send|sending|sent|transfer|transferring|transferred)\b",
+)
+DETAIL_PATTERNS = (
+    r"\$\s*\d+",
+    r"\b\d+(?:\.\d{2})?\s*(?:bucks|dollars)\b",
+    r"\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+    r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|"
+    r"thirty|forty|fifty|hundred)\b.{0,30}\b(?:bucks|dollars|money|cash)\b",
+    r"\b(?:january|february|march|april|may|june|july|august|september|october|"
+    r"november|december)\s+\d{1,2}(?:st|nd|rd|th)?\b",
+    r"\b(?:on|by|around)\s+(?:the\s+)?(?:\d{1,2}(?:st|nd|rd|th)?|"
+    r"first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|"
+    r"eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|"
+    r"eighteenth|nineteenth|twentieth|twenty first|twenty second|twenty third)\b",
+    r"\bbirthday\b",
+    r"\bmodel\b|\b[a-z][a-z0-9 -]*\d{1,4}\s*[a-z]{0,3}\b",
+    r"\bfor\s+(?:her|his|their|my|the)\b",
 )
 
 
@@ -117,6 +136,10 @@ class ChatSearchScorer:
             elif self.is_factual_statement_text(normalized_text):
                 score += 2.0
                 reasons.append("factual statement")
+            detail_score = self.detail_density_score(normalized_text)
+            if detail_score > 0:
+                score += min(4.0, detail_score)
+                reasons.append("detail-rich")
         elif role == "assistant":
             score += 0.4
             reasons.append("assistant-authored")
@@ -163,6 +186,13 @@ class ChatSearchScorer:
             for pattern in FACTUAL_STATEMENT_PATTERNS
         )
 
+    def detail_density_score(self, text: str) -> float:
+        normalized = self.normalize_text(text)
+        if not normalized or self.is_search_question_text(normalized):
+            return 0.0
+        matches = sum(1 for pattern in DETAIL_PATTERNS if re.search(pattern, normalized))
+        return float(matches) * 1.5
+
     def recency_score(self, timestamp: Optional[str]) -> float:
         if not timestamp:
             return 0.0
@@ -174,12 +204,12 @@ class ChatSearchScorer:
             parsed = parsed.replace(tzinfo=timezone.utc)
         age_days = max(0, (datetime.now(timezone.utc) - parsed).days)
         if age_days <= 1:
-            return 1.0
+            return 0.25
         if age_days <= 7:
-            return 0.7
+            return 0.2
         if age_days <= 30:
-            return 0.35
-        return 0.1
+            return 0.1
+        return 0.05
 
     def __getattr__(self, name: str):
         return getattr(self.terms, name)

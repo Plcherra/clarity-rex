@@ -1023,6 +1023,46 @@ async def test_chat_context_searches_raw_and_topic_queries_for_mom_birthday_reca
 
 
 @pytest.mark.asyncio
+async def test_chat_context_prioritizes_old_factual_birthday_over_recent_mom_noise():
+    store = FakeContextMemoryStore()
+    store.past_messages = [
+        *[
+            {
+                "id": f"mom-noise-{index}",
+                "conversation_id": f"conversation-noise-{index}",
+                "role": "user" if index % 2 else "assistant",
+                "content": (
+                    "Can you check for my mom's birthday?"
+                    if index % 2
+                    else "I checked chats but did not find your mom's birthday date."
+                ),
+                "timestamp": f"2026-06-23T21:{index:02d}:00Z",
+            }
+            for index in range(1, 31)
+        ],
+        {
+            "id": "mom-real-birthday",
+            "conversation_id": "conversation-real-mom",
+            "role": "user",
+            "content": "It's not next week, but on the eighteenth, it's my mom's birthday.",
+            "timestamp": "2026-06-02T12:00:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Can you check mom and birthday? What'd you find?",
+        conversation_id="conversation-current",
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert any(
+        "mom's birthday" in result["content"] and "eighteenth" in result["content"]
+        for result in structured_context["chat_search_results"]
+    )
+
+
+@pytest.mark.asyncio
 async def test_chat_context_uses_recent_subject_for_anything_else_followup():
     store = FakeContextMemoryStore()
     store.messages = [
@@ -1737,6 +1777,60 @@ async def test_chat_context_treats_amount_and_purpose_as_recall_followup():
     assert structured_context["memory_status"]["attempted_sources"][
         "chat_search"
     ] is True
+
+
+@pytest.mark.asyncio
+async def test_chat_context_prioritizes_money_amount_and_purpose_over_partial_noise():
+    store = FakeContextMemoryStore()
+    store.messages = [
+        {
+            "id": "message-1",
+            "role": "user",
+            "content": "Did I mention sending money for someone?",
+            "timestamp": "2026-06-23T21:00:00Z",
+        },
+        {
+            "id": "message-2",
+            "role": "assistant",
+            "content": "Old chats mention sending money to your mom.",
+            "timestamp": "2026-06-23T21:00:10Z",
+        },
+    ]
+    store.past_messages = [
+        *[
+            {
+                "id": f"money-noise-{index}",
+                "conversation_id": f"conversation-money-noise-{index}",
+                "role": "assistant" if index % 2 else "user",
+                "content": (
+                    "Old chats mention sending money to your mom. No amount or reason."
+                    if index % 2
+                    else "Did I mention sending money to someone?"
+                ),
+                "timestamp": f"2026-06-23T20:{index:02d}:00Z",
+            }
+            for index in range(1, 25)
+        ],
+        {
+            "id": "mom-money-real",
+            "conversation_id": "conversation-money-real",
+            "role": "user",
+            "content": "I need to send $10 to my mom for her birthday by June 18.",
+            "timestamp": "2026-06-02T12:05:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="How much and for what?",
+        conversation_id="conversation-current",
+        intent_decision=RexIntentDecision(RexIntent.CASUAL),
+    )
+
+    assert any(
+        "$10" in result["content"] and "for her birthday" in result["content"]
+        for result in structured_context["chat_search_results"]
+    )
 
 
 @pytest.mark.asyncio

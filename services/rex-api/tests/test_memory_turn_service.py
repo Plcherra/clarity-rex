@@ -706,6 +706,42 @@ async def test_memory_turn_service_saves_contextual_birthday_answer():
 
 
 @pytest.mark.asyncio
+async def test_memory_turn_service_saves_birthday_from_bare_confirmation():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+    history = [
+        {
+            "id": "message-1",
+            "conversation_id": "conversation-1",
+            "role": "user",
+            "content": "Can you save June 18 as my mom's birthday?",
+        },
+        {
+            "id": "message-2",
+            "conversation_id": "conversation-1",
+            "role": "assistant",
+            "content": "Sure, want me to save June 18 as your mom's birthday?",
+        },
+    ]
+    store.messages.extend(history)
+
+    result = await service.handle_turn(
+        "Please.",
+        conversation_id="conversation-1",
+        user_message={"id": "message-3", "content": "Please."},
+        conversation_history=history,
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert result is not None
+    assert result["response"] == "Got it, your mom's birthday is June 18."
+    assert result["memory_changes"]["created"] == 1
+    assert result["memory_changes"]["records"][0]["action"] == "direct_saved"
+    assert store.long_term_memory[0]["content"] == ("User's mom's birthday is June 18.")
+    assert store.entities[0]["metadata"]["attributes"]["birthday"] == "June 18"
+
+
+@pytest.mark.asyncio
 async def test_memory_turn_service_updates_city_from_contextual_spelling_reply():
     store = FakeMemoryTurnStore()
     store.long_term_memory.append(

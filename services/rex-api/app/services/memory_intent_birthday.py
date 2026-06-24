@@ -25,15 +25,17 @@ class MemoryIntentBirthdayMixin:
             match = self._birthday_correction_pattern.search(message)
         if match is None:
             match = self._inverted_birthday_pattern.search(message)
+        if match is not None and match.re is self._inverted_birthday_pattern and not (
+            self._date_normalizer.is_day_only(match.group("date"))
+            or self._date_normalizer.month_from_text(match.group("date"))
+        ):
+            match = None
+        if match is None:
+            match = self._date_as_birthday_pattern.search(message)
         if match is None:
             return None
 
         raw_date = match.group("date")
-        if match.re is self._inverted_birthday_pattern and not (
-            self._date_normalizer.is_day_only(raw_date)
-            or self._date_normalizer.month_from_text(raw_date)
-        ):
-            return None
 
         person = self._clean_person(match.group("person"))
         date_text = self._normalize_date_phrase(
@@ -79,14 +81,22 @@ class MemoryIntentBirthdayMixin:
         conversation_history: list[dict],
         time_context: Optional[dict],
     ) -> Optional[SimpleMemoryIntent]:
-        if not self._mentions_contextual_birthday_memory(message):
+        if not self._mentions_contextual_birthday_memory(
+            message,
+            conversation_history=conversation_history,
+        ):
             return None
         return self._recent_birthday_intent(
             conversation_history,
             time_context=time_context,
         )
 
-    def _mentions_contextual_birthday_memory(self, message: str) -> bool:
+    def _mentions_contextual_birthday_memory(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+    ) -> bool:
         normalized = self._normalize_reply(message)
         if "birthday" in normalized and self.is_contextual_memory_save_request(
             normalized
@@ -95,6 +105,11 @@ class MemoryIntentBirthdayMixin:
         if self.is_contextual_memory_save_request(normalized) or (
             self.is_contextual_memory_reject_request(normalized)
         ):
+            if (
+                self._recent_birthday_person(conversation_history) is not None
+                and self._recent_birthday_save_prompt(conversation_history)
+            ):
+                return True
             return any(token in normalized for token in {"this", "that", "memory"})
         return False
 
@@ -165,3 +180,14 @@ class MemoryIntentBirthdayMixin:
         if re.search(r"\b(my\s+)?(dad|father|papa)\b", recent_text):
             return "dad"
         return None
+
+    def _recent_birthday_save_prompt(self, conversation_history: list[dict]) -> bool:
+        for message in reversed(conversation_history[-6:]):
+            if message.get("role") != "assistant":
+                continue
+            content = str(message.get("content") or "").lower()
+            if "birthday" not in content:
+                continue
+            if re.search(r"\b(?:save|remember|keep|memory)\b", content):
+                return True
+        return False

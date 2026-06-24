@@ -176,7 +176,9 @@ class PromptStructuredContextMixin:
             line = (
                 f"{line} Use chat results as chat history, not saved memory. "
                 "If the retrieved chats only answer part of the question, say "
-                "what they show and what detail is missing."
+                "what they show and what detail is missing. Do not volunteer "
+                "missing amount, date, reason, or recipient details unless the "
+                "user asked for those details."
             )
         if saved_state == "degraded" or chat_state == "degraded":
             failed = ", ".join(sorted(set(failure_sources))) or "unknown"

@@ -58,7 +58,8 @@ CHAT_SEARCH_STOP_WORDS = STOP_WORDS | {
 CHAT_SEARCH_CONCEPT_GROUPS = (
     ("mom", "mother", "mum", "mama"),
     ("dad", "father", "papa"),
-    ("money", "cash", "gift", "amount", "send", "sent", "sending", "transfer"),
+    ("money", "cash", "gift", "amount"),
+    ("send", "sent", "sending", "transfer", "transferring", "transferred"),
     ("pc", "computer", "desktop", "model"),
 )
 CHAT_SEARCH_CONCEPT_ALIASES = {

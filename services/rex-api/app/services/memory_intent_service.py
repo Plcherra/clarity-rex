@@ -35,6 +35,12 @@ class MemoryIntentService(
         r"(?P<person>mom|mother|mum|mama|dad|father|papa)\s*(?:'s)?\s+birthday\b",
         re.IGNORECASE,
     )
+    _date_as_birthday_pattern = re.compile(
+        r"\b(?P<date>[A-Za-z]+(?:\s+\d{1,2}(?:st|nd|rd|th)?)?|\d{1,2}(?:st|nd|rd|th)?)"
+        r"\s+as\s+(?:my\s+)?"
+        r"(?P<person>mom|mother|mum|mama|dad|father|papa)\s*(?:'s)?\s+birthday\b",
+        re.IGNORECASE,
+    )
     _self_birthday_pattern = re.compile(
         r"\bmy\s+birthday\s+(?:is|falls on|will be|on)\s+"
         r"(?P<date>[^,.!?]{2,60})",

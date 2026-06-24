@@ -57,17 +57,14 @@ class ChatRecallExcerptBuilder:
         sorted_groups = sorted(
             grouped.items(),
             key=lambda item: (
-                self.recency_ranked_score(
-                    max(
-                        float(message.get("_chat_search_score") or 0)
-                        for message in item[1]
-                    )
-                ),
-                max(str(message.get("timestamp") or "") for message in item[1]),
+                self.group_detail_score(item[1]),
+                self.group_factual_count(item[1]),
+                -self.group_noise_count(item[1]),
                 max(
                     float(message.get("_chat_search_score") or 0)
                     for message in item[1]
                 ),
+                max(str(message.get("timestamp") or "") for message in item[1]),
             ),
             reverse=True,
         )
@@ -323,9 +320,43 @@ class ChatRecallExcerptBuilder:
         content = str(message.get("content") or "").lower()
         if not content:
             return False
-        if re.search(r"\$\s*\d|\b\d+(?:\.\d{2})?\s*(?:bucks|dollars)\b", content):
+        if self.text_has_amount(content):
             return True
         return any(marker in content for marker in CHAT_RELATED_DETAIL_MARKERS)
+
+    def group_detail_score(self, messages: list[dict]) -> int:
+        return sum(
+            1
+            for message in messages
+            if is_chat_search_user_content_message(message)
+            and self.message_has_detail_marker(message)
+        )
+
+    def group_factual_count(self, messages: list[dict]) -> int:
+        return sum(1 for message in messages if is_chat_search_user_content_message(message))
+
+    def group_noise_count(self, messages: list[dict]) -> int:
+        return sum(
+            1
+            for message in messages
+            if is_chat_search_no_result_message(message)
+            or not is_chat_search_user_content_message(message)
+        )
+
+    def text_has_amount(self, text: str) -> bool:
+        if re.search(r"\$\s*\d|\b\d+(?:\.\d{2})?\s*(?:bucks|dollars)\b", text):
+            return True
+        if re.search(
+            r"\b\d+\b.{0,40}\b(?:money|cash|send|sent|sending|transfer|gift)\b",
+            text,
+        ):
+            return True
+        if re.search(
+            r"\b(?:money|cash|send|sent|sending|transfer|gift)\b.{0,40}\b\d+\b",
+            text,
+        ):
+            return True
+        return False
 
     def message_was_rejected_in_conversation(
         self,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../widgets/clarity_card.dart';
 
 /// Floating panel for the unified CSV upload + AI categorization job.
 class ImportJobProgressBanner extends StatelessWidget {
@@ -20,34 +21,29 @@ class ImportJobProgressBanner extends StatelessWidget {
       controller.importProgressMessage,
       MediaQuery.sizeOf(context).width,
     );
-    return Material(
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.96),
-      elevation: 8,
-      shadowColor: cs.shadow.withValues(alpha: 0.18),
-      borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$message $pct%',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+    return ClarityCard(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.96),
+      borderColor: cs.outline.withValues(alpha: 0.72),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$message $pct%',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: total > 0 ? done / total : null,
-                minHeight: 5,
-              ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: total > 0 ? done / total : null,
+              minHeight: 5,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -182,103 +178,98 @@ class _PersistentImportMessageBanner extends StatelessWidget {
         : cs.tertiaryContainer.withValues(alpha: 0.9);
     final foreground = isError ? cs.onErrorContainer : cs.onTertiaryContainer;
     final summary = controller.persistentImportSummary;
-    return Material(
-      color: background,
-      elevation: 8,
-      shadowColor: cs.shadow.withValues(alpha: 0.18),
-      borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 10, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  isError
-                      ? Icons.error_outline_rounded
-                      : Icons.info_outline_rounded,
-                  color: foreground,
-                  size: 20,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    summary?.title ?? controller.persistentImportMessage ?? '',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: foreground,
-                      fontWeight: FontWeight.w800,
-                    ),
+    return ClarityCard(
+      padding: const EdgeInsets.fromLTRB(16, 12, 10, 12),
+      backgroundColor: background,
+      borderColor: foreground.withValues(alpha: 0.18),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                isError
+                    ? Icons.error_outline_rounded
+                    : Icons.info_outline_rounded,
+                color: foreground,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  summary?.title ?? controller.persistentImportMessage ?? '',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: foreground,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Dismiss',
-                  onPressed: controller.dismissPersistentImportMessage,
-                  icon: Icon(Icons.close_rounded, color: foreground),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
+              ),
+              IconButton(
+                tooltip: 'Dismiss',
+                onPressed: controller.dismissPersistentImportMessage,
+                icon: Icon(Icons.close_rounded, color: foreground),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+          if (summary == null) ...[
+            const SizedBox(height: 2),
+            Text(
+              controller.persistentImportMessage ?? '',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: foreground,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            if (summary == null) ...[
-              const SizedBox(height: 2),
+          ] else ...[
+            const SizedBox(height: 6),
+            for (final line in summary.lines) ...[
               Text(
-                controller.persistentImportMessage ?? '',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: foreground,
+                line,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: foreground.withValues(alpha: 0.84),
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            ] else ...[
-              const SizedBox(height: 6),
-              for (final line in summary.lines) ...[
-                Text(
-                  line,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: foreground.withValues(alpha: 0.84),
-                    fontWeight: FontWeight.w600,
+              const SizedBox(height: 2),
+            ],
+          ],
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            alignment: WrapAlignment.end,
+            children: [
+              if ((summary?.canRetry ?? false) ||
+                  controller.persistentImportMessageCanRetry)
+                TextButton.icon(
+                  onPressed: controller.retryCategoryAssignment,
+                  icon: Icon(
+                    Icons.refresh_rounded,
+                    color: foreground,
+                    size: 18,
+                  ),
+                  label: Text('Retry', style: TextStyle(color: foreground)),
+                ),
+              if (summary?.canOpenCategoryManagement == true &&
+                  onManageCategories != null)
+                TextButton.icon(
+                  onPressed: onManageCategories,
+                  icon: Icon(
+                    Icons.category_outlined,
+                    color: foreground,
+                    size: 18,
+                  ),
+                  label: Text(
+                    'Categories',
+                    style: TextStyle(color: foreground),
                   ),
                 ),
-                const SizedBox(height: 2),
-              ],
             ],
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              alignment: WrapAlignment.end,
-              children: [
-                if ((summary?.canRetry ?? false) ||
-                    controller.persistentImportMessageCanRetry)
-                  TextButton.icon(
-                    onPressed: controller.retryCategoryAssignment,
-                    icon: Icon(
-                      Icons.refresh_rounded,
-                      color: foreground,
-                      size: 18,
-                    ),
-                    label: Text('Retry', style: TextStyle(color: foreground)),
-                  ),
-                if (summary?.canOpenCategoryManagement == true &&
-                    onManageCategories != null)
-                  TextButton.icon(
-                    onPressed: onManageCategories,
-                    icon: Icon(
-                      Icons.category_outlined,
-                      color: foreground,
-                      size: 18,
-                    ),
-                    label: Text(
-                      'Categories',
-                      style: TextStyle(color: foreground),
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

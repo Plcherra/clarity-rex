@@ -34,6 +34,10 @@ Rex should search the user's own chats, find the most relevant conversations, su
 - The Knows page must only show saved categorized memory, not chat search results.
 - Rex must report degraded or unavailable search honestly.
 - Recall bugs must be fixed in the general retrieval layer, not with topic-specific branches.
+- A failed manual smoke phrase is evidence of a retrieval class, not permission
+  to add a phrase-specific heuristic.
+- Production recall logic must not depend on one observed person, device, date,
+  game, employer, payment phrase, or relationship. Those belong in tests.
 
 ## 4. MVP Baseline
 
@@ -51,6 +55,20 @@ It should:
 This is enough for MVP if it is reliable, honest, and easy to debug.
 
 MVP recall examples are test coverage, not product logic. Mom, games, PC, payroll, immigration, money, places, and preferences should all use the same retrieval path. If one topic fails, improve query expansion, indexed search, ranking, or conversation excerpts for all topics.
+
+Before changing recall code, classify the failure generically:
+- **Query construction:** the query lost useful terms, became too broad, or did
+  not include the wording a user would type in Chats search.
+- **Ranking:** recent noisy chats or assistant no-result messages outranked older
+  user-authored factual chats.
+- **Excerpts:** the matched conversation was found, but the nearby turn with the
+  useful date, amount, name, reason, or model was omitted.
+- **Source status/truth:** search was empty, filtered, partial, or degraded but
+  Rex phrased it as certain knowledge or a clean no-result.
+
+Every fix should improve one of those classes for arbitrary topics. A change is
+not acceptable if replacing the smoke terms with a different person, place,
+device, date, employer, game, or exact phrase would fail for the same reason.
 
 For beta parity, Rex recall and the Chats page should keep using the same shared
 keyword/indexed search contract. In backend code that contract is
@@ -86,7 +104,9 @@ Hybrid search should rank results by:
 - Semantic similarity
 - User-authored messages
 - Conversation-level relevance
-- Recency
+- Information density, such as useful dates, amounts, names, reasons, model
+  names, commitments, or preferences when relevant to the query
+- Recency as a tiebreaker, not as the primary reason recent test chatter wins
 - Repeated mentions
 - Relationship to the user's latest question
 - Whether the result is a failed old Rex response that should be ignored
@@ -124,12 +144,18 @@ Bad:
 
 Recommended path:
 - Keep the current keyword search stable for MVP.
-- Add better reusable query expansion over time.
-- Add conversation-level ranking and deduplication.
+- Add better reusable query expansion over time. Query expansion should be a
+  taxonomy or learned/indexed retrieval improvement, not a list of phrases copied
+  from one smoke failure.
+- Add conversation-level ranking and deduplication that prefers user-authored,
+  information-dense evidence over repeated recent test questions and assistant
+  no-result replies.
 - Add embeddings or another semantic index for user messages and conversation summaries.
 - Use hybrid ranking: keyword first, semantic second, conversation context final.
 - Keep source status and truth enforcement simple.
 - Add tests with arbitrary user topics, not only family or birthday examples.
+  Every recall bug fix should include at least one unrelated control topic that
+  proves the fix is not hardcoded to the smoke phrase.
 - Reject fixes that add topic-only branches, backend-composed answers, or a second recall brain.
 
 Hybrid Chat Search strengthens the same Rex Brain. It must not become a separate memory system or a second assistant.
