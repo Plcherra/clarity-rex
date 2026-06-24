@@ -9,7 +9,6 @@ class _DashboardScrollBody extends StatelessWidget {
     required this.snapshot,
     required this.budgetPerformance,
     required this.transactionCount,
-    required this.onUploadTransactions,
   });
 
   final String title;
@@ -19,7 +18,6 @@ class _DashboardScrollBody extends StatelessWidget {
   final DashboardSnapshot snapshot;
   final BudgetPerformanceSnapshot budgetPerformance;
   final int transactionCount;
-  final Future<void> Function()? onUploadTransactions;
 
   @override
   Widget build(BuildContext context) {
@@ -47,12 +45,6 @@ class _DashboardScrollBody extends StatelessWidget {
                     const SizedBox(height: 10),
                   ],
                   if (title.trim().isEmpty) const SizedBox(height: 2),
-                  if (onUploadTransactions != null) ...[
-                    _DashboardActionRow(
-                      onUploadTransactions: onUploadTransactions!,
-                    ),
-                    const SizedBox(height: 10),
-                  ],
                   _CashFlowSummaryCard(snapshot: snapshot),
                   const SizedBox(height: _sectionGap),
                   _DashboardTransactionsSection(
@@ -247,61 +239,6 @@ class _DashboardLoadMessage extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Text(message, textAlign: TextAlign.center),
-      ),
-    );
-  }
-}
-
-class _DashboardActionRow extends StatelessWidget {
-  const _DashboardActionRow({required this.onUploadTransactions});
-
-  final Future<void> Function() onUploadTransactions;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [_CompactUploadButton(onPressed: onUploadTransactions)],
-    );
-  }
-}
-
-class _CompactUploadButton extends StatefulWidget {
-  const _CompactUploadButton({required this.onPressed});
-
-  final Future<void> Function() onPressed;
-
-  @override
-  State<_CompactUploadButton> createState() => _CompactUploadButtonState();
-}
-
-class _CompactUploadButtonState extends State<_CompactUploadButton> {
-  var _busy = false;
-
-  Future<void> _handleTap() async {
-    setState(() => _busy = true);
-    try {
-      await widget.onPressed();
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'Manual fallback for files from your bank.',
-      child: FilledButton.icon(
-        onPressed: _busy ? null : _handleTap,
-        icon: _busy
-            ? const ClarityInlineLoader(size: 18, strokeWidth: 2)
-            : const Icon(Icons.upload_file_rounded, size: 18),
-        label: Text(_busy ? 'Importing...' : 'Import CSV instead'),
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(0, 44),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-        ),
       ),
     );
   }

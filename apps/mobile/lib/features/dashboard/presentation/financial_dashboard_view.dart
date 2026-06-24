@@ -194,7 +194,7 @@ class FinancialDashboardView extends StatefulWidget {
   final bool showBackButton;
   final String title;
 
-  /// When set (per-account dashboard only), shows a prominent CSV import control.
+  /// Optional per-account CSV import fallback action.
   final Future<void> Function()? onUploadTransactions;
 
   /// Optional per-account delete-one-upload action.
@@ -213,6 +213,7 @@ class FinancialDashboardView extends StatefulWidget {
 class _FinancialDashboardViewState extends State<FinancialDashboardView> {
   late final _DashboardDataNotifier _dataNotifier;
   var _loadGeneration = 0;
+  var _uploadingTransactions = false;
 
   @override
   void initState() {
@@ -254,6 +255,17 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
     }
   }
 
+  Future<void> _handleUploadTransactions() async {
+    final uploadTransactions = widget.onUploadTransactions;
+    if (_uploadingTransactions || uploadTransactions == null) return;
+    setState(() => _uploadingTransactions = true);
+    try {
+      await uploadTransactions();
+    } finally {
+      if (mounted) setState(() => _uploadingTransactions = false);
+    }
+  }
+
   @override
   void dispose() {
     widget.controller.removeListener(_handleControllerChanged);
@@ -282,6 +294,17 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
               )
             : null,
         actions: [
+          if (widget.onUploadTransactions != null)
+            IconButton(
+              tooltip: 'Import CSV instead',
+              icon: _uploadingTransactions
+                  ? const ClarityInlineLoader(size: 19, strokeWidth: 2)
+                  : const Icon(Icons.upload_file_rounded),
+              color: cs.onSurface.withValues(alpha: 0.72),
+              onPressed: _uploadingTransactions
+                  ? null
+                  : _handleUploadTransactions,
+            ),
           if (widget.onDeleteCsvImportBatch != null)
             IconButton(
               tooltip: 'Delete CSV upload',
@@ -329,7 +352,6 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             snapshot: data.snapshot,
             budgetPerformance: data.budgetPerformance,
             transactionCount: data.scopedTransactionCount,
-            onUploadTransactions: widget.onUploadTransactions,
           );
           return widget.showBackButton
               ? ImportJobStatusHost(

@@ -62,7 +62,7 @@ class ConnectBankSetupCard extends StatelessWidget {
             expanded: true,
           ),
           const SizedBox(height: 10),
-          ClarityButton.outlined(
+          ClarityButton.text(
             label: 'Import CSV instead',
             onPressed: onImportCsvInstead,
             icon: const Icon(Icons.upload_file_rounded, size: 20),

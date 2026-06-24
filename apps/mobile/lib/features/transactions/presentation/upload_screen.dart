@@ -116,8 +116,19 @@ class _UploadScreenState extends State<UploadScreen> {
                     SizedBox(
                       width: double.infinity,
                       height: 56,
-                      child: FilledButton(
+                      child: OutlinedButton(
                         onPressed: _busy ? null : _import,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.86),
+                          backgroundColor: theme.colorScheme.surfaceContainerLow
+                              .withValues(alpha: 0.48),
+                          side: BorderSide(
+                            color: theme.colorScheme.outlineVariant.withValues(
+                              alpha: 0.72,
+                            ),
+                          ),
+                        ),
                         child: _busy
                             ? const ClarityInlineLoader(
                                 size: 22,

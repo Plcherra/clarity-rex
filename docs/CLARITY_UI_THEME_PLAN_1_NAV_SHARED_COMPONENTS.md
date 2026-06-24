@@ -1,69 +1,82 @@
-# Clarity UI Theme Plan 1: Navigation And Shared Components
+# Clarity UI Theme Plan 1: Quick Visual Fixes
 
 ## Status
 
 | Item | State |
 |------|-------|
-| Foundation theme tokens | Done |
-| Material component themes | Done |
-| `ClarityCard` / `ClarityButton` / `ClarityDiamondLoader` | Done |
-| `HomeShell` bottom navigation cleanup | Done |
-| Warm/gold cleanup in shared layer | Done |
+| Move `Import CSV instead` to account action icon | Complete |
+| Restyle `+ Add custom category` as quiet outline/ghost action | Complete |
+| Audit obvious too-blue CTA buttons | Complete |
+| Keep dashboard/accounts layout mostly unchanged | Complete |
 
 **Last updated:** 2026-06-24  
-**Completed:** 2026-06-24
-
-## Checklist
-
-- [x] Central theme files under `apps/mobile/lib/theme/`
-- [x] `ClarityTheme.dark()` AppBar, Card, Input, Button, Dialog, SnackBar, BottomSheet, ProgressIndicator themes
-- [x] `navigationBarTheme` in `clarity_theme.dart`
-- [x] Remove redundant `HomeShell` nav wrapper styling
-- [x] Polish `ClarityCard` edge treatment
-- [x] Confirm `ClarityButton` primary gradient styling
-- [x] Align `ClarityDiamondLoader` glow with splash diamond
-- [x] Grep shared layer for stray hardcoded colors
+**Source:** `cursor_chat_app_logo_and_splash_screen.json`
 
 ## Goal
 
-Make the shared app shell and reusable UI foundation match the Clarity dark navy blue-to-teal theme without redesigning the main screens yet.
+Apply the small, high-impact frontend fixes requested in the chat without changing architecture, finance behavior, Plaid/Supabase behavior, routing, or the overall dashboard/accounts layout.
 
-## Scope
+The dashboard and bank accounts layout were considered acceptable. This plan is only for the urgent visual cleanup items.
 
-- Restyle `HomeShell` bottom navigation using centralized Clarity theme tokens.
-- Tighten shared Material themes where needed:
-  - `AppBarTheme`
-  - `CardTheme`
-  - `InputDecorationTheme`
-  - `FilledButtonTheme`
-  - `OutlinedButtonTheme`
-  - `TextButtonTheme`
-  - `DialogTheme`
-  - `SnackBarTheme`
-  - `BottomSheetTheme`
-  - `ProgressIndicatorTheme`
-- Add or refine shared components:
-  - `ClarityCard`
-  - `ClarityButton`
-  - `ClarityDiamondLoader`
-- Replace obvious warm/gold hardcoded styling with centralized Clarity blue-to-teal tokens.
-- Keep all colors centralized in `apps/mobile/lib/theme/`.
+## Checklist
+
+- [x] Move `Import CSV instead` away from large/prominent blue button treatment.
+- [x] Add an import/upload icon action near existing delete/sync actions where account-level actions are shown.
+- [x] Keep CSV import behavior, duplicate warnings, account selection, and transaction import semantics unchanged.
+- [x] Restyle `+ Add custom category` as a modern minimal outline/ghost action.
+- [x] Replace mismatched blue action styling with theme-consistent teal/dark variants.
+- [x] Audit obvious too-blue CTAs introduced by the affected flows.
+- [x] Keep dashboard/accounts layout mostly as-is.
+
+## Target Areas
+
+Likely files to inspect and update:
+
+- `apps/mobile/lib/features/dashboard/presentation/financial_dashboard_shell.dart`
+- `apps/mobile/lib/features/accounts/presentation/account_selection_screen.dart`
+- `apps/mobile/lib/features/accounts/presentation/widgets/connect_bank_setup_card.dart`
+- `apps/mobile/lib/features/accounts/presentation/widgets/plaid_account_header.dart`
+- `apps/mobile/lib/features/accounts/presentation/account_detail_screen.dart`
+- `apps/mobile/lib/features/transactions/presentation/upload_screen.dart`
+- `apps/mobile/lib/features/budgets/presentation/category_management_sheet_sections.dart`
+
+## Requested Changes
+
+### Import CSV Instead
+
+The current text-button treatment makes the fallback import action too visually prominent. Move it toward an icon action pattern:
+
+- Account detail / account-level surfaces should expose CSV import as an icon action next to delete/sync/upload actions where that pattern already exists.
+- Empty/setup surfaces may still mention CSV as a fallback, but should avoid a large bright CTA if it competes with primary bank connection.
+- Keep labels available through tooltips, semantics, or supporting text where needed for accessibility.
+
+### Add Custom Category
+
+The current `+ Add custom category` button should feel quieter and more premium:
+
+- Prefer an outlined/ghost action over a filled blue button.
+- Use the centralized dark navy / teal theme.
+- Keep it easy to find, but visually subordinate to the category list and save flows.
+
+### Too-Blue CTA Audit
+
+Review the affected flows for bright blue actions that do not match the current Clarity theme. Convert only obvious mismatches; do not redesign unrelated screens in this pass.
 
 ## Constraints
 
-- Do not redesign Dashboard, Accounts, Budgets, Assistant, Profile, Auth, or Onboarding in this pass.
-- Do not change the bottom navigation structure or tab order.
-- Do not change auth logic.
-- Do not change Supabase initialization.
-- Do not change Plaid, finance, or Rex backend behavior.
-- Do not introduce random hardcoded colors in screens.
+- Do not change account, transaction, budget, Plaid, Supabase, or CSV import logic.
+- Do not change dashboard/accounts information architecture.
+- Do not add new product flows.
+- Do not change tab order or navigation.
+- Keep financial UI changes under `apps/mobile/lib/features`.
+- Keep colors centralized through theme tokens or existing shared components.
 
-## Expected Visual Changes
+## Expected Visual Outcome
 
-- Bottom navigation should feel dark navy, softly separated, and premium.
-- Active navigation state should use restrained blue-to-teal emphasis.
-- Shared buttons, inputs, cards, dialogs, snackbars, bottom sheets, and loaders should feel aligned with the splash style.
-- The app should move away from the previous warm black/gold look.
+- Dashboard/accounts still feel familiar.
+- CSV fallback is available but less visually loud.
+- Category management action feels modern, minimal, and theme-aligned.
+- Obvious mismatched blue buttons are reduced.
 
 ## Verification
 
@@ -71,23 +84,27 @@ Run from `apps/mobile`:
 
 ```bash
 flutter analyze
-flutter test test/app_routing_test.dart test/assistant_navigation_test.dart
+flutter test test/app_routing_test.dart
 ```
+
+Manual checks:
+
+- Dashboard empty state.
+- Account detail actions.
+- Manual/CSV import fallback path.
+- Connected-account CSV duplicate warning path.
+- Budget category management sheet.
 
 ## Completion Report
 
-**Files changed:**
+Implemented:
 
-- `apps/mobile/lib/features/shell/presentation/home_shell.dart`
-- `apps/mobile/lib/widgets/clarity_card.dart`
-- `apps/mobile/lib/widgets/clarity_button.dart`
-- `apps/mobile/lib/theme/clarity_shadows.dart`
+- Moved per-account CSV import into the dashboard app-bar action cluster with an upload icon, tooltip, and busy state.
+- Removed the prominent per-account body CTA for CSV import.
+- Changed empty/setup CSV fallback and standalone upload-screen CSV action to quieter text/outline treatments.
+- Restyled `+ Add custom category` as a compact outline/ghost action.
 
-**Visual areas changed:**
+Verification:
 
-- Bottom navigation uses theme `NavigationBarTheme` with a single divider separator.
-- Cards use a subtle blue-to-teal gradient edge when `highlighted` is true (default).
-- Primary buttons use the blue-to-teal gradient fill.
-- Shared shadow tokens use navy-tinted shadows instead of raw black.
-
-**Verification:** run `flutter analyze` and targeted routing tests after pull.
+- IDE lints reported no errors for edited files.
+- `flutter analyze` and `flutter test test/app_routing_test.dart` could not be verified because the terminal runner did not return an exit status, including for a simple shell sanity command.

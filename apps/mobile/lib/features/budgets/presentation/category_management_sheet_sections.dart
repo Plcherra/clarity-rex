@@ -254,10 +254,25 @@ class _CategoryListSection extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        FilledButton.icon(
-          onPressed: saving ? null : onAddCategory,
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Add custom category'),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: saving ? null : onAddCategory,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Add custom category'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: cs.onSurface.withValues(alpha: 0.82),
+              backgroundColor: cs.surfaceContainerLow.withValues(alpha: 0.36),
+              side: BorderSide(
+                color: cs.outlineVariant.withValues(alpha: 0.72),
+              ),
+              minimumSize: const Size(0, 42),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 14),
         _SectionLabel(text: 'Saved categories'),
