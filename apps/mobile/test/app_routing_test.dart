@@ -47,6 +47,7 @@ void main() {
         ui: app.ui,
         authController: app.authController,
         profileController: app.profileController,
+        themeModeController: app.themeModeController,
       ),
     );
 
@@ -64,6 +65,7 @@ void main() {
         ui: app.ui,
         authController: app.authController,
         profileController: app.profileController,
+        themeModeController: app.themeModeController,
       ),
     );
 
@@ -91,6 +93,7 @@ void main() {
         ui: app.ui,
         authController: app.authController,
         profileController: app.profileController,
+        themeModeController: app.themeModeController,
       ),
     );
 
@@ -118,6 +121,7 @@ void main() {
         ui: app.ui,
         authController: app.authController,
         profileController: app.profileController,
+        themeModeController: app.themeModeController,
       ),
     );
 
@@ -140,6 +144,12 @@ void main() {
       find.text('Minutes today, this week, and this month'),
       findsOneWidget,
     );
+    expect(find.text('Theme'), findsOneWidget);
+    expect(find.text('System'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -260));
+    await tester.pumpAndSettle();
+
     expect(find.text('Sign out'), findsOneWidget);
   });
 
@@ -162,6 +172,7 @@ void main() {
         ui: app.ui,
         authController: app.authController,
         profileController: app.profileController,
+        themeModeController: app.themeModeController,
       ),
     );
 
@@ -198,6 +209,7 @@ void main() {
         ui: app.ui,
         authController: app.authController,
         profileController: app.profileController,
+        themeModeController: app.themeModeController,
       ),
     );
 
@@ -270,8 +282,8 @@ void main() {
 
     expect(voiceController.startCount, 1);
     expect(voiceController.lastConversationId, 'conversation-1');
-    expect(find.text('Listening - you can speak'), findsOneWidget);
-    expect(find.text('End Voice'), findsOneWidget);
+    expect(find.byTooltip('Mute mic'), findsOneWidget);
+    expect(find.byTooltip('End voice'), findsOneWidget);
   });
 }
 

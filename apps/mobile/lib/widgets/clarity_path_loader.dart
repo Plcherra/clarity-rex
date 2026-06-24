@@ -61,6 +61,7 @@ class _ClarityPathLoaderState extends State<ClarityPathLoader>
     final label = rawLabel == null || rawLabel.isEmpty ? null : rawLabel;
     final showTextLabel = widget.showLabel && label != null && !widget.compact;
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Semantics(
       label: label ?? 'Loading',
@@ -76,6 +77,8 @@ class _ClarityPathLoaderState extends State<ClarityPathLoader>
                 return CustomPaint(
                   painter: _ClarityPathLoaderPainter(
                     progress: _controller.value,
+                    accent: colors.accent,
+                    accentStrong: colors.accentStrong,
                     strokeWidth:
                         widget.strokeWidth ??
                         (widget.compact
@@ -93,7 +96,7 @@ class _ClarityPathLoaderState extends State<ClarityPathLoader>
               label,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: ClarityColors.textSecondary,
+                color: colors.textSecondary,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.05,
               ),
@@ -128,11 +131,15 @@ class ClarityInlineLoader extends StatelessWidget {
 class _ClarityPathLoaderPainter extends CustomPainter {
   const _ClarityPathLoaderPainter({
     required this.progress,
+    required this.accent,
+    required this.accentStrong,
     required this.strokeWidth,
     required this.compact,
   });
 
   final double progress;
+  final Color accent;
+  final Color accentStrong;
   final double strokeWidth;
   final bool compact;
 
@@ -167,8 +174,8 @@ class _ClarityPathLoaderPainter extends CustomPainter {
       final end = head - tailLength + tailLength * endT;
       final intensity = Curves.easeOutCubic.transform(endT);
       final color = Color.lerp(
-        ClarityColors.deepBlue,
-        ClarityColors.tealGlow,
+        accent,
+        accentStrong,
         intensity,
       )!.withValues(alpha: (0.08 + intensity * 0.92).clamp(0.0, 1.0));
 
@@ -210,7 +217,7 @@ class _ClarityPathLoaderPainter extends CustomPainter {
     final tangent = metric.getTangentForOffset(head % length);
     if (tangent != null) {
       final headPaint = Paint()
-        ..color = ClarityColors.tealGlow.withValues(alpha: compact ? 0.75 : 0.9)
+        ..color = accentStrong.withValues(alpha: compact ? 0.75 : 0.9)
         ..maskFilter = ui.MaskFilter.blur(
           ui.BlurStyle.normal,
           strokeWidth * (compact ? 0.7 : 1.1),
@@ -256,6 +263,8 @@ class _ClarityPathLoaderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ClarityPathLoaderPainter oldDelegate) {
     return oldDelegate.progress != progress ||
+        oldDelegate.accent != accent ||
+        oldDelegate.accentStrong != accentStrong ||
         oldDelegate.strokeWidth != strokeWidth ||
         oldDelegate.compact != compact;
   }

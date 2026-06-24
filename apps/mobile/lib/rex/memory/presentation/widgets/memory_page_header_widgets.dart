@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_quick_filter.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
 class MemorySearchAndFilters extends StatelessWidget {
@@ -20,6 +21,7 @@ class MemorySearchAndFilters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,24 +51,18 @@ class MemorySearchAndFilters extends StatelessWidget {
                     tooltip: 'Clear search',
                   ),
             filled: true,
-            fillColor: RexUiTokens.surface.withValues(alpha: 0.86),
+            fillColor: colors.surface.withValues(alpha: 0.86),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-              borderSide: BorderSide(
-                color: RexUiTokens.border.withValues(alpha: 0.7),
-              ),
+              borderSide: BorderSide(color: colors.divider),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-              borderSide: BorderSide(
-                color: RexUiTokens.border.withValues(alpha: 0.7),
-              ),
+              borderSide: BorderSide(color: colors.divider),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-              borderSide: BorderSide(
-                color: RexUiTokens.accent.withValues(alpha: 0.72),
-              ),
+              borderSide: BorderSide(color: colors.borderActive),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: RexUiTokens.space16,
@@ -86,24 +82,24 @@ class MemorySearchAndFilters extends StatelessWidget {
                 onSelected: onFilterSelected == null
                     ? null
                     : (_) => onFilterSelected!(filter),
-                backgroundColor: RexUiTokens.surfaceRaised.withValues(
-                  alpha: 0.72,
-                ),
-                selectedColor: RexUiTokens.accent,
-                disabledColor: RexUiTokens.surface,
+                backgroundColor: colors.surfaceElevated.withValues(alpha: 0.72),
+                selectedColor: colors.accent,
+                disabledColor: colors.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
                   side: BorderSide(
                     color: selectedFilter == filter
-                        ? RexUiTokens.accent
-                        : RexUiTokens.border,
+                        ? colors.accent
+                        : colors.divider,
                   ),
                 ),
                 showCheckmark: false,
                 labelStyle: theme.textTheme.labelLarge?.copyWith(
                   color: selectedFilter == filter
-                      ? RexUiTokens.background
-                      : RexUiTokens.textMuted,
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black
+                            : Colors.white)
+                      : colors.textSecondary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -120,53 +116,16 @@ class SavedMemoryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
-    return RexSurface(
-      color: RexUiTokens.surface.withValues(alpha: 0.78),
-      borderColor: RexUiTokens.border.withValues(alpha: 0.68),
-      radius: RexUiTokens.radiusLarge,
-      padding: const EdgeInsets.all(RexUiTokens.space16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: RexUiTokens.accent.withValues(alpha: 0.13),
-              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-            ),
-            child: const SizedBox(
-              width: 40,
-              height: 40,
-              child: Icon(
-                Icons.psychology_alt_outlined,
-                color: RexUiTokens.accent,
-                size: 22,
-              ),
-            ),
-          ),
-          const SizedBox(width: RexUiTokens.space12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'What Clarity knows',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: RexUiTokens.text,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: RexUiTokens.space4),
-                Text(
-                  'Saved details Clarity can use later. Edit anything that changes.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: RexUiTokens.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: RexUiTokens.space4),
+      child: Text(
+        'What Clarity knows',
+        style: theme.textTheme.titleLarge?.copyWith(
+          color: colors.textPrimary,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }

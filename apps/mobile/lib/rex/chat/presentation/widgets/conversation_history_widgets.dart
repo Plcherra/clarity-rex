@@ -5,6 +5,7 @@ import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/theme/clarity_colors.dart';
 
 class ConversationDateHeader extends StatelessWidget {
   const ConversationDateHeader({
@@ -68,6 +69,7 @@ class ConversationHistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
     final preview = _conversationPreview(conversation);
 
     return RexSurface(
@@ -79,11 +81,9 @@ class ConversationHistoryTile extends StatelessWidget {
       ),
       padding: EdgeInsets.zero,
       color: isSelected
-          ? RexUiTokens.surfaceRaised.withValues(alpha: 0.92)
-          : RexUiTokens.surface.withValues(alpha: 0.82),
-      borderColor: isSelected
-          ? RexUiTokens.accent.withValues(alpha: 0.78)
-          : RexUiTokens.border.withValues(alpha: 0.72),
+          ? colors.accent.withValues(alpha: 0.10)
+          : Colors.transparent,
+      borderColor: isSelected ? colors.borderActive : null,
       radius: RexUiTokens.radiusLarge,
       child: InkWell(
         borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
@@ -109,7 +109,7 @@ class ConversationHistoryTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.titleMedium?.copyWith(
-                              color: RexUiTokens.text,
+                              color: colors.textPrimary,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -136,7 +136,7 @@ class ConversationHistoryTile extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: RexUiTokens.textMuted,
+                        color: colors.textSecondary,
                         height: 1.35,
                       ),
                     ),
@@ -166,6 +166,7 @@ class ConversationSearchResultTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
     final title = _searchResultTitle(result);
     final timestamp = timestampLabel(
       result.message?.timestamp ?? result.conversationTimestamp,
@@ -179,8 +180,7 @@ class ConversationSearchResultTile extends StatelessWidget {
         RexUiTokens.space12,
       ),
       padding: EdgeInsets.zero,
-      color: RexUiTokens.surface.withValues(alpha: 0.82),
-      borderColor: RexUiTokens.border.withValues(alpha: 0.72),
+      color: colors.surface.withValues(alpha: 0.64),
       radius: RexUiTokens.radiusLarge,
       child: InkWell(
         borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
@@ -192,18 +192,15 @@ class ConversationSearchResultTile extends StatelessWidget {
             children: [
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: RexUiTokens.accent.withValues(alpha: 0.13),
+                  color: colors.accent.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-                  border: Border.all(
-                    color: RexUiTokens.accent.withValues(alpha: 0.24),
-                  ),
                 ),
-                child: const SizedBox(
+                child: SizedBox(
                   width: 42,
                   height: 42,
                   child: Icon(
                     Icons.manage_search_rounded,
-                    color: RexUiTokens.accent,
+                    color: colors.accent,
                     size: 23,
                   ),
                 ),
@@ -245,7 +242,7 @@ class ConversationSearchResultTile extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: RexUiTokens.textMuted,
+                        color: colors.textSecondary,
                         height: 1.35,
                       ),
                     ),
@@ -501,24 +498,20 @@ class _ConversationGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: isSelected
-            ? RexUiTokens.accent.withValues(alpha: 0.18)
-            : RexUiTokens.surfaceRaised.withValues(alpha: 0.72),
+            ? colors.accent.withValues(alpha: 0.14)
+            : colors.surfaceElevated.withValues(alpha: 0.52),
         borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-        border: Border.all(
-          color: isSelected
-              ? RexUiTokens.accent.withValues(alpha: 0.7)
-              : RexUiTokens.border.withValues(alpha: 0.72),
-        ),
       ),
-      child: const SizedBox(
+      child: SizedBox(
         width: 42,
         height: 42,
         child: Icon(
           Icons.chat_bubble_outline_rounded,
-          color: RexUiTokens.accent,
+          color: colors.accent,
           size: 20,
         ),
       ),
@@ -533,10 +526,11 @@ class _ConversationMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     return PopupMenuButton<_ConversationAction>(
       tooltip: 'Conversation actions',
-      color: RexUiTokens.surfaceRaised,
-      iconColor: RexUiTokens.textSubtle,
+      color: colors.surfaceElevated,
+      iconColor: colors.textMuted,
       onSelected: (action) {
         switch (action) {
           case _ConversationAction.delete:
@@ -556,7 +550,7 @@ class _ConversationMenu extends StatelessWidget {
               Text(
                 'Delete',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: RexUiTokens.text,
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),

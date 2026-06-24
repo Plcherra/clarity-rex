@@ -15,7 +15,7 @@ class ClarityCard extends StatelessWidget {
     this.borderRadius,
     this.constraints,
     this.width,
-    this.highlighted = true,
+    this.highlighted = false,
   });
 
   final Widget child;

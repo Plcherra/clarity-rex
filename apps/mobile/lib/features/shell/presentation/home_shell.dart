@@ -9,6 +9,7 @@ import '../../budgets/presentation/budgets_screen.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
 import '../../plaid/application/plaid_link_service.dart';
 import '../../profile/application/profile_controller.dart';
+import '../../profile/application/theme_mode_controller.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../../rex/presentation/assistant_screen.dart';
 
@@ -18,12 +19,14 @@ class HomeShell extends StatefulWidget {
     required this.ui,
     required this.authController,
     required this.profileController,
+    required this.themeModeController,
     this.signOut,
   });
 
   final AppUiDependencies ui;
   final AuthController authController;
   final ProfileController profileController;
+  final ThemeModeController themeModeController;
   final Future<void> Function()? signOut;
 
   @override
@@ -143,6 +146,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       ProfileScreen(
         profileController: widget.profileController,
         authController: widget.authController,
+        themeModeController: widget.themeModeController,
         signOut: widget.signOut,
       ),
     ];

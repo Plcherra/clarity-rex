@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/supabase/supabase_service.dart';
+import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
 import '../application/usage_summary_controller.dart';
@@ -114,10 +115,10 @@ final class _UsageStatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final colors = context.clarityColors;
     return ClarityCard(
       padding: const EdgeInsets.all(18),
-      backgroundColor: cs.surfaceContainerLow.withValues(alpha: 0.56),
-      borderColor: cs.outlineVariant.withValues(alpha: 0.56),
+      backgroundColor: colors.surface.withValues(alpha: 0.66),
       child: Row(
         children: [
           DecoratedBox(
@@ -130,7 +131,7 @@ final class _UsageStatTile extends StatelessWidget {
               height: 40,
               child: Icon(
                 Icons.graphic_eq_rounded,
-                color: cs.primary,
+                color: colors.accent,
                 size: 21,
               ),
             ),
@@ -180,10 +181,10 @@ final class _UsageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final colors = context.clarityColors;
     return ClarityCard(
       padding: const EdgeInsets.all(20),
-      backgroundColor: cs.surfaceContainerLow.withValues(alpha: 0.74),
-      borderColor: cs.outlineVariant.withValues(alpha: 0.64),
+      backgroundColor: colors.surface.withValues(alpha: 0.72),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -14,6 +14,7 @@ class AccountsSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final colors = context.clarityColors;
     final netCashFlowTotal = accounts.fold<double>(
       0,
       (sum, item) => sum + item.netCashFlow,
@@ -28,8 +29,7 @@ class AccountsSummaryCard extends StatelessWidget {
     );
     return ClarityCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      backgroundColor: cs.surfaceContainerLow,
-      borderColor: cs.outlineVariant.withValues(alpha: 0.78),
+      backgroundColor: colors.surface.withValues(alpha: 0.72),
       child: Row(
         children: [
           Expanded(
@@ -50,12 +50,12 @@ class AccountsSummaryCard extends StatelessWidget {
                     _InlineMoneyLabel(
                       label: 'Income',
                       value: incomeTotal,
-                      color: ClarityColors.financePositive,
+                      color: colors.financePositive,
                     ),
                     _InlineMoneyLabel(
                       label: 'Spending',
                       value: spendingTotal,
-                      color: ClarityColors.financeSpending,
+                      color: colors.financeSpending,
                     ),
                   ],
                 ),
@@ -72,8 +72,8 @@ class AccountsSummaryCard extends StatelessWidget {
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: netCashFlowTotal >= 0
-                      ? ClarityColors.financePositive
-                      : ClarityColors.financeNegative,
+                      ? colors.financePositive
+                      : colors.financeNegative,
                 ),
               ),
               const SizedBox(height: 2),

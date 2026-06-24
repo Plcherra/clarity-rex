@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
 /// Composer row: text field, optional attachment preview, and send action.
@@ -34,21 +35,19 @@ class ChatInputBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
     final hasBlockingAttachmentError = attachmentError != null;
 
     return Material(
-      color: RexUiTokens.background,
+      color: colors.background,
       child: SafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: RexUiTokens.surfaceSoft.withValues(alpha: 0.72),
+              color: colors.surfaceElevated.withValues(alpha: 0.72),
               borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
-              border: Border.all(
-                color: RexUiTokens.border.withValues(alpha: 0.34),
-              ),
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -95,7 +94,7 @@ class ChatInputBar extends StatelessWidget {
                           maxLines: 7,
                           textInputAction: TextInputAction.send,
                           textCapitalization: TextCapitalization.sentences,
-                          cursorColor: RexUiTokens.accent,
+                          cursorColor: colors.accent,
                           onSubmitted: (_) {
                             final text = controller.text.trim();
                             if (text.isNotEmpty &&
@@ -120,7 +119,7 @@ class ChatInputBar extends StatelessWidget {
                             ),
                           ),
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: RexUiTokens.text,
+                            color: colors.textPrimary,
                             height: 1.35,
                           ),
                         ),
@@ -143,12 +142,14 @@ class ChatInputBar extends StatelessWidget {
                                 fixedSize: const Size.square(40),
                                 padding: EdgeInsets.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                backgroundColor: RexUiTokens.accent,
-                                foregroundColor: RexUiTokens.background,
-                                disabledBackgroundColor: RexUiTokens
-                                    .surfaceRaised
-                                    .withValues(alpha: 0.7),
-                                disabledForegroundColor: RexUiTokens.textSubtle
+                                backgroundColor: colors.accent,
+                                foregroundColor:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.black
+                                    : Colors.white,
+                                disabledBackgroundColor: colors.surfaceSoft,
+                                disabledForegroundColor: colors.textMuted
                                     .withValues(alpha: 0.55),
                               ),
                               icon: isLoading
@@ -194,15 +195,16 @@ class _ComposerIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     final foreground = isActive
-        ? RexUiTokens.accent
+        ? colors.accent
         : isProminent
-        ? RexUiTokens.text
-        : RexUiTokens.textMuted;
+        ? colors.textPrimary
+        : colors.textSecondary;
     final background = isActive
-        ? RexUiTokens.accent.withValues(alpha: 0.16)
+        ? colors.accent.withValues(alpha: 0.14)
         : isProminent
-        ? RexUiTokens.surfaceRaised
+        ? colors.surfaceSoft
         : Colors.transparent;
 
     return IconButton(
@@ -216,7 +218,7 @@ class _ComposerIconButton extends StatelessWidget {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         backgroundColor: background,
         foregroundColor: foreground,
-        disabledForegroundColor: RexUiTokens.textSubtle.withValues(alpha: 0.45),
+        disabledForegroundColor: colors.textMuted.withValues(alpha: 0.45),
       ),
     );
   }
@@ -238,6 +240,7 @@ class _AttachmentPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
     final hasError = errorMessage != null;
     final title = fileName ?? 'Attachment';
     final isImage = fileName != null && isChatImageAttachmentName(fileName!);
@@ -252,13 +255,13 @@ class _AttachmentPreview extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: hasError
-              ? RexUiTokens.danger.withValues(alpha: 0.12)
-              : RexUiTokens.background.withValues(alpha: 0.28),
+              ? colors.danger.withValues(alpha: 0.12)
+              : colors.background.withValues(alpha: 0.24),
           borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
           border: Border.all(
             color: hasError
-                ? RexUiTokens.danger.withValues(alpha: 0.42)
-                : RexUiTokens.border.withValues(alpha: 0.28),
+                ? colors.danger.withValues(alpha: 0.32)
+                : colors.divider,
           ),
         ),
         child: Padding(
@@ -271,7 +274,7 @@ class _AttachmentPreview extends StatelessWidget {
                     : isImage
                     ? Icons.image_outlined
                     : Icons.description_outlined,
-                color: hasError ? RexUiTokens.danger : RexUiTokens.textMuted,
+                color: hasError ? colors.danger : colors.textSecondary,
                 size: 19,
               ),
               const SizedBox(width: 8),
@@ -285,7 +288,7 @@ class _AttachmentPreview extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: RexUiTokens.text,
+                        color: colors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -293,9 +296,7 @@ class _AttachmentPreview extends StatelessWidget {
                       Text(
                         subtitle,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: hasError
-                              ? RexUiTokens.danger
-                              : RexUiTokens.textSubtle,
+                          color: hasError ? colors.danger : colors.textMuted,
                         ),
                       ),
                   ],
@@ -306,8 +307,8 @@ class _AttachmentPreview extends StatelessWidget {
                 icon: const Icon(Icons.close_rounded),
                 tooltip: 'Remove attachment',
                 style: IconButton.styleFrom(
-                  foregroundColor: RexUiTokens.textMuted,
-                  disabledForegroundColor: RexUiTokens.textSubtle.withValues(
+                  foregroundColor: colors.textSecondary,
+                  disabledForegroundColor: colors.textMuted.withValues(
                     alpha: 0.45,
                   ),
                 ),

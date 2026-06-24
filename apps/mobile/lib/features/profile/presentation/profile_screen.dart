@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/presentation/mfa_enrollment_screen.dart';
 import '../application/profile_controller.dart';
+import '../application/theme_mode_controller.dart';
 import 'usage_summary_screen.dart';
 
 final class ProfileScreen extends StatelessWidget {
@@ -11,11 +13,13 @@ final class ProfileScreen extends StatelessWidget {
     super.key,
     required this.profileController,
     required this.authController,
+    required this.themeModeController,
     this.signOut,
   });
 
   final ProfileController profileController;
   final AuthController authController;
+  final ThemeModeController themeModeController;
   final Future<void> Function()? signOut;
 
   Future<void> _openMfaSettings(BuildContext context) async {
@@ -29,6 +33,52 @@ final class ProfileScreen extends StatelessWidget {
   Future<void> _openUsage(BuildContext context) async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(builder: (context) => const UsageSummaryScreen()),
+    );
+  }
+
+  Future<void> _openAppearance(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ListenableBuilder(
+            listenable: themeModeController,
+            builder: (context, _) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Appearance',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    for (final mode in ThemeMode.values)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(_themeModeLabel(mode)),
+                        trailing: themeModeController.themeMode == mode
+                            ? const Icon(Icons.check_rounded)
+                            : null,
+                        onTap: () async {
+                          await themeModeController.setThemeMode(mode);
+                          if (sheetContext.mounted) {
+                            Navigator.of(sheetContext).pop();
+                          }
+                        },
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -172,6 +222,24 @@ final class ProfileScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 18),
+              const _ProfileSectionLabel('Appearance'),
+              const SizedBox(height: 8),
+              ListenableBuilder(
+                listenable: themeModeController,
+                builder: (context, _) {
+                  return _ProfileActionGroup(
+                    children: [
+                      _ProfileActionTile(
+                        icon: Icons.contrast_rounded,
+                        title: 'Theme',
+                        subtitle: themeModeController.label,
+                        onTap: () => _openAppearance(context),
+                      ),
+                    ],
+                  );
+                },
+              ),
               if (signOut != null) ...[
                 const SizedBox(height: 18),
                 const _ProfileSectionLabel('Session'),
@@ -206,20 +274,19 @@ final class _ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final colors = context.clarityColors;
     final initial = name.trim().isEmpty ? 'C' : name.trim()[0].toUpperCase();
 
     return ClarityCard(
       padding: const EdgeInsets.all(20),
-      backgroundColor: cs.surfaceContainerLow.withValues(alpha: 0.74),
-      borderColor: cs.outlineVariant.withValues(alpha: 0.64),
+      backgroundColor: colors.surface.withValues(alpha: 0.72),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DecoratedBox(
             decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: 0.14),
+              color: colors.accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: cs.primary.withValues(alpha: 0.25)),
             ),
             child: SizedBox(
               width: 58,
@@ -228,7 +295,7 @@ final class _ProfileHeader extends StatelessWidget {
                 child: Text(
                   initial,
                   style: theme.textTheme.titleLarge?.copyWith(
-                    color: cs.onSurface,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -305,12 +372,11 @@ final class _ProfileActionGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final colors = context.clarityColors;
     return ClarityCard(
       padding: EdgeInsets.zero,
       highlighted: false,
-      backgroundColor: cs.surfaceContainerLow.withValues(alpha: 0.48),
-      borderColor: cs.outlineVariant.withValues(alpha: 0.56),
+      backgroundColor: colors.surface.withValues(alpha: 0.58),
       child: Column(
         children: [
           for (var index = 0; index < children.length; index++) ...[
@@ -319,7 +385,7 @@ final class _ProfileActionGroup extends StatelessWidget {
                 height: 1,
                 thickness: 1,
                 indent: 64,
-                color: cs.outlineVariant.withValues(alpha: 0.38),
+                color: colors.divider,
               ),
             children[index],
           ],
@@ -348,7 +414,8 @@ final class _ProfileActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final color = destructive ? cs.error : cs.onSurface;
+    final colors = context.clarityColors;
+    final color = destructive ? cs.error : colors.textPrimary;
 
     return Material(
       color: Colors.transparent,
@@ -360,7 +427,7 @@ final class _ProfileActionTile extends StatelessWidget {
             children: [
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: (destructive ? cs.error : cs.primary).withValues(
+                  color: (destructive ? cs.error : colors.accent).withValues(
                     alpha: destructive ? 0.12 : 0.10,
                   ),
                   borderRadius: BorderRadius.circular(14),
@@ -371,7 +438,7 @@ final class _ProfileActionTile extends StatelessWidget {
                   child: Icon(
                     icon,
                     size: 20,
-                    color: destructive ? cs.error : cs.primary,
+                    color: destructive ? cs.error : colors.accent,
                   ),
                 ),
               ),
@@ -415,4 +482,12 @@ final class _ProfileActionTile extends StatelessWidget {
       ),
     );
   }
+}
+
+String _themeModeLabel(ThemeMode mode) {
+  return switch (mode) {
+    ThemeMode.system => 'System',
+    ThemeMode.dark => 'Dark',
+    ThemeMode.light => 'Light',
+  };
 }

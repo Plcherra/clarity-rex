@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_meta_chip.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/theme/clarity_colors.dart';
 
 class StructuredMemoryTile extends StatelessWidget {
   const StructuredMemoryTile({
@@ -61,6 +62,7 @@ class SavedMemoryTileShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -70,10 +72,9 @@ class SavedMemoryTileShell extends StatelessWidget {
         RexUiTokens.space8,
       ),
       child: RexSurface(
-        color: active ? RexUiTokens.surface : RexUiTokens.surfaceSoft,
-        borderColor: active
-            ? RexUiTokens.border
-            : RexUiTokens.border.withValues(alpha: 0.55),
+        color: active
+            ? colors.surface.withValues(alpha: 0.72)
+            : colors.surfaceSoft.withValues(alpha: 0.48),
         radius: RexUiTokens.radiusMedium,
         padding: const EdgeInsets.all(RexUiTokens.space16),
         child: GestureDetector(
@@ -91,9 +92,7 @@ class SavedMemoryTileShell extends StatelessWidget {
                     Text(
                       title,
                       style: theme.textTheme.bodyLarge?.copyWith(
-                        color: active
-                            ? RexUiTokens.text
-                            : RexUiTokens.textSubtle,
+                        color: active ? colors.textPrimary : colors.textMuted,
                         fontWeight: FontWeight.w700,
                         height: 1.3,
                       ),
@@ -106,8 +105,8 @@ class SavedMemoryTileShell extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: active
-                              ? RexUiTokens.textMuted
-                              : RexUiTokens.textSubtle,
+                              ? colors.textSecondary
+                              : colors.textMuted,
                           height: 1.3,
                         ),
                       ),
@@ -166,18 +165,19 @@ class _MemoryIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: active
-            ? RexUiTokens.accent.withValues(alpha: 0.18)
-            : RexUiTokens.surfaceRaised,
+            ? colors.accent.withValues(alpha: 0.14)
+            : colors.surfaceElevated,
         borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
       ),
       child: SizedBox.square(
         dimension: 44,
         child: Icon(
           icon,
-          color: active ? RexUiTokens.accent : RexUiTokens.textSubtle,
+          color: active ? colors.accent : colors.textMuted,
           size: 22,
         ),
       ),

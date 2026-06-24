@@ -79,8 +79,7 @@ class _CategoryManagementRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outline.withValues(alpha: 0.12)),
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.22),
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.16),
       ),
       child: Row(
         children: [
@@ -94,14 +93,16 @@ class _CategoryManagementRow extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  usage.label,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.48),
-                    fontWeight: FontWeight.w600,
+                if (usage.label.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    usage.label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.48),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -427,8 +428,13 @@ class _CategoryUsageStats {
   final int merchantRuleCount;
 
   String get label {
-    return '$transactionCount tx · $budgetCount budgets · '
-        '$merchantRuleCount rules';
+    final parts = <String>[
+      if (transactionCount > 0) '$transactionCount tx',
+      if (budgetCount > 0) '$budgetCount budget${budgetCount == 1 ? '' : 's'}',
+      if (merchantRuleCount > 0)
+        '$merchantRuleCount rule${merchantRuleCount == 1 ? '' : 's'}',
+    ];
+    return parts.join(' · ');
   }
 
   bool get hasAny =>

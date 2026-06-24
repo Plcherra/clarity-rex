@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../core/rex/rex_config.dart';
 import '../core/supabase/supabase_service.dart';
+import '../features/profile/application/theme_mode_controller.dart';
 import '../screens/splash/clarity_splash_screen.dart';
 import '../widgets/clarity_diamond_loader.dart';
 import 'app.dart';
@@ -30,6 +31,7 @@ final class ClarityBootApp extends StatefulWidget {
 }
 
 final class _ClarityBootAppState extends State<ClarityBootApp> {
+  final ThemeModeController _themeModeController = ThemeModeController();
   Future<AppComposition>? _bootFuture;
   AppComposition? _composition;
 
@@ -40,11 +42,14 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
   }
 
   Future<AppComposition> _boot() async {
+    await _themeModeController.load();
     await dotenv.load(fileName: '.env', isOptional: true);
     _logReleaseConfig();
     await SupabaseService.initializeFromEnv();
 
-    final composition = AppComposition();
+    final composition = AppComposition(
+      themeModeController: _themeModeController,
+    );
     try {
       await composition.startupService.hydrateForStartup();
       await composition.profileController.hydrateProfileForCurrentUser();
@@ -65,6 +70,7 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
   @override
   void dispose() {
     _composition?.dispose();
+    _themeModeController.dispose();
     super.dispose();
   }
 
@@ -75,7 +81,11 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
       builder: (context, snapshot) {
         final composition = snapshot.data;
         if (snapshot.hasError) {
-          return _BootErrorApp(error: snapshot.error, retry: _retry);
+          return _BootErrorApp(
+            error: snapshot.error,
+            retry: _retry,
+            themeModeController: _themeModeController,
+          );
         }
         return ClaritySplashScreen(
           isReady: composition != null,
@@ -84,8 +94,9 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
                   ui: composition.ui,
                   authController: composition.authController,
                   profileController: composition.profileController,
+                  themeModeController: composition.themeModeController,
                 )
-              : const _BootLoadingApp(),
+              : _BootLoadingApp(themeModeController: _themeModeController),
         );
       },
     );
@@ -105,14 +116,14 @@ void _logReleaseConfig() {
 }
 
 final class _BootLoadingApp extends StatelessWidget {
-  const _BootLoadingApp();
+  const _BootLoadingApp({required this.themeModeController});
+
+  final ThemeModeController themeModeController;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Clarity',
-      debugShowCheckedModeBanner: false,
-      theme: ClarityApp.buildTheme(),
+    return _BootMaterialApp(
+      themeModeController: themeModeController,
       home: const Scaffold(
         body: Center(
           child: ClarityDiamondLoader(size: 64, label: 'Starting Clarity'),
@@ -123,17 +134,20 @@ final class _BootLoadingApp extends StatelessWidget {
 }
 
 final class _BootErrorApp extends StatelessWidget {
-  const _BootErrorApp({required this.error, required this.retry});
+  const _BootErrorApp({
+    required this.error,
+    required this.retry,
+    required this.themeModeController,
+  });
 
   final Object? error;
   final VoidCallback retry;
+  final ThemeModeController themeModeController;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Clarity',
-      debugShowCheckedModeBanner: false,
-      theme: ClarityApp.buildTheme(),
+    return _BootMaterialApp(
+      themeModeController: themeModeController,
       home: Scaffold(
         body: SafeArea(
           child: Padding(
@@ -172,6 +186,33 @@ final class _BootErrorApp extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+final class _BootMaterialApp extends StatelessWidget {
+  const _BootMaterialApp({
+    required this.themeModeController,
+    required this.home,
+  });
+
+  final ThemeModeController themeModeController;
+  final Widget home;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: themeModeController,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'Clarity',
+          debugShowCheckedModeBanner: false,
+          theme: ClarityApp.buildLightTheme(),
+          darkTheme: ClarityApp.buildTheme(),
+          themeMode: themeModeController.themeMode,
+          home: home,
+        );
+      },
     );
   }
 }

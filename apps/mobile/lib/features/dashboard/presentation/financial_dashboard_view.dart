@@ -13,7 +13,6 @@ import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../theme/clarity_radius.dart';
-import '../../../theme/clarity_shadows.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
 import '../../../widgets/clarity_path_loader.dart';
@@ -44,26 +43,27 @@ const List<String> _monthAbbreviations = [
 ];
 
 Color _dashboardPanel(BuildContext context) {
-  return ClarityColors.cardFill;
+  return context.clarityColors.cardFill;
 }
 
 Color _dashboardPanelMuted(BuildContext context) {
-  return ClarityColors.surfaceSoft;
+  return context.clarityColors.surfaceElevated.withValues(alpha: 0.72);
 }
 
 Color _dashboardOutline(BuildContext context) {
-  return ClarityColors.mutedBorder.withValues(alpha: 0.78);
+  return context.clarityColors.divider.withValues(alpha: 0.68);
 }
 
-List<BoxShadow> _dashboardShadow() => ClarityShadows.panel;
+List<BoxShadow> _dashboardShadow() => const [];
 
 Color _dashboardSelected(BuildContext context) {
-  return ClarityColors.electricBlue.withValues(alpha: 0.12);
+  return context.clarityColors.accent.withValues(alpha: 0.10);
 }
 
 Color _balanceColor(BuildContext context, double v) {
-  if (v > 0) return ClarityColors.financePositive;
-  if (v < 0) return ClarityColors.financeNegative;
+  final colors = context.clarityColors;
+  if (v > 0) return colors.financePositive;
+  if (v < 0) return colors.financeNegative;
   return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72);
 }
 

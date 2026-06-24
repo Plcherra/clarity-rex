@@ -61,21 +61,21 @@ class _SummaryPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return RexSurface(
-      color: RexUiTokens.surfaceSoft,
-      borderColor: RexUiTokens.border.withValues(alpha: 0.72),
+      color: colors.surfaceElevated.withValues(alpha: 0.64),
       radius: RexUiTokens.radiusPill,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: RexUiTokens.accent),
+          Icon(icon, size: 16, color: colors.accent),
           const SizedBox(width: 7),
           Text(
             '$value $label',
             style: theme.textTheme.labelLarge?.copyWith(
-              color: RexUiTokens.text,
+              color: colors.textPrimary,
               fontWeight: FontWeight.w600,
             ),
           ),

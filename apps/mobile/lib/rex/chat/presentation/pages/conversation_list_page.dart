@@ -8,6 +8,7 @@ import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/chat/presentation/widgets/conversation_history_widgets.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
 class ConversationListPage extends ConsumerStatefulWidget {
@@ -84,23 +85,12 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: RexUiTokens.surfaceRaised,
-        surfaceTintColor: Colors.transparent,
-        title: const Text(
-          'Delete conversation?',
-          style: TextStyle(color: RexUiTokens.text),
-        ),
-        content: const Text(
-          'This removes the conversation and its messages from Clarity.',
-          style: TextStyle(color: RexUiTokens.textMuted),
-        ),
+        title: const Text('Delete conversation?'),
+        content: const Text('This removes the conversation and its messages.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: RexUiTokens.textMuted),
-            ),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -189,22 +179,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
       initialDateRange: initialRange,
       firstDate: DateTime(now.year - 10),
       lastDate: DateTime(now.year + 1, 12, 31),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: RexUiTokens.accent,
-              onPrimary: RexUiTokens.background,
-              surface: RexUiTokens.surfaceRaised,
-              onSurface: RexUiTokens.text,
-            ),
-            dialogTheme: const DialogThemeData(
-              backgroundColor: RexUiTokens.surfaceRaised,
-            ),
-          ),
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
+      builder: (context, child) => child ?? const SizedBox.shrink(),
     );
     if (!mounted || range == null) {
       return;
@@ -220,6 +195,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
     super.build(context);
 
     final state = ref.watch(conversationListProvider);
+    final colors = context.clarityColors;
     final currentConversation = ref.watch(currentConversationProvider);
     final filteredConversations = filterConversationsByDate(
       state.conversations,
@@ -231,8 +207,8 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
     );
 
     final body = RefreshIndicator(
-      color: RexUiTokens.accent,
-      backgroundColor: RexUiTokens.surfaceRaised,
+      color: colors.accent,
+      backgroundColor: colors.surfaceElevated,
       onRefresh: () =>
           ref.read(conversationListProvider.notifier).loadConversations(),
       child: CustomScrollView(
@@ -242,67 +218,27 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: RexSurface(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-                  color: RexUiTokens.surface.withValues(alpha: 0.72),
-                  borderColor: RexUiTokens.border.withValues(alpha: 0.65),
-                  radius: RexUiTokens.radiusLarge,
-                  child: Row(
-                    children: [
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: RexUiTokens.accent.withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(
-                            RexUiTokens.radiusMedium,
+                child: Row(
+                  children: [
+                    Text(
+                      'Chats',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: colors.textPrimary,
                           ),
-                        ),
-                        child: const SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: Icon(
-                            Icons.forum_outlined,
-                            color: RexUiTokens.accent,
-                            size: 21,
-                          ),
-                        ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: state.isLoading ? null : _newConversation,
+                      icon: const Icon(Icons.add_rounded),
+                      tooltip: 'New conversation',
+                      color: colors.accent,
+                      style: IconButton.styleFrom(
+                        backgroundColor: colors.accent.withValues(alpha: 0.12),
                       ),
-                      const SizedBox(width: RexUiTokens.space12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Chats',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    color: RexUiTokens.text,
-                                  ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Find old context or start a new thread.',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: RexUiTokens.textMuted),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: state.isLoading ? null : _newConversation,
-                        icon: const Icon(Icons.add_rounded),
-                        tooltip: 'New conversation',
-                        color: RexUiTokens.accent,
-                        style: IconButton.styleFrom(
-                          backgroundColor: RexUiTokens.accent.withValues(
-                            alpha: 0.12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

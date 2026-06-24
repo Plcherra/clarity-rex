@@ -1,39 +1,31 @@
 import 'package:flutter/material.dart';
 
-import 'clarity_colors.dart';
-
 class ClarityShadows {
   const ClarityShadows._();
 
   static List<BoxShadow> get softGlow => [
     BoxShadow(
-      color: ClarityColors.deepBlue.withValues(alpha: 0.16),
-      blurRadius: 24,
-      spreadRadius: -10,
-      offset: const Offset(-8, -6),
-    ),
-    BoxShadow(
-      color: ClarityColors.tealGlow.withValues(alpha: 0.14),
-      blurRadius: 28,
-      spreadRadius: -12,
-      offset: const Offset(10, 10),
-    ),
-  ];
-
-  static List<BoxShadow> get panel => [
-    BoxShadow(
-      color: ClarityColors.appBackground.withValues(alpha: 0.55),
+      color: Colors.black.withValues(alpha: 0.18),
       blurRadius: 18,
       spreadRadius: -10,
       offset: const Offset(0, 10),
     ),
   ];
 
+  static List<BoxShadow> get panel => [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.16),
+      blurRadius: 14,
+      spreadRadius: -12,
+      offset: const Offset(0, 8),
+    ),
+  ];
+
   static List<BoxShadow> get dropdown => [
     BoxShadow(
-      color: ClarityColors.appBackground.withValues(alpha: 0.45),
-      blurRadius: 16,
-      spreadRadius: -6,
+      color: Colors.black.withValues(alpha: 0.18),
+      blurRadius: 14,
+      spreadRadius: -8,
       offset: const Offset(0, 8),
     ),
   ];

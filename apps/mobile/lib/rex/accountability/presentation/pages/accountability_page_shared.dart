@@ -14,6 +14,7 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -28,15 +29,14 @@ class _Section extends StatelessWidget {
         const SizedBox(height: RexUiTokens.space8),
         if (children.isEmpty)
           RexSurface(
-            color: RexUiTokens.surface.withValues(alpha: 0.74),
-            borderColor: RexUiTokens.border.withValues(alpha: 0.58),
+            color: colors.surface.withValues(alpha: 0.58),
             radius: RexUiTokens.radiusLarge,
             padding: const EdgeInsets.all(RexUiTokens.space16),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.check_circle_outline_rounded,
-                  color: RexUiTokens.textSubtle,
+                  color: colors.textMuted,
                   size: 18,
                 ),
                 const SizedBox(width: RexUiTokens.space8),
@@ -44,7 +44,7 @@ class _Section extends StatelessWidget {
                   child: Text(
                     emptyText,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: RexUiTokens.textMuted,
+                      color: colors.textSecondary,
                     ),
                   ),
                 ),
@@ -83,9 +83,9 @@ class _GoalTileShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     return RexSurface(
-      color: RexUiTokens.surface.withValues(alpha: 0.82),
-      borderColor: RexUiTokens.border.withValues(alpha: 0.72),
+      color: colors.surface.withValues(alpha: 0.66),
       radius: RexUiTokens.radiusLarge,
       padding: const EdgeInsets.all(RexUiTokens.space16),
       child: Row(
@@ -127,26 +127,22 @@ class _InlineWarning extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return RexSurface(
       radius: RexUiTokens.radiusSmall,
-      color: RexUiTokens.danger.withValues(alpha: 0.1),
-      borderColor: RexUiTokens.danger.withValues(alpha: 0.32),
+      color: colors.danger.withValues(alpha: 0.1),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.warning_amber_rounded,
-            size: 17,
-            color: RexUiTokens.danger,
-          ),
+          Icon(Icons.warning_amber_rounded, size: 17, color: colors.danger),
           const SizedBox(width: RexUiTokens.space8),
           Expanded(
             child: Text(
               text,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: RexUiTokens.danger,
+                color: colors.danger,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -204,25 +200,25 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: RexUiTokens.accent.withValues(alpha: 0.16),
+        color: colors.accent.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-        border: Border.all(color: RexUiTokens.accent.withValues(alpha: 0.28)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: RexUiTokens.accent),
+            Icon(icon, size: 15, color: colors.accent),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
                 label,
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: RexUiTokens.text,
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -235,8 +231,9 @@ class _StatusChip extends StatelessWidget {
 }
 
 TextStyle? _tileTitleStyle(BuildContext context) {
+  final colors = context.clarityColors;
   return Theme.of(context).textTheme.titleSmall?.copyWith(
-    color: RexUiTokens.text,
+    color: colors.textPrimary,
     fontWeight: FontWeight.w700,
   );
 }
@@ -249,19 +246,19 @@ class _MetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: RexUiTokens.surfaceRaised.withValues(alpha: 0.74),
+        color: colors.surfaceElevated.withValues(alpha: 0.62),
         borderRadius: BorderRadius.circular(RexUiTokens.radiusSmall),
-        border: Border.all(color: RexUiTokens.border.withValues(alpha: 0.58)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Text(
           label,
           style: theme.textTheme.labelMedium?.copyWith(
-            color: RexUiTokens.textMuted,
+            color: colors.textSecondary,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -289,30 +286,22 @@ class _EmptyAccountabilityState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final compact = MediaQuery.sizeOf(context).height < 650;
+    final colors = context.clarityColors;
 
     return Center(
-      child: RexSurface(
-        color: RexUiTokens.surface.withValues(alpha: 0.78),
-        borderColor: RexUiTokens.border.withValues(alpha: 0.65),
-        radius: RexUiTokens.radiusLarge,
-        padding: EdgeInsets.all(
-          compact ? RexUiTokens.space12 : RexUiTokens.space20,
-        ),
+      child: Padding(
+        padding: EdgeInsets.all(compact ? RexUiTokens.space12 : 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (!compact) ...[
-              const Icon(
-                Icons.flag_outlined,
-                size: 34,
-                color: RexUiTokens.accent,
-              ),
+              Icon(Icons.flag_outlined, size: 34, color: colors.accent),
               const SizedBox(height: RexUiTokens.space12),
             ],
             Text(
               'No goals yet',
               style: theme.textTheme.titleMedium?.copyWith(
-                color: RexUiTokens.text,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -323,7 +312,7 @@ class _EmptyAccountabilityState extends StatelessWidget {
               maxLines: compact ? 2 : 3,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: RexUiTokens.textMuted,
+                color: colors.textSecondary,
                 height: 1.25,
               ),
             ),

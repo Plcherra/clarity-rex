@@ -8,11 +8,7 @@ class ClarityGradients {
   static const primary = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
-    colors: [
-      ClarityColors.deepBlue,
-      ClarityColors.electricBlue,
-      ClarityColors.teal,
-    ],
+    colors: [ClarityColors.teal, ClarityColors.tealGlow],
   );
 
   static const appBackground = LinearGradient(
@@ -28,6 +24,6 @@ class ClarityGradients {
   static const cardEdge = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [ClarityColors.subtleBlueBorder, ClarityColors.mutedBorder],
+    colors: [ClarityColors.subtleBorder, ClarityColors.mutedBorder],
   );
 }

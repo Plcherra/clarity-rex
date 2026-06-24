@@ -5,6 +5,7 @@ import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/accountability/data/accountability_models.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
 part 'accountability_page_sections.dart';

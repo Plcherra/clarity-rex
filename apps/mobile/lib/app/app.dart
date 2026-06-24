@@ -5,6 +5,7 @@ import '../features/auth/application/auth_controller.dart';
 import '../features/auth/presentation/auth_screen.dart';
 import '../features/auth/presentation/mfa_verification_screen.dart';
 import '../features/profile/application/profile_controller.dart';
+import '../features/profile/application/theme_mode_controller.dart';
 import '../features/shell/presentation/home_shell.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../rex/data/financial_context_service.dart';
@@ -18,14 +19,20 @@ final class ClarityApp extends StatelessWidget {
     required this.ui,
     required this.authController,
     required this.profileController,
+    required this.themeModeController,
   });
 
   final AppUiDependencies ui;
   final AuthController authController;
   final ProfileController profileController;
+  final ThemeModeController themeModeController;
 
   static ThemeData buildTheme() {
     return ClarityTheme.dark();
+  }
+
+  static ThemeData buildLightTheme() {
+    return ClarityTheme.light();
   }
 
   @override
@@ -41,20 +48,19 @@ final class ClarityApp extends StatelessWidget {
         ),
       ],
       child: ListenableBuilder(
-        listenable: authController,
+        listenable: Listenable.merge([
+          authController,
+          profileController,
+          themeModeController,
+        ]),
         builder: (context, _) {
-          return ListenableBuilder(
-            listenable: profileController,
-            builder: (context, _) {
-              return MaterialApp(
-                title: 'Clarity',
-                debugShowCheckedModeBanner: false,
-                theme: buildTheme(),
-                darkTheme: buildTheme(),
-                themeMode: ThemeMode.dark,
-                home: _homeForCurrentState(),
-              );
-            },
+          return MaterialApp(
+            title: 'Clarity',
+            debugShowCheckedModeBanner: false,
+            theme: buildLightTheme(),
+            darkTheme: buildTheme(),
+            themeMode: themeModeController.themeMode,
+            home: _homeForCurrentState(),
           );
         },
       ),
@@ -86,6 +92,7 @@ final class ClarityApp extends StatelessWidget {
       ui: ui,
       authController: authController,
       profileController: profileController,
+      themeModeController: themeModeController,
       signOut: authController.signOut,
     );
   }

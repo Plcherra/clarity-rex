@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_message_bubble.dart';
-import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/theme/clarity_colors.dart';
 
 class ChatTranscript extends StatelessWidget {
   const ChatTranscript({
@@ -116,71 +116,35 @@ class _EmptyChatState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
     final compact = MediaQuery.sizeOf(context).height < 650;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(2, compact ? 12 : 34, 2, 14),
-      child: RexSurface(
-        padding: EdgeInsets.all(
-          compact ? RexUiTokens.space12 : RexUiTokens.space20,
-        ),
-        color: RexUiTokens.surface.withValues(alpha: 0.82),
-        borderColor: RexUiTokens.border.withValues(alpha: 0.72),
-        radius: RexUiTokens.radiusLarge,
+      child: Padding(
+        padding: EdgeInsets.all(compact ? RexUiTokens.space12 : 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!compact) ...[
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: RexUiTokens.accent.withValues(alpha: 0.13),
-                  borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
-                  border: Border.all(
-                    color: RexUiTokens.accent.withValues(alpha: 0.28),
-                  ),
-                ),
-                child: const SizedBox(
-                  width: 46,
-                  height: 46,
-                  child: Icon(
-                    Icons.auto_awesome_rounded,
-                    color: RexUiTokens.accent,
-                    size: 24,
-                  ),
-                ),
-              ),
-              const SizedBox(height: RexUiTokens.space16),
-            ],
             Text(
               'Rex is ready',
               style: theme.textTheme.headlineSmall?.copyWith(
-                color: RexUiTokens.text,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w900,
                 height: 1.05,
               ),
             ),
-            const SizedBox(height: RexUiTokens.space8),
-            Text(
-              welcomeMessage,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: RexUiTokens.textMuted,
-                height: 1.45,
-              ),
-            ),
-            SizedBox(
-              height: compact ? RexUiTokens.space12 : RexUiTokens.space20,
-            ),
             if (!compact) ...[
+              const SizedBox(height: RexUiTokens.space8),
               Text(
-                'Try asking',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: RexUiTokens.textSubtle,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
+                welcomeMessage,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: colors.textSecondary,
+                  height: 1.35,
                 ),
               ),
-              const SizedBox(height: RexUiTokens.space8),
             ],
+            SizedBox(height: compact ? RexUiTokens.space12 : 18),
             Wrap(
               spacing: RexUiTokens.space8,
               runSpacing: RexUiTokens.space8,
@@ -189,19 +153,15 @@ class _EmptyChatState extends StatelessWidget {
                     (prompt) => ActionChip(
                       label: Text(prompt),
                       onPressed: () => onPromptSelected(prompt),
-                      backgroundColor: RexUiTokens.surfaceRaised.withValues(
-                        alpha: 0.72,
-                      ),
-                      side: BorderSide(
-                        color: RexUiTokens.border.withValues(alpha: 0.72),
-                      ),
+                      backgroundColor: Colors.transparent,
+                      side: BorderSide(color: colors.borderActive),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
                           RexUiTokens.radiusPill,
                         ),
                       ),
                       labelStyle: theme.textTheme.labelLarge?.copyWith(
-                        color: RexUiTokens.textMuted,
+                        color: colors.textSecondary,
                         fontWeight: FontWeight.w800,
                       ),
                     ),

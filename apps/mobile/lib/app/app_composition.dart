@@ -18,6 +18,7 @@ import '../features/finance/data/financial_audit_service.dart';
 import '../features/plaid/application/plaid_link_service.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/profile/application/profile_service.dart';
+import '../features/profile/application/theme_mode_controller.dart';
 import '../features/transactions/application/category_workflow_service.dart';
 import '../features/transactions/application/import_job_status_service.dart';
 import '../features/transactions/application/transaction_workflow_service.dart';
@@ -35,11 +36,15 @@ final class AppComposition {
   AppComposition({
     SupabaseService? supabaseService,
     bool initialAuthenticated = false,
+    ThemeModeController? themeModeController,
   }) : supabaseService = supabaseService ?? const SupabaseService(),
-       _initialAuthenticated = initialAuthenticated;
+       _initialAuthenticated = initialAuthenticated,
+       themeModeController = themeModeController ?? ThemeModeController(),
+       _ownsThemeModeController = themeModeController == null;
 
   final SupabaseService supabaseService;
   final bool _initialAuthenticated;
+  final bool _ownsThemeModeController;
 
   late final SupabaseRepository supabaseRepository = SupabaseRepository(
     supabaseService: supabaseService,
@@ -85,6 +90,7 @@ final class AppComposition {
       );
   final ImportJobStatusService importJobStatusService =
       ImportJobStatusService();
+  final ThemeModeController themeModeController;
 
   late final AuthService authService = AuthService(
     supabaseService: supabaseService,
@@ -234,6 +240,9 @@ final class AppComposition {
     _tryDispose(() => ui.dispose());
     _tryDispose(() => authController.dispose());
     _tryDispose(() => profileController.dispose());
+    if (_ownsThemeModeController) {
+      _tryDispose(() => themeModeController.dispose());
+    }
   }
 }
 
