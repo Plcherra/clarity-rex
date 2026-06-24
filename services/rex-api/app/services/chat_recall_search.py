@@ -20,6 +20,7 @@ PAST_CHAT_FULL_SCAN_MAX_MESSAGES = (
     PAST_CHAT_SEARCH_PAGE_LIMIT * PAST_CHAT_FULL_SCAN_MAX_PAGES
 )
 PAST_CHAT_FULL_SCAN_TIME_BUDGET_SECONDS = 6.0
+PAST_CHAT_SHARED_SEARCH_QUERY_LIMIT = 10
 SHARED_SEARCH_STRONG_MATCH_SCORE = 6.0
 SHARED_SEARCH_MIN_FACTUAL_MATCHES = 3
 LOGGER = logging.getLogger("rex.context")
@@ -79,44 +80,65 @@ class ChatRecallSearch:
         if shared_conversation_search is not None:
             shared_search_used = True
             result.query_modes.add("shared_conversation_search")
-            result.attempted_queries.append(
-                {"query": query, "mode": "shared_conversation_search"}
-            )
-            phase_started = time.perf_counter()
-            try:
-                conversation_results = await shared_conversation_search(
-                    query,
-                    limit=PAST_CHAT_SEARCH_PAGE_LIMIT,
+            for search_query, query_mode in self.shared_conversation_search_queries(
+                query,
+                search_queries=search_queries,
+            ):
+                shared_mode = (
+                    "shared_conversation_search"
+                    if query_mode == "exact"
+                    else f"shared_conversation_search:{query_mode}"
                 )
-                result.scanned_messages += len(conversation_results)
-                for item in conversation_results:
-                    message = item.get("message")
-                    if isinstance(message, dict) and self.scorer.is_current_query_echo(
-                        query,
-                        message,
-                    ):
-                        continue
-                    self.add_best_message(
-                        result.messages_by_id,
-                        self.scorer.scored_conversation_search_result(
-                            query,
-                            item,
-                            query_mode="shared_conversation_search",
-                        ),
+                result.attempted_queries.append(
+                    {"query": search_query, "mode": shared_mode}
+                )
+                phase_started = time.perf_counter()
+                try:
+                    conversation_results = await shared_conversation_search(
+                        search_query,
+                        limit=PAST_CHAT_SEARCH_PAGE_LIMIT,
                     )
-                self.log(
-                    "shared_conversation_search",
-                    phase_started,
-                    result_count=len(conversation_results),
-                    raw_match_count=len(result.messages_by_id),
-                )
-            except Exception as exc:
-                failure = safe_error_message(exc)
-                LOGGER.warning(
-                    "rex_memory_fetch_failed source=shared_conversation_search"
-                )
-                result.error_message = failure
-                return result
+                    result.scanned_messages += len(conversation_results)
+                    for item in conversation_results:
+                        message = item.get("message")
+                        if isinstance(
+                            message,
+                            dict,
+                        ) and self.scorer.is_current_query_echo(
+                            query,
+                            message,
+                        ):
+                            continue
+                        self.add_best_message(
+                            result.messages_by_id,
+                            self.scorer.scored_conversation_search_result(
+                                search_query,
+                                item,
+                                query_mode=shared_mode,
+                            ),
+                        )
+                    self.log(
+                        "shared_conversation_search",
+                        phase_started,
+                        mode=query_mode,
+                        result_count=len(conversation_results),
+                        raw_match_count=len(result.messages_by_id),
+                    )
+                except Exception as exc:
+                    failure = safe_error_message(exc)
+                    LOGGER.warning(
+                        "rex_memory_fetch_failed source=shared_conversation_search"
+                    )
+                    result.error_message = failure
+                    return result
+                if self.viable_match_count(result.messages_by_id) >= target_match_count:
+                    self.log(
+                        "shared_conversation_search_target_reached",
+                        raw_match_count=len(result.messages_by_id),
+                        viable_match_count=self.viable_match_count(result.messages_by_id),
+                        target_match_count=target_match_count,
+                    )
+                    break
 
         fallback_search_allowed = (
             not shared_search_used
@@ -412,6 +434,61 @@ class ChatRecallSearch:
     def past_chat_search_queries(self, query: str) -> list[tuple[str, str]]:
         return self.scorer.past_chat_search_queries(query)
 
+    def combined_past_chat_search_queries(
+        self,
+        query: str,
+        *,
+        raw_query: Optional[str] = None,
+    ) -> list[tuple[str, str]]:
+        queries: list[tuple[str, str]] = []
+        for candidate in (query, raw_query):
+            if not str(candidate or "").strip():
+                continue
+            queries.extend(self.past_chat_search_queries(str(candidate)))
+        return self.unique_search_queries(queries)
+
+    def shared_conversation_search_queries(
+        self,
+        query: str,
+        *,
+        search_queries: list[tuple[str, str]],
+    ) -> list[tuple[str, str]]:
+        queries = self.unique_search_queries(
+            [
+                (query, "exact"),
+                *search_queries,
+            ]
+        )
+        priority = {
+            "exact": 0,
+            "subject": 1,
+            "expanded_keywords": 2,
+            "keyword": 3,
+        }
+        queries = sorted(
+            queries,
+            key=lambda item: (
+                priority.get(item[1], 9),
+                len(item[0]),
+                item[0],
+            ),
+        )
+        return queries[:PAST_CHAT_SHARED_SEARCH_QUERY_LIMIT]
+
+    def unique_search_queries(
+        self,
+        queries: list[tuple[str, str]],
+    ) -> list[tuple[str, str]]:
+        unique: list[tuple[str, str]] = []
+        seen: set[str] = set()
+        for search_query, query_mode in queries:
+            normalized = " ".join(str(search_query or "").split())
+            if not normalized or normalized.lower() in seen:
+                continue
+            seen.add(normalized.lower())
+            unique.append((normalized, query_mode))
+        return unique
+
     def target_match_count(self, limit: int) -> int:
         return max(limit, min(PAST_CHAT_SEARCH_PAGE_LIMIT, limit * 2))
 
@@ -464,7 +541,10 @@ class ChatRecallSearch:
         factual_count = self.factual_user_match_count(messages_by_id)
         if factual_count >= min(SHARED_SEARCH_MIN_FACTUAL_MATCHES, target_match_count):
             return True
-        return self.best_match_score(messages_by_id) >= SHARED_SEARCH_STRONG_MATCH_SCORE
+        return (
+            factual_count >= 2
+            and self.best_match_score(messages_by_id) >= SHARED_SEARCH_STRONG_MATCH_SCORE
+        )
 
     def log(
         self,

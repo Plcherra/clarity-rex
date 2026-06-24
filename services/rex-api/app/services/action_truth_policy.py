@@ -21,6 +21,10 @@ FILTERED_RECALL_FALLBACK = (
     "were search echoes or unusable no-result messages. I don't have usable "
     "chat-history evidence for that yet."
 )
+PARTIAL_RECALL_FALLBACK = (
+    "I found related chat history, not saved memory, but I don't have enough "
+    "clear evidence in the retrieved context to answer that confidently."
+)
 CHAT_SEARCH_CAPABILITY_FALLBACK = (
     "I can search saved chat history when chat search is available. I won't treat "
     "this visible chat as the only source."
@@ -185,8 +189,10 @@ def safe_old_chat_search_response(
     response: str, *, chat_search_results_loaded: bool, memory_status: object = None,
 ) -> str:
     cleaned = response.strip()
-    if chat_search_results_loaded or not response_claims_old_chat_search_result(cleaned):
+    if not response_claims_old_chat_search_result(cleaned):
         return cleaned
+    if chat_search_results_loaded:
+        return PARTIAL_RECALL_FALLBACK
     if memory_status_has_saved_knowledge(memory_status):
         return cleaned
     if chat_search_filtered_without_results(memory_status):

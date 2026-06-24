@@ -26,6 +26,8 @@ RECALL_TRIGGER_PHRASES = (
     "pull up",
 )
 RECALL_FOLLOWUP_TERMS = (
+    "by when",
+    "for what",
     "that",
     "there",
     "it",
@@ -39,7 +41,11 @@ RECALL_FOLLOWUP_TERMS = (
     "the chat",
     "old chat",
     "old chats",
+    "how much",
+    "what amount",
+    "what date",
     "what else",
+    "why",
 )
 ROUTER_RECALL_QUESTION_TERMS = (
     "anything about me",
@@ -316,7 +322,7 @@ class RecallIntentHelper:
         if any(phrase in normalized for phrase in RECALL_TRIGGER_PHRASES):
             return True
         has_question_language = re.search(
-            r"\b(?:did|do|have|had|what|when|where|who)\b",
+            r"\b(?:did|do|have|had|how|what|when|where|who|why)\b",
             normalized,
         )
         has_recall_verb = re.search(
@@ -382,7 +388,10 @@ class RecallIntentHelper:
 
     def is_direct_recall_question(self, normalized_message: str) -> bool:
         stripped = normalized_message.strip("?.! ")
-        if not re.search(r"\b(?:did|do|have|had|what|when|where|who)\b", stripped):
+        if not re.search(
+            r"\b(?:did|do|have|had|how|what|when|where|who|why)\b",
+            stripped,
+        ):
             return False
         if re.search(
             r"\b(?:remember|recall|mention|mentions|mentioned|say|said|"

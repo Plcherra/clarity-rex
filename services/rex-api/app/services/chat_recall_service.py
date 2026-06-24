@@ -32,14 +32,23 @@ class ChatRecallService:
         )
 
     async def fetch_relevant_chat_excerpts(
-        self, *, query: str, limit: int, exclude_conversation_id: Optional[str]
+        self,
+        *,
+        query: str,
+        limit: int,
+        exclude_conversation_id: Optional[str],
+        raw_query: Optional[str] = None,
     ) -> list[dict]:
         recall_started = time.perf_counter()
-        search_queries = self.chat_recall_search.past_chat_search_queries(query)
+        search_queries = self.chat_recall_search.combined_past_chat_search_queries(
+            query,
+            raw_query=raw_query,
+        )
         target_match_count = self.chat_recall_search.target_match_count(limit)
         self.log_recall_phase(
             "fetch_relevant_chat_excerpts_start",
             query_length=len(query or ""),
+            raw_query_length=len(raw_query or ""),
             query_count=len(search_queries),
             limit=limit,
             target_match_count=target_match_count,

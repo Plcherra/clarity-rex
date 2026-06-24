@@ -55,6 +55,17 @@ CHAT_SEARCH_STOP_WORDS = STOP_WORDS | {
     "was",
     "were",
 }
+CHAT_SEARCH_CONCEPT_GROUPS = (
+    ("mom", "mother", "mum", "mama"),
+    ("dad", "father", "papa"),
+    ("money", "cash", "gift", "amount", "send", "sent", "sending", "transfer"),
+    ("pc", "computer", "desktop", "model"),
+)
+CHAT_SEARCH_CONCEPT_ALIASES = {
+    term: group
+    for group in CHAT_SEARCH_CONCEPT_GROUPS
+    for term in group
+}
 
 
 @dataclass(frozen=True)
@@ -149,12 +160,19 @@ class ChatSearchTermBuilder:
             if not self.is_searchable_short_term(term):
                 continue
             expanded_terms.extend(self.simple_term_variants(term))
+            expanded_terms.extend(self.concept_variants(term))
 
         unique_terms: list[str] = []
         for term in expanded_terms:
             if term and term not in unique_terms:
                 unique_terms.append(term)
         return unique_terms[:max_terms]
+
+    def concept_variants(self, term: str) -> tuple[str, ...]:
+        normalized = self.normalize_term(term)
+        if not normalized:
+            return ()
+        return tuple(CHAT_SEARCH_CONCEPT_ALIASES.get(normalized, ()))
 
     def unique_terms(self, terms: list[str]) -> list[str]:
         return self.normalizer.unique_terms(terms)

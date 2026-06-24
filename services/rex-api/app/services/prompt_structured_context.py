@@ -173,7 +173,11 @@ class PromptStructuredContextMixin:
             f"chat_search={chat_state} count={chat_count}."
         )
         if chat_state == "found":
-            line = f"{line} Use chat results as chat history, not saved memory."
+            line = (
+                f"{line} Use chat results as chat history, not saved memory. "
+                "If the retrieved chats only answer part of the question, say "
+                "what they show and what detail is missing."
+            )
         if saved_state == "degraded" or chat_state == "degraded":
             failed = ", ".join(sorted(set(failure_sources))) or "unknown"
             line = (

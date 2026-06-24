@@ -3,6 +3,7 @@ from app.services.action_truth_policy import (
     DEGRADED_RECALL_FALLBACK,
     EMPTY_RECALL_FALLBACK,
     FILTERED_RECALL_FALLBACK,
+    PARTIAL_RECALL_FALLBACK,
     safe_chat_search_capability_response,
     safe_degraded_memory_search_response,
     safe_empty_recall_search_response,
@@ -120,6 +121,26 @@ def test_partial_chat_search_uses_canonical_degraded_fallback():
     )
 
     assert response == DEGRADED_RECALL_FALLBACK
+
+
+def test_loaded_chat_history_no_mentions_claim_uses_partial_fallback():
+    response = safe_old_chat_search_response(
+        "I checked the old chats and found no mentions of your PC.",
+        chat_search_results_loaded=True,
+        memory_status={
+            "source_statuses": [
+                {
+                    "source": "chat_search",
+                    "attempted": True,
+                    "succeeded": True,
+                    "status": "found",
+                    "result_count": 1,
+                }
+            ]
+        },
+    )
+
+    assert response == PARTIAL_RECALL_FALLBACK
 
 
 def test_chat_no_mentions_claim_without_search_is_blocked():

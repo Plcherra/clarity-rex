@@ -32,7 +32,15 @@ class RexIntentMemoryHelper:
     def is_finance_first_query(self, normalized_message: str) -> bool:
         if not self.finance_helper.has_finance_language(normalized_message):
             return False
+        if self.is_financial_recall_question(normalized_message):
+            return False
         return not contains(normalized_message, MEMORY_STORE_TERMS)
+
+    def is_financial_recall_question(self, normalized_message: str) -> bool:
+        return (
+            contains(normalized_message, MEMORY_STORE_TERMS)
+            and self.recall_intent.is_router_memory_recall_request(normalized_message)
+        ) or self.recall_intent.has_user_scoped_past_reference(normalized_message)
 
     def looks_like_memory_save(self, normalized_message: str) -> bool:
         if normalized_message.startswith(("do you remember", "what do you remember")):

@@ -481,9 +481,9 @@ async def test_chat_context_falls_back_to_subject_search_when_broad_terms_fill_l
         item["id"] == "chat-mom-1"
         for item in structured_context["chat_search_results"]
     )
-    assert store.shared_conversation_search_queries == [
-        {"query": "mom", "limit": 200, "exclude_conversation_id": None}
-    ]
+    shared_queries = [item["query"] for item in store.shared_conversation_search_queries]
+    assert "mom" in shared_queries
+    assert "Do you know anything about my mom?" in shared_queries
 
 
 @pytest.mark.asyncio
@@ -966,6 +966,60 @@ async def test_chat_context_returns_conversation_level_context_for_related_mom_d
     assert "mom's birthday" in result["content"]
     assert "send her money" in result["content"]
     assert "included nearby conversation context" in result["relevance_reason"]
+
+
+@pytest.mark.asyncio
+async def test_chat_context_searches_raw_and_topic_queries_for_mom_birthday_recall():
+    class RawParityStore(FakeContextMemoryStore):
+        async def search_conversations(
+            self,
+            query,
+            limit=50,
+            exclude_conversation_id=None,
+        ):
+            self.shared_conversation_search_queries.append(
+                {
+                    "query": query,
+                    "limit": limit,
+                    "exclude_conversation_id": exclude_conversation_id,
+                }
+            )
+            if "mom" not in str(query).lower():
+                return []
+            return [
+                {
+                    "conversation_id": "conversation-mom",
+                    "conversation_title": "Family dates",
+                    "conversation_timestamp": "2026-06-18T12:00:00Z",
+                    "message": {
+                        "id": "mom-birthday",
+                        "conversation_id": "conversation-mom",
+                        "role": "user",
+                        "content": "My mom's birthday is June 18.",
+                        "timestamp": "2026-06-18T12:00:00Z",
+                    },
+                    "match_type": "message",
+                    "preview": "My mom's birthday is June 18.",
+                    "relevance_score": 8.0,
+                    "matched_terms": ["mom"],
+                }
+            ]
+
+    store = RawParityStore(force_empty_search_messages=True)
+    store.list_messages = None
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Can you look if I mention my mom?",
+        conversation_id=None,
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    queries = [item["query"] for item in store.shared_conversation_search_queries]
+    assert "mom" in queries
+    assert "Can you look if I mention my mom?" in queries
+    result = structured_context["chat_search_results"][0]
+    assert "mom's birthday is June 18" in result["content"]
 
 
 @pytest.mark.asyncio
@@ -1636,6 +1690,56 @@ async def test_chat_context_finds_send_money_from_gift_followup():
 
 
 @pytest.mark.asyncio
+async def test_chat_context_treats_amount_and_purpose_as_recall_followup():
+    store = FakeContextMemoryStore()
+    store.messages = [
+        {
+            "id": "message-1",
+            "role": "user",
+            "content": "Did I mention sending money for someone?",
+            "timestamp": "2026-06-12T19:00:00Z",
+        },
+        {
+            "id": "message-2",
+            "role": "assistant",
+            "content": "Yeah, you mentioned sending money to your mom in our chats.",
+            "timestamp": "2026-06-12T19:00:10Z",
+        },
+    ]
+    store.past_messages = [
+        {
+            "id": "mom-money",
+            "conversation_id": "conversation-money",
+            "role": "user",
+            "content": "I need to send $10 to my mom for her birthday by June 18.",
+            "timestamp": "2026-06-12T18:49:00Z",
+        },
+        {
+            "id": "mom-birthday",
+            "conversation_id": "conversation-money",
+            "role": "user",
+            "content": "My mom's birthday is June 18.",
+            "timestamp": "2026-06-12T18:48:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="How much and for what?",
+        conversation_id="conversation-1",
+        intent_decision=RexIntentDecision(RexIntent.CASUAL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert "$10" in result["content"]
+    assert "for her birthday" in result["content"]
+    assert "June 18" in result["content"]
+    assert structured_context["memory_status"]["attempted_sources"][
+        "chat_search"
+    ] is True
+
+
+@pytest.mark.asyncio
 async def test_chat_context_searches_short_pc_subject():
     store = FakeContextMemoryStore()
     store.past_messages = [
@@ -1728,9 +1832,9 @@ async def test_chat_context_uses_shared_conversation_search_for_recall():
     result = structured_context["chat_search_results"][0]
     assert result["id"] == "chat-conversation-omen"
     assert "Omen PC forty five" in result["content"]
-    assert store.shared_conversation_search_queries == [
-        {"query": "pc", "limit": 200, "exclude_conversation_id": None}
-    ]
+    shared_queries = [item["query"] for item in store.shared_conversation_search_queries]
+    assert "pc" in shared_queries
+    assert "Can you look what kind PC I have?" in shared_queries
     assert store.list_message_queries == []
     status = structured_context["memory_status"]["source_statuses"][0]
     assert "shared_conversation_search" in status["query_modes"]
@@ -1834,7 +1938,6 @@ async def test_chat_context_falls_back_when_shared_search_returns_weak_match():
 
     assert all(not memory["id"].startswith("chat-") for memory in memories)
     assert store.shared_conversation_search_queries[0]["query"] == "bom dough payroll"
-    assert store.search_message_queries
     assert any(
         "Friday morning" in result["content"]
         for result in structured_context["chat_search_results"]
@@ -1902,7 +2005,7 @@ async def test_chat_context_includes_nearby_factual_answer_for_question_match():
     assert result["id"] == "chat-conversation-omen"
     assert "Do I have a PC?" in result["content"]
     assert "Omen 45L" in result["content"]
-    assert result["matched_message_ids"] == ["pc-question"]
+    assert "pc-question" in result["matched_message_ids"]
 
 
 @pytest.mark.asyncio

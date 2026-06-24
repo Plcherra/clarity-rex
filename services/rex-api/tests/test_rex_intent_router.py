@@ -106,6 +106,8 @@ def test_router_memory_information_question_beats_attached_financial_context():
         "Do you know anything about my friend Lara?",
         "Did I mention sending money?",
         "What did I say about money?",
+        "How much did I say I would send?",
+        "Why was I sending money?",
         "Have we talked about my immigration plan?",
         "What did I tell you about my sister?",
         "Can you search our chats for my birthday?",

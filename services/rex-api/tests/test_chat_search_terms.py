@@ -39,3 +39,15 @@ def test_assistant_topic_query_falls_back_to_content_terms_without_subject_marke
     assert builder.assistant_topic_query("Could you pull up Omen PC 45L?") == (
         "omen pc 45l"
     )
+
+
+def test_search_terms_expand_common_recall_aliases():
+    builder = ChatSearchTermBuilder()
+
+    mom_terms = builder.search_terms("mom birthday", max_terms=12)
+    gift_terms = builder.search_terms("gift for her", max_terms=12)
+    pc_terms = builder.search_terms("PC model", max_terms=12)
+
+    assert {"mom", "mother", "mama"} <= set(mom_terms)
+    assert {"gift", "money", "cash"} <= set(gift_terms)
+    assert {"pc", "computer", "desktop"} <= set(pc_terms)

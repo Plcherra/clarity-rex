@@ -1,3 +1,4 @@
+import re
 import time
 from typing import Callable, Optional
 
@@ -13,6 +14,20 @@ CHAT_EXCERPT_CONTEXT_BEFORE = 6
 CHAT_EXCERPT_CONTEXT_AFTER = 8
 CHAT_EXCERPT_CONVERSATION_LIMIT = 500
 CHAT_TITLE_MATCH_CONTEXT_LIMIT = 24
+CHAT_RELATED_DETAIL_CONTEXT_RADIUS = 24
+CHAT_RELATED_DETAIL_MARKERS = (
+    "amount",
+    "birthday",
+    "by ",
+    "deadline",
+    "for ",
+    "june",
+    "model",
+    "pay",
+    "send",
+    "sent",
+    "transfer",
+)
 
 
 class ChatRecallExcerptBuilder:
@@ -208,7 +223,12 @@ class ChatRecallExcerptBuilder:
                 if message_id:
                     seen_ids.add(message_id)
                 context_messages.append(message)
-        return context_messages
+        return self.with_related_detail_messages(
+            context_messages,
+            conversation_messages=conversation_messages,
+            matched_messages=matched_messages,
+            matched_indexes=matched_indexes,
+        )
 
     def has_conversation_level_match(self, matched_messages: list[dict]) -> bool:
         return any(
@@ -227,6 +247,99 @@ class ChatRecallExcerptBuilder:
         if len(filtered) <= CHAT_TITLE_MATCH_CONTEXT_LIMIT:
             return filtered
         return filtered[:CHAT_TITLE_MATCH_CONTEXT_LIMIT]
+
+    def with_related_detail_messages(
+        self,
+        context_messages: list[dict],
+        *,
+        conversation_messages: list[dict],
+        matched_messages: list[dict],
+        matched_indexes: list[int],
+    ) -> list[dict]:
+        if not context_messages or not matched_indexes:
+            return context_messages
+
+        selected_ids = {
+            str(message.get("id") or "")
+            for message in context_messages
+            if str(message.get("id") or "")
+        }
+        matched_terms = self.matched_terms(matched_messages)
+        selected = list(context_messages)
+        for index, message in enumerate(conversation_messages):
+            message_id = str(message.get("id") or "")
+            if message_id and message_id in selected_ids:
+                continue
+            if not self.is_near_match(index, matched_indexes):
+                continue
+            if not is_chat_search_user_content_message(message):
+                continue
+            if self.message_was_rejected_in_conversation(
+                index,
+                conversation_messages,
+            ):
+                continue
+            if not (
+                self.message_contains_term(message, matched_terms)
+                or self.message_has_detail_marker(message)
+            ):
+                continue
+            if message_id:
+                selected_ids.add(message_id)
+            selected.append(message)
+
+        order = {
+            str(message.get("id") or ""): index
+            for index, message in enumerate(conversation_messages)
+            if str(message.get("id") or "")
+        }
+        return sorted(
+            selected,
+            key=lambda message: order.get(str(message.get("id") or ""), 10_000),
+        )
+
+    def matched_terms(self, matched_messages: list[dict]) -> set[str]:
+        terms = {
+            str(term).lower()
+            for message in matched_messages
+            for term in message.get("_chat_search_matched_terms", [])
+            if str(term).strip()
+        }
+        return {term for term in terms if len(term) >= 2}
+
+    def is_near_match(self, index: int, matched_indexes: list[int]) -> bool:
+        return any(
+            abs(index - matched_index) <= CHAT_RELATED_DETAIL_CONTEXT_RADIUS
+            for matched_index in matched_indexes
+        )
+
+    def message_contains_term(self, message: dict, terms: set[str]) -> bool:
+        if not terms:
+            return False
+        content = str(message.get("content") or "").lower()
+        return any(term in content for term in terms)
+
+    def message_has_detail_marker(self, message: dict) -> bool:
+        content = str(message.get("content") or "").lower()
+        if not content:
+            return False
+        if re.search(r"\$\s*\d|\b\d+(?:\.\d{2})?\s*(?:bucks|dollars)\b", content):
+            return True
+        return any(marker in content for marker in CHAT_RELATED_DETAIL_MARKERS)
+
+    def message_was_rejected_in_conversation(
+        self,
+        message_index: int,
+        conversation_messages: list[dict],
+    ) -> bool:
+        following_messages = conversation_messages[
+            message_index + 1 : message_index + 7
+        ]
+        return any(
+            str(item.get("role") or "") == "user"
+            and is_memory_rejection_message(item)
+            for item in following_messages
+        )
 
     async def cached_conversation_messages(
         self,
