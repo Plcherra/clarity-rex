@@ -2,19 +2,25 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../theme/clarity_colors.dart';
+import '../../theme/clarity_theme.dart';
+import '../../widgets/clarity_diamond_loader.dart';
+
 class ClaritySplashScreen extends StatefulWidget {
   const ClaritySplashScreen({
     super.key,
     required this.child,
     required this.isReady,
-    this.assetPath = 'assets/brand/clarity_splash_screen.png',
-    this.minDuration = const Duration(milliseconds: 900),
+    this.logoAssetPath = 'assets/brand/splash_logo.png',
+    this.fallbackLogoAssetPath = 'assets/brand/clarity_mark.png',
+    this.minDuration = const Duration(milliseconds: 600),
     this.fadeDuration = const Duration(milliseconds: 520),
   });
 
   final Widget child;
   final bool isReady;
-  final String assetPath;
+  final String logoAssetPath;
+  final String fallbackLogoAssetPath;
   final Duration minDuration;
   final Duration fadeDuration;
 
@@ -76,7 +82,10 @@ class _ClaritySplashScreenState extends State<ClaritySplashScreen> {
                   if (_overlayVisible || !mounted) return;
                   setState(() => _overlayMounted = false);
                 },
-                child: _SplashVisual(assetPath: widget.assetPath),
+                child: _SplashVisual(
+                  logoAssetPath: widget.logoAssetPath,
+                  fallbackLogoAssetPath: widget.fallbackLogoAssetPath,
+                ),
               ),
             ),
           ),
@@ -86,25 +95,65 @@ class _ClaritySplashScreenState extends State<ClaritySplashScreen> {
 }
 
 class _SplashVisual extends StatelessWidget {
-  const _SplashVisual({required this.assetPath});
+  const _SplashVisual({
+    required this.logoAssetPath,
+    required this.fallbackLogoAssetPath,
+  });
 
-  final String assetPath;
+  final String logoAssetPath;
+  final String fallbackLogoAssetPath;
 
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.ltr,
-      child: Material(
-        color: const Color(0xFF050D1A),
-        child: SizedBox.expand(
-          child: Image.asset(
-            assetPath,
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            filterQuality: FilterQuality.high,
-            gaplessPlayback: true,
+      child: Theme(
+        data: ClarityTheme.dark(),
+        child: Material(
+          color: ClarityColors.appBackground,
+          child: Center(
+            child: _SplashLogo(
+              logoAssetPath: logoAssetPath,
+              fallbackLogoAssetPath: fallbackLogoAssetPath,
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SplashLogo extends StatelessWidget {
+  const _SplashLogo({
+    required this.logoAssetPath,
+    required this.fallbackLogoAssetPath,
+  });
+
+  final String logoAssetPath;
+  final String fallbackLogoAssetPath;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.maybeOf(context)?.size ?? const Size(390, 844);
+    final shortestSide = size.shortestSide;
+    final logoSize = (shortestSide * 0.42).clamp(148.0, 220.0);
+
+    return SizedBox.square(
+      dimension: logoSize,
+      child: Image.asset(
+        logoAssetPath,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (context, error, stackTrace) {
+          return Image.asset(
+            fallbackLogoAssetPath,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (context, error, stackTrace) {
+              return const ClarityDiamondLoader();
+            },
+          );
+        },
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/clarity_gradients.dart';
 import '../theme/clarity_radius.dart';
 
 class ClarityCard extends StatelessWidget {
@@ -14,6 +15,7 @@ class ClarityCard extends StatelessWidget {
     this.borderRadius,
     this.constraints,
     this.width,
+    this.highlighted = true,
   });
 
   final Widget child;
@@ -25,26 +27,57 @@ class ClarityCard extends StatelessWidget {
   final BorderRadiusGeometry? borderRadius;
   final BoxConstraints? constraints;
   final double? width;
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final radius = borderRadius ?? BorderRadius.circular(ClarityRadius.card);
-    final shape = RoundedRectangleBorder(
-      borderRadius: radius,
-      side: BorderSide(
-        color: borderColor ?? cs.outline.withValues(alpha: 0.72),
-      ),
-    );
+    final fillColor =
+        backgroundColor ?? theme.cardTheme.color ?? cs.surfaceContainerLow;
     final content = Padding(padding: padding, child: child);
-    final card = Material(
-      color: backgroundColor ?? theme.cardTheme.color ?? cs.surfaceContainerLow,
-      surfaceTintColor: Colors.transparent,
-      shape: shape,
-      clipBehavior: Clip.antiAlias,
-      child: onTap == null ? content : InkWell(onTap: onTap, child: content),
-    );
+
+    final Widget card;
+    if (borderColor != null) {
+      card = Material(
+        color: fillColor,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(color: borderColor!),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: onTap == null ? content : InkWell(onTap: onTap, child: content),
+      );
+    } else if (highlighted) {
+      card = DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          gradient: ClarityGradients.cardEdge,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(1),
+          child: Material(
+            color: fillColor,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: _insetRadius(radius)),
+            clipBehavior: Clip.antiAlias,
+            child: onTap == null
+                ? content
+                : InkWell(onTap: onTap, child: content),
+          ),
+        ),
+      );
+    } else {
+      card = Material(
+        color: fillColor,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: radius),
+        clipBehavior: Clip.antiAlias,
+        child: onTap == null ? content : InkWell(onTap: onTap, child: content),
+      );
+    }
 
     Widget result = card;
     if (constraints != null || width != null) {
@@ -57,5 +90,25 @@ class ClarityCard extends StatelessWidget {
       result = Padding(padding: margin!, child: result);
     }
     return result;
+  }
+
+  BorderRadiusGeometry _insetRadius(BorderRadiusGeometry radius) {
+    if (radius is BorderRadius) {
+      return BorderRadius.only(
+        topLeft: Radius.circular(
+          (radius.topLeft.x - 1).clamp(0.0, double.infinity),
+        ),
+        topRight: Radius.circular(
+          (radius.topRight.x - 1).clamp(0.0, double.infinity),
+        ),
+        bottomLeft: Radius.circular(
+          (radius.bottomLeft.x - 1).clamp(0.0, double.infinity),
+        ),
+        bottomRight: Radius.circular(
+          (radius.bottomRight.x - 1).clamp(0.0, double.infinity),
+        ),
+      );
+    }
+    return radius;
   }
 }

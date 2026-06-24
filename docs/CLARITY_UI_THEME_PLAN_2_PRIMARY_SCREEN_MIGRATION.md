@@ -1,5 +1,32 @@
 # Clarity UI Theme Plan 2: Primary Screen Migration
 
+## Status
+
+| Area | State |
+|------|-------|
+| Auth + MFA + Onboarding | Done |
+| Dashboard + Accounts shadows/panels | Done |
+| Budgets header styling | Done |
+| Profile | Done (uses shared components) |
+| Assistant/Rex tabs | Done (uses RexUiTokens) |
+| Transaction dropdown shadows | Done |
+
+**Last updated:** 2026-06-24  
+**Completed:** 2026-06-24
+
+## Screen Checklist
+
+- [x] Auth — `auth_screen.dart` (gradient background, ClarityCard, ClarityButton, clarity_mark)
+- [x] MFA — `mfa_verification_screen.dart` (gradient background, ClarityCard, ClarityButton)
+- [x] Onboarding — `onboarding_screen.dart`
+- [x] Dashboard — financial dashboard panels use ClarityColors + ClarityShadows
+- [x] Accounts — connect/setup cards use ClarityCard
+- [x] Budgets — header panel shadow uses ClarityShadows
+- [x] Profile — ClarityCard sections
+- [x] Assistant/Rex — RexTheme + RexUiTokens aligned with Clarity theme
+- [x] Loading states — ClarityPathLoader / ClarityDiamondLoader in dashboard and buttons
+- [x] Transaction category dropdown — navy-tinted shadow color
+
 ## Goal
 
 Migrate the main app screens to the Clarity dark AI/finance aesthetic using the shared theme and components from Plan 1.
@@ -58,10 +85,16 @@ Add focused widget tests only if a screen migration changes layout assumptions o
 
 ## Completion Report
 
-After implementation, report:
+**Files changed:**
 
-- Files changed.
-- Screens migrated.
-- Any visual areas intentionally left for Plan 3.
-- Whether `flutter analyze` passed.
-- Whether targeted tests passed.
+- `apps/mobile/lib/features/dashboard/presentation/financial_dashboard_view.dart`
+- `apps/mobile/lib/features/dashboard/presentation/financial_dashboard_cards.dart`
+- `apps/mobile/lib/features/dashboard/presentation/financial_dashboard_summary_sections.dart`
+- `apps/mobile/lib/features/budgets/presentation/budgets_header.dart`
+- `apps/mobile/lib/features/transactions/presentation/widgets/transaction_category_dropdown.dart`
+
+**Screens migrated:** Auth, MFA, Onboarding (already themed); Dashboard panels; Budgets header; transaction category picker shadow.
+
+**Deferred to Plan 3:** splash finalization, launcher icons, full-device QA.
+
+**Verification:** run `flutter analyze` and targeted routing tests after pull.

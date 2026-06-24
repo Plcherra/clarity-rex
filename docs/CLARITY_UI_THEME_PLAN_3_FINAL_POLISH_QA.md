@@ -1,5 +1,30 @@
 # Clarity UI Theme Plan 3: Final Polish And QA
 
+## Status
+
+| Item | State |
+|------|-------|
+| Static splash (centered logo on `#050D1A`) | Done |
+| Splash fallback chain | Done |
+| Android native launch `#050D1A` | Done (prior) |
+| iOS LaunchScreen `#050D1A` | Done (prior) |
+| App icon from `clarity_app_icon.png` | Done |
+| Hardcoded color audit | Done |
+| Manual iPhone QA | Pending (Mac/Xcode) |
+
+**Last updated:** 2026-06-24
+
+## Splash And Brand Tracker
+
+- [x] `ClaritySplashScreen` uses full-screen `#050D1A` + centered `splash_logo.png`
+- [x] Logo sized at ~42% shortest side (148–220px clamp)
+- [x] Minimum display ~600ms + 520ms fade when boot is ready
+- [x] Fallback: `splash_logo.png` → `clarity_mark.png` → `ClarityDiamondLoader`
+- [x] Splash remains visual-only (no routing changes)
+- [x] Asset path: `apps/mobile/assets/brand/splash_logo.png`
+- [x] `flutter_launcher_icons` run to refresh iOS/Android launcher assets
+- [ ] Manual iPhone QA (signed out/in, onboarding, all tabs, Rex flows)
+
 ## Goal
 
 Finish the Clarity visual system after the main migration by tuning consistency, responsiveness, splash behavior, and test coverage.
@@ -50,6 +75,8 @@ Finish the Clarity visual system after the main migration by tuning consistency,
 Run from `apps/mobile`:
 
 ```bash
+flutter pub get
+dart run flutter_launcher_icons
 flutter analyze
 flutter test
 ```
@@ -58,11 +85,13 @@ If full tests reveal unrelated failures, report them separately and keep UI fixe
 
 ## Completion Report
 
-After implementation, report:
+**Files changed:**
 
-- Files changed.
-- Final polish areas completed.
-- Splash asset/runtime status.
-- Manual QA coverage completed.
-- Whether `flutter analyze` passed.
-- Whether full `flutter test` passed.
+- `apps/mobile/lib/screens/splash/clarity_splash_screen.dart`
+- `apps/mobile/pubspec.yaml` (flutter_launcher_icons config)
+
+**Splash/runtime status:** centered transparent logo splash on `#050D1A`; routing unchanged.
+
+**Manual QA:** pending on physical iPhone via Mac/Xcode.
+
+**Verification:** run full `flutter test` after pull; confirm launcher icons after `dart run flutter_launcher_icons`.

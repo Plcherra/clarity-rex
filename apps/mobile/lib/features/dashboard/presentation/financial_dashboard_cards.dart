@@ -303,13 +303,7 @@ class _AccountHealthCard extends StatelessWidget {
         color: _dashboardPanel(context),
         borderRadius: BorderRadius.circular(_cardRadius),
         border: Border.all(color: _dashboardOutline(context)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.24),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: _dashboardShadow(),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

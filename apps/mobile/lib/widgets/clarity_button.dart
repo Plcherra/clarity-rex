@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../theme/clarity_colors.dart';
+import '../theme/clarity_gradients.dart';
+import '../theme/clarity_radius.dart';
 import 'clarity_path_loader.dart';
 
 enum ClarityButtonVariant { filled, outlined, text }
@@ -60,20 +63,12 @@ class ClarityButton extends StatelessWidget {
     final leading = isLoading ? const _ClarityButtonLoader() : icon;
     final hasLeading = leading != null;
 
-    final button = switch (variant) {
-      ClarityButtonVariant.filled =>
-        hasLeading
-            ? FilledButton.icon(
-                onPressed: effectiveOnPressed,
-                style: style,
-                icon: leading,
-                label: Text(label),
-              )
-            : FilledButton(
-                onPressed: effectiveOnPressed,
-                style: style,
-                child: Text(label),
-              ),
+    final Widget button = switch (variant) {
+      ClarityButtonVariant.filled => _GradientFilledButton(
+        onPressed: effectiveOnPressed,
+        icon: hasLeading ? leading : null,
+        label: label,
+      ),
       ClarityButtonVariant.outlined =>
         hasLeading
             ? OutlinedButton.icon(
@@ -106,6 +101,79 @@ class ClarityButton extends StatelessWidget {
       return button;
     }
     return SizedBox(width: double.infinity, child: button);
+  }
+}
+
+class _GradientFilledButton extends StatelessWidget {
+  const _GradientFilledButton({
+    required this.onPressed,
+    required this.label,
+    this.icon,
+  });
+
+  final VoidCallback? onPressed;
+  final String label;
+  final Widget? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final radius = BorderRadius.circular(ClarityRadius.medium);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        gradient: enabled
+            ? ClarityGradients.primary
+            : LinearGradient(
+                colors: [
+                  ClarityColors.surfaceSoft,
+                  ClarityColors.surfaceSoft,
+                ],
+              ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: radius,
+          splashColor: ClarityColors.tealGlow.withValues(alpha: 0.16),
+          highlightColor: ClarityColors.electricBlue.withValues(alpha: 0.12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) ...[
+                  IconTheme.merge(
+                    data: IconThemeData(
+                      color: enabled
+                          ? ClarityColors.textPrimary
+                          : ClarityColors.textMuted,
+                      size: 20,
+                    ),
+                    child: icon!,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: enabled
+                        ? ClarityColors.textPrimary
+                        : ClarityColors.textMuted,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.15,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -1,5 +1,29 @@
 # Clarity UI Theme Plan 1: Navigation And Shared Components
 
+## Status
+
+| Item | State |
+|------|-------|
+| Foundation theme tokens | Done |
+| Material component themes | Done |
+| `ClarityCard` / `ClarityButton` / `ClarityDiamondLoader` | Done |
+| `HomeShell` bottom navigation cleanup | Done |
+| Warm/gold cleanup in shared layer | Done |
+
+**Last updated:** 2026-06-24  
+**Completed:** 2026-06-24
+
+## Checklist
+
+- [x] Central theme files under `apps/mobile/lib/theme/`
+- [x] `ClarityTheme.dark()` AppBar, Card, Input, Button, Dialog, SnackBar, BottomSheet, ProgressIndicator themes
+- [x] `navigationBarTheme` in `clarity_theme.dart`
+- [x] Remove redundant `HomeShell` nav wrapper styling
+- [x] Polish `ClarityCard` edge treatment
+- [x] Confirm `ClarityButton` primary gradient styling
+- [x] Align `ClarityDiamondLoader` glow with splash diamond
+- [x] Grep shared layer for stray hardcoded colors
+
 ## Goal
 
 Make the shared app shell and reusable UI foundation match the Clarity dark navy blue-to-teal theme without redesigning the main screens yet.
@@ -52,9 +76,18 @@ flutter test test/app_routing_test.dart test/assistant_navigation_test.dart
 
 ## Completion Report
 
-After implementation, report:
+**Files changed:**
 
-- Files changed.
-- Exact visual areas changed.
-- Whether `flutter analyze` passed.
-- Whether targeted tests passed.
+- `apps/mobile/lib/features/shell/presentation/home_shell.dart`
+- `apps/mobile/lib/widgets/clarity_card.dart`
+- `apps/mobile/lib/widgets/clarity_button.dart`
+- `apps/mobile/lib/theme/clarity_shadows.dart`
+
+**Visual areas changed:**
+
+- Bottom navigation uses theme `NavigationBarTheme` with a single divider separator.
+- Cards use a subtle blue-to-teal gradient edge when `highlighted` is true (default).
+- Primary buttons use the blue-to-teal gradient fill.
+- Shared shadow tokens use navy-tinted shadows instead of raw black.
+
+**Verification:** run `flutter analyze` and targeted routing tests after pull.

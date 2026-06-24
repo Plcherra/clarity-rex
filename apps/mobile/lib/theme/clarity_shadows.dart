@@ -22,10 +22,19 @@ class ClarityShadows {
 
   static List<BoxShadow> get panel => [
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.22),
+      color: ClarityColors.appBackground.withValues(alpha: 0.55),
       blurRadius: 18,
       spreadRadius: -10,
       offset: const Offset(0, 10),
+    ),
+  ];
+
+  static List<BoxShadow> get dropdown => [
+    BoxShadow(
+      color: ClarityColors.appBackground.withValues(alpha: 0.45),
+      blurRadius: 16,
+      spreadRadius: -6,
+      offset: const Offset(0, 8),
     ),
   ];
 }

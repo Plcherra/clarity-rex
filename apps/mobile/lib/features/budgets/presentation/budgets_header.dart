@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../theme/clarity_shadows.dart';
 import '../domain/budget_models.dart';
 
 class BudgetsHeader extends StatelessWidget {
@@ -47,13 +48,7 @@ class BudgetsHeader extends StatelessWidget {
         color: cs.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: cs.outline.withValues(alpha: 0.12)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: ClarityShadows.panel,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -117,8 +117,6 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     final pages = <Widget>[
       DashboardScreen(
         controller: widget.ui.dashboard,
@@ -157,25 +155,18 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           onManageCategories: _openCategoryManagement,
           child: IndexedStack(index: _idx, children: pages),
         ),
-        bottomNavigationBar: DecoratedBox(
-          decoration: BoxDecoration(
-            color: cs.surface,
-            border: Border(
-              top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.72)),
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: Theme.of(context).dividerTheme.color,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: cs.shadow.withValues(alpha: 0.30),
-                blurRadius: 22,
-                spreadRadius: -14,
-                offset: const Offset(0, -8),
-              ),
-            ],
-          ),
-          child: NavigationBar(
-            selectedIndex: _idx,
-            onDestinationSelected: (i) => setState(() => _selectIndex(i)),
-            destinations: const [
+            NavigationBar(
+              selectedIndex: _idx,
+              onDestinationSelected: (i) => setState(() => _selectIndex(i)),
+              destinations: const [
               NavigationDestination(
                 icon: Icon(Icons.dashboard_outlined),
                 selectedIcon: Icon(Icons.dashboard_rounded),
@@ -201,8 +192,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                 selectedIcon: Icon(Icons.person_rounded),
                 label: 'Profile',
               ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );

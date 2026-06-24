@@ -13,6 +13,7 @@ import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../theme/clarity_radius.dart';
+import '../../../theme/clarity_shadows.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
 import '../../../widgets/clarity_path_loader.dart';
@@ -53,6 +54,8 @@ Color _dashboardPanelMuted(BuildContext context) {
 Color _dashboardOutline(BuildContext context) {
   return ClarityColors.mutedBorder.withValues(alpha: 0.78);
 }
+
+List<BoxShadow> _dashboardShadow() => ClarityShadows.panel;
 
 Color _dashboardSelected(BuildContext context) {
   return ClarityColors.electricBlue.withValues(alpha: 0.12);

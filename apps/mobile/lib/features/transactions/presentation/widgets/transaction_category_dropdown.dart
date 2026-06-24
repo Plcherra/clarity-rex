@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../app/ui_dependencies.dart';
-// (rules disabled) keep normalization helpers local to rule subsystem only.
 import '../../../../core/models/models.dart';
+import '../../../../theme/clarity_colors.dart';
 import '../../../../widgets/clarity_path_loader.dart';
 import '../../application/category_workflow_service.dart';
 import '../../domain/spend_categories.dart';
@@ -255,7 +255,7 @@ class _AnchoredCategoryPanel extends StatelessWidget {
       offset: const Offset(0, 6),
       child: Material(
         elevation: 6,
-        shadowColor: Colors.black26,
+        shadowColor: ClarityColors.appBackground.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(16),
         color: colorScheme.surface,
         child: Container(
@@ -531,7 +531,7 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
               top: false,
               child: Material(
                 elevation: 10,
-                shadowColor: Colors.black26,
+                shadowColor: ClarityColors.appBackground.withValues(alpha: 0.45),
                 borderRadius: BorderRadius.circular(24),
                 color: cs.surface,
                 child: Container(
