@@ -377,20 +377,7 @@ final class _ProfileActionGroup extends StatelessWidget {
       padding: EdgeInsets.zero,
       highlighted: false,
       backgroundColor: colors.surface.withValues(alpha: 0.58),
-      child: Column(
-        children: [
-          for (var index = 0; index < children.length; index++) ...[
-            if (index > 0)
-              Divider(
-                height: 1,
-                thickness: 1,
-                indent: 64,
-                color: colors.divider,
-              ),
-            children[index],
-          ],
-        ],
-      ),
+      child: Column(children: children),
     );
   }
 }

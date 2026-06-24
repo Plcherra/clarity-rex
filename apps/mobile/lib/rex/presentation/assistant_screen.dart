@@ -177,7 +177,6 @@ class _AssistantTabNavigation extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceElevated.withValues(alpha: 0.42),
         borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-        border: Border.all(color: colors.divider.withValues(alpha: 0.75)),
       ),
       child: TabBar(
         controller: controller,

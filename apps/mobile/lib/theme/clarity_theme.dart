@@ -37,7 +37,7 @@ class ClarityTheme {
           scrim: Colors.black,
         );
     final baseTheme = ThemeData(useMaterial3: true, colorScheme: scheme);
-    final outlineSoft = colors.border.withValues(alpha: isDark ? 0.70 : 0.95);
+    final outlineSoft = colors.border.withValues(alpha: isDark ? 0.45 : 0.50);
     final overlay = colors.accent.withValues(alpha: isDark ? 0.10 : 0.08);
 
     return baseTheme.copyWith(
@@ -104,7 +104,6 @@ class ClarityTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(ClarityRadius.card),
-          side: BorderSide(color: colors.divider),
         ),
       ),
       dialogTheme: DialogThemeData(
@@ -163,7 +162,6 @@ class ClarityTheme {
         indicatorColor: colors.accent.withValues(alpha: isDark ? 0.16 : 0.12),
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(ClarityRadius.pill),
-          side: BorderSide(color: colors.borderActive.withValues(alpha: 0.50)),
         ),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -201,7 +199,7 @@ class ClarityTheme {
         elevation: isDark ? 2 : 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(ClarityRadius.large),
-          side: BorderSide(color: outlineSoft),
+          side: BorderSide(color: outlineSoft.withValues(alpha: 0.45)),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -277,11 +275,11 @@ class ClarityTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ClarityRadius.medium),
-          borderSide: BorderSide(color: outlineSoft),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ClarityRadius.medium),
-          borderSide: BorderSide(color: outlineSoft),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ClarityRadius.medium),
@@ -302,7 +300,7 @@ class ClarityTheme {
         disabledColor: colors.surfaceSoft,
         labelStyle: TextStyle(color: colors.textPrimary),
         secondaryLabelStyle: TextStyle(color: colors.textPrimary),
-        side: BorderSide(color: outlineSoft),
+        side: BorderSide(color: outlineSoft.withValues(alpha: 0.50)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(ClarityRadius.pill),
         ),

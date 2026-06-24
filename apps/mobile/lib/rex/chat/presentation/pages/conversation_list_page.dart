@@ -363,18 +363,17 @@ class _ConversationSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.clarityColors;
     return TextField(
       controller: controller,
       onSubmitted: onSubmitted,
       textInputAction: TextInputAction.search,
-      style: const TextStyle(color: RexUiTokens.text),
+      style: theme.textTheme.bodyLarge?.copyWith(color: colors.textPrimary),
       decoration: InputDecoration(
         hintText: 'Search chats',
-        hintStyle: const TextStyle(color: RexUiTokens.textSubtle),
-        prefixIcon: const Icon(
-          Icons.search_rounded,
-          color: RexUiTokens.textSubtle,
-        ),
+        hintStyle: theme.textTheme.bodyLarge?.copyWith(color: colors.textMuted),
+        prefixIcon: Icon(Icons.search_rounded, color: colors.textSecondary),
         suffixIcon: isSearching
             ? const Padding(
                 padding: EdgeInsets.all(14),
@@ -384,21 +383,17 @@ class _ConversationSearchField extends StatelessWidget {
                 tooltip: 'Clear search',
                 onPressed: onClear,
                 icon: const Icon(Icons.close_rounded),
-                color: RexUiTokens.textSubtle,
+                color: colors.textSecondary,
               ),
         filled: true,
-        fillColor: RexUiTokens.surface.withValues(alpha: 0.86),
+        fillColor: colors.surface,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-          borderSide: BorderSide(
-            color: RexUiTokens.border.withValues(alpha: 0.7),
-          ),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-          borderSide: BorderSide(
-            color: RexUiTokens.accent.withValues(alpha: 0.7),
-          ),
+          borderSide: BorderSide(color: colors.borderActive, width: 1.2),
         ),
       ),
     );
@@ -418,6 +413,7 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     if (state.isSearching && state.searchResults.isEmpty) {
       return const SliverFillRemaining(
         child: Center(
@@ -437,22 +433,21 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             child: RexSurface(
               padding: const EdgeInsets.all(RexUiTokens.space20),
-              color: RexUiTokens.surface.withValues(alpha: 0.78),
-              borderColor: RexUiTokens.border.withValues(alpha: 0.65),
+              color: colors.surface.withValues(alpha: 0.82),
               radius: RexUiTokens.radiusLarge,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.search_off_rounded,
-                    color: RexUiTokens.accent,
+                    color: colors.accent,
                     size: 30,
                   ),
                   const SizedBox(height: RexUiTokens.space12),
                   Text(
                     'No matching chats',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: RexUiTokens.text,
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -461,7 +456,7 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
                     'No chats matched "${state.searchQuery}"$suffix',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: RexUiTokens.textMuted,
+                      color: colors.textSecondary,
                       height: 1.35,
                     ),
                   ),
@@ -552,29 +547,27 @@ class _ConversationFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.clarityColors;
     final foreground = selected
-        ? RexUiTokens.background
-        : RexUiTokens.textMuted;
+        ? (theme.brightness == Brightness.dark ? Colors.black : Colors.white)
+        : colors.textSecondary;
     return Padding(
       padding: const EdgeInsets.only(right: RexUiTokens.space8),
       child: ActionChip(
         avatar: icon == null ? null : Icon(icon, size: 16, color: foreground),
         label: Text(label),
-        labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+        labelStyle: theme.textTheme.labelLarge?.copyWith(
           color: foreground,
           fontWeight: FontWeight.w800,
         ),
         backgroundColor: selected
-            ? RexUiTokens.accent
-            : RexUiTokens.surfaceRaised.withValues(alpha: 0.72),
-        side: BorderSide(
-          color: selected
-              ? RexUiTokens.accent
-              : RexUiTokens.border.withValues(alpha: 0.72),
-        ),
+            ? colors.accent
+            : colors.surfaceElevated.withValues(alpha: 0.72),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
         ),
+        side: BorderSide.none,
         onPressed: onTap,
       ),
     );
@@ -597,13 +590,14 @@ class _EmptyConversationState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
     final compact = MediaQuery.sizeOf(context).height < 650;
 
     return RexSurface(
       padding: EdgeInsets.all(
         compact ? RexUiTokens.space12 : RexUiTokens.space24,
       ),
-      color: RexUiTokens.surface.withValues(alpha: 0.82),
+      color: colors.surface.withValues(alpha: 0.82),
       radius: RexUiTokens.radiusLarge,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -611,18 +605,15 @@ class _EmptyConversationState extends StatelessWidget {
           if (!compact) ...[
             DecoratedBox(
               decoration: BoxDecoration(
-                color: RexUiTokens.accent.withValues(alpha: 0.13),
+                color: colors.accent.withValues(alpha: 0.13),
                 borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
-                border: Border.all(
-                  color: RexUiTokens.accent.withValues(alpha: 0.25),
-                ),
               ),
-              child: const SizedBox(
+              child: SizedBox(
                 width: 52,
                 height: 52,
                 child: Icon(
                   Icons.forum_outlined,
-                  color: RexUiTokens.accent,
+                  color: colors.accent,
                   size: 28,
                 ),
               ),
@@ -632,7 +623,7 @@ class _EmptyConversationState extends StatelessWidget {
           Text(
             title,
             style: theme.textTheme.titleMedium?.copyWith(
-              color: RexUiTokens.text,
+              color: colors.textPrimary,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -643,15 +634,17 @@ class _EmptyConversationState extends StatelessWidget {
             maxLines: compact ? 2 : 3,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: RexUiTokens.textMuted,
+              color: colors.textSecondary,
               height: 1.25,
             ),
           ),
           SizedBox(height: compact ? RexUiTokens.space12 : RexUiTokens.space20),
           FilledButton.icon(
             style: FilledButton.styleFrom(
-              backgroundColor: RexUiTokens.accent,
-              foregroundColor: RexUiTokens.background,
+              backgroundColor: colors.accent,
+              foregroundColor: theme.brightness == Brightness.dark
+                  ? Colors.black
+                  : Colors.white,
               minimumSize: compact ? const Size(0, 40) : null,
               padding: compact
                   ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
@@ -674,24 +667,20 @@ class _HistoryErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     return RexSurface(
       padding: const EdgeInsets.all(RexUiTokens.space16),
-      color: RexUiTokens.danger.withValues(alpha: 0.12),
-      borderColor: RexUiTokens.danger.withValues(alpha: 0.45),
+      color: colors.danger.withValues(alpha: 0.12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.error_outline_rounded,
-            color: RexUiTokens.danger,
-            size: 20,
-          ),
+          Icon(Icons.error_outline_rounded, color: colors.danger, size: 20),
           const SizedBox(width: RexUiTokens.space12),
           Expanded(
             child: Text(
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: RexUiTokens.text,
+                color: colors.textPrimary,
                 height: 1.35,
               ),
             ),

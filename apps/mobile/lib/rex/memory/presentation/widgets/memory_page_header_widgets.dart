@@ -22,47 +22,47 @@ class MemorySearchAndFilters extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final selectedTextColor = theme.brightness == Brightness.dark
+        ? Colors.black
+        : Colors.white;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
           controller: controller,
-          style: theme.textTheme.bodyLarge?.copyWith(color: RexUiTokens.text),
+          style: theme.textTheme.bodyLarge?.copyWith(color: colors.textPrimary),
           textInputAction: TextInputAction.search,
-          cursorColor: RexUiTokens.accent,
+          cursorColor: colors.accent,
           decoration: InputDecoration(
             hintText: 'Search what Clarity knows',
             hintStyle: theme.textTheme.bodyLarge?.copyWith(
-              color: RexUiTokens.textSubtle,
+              color: colors.textMuted,
             ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: RexUiTokens.textMuted,
-            ),
+            prefixIcon: Icon(Icons.search_rounded, color: colors.textSecondary),
             suffixIcon: controller.text.isEmpty
                 ? null
                 : IconButton(
                     onPressed: controller.clear,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
-                      color: RexUiTokens.textMuted,
+                      color: colors.textSecondary,
                     ),
                     tooltip: 'Clear search',
                   ),
             filled: true,
-            fillColor: colors.surface.withValues(alpha: 0.86),
+            fillColor: colors.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-              borderSide: BorderSide(color: colors.divider),
+              borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-              borderSide: BorderSide(color: colors.divider),
+              borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-              borderSide: BorderSide(color: colors.borderActive),
+              borderSide: BorderSide(color: colors.borderActive, width: 1.2),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: RexUiTokens.space16,
@@ -87,18 +87,12 @@ class MemorySearchAndFilters extends StatelessWidget {
                 disabledColor: colors.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-                  side: BorderSide(
-                    color: selectedFilter == filter
-                        ? colors.accent
-                        : colors.divider,
-                  ),
                 ),
+                side: BorderSide.none,
                 showCheckmark: false,
                 labelStyle: theme.textTheme.labelLarge?.copyWith(
                   color: selectedFilter == filter
-                      ? (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.black
-                            : Colors.white)
+                      ? selectedTextColor
                       : colors.textSecondary,
                   fontWeight: FontWeight.w700,
                 ),
@@ -144,6 +138,7 @@ class ActiveMemoryToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Padding(
       padding: const EdgeInsets.only(top: RexUiTokens.space8),
@@ -153,17 +148,19 @@ class ActiveMemoryToggle extends StatelessWidget {
             child: Text(
               'Active information only',
               style: theme.textTheme.titleSmall?.copyWith(
-                color: RexUiTokens.text,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w800,
               ),
             ),
           ),
           Switch.adaptive(
             value: value,
-            activeThumbColor: RexUiTokens.background,
-            activeTrackColor: RexUiTokens.accent,
-            inactiveThumbColor: RexUiTokens.textMuted,
-            inactiveTrackColor: RexUiTokens.surfaceRaised,
+            activeThumbColor: theme.brightness == Brightness.dark
+                ? Colors.black
+                : Colors.white,
+            activeTrackColor: colors.accent,
+            inactiveThumbColor: colors.textMuted,
+            inactiveTrackColor: colors.surfaceElevated,
             onChanged: onChanged,
           ),
         ],
@@ -180,27 +177,21 @@ class MemoryErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return RexSurface(
-      color: RexUiTokens.danger.withValues(alpha: 0.1),
-      borderColor: RexUiTokens.danger.withValues(alpha: 0.38),
+      color: colors.danger.withValues(alpha: 0.10),
       radius: RexUiTokens.radiusMedium,
       padding: const EdgeInsets.all(RexUiTokens.space12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.error_outline_rounded,
-            color: RexUiTokens.danger,
-            size: 20,
-          ),
+          Icon(Icons.error_outline_rounded, color: colors.danger, size: 20),
           const SizedBox(width: RexUiTokens.space8),
           Expanded(
             child: Text(
               message,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: RexUiTokens.danger,
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: colors.danger),
             ),
           ),
         ],
@@ -234,6 +225,7 @@ class _EmptyMemoryShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
     final compact = MediaQuery.sizeOf(context).height < 650;
 
     return Center(
@@ -247,8 +239,7 @@ class _EmptyMemoryShell extends StatelessWidget {
             padding: EdgeInsets.all(
               compact ? RexUiTokens.space12 : RexUiTokens.space20,
             ),
-            color: RexUiTokens.surface.withValues(alpha: 0.78),
-            borderColor: RexUiTokens.border.withValues(alpha: 0.65),
+            color: colors.surface.withValues(alpha: 0.82),
             radius: RexUiTokens.radiusLarge,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -256,7 +247,7 @@ class _EmptyMemoryShell extends StatelessWidget {
                 if (!compact) ...[
                   DecoratedBox(
                     decoration: BoxDecoration(
-                      color: RexUiTokens.accent.withValues(alpha: 0.13),
+                      color: colors.accent.withValues(alpha: 0.13),
                       borderRadius: BorderRadius.circular(
                         RexUiTokens.radiusLarge,
                       ),
@@ -264,7 +255,7 @@ class _EmptyMemoryShell extends StatelessWidget {
                     child: SizedBox(
                       width: 50,
                       height: 50,
-                      child: Icon(icon, color: RexUiTokens.accent, size: 27),
+                      child: Icon(icon, color: colors.accent, size: 27),
                     ),
                   ),
                   const SizedBox(height: RexUiTokens.space12),
@@ -273,7 +264,7 @@ class _EmptyMemoryShell extends StatelessWidget {
                   title,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: RexUiTokens.text,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -286,7 +277,7 @@ class _EmptyMemoryShell extends StatelessWidget {
                   maxLines: compact ? 2 : 3,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: RexUiTokens.textMuted,
+                    color: colors.textSecondary,
                     height: 1.25,
                   ),
                 ),

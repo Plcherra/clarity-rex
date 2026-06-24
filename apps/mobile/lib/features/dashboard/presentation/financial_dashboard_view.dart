@@ -51,7 +51,7 @@ Color _dashboardPanelMuted(BuildContext context) {
 }
 
 Color _dashboardOutline(BuildContext context) {
-  return context.clarityColors.divider.withValues(alpha: 0.68);
+  return Colors.transparent;
 }
 
 List<BoxShadow> _dashboardShadow() => const [];

@@ -162,11 +162,6 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: Theme.of(context).dividerTheme.color,
-            ),
             NavigationBar(
               selectedIndex: _idx,
               onDestinationSelected: (i) => setState(() => _selectIndex(i)),

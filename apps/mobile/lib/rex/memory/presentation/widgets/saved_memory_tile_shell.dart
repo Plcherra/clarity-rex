@@ -193,13 +193,13 @@ class _MemoryActionsMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     return PopupMenuButton<_MemoryAction>(
       tooltip: 'Memory actions',
-      color: RexUiTokens.surfaceRaised,
-      iconColor: RexUiTokens.textMuted,
+      color: colors.surfaceElevated,
+      iconColor: colors.textSecondary,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-        side: const BorderSide(color: RexUiTokens.border),
       ),
       onSelected: (action) {
         switch (action) {
@@ -236,16 +236,17 @@ class _MemoryMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: RexUiTokens.textMuted, size: 20),
+        Icon(icon, color: colors.textSecondary, size: 20),
         const SizedBox(width: RexUiTokens.space12),
         Text(
           label,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: RexUiTokens.text,
+            color: colors.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),

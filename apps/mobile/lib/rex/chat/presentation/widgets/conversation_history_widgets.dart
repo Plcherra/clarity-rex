@@ -20,6 +20,7 @@ class ConversationDateHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -34,7 +35,7 @@ class ConversationDateHeader extends StatelessWidget {
             child: Text(
               label,
               style: theme.textTheme.labelLarge?.copyWith(
-                color: RexUiTokens.textSubtle,
+                color: colors.textMuted,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -42,7 +43,7 @@ class ConversationDateHeader extends StatelessWidget {
           Text(
             '$count',
             style: theme.textTheme.labelSmall?.copyWith(
-              color: RexUiTokens.textSubtle.withValues(alpha: 0.72),
+              color: colors.textMuted.withValues(alpha: 0.72),
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -83,7 +84,6 @@ class ConversationHistoryTile extends StatelessWidget {
       color: isSelected
           ? colors.accent.withValues(alpha: 0.10)
           : Colors.transparent,
-      borderColor: isSelected ? colors.borderActive : null,
       radius: RexUiTokens.radiusLarge,
       child: InkWell(
         borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
@@ -123,7 +123,7 @@ class ConversationHistoryTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.right,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: RexUiTokens.textSubtle,
+                              color: colors.textMuted,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -219,7 +219,7 @@ class ConversationSearchResultTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.titleMedium?.copyWith(
-                              color: RexUiTokens.text,
+                              color: colors.textPrimary,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -228,7 +228,7 @@ class ConversationSearchResultTile extends StatelessWidget {
                         Text(
                           timestamp,
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: RexUiTokens.textSubtle,
+                            color: colors.textMuted,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -542,10 +542,7 @@ class _ConversationMenu extends StatelessWidget {
           value: _ConversationAction.delete,
           child: Row(
             children: [
-              const Icon(
-                Icons.delete_outline_rounded,
-                color: RexUiTokens.danger,
-              ),
+              Icon(Icons.delete_outline_rounded, color: colors.danger),
               const SizedBox(width: RexUiTokens.space12),
               Text(
                 'Delete',
