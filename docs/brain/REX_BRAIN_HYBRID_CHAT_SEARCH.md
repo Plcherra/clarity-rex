@@ -33,6 +33,7 @@ Rex should search the user's own chats, find the most relevant conversations, su
 - Saved memory still requires explicit save intent and backend confirmation.
 - The Knows page must only show saved categorized memory, not chat search results.
 - Rex must report degraded or unavailable search honestly.
+- Recall bugs must be fixed in the general retrieval layer, not with topic-specific branches.
 
 ## 4. MVP Baseline
 
@@ -48,6 +49,8 @@ It should:
 - Keep prompt context capped and relevant.
 
 This is enough for MVP if it is reliable, honest, and easy to debug.
+
+MVP recall examples are test coverage, not product logic. Mom, games, PC, payroll, immigration, money, places, and preferences should all use the same retrieval path. If one topic fails, improve query expansion, indexed search, ranking, or conversation excerpts for all topics.
 
 ## 5. Future Hybrid Search
 
@@ -120,5 +123,6 @@ Recommended path:
 - Use hybrid ranking: keyword first, semantic second, conversation context final.
 - Keep source status and truth enforcement simple.
 - Add tests with arbitrary user topics, not only family or birthday examples.
+- Reject fixes that add topic-only branches, backend-composed answers, or a second recall brain.
 
 Hybrid Chat Search strengthens the same Rex Brain. It must not become a separate memory system or a second assistant.

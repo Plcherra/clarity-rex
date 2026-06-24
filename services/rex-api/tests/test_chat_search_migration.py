@@ -42,8 +42,23 @@ def test_chat_search_embeddings_migration_is_user_scoped_vector_scaffold():
 
     assert "create extension if not exists vector" in sql
     assert "create table if not exists public.chat_search_embeddings" in sql
+    assert "content text not null default ''" in sql
     assert "embedding extensions.vector(1536)" in sql
     assert "enable row level security" in sql
     assert "auth.uid() = user_id" in sql
+    assert "for insert" in sql
+    assert "for update" in sql
     assert "using hnsw" in sql
     assert "vector_cosine_ops" in sql
+
+
+def test_chat_search_embeddings_migration_adds_user_scoped_semantic_rpc():
+    sql = EMBEDDINGS_MIGRATION_PATH.read_text(encoding="utf-8").lower()
+
+    assert "create or replace function public.match_user_chat_search_embeddings" in sql
+    assert "security invoker" in sql
+    assert "security definer" not in sql
+    assert "e.user_id = auth.uid()" in sql
+    assert "e.embedding_model = match_embedding_model" in sql
+    assert "e.embedding <=> query_embedding" in sql
+    assert "grant execute on function public.match_user_chat_search_embeddings" in sql

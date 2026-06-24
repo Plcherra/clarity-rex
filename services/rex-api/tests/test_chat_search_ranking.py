@@ -29,6 +29,17 @@ def test_chat_search_normalizes_generic_model_number_forms():
     assert ranking.term_in_text("45 l", "The model is 45L.")
 
 
+def test_chat_search_filters_noisy_recall_terms_without_dropping_acronyms():
+    ranking = ChatSearchRanking()
+
+    terms = ranking.search_terms("What kind of PC do I have?", max_terms=10)
+
+    assert "pc" in terms
+    assert "of" not in terms
+    assert "kind" not in terms
+    assert "have" not in terms
+
+
 def test_chat_search_builds_subject_and_expanded_queries():
     ranking = ChatSearchRanking()
 
@@ -104,6 +115,43 @@ def test_chat_search_scores_user_exact_match_above_assistant_noise():
 
     assert user_score.score > assistant_score.score
     assert "lara" in user_score.matched_terms
+
+
+def test_chat_search_scores_factual_statement_above_search_question():
+    ranking = ChatSearchRanking()
+
+    factual_score = ranking.score_text(
+        "What kind PC do I have?",
+        "I own an Omen PC forty five.",
+        role="user",
+    )
+    question_score = ranking.score_text(
+        "What kind PC do I have?",
+        "Do I have a PC?",
+        role="user",
+    )
+
+    assert factual_score.score > question_score.score
+    assert "factual statement" in factual_score.reason
+    assert "search-question demotion" in question_score.reason
+
+
+def test_chat_search_demotes_assistant_no_result_messages():
+    ranking = ChatSearchRanking()
+
+    factual_score = ranking.score_text(
+        "What did I say about my PC?",
+        "I own an Omen PC forty five.",
+        role="user",
+    )
+    no_result_score = ranking.score_text(
+        "What did I say about my PC?",
+        "I checked old chats, but nothing about your PC came up.",
+        role="assistant",
+    )
+
+    assert factual_score.score > no_result_score.score
+    assert "no-result demotion" in no_result_score.reason
 
 
 def test_chat_search_scores_title_matches_for_chats_tab():

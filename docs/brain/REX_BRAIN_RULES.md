@@ -19,6 +19,7 @@ Pre-launch cleanup is tracked in `docs/brain/REX_BRAIN_FINAL_RESET.md`. Larger d
 - Prefer good context over complex routing.
 - Keep prompts short and relevant.
 - Search saved memory and old chats when the user asks about past information.
+- Improve recall through one general retrieval pipeline, not topic-specific patches.
 - Clearly separate saved durable memory from chat search results.
 - Never claim a durable action happened unless the backend confirms it.
 - Say when memory, old chat search, financial data, or another source is unavailable or degraded.
@@ -76,6 +77,8 @@ Old chat search should:
 - Return only the most useful chat matches for the current question.
 - Avoid flooding the prompt with long chat history.
 - Report clearly when search is unavailable or degraded.
+
+Recall fixes must strengthen the general pipeline: lightweight recall intent, reusable query expansion, user-scoped indexed chat search, conversation-level excerpts, source status, and labeled context for Grok. Do not add mom-only, PC-only, game-only, payroll-only, or other topic-specific branches to make one smoke test pass.
 
 Old chat search does not turn past messages into memory. Chat history is searchable history. Saved memory is explicit, durable, categorized knowledge.
 
@@ -150,6 +153,7 @@ Rex must not invent balances, budgets, spending totals, account names, merchants
 - Saving chat content automatically or secretly.
 - Letting Knows tab and Rex recall drift from each other.
 - Accumulating heuristic patches instead of building one clear pipeline.
+- Adding topic-specific recall branches instead of improving retrieval, ranking, or excerpt context.
 - Saying "I do not know" when search failed or was not checked.
 - Hiding degraded memory, chat, or financial context.
 - Letting Rex and the UI use different data truth.

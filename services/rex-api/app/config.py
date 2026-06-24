@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     grok_fast_model: Optional[str] = None
     grok_standard_model: Optional[str] = None
     grok_reasoning_model: Optional[str] = None
+    grok_embedding_model: Optional[str] = None
+    grok_embedding_dimensions: int = 1536
     grok_timeout_seconds: int = 120
     # MVP launch: advanced Rex Brain routing is deferred. Keep these disabled;
     # ChatService uses the direct memory path plus standard prompt path only.
@@ -28,6 +30,7 @@ class Settings(BaseSettings):
     supabase_service_role_key: Optional[str] = None
     supabase_conversations_table: str = "conversations"
     supabase_messages_table: str = "messages"
+    supabase_chat_search_embeddings_table: str = "chat_search_embeddings"
     supabase_long_term_memory_table: str = "long_term_memory"
     supabase_memory_corrections_table: str = "memory_corrections"
     supabase_voice_turns_table: str = "voice_turns"
@@ -71,6 +74,10 @@ class Settings(BaseSettings):
     @property
     def grok_chat_url(self) -> str:
         return f"{self.grok_base_url.rstrip('/')}/chat/completions"
+
+    @property
+    def grok_embeddings_url(self) -> str:
+        return f"{self.grok_base_url.rstrip('/')}/embeddings"
 
     @property
     def supabase_rest_url(self) -> Optional[str]:

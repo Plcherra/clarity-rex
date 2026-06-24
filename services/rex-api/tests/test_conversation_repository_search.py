@@ -8,6 +8,7 @@ from app.services.conversation_repository import ConversationRepository
 class _Settings:
     supabase_conversations_table = "conversations"
     supabase_messages_table = "messages"
+    supabase_chat_search_embeddings_table = "chat_search_embeddings"
 
 
 class _SearchStore:
@@ -188,6 +189,9 @@ class _SearchStore:
         limit = int(query.get("limit") or len(ordered))
         return ordered[offset : offset + limit]
 
+    def _first_row(self, rows: list[dict]) -> dict:
+        return rows[0]
+
 
 class _RpcSearchStore(_SearchStore):
     def __init__(self, *, user_id: str = "user-123"):
@@ -211,6 +215,124 @@ class _RpcSearchStore(_SearchStore):
                 "matched_terms": ["pc", "45"],
             }
         ]
+
+
+class _FakeEmbeddingService:
+    is_configured = True
+    model = "test-embedding-model"
+
+    def __init__(self):
+        self.embedded_queries = []
+        self.embedded_texts = []
+
+    async def embed_query(self, text):
+        self.embedded_queries.append(text)
+        return [0.1, 0.2, 0.3]
+
+    async def embed_text(self, text):
+        self.embedded_texts.append(text)
+        return [0.1, 0.2, 0.3]
+
+    def content_hash(self, content):
+        return f"hash-{len(content)}"
+
+    def embedding_record(
+        self,
+        *,
+        conversation_id,
+        content,
+        embedding,
+        source_kind="message",
+        message_id=None,
+    ):
+        return {
+            "conversation_id": conversation_id,
+            "message_id": message_id,
+            "source_kind": source_kind,
+            "content": content,
+            "content_hash": self.content_hash(content),
+            "embedding_model": self.model,
+            "embedding": embedding,
+        }
+
+
+class _HybridSearchStore(_SearchStore):
+    def __init__(self, *, user_id: str = "user-123"):
+        super().__init__(user_id=user_id)
+        self.rpc_calls = []
+        self.chat_embedding_service = _FakeEmbeddingService()
+
+    async def _rpc(self, function_name, body=None):
+        self.rpc_calls.append({"function_name": function_name, "body": body or {}})
+        if function_name == "search_user_chat_messages":
+            return [
+                {
+                    "message_id": "message-assistant-noise",
+                    "conversation_id": "conversation-noise",
+                    "role": "assistant",
+                    "content": "I checked chats, but nothing about your PC came up.",
+                    "message_timestamp": "2026-06-11T10:00:00Z",
+                    "conversation_title": "Failed search",
+                    "conversation_timestamp": "2026-06-11T10:00:00Z",
+                    "match_type": "message",
+                    "rank": 2.0,
+                    "search_reason": "Matched message content with indexed chat search.",
+                    "matched_terms": ["pc"],
+                }
+            ]
+        if function_name == "match_user_chat_search_embeddings":
+            return [
+                {
+                    "message_id": "message-omen",
+                    "conversation_id": "conversation-omen",
+                    "role": "user",
+                    "content": "The model is an Omen 45L.",
+                    "message_timestamp": "2026-06-23T21:13:00Z",
+                    "conversation_title": "PC details",
+                    "conversation_timestamp": "2026-06-23T21:13:00Z",
+                    "match_type": "semantic_message",
+                    "rank": 9.1,
+                    "search_reason": "Matched message content with semantic chat search.",
+                    "matched_terms": [],
+                }
+            ]
+        return []
+
+
+class _EmbeddingSaveStore(_SearchStore):
+    def __init__(self, *, user_id: str = "user-123"):
+        super().__init__(user_id=user_id)
+        self.chat_embedding_service = _FakeEmbeddingService()
+        self.created_embeddings = []
+
+    async def _request(self, method, table, *, query=None, body=None, prefer=None, **kwargs):
+        if method == "POST" and table == "messages":
+            return [
+                {
+                    "id": "message-new",
+                    "conversation_id": body["conversation_id"],
+                    "role": body["role"],
+                    "content": body["content"],
+                    "timestamp": "2026-06-23T21:13:00Z",
+                }
+            ]
+        if method == "POST" and table == "chat_search_embeddings":
+            self.created_embeddings.append(
+                {
+                    "body": body,
+                    "query": query,
+                    "prefer": prefer,
+                }
+            )
+            return [{"id": "embedding-1"}]
+        return await super()._request(
+            method,
+            table,
+            query=query,
+            body=body,
+            prefer=prefer,
+            **kwargs,
+        )
 
 
 @pytest.mark.asyncio
@@ -297,6 +419,47 @@ async def test_conversation_repository_passes_exclusion_to_ranked_chat_search_rp
     assert store.rpc_calls[0]["body"]["exclude_conversation_id"] == (
         "conversation-current"
     )
+
+
+@pytest.mark.asyncio
+async def test_conversation_repository_merges_semantic_chat_results():
+    store = _HybridSearchStore(user_id="user-123")
+    repository = ConversationRepository(store)
+
+    results = await repository.search_chat_history("What kind PC do I have?", limit=10)
+
+    assert store.rpc_calls[0]["function_name"] == "search_user_chat_messages"
+    assert store.rpc_calls[1]["function_name"] == "match_user_chat_search_embeddings"
+    assert store.rpc_calls[1]["body"]["match_embedding_model"] == "test-embedding-model"
+    assert results[0]["conversation_id"] == "conversation-omen"
+    assert any(
+        result["conversation_id"] == "conversation-omen"
+        and result["match_type"] == "semantic_message"
+        and "semantic chat search" in result["search_reason"]
+        for result in results
+    )
+
+
+@pytest.mark.asyncio
+async def test_conversation_repository_saves_message_embedding_when_configured():
+    store = _EmbeddingSaveStore(user_id="user-123")
+    repository = ConversationRepository(store)
+
+    message = await repository.save_message(
+        "conversation-omen",
+        "user",
+        "The model is an Omen 45L.",
+    )
+
+    assert message["id"] == "message-new"
+    assert store.chat_embedding_service.embedded_texts == ["The model is an Omen 45L."]
+    created = store.created_embeddings[0]
+    assert created["body"]["conversation_id"] == "conversation-omen"
+    assert created["body"]["message_id"] == "message-new"
+    assert created["body"]["source_kind"] == "message"
+    assert created["body"]["embedding_model"] == "test-embedding-model"
+    assert created["query"]["on_conflict"] == "user_id,content_hash,embedding_model"
+    assert "resolution=merge-duplicates" in created["prefer"]
 
 
 @pytest.mark.asyncio

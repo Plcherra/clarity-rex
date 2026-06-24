@@ -34,6 +34,8 @@ The intent check should stay lightweight.
 
 It only decides what context is needed for this turn.
 
+It must not decide the answer, build topic-specific recall branches, or become a second reasoning system. Grok reasons after the backend retrieves honest, labeled context.
+
 Main MVP intents:
 - Normal chat
 - Save memory
@@ -65,6 +67,8 @@ Each source should have a simple status:
 - Unavailable or degraded
 
 A failed source is not proof that the user never said something.
+
+Recall retrieval must stay one general pipeline: detect recall, build reusable search terms, search user-scoped history, gather conversation-level excerpts, label chat history, and pass that context to Grok. Fix missed recall by improving that pipeline, not by adding mom-only, PC-only, game-only, payroll-only, or other topic-specific patches.
 
 ## 5. Step 3: Optional Direct Backend Action
 

@@ -41,29 +41,24 @@ Follow-up:
 
 ### Delete To Knows
 
-Result: `FAIL`.
+Result: `PASS AFTER FIX`.
 
 Observed:
 
-- Rex claimed there was no saved memory.
-- Rex also claimed it saved a memory, but nothing appeared in the Knows tab.
-- Delete-to-Knows could not be trusted because save visibility and memory lookup
-  were already inconsistent.
+- Initial smoke failed: Rex claimed there was no saved memory, and also claimed
+  it saved a memory while nothing appeared in Knows.
+- Follow-up device check now shows memory information is fixed: Rex says what is
+  saved into the Knows tab.
 
 Risk:
 
-- This is a P0 trust blocker. Rex cannot claim save/delete success unless the
-  backend confirms the durable record and Knows reads the same active truth.
+- This P0 is no longer the top active blocker, but it should remain in regression
+  checks because durable memory truth is high risk.
 
 Follow-up:
 
-- Trace direct memory save response payloads through mobile chat and Knows
-  refresh.
-- Confirm whether the backend creates the durable memory row, structured entity,
-  or neither.
-- Confirm Knows active-only query is reading the same saved record Rex reports.
-- Add or run an integration test for save -> Knows visible -> delete -> Knows
-  hidden.
+- Keep save -> Knows visible -> delete -> Knows hidden in the manual smoke pass.
+- Add or keep an integration test for the same loop.
 
 ### Recall Truth Labeling
 
@@ -78,11 +73,17 @@ Observed:
 - When asked why money would be sent and how much, Rex could not answer.
 - Running a new search for mom's birthday found related evidence again.
 - Rex remembered the games mentioned.
+- Follow-up screenshot still shows old-chat PC recall failing: the user asked
+  `From our old chat, can you say what kind of computer, what PC I have?`, and
+  Rex answered `I don't have any info saved about your computer or PC from our
+  chats.`
 
 Risk:
 
 - Recall is working, but ranking/excerpt assembly is not sharp enough for
   multi-fact recall around the same entity/event.
+- Truth wording is still too loose when old chat search is empty or misses; Rex
+  should not conflate saved memory with old-chat search.
 
 Follow-up:
 
@@ -93,6 +94,9 @@ Follow-up:
 - If the Chats tab can find the exact message, Rex recall should include enough
   surrounding text to answer the amount/date question or clearly say it found
   only partial evidence.
+- Treat old-chat search as a real user-scoped product feature: when the user asks
+  about older chats, Rex must search all conversations for that authenticated
+  user, not rely on saved memory or phrase-specific fallbacks.
 
 ### Finance No-Guessing
 
@@ -223,8 +227,9 @@ Follow-up:
 Do not move directly to broad frontend polish. Fix P0 blockers first:
 
 1. **Memory Save/Delete To Knows Fix Pack**
-   - Highest priority because it violates durable action truth.
-   - Prove save appears in Knows before proving delete hides it.
+   - Status: improved after follow-up device check.
+   - Keep in regression: prove save appears in Knows before proving delete hides
+     it.
 
 2. **Finance Context Bridge Fix Pack**
    - Confirm mobile sends ready financial context on finance turns.
@@ -238,6 +243,8 @@ Do not move directly to broad frontend polish. Fix P0 blockers first:
 
 4. **Recall Sharpness Fix Pack**
    - Improve mom birthday + money amount/date recall.
+   - Build and verify all-conversation, user-scoped old-chat search for generic
+     "what did we talk about" questions.
    - Preserve truth labeling: chat history is not saved memory.
 
 5. **P1 Assistant Performance And Upload Errors**

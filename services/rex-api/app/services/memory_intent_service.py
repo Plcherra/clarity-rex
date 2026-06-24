@@ -1,21 +1,19 @@
 import re
-from dataclasses import dataclass, field
 from typing import Optional
 
 from app.services.memory_date_normalizer import MemoryDateNormalizer
+from app.services.memory_intent_birthday import MemoryIntentBirthdayMixin
+from app.services.memory_intent_facts import MemoryIntentFactMixin
+from app.services.memory_intent_models import SimpleMemoryIntent
+from app.services.memory_intent_text import MemoryIntentTextMixin
 from app.services.personal_plan_intent_parser import PersonalPlanIntentParser
 
 
-@dataclass(frozen=True)
-class SimpleMemoryIntent:
-    memory_type: str
-    content: str
-    importance: int
-    source: str = "simple_memory_intent"
-    metadata: dict = field(default_factory=dict)
-
-
-class MemoryIntentService:
+class MemoryIntentService(
+    MemoryIntentBirthdayMixin,
+    MemoryIntentFactMixin,
+    MemoryIntentTextMixin,
+):
     """Detects low-risk memories that can be confirmed naturally in chat."""
 
     _birthday_pattern = re.compile(
@@ -118,30 +116,17 @@ class MemoryIntentService:
         if birthday_intent is not None:
             return birthday_intent
 
-        identity_intent = self._detect_identity_fact(message)
-        if identity_intent is not None:
-            return identity_intent
-
-        work_intent = self._detect_work_fact(message)
-        if work_intent is not None:
-            return work_intent
-
-        device_intent = self._detect_device_fact(message)
-        if device_intent is not None:
-            return device_intent
-
-        preference_intent = self._detect_preference(message)
-        if preference_intent is not None:
-            return preference_intent
-
-        personal_plan_intent = self._detect_personal_plan(message)
-        if personal_plan_intent is not None:
-            return personal_plan_intent
-
-        remember_intent = self._detect_remember_that(message)
-        if remember_intent is not None:
-            return remember_intent
-
+        for detector in (
+            self._detect_identity_fact,
+            self._detect_work_fact,
+            self._detect_device_fact,
+            self._detect_preference,
+            self._detect_personal_plan,
+            self._detect_remember_that,
+        ):
+            intent = detector(message)
+            if intent is not None:
+                return intent
         return None
 
     def detect_contextual_memory(
@@ -180,31 +165,11 @@ class MemoryIntentService:
         if personal_plan is not None:
             return personal_plan
 
-        cleaned_message = self._clean_fact(message)
-        date_correction = self._date_correction_pattern.match(cleaned_message)
-        date_only = date_correction or self._date_only_pattern.match(cleaned_message)
-        if date_only is None:
-            return None
-
-        raw_date = date_only.group("date")
-        if not (
-            self._date_normalizer.is_day_only(raw_date)
-            or self._date_normalizer.month_from_text(raw_date)
-        ):
-            return None
-
-        person = self._recent_birthday_person(conversation_history)
-        if person is None:
-            return None
-
-        date_text = self._normalize_date_phrase(
-            raw_date,
+        return self._detect_contextual_date_memory(
+            message,
+            conversation_history=conversation_history,
             time_context=time_context,
         )
-        if not date_text:
-            return None
-
-        return self._birthday_intent(person, date_text)
 
     def is_contextual_memory_save_request(self, message: str) -> bool:
         normalized = self._normalize_reply(message)
@@ -227,9 +192,7 @@ class MemoryIntentService:
             return True
         if re.search(r"\b(?:save|remember|keep|note)\s+(?:it|that|this)\b", normalized):
             return True
-        return bool(
-            self._explicit_save_request_pattern.search(normalized)
-        )
+        return bool(self._explicit_save_request_pattern.search(normalized))
 
     def is_contextual_memory_reject_request(self, message: str) -> bool:
         normalized = self._normalize_reply(message)
@@ -381,623 +344,35 @@ class MemoryIntentService:
     def rejected_response(self) -> str:
         return "No problem. I won't save that."
 
-    def _detect_birthday(
+    def _detect_contextual_date_memory(
         self,
         message: str,
         *,
+        conversation_history: list[dict],
         time_context: Optional[dict],
     ) -> Optional[SimpleMemoryIntent]:
-        self_match = self._self_birthday_pattern.search(message)
-        if self_match is not None:
-            date_text = self._normalize_date_phrase(
-                self_match.group("date"),
-                time_context=time_context,
-            )
-            if date_text:
-                return self._birthday_intent("self", date_text)
-
-        match = self._birthday_pattern.search(message)
-        if match is None:
-            match = self._birthday_correction_pattern.search(message)
-        if match is None:
-            match = self._inverted_birthday_pattern.search(message)
-        if match is None:
+        cleaned_message = self._clean_fact(message)
+        date_correction = self._date_correction_pattern.match(cleaned_message)
+        date_only = date_correction or self._date_only_pattern.match(cleaned_message)
+        if date_only is None:
             return None
 
-        raw_date = match.group("date")
-        if match.re is self._inverted_birthday_pattern and not (
+        raw_date = date_only.group("date")
+        if not (
             self._date_normalizer.is_day_only(raw_date)
             or self._date_normalizer.month_from_text(raw_date)
         ):
             return None
 
-        person = self._clean_person(match.group("person"))
-        date_text = self._normalize_date_phrase(
-            raw_date,
-            time_context=time_context,
-        )
-        if not person or not date_text:
-            return None
-
-        return self._birthday_intent(person, date_text)
-
-    def _birthday_intent(
-        self,
-        person: str,
-        date_text: str,
-    ) -> SimpleMemoryIntent:
-        normalized_person = self._clean_person(person)
-        if normalized_person in {"self", "user", "me", "myself"}:
-            content = f"User's birthday is {date_text}."
-            entity_label = "self"
-            topic = "fact:birthday:self"
-        else:
-            content = f"User's {person}'s birthday is {date_text}."
-            entity_label = person
-            topic = f"fact:birthday:{person.lower()}"
-        return SimpleMemoryIntent(
-            memory_type="fact",
-            content=content,
-            importance=5,
-            metadata={
-                "fact_kind": "birthday",
-                "memory_category": "Events",
-                "entity_label": entity_label,
-                "normalized_date": date_text,
-                "topic_fingerprint": topic,
-            },
-        )
-
-    def _detect_remember_that(self, message: str) -> Optional[SimpleMemoryIntent]:
-        match = self._remember_that_pattern.search(message)
-        if match is None:
-            return None
-
-        fact = self._clean_fact(match.group("fact"))
-        if self._looks_like_transcript_noise(self._normalize_reply(fact)):
-            return None
-        if len(fact) < 8:
-            return None
-
-        content = f"{fact[0].upper()}{fact[1:]}."
-        return SimpleMemoryIntent(
-            memory_type="fact",
-            content=content,
-            importance=4,
-            metadata={
-                "fact_kind": "remember_that",
-                "memory_category": "Facts",
-                "topic_fingerprint": f"fact:remember_that:{self._fingerprint(fact)}",
-            },
-        )
-
-    def _detect_identity_fact(self, message: str) -> Optional[SimpleMemoryIntent]:
-        negative_location_correction = (
-            self._negative_location_correction_pattern.search(message)
-        )
-        if negative_location_correction is not None:
-            place = self._clean_place(
-                negative_location_correction.group("place"),
-                message,
-            )
-            if len(place) >= 2 and self._is_valid_location_place(place):
-                return self._location_intent(place)
-
-        location_correction = self._location_correction_pattern.search(message)
-        if location_correction is not None:
-            place = self._clean_place(location_correction.group("place"), message)
-            if len(place) >= 2 and self._is_valid_location_place(place):
-                return self._location_intent(place)
-
-        name_match = self._name_pattern.search(message)
-        if name_match is not None:
-            name = self._clean_fact(name_match.group("name"))
-            if len(name) >= 2:
-                return SimpleMemoryIntent(
-                    memory_type="fact",
-                    content=f"User's name is {name}.",
-                    importance=5,
-                    metadata={
-                        "fact_kind": "name",
-                        "memory_category": "People",
-                        "topic_fingerprint": "fact:identity:name",
-                    },
-                )
-
-        place_match = self._live_in_pattern.search(message)
-        if place_match is None:
-            return None
-        place = self._clean_fact(place_match.group("place"))
-        if len(place) < 2:
-            return None
-        return self._location_intent(place)
-
-    def _detect_work_fact(self, message: str) -> Optional[SimpleMemoryIntent]:
-        match = self._work_at_pattern.search(message)
-        if match is None:
-            return None
-        workplace = self._clean_fact(match.group("workplace"))
-        if len(workplace) < 2:
-            return None
-        return SimpleMemoryIntent(
-            memory_type="fact",
-            content=f"User works at {workplace}.",
-            importance=4,
-            metadata={
-                "fact_kind": "work",
-                "memory_category": "People",
-                "workplace": workplace,
-                "topic_fingerprint": "fact:identity:work",
-            },
-        )
-
-    def _detect_device_fact(self, message: str) -> Optional[SimpleMemoryIntent]:
-        if self.is_memory_lookup_or_topic_shift(message):
-            return None
-        match = self._device_fact_pattern.search(message)
-        if match is None:
-            return None
-
-        device = self._clean_device_model(match.group("device"))
-        if len(device) < 4:
-            return None
-        article = "an" if device[:1].lower() in {"a", "e", "i", "o", "u"} else "a"
-        return SimpleMemoryIntent(
-            memory_type="fact",
-            content=f"User has {article} {device}.",
-            importance=4,
-            metadata={
-                "fact_kind": "device",
-                "memory_category": "Facts",
-                "device_model": device,
-            },
-        )
-
-    def _detect_contextual_save_proposal_memory(
-        self,
-        message: str,
-        *,
-        conversation_history: list[dict],
-    ) -> Optional[SimpleMemoryIntent]:
-        if not self.is_contextual_memory_save_request(message):
-            return None
-        for item in reversed(conversation_history[-8:]):
-            if item.get("role") != "assistant":
-                continue
-            content = str(item.get("content") or "")
-            normalized = self._normalize_reply(content)
-            if not any(
-                phrase in normalized
-                for phrase in (
-                    "want me to save",
-                    "would you like me to save",
-                    "should i save",
-                    "save that",
-                    "save this",
-                    "saving that",
-                )
-            ):
-                continue
-            candidate = re.sub(r"\byou\b", "I", content, flags=re.IGNORECASE)
-            intent = self._detect_device_fact(candidate)
-            if intent is not None:
-                return intent
-        return None
-
-    def _detect_contextual_location_memory(
-        self,
-        message: str,
-        *,
-        conversation_history: list[dict],
-    ) -> Optional[SimpleMemoryIntent]:
-        if self.is_memory_lookup_or_topic_shift(message):
-            return None
-        if not self._recent_location_correction_context(conversation_history):
-            return None
-
-        normalized = self._normalize_reply(message)
-        recent_text = " ".join(
-            str(item.get("content") or "")
-            for item in conversation_history[-8:]
-            if item.get("role") in {"user", "assistant"}
-        ).lower()
-        if self._mentions_somerville_spelling(normalized):
-            if "massachusetts" in normalized or "massachusetts" in recent_text:
-                return self._location_intent("Somerville, Massachusetts")
-            return self._location_intent("Somerville")
-
-        direct_place = self._place_from_contextual_location_reply(message)
-        if direct_place:
-            return self._location_intent(direct_place)
-
-        return None
-
-    def _location_intent(self, place: str) -> SimpleMemoryIntent:
-        return SimpleMemoryIntent(
-            memory_type="fact",
-            content=f"User lives in {place}.",
-            importance=4,
-            metadata={
-                "fact_kind": "location",
-                "memory_category": "Places",
-                "topic_fingerprint": "fact:identity:location",
-            },
-        )
-
-    def _detect_personal_plan(
-        self,
-        message: str,
-        *,
-        conversation_history: Optional[list[dict]] = None,
-    ) -> Optional[SimpleMemoryIntent]:
-        draft = self._personal_plan_parser.detect(
-            message,
-            conversation_history=conversation_history,
-        )
-        if draft is None:
-            return None
-        metadata = dict(draft.metadata)
-        metadata.setdefault("memory_category", "Goals")
-        return SimpleMemoryIntent(
-            memory_type="event",
-            content=draft.content,
-            importance=draft.importance,
-            metadata=metadata,
-        )
-
-    def _detect_preference(self, message: str) -> Optional[SimpleMemoryIntent]:
-        match = self._preference_pattern.search(message)
-        if match is None:
-            match = self._like_preference_pattern.search(message)
-        if match is None:
-            return None
-
-        preferred = self._clean_fact(match.group("preferred"))
-        other = self._clean_fact(match.group("other"))
-        if len(preferred) < 2 or len(other) < 2:
-            return None
-
-        content = f"User prefers {preferred} over {other}."
-        return SimpleMemoryIntent(
-            memory_type="preference",
-            content=content,
-            importance=4,
-            metadata={
-                "fact_kind": "preference",
-                "memory_category": "Preferences",
-                "preferred": preferred,
-                "compared_to": other,
-                "topic_fingerprint": (
-                    f"preference:{self._fingerprint(preferred)}:"
-                    f"{self._fingerprint(other)}"
-                ),
-            },
-        )
-
-    def _detect_contextual_birthday_memory(
-        self,
-        message: str,
-        *,
-        conversation_history: list[dict],
-        time_context: Optional[dict],
-    ) -> Optional[SimpleMemoryIntent]:
-        if not self._mentions_contextual_birthday_memory(message):
-            return None
-        return self._recent_birthday_intent(
-            conversation_history,
-            time_context=time_context,
-        )
-
-    def _mentions_contextual_birthday_memory(self, message: str) -> bool:
-        normalized = self._normalize_reply(message)
-        if "birthday" in normalized and self.is_contextual_memory_save_request(
-            normalized
-        ):
-            return True
-        if self.is_contextual_memory_save_request(normalized) or (
-            self.is_contextual_memory_reject_request(normalized)
-        ):
-            return any(token in normalized for token in {"this", "that", "memory"})
-        return False
-
-    def _recent_birthday_intent(
-        self,
-        conversation_history: list[dict],
-        *,
-        time_context: Optional[dict],
-    ) -> Optional[SimpleMemoryIntent]:
         person = self._recent_birthday_person(conversation_history)
         if person is None:
             return None
 
-        for message in reversed(conversation_history[-10:]):
-            content = str(message.get("content") or "")
-            content_for_detection = content
-            if message.get("role") == "assistant":
-                content_for_detection = re.sub(
-                    r"\byour\b",
-                    "my",
-                    content_for_detection,
-                    flags=re.IGNORECASE,
-                )
-            explicit = self._detect_birthday(
-                content_for_detection,
-                time_context=time_context,
-            )
-            if explicit is not None:
-                return explicit
-            date_only = self._date_only_pattern.match(self._clean_fact(content))
-            if date_only is None:
-                continue
-            raw_date = date_only.group("date")
-            if not (
-                self._date_normalizer.is_day_only(raw_date)
-                or self._date_normalizer.month_from_text(raw_date)
-            ):
-                continue
-            date_text = self._normalize_date_phrase(
-                raw_date,
-                time_context=time_context,
-            )
-            if date_text:
-                return self._birthday_intent(person, date_text)
-        return None
-
-    def _normalize_date_phrase(
-        self,
-        raw_date: str,
-        *,
-        time_context: Optional[dict],
-    ) -> Optional[str]:
-        cleaned = self._clean_fact(raw_date)
-        return self._date_normalizer.normalize(cleaned, time_context=time_context)
-
-    def _recent_birthday_person(
-        self, conversation_history: list[dict]
-    ) -> Optional[str]:
-        recent_text = " ".join(
-            str(message.get("content") or "")
-            for message in conversation_history[-6:]
-            if message.get("role") in {"user", "assistant"}
-        ).lower()
-        if "birthday" not in recent_text:
+        date_text = self._normalize_date_phrase(
+            raw_date,
+            time_context=time_context,
+        )
+        if not date_text:
             return None
-        if re.search(r"\b(my\s+)?(mom|mother|mum|mama)\b", recent_text):
-            return "mom"
-        if re.search(r"\b(my\s+)?(dad|father|papa)\b", recent_text):
-            return "dad"
-        return None
 
-    def _clean_person(self, person: str) -> str:
-        cleaned = re.sub(r"\s+", " ", person).strip(" .'_-").lower()
-        aliases = {
-            "mother": "mom",
-            "mum": "mom",
-            "mama": "mom",
-            "father": "dad",
-            "papa": "dad",
-        }
-        return aliases.get(cleaned, cleaned)
-
-    def _clean_fact(self, fact: str) -> str:
-        cleaned = re.sub(r"\s+", " ", fact).strip()
-        return cleaned.strip(" .!?")
-
-    def _clean_place(self, place: str, message: str) -> str:
-        cleaned = self._clean_fact(place)
-        normalized = cleaned.lower()
-        message_normalized = message.lower()
-        if re.search(r"\bsomerville\b", message_normalized):
-            if "massachusetts" in message_normalized:
-                return "Somerville, Massachusetts"
-            return "Somerville"
-        if re.search(
-            r"\b(?:summerville|somerville)\b",
-            normalized,
-        ) and self._mentions_somerville_spelling(message_normalized):
-            if (
-                "massachusetts" in message_normalized
-                or "location" in message_normalized
-            ):
-                return "Somerville, Massachusetts"
-            return "Somerville"
-        return cleaned
-
-    def _clean_device_model(self, value: str) -> str:
-        cleaned = self._clean_fact(value)
-        cleaned = re.sub(r"^(?:an?|the)\s+", "", cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(r"\b(\d{1,4})\s+([A-Za-z]{1,3})\b", r"\1\2", cleaned)
-        cleaned = re.sub(r"\bpc\b", "PC", cleaned, flags=re.IGNORECASE)
-        cleaned = re.sub(
-            r"\b(?:cpu|gpu|ram|ssd|hdd|usb|vr|ai)\b",
-            lambda match: match.group(0).upper(),
-            cleaned,
-            flags=re.IGNORECASE,
-        )
-        cleaned = " ".join(
-            token.upper() if re.fullmatch(r"\d{1,4}[a-z]{1,3}", token.lower()) else token
-            for token in cleaned.split()
-        )
-        cleaned = re.sub(r"\s+", " ", cleaned).strip()
-        return cleaned
-
-
-    def _recent_location_correction_context(
-        self,
-        conversation_history: list[dict],
-    ) -> bool:
-        recent_text = " ".join(
-            str(message.get("content") or "")
-            for message in conversation_history[-6:]
-            if message.get("role") in {"user", "assistant"}
-        ).lower()
-        if not recent_text:
-            return False
-        has_location_topic = any(
-            term in recent_text
-            for term in (
-                "city",
-                "location",
-                "where i live",
-                "where you live",
-                "correct city",
-                "correct location",
-                "fix my city",
-                "fix my location",
-            )
-        )
-        has_correction_language = any(
-            term in recent_text
-            for term in (
-                "change",
-                "correct",
-                "fix",
-                "update",
-                "updating",
-                "wrong",
-                "spelled",
-                "spelling",
-            )
-        )
-        return has_location_topic and has_correction_language
-
-    def _place_from_contextual_location_reply(self, message: str) -> Optional[str]:
-        cleaned = self._clean_fact(message)
-        normalized = self._normalize_reply(message)
-        if "?" in message or normalized.startswith(
-            ("do ", "can ", "what ", "where ", "who ", "when ", "why ", "how ")
-        ):
-            return None
-        known_place = self._known_location_from_text(message)
-        if known_place:
-            return known_place
-        match = re.match(
-            r"^(?:it(?:'s| is)\s+|the\s+correct\s+(?:city|location)\s+is\s+)?"
-            r"(?P<place>[A-Z][A-Za-z\s,.'-]{2,80})"
-            r"(?:\.|,|$)",
-            cleaned,
-        )
-        if match is None:
-            return None
-        place = self._clean_place(match.group("place"), message)
-        if len(place) < 2:
-            return None
-        if not self._is_valid_location_place(place):
-            return None
-        return place
-
-    def _known_location_from_text(self, message: str) -> Optional[str]:
-        normalized = self._normalize_reply(message)
-        if re.search(r"\bsomerville\b", normalized):
-            if "massachusetts" in normalized:
-                return "Somerville, Massachusetts"
-            return "Somerville"
-        if re.search(
-            r"\bsummerville\b", normalized
-        ) and self._mentions_somerville_spelling(normalized):
-            if "massachusetts" in normalized:
-                return "Somerville, Massachusetts"
-            return "Somerville"
-        compact = re.sub(r"[^a-z]+", "", normalized)
-        if compact == "somerville":
-            return "Somerville"
-        return None
-
-    def _is_valid_location_place(self, place: str) -> bool:
-        normalized = self._normalize_reply(place)
-        if normalized in {
-            "thanks",
-            "thank you",
-            "yes",
-            "yep",
-            "no",
-            "nope",
-            "you",
-        }:
-            return False
-        if self._looks_like_transcript_noise(normalized):
-            return False
-        words = normalized.split()
-        if len(words) > 4:
-            return False
-        blocked_terms = {
-            "all",
-            "available",
-            "city",
-            "dont",
-            "don't",
-            "got",
-            "instead",
-            "leave",
-            "leaves",
-            "meant",
-            "memory",
-            "nose",
-            "saved",
-            "see",
-            "user",
-        }
-        if any(word.strip("'") in blocked_terms for word in words):
-            return False
-        if re.search(r"\b(?:m'?s|o|one|two|2|1)\b", normalized):
-            return False
-        return bool(re.search(r"[a-z]", normalized))
-
-    def _looks_like_transcript_noise(self, normalized: str) -> bool:
-        return any(
-            re.search(pattern, normalized) is not None
-            for pattern in (
-                r"\binaudible\b",
-                r"\bunintelligible\b",
-                r"\btranscript\b",
-                r"\baudio\b",
-                r"\bbackground noise\b",
-                r"\bgarbled\b",
-                r"\bunclear\b",
-                r"\bunknown\b",
-            )
-        )
-
-    def _mentions_somerville_spelling(self, normalized_message: str) -> bool:
-        compact = re.sub(r"[^a-z0-9]+", "", normalized_message.lower())
-        if "insteadofu1m" in compact or "oinsteadofu1m" in compact:
-            return True
-
-        has_one_m = re.search(r"\b(?:one|1)\s*m\b", normalized_message) is not None
-        has_one_o = (
-            re.search(r"\b(?:one|1)\s*o\b", normalized_message) is not None
-            or re.search(r"\b(?:one|1)\s*m\s+and\s+o\b", normalized_message) is not None
-        )
-        has_wrong_spelling_hint = any(
-            hint in normalized_message
-            for hint in ("instead of u", "two m", "2 m", "summerville", "somerville")
-        )
-        return has_one_m and has_one_o and has_wrong_spelling_hint
-
-    def _sentence_body(self, content: str) -> str:
-        body = content.strip().rstrip(".")
-        replacements = (
-            ("User's", "your"),
-            ("User lives", "you live"),
-            ("User works", "you work"),
-            ("User has", "you have"),
-            ("User likes", "you like"),
-            ("User prefers", "you prefer"),
-            ("User plans", "you plan"),
-        )
-        for old, new in replacements:
-            if body.startswith(old):
-                body = body.replace(old, new, 1)
-                break
-        return f"{body}."
-
-    def _normalize_reply(self, message: str) -> str:
-        normalized = message.lower().strip()
-        normalized = re.sub(r"[,;:]+", " ", normalized)
-        normalized = re.sub(r"[.!?]+$", "", normalized)
-        normalized = re.sub(r"\s+", " ", normalized)
-        return normalized
-
-    def _fingerprint(self, text: str) -> str:
-        normalized = re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
-        return normalized[:80] or "unknown"
+        return self._birthday_intent(person, date_text)

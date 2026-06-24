@@ -1,7 +1,9 @@
 from typing import Optional
 
-from app.services.chat_search_ranking import ChatSearchRanking
+from app.services.chat_embedding_repository import ChatEmbeddingRepository
+from app.services.chat_search_repository import ChatSearchRepository
 from app.services.memory_errors import MemoryServiceError
+
 
 CONVERSATION_SELECT = "id,title,timestamp"
 MESSAGE_SELECT = "id,conversation_id,role,content,timestamp"
@@ -10,13 +12,14 @@ VOICE_TURN_SELECT = (
     "transcript_confidence,audio_duration_seconds,input_mime_type,"
     "output_audio_encoding,stt_vendor,tts_vendor,metadata,created_at"
 )
-CHAT_SEARCH_RPC = "search_user_chat_messages"
 
 
 class ConversationRepository:
     def __init__(self, store: object) -> None:
         self.store = store
-        self.search_ranking = ChatSearchRanking()
+        self.chat_search_repository = ChatSearchRepository(store)
+        self.chat_embedding_repository = ChatEmbeddingRepository(store)
+        self.search_ranking = self.chat_search_repository.search_ranking
 
     async def create_conversation(self) -> str:
         row = await self.create_conversation_record()
@@ -83,7 +86,9 @@ class ConversationRepository:
             query={"select": MESSAGE_SELECT},
             prefer="return=representation",
         )
-        return self.store._first_row(rows)
+        message = self.store._first_row(rows)
+        await self.save_message_chat_embedding(message)
+        return message
 
     async def get_recent_messages(
         self,
@@ -141,40 +146,12 @@ class ConversationRepository:
         exclude_conversation_id: Optional[str] = None,
         offset: int = 0,
     ) -> list[dict]:
-        rpc_rows = await self._ranked_chat_search_rows(
+        return await self.chat_search_repository.search_messages(
             query,
             limit=limit,
             exclude_conversation_id=exclude_conversation_id,
             offset=offset,
         )
-        if rpc_rows is not None:
-            return [
-                message
-                for row in rpc_rows[offset : offset + limit]
-                if (message := self._message_from_ranked_search_row(row)) is not None
-            ]
-
-        terms = self._search_terms(query)
-        if not terms:
-            return []
-
-        filters = ",".join(f"content.ilike.*{term}*" for term in terms)
-        query_params = {
-            "select": MESSAGE_SELECT,
-            "or": f"({filters})",
-            "order": "timestamp.desc",
-            "limit": str(limit),
-        }
-        if offset > 0:
-            query_params["offset"] = str(offset)
-        if exclude_conversation_id:
-            query_params["conversation_id"] = f"neq.{exclude_conversation_id}"
-        rows = await self.store._request(
-            "GET",
-            self.store.settings.supabase_messages_table,
-            query=query_params,
-        )
-        return self._rank_messages(query, rows)
 
     async def search_conversations(
         self,
@@ -182,119 +159,11 @@ class ConversationRepository:
         limit: int = 50,
         exclude_conversation_id: Optional[str] = None,
     ) -> list[dict]:
-        rpc_rows = await self._ranked_chat_search_rows(
+        return await self.chat_search_repository.search_conversations(
             query,
             limit=limit,
             exclude_conversation_id=exclude_conversation_id,
         )
-        if rpc_rows is not None:
-            return [
-                self._conversation_result_from_ranked_row(row)
-                for row in rpc_rows[:limit]
-            ]
-
-        terms = self._search_terms(query)
-        if not terms:
-            return []
-
-        results: list[dict] = []
-        seen: set[tuple[str, str]] = set()
-        title_filters = ",".join(f"title.ilike.*{term}*" for term in terms)
-        title_rows = await self.store._request(
-            "GET",
-            self.store.settings.supabase_conversations_table,
-            query={
-                "select": CONVERSATION_SELECT,
-                "or": f"({title_filters})",
-                "order": "timestamp.desc",
-                "limit": str(limit),
-            },
-        )
-        for conversation in title_rows:
-            conversation_id = str(conversation.get("id") or "")
-            if not conversation_id:
-                continue
-            key = (conversation_id, "title")
-            if key in seen:
-                continue
-            seen.add(key)
-            title = str(conversation.get("title") or "").strip()
-            score = self.search_ranking.score_text(
-                query,
-                title,
-                timestamp=str(conversation.get("timestamp") or ""),
-                title_match=True,
-            )
-            if score.score <= 0:
-                continue
-            results.append(
-                {
-                    "conversation_id": conversation_id,
-                    "conversation_title": conversation.get("title"),
-                    "conversation_timestamp": conversation.get("timestamp"),
-                    "message": None,
-                    "match_type": "title",
-                    "preview": title or "Matched conversation title.",
-                    "relevance_score": score.score,
-                    "search_reason": score.reason,
-                    "matched_terms": list(score.matched_terms),
-                }
-            )
-
-        message_rows = await self.search_messages(query, limit=limit)
-        repeated_counts: dict[str, int] = {}
-        for message in message_rows:
-            conversation_id = str(message.get("conversation_id") or "")
-            if conversation_id:
-                repeated_counts[conversation_id] = repeated_counts.get(
-                    conversation_id,
-                    0,
-                ) + 1
-
-        conversation_cache: dict[str, dict] = {}
-        for message in message_rows:
-            conversation_id = str(message.get("conversation_id") or "")
-            message_id = str(message.get("id") or "")
-            if not conversation_id or not message_id:
-                continue
-            key = (conversation_id, message_id)
-            if key in seen:
-                continue
-            seen.add(key)
-            conversation = conversation_cache.get(conversation_id)
-            if conversation is None:
-                conversation = await self._conversation_by_id(conversation_id)
-                conversation_cache[conversation_id] = conversation
-            score = self.search_ranking.score_text(
-                query,
-                str(message.get("content") or ""),
-                role=str(message.get("role") or ""),
-                timestamp=str(message.get("timestamp") or ""),
-                repeated_mentions=repeated_counts.get(conversation_id, 1),
-            )
-            if score.score <= 0:
-                continue
-            results.append(
-                {
-                    "conversation_id": conversation_id,
-                    "conversation_title": conversation.get("title"),
-                    "conversation_timestamp": conversation.get("timestamp"),
-                    "message": message,
-                    "match_type": "message",
-                    "preview": str(message.get("content") or "").strip(),
-                    "relevance_score": score.score,
-                    "search_reason": score.reason,
-                    "matched_terms": list(score.matched_terms),
-                }
-            )
-        results.sort(
-            key=lambda result: (
-                float(result.get("relevance_score") or 0),
-                str(result.get("conversation_timestamp") or ""),
-            ),
-            reverse=True,
-        )
-        return results[:limit]
 
     async def search_chat_history(
         self,
@@ -302,11 +171,69 @@ class ConversationRepository:
         limit: int = 50,
         exclude_conversation_id: Optional[str] = None,
     ) -> list[dict]:
-        return await self.search_conversations(
+        return await self.chat_search_repository.search_chat_history(
             query,
             limit=limit,
             exclude_conversation_id=exclude_conversation_id,
         )
+
+    async def search_semantic_conversations(
+        self,
+        query: str,
+        *,
+        limit: int,
+        exclude_conversation_id: Optional[str] = None,
+    ) -> list[dict]:
+        return await self.chat_search_repository.search_semantic_conversations(
+            query,
+            limit=limit,
+            exclude_conversation_id=exclude_conversation_id,
+        )
+
+    def merge_search_results(
+        self,
+        keyword_results: list[dict],
+        semantic_results: list[dict],
+        *,
+        limit: int,
+    ) -> list[dict]:
+        return self.chat_search_repository.merge_search_results(
+            keyword_results,
+            semantic_results,
+            limit=limit,
+        )
+
+    async def save_message_chat_embedding(self, message: dict) -> None:
+        await self.chat_embedding_repository.save_message_chat_embedding(message)
+
+    async def save_conversation_summary_embedding(
+        self,
+        *,
+        conversation_id: str,
+        summary: str,
+    ) -> None:
+        await self.chat_embedding_repository.save_conversation_summary_embedding(
+            conversation_id=conversation_id,
+            summary=summary,
+        )
+
+    async def save_chat_search_embedding(
+        self,
+        *,
+        conversation_id: str,
+        message_id: Optional[str],
+        source_kind: str,
+        content: str,
+    ) -> None:
+        await self.chat_embedding_repository.save_chat_search_embedding(
+            conversation_id=conversation_id,
+            message_id=message_id,
+            source_kind=source_kind,
+            content=content,
+        )
+
+    def should_embed_message(self, message: dict) -> bool:
+        return self.chat_embedding_repository.should_embed_message(message)
 
     async def delete_conversation(self, conversation_id: str) -> bool:
         if not await self.conversation_exists(conversation_id):
@@ -318,18 +245,6 @@ class ConversationRepository:
             query={"id": f"eq.{conversation_id}"},
         )
         return True
-
-    async def _conversation_by_id(self, conversation_id: str) -> dict:
-        rows = await self.store._request(
-            "GET",
-            self.store.settings.supabase_conversations_table,
-            query={
-                "id": f"eq.{conversation_id}",
-                "select": CONVERSATION_SELECT,
-                "limit": "1",
-            },
-        )
-        return rows[0] if rows else {}
 
     async def save_voice_turn(
         self,
@@ -375,107 +290,3 @@ class ConversationRepository:
             "timestamp": row.get("timestamp"),
             "last_message": last_message,
         }
-
-    def _search_terms(self, query: str) -> list[str]:
-        return self.search_ranking.expand_terms(query, max_terms=8)
-
-    def _normalize_search_term(self, term: str) -> str:
-        return self.search_ranking.normalize_term(term)
-
-    def _simple_term_variants(self, term: str) -> tuple[str, ...]:
-        return self.search_ranking.simple_term_variants(term)
-
-    async def _ranked_chat_search_rows(
-        self,
-        query: str,
-        *,
-        limit: int,
-        exclude_conversation_id: Optional[str] = None,
-        offset: int = 0,
-    ) -> Optional[list[dict]]:
-        rpc = getattr(self.store, "_rpc", None)
-        if rpc is None:
-            return None
-
-        search_terms = self.search_ranking.search_terms(
-            query,
-            max_terms=20,
-        )
-        if not search_terms:
-            search_terms = list(self.search_ranking.content_terms(query))
-        if not search_terms:
-            return []
-
-        rows = await rpc(
-            CHAT_SEARCH_RPC,
-            {
-                "search_query": query,
-                "search_terms": search_terms,
-                "match_count": min(max(limit + offset, limit), 200),
-                "exclude_conversation_id": exclude_conversation_id,
-            },
-        )
-        return rows
-
-    def _message_from_ranked_search_row(self, row: dict) -> Optional[dict]:
-        message_id = str(row.get("message_id") or "").strip()
-        if not message_id:
-            return None
-        return {
-            "id": message_id,
-            "conversation_id": row.get("conversation_id"),
-            "role": row.get("role") or "message",
-            "content": row.get("content") or "",
-            "timestamp": row.get("message_timestamp"),
-            "relevance_score": float(row.get("rank") or 0),
-            "search_reason": row.get("search_reason") or "indexed chat search match",
-            "matched_terms": list(row.get("matched_terms") or []),
-        }
-
-    def _conversation_result_from_ranked_row(self, row: dict) -> dict:
-        message = self._message_from_ranked_search_row(row)
-        match_type = str(row.get("match_type") or "message")
-        preview = str(
-            row.get("content")
-            or row.get("conversation_title")
-            or "Matched conversation."
-        ).strip()
-        return {
-            "conversation_id": row.get("conversation_id"),
-            "conversation_title": row.get("conversation_title"),
-            "conversation_timestamp": row.get("conversation_timestamp"),
-            "message": message,
-            "match_type": match_type,
-            "preview": preview,
-            "relevance_score": float(row.get("rank") or 0),
-            "search_reason": row.get("search_reason") or "indexed chat search match",
-            "matched_terms": list(row.get("matched_terms") or []),
-        }
-
-    def _rank_messages(self, query: str, rows: list[dict]) -> list[dict]:
-        ranked = []
-        for row in rows:
-            score = self.search_ranking.score_text(
-                query,
-                str(row.get("content") or ""),
-                role=str(row.get("role") or ""),
-                timestamp=str(row.get("timestamp") or ""),
-            )
-            if score.score <= 0:
-                continue
-            ranked.append(
-                {
-                    **row,
-                    "relevance_score": score.score,
-                    "search_reason": score.reason,
-                    "matched_terms": list(score.matched_terms),
-                }
-            )
-        ranked.sort(
-            key=lambda item: (
-                float(item.get("relevance_score") or 0),
-                str(item.get("timestamp") or ""),
-            ),
-            reverse=True,
-        )
-        return ranked

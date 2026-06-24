@@ -1643,6 +1643,134 @@ async def test_chat_context_uses_ranked_chat_history_search_when_available():
 
 
 @pytest.mark.asyncio
+async def test_chat_context_falls_back_when_indexed_search_only_returns_noise():
+    class WeakRankedSearchStore(FakeContextMemoryStore):
+        def __init__(self):
+            super().__init__()
+            self.ranked_search_queries = []
+            self.past_messages = [
+                {
+                    "id": "omen-pc-model",
+                    "conversation_id": "conversation-omen",
+                    "role": "user",
+                    "content": "I own an Omen PC forty five.",
+                    "timestamp": "2026-06-23T21:13:00Z",
+                },
+            ]
+
+        async def search_chat_history(
+            self,
+            query,
+            limit=50,
+            exclude_conversation_id=None,
+        ):
+            self.ranked_search_queries.append(
+                {
+                    "query": query,
+                    "limit": limit,
+                    "exclude_conversation_id": exclude_conversation_id,
+                }
+            )
+            return [
+                {
+                    "conversation_id": "conversation-noise",
+                    "conversation_title": "Failed search",
+                    "conversation_timestamp": "2026-06-23T21:12:00Z",
+                    "message": {
+                        "id": "assistant-no-result",
+                        "conversation_id": "conversation-noise",
+                        "role": "assistant",
+                        "content": "I checked chats, but nothing about your PC came up.",
+                        "timestamp": "2026-06-23T21:12:00Z",
+                    },
+                    "match_type": "message",
+                    "preview": "I checked chats, but nothing about your PC came up.",
+                    "relevance_score": 12.5,
+                    "search_reason": "Matched message content with indexed chat search.",
+                    "matched_terms": ["pc"],
+                }
+            ]
+
+    store = WeakRankedSearchStore()
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Can you look what kind PC I have?",
+        conversation_id="conversation-current",
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-omen"
+    assert "Omen PC forty five" in result["content"]
+    assert store.search_message_queries
+    status = structured_context["memory_status"]["source_statuses"][0]
+    assert "indexed_search" in status["query_modes"]
+    assert any(
+        mode.startswith("expanded_keywords") or mode == "keyword"
+        for mode in status["query_modes"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_chat_context_includes_nearby_factual_answer_for_question_match():
+    class QuestionMatchStore(FakeContextMemoryStore):
+        def __init__(self):
+            super().__init__()
+            self.past_messages = [
+                {
+                    "id": "pc-question",
+                    "conversation_id": "conversation-omen",
+                    "role": "user",
+                    "content": "Do I have a PC?",
+                    "timestamp": "2026-06-23T21:12:00Z",
+                },
+                {
+                    "id": "pc-answer",
+                    "conversation_id": "conversation-omen",
+                    "role": "user",
+                    "content": "The model is an Omen 45L.",
+                    "timestamp": "2026-06-23T21:13:00Z",
+                },
+            ]
+
+        async def search_chat_history(
+            self,
+            query,
+            limit=50,
+            exclude_conversation_id=None,
+        ):
+            return [
+                {
+                    "conversation_id": "conversation-omen",
+                    "conversation_title": "PC details",
+                    "conversation_timestamp": "2026-06-23T21:13:00Z",
+                    "message": self.past_messages[0],
+                    "match_type": "message",
+                    "preview": self.past_messages[0]["content"],
+                    "relevance_score": 8.0,
+                    "search_reason": "Matched message content with indexed chat search.",
+                    "matched_terms": ["pc"],
+                }
+            ]
+
+    store = QuestionMatchStore()
+    service = ChatContextService(store)
+
+    _, _, structured_context = await service.fetch_prompt_context(
+        message="Can you look what kind PC I have?",
+        conversation_id="conversation-current",
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    result = structured_context["chat_search_results"][0]
+    assert result["id"] == "chat-conversation-omen"
+    assert "Do I have a PC?" in result["content"]
+    assert "Omen 45L" in result["content"]
+    assert result["matched_message_ids"] == ["pc-question"]
+
+
+@pytest.mark.asyncio
 async def test_chat_context_treats_old_chet_as_old_chat_recall():
     store = FakeContextMemoryStore()
     store.past_messages = [

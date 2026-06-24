@@ -1,50 +1,37 @@
+from __future__ import annotations
+
 from collections.abc import AsyncIterator
-import time
 from typing import Optional
 
 from fastapi import UploadFile
 
 from app.services.ai_service import AIService
 from app.services.accountability_service import AccountabilityService
-from app.services.action_truth_policy import (
-    safe_degraded_memory_search_response,
-    safe_empty_recall_search_response,
-    safe_old_chat_search_response,
-    safe_chat_search_capability_response,
-    safe_pending_action_response,
-    safe_unexecuted_delete_response,
-    safe_unexecuted_memory_response,
-    safe_unsupported_action_response,
-)
 from app.services.chat_context_service import ChatContextService
+from app.services.chat_financial_guard import (
+    FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE,
+    ChatFinancialGuard,
+)
+from app.services.chat_response_truth import ChatResponseTruthService
 from app.services.chat_turn_context import (
     ChatTurnContextService,
     ConversationNotFoundError,
     MemoryService,
 )
-from app.services.clarity_action_parser import (
-    ClarityActionParser,
-    ClarityActionStreamFilter,
-)
+from app.services.chat_turn_orchestrator import ChatTurnOrchestrator
+from app.services.chat_usage_recorder import ChatUsageRecorder
 from app.services.chat_voice_metadata import ChatVoiceMetadataMixin
+from app.services.clarity_action_parser import ClarityActionParser
 from app.services.file_service import FileService
-from app.services.file_service import AttachmentContext
 from app.services.goal_command_service import GoalCommandService
 from app.services.memory_intent_service import MemoryIntentService
 from app.services.memory_turn_service import MemoryTurnService
 from app.services.prompt_service import PromptService
 from app.services.rex_channel import RexBrainChannel
-from app.services.rex_intent_router import RexIntent, RexIntentRouter
+from app.services.rex_intent_router import RexIntentRouter
 from app.services.simple_rex_brain import SimpleRexBrain
 from app.services.time_context_service import TimeContextService
 from app.services.usage_tracking_service import UsageTrackingService
-
-
-FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE = (
-    "I don't have reliable Clarity financial data available for this turn, so I "
-    "can't answer that without guessing. Please refresh your financial data or "
-    "try again in a moment."
-)
 
 
 class ChatService(ChatVoiceMetadataMixin):
@@ -100,6 +87,25 @@ class ChatService(ChatVoiceMetadataMixin):
             memory_service=memory_service,
             chat_context_service=self.chat_context_service,
         )
+        self.financial_guard = ChatFinancialGuard()
+        self.truth_service = ChatResponseTruthService()
+        self.usage_recorder = ChatUsageRecorder(
+            ai_service=ai_service,
+            memory_service=memory_service,
+            usage_tracking_service=self.usage_tracking_service,
+        )
+        self.turn_orchestrator = ChatTurnOrchestrator(
+            ai_service=ai_service,
+            memory_service=memory_service,
+            simple_rex_brain=self.simple_rex_brain,
+            chat_turn_context_service=self.chat_turn_context_service,
+            memory_turn_service=self.memory_turn_service,
+            goal_command_service=self.goal_command_service,
+            clarity_action_parser=self.clarity_action_parser,
+            financial_guard=self.financial_guard,
+            truth_service=self.truth_service,
+            usage_recorder=self.usage_recorder,
+        )
 
     async def send_message(
         self,
@@ -112,140 +118,16 @@ class ChatService(ChatVoiceMetadataMixin):
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
     ) -> dict:
-        intent_decision = self.simple_rex_brain.classify(
-            message,
-            has_file=file is not None,
-            has_financial_context=financial_context is not None,
-            user_requested_deep_thinking=user_requested_deep_thinking,
-        )
-        financial_context = self._financial_context_for_intent(
-            intent_decision,
-            financial_context,
-        )
-        turn_context = await self.chat_turn_context_service.prepare(
+        return await self.turn_orchestrator.send_message(
             message=message,
             conversation_id=conversation_id,
             file=file,
-            intent_decision=intent_decision,
-        )
-        conversation_id = turn_context.conversation_id
-        file_text = turn_context.file_text
-        attachment_context = turn_context.attachment_context
-        conversation_history = turn_context.conversation_history
-        long_term_memory = turn_context.long_term_memory
-        structured_context = turn_context.structured_context
-        time_context = turn_context.time_context
-        accountability_signals = turn_context.accountability_signals
-        user_message = turn_context.user_message
-        simple_memory_turn = await self.memory_turn_service.handle_turn(
-            message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_history=conversation_history,
-            time_context=time_context,
-        )
-        if simple_memory_turn:
-            return simple_memory_turn
-        goal_command_turn = await self.goal_command_service.handle_turn(
-            message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_history=conversation_history,
-            time_context=time_context,
-        )
-        if goal_command_turn:
-            return goal_command_turn
-        finance_guard_response = self._financial_context_guard_response(
-            intent_decision,
-            financial_context,
-        )
-        if finance_guard_response:
-            return await self._guarded_turn_response(
-                conversation_id=conversation_id,
-                response=finance_guard_response,
-                user_message=user_message,
-            )
-        conversation_history = self.memory_turn_service.public_messages(
-            conversation_history
-        )
-        ai_messages = self.simple_rex_brain.build_prompt_messages(
-            message=message,
-            conversation_id=conversation_id,
-            conversation_history=conversation_history,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-            accountability_signals=accountability_signals,
-            file_text=file_text,
-            time_context=time_context,
             financial_context=financial_context,
+            response_instructions=response_instructions,
+            max_response_tokens=max_response_tokens,
             channel=channel,
+            user_requested_deep_thinking=user_requested_deep_thinking,
         )
-
-        if response_instructions:
-            ai_messages.append({"role": "system", "content": response_instructions})
-
-        ai_messages = self._messages_with_attachment(ai_messages, attachment_context)
-
-        ai_kwargs = {}
-        if max_response_tokens is not None:
-            ai_kwargs["max_tokens"] = max_response_tokens
-        llm_started_at = time.perf_counter()
-        try:
-            rex_response = await self.ai_service.generate_response(
-                ai_messages,
-                **ai_kwargs,
-            )
-        except Exception as error:
-            await self._record_llm_usage(
-                channel=channel,
-                ai_kwargs=ai_kwargs,
-                latency_ms=self._elapsed_ms(llm_started_at),
-                status="failure",
-                error_class=error.__class__.__name__,
-            )
-            raise
-        await self._record_llm_usage(
-            channel=channel,
-            ai_kwargs=ai_kwargs,
-            latency_ms=self._elapsed_ms(llm_started_at),
-        )
-        unsupported_actions = self.clarity_action_parser.unsupported_actions(
-            rex_response,
-        )
-        assistant_response, clarity_action_proposals = (
-            self.clarity_action_parser.extract_proposals(rex_response)
-        )
-        assistant_response = self._truthful_generated_response(
-            assistant_response,
-            clarity_action_proposals,
-            unsupported_actions=unsupported_actions,
-            intent_decision=intent_decision,
-            user_message=message,
-            memory_status=structured_context.get("memory_status"),
-            chat_search_results_loaded=self._has_chat_search_results(ai_messages),
-        )
-        assistant_message = await self.memory_service.save_message(
-            conversation_id,
-            "assistant",
-            assistant_response,
-        )
-
-        memory_changes = self.clarity_action_parser.with_memory_changes(
-            None,
-            clarity_action_proposals,
-        )
-
-        return {
-            "conversation_id": conversation_id,
-            "response": assistant_response,
-            "user_message": user_message,
-            "assistant_message": assistant_message,
-            "memory_correction": None,
-            "memory_changes": memory_changes,
-            "messages": await self.memory_turn_service.recent_public_messages(
-                conversation_id
-            ),
-        }
 
     async def stream_message(
         self,
@@ -259,382 +141,15 @@ class ChatService(ChatVoiceMetadataMixin):
         user_requested_deep_thinking: bool = False,
         include_turn_trace: bool = False,
     ) -> AsyncIterator[dict]:
-        intent_decision = self.simple_rex_brain.classify(
-            message,
-            has_file=file is not None,
-            has_financial_context=financial_context is not None,
-            user_requested_deep_thinking=user_requested_deep_thinking,
-        )
-        financial_context = self._financial_context_for_intent(
-            intent_decision,
-            financial_context,
-        )
-        turn_context = await self.chat_turn_context_service.prepare(
+        async for event in self.turn_orchestrator.stream_message(
             message=message,
             conversation_id=conversation_id,
             file=file,
-            intent_decision=intent_decision,
-        )
-        conversation_id = turn_context.conversation_id
-        file_text = turn_context.file_text
-        attachment_context = turn_context.attachment_context
-        conversation_history = turn_context.conversation_history
-        long_term_memory = turn_context.long_term_memory
-        structured_context = turn_context.structured_context
-        time_context = turn_context.time_context
-        accountability_signals = turn_context.accountability_signals
-        user_message = turn_context.user_message
-        yield {"event": "conversation", "conversation_id": conversation_id}
-        if include_turn_trace:
-            yield self._turn_trace_event(intent_decision, channel)
-        simple_memory_turn = await self.memory_turn_service.handle_turn(
-            message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_history=conversation_history,
-            time_context=time_context,
-        )
-        if simple_memory_turn:
-            yield {"event": "token", "token": simple_memory_turn["response"]}
-            yield {
-                "event": "done",
-                "conversation_id": conversation_id,
-                "response": simple_memory_turn["response"],
-                "messages": simple_memory_turn["messages"],
-                "memory_changes": simple_memory_turn["memory_changes"],
-                "assistant_message": simple_memory_turn["assistant_message"],
-            }
-            return
-        goal_command_turn = await self.goal_command_service.handle_turn(
-            message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_history=conversation_history,
-            time_context=time_context,
-        )
-        if goal_command_turn:
-            yield {"event": "token", "token": goal_command_turn["response"]}
-            yield {
-                "event": "done",
-                "conversation_id": conversation_id,
-                "response": goal_command_turn["response"],
-                "messages": goal_command_turn["messages"],
-                "memory_changes": goal_command_turn["memory_changes"],
-                "assistant_message": goal_command_turn["assistant_message"],
-            }
-            return
-        finance_guard_response = self._financial_context_guard_response(
-            intent_decision,
-            financial_context,
-        )
-        if finance_guard_response:
-            yield {"event": "token", "token": finance_guard_response}
-            assistant_message = await self.memory_service.save_message(
-                conversation_id,
-                "assistant",
-                finance_guard_response,
-            )
-            yield {
-                "event": "done",
-                "conversation_id": conversation_id,
-                "response": finance_guard_response,
-                "messages": await self.memory_turn_service.recent_public_messages(
-                    conversation_id
-                ),
-                "memory_changes": None,
-                "assistant_message": assistant_message,
-            }
-            return
-        conversation_history = self.memory_turn_service.public_messages(
-            conversation_history
-        )
-        ai_messages = self.simple_rex_brain.build_prompt_messages(
-            message=message,
-            conversation_id=conversation_id,
-            conversation_history=conversation_history,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-            accountability_signals=accountability_signals,
-            file_text=file_text,
-            time_context=time_context,
+            response_instructions=response_instructions,
+            max_response_tokens=max_response_tokens,
             financial_context=financial_context,
             channel=channel,
-        )
-
-        if response_instructions:
-            ai_messages.append({"role": "system", "content": response_instructions})
-
-        ai_messages = self._messages_with_attachment(ai_messages, attachment_context)
-
-        response_parts = []
-        stream_filter = ClarityActionStreamFilter()
-        ai_kwargs = {}
-        if max_response_tokens is not None:
-            ai_kwargs["max_tokens"] = max_response_tokens
-        token_stream = self.ai_service.stream_response(ai_messages, **ai_kwargs)
-        llm_started_at = time.perf_counter()
-        try:
-            async for token in token_stream:
-                response_parts.append(token)
-                for visible_token in stream_filter.feed(token):
-                    if visible_token:
-                        yield {"event": "token", "token": visible_token}
-        except Exception as error:
-            await self._record_llm_usage(
-                channel=channel,
-                ai_kwargs=ai_kwargs,
-                latency_ms=self._elapsed_ms(llm_started_at),
-                status="failure",
-                error_class=error.__class__.__name__,
-            )
-            raise
-        await self._record_llm_usage(
-            channel=channel,
-            ai_kwargs=ai_kwargs,
-            latency_ms=self._elapsed_ms(llm_started_at),
-        )
-        for visible_token in stream_filter.finish():
-            if visible_token:
-                yield {"event": "token", "token": visible_token}
-
-        rex_response = "".join(response_parts).strip()
-        unsupported_actions = self.clarity_action_parser.unsupported_actions(
-            rex_response,
-        )
-        assistant_response, clarity_action_proposals = (
-            self.clarity_action_parser.extract_proposals(rex_response)
-        )
-        assistant_response = self._truthful_generated_response(
-            assistant_response,
-            clarity_action_proposals,
-            unsupported_actions=unsupported_actions,
-            intent_decision=intent_decision,
-            user_message=message,
-            memory_status=structured_context.get("memory_status"),
-            chat_search_results_loaded=self._has_chat_search_results(ai_messages),
-        )
-        assistant_message = await self.memory_service.save_message(
-            conversation_id,
-            "assistant",
-            assistant_response,
-        )
-
-        memory_changes = self.clarity_action_parser.with_memory_changes(
-            None,
-            clarity_action_proposals,
-        )
-
-        yield {
-            "event": "done",
-            "conversation_id": conversation_id,
-            "response": assistant_response,
-            "messages": await self.memory_turn_service.recent_public_messages(
-                conversation_id
-            ),
-            "memory_changes": memory_changes,
-        }
-
-    def _turn_trace_event(self, intent_decision, channel: RexBrainChannel) -> dict:
-        return {
-            "event": "turn.trace",
-            "intent": intent_decision.intent.value,
-            "intent_reasons": list(intent_decision.reasons),
-            "channel": channel.value,
-            "loaded_context": {
-                "long_term_memory": intent_decision.should_load_long_term_memory,
-                "profile_memory": intent_decision.should_load_profile_memory,
-                "structured_memory": intent_decision.should_load_structured_memory,
-                "goal_context": intent_decision.should_load_goal_context,
-                "accountability": intent_decision.should_load_accountability,
-                "financial_context": intent_decision.should_use_financial_context,
-            },
-        }
-
-    def _messages_with_attachment(
-        self,
-        messages: list[dict],
-        attachment_context: Optional[AttachmentContext],
-    ) -> list[dict]:
-        if attachment_context is None or attachment_context.kind != "image":
-            return messages
-        if not attachment_context.data_url:
-            return messages
-
-        updated_messages = [dict(message) for message in messages]
-        for index in range(len(updated_messages) - 1, -1, -1):
-            if updated_messages[index].get("role") != "user":
-                continue
-            content = updated_messages[index].get("content", "")
-            text = content if isinstance(content, str) else str(content)
-            updated_messages[index]["content"] = [
-                {"type": "text", "text": text},
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": attachment_context.data_url,
-                        "detail": "auto",
-                    },
-                },
-            ]
-            return updated_messages
-        return updated_messages
-
-    def _financial_context_for_intent(
-        self,
-        intent_decision,
-        financial_context: Optional[dict],
-    ) -> Optional[dict]:
-        if intent_decision.should_use_financial_context:
-            return financial_context
-        return None
-
-    def _financial_context_guard_response(
-        self,
-        intent_decision,
-        financial_context: Optional[dict],
-    ) -> Optional[str]:
-        if not intent_decision.should_use_financial_context:
-            return None
-        if self._financial_context_is_reliable(financial_context):
-            return None
-        return FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
-
-    def _financial_context_is_reliable(self, financial_context: Optional[dict]) -> bool:
-        if not isinstance(financial_context, dict) or not financial_context:
-            return False
-
-        data_status = financial_context.get("data_status")
-        status = data_status if isinstance(data_status, dict) else {}
-        state = str(
-            status.get("state") or status.get("status") or data_status or ""
-        ).strip().lower()
-        if not state:
-            return False
-        if state in {"unavailable", "degraded", "partial", "error", "failed"}:
-            return False
-        if state != "ready":
-            return False
-
-        complete = status.get("financial_context_complete")
-        if complete is False or str(complete).strip().lower() == "false":
-            return False
-
-        load_errors = status.get("load_errors")
-        if load_errors is None:
-            load_errors = financial_context.get("load_errors")
-        if load_errors:
-            return False
-
-        integration = financial_context.get("integration")
-        if isinstance(integration, dict):
-            full_context = integration.get("full_financial_context_included")
-            if full_context is False or str(full_context).strip().lower() == "false":
-                return False
-
-        return True
-
-    async def _guarded_turn_response(
-        self,
-        *,
-        conversation_id: str,
-        response: str,
-        user_message: dict,
-    ) -> dict:
-        assistant_message = await self.memory_service.save_message(
-            conversation_id,
-            "assistant",
-            response,
-        )
-        return {
-            "conversation_id": conversation_id,
-            "response": response,
-            "user_message": user_message,
-            "assistant_message": assistant_message,
-            "memory_correction": None,
-            "memory_changes": None,
-            "messages": await self.memory_turn_service.recent_public_messages(
-                conversation_id
-            ),
-        }
-
-    def _truthful_generated_response(
-        self,
-        assistant_response: str,
-        clarity_action_proposals: list[dict],
-        *,
-        unsupported_actions: list[str],
-        intent_decision,
-        user_message: str,
-        memory_status: object = None,
-        chat_search_results_loaded: bool = False,
-    ) -> str:
-        response = safe_pending_action_response(
-            assistant_response,
-            clarity_action_proposals,
-        )
-        if clarity_action_proposals:
-            return response
-        response = safe_unsupported_action_response(response, unsupported_actions)
-        if unsupported_actions:
-            return response
-        response = safe_degraded_memory_search_response(
-            response,
-            memory_status=memory_status,
-        )
-        response = safe_old_chat_search_response(
-            response,
-            chat_search_results_loaded=chat_search_results_loaded,
-            memory_status=memory_status,
-        )
-        response = safe_empty_recall_search_response(
-            response,
-            memory_status=memory_status,
-        )
-        response = safe_chat_search_capability_response(response)
-        response = safe_unexecuted_delete_response(
-            response,
-            user_message=user_message,
-        )
-        if intent_decision.intent in {RexIntent.MEMORY_SAVE, RexIntent.MEMORY_UPDATE}:
-            return safe_unexecuted_memory_response(response)
-        return response
-
-    def _has_chat_search_results(self, messages: list[dict]) -> bool:
-        for message in messages:
-            content = message.get("content")
-            if isinstance(content, str) and "Chat history, not saved memory:" in content:
-                return True
-        return False
-
-    async def _record_llm_usage(
-        self,
-        *,
-        channel: RexBrainChannel,
-        ai_kwargs: dict,
-        latency_ms: int,
-        status: str = "success",
-        error_class: Optional[str] = None,
-    ) -> None:
-        user_id = getattr(self.memory_service, "user_id", None)
-        if not user_id:
-            return
-        await self.usage_tracking_service.record_llm_turn(
-            user_id=user_id,
-            surface="assistant",
-            channel=channel.value,
-            model=self._usage_model(ai_kwargs),
-            latency_ms=latency_ms,
-            status=status,
-            error_class=error_class,
-        )
-
-    def _usage_model(self, ai_kwargs: dict) -> str:
-        model_override = ai_kwargs.get("model_override")
-        if isinstance(model_override, str) and model_override.strip():
-            return model_override
-        settings = getattr(self.ai_service, "settings", None)
-        model = getattr(settings, "grok_model", None)
-        return model if isinstance(model, str) and model.strip() else "unknown"
-
-    def _elapsed_ms(self, started_at: float) -> int:
-        return max(0, round((time.perf_counter() - started_at) * 1000))
+            user_requested_deep_thinking=user_requested_deep_thinking,
+            include_turn_trace=include_turn_trace,
+        ):
+            yield event
