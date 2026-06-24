@@ -2,112 +2,82 @@
 
 ## Goal
 
-Turn Goals from a mostly read-only accountability overview into a complete user-facing system for plans, milestones, commitments, rules, progress, and Rex follow-through.
+Make Goals and Accountability functional and useful for MVP so Rex can actually
+help with real commitments, especially morning routine and waking up at 5 AM.
 
-## Current State
+## MVP Scope
 
-- Backend supports plans, plan milestones, commitments, personal rules, entity links, and accountability signals.
-- Mobile Goals tab calls `/accountability/overview`.
-- Mobile can display signals, active rules, commitments, plans, milestones, completed milestones, and duplicate warnings.
-- Direct create/edit/complete flows for goals are incomplete or not surfaced in the Goals UI.
+Must have:
+
+- Create simple goals and commitments.
+- View active goals and commitments in the Goals tab.
+- Mark commitments as complete or archive them.
+- Rex can create, track, and reference commitments with real backend confirmation.
+- Morning routine accountability: wake up at 5 AM, daily check-ins, missed/completed.
+- Rex and Goals tab share the exact same backend truth.
+
+Deferred after MVP:
+
+- Milestone trees, drag and drop, complex planning.
+- Advanced analytics.
+- Push notifications/reminders.
+- Full accountability workflows.
 
 ## Work Plan
 
-### 1. Define Goals Product Model
+### Step 1: Quick Audit
 
-Use a clear hierarchy:
+- Check current backend endpoints and mobile screens.
+- Identify what already works vs what is read-only.
+- Completed:
+  - Backend already has `/plans` and `/commitments` create/update/archive routes.
+  - Rex `GoalCommandService` already writes through the same backend services.
+  - Mobile Goals tab was read-only through `/accountability/overview`.
 
-- Plan: the larger outcome.
-- Milestone: a checkpoint inside a plan.
-- Commitment: an action or promise.
-- Rule: an ongoing personal standard.
-- Accountability signal: Rex-generated warning or insight.
+### Step 2: Make Mobile Goals Tab Functional
 
-### 2. Goals UI Actions
+- Add goal and commitment creation with simple dialogs or bottom sheets.
+- Add complete and archive actions.
+- Refresh after backend-confirmed changes.
+- In progress:
+  - Mobile API methods added for plan/commitment create, complete, and archive.
+  - Goals tab now has simple Add commitment / Add goal actions.
+  - Commitments can be marked complete or archived.
+  - Commitments can be marked missed.
+  - Goals can be archived.
 
-Add user-facing actions:
+### Step 3: Connect Rex To The Same Data
 
-- Create plan.
-- Edit plan.
-- Archive plan.
-- Create milestone.
-- Mark milestone complete.
-- Create commitment.
-- Mark commitment complete.
-- Archive commitment.
-- Create/edit/archive rule.
-- Ask Rex about a signal.
+- Rex-created commitments must appear in the Goals tab.
+- UI-created commitments must be visible to Rex.
+- Rex must always require backend confirmation before saying "done".
+- In progress:
+  - UI-created goals/commitments use the same Rex API routes as backend records
+    consumed by `/accountability/overview`.
+  - Rex morning accountability command now recognizes "Hold me accountable to
+    wake up at 5 AM" as a habit commitment.
 
-### 3. Backend Route Usage
+### Step 4: Morning Routine Focus
 
-Wire mobile clients for routes already present:
+- Support commitments like "Wake up at 5 AM".
+- Allow marking as completed or missed.
+- Rex should naturally reference active commitments in conversation.
+- Do not add push notifications/reminders for MVP.
+- In progress:
+  - Morning routine commitments are classified as habit commitments.
+  - Completion and missed status are supported in UI.
+  - Missed tracking remains backend signal/read-model behavior for MVP; no push
+    reminders are added.
 
-- `POST /plans`
-- `PATCH /plans/{plan_id}`
-- `DELETE /plans/{plan_id}`
-- `GET /plans/{plan_id}/milestones`
-- `POST /plans/{plan_id}/milestones`
-- `PATCH /plans/milestones/{milestone_id}`
-- `DELETE /plans/milestones/{milestone_id}`
-- `POST /commitments`
-- `PATCH /commitments/{commitment_id}`
-- `DELETE /commitments/{commitment_id}`
-- `POST /rules`
-- `PATCH /rules/{rule_id}`
-- `DELETE /rules/{rule_id}`
+### Step 5: Tests And Verification
 
-Keep backend confirmation before success UI.
-
-### 4. Rex Goal Commands
-
-- Ensure Rex-created goals and UI-created goals share the same backend records.
-- Avoid separate goal systems.
-- Rex should confirm only after backend writes.
-- Rex should ask clarification when a goal or commitment is ambiguous.
-
-### 5. Accountability Signals
-
-- Keep `/accountability/overview` for the default Goals tab.
-- Add drill-down routes only if the UI needs them:
-  - `/accountability/signals`
-  - `/accountability/rule-risks`
-  - `/accountability/plan-risks`
-  - `/accountability/patterns`
-- Add dismiss/resolve only if backend supports durable status changes.
-
-### 6. Duplicate And Drift Handling
-
-- Show duplicate warnings clearly.
-- Let user merge, ignore, or archive duplicates only after backend supports it.
-- Avoid automatic merge without confirmation.
+- Backend and mobile tests.
+- Rex chat tests for goal creation and accountability.
+- Manual smoke test with morning routine.
 
 ## Acceptance Criteria
 
-- User can create, edit, complete, and archive core goal records.
-- Rex and Goals tab show the same records.
-- Goals tab is useful even with zero records.
-- Accountability signals have clear source labels.
-- Duplicate warnings do not block normal goal use.
-
-## Suggested Tests
-
-- Backend:
-  - plan service tests
-  - goal command service tests
-  - accountability service tests
-  - route tests for plans, commitments, and rules
-- Flutter:
-  - accountability controller tests
-  - Goals page widget tests
-  - create/edit/complete flow tests
-
-## Manual Smoke
-
-1. Create a plan in UI.
-2. Add milestone.
-3. Add commitment.
-4. Ask Rex about the plan.
-5. Complete the milestone.
-6. Confirm Goals overview updates.
-7. Ask Rex what commitments are still open.
-8. Archive the plan and confirm it no longer appears active.
+- User can create a commitment in the Goals tab and Rex knows about it.
+- Rex can create a commitment that appears in the Goals tab.
+- Morning 5 AM commitment works.
+- No fake success messages without backend confirmation.

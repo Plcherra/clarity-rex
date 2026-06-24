@@ -116,9 +116,17 @@ class _RuleSection extends StatelessWidget {
 }
 
 class _CommitmentSection extends StatelessWidget {
-  const _CommitmentSection({required this.commitments});
+  const _CommitmentSection({
+    required this.commitments,
+    required this.onComplete,
+    required this.onMissed,
+    required this.onArchive,
+  });
 
   final List<Commitment> commitments;
+  final ValueChanged<Commitment> onComplete;
+  final ValueChanged<Commitment> onMissed;
+  final ValueChanged<Commitment> onArchive;
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +134,14 @@ class _CommitmentSection extends StatelessWidget {
       title: 'Commitments',
       emptyText: 'No open commitments right now.',
       children: commitments
-          .map((commitment) => _CommitmentTile(commitment: commitment))
+          .map(
+            (commitment) => _CommitmentTile(
+              commitment: commitment,
+              onComplete: () => onComplete(commitment),
+              onMissed: () => onMissed(commitment),
+              onArchive: () => onArchive(commitment),
+            ),
+          )
           .toList(),
     );
   }
@@ -138,18 +153,25 @@ class _PlanSection extends StatelessWidget {
     required this.plans,
     required this.milestones,
     required this.completedMilestones,
+    required this.onArchivePlan,
   });
 
   final List<PlanHierarchyItem> planHierarchy;
   final List<PlanRecord> plans;
   final List<PlanMilestone> milestones;
   final List<PlanMilestone> completedMilestones;
+  final ValueChanged<PlanRecord> onArchivePlan;
 
   @override
   Widget build(BuildContext context) {
     final planTiles = planHierarchy.isNotEmpty
         ? planHierarchy
-              .map((item) => _PlanTile(item: item))
+              .map(
+                (item) => _PlanTile(
+                  item: item,
+                  onArchive: () => onArchivePlan(item.plan),
+                ),
+              )
               .toList(growable: false)
         : plans
               .map(
@@ -165,6 +187,7 @@ class _PlanSection extends StatelessWidget {
                     openCommitments: const [],
                     counts: const {},
                   ),
+                  onArchive: () => onArchivePlan(plan),
                 ),
               )
               .toList(growable: false);

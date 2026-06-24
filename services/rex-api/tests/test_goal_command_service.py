@@ -75,6 +75,32 @@ async def test_set_reminder_command_creates_commitment():
 
 
 @pytest.mark.asyncio
+async def test_hold_me_accountable_creates_morning_routine_habit():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    message = "Hold me accountable to wake up at 5 AM"
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert result["response"] == (
+        "Got it, I saved that commitment: Wake up at 5 AM."
+    )
+    commitment = memory_service.created_commitments[0]
+    assert commitment["commitment_type"] == "habit"
+    assert commitment["title"] == "Wake up at 5 AM"
+    assert commitment["commitment_text"] == "wake up at 5 AM"
+    assert commitment["priority"] == 5
+
+
+@pytest.mark.asyncio
 async def test_need_to_with_due_date_creates_commitment():
     memory_service = FakeMemoryService()
     conversation_id = await memory_service.create_conversation()

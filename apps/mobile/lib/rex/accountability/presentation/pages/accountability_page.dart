@@ -34,6 +34,137 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     return ref.read(accountabilityProvider.notifier).loadOverview();
   }
 
+  Future<void> _createPlan() async {
+    final result = await showDialog<_GoalFormResult>(
+      context: context,
+      builder: (context) => const _GoalFormDialog(
+        title: 'Add goal',
+        primaryLabel: 'Goal title',
+        detailLabel: 'Why this matters',
+        primaryHint: 'Build a reliable morning routine',
+        detailHint: 'Wake up at 5 AM and start the day cleanly',
+      ),
+    );
+    if (result == null || !mounted) return;
+    final saved = await ref
+        .read(accountabilityProvider.notifier)
+        .createPlan(title: result.primary, description: result.detail);
+    if (!mounted) return;
+    _showMutationResult(saved ? 'Goal saved.' : null);
+  }
+
+  Future<void> _createCommitment() async {
+    final result = await showDialog<_GoalFormResult>(
+      context: context,
+      builder: (context) => const _GoalFormDialog(
+        title: 'Add commitment',
+        primaryLabel: 'Commitment title',
+        detailLabel: 'Commitment',
+        primaryHint: 'Wake up at 5 AM',
+        detailHint: 'Wake up at 5 AM and start my morning routine',
+      ),
+    );
+    if (result == null || !mounted) return;
+    final commitmentType = _commitmentTypeFor(result);
+    final saved = await ref
+        .read(accountabilityProvider.notifier)
+        .createCommitment(
+          title: result.primary,
+          commitmentText: result.detail.isEmpty
+              ? result.primary
+              : result.detail,
+          commitmentType: commitmentType,
+        );
+    if (!mounted) return;
+    _showMutationResult(saved ? 'Commitment saved.' : null);
+  }
+
+  Future<void> _completeCommitment(Commitment commitment) async {
+    final saved = await ref
+        .read(accountabilityProvider.notifier)
+        .completeCommitment(commitment.id);
+    if (!mounted) return;
+    _showMutationResult(saved ? 'Commitment completed.' : null);
+  }
+
+  Future<void> _missCommitment(Commitment commitment) async {
+    final confirmed = await _confirmArchive(
+      title: 'Mark missed?',
+      body:
+          'Mark "${commitment.title}" as missed? It will leave your active Goals list.',
+      confirmLabel: 'Mark missed',
+    );
+    if (confirmed != true || !mounted) return;
+    final saved = await ref
+        .read(accountabilityProvider.notifier)
+        .missCommitment(commitment.id);
+    if (!mounted) return;
+    _showMutationResult(saved ? 'Commitment marked missed.' : null);
+  }
+
+  Future<void> _archiveCommitment(Commitment commitment) async {
+    final confirmed = await _confirmArchive(
+      title: 'Archive commitment?',
+      body:
+          'Archive "${commitment.title}"? It will leave your active Goals list.',
+      confirmLabel: 'Archive',
+    );
+    if (confirmed != true || !mounted) return;
+    final saved = await ref
+        .read(accountabilityProvider.notifier)
+        .archiveCommitment(commitment.id);
+    if (!mounted) return;
+    _showMutationResult(saved ? 'Commitment archived.' : null);
+  }
+
+  Future<void> _archivePlan(PlanRecord plan) async {
+    final confirmed = await _confirmArchive(
+      title: 'Archive goal?',
+      body: 'Archive "${plan.title}"? It will leave your active Goals list.',
+      confirmLabel: 'Archive',
+    );
+    if (confirmed != true || !mounted) return;
+    final saved = await ref
+        .read(accountabilityProvider.notifier)
+        .archivePlan(plan.id);
+    if (!mounted) return;
+    _showMutationResult(saved ? 'Goal archived.' : null);
+  }
+
+  Future<bool?> _confirmArchive({
+    required String title,
+    required String body,
+    required String confirmLabel,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(confirmLabel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMutationResult(String? successMessage) {
+    final message =
+        successMessage ??
+        ref.read(accountabilityProvider).errorMessage ??
+        'Goals update failed.';
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(accountabilityProvider);
@@ -70,6 +201,12 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                 delegate: SliverChildListDelegate([
                   if (state.errorMessage != null)
                     _ErrorBanner(message: state.errorMessage!),
+                  _GoalActionBar(
+                    isBusy: state.isLoading,
+                    onAddGoal: _createPlan,
+                    onAddCommitment: _createCommitment,
+                  ),
+                  const SizedBox(height: 20),
                   if (state.isLoading && overview == null)
                     const _InitialLoading()
                   else if (overview == null || overview.isEmpty)
@@ -89,6 +226,9 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                                 commitment.milestoneId == null,
                           )
                           .toList(growable: false),
+                      onComplete: _completeCommitment,
+                      onMissed: _missCommitment,
+                      onArchive: _archiveCommitment,
                     ),
                     const SizedBox(height: 20),
                     _PlanSection(
@@ -96,6 +236,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                       plans: overview.activePlans,
                       milestones: overview.openMilestones,
                       completedMilestones: overview.completedMilestones,
+                      onArchivePlan: _archivePlan,
                     ),
                     if (overview.duplicateWarnings.isNotEmpty) ...[
                       const SizedBox(height: 20),
@@ -110,6 +251,103 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+String _commitmentTypeFor(_GoalFormResult result) {
+  final text = '${result.primary} ${result.detail}'.toLowerCase();
+  if (text.contains('wake') ||
+      text.contains('5 am') ||
+      text.contains('5:00') ||
+      text.contains('morning routine')) {
+    return 'habit';
+  }
+  return 'task';
+}
+
+class _GoalFormResult {
+  const _GoalFormResult({required this.primary, required this.detail});
+
+  final String primary;
+  final String detail;
+}
+
+class _GoalFormDialog extends StatefulWidget {
+  const _GoalFormDialog({
+    required this.title,
+    required this.primaryLabel,
+    required this.detailLabel,
+    required this.primaryHint,
+    required this.detailHint,
+  });
+
+  final String title;
+  final String primaryLabel;
+  final String detailLabel;
+  final String primaryHint;
+  final String detailHint;
+
+  @override
+  State<_GoalFormDialog> createState() => _GoalFormDialogState();
+}
+
+class _GoalFormDialogState extends State<_GoalFormDialog> {
+  final _primaryController = TextEditingController();
+  final _detailController = TextEditingController();
+
+  @override
+  void dispose() {
+    _primaryController.dispose();
+    _detailController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final primary = _primaryController.text.trim();
+    if (primary.isEmpty) {
+      return;
+    }
+    Navigator.of(context).pop(
+      _GoalFormResult(primary: primary, detail: _detailController.text.trim()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _primaryController,
+            autofocus: true,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: widget.primaryLabel,
+              hintText: widget.primaryHint,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _detailController,
+            minLines: 2,
+            maxLines: 4,
+            decoration: InputDecoration(
+              labelText: widget.detailLabel,
+              hintText: widget.detailHint,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Save')),
+      ],
     );
   }
 }

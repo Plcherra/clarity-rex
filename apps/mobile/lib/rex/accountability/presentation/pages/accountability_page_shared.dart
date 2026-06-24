@@ -1,5 +1,46 @@
 part of 'accountability_page.dart';
 
+class _GoalActionBar extends StatelessWidget {
+  const _GoalActionBar({
+    required this.isBusy,
+    required this.onAddGoal,
+    required this.onAddCommitment,
+  });
+
+  final bool isBusy;
+  final VoidCallback onAddGoal;
+  final VoidCallback onAddCommitment;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.clarityColors;
+    return RexSurface(
+      color: colors.surface.withValues(alpha: 0.66),
+      radius: RexUiTokens.radiusLarge,
+      padding: const EdgeInsets.all(RexUiTokens.space12),
+      child: Row(
+        children: [
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: isBusy ? null : onAddCommitment,
+              icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+              label: const Text('Add commitment'),
+            ),
+          ),
+          const SizedBox(width: RexUiTokens.space8),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: isBusy ? null : onAddGoal,
+              icon: const Icon(Icons.flag_outlined, size: 18),
+              label: const Text('Add goal'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Section extends StatelessWidget {
   const _Section({
     required this.title,

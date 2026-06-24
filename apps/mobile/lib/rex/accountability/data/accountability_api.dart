@@ -18,12 +18,12 @@ class AccountabilityApi {
     RexAuthHeaders? authHeaders,
     RexApiClient? apiClient,
   }) : _apiClient =
-          apiClient ??
-          RexApiClient(
-            httpClient: client,
-            baseUrl: baseUrl,
-            authHeaders: authHeaders,
-          );
+           apiClient ??
+           RexApiClient(
+             httpClient: client,
+             baseUrl: baseUrl,
+             authHeaders: authHeaders,
+           );
 
   final RexApiClient _apiClient;
 
@@ -41,6 +41,102 @@ class AccountabilityApi {
     }
 
     return AccountabilityOverview.fromJson(data);
+  }
+
+  Future<PlanRecord> createPlan({
+    required String title,
+    String? description,
+  }) async {
+    final response = await _apiClient.postJson('/plans', {
+      'plan_type': 'personal',
+      'title': title,
+      'description': description,
+      'desired_outcome': description?.trim().isNotEmpty == true
+          ? description
+          : title,
+      'priority': 4,
+      'status': 'active',
+      'active': true,
+      'metadata': {'source': 'goals_tab'},
+    });
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const AccountabilityApiException(
+        'Backend returned an invalid plan response.',
+      );
+    }
+    return PlanRecord.fromJson(data);
+  }
+
+  Future<void> archivePlan(String planId) async {
+    final response = await _apiClient.delete('/plans/$planId');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AccountabilityApiException(_errorMessage(response.body));
+    }
+  }
+
+  Future<Commitment> createCommitment({
+    required String title,
+    required String commitmentText,
+    String commitmentType = 'task',
+  }) async {
+    final response = await _apiClient.postJson('/commitments', {
+      'commitment_type': commitmentType,
+      'title': title,
+      'commitment_text': commitmentText,
+      'priority': commitmentType == 'habit' ? 5 : 4,
+      'status': 'open',
+      'active': true,
+      'metadata': {
+        'source': 'goals_tab',
+        if (_isMorningRoutine(commitmentText)) 'routine': 'morning',
+      },
+    });
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const AccountabilityApiException(
+        'Backend returned an invalid commitment response.',
+      );
+    }
+    return Commitment.fromJson(data);
+  }
+
+  Future<Commitment> completeCommitment(String commitmentId) async {
+    final response = await _apiClient.patchJson('/commitments/$commitmentId', {
+      'status': 'completed',
+      'active': false,
+      'completed_at': DateTime.now().toUtc().toIso8601String(),
+      'last_checked_at': DateTime.now().toUtc().toIso8601String(),
+    });
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const AccountabilityApiException(
+        'Backend returned an invalid commitment response.',
+      );
+    }
+    return Commitment.fromJson(data);
+  }
+
+  Future<Commitment> missCommitment(String commitmentId) async {
+    final response = await _apiClient.patchJson('/commitments/$commitmentId', {
+      'status': 'missed',
+      'active': false,
+      'last_checked_at': DateTime.now().toUtc().toIso8601String(),
+    });
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const AccountabilityApiException(
+        'Backend returned an invalid commitment response.',
+      );
+    }
+    return Commitment.fromJson(data);
+  }
+
+  Future<void> archiveCommitment(String commitmentId) async {
+    final response = await _apiClient.delete('/commitments/$commitmentId');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AccountabilityApiException(_errorMessage(response.body));
+    }
   }
 
   dynamic _decodeResponse(http.Response response) {
@@ -75,6 +171,14 @@ class AccountabilityApi {
 
     return 'Clarity API returned an accountability error.';
   }
+}
+
+bool _isMorningRoutine(String text) {
+  final normalized = text.toLowerCase();
+  return normalized.contains('wake') ||
+      normalized.contains('5 am') ||
+      normalized.contains('5:00') ||
+      normalized.contains('morning routine');
 }
 
 class AccountabilityApiException implements Exception {

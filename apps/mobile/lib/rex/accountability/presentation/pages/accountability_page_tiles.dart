@@ -49,15 +49,28 @@ class _RuleTile extends StatelessWidget {
 }
 
 class _CommitmentTile extends StatelessWidget {
-  const _CommitmentTile({required this.commitment});
+  const _CommitmentTile({
+    required this.commitment,
+    required this.onComplete,
+    required this.onMissed,
+    required this.onArchive,
+  });
 
   final Commitment commitment;
+  final VoidCallback onComplete;
+  final VoidCallback onMissed;
+  final VoidCallback onArchive;
 
   @override
   Widget build(BuildContext context) {
     return _GoalTileShell(
       icon: Icons.check_circle_outline_rounded,
       title: Text(commitment.title),
+      trailing: _CommitmentActions(
+        onComplete: onComplete,
+        onMissed: onMissed,
+        onArchive: onArchive,
+      ),
       subtitle: _RecordSubtitle(
         text: commitment.commitmentText,
         chips: [
@@ -71,9 +84,10 @@ class _CommitmentTile extends StatelessWidget {
 }
 
 class _PlanTile extends StatelessWidget {
-  const _PlanTile({required this.item});
+  const _PlanTile({required this.item, required this.onArchive});
 
   final PlanHierarchyItem item;
+  final VoidCallback onArchive;
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +109,7 @@ class _PlanTile extends StatelessWidget {
         _GoalTileShell(
           icon: Icons.flag_rounded,
           title: Text(plan.title),
-          trailing: const _PlanActions(),
+          trailing: _PlanActions(onArchive: onArchive),
           subtitle: _RecordSubtitle(
             text: details,
             chips: [
@@ -149,7 +163,9 @@ class _PlanTile extends StatelessWidget {
 }
 
 class _PlanActions extends StatelessWidget {
-  const _PlanActions();
+  const _PlanActions({required this.onArchive});
+
+  final VoidCallback onArchive;
 
   @override
   Widget build(BuildContext context) {
@@ -158,15 +174,48 @@ class _PlanActions extends StatelessWidget {
       color: RexUiTokens.surfaceRaised,
       iconColor: RexUiTokens.textMuted,
       itemBuilder: (context) => const [
-        PopupMenuItem(value: 'edit', child: Text('Edit')),
         PopupMenuItem(value: 'archive', child: Text('Archive')),
       ],
-      onSelected: (_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Plan edits go through confirmed memory changes.'),
-          ),
-        );
+      onSelected: (value) {
+        if (value == 'archive') {
+          onArchive();
+        }
+      },
+    );
+  }
+}
+
+class _CommitmentActions extends StatelessWidget {
+  const _CommitmentActions({
+    required this.onComplete,
+    required this.onMissed,
+    required this.onArchive,
+  });
+
+  final VoidCallback onComplete;
+  final VoidCallback onMissed;
+  final VoidCallback onArchive;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      tooltip: 'Commitment actions',
+      color: RexUiTokens.surfaceRaised,
+      iconColor: RexUiTokens.textMuted,
+      itemBuilder: (context) => const [
+        PopupMenuItem(value: 'complete', child: Text('Mark complete')),
+        PopupMenuItem(value: 'missed', child: Text('Mark missed')),
+        PopupMenuItem(value: 'archive', child: Text('Archive')),
+      ],
+      onSelected: (value) {
+        switch (value) {
+          case 'complete':
+            onComplete();
+          case 'missed':
+            onMissed();
+          case 'archive':
+            onArchive();
+        }
       },
     );
   }

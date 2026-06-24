@@ -51,4 +51,70 @@ class AccountabilityController extends Notifier<AccountabilityState> {
       state = state.copyWith(isLoading: false, errorMessage: error.toString());
     }
   }
+
+  Future<bool> createPlan({required String title, String? description}) {
+    return _runMutation(
+      () => ref
+          .read(accountabilityApiProvider)
+          .createPlan(title: title, description: description),
+    );
+  }
+
+  Future<bool> archivePlan(String planId) {
+    return _runMutation(
+      () => ref.read(accountabilityApiProvider).archivePlan(planId),
+    );
+  }
+
+  Future<bool> createCommitment({
+    required String title,
+    required String commitmentText,
+    String commitmentType = 'task',
+  }) {
+    return _runMutation(
+      () => ref
+          .read(accountabilityApiProvider)
+          .createCommitment(
+            title: title,
+            commitmentText: commitmentText,
+            commitmentType: commitmentType,
+          ),
+    );
+  }
+
+  Future<bool> completeCommitment(String commitmentId) {
+    return _runMutation(
+      () =>
+          ref.read(accountabilityApiProvider).completeCommitment(commitmentId),
+    );
+  }
+
+  Future<bool> missCommitment(String commitmentId) {
+    return _runMutation(
+      () => ref.read(accountabilityApiProvider).missCommitment(commitmentId),
+    );
+  }
+
+  Future<bool> archiveCommitment(String commitmentId) {
+    return _runMutation(
+      () => ref.read(accountabilityApiProvider).archiveCommitment(commitmentId),
+    );
+  }
+
+  Future<bool> _runMutation(Future<Object?> Function() action) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await action();
+      final overview = await ref.read(accountabilityApiProvider).getOverview();
+      state = state.copyWith(
+        overview: overview,
+        isLoading: false,
+        clearError: true,
+      );
+      return true;
+    } on Object catch (error) {
+      state = state.copyWith(isLoading: false, errorMessage: error.toString());
+      return false;
+    }
+  }
 }

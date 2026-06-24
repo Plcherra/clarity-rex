@@ -52,6 +52,10 @@ class GoalCommandService:
     )
     _commitment_patterns = (
         re.compile(
+            r"\bhold\s+me\s+accountable\s+to\s+(?P<commitment>.+)",
+            re.IGNORECASE,
+        ),
+        re.compile(
             r"\b(?:remind|remember)\s+me\s+to\s+(?P<commitment>.+)",
             re.IGNORECASE,
         ),
@@ -250,7 +254,7 @@ class GoalCommandService:
                     source_conversation_id=conversation_id,
                     source_message_id=str(user_message.get("id") or "") or None,
                     due_at=command.due_text,
-                    priority=4,
+                    priority=5 if command.record_type == "habit" else 4,
                     metadata={"source": "explicit_commitment_command"},
                 )
             )
@@ -427,6 +431,11 @@ class GoalCommandService:
 
     def _commitment_type(self, text: str) -> str:
         lowered = text.casefold()
+        if any(
+            term in lowered
+            for term in ("wake up", "5 am", "5:00", "morning routine")
+        ):
+            return "habit"
         if any(term in lowered for term in ("$", "send money", "pay", "money", "rent")):
             return "money"
         if any(term in lowered for term in ("work", "job", "email")):
