@@ -9,15 +9,14 @@ Finish the Clarity visual system after the main migration by tuning consistency,
 - Tune responsive spacing for common iPhone and Android widths.
 - Tune glow intensity, borders, shadows, card contrast, and text hierarchy.
 - Review all hardcoded colors across `apps/mobile/lib`.
-- Confirm the splash video behavior:
-  - Centered.
+- Confirm the static splash behavior:
+  - Full-screen `#050D1A` background.
+  - Centered logo image at the preferred size.
   - Not stretched or distorted.
-  - Autoplays.
-  - Shows no playback controls.
-  - Fades smoothly into the app.
-  - Falls back to `ClarityDiamondLoader` if the video is missing or fails.
-- Confirm the actual splash video asset exists at:
-  - `apps/mobile/assets/videos/splashscreen.mp4`
+  - Fades smoothly into the app after startup is ready.
+  - Falls back to `clarity_mark.png`, then `ClarityDiamondLoader`, if the splash logo asset is missing.
+- Confirm the splash logo asset exists at:
+  - `apps/mobile/assets/brand/splash_logo.png`
 - Run a visual sweep of all main flows.
 - Run broader Flutter tests.
 

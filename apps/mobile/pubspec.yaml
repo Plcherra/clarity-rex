@@ -51,7 +51,6 @@ dependencies:
   speech_to_text: ^7.3.0
   supabase_flutter: ^2.12.4
   qr_flutter: ^4.1.0
-  video_player: ^2.11.1
 
 dev_dependencies:
   flutter_test:
@@ -80,7 +79,7 @@ flutter:
 
   assets:
     - assets/brand/clarity_mark.png
-    - assets/videos/
+    - assets/brand/splash_logo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
