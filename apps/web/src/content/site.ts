@@ -85,6 +85,14 @@ export const publicRoutes = [
       'Fallback information if a Clarity public form could not be submitted.',
     footerRequired: false,
   },
+  {
+    path: '/auth/confirmed',
+    label: 'Email Confirmed',
+    title: 'Email Confirmed - Clarity',
+    description:
+      'Confirmation page shown after a user verifies their Clarity account email address.',
+    footerRequired: false,
+  },
 ] satisfies PublicRoute[];
 
 export const headerLinks = publicRoutes.filter((route) =>

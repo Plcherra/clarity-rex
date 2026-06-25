@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_service.dart';
+import 'auth_config.dart';
 
 final class MfaEnrollment {
   const MfaEnrollment({
@@ -82,6 +83,7 @@ class AuthService {
     return _supabaseService.auth.signUp(
       email: email.trim(),
       password: password,
+      emailRedirectTo: AuthConfig.emailRedirectUrl,
       data: {
         if (fullName != null && fullName.trim().isNotEmpty)
           'full_name': fullName.trim(),

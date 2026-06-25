@@ -17,6 +17,7 @@ Do not proceed to beta with any known P0 failure:
 - Delete confirmation succeeds in chat but the item remains visible in Knows
   active-only view.
 - Recall labels chat history as saved memory.
+- Sign-up confirmation email cannot be sent or confirmed.
 
 ## Run Metadata
 
@@ -49,6 +50,27 @@ Screenshot/log:
 Owner:
 Severity: P0 / P1 / P2
 ```
+
+## P0: Auth Sign-Up And Email Confirmation
+
+Goal: prove a brand-new user can enter Clarity before any finance or Rex smoke.
+
+Prerequisite: `./scripts/verify_supabase_auth_email.sh` passes and
+`docs/SUPABASE_AUTH_EMAIL_SETUP.md` is complete.
+
+- `[ ]` Use a fresh email not already in Supabase Auth users.
+- `[ ]` Create account in the app.
+- `[ ]` Receive confirmation email within 2 minutes.
+- `[ ]` Open the link and land on `https://goclarity.app/auth/confirmed`.
+- `[ ]` Sign in with the same email and password.
+- `[ ]` Complete onboarding profile name.
+- `[ ]` Sign out and sign back in.
+
+Pass criteria:
+
+- No misleading MFA or authenticator error on the email/password screen.
+- No `Error sending confirmation email` in Supabase auth logs.
+- Confirmed user can reach the main app shell.
 
 ## P0: Unified Voice In Chat
 

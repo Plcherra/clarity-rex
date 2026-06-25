@@ -88,6 +88,21 @@ Apply database migrations:
 supabase db push
 ```
 
+## Auth email (launch blocker)
+
+Sign-up confirmation email is sent by **Supabase Auth SMTP**, not the mobile app.
+Configure Resend SMTP in the Supabase dashboard before beta.
+
+Full runbook: `docs/SUPABASE_AUTH_EMAIL_SETUP.md`
+
+Quick verify after SMTP is configured:
+
+```sh
+export SUPABASE_URL=...
+export SUPABASE_ANON_KEY=...
+./scripts/verify_supabase_auth_email.sh
+```
+
 Deploy the OpenAI Edge Functions:
 
 ```sh

@@ -23,7 +23,7 @@ String friendlyAuthError(Object error) {
   }
   if (normalized.contains('error sending') &&
       normalized.contains('email')) {
-    return 'We could not send a confirmation email right now. Try again in a few minutes.';
+    return 'We could not send a confirmation email right now. Try again in a few minutes or contact support if this continues.';
   }
   if (normalized.contains('signups not allowed') ||
       normalized.contains('signup is disabled')) {

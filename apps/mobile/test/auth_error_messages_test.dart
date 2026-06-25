@@ -29,7 +29,7 @@ void main() {
       friendlyAuthError(
         const AuthException('Error sending confirmation email'),
       ),
-      'We could not send a confirmation email right now. Try again in a few minutes.',
+      'We could not send a confirmation email right now. Try again in a few minutes or contact support if this continues.',
     );
   });
 }

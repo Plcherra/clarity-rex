@@ -94,6 +94,12 @@ Apply migrations from `supabase/migrations/`. Do not apply `services/rex-api/sup
 
 CSV AI categorization uses `supabase/functions/categorize-transactions` with JWT verification enabled. The legacy `call-openai` function is deprecated.
 
+## Auth email (launch blocker)
+
+Supabase Auth must send sign-up confirmation mail through working SMTP.
+See `docs/SUPABASE_AUTH_EMAIL_SETUP.md` and run `./scripts/verify_supabase_auth_email.sh`
+before beta sign-off.
+
 ## Mobile Release Build
 
 From `apps/mobile`:
@@ -116,3 +122,5 @@ Use the production Rex API URL in `REX_BACKEND_URL`.
 | Auth returns 503 in production | Supabase URL/anon key missing |
 | Plaid routes fail | Plaid env or service role key missing |
 | Dev user id in logs on VPS | `APP_ENVIRONMENT` not set to `production` |
+| Sign-up shows email send error | Broken Supabase Auth SMTP; see `docs/SUPABASE_AUTH_EMAIL_SETUP.md` |
+| No confirmation email received | Fix Resend SMTP, verify domain, check spam |

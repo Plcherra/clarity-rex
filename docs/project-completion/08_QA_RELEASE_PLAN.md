@@ -150,9 +150,13 @@ Do not release if:
 - Main navigation has unreachable or broken surfaces.
 - Voice gets stuck in a loop or cannot recover from failure.
 - Light/dark themes have unreadable text or controls.
+- Supabase Auth cannot send sign-up confirmation email (`verify_supabase_auth_email.sh` fails).
 
 Static review (2026-06-25): no mobile secret exposure; voice loop cap and memory
 tests green. Manual blocker checks still required on device.
+
+Auth email (2026-06-26): REX project auth logs show Gmail SMTP `BadCredentials`.
+Permanent fix runbook: `docs/SUPABASE_AUTH_EMAIL_SETUP.md` (switch Auth SMTP to Resend).
 
 ## Release Artifacts
 
@@ -187,6 +191,8 @@ automated section updated.
 - [x] Full Flutter tests pass.
 - [x] Working tree clean (static pass date).
 - [ ] Manual smoke completed on target device.
+- [ ] `./scripts/verify_supabase_auth_email.sh` passes.
+- [ ] Sign-up confirmation email verified on a real inbox.
 - [ ] `/ready` checked in deployment environment.
 - [ ] Supabase migrations applied.
 - [ ] Edge Functions deployed.
