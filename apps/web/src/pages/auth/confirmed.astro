@@ -1,21 +1,84 @@
 ---
-import BaseLayout from '@layouts/BaseLayout.astro';
+import AuthLayout from '@layouts/AuthLayout.astro';
+import { product } from '@content/site';
+
+const steps = [
+  {
+    title: 'Open Clarity on your phone',
+    body: 'Use the app you installed during beta setup.',
+  },
+  {
+    title: 'Choose Sign in',
+    body: 'Use the same email and password you used to create your account.',
+  },
+  {
+    title: 'Finish setup inside the app',
+    body: 'Connect accounts, explore your dashboard, and talk with Rex when you are ready.',
+  },
+] as const;
 ---
 
-<BaseLayout
+<AuthLayout
   title="Email confirmed - Clarity"
   description="Your Clarity account email address is confirmed. Return to the app and sign in."
 >
-  <section class="page-shell">
+  <section class="auth-card" aria-labelledby="auth-confirmed-title">
+    <div class="auth-card__badge" aria-hidden="true">
+      <span class="auth-card__check">✓</span>
+    </div>
     <p class="eyebrow">Account verified</p>
-    <h1>Your email is confirmed.</h1>
-    <p>
-      You can return to the Clarity app on your phone and sign in with the email
-      and password you used to create your account.
+    <h1 id="auth-confirmed-title">You are all set.</h1>
+    <p class="auth-card__lede">
+      Your email is confirmed for Clarity. You can close this page and sign in from the app.
     </p>
-    <p>If the app is not open yet, install or reopen Clarity and choose Sign in.</p>
-    <div class="hero__actions">
-      <a class="button" href="/">Back to Clarity</a>
+
+    <div id="auth-confirmed-error" class="auth-alert auth-alert--error" hidden>
+      <strong>We could not confirm this link.</strong>
+      <p id="auth-confirmed-error-text">
+        The link may have expired or already been used. Request a new confirmation email from the app, or contact support.
+      </p>
+    </div>
+
+    <ol class="auth-steps">
+      {
+        steps.map((step) => (
+          <li>
+            <strong>{step.title}</strong>
+            <span>{step.body}</span>
+          </li>
+        ))
+      }
+    </ol>
+
+    <div class="auth-card__actions">
+      <a class="button button--large" href="/">Back to Clarity</a>
+      <a class="button button--secondary button--large" href={`mailto:${product.supportEmail}`}>
+        Contact support
+      </a>
     </div>
   </section>
-</BaseLayout>
+
+  <script is:inline>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var hash = window.location.hash.startsWith('#')
+        ? window.location.hash.slice(1)
+        : window.location.hash;
+      var hashParams = new URLSearchParams(hash);
+      var error = params.get('error') || hashParams.get('error');
+      var errorDescription =
+        params.get('error_description') || hashParams.get('error_description');
+
+      if (!error) return;
+
+      var panel = document.getElementById('auth-confirmed-error');
+      var text = document.getElementById('auth-confirmed-error-text');
+      if (!panel || !text) return;
+
+      panel.hidden = false;
+      if (errorDescription) {
+        text.textContent = decodeURIComponent(errorDescription.replace(/\+/g, ' '));
+      }
+    })();
+  </script>
+</AuthLayout>

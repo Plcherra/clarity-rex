@@ -1,3 +1,5 @@
+import { clarityBrandedEmailHtml } from "../_shared/clarity-email.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -108,15 +110,20 @@ Deno.serve(async (req) => {
       subject: copy.subject,
       text:
         `${copy.body}\n\nIf this was you, no action is needed.\n\nIf this was not you, change your password and contact support immediately.\n\nTime: ${sentAt}`,
-      html: `
-        <div style="font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1c1b19; line-height: 1.5;">
-          <p>${copy.preview}</p>
-          <p>${copy.body}</p>
-          <p>If this was you, no action is needed.</p>
-          <p><strong>If this was not you, change your password and contact support immediately.</strong></p>
-          <p style="color: #5f5a50;">Time: ${sentAt}</p>
-        </div>
-      `,
+      html: clarityBrandedEmailHtml({
+        eyebrow: "Account security",
+        title: event === "mfa_enabled" ? "MFA is on" : "MFA is off",
+        preview: copy.preview,
+        bodyHtml: `
+          <p style="margin:0 0 16px;color:#667085;font-size:16px;line-height:1.65;">${copy.body}</p>
+          <p style="margin:0 0 12px;color:#667085;font-size:16px;line-height:1.65;">If this was you, no action is needed.</p>
+          <p style="margin:0;color:#344054;font-size:16px;line-height:1.65;"><strong>If this was not you, change your password and contact support immediately.</strong></p>
+          <p style="margin:16px 0 0;color:#667085;font-size:13px;line-height:1.55;">Time: ${sentAt}</p>
+        `,
+        ctaLabel: "",
+        footerNote:
+          "This notice was sent because multi-factor authentication changed on your Clarity account.",
+      }),
     }),
   });
 

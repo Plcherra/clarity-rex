@@ -1,0 +1,42 @@
+---
+import { product } from '@content/site';
+import '../styles/global.css';
+
+type Props = {
+  title: string;
+  description: string;
+};
+
+const { title, description } = Astro.props;
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? product.siteUrl);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#081827" />
+    <meta name="color-scheme" content="light" />
+    <link rel="canonical" href={canonicalUrl.toString()} />
+    <link rel="icon" type="image/png" sizes="96x96" href="/clarity-mark-96.png" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+  </head>
+  <body class="auth-body">
+    <main class="auth-shell">
+      <a class="auth-brand" href="/" aria-label="Clarity home">
+        <img src="/clarity-mark-96.png" alt="" width="44" height="44" decoding="async" />
+        <span>{product.name}</span>
+      </a>
+      <slot />
+      <footer class="auth-footer">
+        <p>
+          Need help?
+          <a href={`mailto:${product.supportEmail}`}>{product.supportEmail}</a>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -87,7 +87,19 @@ supabase secrets set SECURITY_EMAIL_FROM="Clarity Security <security@goclarity.a
 supabase functions deploy send-mfa-security-email
 ```
 
-### 6. Deploy the email-confirmed landing page
+### 6. Branded auth email templates (Dashboard)
+
+Paste the HTML templates from `supabase/templates/` into **Authentication → Email Templates**:
+
+| Template | Subject | File |
+|----------|---------|------|
+| Confirm signup | `Confirm your Clarity account` | `supabase/templates/confirm-signup.html` |
+| Reset password | `Reset your Clarity password` | `supabase/templates/reset-password.html` |
+
+See `supabase/templates/README.md` for details. Logo URL:
+`https://goclarity.app/clarity-mark-96.png`
+
+### 7. Deploy the email-confirmed landing page
 
 The web app hosts the post-confirmation page users see after clicking the email link:
 
@@ -99,7 +111,7 @@ PUBLIC_SITE_URL=https://goclarity.app npm run build
 
 Page path: `https://goclarity.app/auth/confirmed`
 
-### 7. Verify before launch
+### 8. Verify before launch
 
 Run the verification script from repo root:
 
@@ -119,7 +131,7 @@ Then manually:
 4. Sign in in the app.
 5. Enable MFA → receive MFA security email.
 
-### 8. Clean up failed sign-up attempts
+### 9. Clean up failed sign-up attempts
 
 Dashboard → **Authentication → Users**
 
@@ -150,6 +162,8 @@ Do **not** launch until all are true:
 
 - Mobile redirect: `apps/mobile/lib/features/auth/application/auth_config.dart`
 - Sign-up call: `apps/mobile/lib/features/auth/application/auth_service.dart`
+- Email templates: `supabase/templates/confirm-signup.html`, `reset-password.html`
 - Landing page: `apps/web/src/pages/auth/confirmed.astro`
+- Auth layout: `apps/web/src/layouts/AuthLayout.astro`
 - MFA mail function: `supabase/functions/send-mfa-security-email/index.ts`
 - Launch smoke: `docs/CLARITY_BETA_SMOKE_RUNBOOK.md`
