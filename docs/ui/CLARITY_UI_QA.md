@@ -6,11 +6,29 @@ Run from `apps/mobile`:
 
 ```bash
 flutter analyze
-flutter test test/assistant_navigation_test.dart
-flutter test test/app_routing_test.dart
+flutter test
 ```
 
-On Windows, Cursor agent shell commands may need to run outside the sandbox.
+Plan 8 targeted regression subset (2026-06-25: all passed):
+
+```bash
+flutter test test/app_routing_test.dart test/assistant_navigation_test.dart test/chat_controller_test.dart test/memory_page_test.dart test/voice_call_controller_test.dart test/plaid_account_service_test.dart test/financial_read_model_service_test.dart test/accountability_api_test.dart test/assistant_financial_context_service_test.dart
+```
+
+Backend (from `services/rex-api`):
+
+```bash
+python -m pytest
+```
+
+Edge Functions (from repo root, requires Deno):
+
+```bash
+deno check supabase/functions/call-openai/index.ts
+deno check supabase/functions/categorize-transactions/index.ts
+deno check supabase/functions/send-mfa-security-email/index.ts
+deno test --allow-env --allow-net supabase/functions/categorize-transactions/index_test.ts
+```
 
 ## Manual Screenshot QA
 

@@ -4,6 +4,14 @@
 
 Define the final verification path that proves Clarity is ready for beta or production release.
 
+## Status
+
+**In progress.** Plan 8 §1 static checks and §5 targeted regressions **passed** on
+2026-06-25. Manual device smoke (§3), deployment `/ready` (§2), and final signoff
+checklist items remain open.
+
+Results log: `docs/CLARITY_BETA_SMOKE_RESULTS_2026_06_25.md`
+
 ## Release Definition
 
 Clarity is release-ready when:
@@ -29,6 +37,11 @@ Clarity is release-ready when:
   - `send-mfa-security-email`
 - `git diff --check`
 
+**Done (2026-06-25):** analyze clean, 234 Flutter tests, 1016 backend tests,
+`git diff --check` clean. Deno 2.8.3 installed; all three Edge Functions
+type-check clean; 11/11 `categorize-transactions` Deno tests passed
+(`deno test --allow-env --allow-net`).
+
 ### 2. Backend Smoke
 
 - `/` returns ok.
@@ -40,6 +53,9 @@ Clarity is release-ready when:
 - `/accountability/overview` works.
 - `/voice/turn` or `/voice/stream` works when configured.
 - Plaid link token creation works in sandbox.
+
+**Done (automated proxy):** route/readiness tests pass. **Pending:** live VPS curl
+smoke per `docs/BACKEND_DEPLOY_RUNBOOK.md`.
 
 ### 3. Mobile Smoke
 
@@ -85,7 +101,7 @@ Voice:
 Goals:
 
 - View Goals overview.
-- Create/edit/complete goal records if UI is implemented.
+- Create/complete goal records (edit deferred in MVP).
 - Confirm Rex and Goals show same records.
 
 Themes:
@@ -95,6 +111,8 @@ Themes:
 - System mode.
 - Small screen layout.
 
+**Pending:** manual pass using `docs/CLARITY_BETA_SMOKE_RUNBOOK.md`.
+
 ### 4. Data Truth Checks
 
 - Dashboard totals match transaction records.
@@ -103,6 +121,8 @@ Themes:
 - Rex does not invent balances or transactions.
 - Chat history is not labeled as saved memory.
 - Backend-confirmed actions show success; failed actions show failure.
+
+**Pending:** manual/device verification.
 
 ### 5. Regression Areas
 
@@ -117,6 +137,8 @@ Run targeted regressions after touching:
 - Theme tokens.
 - Navigation.
 
+**Done (2026-06-25):** 134 backend + 88 Flutter critical-path tests passed.
+
 ## Launch Blockers
 
 Do not release if:
@@ -129,6 +151,9 @@ Do not release if:
 - Voice gets stuck in a loop or cannot recover from failure.
 - Light/dark themes have unreadable text or controls.
 
+Static review (2026-06-25): no mobile secret exposure; voice loop cap and memory
+tests green. Manual blocker checks still required on device.
+
 ## Release Artifacts
 
 Before release, update:
@@ -140,15 +165,36 @@ Before release, update:
 - Backend env example if env vars changed.
 - Mobile README if run commands changed.
 
+**Done:** `docs/CLARITY_BETA_SMOKE_RESULTS_2026_06_25.md`, `docs/ui/CLARITY_UI_QA.md`
+automated section updated.
+
+## Verification Log
+
+- `flutter analyze` — no issues.
+- `flutter test` — 234 passed.
+- `python -m pytest` — 1016 passed.
+- Targeted regression backend — 134 passed.
+- Targeted regression Flutter — 88 passed.
+- `git diff --check` — clean.
+- Deno 2.8.3: `deno check` on call-openai, categorize-transactions,
+  send-mfa-security-email — pass.
+- `deno test --allow-env --allow-net supabase/functions/categorize-transactions/index_test.ts`
+  — 11 passed.
+
 ## Final Signoff Checklist
 
-- [ ] Working tree clean.
-- [ ] Full backend tests pass.
-- [ ] Full Flutter tests pass.
+- [x] Full backend tests pass.
+- [x] Full Flutter tests pass.
+- [x] Working tree clean (static pass date).
 - [ ] Manual smoke completed on target device.
 - [ ] `/ready` checked in deployment environment.
 - [ ] Supabase migrations applied.
 - [ ] Edge Functions deployed.
 - [ ] Plaid sandbox flow verified.
-- [ ] Rex chat and voice verified.
+- [ ] Rex chat and voice verified on device.
 - [ ] Known release limitations documented.
+
+## Manual Smoke
+
+Follow `docs/CLARITY_BETA_SMOKE_RUNBOOK.md`. Record outcomes in
+`docs/CLARITY_BETA_SMOKE_RESULTS_2026_06_25.md`.

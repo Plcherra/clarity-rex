@@ -117,6 +117,8 @@ Optional Edge Function type check, after installing Deno:
 ```sh
 deno check supabase/functions/call-openai/index.ts
 deno check supabase/functions/categorize-transactions/index.ts
+deno check supabase/functions/send-mfa-security-email/index.ts
+deno test --allow-env --allow-net supabase/functions/categorize-transactions/index_test.ts
 ```
 
 ## Product Direction
