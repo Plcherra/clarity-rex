@@ -62,6 +62,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _isUsingNativeVoice = false;
   var _warnedLegacyNativeVoiceFlag = false;
   var _isAwaitingFollowUpSpeech = false;
+  var _emptyVoiceTurnRecoveryCount = 0;
   var _streamingUtteranceEndSent = false;
   var _streamingTurnSequence = 0;
   Timer? _thinkingTimeoutTimer;
@@ -174,6 +175,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     _isStartingCall = true;
     _isAwaitingFollowUpSpeech = false;
+    _emptyVoiceTurnRecoveryCount = 0;
     _warnIfLegacyNativeVoiceFlagRequested();
     final generation = ++_callGeneration;
     _clearVisibleTranscript();
@@ -240,6 +242,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     _isAwaitingFollowUpSpeech = false;
+    _emptyVoiceTurnRecoveryCount = 0;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();
     state = state.copyWith(
@@ -345,6 +348,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   void fail(String message) {
     _callGeneration++;
     _isAwaitingFollowUpSpeech = false;
+    _emptyVoiceTurnRecoveryCount = 0;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
@@ -379,6 +383,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     _callGeneration++;
     _isAwaitingFollowUpSpeech = false;
+    _emptyVoiceTurnRecoveryCount = 0;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();

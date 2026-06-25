@@ -2,6 +2,8 @@
 
 part of 'voice_call_controller.dart';
 
+const _maxEmptyVoiceTurnRecoveries = 3;
+
 extension VoiceCallControllerTimers on VoiceCallController {
   bool _isCurrentCall(int generation) => generation == _callGeneration;
 
@@ -78,6 +80,13 @@ extension VoiceCallControllerTimers on VoiceCallController {
 
   void _recoverFromEmptyVoiceTurn(String message) {
     if (!state.isCallActive) {
+      return;
+    }
+    _emptyVoiceTurnRecoveryCount++;
+    if (_emptyVoiceTurnRecoveryCount > _maxEmptyVoiceTurnRecoveries) {
+      fail(
+        'I still did not hear anything. Tap Try again when you are ready to use voice.',
+      );
       return;
     }
     if (_isAwaitingFollowUpSpeech) {

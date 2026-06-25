@@ -13,10 +13,10 @@ import 'package:clarity/rex/chat/presentation/widgets/attachment_source_sheet.da
 import 'package:clarity/rex/chat/presentation/widgets/chat_input_bar.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_transcript.dart';
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
-import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
+import 'package:clarity/theme/clarity_colors.dart';
 
 /// Main chat surface: empty thread UI + composer.
 class ChatPage extends ConsumerStatefulWidget {
@@ -132,7 +132,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
   Future<void> _pickAttachment() async {
     final source = await showModalBottomSheet<ChatAttachmentSource>(
       context: context,
-      backgroundColor: RexUiTokens.surface,
+      backgroundColor: context.clarityColors.surfaceElevated,
       showDragHandle: false,
       builder: (_) => const AttachmentSourceSheet(),
     );

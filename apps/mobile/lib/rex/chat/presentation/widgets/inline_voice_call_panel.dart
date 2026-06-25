@@ -70,7 +70,7 @@ class InlineVoiceCallPanel extends StatelessWidget {
                       if (state.isMuted && !isFailed) ...[
                         DecoratedBox(
                           decoration: BoxDecoration(
-                            color: RexUiTokens.surfaceRaised.withValues(
+                            color: colors.surfaceSoft.withValues(
                               alpha: 0.72,
                             ),
                             borderRadius: BorderRadius.circular(
@@ -228,7 +228,17 @@ class InlineVoiceCallPanel extends StatelessWidget {
 
   String _voiceFailureMessage(String? error) {
     final message = error?.toLowerCase() ?? '';
+    if (message.contains('auth') ||
+        message.contains('token') ||
+        message.contains('session') ||
+        message.contains('expired') ||
+        message.contains('unauthorized') ||
+        message.contains('401')) {
+      return 'Your Clarity session needs to reconnect before voice can continue. Sign in again if this keeps happening.';
+    }
     if (message.contains('permission') ||
+        message.contains('capture') ||
+        message.contains('microphone') ||
         message.contains('microphone access') ||
         message.contains('settings')) {
       return 'Microphone access is needed for voice. Check Settings, then try again.';
@@ -236,6 +246,7 @@ class InlineVoiceCallPanel extends StatelessWidget {
     if (message.contains('empty_audio') ||
         message.contains('no audio') ||
         message.contains('did not catch') ||
+        message.contains('did not hear') ||
         message.contains('blank transcript')) {
       return "I didn't catch that. Tap Try again when you are ready.";
     }
@@ -247,6 +258,13 @@ class InlineVoiceCallPanel extends StatelessWidget {
     }
     if (message.contains('transcript')) {
       return "I couldn't read that transcript. Tap Try again and say it once more.";
+    }
+    if (message.contains('tts') ||
+        message.contains('synthesize') ||
+        message.contains('playback') ||
+        message.contains('play rex voice') ||
+        message.contains('play audio')) {
+      return "Rex answered, but I couldn't play the audio. Tap Try again to hear the reply.";
     }
     return 'Voice paused. Tap Try again when you are ready to continue.';
   }

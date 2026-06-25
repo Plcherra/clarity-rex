@@ -169,6 +169,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(accountabilityProvider);
     final overview = state.overview;
+    final colors = context.clarityColors;
 
     return RexScaffold(
       appBar: widget.showAppBar
@@ -184,8 +185,8 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
             )
           : null,
       body: RefreshIndicator(
-        color: RexUiTokens.accent,
-        backgroundColor: RexUiTokens.surfaceRaised,
+        color: colors.accent,
+        backgroundColor: colors.surfaceSoft,
         onRefresh: _refresh,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

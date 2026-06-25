@@ -4,6 +4,7 @@ import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/widgets/saved_memory_results.dart';
 import 'package:clarity/rex/memory/presentation/widgets/saved_memory_tiles.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/theme/clarity_colors.dart';
 
 class SavedMemoryGroupList extends StatelessWidget {
   const SavedMemoryGroupList({
@@ -146,6 +147,7 @@ class _MemoryGroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         RexUiTokens.space16,
@@ -156,7 +158,7 @@ class _MemoryGroupHeader extends StatelessWidget {
       child: Text(
         group.label,
         style: theme.textTheme.titleSmall?.copyWith(
-          color: RexUiTokens.text,
+          color: colors.textPrimary,
           fontWeight: FontWeight.w800,
         ),
       ),

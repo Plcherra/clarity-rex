@@ -113,7 +113,7 @@ class ChatInputBar extends StatelessWidget {
                               vertical: 11,
                             ),
                             hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                              color: RexUiTokens.textSubtle.withValues(
+                              color: colors.textMuted.withValues(
                                 alpha: 0.7,
                               ),
                             ),

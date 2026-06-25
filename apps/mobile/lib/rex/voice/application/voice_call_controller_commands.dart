@@ -9,6 +9,9 @@ extension VoiceCallControllerCommands on VoiceCallController {
     }
 
     _isAwaitingFollowUpSpeech = false;
+    if (transcript.trim().isNotEmpty) {
+      _emptyVoiceTurnRecoveryCount = 0;
+    }
     _cancelNoSpeechTimeout();
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
@@ -81,6 +84,9 @@ extension VoiceCallControllerCommands on VoiceCallController {
     _cancelNoSpeechTimeout();
     _isAwaitingFollowUpSpeech = false;
     if (finalTranscript != null) {
+      if (finalTranscript.trim().isNotEmpty) {
+        _emptyVoiceTurnRecoveryCount = 0;
+      }
       _transcriptBuffer.appendFinal(finalTranscript);
     }
 
@@ -240,6 +246,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
   void reset() {
     _callGeneration++;
     _isAwaitingFollowUpSpeech = false;
+    _emptyVoiceTurnRecoveryCount = 0;
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();

@@ -63,7 +63,7 @@ class _Section extends StatelessWidget {
         Text(
           title,
           style: theme.textTheme.titleMedium?.copyWith(
-            color: RexUiTokens.text,
+            color: colors.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -113,18 +113,19 @@ class _GoalTileShell extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.trailing,
-    this.iconColor = RexUiTokens.accent,
+    this.iconColor,
   });
 
   final IconData icon;
   final Widget title;
   final Widget subtitle;
   final Widget? trailing;
-  final Color iconColor;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final resolvedIconColor = iconColor ?? colors.accent;
     return RexSurface(
       color: colors.surface.withValues(alpha: 0.66),
       radius: RexUiTokens.radiusLarge,
@@ -134,13 +135,13 @@ class _GoalTileShell extends StatelessWidget {
         children: [
           DecoratedBox(
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.14),
+              color: resolvedIconColor.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
             ),
             child: SizedBox(
               width: 38,
               height: 38,
-              child: Icon(icon, color: iconColor, size: 20),
+              child: Icon(icon, color: resolvedIconColor, size: 20),
             ),
           ),
           const SizedBox(width: RexUiTokens.space12),
@@ -203,6 +204,7 @@ class _RecordSubtitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Padding(
       padding: const EdgeInsets.only(top: RexUiTokens.space8),
@@ -213,7 +215,7 @@ class _RecordSubtitle extends StatelessWidget {
             Text(
               text,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: RexUiTokens.textMuted,
+                color: colors.textMuted,
               ),
             ),
           if (text.trim().isNotEmpty)
@@ -372,18 +374,19 @@ class _ErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: RexSurface(
-        color: RexUiTokens.danger.withValues(alpha: 0.12),
-        borderColor: RexUiTokens.danger.withValues(alpha: 0.34),
+        color: colors.danger.withValues(alpha: 0.12),
+        borderColor: colors.danger.withValues(alpha: 0.34),
         padding: const EdgeInsets.all(RexUiTokens.space12),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
-              color: RexUiTokens.danger,
+              color: colors.danger,
               size: 18,
             ),
             const SizedBox(width: RexUiTokens.space8),
@@ -391,7 +394,7 @@ class _ErrorBanner extends StatelessWidget {
               child: Text(
                 message,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: RexUiTokens.danger,
+                  color: colors.danger,
                 ),
               ),
             ),
@@ -423,17 +426,18 @@ IconData _signalIcon(AccountabilitySignalType type) {
   }
 }
 
-Color _severityColor(AccountabilitySeverity severity) {
+Color _severityColor(BuildContext context, AccountabilitySeverity severity) {
+  final colors = context.clarityColors;
   switch (severity) {
     case AccountabilitySeverity.critical:
     case AccountabilitySeverity.high:
-      return RexUiTokens.danger;
+      return colors.danger;
     case AccountabilitySeverity.medium:
-      return RexUiTokens.accentStrong;
+      return colors.accentStrong;
     case AccountabilitySeverity.low:
     case AccountabilitySeverity.info:
     case AccountabilitySeverity.unknown:
-      return RexUiTokens.accent;
+      return colors.accent;
   }
 }
 

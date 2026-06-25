@@ -183,20 +183,21 @@ class _ChatErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: RexUiTokens.danger.withValues(alpha: 0.12),
+        color: colors.danger.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-        border: Border.all(color: RexUiTokens.danger.withValues(alpha: 0.35)),
+        border: Border.all(color: colors.danger.withValues(alpha: 0.35)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
-              color: RexUiTokens.danger,
+              color: colors.danger,
               size: 18,
             ),
             const SizedBox(width: RexUiTokens.space8),
@@ -204,7 +205,7 @@ class _ChatErrorBanner extends StatelessWidget {
               child: Text(
                 message,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: RexUiTokens.text,
+                  color: colors.textPrimary,
                   height: 1.35,
                 ),
               ),

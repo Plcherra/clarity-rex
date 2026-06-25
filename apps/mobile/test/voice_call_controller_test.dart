@@ -304,6 +304,55 @@ void main() {
   );
 
   test(
+    'streaming voice stops auto-retrying after repeated no-speech turns',
+    () async {
+      final captureService = _ReusableSilentStreamingAudioCaptureService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          voiceCallNoSpeechTimeoutProvider.overrideWithValue(
+            const Duration(milliseconds: 10),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(3);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.failed);
+      expect(state.errorMessage, contains('Tap Try again'));
+    },
+  );
+
+  test(
     'silence after assistant response keeps call listening without error',
     () async {
       final captureService = _ReusableSilentStreamingAudioCaptureService();
@@ -397,10 +446,7 @@ void main() {
     );
 
     expect(find.byIcon(Icons.front_hand_rounded), findsNothing);
-    expect(
-      find.text('Rex is replying. End Voice if you need to stop.'),
-      findsOneWidget,
-    );
+    expect(find.byIcon(Icons.call_end_rounded), findsOneWidget);
   });
 
   testWidgets('inline voice panel shows recoverable retry action on failure', (

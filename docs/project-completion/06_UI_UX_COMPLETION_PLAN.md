@@ -4,13 +4,18 @@
 
 Make Clarity feel calm, complete, coherent, and trustworthy across light, dark, and system themes.
 
+## Status
+
+**MVP code/static complete.** Rex assistant surfaces now read active Clarity theme tokens instead of hard-coded dark-only Rex color constants. Dedicated manual light/dark/system QA is deferred until the project-wide test pass.
+
 ## Current State
 
 - The app has a five-tab shell: Dashboard, Accounts, Budgets, Assistant, Profile.
 - Assistant has four inner tabs: Chat, Knows, Goals, Chats.
 - Shared theme tokens exist and were recently tuned.
-- Some screens remain large and need splitting.
-- Some visual states and empty/error flows need final polish.
+- Rex assistant UI (Chat, Knows, Goals, Chats, voice panel) uses `context.clarityColors` for user-facing colors.
+- Some financial feature screens remain large and need splitting (deferred).
+- Full-app manual theme QA deferred per current testing plan.
 
 ## Work Plan
 
@@ -28,6 +33,8 @@ Make Clarity feel calm, complete, coherent, and trustworthy across light, dark, 
 - Confirm system theme:
   - Follows OS mode.
   - Label makes sense to users.
+- Done (code):
+  - Chat bubbles, attachment sheet, input bar hint, transcript error banner, voice muted chip, Knows group headers, and Goals tiles/error/empty states follow light/dark theme tokens.
 
 ### 2. Border And Surface Cleanup
 
@@ -37,6 +44,8 @@ Make Clarity feel calm, complete, coherent, and trustworthy across light, dark, 
   - Destructive states.
   - Selected states where fill alone is not enough.
   - Accessibility/contrast needs.
+- Done (code):
+  - Chat message bubbles use fill and shape without ordinary decorative borders.
 
 ### 3. Navigation Polish
 
@@ -45,6 +54,8 @@ Make Clarity feel calm, complete, coherent, and trustworthy across light, dark, 
 - Ensure Assistant tab switching is intuitive.
 - Confirm conversation selection moves back to Chat.
 - Add or remove route entries for orphan screens.
+- Done (static):
+  - Widget tests cover assistant tab order, tab switching, Chats search, draft preservation, and conversation return flow.
 
 ### 4. Empty, Loading, Error, Degraded States
 
@@ -58,14 +69,16 @@ Every major screen needs:
 
 Priority screens:
 
-- Dashboard empty.
-- Accounts empty/degraded Plaid.
-- Budgets empty.
-- Chat backend unavailable.
-- Knows no memory.
-- Goals no goals.
-- Voice unavailable.
-- Profile usage unavailable.
+| Screen | Status (code) |
+|--------|---------------|
+| Dashboard empty | Existing (not re-audited this pass) |
+| Accounts empty/degraded Plaid | Existing (not re-audited this pass) |
+| Budgets empty | Existing basic message |
+| Chat backend unavailable | Error banner in transcript |
+| Knows no memory | Empty + filtered empty + error banner |
+| Goals no goals | Empty + section empties + error banner + loading |
+| Voice unavailable | Failed panel with Try again + Settings |
+| Profile usage unavailable | Error + Retry on usage screen |
 
 ### 5. Accessibility And Mobile Fit
 
@@ -74,6 +87,8 @@ Priority screens:
 - Confirm search fields and chips are readable in both themes.
 - Confirm screen readers get useful labels on primary actions.
 - Avoid clipped content behind the bottom navigation bar.
+- Done (static):
+  - Assistant navigation tests cover 320/390/430 widths and semantic tab labels.
 
 ### 6. File Splits
 
@@ -89,6 +104,8 @@ Split large presentation files after product wiring stabilizes:
 
 Use one screen file plus focused widget files. Avoid creating vague `utils` files.
 
+**Deferred** until post-MVP polish.
+
 ## Acceptance Criteria
 
 - Every visible screen looks consistent in light and dark.
@@ -103,6 +120,20 @@ Use one screen file plus focused widget files. Avoid creating vague `utils` file
 - Widget tests for main tabs.
 - Golden/screenshot checks if available later.
 - Manual light/dark/system theme QA.
+
+## Verification Log
+
+- `flutter analyze` on Rex UI files touched this pass — no issues found.
+- `flutter test test/chat_message_bubble_test.dart test/attachment_source_sheet_test.dart test/chat_input_bar_test.dart test/assistant_navigation_test.dart test/app_routing_test.dart test/memory_page_test.dart test/inline_voice_call_panel_test.dart`
+  - 30 tests passed.
+
+## Deferred
+
+- Manual light/dark/system walkthrough of every bottom tab.
+- Golden/screenshot theme regression suite.
+- Financial feature screen file splits.
+- Full Dashboard/Accounts/Budgets empty-degraded re-audit.
+- Sync `docs/ui/CLARITY_UI_TOKENS.md` with current `clarity_colors.dart` palette values.
 
 ## Manual Smoke
 

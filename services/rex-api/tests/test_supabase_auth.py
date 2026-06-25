@@ -19,6 +19,18 @@ class FakeSupabaseUserResponse:
 
 
 @pytest.mark.asyncio
+async def test_auth_rejects_dev_fallback_in_production_when_supabase_is_not_configured():
+    with pytest.raises(HTTPException) as exc:
+        await authenticate_access_token(
+            None,
+            Settings(app_environment="production", _env_file=None),
+        )
+
+    assert exc.value.status_code == 503
+    assert exc.value.detail == "Supabase auth is not configured."
+
+
+@pytest.mark.asyncio
 async def test_auth_uses_development_user_when_supabase_is_not_configured():
     user = await authenticate_access_token(
         None,

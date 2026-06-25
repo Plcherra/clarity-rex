@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,9 +26,21 @@ from app.routes.voice_stream import router as voice_stream_router
 from app.services.http_client import shutdown_http_client, startup_http_client
 from app.services.plaid_config import get_plaid_config_status
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    settings = get_settings()
+    production_errors = settings.production_validation_errors()
+    if production_errors:
+        message = (
+            "Production configuration incomplete: "
+            + ", ".join(production_errors)
+        )
+        logger.error(message)
+        raise RuntimeError(message)
+
     await startup_http_client()
     try:
         yield

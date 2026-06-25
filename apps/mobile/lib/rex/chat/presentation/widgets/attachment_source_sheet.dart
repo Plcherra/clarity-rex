@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/theme/clarity_colors.dart';
 
 enum ChatAttachmentSource { gallery, camera, files }
 
@@ -9,6 +9,7 @@ class AttachmentSourceSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
@@ -21,7 +22,7 @@ class AttachmentSourceSheet extends StatelessWidget {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: RexUiTokens.border,
+                  color: colors.divider,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -30,7 +31,7 @@ class AttachmentSourceSheet extends StatelessWidget {
             Text(
               'Attach',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: RexUiTokens.text,
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -75,13 +76,14 @@ class _AttachmentSourceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: RexUiTokens.accent),
+      leading: Icon(icon, color: colors.accent),
       title: Text(
         title,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          color: RexUiTokens.text,
+          color: colors.textPrimary,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -89,7 +91,7 @@ class _AttachmentSourceTile extends StatelessWidget {
         subtitle,
         style: Theme.of(
           context,
-        ).textTheme.bodySmall?.copyWith(color: RexUiTokens.textSubtle),
+        ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
       ),
       onTap: () => Navigator.of(context).pop(source),
     );

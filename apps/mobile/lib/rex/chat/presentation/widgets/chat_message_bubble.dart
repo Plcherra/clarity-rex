@@ -4,6 +4,7 @@ import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_bubble_effects.dart'
     show ChatStreamingCursor, ChatTypingDots;
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
 /// A single chat line: assistant (left) or user (right).
@@ -30,16 +31,20 @@ class ChatMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
+    final isDark = theme.brightness == Brightness.dark;
     final width = MediaQuery.sizeOf(context).width;
     final maxWidth = width >= 700 ? 600.0 : width * 0.86;
 
     final background = isUser
-        ? RexUiTokens.userBubble
-        : RexUiTokens.surfaceSoft.withValues(alpha: 0.72);
-    const foreground = RexUiTokens.text;
-    final borderColor = isUser
-        ? RexUiTokens.accent.withValues(alpha: 0.18)
-        : RexUiTokens.border.withValues(alpha: 0.72);
+        ? colors.accent
+        : colors.surfaceElevated.withValues(alpha: isDark ? 0.82 : 0.92);
+    final foreground = isUser
+        ? (isDark ? Colors.black : Colors.white)
+        : colors.textPrimary;
+    final codeBackground = isUser
+        ? foreground.withValues(alpha: isDark ? 0.16 : 0.20)
+        : colors.background.withValues(alpha: isDark ? 0.42 : 0.54);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -73,7 +78,6 @@ class ChatMessageBubble extends StatelessWidget {
                           : RexUiTokens.radiusLarge,
                     ),
                   ),
-                  border: Border.all(color: borderColor),
                 ),
                 child: Padding(
                   padding: EdgeInsets.symmetric(
@@ -98,7 +102,7 @@ class ChatMessageBubble extends StatelessWidget {
                                     text,
                                     theme,
                                     foreground,
-                                    isUser,
+                                    codeBackground,
                                   ),
                                   if (isStreaming)
                                     WidgetSpan(
@@ -133,7 +137,7 @@ class ChatMessageBubble extends StatelessWidget {
     String value,
     ThemeData theme,
     Color foreground,
-    bool isUser,
+    Color codeBackground,
   ) {
     final spans = <InlineSpan>[];
     final pattern = RegExp(r'(\*\*[^*]+\*\*|`[^`]+`)');
@@ -159,9 +163,7 @@ class ChatMessageBubble extends StatelessWidget {
             style: theme.textTheme.bodyMedium?.copyWith(
               color: foreground,
               fontFamily: 'monospace',
-              backgroundColor:
-                  (isUser ? RexUiTokens.text : RexUiTokens.background)
-                      .withValues(alpha: isUser ? 0.16 : 0.42),
+              backgroundColor: codeBackground,
             ),
           ),
         );
@@ -239,6 +241,7 @@ class _ClarityActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final colors = context.clarityColors;
     final isHighRisk = action.riskLevel == 'high';
     final borderColor = action.isFailed || isHighRisk
         ? scheme.error.withValues(alpha: 0.46)
@@ -246,7 +249,7 @@ class _ClarityActionCard extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: RexUiTokens.surfaceRaised.withValues(alpha: 0.78),
+        color: colors.surfaceSoft.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor),
       ),

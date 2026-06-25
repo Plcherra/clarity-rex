@@ -61,7 +61,6 @@ SUPABASE_CONVERSATIONS_TABLE=conversations
 SUPABASE_MESSAGES_TABLE=messages
 SUPABASE_LONG_TERM_MEMORY_TABLE=long_term_memory
 SUPABASE_MEMORY_CORRECTIONS_TABLE=memory_corrections
-SUPABASE_MEMORY_CANDIDATES_TABLE=memory_candidates
 SUPABASE_VOICE_TURNS_TABLE=voice_turns
 
 DEEPGRAM_API_KEY=
@@ -229,4 +228,4 @@ Current expected status after Phase 8 plus pre-deploy cleanup:
 - Use `apps/mobile/.env` or `--dart-define=REX_BACKEND_URL=...` to point Flutter at the correct backend. The dart define wins if both are set.
 - Supabase SQL must be applied before real chat memory can work.
 - Deepgram and Google TTS credentials stay backend-side only.
-- Deployment notes are in [../../docs/deployment.md](../../docs/deployment.md).
+- Deployment notes are in [../../docs/BACKEND_DEPLOY_RUNBOOK.md](../../docs/BACKEND_DEPLOY_RUNBOOK.md).

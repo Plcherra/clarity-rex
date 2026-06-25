@@ -7,7 +7,7 @@ class _SignalTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = _severityColor(signal.severity);
+    final accent = _severityColor(context, signal.severity);
 
     return _GoalTileShell(
       icon: _signalIcon(signal.signalType),
@@ -169,10 +169,11 @@ class _PlanActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     return PopupMenuButton<String>(
       tooltip: 'Plan actions',
-      color: RexUiTokens.surfaceRaised,
-      iconColor: RexUiTokens.textMuted,
+      color: colors.surfaceSoft,
+      iconColor: colors.textMuted,
       itemBuilder: (context) => const [
         PopupMenuItem(value: 'archive', child: Text('Archive')),
       ],
@@ -198,10 +199,11 @@ class _CommitmentActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.clarityColors;
     return PopupMenuButton<String>(
       tooltip: 'Commitment actions',
-      color: RexUiTokens.surfaceRaised,
-      iconColor: RexUiTokens.textMuted,
+      color: colors.surfaceSoft,
+      iconColor: colors.textMuted,
       itemBuilder: (context) => const [
         PopupMenuItem(value: 'complete', child: Text('Mark complete')),
         PopupMenuItem(value: 'missed', child: Text('Mark missed')),
@@ -229,6 +231,7 @@ class _UpcomingTargets extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,7 +240,7 @@ class _UpcomingTargets extends StatelessWidget {
           'Next targets',
           style: theme.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w700,
-            color: RexUiTokens.text,
+            color: colors.textPrimary,
           ),
         ),
         const SizedBox(height: 7),
@@ -304,10 +307,11 @@ class _NestedGoalGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return RexSurface(
-      color: RexUiTokens.surfaceSoft.withValues(alpha: 0.66),
-      borderColor: RexUiTokens.border.withValues(alpha: 0.62),
+      color: colors.surfaceSoft.withValues(alpha: 0.66),
+      borderColor: colors.divider.withValues(alpha: 0.62),
       radius: RexUiTokens.radiusSmall,
       padding: const EdgeInsets.all(RexUiTokens.space12),
       child: Column(
@@ -316,7 +320,7 @@ class _NestedGoalGroup extends StatelessWidget {
           Text(
             '$title / ${children.length}',
             style: theme.textTheme.labelLarge?.copyWith(
-              color: RexUiTokens.text,
+              color: colors.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -336,6 +340,7 @@ class _InternalMilestoneRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Padding(
       padding: const EdgeInsets.only(top: 6),
@@ -345,7 +350,7 @@ class _InternalMilestoneRow extends StatelessWidget {
           Icon(
             Icons.subdirectory_arrow_right_rounded,
             size: 18,
-            color: RexUiTokens.accent,
+            color: colors.accent,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -355,7 +360,7 @@ class _InternalMilestoneRow extends StatelessWidget {
                 Text(
                   milestone.title,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: RexUiTokens.text,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -401,6 +406,7 @@ class _ChecklistRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.clarityColors;
 
     return Padding(
       padding: const EdgeInsets.only(top: 7),
@@ -410,7 +416,7 @@ class _ChecklistRow extends StatelessWidget {
           Icon(
             Icons.check_circle_outline_rounded,
             size: 17,
-            color: RexUiTokens.accent,
+            color: colors.accent,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -419,7 +425,7 @@ class _ChecklistRow extends StatelessWidget {
                   ? commitment.title
                   : commitment.commitmentText,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: RexUiTokens.textMuted,
+                color: colors.textMuted,
               ),
             ),
           ),

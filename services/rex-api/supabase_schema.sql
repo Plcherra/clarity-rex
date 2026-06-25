@@ -1,3 +1,9 @@
+-- STALE / DO NOT APPLY
+-- Canonical schema lives in ../../supabase/migrations/
+-- This file is kept for historical reference only.
+-- Tables such as memory_candidates and memory_confirmations were archived in migration
+-- 20260604120456_archive_legacy_rex_memory_review_tables.sql
+
 create extension if not exists pgcrypto;
 
 create table if not exists public.conversations (

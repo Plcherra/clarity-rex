@@ -124,6 +124,36 @@ class Settings(BaseSettings):
             if origin.strip()
         ]
 
+    @property
+    def is_production(self) -> bool:
+        return self.app_environment.strip().lower() == "production"
+
+    def production_validation_errors(self) -> list[str]:
+        if not self.is_production:
+            return []
+
+        errors: list[str] = []
+        if not self.grok_api_key:
+            errors.append("GROK_API_KEY")
+        if not self.grok_model:
+            errors.append("GROK_MODEL")
+        if not self.supabase_url:
+            errors.append("SUPABASE_URL")
+        if not self.supabase_anon_key:
+            errors.append("SUPABASE_ANON_KEY")
+        if not self.deepgram_api_key:
+            errors.append("DEEPGRAM_API_KEY")
+        if not self.google_tts_is_configured:
+            errors.append(
+                "GOOGLE_TTS_PROJECT_ID with GOOGLE_TTS_CREDENTIALS_JSON "
+                "or GOOGLE_APPLICATION_CREDENTIALS"
+            )
+        if self.rex_brain_routing_enabled:
+            errors.append("REX_BRAIN_ROUTING_ENABLED must remain false in production")
+        if self.rex_brain_rollout_stage.strip().lower() != "disabled":
+            errors.append("REX_BRAIN_ROLLOUT_STAGE must remain disabled in production")
+        return errors
+
 
 @lru_cache
 def get_settings() -> Settings:

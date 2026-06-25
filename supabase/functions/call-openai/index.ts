@@ -1,3 +1,7 @@
+// Legacy OpenAI chat proxy. Production CSV categorization uses
+// supabase/functions/categorize-transactions instead.
+// Keep deployed only until any remaining callers are confirmed removed.
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':

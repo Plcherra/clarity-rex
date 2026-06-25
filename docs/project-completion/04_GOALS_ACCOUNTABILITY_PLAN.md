@@ -22,6 +22,7 @@ Deferred after MVP:
 - Advanced analytics.
 - Push notifications/reminders.
 - Full accountability workflows.
+- Ask Rex about a signal from a dedicated signal action.
 
 ## Work Plan
 
@@ -39,7 +40,7 @@ Deferred after MVP:
 - Add goal and commitment creation with simple dialogs or bottom sheets.
 - Add complete and archive actions.
 - Refresh after backend-confirmed changes.
-- In progress:
+- Completed static wiring:
   - Mobile API methods added for plan/commitment create, complete, and archive.
   - Goals tab now has simple Add commitment / Add goal actions.
   - Commitments can be marked complete or archived.
@@ -51,7 +52,7 @@ Deferred after MVP:
 - Rex-created commitments must appear in the Goals tab.
 - UI-created commitments must be visible to Rex.
 - Rex must always require backend confirmation before saying "done".
-- In progress:
+- Completed static wiring:
   - UI-created goals/commitments use the same Rex API routes as backend records
     consumed by `/accountability/overview`.
   - Rex morning accountability command now recognizes "Hold me accountable to
@@ -63,7 +64,7 @@ Deferred after MVP:
 - Allow marking as completed or missed.
 - Rex should naturally reference active commitments in conversation.
 - Do not add push notifications/reminders for MVP.
-- In progress:
+- Completed static wiring:
   - Morning routine commitments are classified as habit commitments.
   - Completion and missed status are supported in UI.
   - Missed tracking remains backend signal/read-model behavior for MVP; no push
@@ -81,3 +82,16 @@ Deferred after MVP:
 - Rex can create a commitment that appears in the Goals tab.
 - Morning 5 AM commitment works.
 - No fake success messages without backend confirmation.
+
+## Verification Log
+
+- `flutter test test/accountability_api_test.dart`
+  - Result: 5 passed.
+- `python -m pytest tests/test_goal_command_service.py tests/test_plan_service.py tests/test_accountability_service.py tests/test_accountability_routes.py -q`
+  - Result: 62 passed.
+
+## Remaining Runtime Smoke
+
+- Create a commitment in the Goals tab and confirm Rex sees it.
+- Ask Rex to create "Wake up at 5 AM" and confirm it appears in Goals.
+- Mark the morning routine commitment complete and missed from the Goals tab.
