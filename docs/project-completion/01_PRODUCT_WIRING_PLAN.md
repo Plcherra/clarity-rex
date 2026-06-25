@@ -8,9 +8,14 @@ Make every implemented product surface either reachable and connected or intenti
 
 - Standalone `UploadScreen` was removed; current CSV flows use account-scoped import screens instead.
 - `TransactionReviewScreen` is now reachable from the Dashboard app bar.
-- Goals reads backend overview data, but direct create/edit/complete flows are not exposed.
+- Goals tab now supports create, complete, miss, and archive flows through Rex API.
+- Goals still lack edit-after-create and actionable accountability signals in MVP.
 - Backend has routes that mobile does not use yet: memory corrections, entity events, plan milestones, accountability drill-downs, and usage routes.
 - Some features are split between direct Supabase and Rex API without clear user-facing boundaries.
+
+## Status
+
+**MVP code/static complete** for route wiring and orphan cleanup. Manual navigation smoke and backend-only route UI decisions remain for Plan 8.
 
 ## Work Plan
 

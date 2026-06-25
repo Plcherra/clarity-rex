@@ -32,6 +32,7 @@ void main() {
       accountCount: 2,
       scopedStatementImportCount: 0,
       totalStatementImportCount: 0,
+      loadIssues: const [],
     );
 
     expect(data.isTrulyEmpty, isFalse);

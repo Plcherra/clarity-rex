@@ -84,7 +84,9 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
   Future<void> _deleteConversation(Conversation conversation) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) {
+        final colors = context.clarityColors;
+        return AlertDialog(
         title: const Text('Delete conversation?'),
         content: const Text('This removes the conversation and its messages.'),
         actions: [
@@ -94,14 +96,15 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: RexUiTokens.danger,
-              foregroundColor: RexUiTokens.background,
+              backgroundColor: colors.danger,
+              foregroundColor: colors.background,
             ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Delete'),
           ),
         ],
-      ),
+      );
+      },
     );
 
     if (confirmed != true) {
@@ -338,7 +341,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                   onPressed: state.isLoading ? null : _newConversation,
                   icon: const Icon(Icons.add_rounded),
                   tooltip: 'New conversation',
-                  color: RexUiTokens.accent,
+                  color: context.clarityColors.accent,
                 ),
               ],
             )

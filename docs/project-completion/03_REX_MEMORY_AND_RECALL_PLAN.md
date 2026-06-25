@@ -75,9 +75,10 @@ the same generic birthday path instead of only the original family smoke terms.
 - Fixed generic failure class: memory lookup/topic-shift protection included
 specific family/birthday topic terms. It now uses generic recall/search
 language so arbitrary people can still be saved as memory.
-- Fixed duplicate active memory issue: flat memories covered by structured person
-cards are archived, and duplicate-save detection still recognizes those covered
-archived source records.
+- Fixed generic failure class: inverted birthday parsing could steal
+  `DATE as PERSON's birthday` phrases and produce invalid person labels such as
+  `as my mom`. Date-as-birthday detection now runs first, accepts `your`, and
+  resolves pronoun-only birthday follow-ups from recent relationship context.
 
 ### 4. Memory Corrections
 

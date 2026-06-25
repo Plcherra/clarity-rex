@@ -25,7 +25,7 @@ class OpenAiProxyUnavailableException implements Exception {
 
   @override
   String toString() =>
-      'AI categorization is not configured. Sign in and configure the Supabase call-openai Edge Function secret.';
+      'AI categorization is not configured. Sign in and deploy the categorize-transactions Edge Function.';
 }
 
 final class SupabaseOpenAiProxyClient implements OpenAiProxyClient {

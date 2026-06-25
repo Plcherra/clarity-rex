@@ -37,7 +37,7 @@ class MemoryIntentService(
     )
     _date_as_birthday_pattern = re.compile(
         r"\b(?P<date>[A-Za-z]+(?:\s+\d{1,2}(?:st|nd|rd|th)?)?|\d{1,2}(?:st|nd|rd|th)?)"
-        r"\s+as\s+(?:my\s+)?"
+        r"\s+as\s+(?:my\s+|your\s+)?"
         r"(?P<person>[A-Za-z][A-Za-z\s_-]{1,40}?)\s*(?:'s)?\s+birthday\b",
         re.IGNORECASE,
     )

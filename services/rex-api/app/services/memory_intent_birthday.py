@@ -24,6 +24,8 @@ class MemoryIntentBirthdayMixin:
         if match is None:
             match = self._birthday_correction_pattern.search(message)
         if match is None:
+            match = self._date_as_birthday_pattern.search(message)
+        if match is None:
             match = self._inverted_birthday_pattern.search(message)
         if match is not None and match.re is self._inverted_birthday_pattern and not (
             self._date_normalizer.is_day_only(match.group("date"))
@@ -31,13 +33,11 @@ class MemoryIntentBirthdayMixin:
         ):
             match = None
         if match is None:
-            match = self._date_as_birthday_pattern.search(message)
-        if match is None:
             return None
 
         raw_date = match.group("date")
 
-        person = self._clean_person(match.group("person"))
+        person = self._clean_birthday_person(match.group("person"))
         date_text = self._normalize_date_phrase(
             raw_date,
             time_context=time_context,
@@ -58,9 +58,9 @@ class MemoryIntentBirthdayMixin:
             entity_label = "self"
             topic = "fact:birthday:self"
         else:
-            content = f"User's {person}'s birthday is {date_text}."
-            entity_label = person
-            topic = f"fact:birthday:{person.lower()}"
+            content = f"User's {normalized_person}'s birthday is {date_text}."
+            entity_label = normalized_person
+            topic = f"fact:birthday:{normalized_person.lower()}"
         return SimpleMemoryIntent(
             memory_type="fact",
             content=content,
@@ -176,6 +176,67 @@ class MemoryIntentBirthdayMixin:
             )
             if person is not None:
                 return person
+        return self._recent_birthday_person_from_context(conversation_history)
+
+    def _recent_birthday_person_from_context(
+        self, conversation_history: list[dict]
+    ) -> Optional[str]:
+        if not self._recent_birthday_topic_active(conversation_history):
+            return None
+        if not self._recent_birthday_pronoun_reference(conversation_history):
+            return None
+        return self._recent_relationship_person(conversation_history)
+
+    def _recent_birthday_topic_active(self, conversation_history: list[dict]) -> bool:
+        for message in reversed(conversation_history[-6:]):
+            content = str(message.get("content") or "").lower()
+            if "birthday" in content:
+                return True
+        return False
+
+    def _recent_birthday_pronoun_reference(
+        self, conversation_history: list[dict]
+    ) -> bool:
+        for message in reversed(conversation_history[-6:]):
+            content = str(message.get("content") or "").lower()
+            if re.search(
+                r"\b(?:her|his|their|she|he|they)\b[^.!?]{0,40}\bbirthday\b",
+                content,
+            ) or re.search(
+                r"\bbirthday\b[^.!?]{0,40}\b(?:her|his|their|she|he|they)\b",
+                content,
+            ):
+                return True
+        return False
+
+    def _recent_relationship_person(
+        self, conversation_history: list[dict]
+    ) -> Optional[str]:
+        for message in reversed(conversation_history[-6:]):
+            if message.get("role") not in {"user", "assistant"}:
+                continue
+            content = str(message.get("content") or "")
+            match = re.search(
+                r"\b(?:my|your)\s+(?P<person>[A-Za-z][A-Za-z\s_-]{1,40}?)\b",
+                content,
+                re.IGNORECASE,
+            )
+            if match is None:
+                continue
+            person = self._clean_birthday_person(match.group("person"))
+            if person in {
+                "birthday",
+                "her",
+                "his",
+                "its",
+                "my",
+                "our",
+                "their",
+                "your",
+            }:
+                continue
+            if person:
+                return person
         return None
 
     def _birthday_person_from_text(self, text: str) -> Optional[str]:
@@ -212,6 +273,12 @@ class MemoryIntentBirthdayMixin:
             maxsplit=1,
             flags=re.IGNORECASE,
         )[0]
+        cleaned = re.sub(
+            r"^(?:as\s+)?(?:my\s+|your\s+)?",
+            "",
+            cleaned.strip(),
+            flags=re.IGNORECASE,
+        )
         return self._clean_person(cleaned)
 
     def _recent_birthday_save_prompt(self, conversation_history: list[dict]) -> bool:

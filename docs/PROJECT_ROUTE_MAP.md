@@ -41,7 +41,7 @@ and the data source behind each one.
 | --- | --- | --- | --- | --- |
 | Chat | `ChatPage` | `ChatController`, `ChatApi`, `ClarityActionsApi` | Rex `/chat`, optional financial context from Supabase read model | Chat empty state, backend errors |
 | Knows | `MemoryPage` | `MemoryController`, `MemoryApi` | Rex `/memory`, `/entities`, `/rules`, `/plans`, `/commitments` | No saved information, memory errors |
-| Goals | `AccountabilityPage` | `AccountabilityController`, `AccountabilityApi` | Rex `/accountability/overview` | No goals/signals, accountability errors |
+| Goals | `AccountabilityPage` | `AccountabilityController`, `AccountabilityApi` | Rex `/accountability/overview`, `/plans`, `/commitments` | No goals/signals, accountability errors; create/complete/miss/archive supported |
 | Chats | `ConversationListPage` | `ConversationListController`, `ConversationApi` | Rex `/conversations` and `/conversations/search` | No chats/search results, load errors |
 
 ## Product Wiring Decisions
