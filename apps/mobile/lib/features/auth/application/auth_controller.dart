@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'auth_error_messages.dart';
 import 'auth_service.dart';
 
 class AuthController extends ChangeNotifier {
@@ -40,6 +41,12 @@ class AuthController extends ChangeNotifier {
   User? get currentUser => _session?.user ?? _authService.currentUser;
   bool get isAuthenticated => _authenticatedOverride || currentSession != null;
   bool get hasVerifiedTotpFactor => mfaFactors.isNotEmpty;
+
+  void clearAuthMessages() {
+    errorMessage = null;
+    infoMessage = null;
+    notifyListeners();
+  }
 
   Future<void> signUpWithEmail({
     required String email,
@@ -211,7 +218,7 @@ class AuthController extends ChangeNotifier {
     try {
       await action();
     } catch (e) {
-      errorMessage = _friendlyAuthError(e);
+      errorMessage = friendlyAuthError(e);
     } finally {
       isLoading = false;
       notifyListeners();
@@ -226,7 +233,7 @@ class AuthController extends ChangeNotifier {
     try {
       await action();
     } catch (e) {
-      mfaErrorMessage = _friendlyAuthError(e);
+      mfaErrorMessage = friendlyAuthError(e);
     } finally {
       isMfaLoading = false;
       notifyListeners();
@@ -253,25 +260,6 @@ class AuthController extends ChangeNotifier {
     mfaFactors = const [];
     mfaErrorMessage = null;
     mfaInfoMessage = null;
-  }
-
-  String _friendlyAuthError(Object error) {
-    if (error is AuthException) {
-      final message = error.message.toLowerCase();
-      if (message.contains('invalid') ||
-          message.contains('otp') ||
-          message.contains('code')) {
-        return 'That code was not accepted. Check your authenticator app and try again.';
-      }
-      if (message.contains('mfa') && message.contains('not enabled')) {
-        return 'MFA is not enabled for this Supabase project.';
-      }
-      if (message.contains('too many')) {
-        return 'Too many attempts. Wait a moment, then try again.';
-      }
-      return error.message;
-    }
-    return error.toString();
   }
 
   @override

@@ -171,6 +171,7 @@ final class _AuthScreenState extends State<AuthScreen> {
                             onPressed: widget.controller.isLoading
                                 ? null
                                 : () {
+                                    widget.controller.clearAuthMessages();
                                     setState(() {
                                       _localError = null;
                                       _isSignUp = !_isSignUp;
