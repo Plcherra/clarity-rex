@@ -212,3 +212,72 @@ class RexBrainDecision:
             "requires_action_confirmation": self.requires_action_confirmation,
             "pending_action_contract": self.pending_action_contract.metadata(),
         }
+
+
+@dataclass(frozen=True)
+class RexModelLimits:
+    max_prompt_characters: int
+    max_output_tokens: int
+
+
+@dataclass(frozen=True)
+class RexModelRoute:
+    routing_enabled: bool
+    rollout_stage: str
+    requested_profile: RexModelProfile
+    effective_profile: RexModelProfile
+    selected_model: Optional[str]
+    fallback_model: Optional[str]
+    limits: RexModelLimits
+    cost_tier: RexCostTier
+    reasons: tuple[str, ...] = field(default_factory=tuple)
+
+    def metadata(self) -> dict:
+        return {
+            "routing_enabled": self.routing_enabled,
+            "rollout_stage": self.rollout_stage,
+            "requested_profile": self.requested_profile.value,
+            "effective_profile": self.effective_profile.value,
+            "selected_model": self.selected_model,
+            "fallback_model": self.fallback_model,
+            "max_prompt_characters": self.limits.max_prompt_characters,
+            "max_output_tokens": self.limits.max_output_tokens,
+            "cost_tier": self.cost_tier.value,
+            "reasons": list(self.reasons),
+        }
+
+
+PROFILE_LIMITS: dict[RexModelProfile, RexModelLimits] = {
+    RexModelProfile.FAST: RexModelLimits(
+        max_prompt_characters=6000,
+        max_output_tokens=700,
+    ),
+    RexModelProfile.STANDARD: RexModelLimits(
+        max_prompt_characters=14000,
+        max_output_tokens=1400,
+    ),
+    RexModelProfile.REASONING: RexModelLimits(
+        max_prompt_characters=28000,
+        max_output_tokens=3000,
+    ),
+}
+
+
+def default_model_route(
+    decision: RexBrainDecision,
+    *,
+    grok_model: Optional[str],
+    reason: str = "simple_rex_brain_only",
+) -> RexModelRoute:
+    """Production and compatibility helper: always use the standard Grok model."""
+    return RexModelRoute(
+        routing_enabled=False,
+        rollout_stage="disabled",
+        requested_profile=decision.model_profile,
+        effective_profile=RexModelProfile.STANDARD,
+        selected_model=grok_model,
+        fallback_model=grok_model,
+        limits=PROFILE_LIMITS[RexModelProfile.STANDARD],
+        cost_tier=RexCostTier.MEDIUM,
+        reasons=(reason,),
+    )

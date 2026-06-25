@@ -48,10 +48,6 @@ GROK_MODEL=
 GROK_FAST_MODEL=
 GROK_STANDARD_MODEL=
 GROK_REASONING_MODEL=
-REX_BRAIN_ROUTING_ENABLED=false
-REX_BRAIN_DEBUG_ENABLED=false
-REX_BRAIN_FAST_FIRST_ENABLED=false
-REX_BRAIN_ROLLOUT_STAGE=disabled
 GROK_BASE_URL=https://api.x.ai/v1
 GROK_TIMEOUT_SECONDS=120
 
@@ -133,19 +129,9 @@ curl http://localhost:8000/ready
 
 MVP launch uses Simple Rex Brain as the single production assistant brain:
 intent classification, direct memory/goal handling, long-horizon chat and memory
-retrieval, standard prompt assembly, and post-response truth enforcement. The
-advanced layered router, layer-specific prompt contracts, and dynamic model
-routing remain experimental and must stay off for launch validation:
-
-```env
-REX_BRAIN_ROUTING_ENABLED=false
-REX_BRAIN_ROLLOUT_STAGE=disabled
-```
-
-The experimental brain files may remain in the tree for later work, but
-production chat and voice should call Simple Rex Brain only. If the experimental
-routing values change by accident, set them back to the values above and restart
-`clarity-rex.service` through `./scripts/vps_restart_rex_api.sh`.
+retrieval, standard prompt assembly, and post-response truth enforcement.
+Experimental layered routing was removed; production chat and voice always use
+Simple Rex Brain through `ChatService`.
 
 Production VPS restarts should use the canonical systemd unit:
 

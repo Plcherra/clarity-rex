@@ -4,8 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 from uuid import uuid4
 
-from app.services.rex_brain_contracts import RexBrainChannel, RexBrainDecision
-from app.services.rex_model_router import RexModelRoute
+from app.services.rex_brain_contracts import RexBrainChannel, RexBrainDecision, RexModelRoute
 
 
 @dataclass(frozen=True)

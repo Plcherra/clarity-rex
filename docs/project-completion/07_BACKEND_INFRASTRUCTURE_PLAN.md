@@ -66,7 +66,7 @@ Do this incrementally. Avoid large move-only commits mixed with behavior changes
 - Keep one production brain for chat and voice.
 - Done (code):
   - Production path wired and tested.
-  - Startup rejects `REX_BRAIN_ROUTING_ENABLED=true` or non-`disabled` rollout stage in production.
+  - Experimental Rex Brain routing env flags and router removed from launch path.
   - Experimental module relocation deferred.
 
 ### 4. Supabase Schema Hygiene

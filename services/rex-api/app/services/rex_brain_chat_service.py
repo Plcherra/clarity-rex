@@ -9,6 +9,7 @@ module is retained only for future advanced routing work and compatibility tests
 import logging
 from typing import Optional
 
+from app.config import get_settings
 from app.services.rex_brain import RexBrain
 from app.services.rex_brain_context import RexBrainContext, build_rex_brain_context
 from app.services.rex_brain_contracts import (
@@ -19,11 +20,12 @@ from app.services.rex_brain_contracts import (
     RexBrainInput,
     RexLatencyClass,
     RexModelProfile,
+    RexModelRoute,
     RexOutputMode,
     RexThinkingLayer,
+    default_model_route,
 )
 from app.services.rex_brain_prompts import RexPromptContract, get_rex_prompt_contract
-from app.services.rex_model_router import RexModelRoute, RexModelRouter
 from app.services.rex_observability import RexBrainObserver
 
 
@@ -36,11 +38,9 @@ class RexBrainChatService:
     def __init__(
         self,
         rex_brain: Optional[RexBrain] = None,
-        rex_model_router: Optional[RexModelRouter] = None,
         rex_brain_observer: Optional[RexBrainObserver] = None,
     ) -> None:
         self.rex_brain = rex_brain or RexBrain()
-        self.rex_model_router = rex_model_router or RexModelRouter()
         self.rex_brain_observer = rex_brain_observer or RexBrainObserver()
 
     def safe_plan_chat_turn(self, **kwargs) -> dict:
@@ -68,8 +68,9 @@ class RexBrainChatService:
             return {
                 "decision": decision,
                 "brain_context": None,
-                "model_route": self.rex_model_router._disabled_route(
+                "model_route": default_model_route(
                     decision,
+                    grok_model=get_settings().grok_model,
                     reason="rex_brain_planning_failed_fallback",
                 ),
                 "prompt_contract": get_rex_prompt_contract(decision.layer),
@@ -107,9 +108,6 @@ class RexBrainChatService:
             conversation_message_count=len(conversation_history),
             user_requested_deep_thinking=user_requested_deep_thinking
             or self.user_requested_deep_thinking(message),
-            rex_brain_debug_enabled=(
-                self.rex_model_router.settings.rex_brain_debug_enabled
-            ),
         )
         decision = self.rex_brain.plan_turn(brain_input)
         brain_context = build_rex_brain_context(
@@ -120,7 +118,10 @@ class RexBrainChatService:
             structured_context=structured_context,
             accountability_signals=accountability_signals,
         )
-        model_route = self.rex_model_router.route_for_decision(decision)
+        model_route = default_model_route(
+            decision,
+            grok_model=get_settings().grok_model,
+        )
         return {
             "decision": decision,
             "brain_context": brain_context,

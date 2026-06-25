@@ -127,7 +127,6 @@ task explicitly says to work on experimental routing.
 Non-production files include:
 
 - `services/rex-api/app/services/rex_brain*.py`
-- `services/rex-api/app/services/rex_model_router.py`
 
 The production path is `ChatService` plus `SimpleRexBrain`. Experimental files
 may have tests for historical contracts, but they are not the launch brain.

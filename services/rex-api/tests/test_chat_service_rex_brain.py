@@ -6,10 +6,8 @@ from chat_service_fakes import (
     FakeMemoryService,
     FakeRexBrainObserver,
 )
-from app.config import Settings
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
-from app.services.rex_model_router import RexModelRouter
 
 
 def _routed_chat_service(
@@ -20,19 +18,12 @@ def _routed_chat_service(
     rex_brain_observer=None,
     **settings_overrides,
 ):
-    settings = Settings(
-        grok_api_key="key",
-        grok_model="grok-default",
-        rex_brain_routing_enabled=True,
-        rex_brain_rollout_stage="deep_think_ui",
-        **settings_overrides,
-    )
+    _ = settings_overrides
     return ChatService(
         ai_service,
         FileService(),
         memory_service,
         rex_brain=rex_brain,
-        rex_model_router=RexModelRouter(settings),
         rex_brain_observer=rex_brain_observer,
     )
 

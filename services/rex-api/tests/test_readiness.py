@@ -33,11 +33,6 @@ def test_readiness_reports_missing_cloud_voice_config(monkeypatch):
     assert payload["checks"]["plaid"]["required_for_ready"] is False
     assert payload["checks"]["rex_brain"]["configured"] is True
     assert payload["checks"]["rex_brain"]["mode"] == "simple"
-    assert payload["checks"]["rex_brain"]["experimental_routing"]["enabled"] is False
-    assert (
-        payload["checks"]["rex_brain"]["experimental_routing"]["production_path"]
-        is False
-    )
     assert payload["checks"]["time"]["timezone"] == "America/New_York"
     assert "DEEPGRAM_API_KEY" in payload["checks"]["deepgram"]["required"]
 
@@ -52,9 +47,6 @@ def test_readiness_reports_ready_when_all_required_services_are_configured(monke
             grok_fast_model="grok-fast",
             grok_standard_model="grok-standard",
             grok_reasoning_model="grok-reasoning",
-            rex_brain_routing_enabled=True,
-            rex_brain_debug_enabled=True,
-            rex_brain_rollout_stage="analytical",
             supabase_url="https://example.supabase.co",
             supabase_anon_key="anon-key",
             supabase_service_role_key="service-key",
@@ -81,24 +73,8 @@ def test_readiness_reports_ready_when_all_required_services_are_configured(monke
         "configured": True,
         "mode": "simple",
         "description": (
-            "Simple Rex Brain is the production launch brain. "
-            "Experimental layered routing is not on the production path."
+            "Simple Rex Brain is the production launch brain for chat and voice."
         ),
-        "experimental_routing": {
-            "enabled": True,
-            "production_path": False,
-            "debug_enabled": True,
-            "fast_first_enabled": False,
-            "rollout_stage": "analytical",
-            "rollout_stages": [
-                "disabled",
-                "logging_only",
-                "fast_contextual",
-                "analytical",
-                "strategic_reflective",
-                "deep_think_ui",
-            ],
-        },
         "models": {
             "fallback": "grok-4.3",
             "fast": "grok-fast",

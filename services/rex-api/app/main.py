@@ -79,24 +79,8 @@ def readiness_check() -> dict:
             "configured": True,
             "mode": "simple",
             "description": (
-                "Simple Rex Brain is the production launch brain. "
-                "Experimental layered routing is not on the production path."
+                "Simple Rex Brain is the production launch brain for chat and voice."
             ),
-            "experimental_routing": {
-                "enabled": settings.rex_brain_routing_enabled,
-                "production_path": False,
-                "debug_enabled": settings.rex_brain_debug_enabled,
-                "fast_first_enabled": settings.rex_brain_fast_first_enabled,
-                "rollout_stage": settings.rex_brain_rollout_stage,
-                "rollout_stages": [
-                    "disabled",
-                    "logging_only",
-                    "fast_contextual",
-                    "analytical",
-                    "strategic_reflective",
-                    "deep_think_ui",
-                ],
-            },
             "models": {
                 "fallback": settings.grok_model,
                 "fast": settings.grok_fast_model or settings.grok_model,

@@ -18,12 +18,6 @@ class Settings(BaseSettings):
     grok_embedding_model: Optional[str] = None
     grok_embedding_dimensions: int = 1536
     grok_timeout_seconds: int = 120
-    # MVP launch: advanced Rex Brain routing is deferred. Keep these disabled;
-    # ChatService uses the direct memory path plus standard prompt path only.
-    rex_brain_routing_enabled: bool = False
-    rex_brain_debug_enabled: bool = False
-    rex_brain_fast_first_enabled: bool = False
-    rex_brain_rollout_stage: str = "disabled"
 
     supabase_url: Optional[str] = None
     supabase_anon_key: Optional[str] = None
@@ -148,10 +142,6 @@ class Settings(BaseSettings):
                 "GOOGLE_TTS_PROJECT_ID with GOOGLE_TTS_CREDENTIALS_JSON "
                 "or GOOGLE_APPLICATION_CREDENTIALS"
             )
-        if self.rex_brain_routing_enabled:
-            errors.append("REX_BRAIN_ROUTING_ENABLED must remain false in production")
-        if self.rex_brain_rollout_stage.strip().lower() != "disabled":
-            errors.append("REX_BRAIN_ROLLOUT_STAGE must remain disabled in production")
         return errors
 
 

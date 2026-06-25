@@ -39,14 +39,7 @@ Required for production startup (`APP_ENVIRONMENT=production`):
 | `GOOGLE_TTS_PROJECT_ID` | Cloud text-to-speech |
 | `GOOGLE_TTS_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS` | Google TTS auth |
 
-Production guardrails (must stay off):
-
-```env
-REX_BRAIN_ROUTING_ENABLED=false
-REX_BRAIN_ROLLOUT_STAGE=disabled
-```
-
-The API refuses to start in production when required vars are missing or experimental Rex Brain routing is enabled.
+The API refuses to start in production when required vars are missing.
 
 ## Plaid (when finance sync is enabled)
 

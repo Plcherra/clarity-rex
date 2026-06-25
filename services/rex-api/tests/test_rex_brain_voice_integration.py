@@ -1,10 +1,8 @@
 import pytest
 
-from app.config import Settings
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.rex_brain_contracts import RexBrainChannel
-from app.services.rex_model_router import RexModelRouter
 from app.services.voice_stream_session import (
     VOICE_DEEP_RESPONSE_MAX_TOKENS,
     VOICE_RESPONSE_MAX_TOKENS,
@@ -75,29 +73,18 @@ class FakeMemoryService:
         return {"id": "voice-turn", **kwargs}
 
 
-def _voice_chat_service(ai_service, *, settings):
+def _voice_chat_service(ai_service):
     return ChatService(
         ai_service,
         FileService(),
         FakeMemoryService(),
-        rex_model_router=RexModelRouter(settings),
     )
 
 
 @pytest.mark.asyncio
 async def test_voice_channel_uses_standard_model_for_normal_financial_question():
     ai_service = FakeAIService(stream_tokens=["ok"])
-    chat_service = _voice_chat_service(
-        ai_service,
-        settings=Settings(
-            grok_api_key="key",
-            grok_model="grok-default",
-            grok_standard_model="grok-standard",
-            grok_reasoning_model="grok-reasoning",
-            rex_brain_routing_enabled=True,
-            rex_brain_rollout_stage="deep_think_ui",
-        ),
-    )
+    chat_service = _voice_chat_service(ai_service)
 
     events = [
         event
@@ -127,17 +114,7 @@ async def test_voice_channel_uses_standard_model_for_normal_financial_question()
 @pytest.mark.asyncio
 async def test_voice_channel_can_escalate_explicit_deep_thinking_to_reasoning():
     ai_service = FakeAIService(response="deep voice response")
-    chat_service = _voice_chat_service(
-        ai_service,
-        settings=Settings(
-            grok_api_key="key",
-            grok_model="grok-default",
-            grok_standard_model="grok-standard",
-            grok_reasoning_model="grok-reasoning",
-            rex_brain_routing_enabled=True,
-            rex_brain_rollout_stage="deep_think_ui",
-        ),
-    )
+    chat_service = _voice_chat_service(ai_service)
 
     await chat_service.send_message(
         "Deep think and analyze thoroughly why my spending is up",

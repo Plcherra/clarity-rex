@@ -3,10 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from app.config import Settings
 from app.services.rex_brain import RexBrainInput, RexThinkingRouter
-from app.services.rex_brain_contracts import RexBrainChannel
-from app.services.rex_model_router import RexModelRouter
+from app.services.rex_brain_contracts import RexBrainChannel, default_model_route
 from app.services.rex_observability import MemoryOperationObserver, RexBrainObserver
 
 
@@ -32,14 +30,10 @@ def test_observer_logs_metadata_only_without_raw_text_or_financial_rows():
         message="Analyze Private Merchant and secret transaction row",
         has_financial_context=True,
     )
-    model_route = RexModelRouter(
-        Settings(
-            grok_model="grok-default",
-            grok_reasoning_model="grok-reasoning",
-            rex_brain_routing_enabled=True,
-            rex_brain_rollout_stage="deep_think_ui",
-        )
-    ).route_for_decision(decision)
+    model_route = default_model_route(
+        decision,
+        grok_model="grok-default",
+    )
 
     payload = observer.log_turn(
         request_id="request-1",
@@ -56,19 +50,19 @@ def test_observer_logs_metadata_only_without_raw_text_or_financial_rows():
         "status": "completed",
         "layer": "layer_2_analytical",
         "model_profile": "reasoning",
-        "effective_model_profile": "reasoning",
+        "effective_model_profile": "standard",
         "context_budget": "medium",
         "output_mode": "analysis",
         "latency_class": "deep",
-        "cost_tier": "high",
-        "routing_enabled": True,
-        "rollout_stage": "deep_think_ui",
+        "cost_tier": "medium",
+        "routing_enabled": False,
+        "rollout_stage": "disabled",
         "escalation_source": "analytical_language",
         "reasons": [
             "financial_context_available",
             "analytical_language",
         ],
-        "model_route_reasons": ["requested_profile:reasoning"],
+        "model_route_reasons": ["simple_rex_brain_only"],
         "duration_ms": 123,
     }
     rendered = json.dumps(payload) + "\n" + "\n".join(logger.records)
@@ -80,9 +74,7 @@ def test_observer_logs_metadata_only_without_raw_text_or_financial_rows():
 def test_observer_supports_error_class_without_exception_body():
     observer = RexBrainObserver(logger=FakeLogger())
     decision = _decision(message="hey")
-    model_route = RexModelRouter(
-        Settings(grok_model="grok-default")
-    ).route_for_decision(decision)
+    model_route = default_model_route(decision, grok_model="grok-default")
 
     payload = observer.log_turn(
         request_id="request-2",
