@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'auth_error_messages.dart';
 import 'auth_service.dart';
+import 'auth_signup.dart';
 
 class AuthController extends ChangeNotifier {
   AuthController({
@@ -59,10 +60,20 @@ class AuthController extends ChangeNotifier {
         password: password,
         fullName: fullName,
       );
-      _session = response.session;
-      _syncMfaRequirement();
-      if (_session == null) {
-        infoMessage = 'Check your email to confirm your account.';
+      switch (signUpStatus(response)) {
+        case SignUpStatus.emailAlreadyRegistered:
+          throw const AuthException(
+            'An account with this email already exists. Sign in instead.',
+          );
+        case SignUpStatus.signedIn:
+          _session = response.session;
+          _syncMfaRequirement();
+          infoMessage = 'Account created. You are signed in.';
+        case SignUpStatus.needsEmailConfirmation:
+          _session = response.session;
+          _syncMfaRequirement();
+          infoMessage =
+              'We sent a confirmation link to $email. Open it, then return here and sign in.';
       }
     });
   }
@@ -218,6 +229,7 @@ class AuthController extends ChangeNotifier {
     try {
       await action();
     } catch (e) {
+      debugPrint('[Clarity][Auth] $e');
       errorMessage = friendlyAuthError(e);
     } finally {
       isLoading = false;

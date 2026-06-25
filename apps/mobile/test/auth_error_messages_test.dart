@@ -23,4 +23,13 @@ void main() {
       'That code was not accepted. Check your authenticator app and try again.',
     );
   });
+
+  test('email send failures are not shown as MFA errors', () {
+    expect(
+      friendlyAuthError(
+        const AuthException('Error sending confirmation email'),
+      ),
+      'We could not send a confirmation email right now. Try again in a few minutes.',
+    );
+  });
 }
