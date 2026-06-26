@@ -6,7 +6,7 @@ Make the Rex API backend, Supabase schema, Plaid sync, voice infrastructure, and
 
 ## Status
 
-**MVP code/static complete.** Production startup validation, deploy runbook, schema/env cleanup, and guardrail tests are in place. Service subpackage moves and oversized module splits remain deferred.
+**MVP code/static complete.** Production startup validation, deploy runbook, schema/env cleanup, and guardrail tests are in place. Service subpackage moves remain deferred. **Files over 500 lines must be split per [`docs/brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md`](../brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md) and `.cursor/rules/FILE-SIZE-AND-SPLIT-md.mdc` — not deferred when already over limit.**
 
 ## Current State
 
@@ -53,7 +53,7 @@ Move toward subpackages after behavior is stable:
 
 Do this incrementally. Avoid large move-only commits mixed with behavior changes.
 
-**Deferred** until post-MVP.
+**Deferred** until post-MVP (subpackage moves only). Oversized files over 500 lines: follow `REX_BRAIN_TRUST_RELIABILITY_PLAN.md` P1/P2 split schedule.
 
 ### 3. Rex Brain Production Guard
 
@@ -123,7 +123,7 @@ Priority splits:
 
 Each split should preserve tests and public behavior.
 
-**Deferred** until post-MVP.
+**Priority:** `goal_command_service.py` (1,408 lines) — see P1-1 in [`REX_BRAIN_TRUST_RELIABILITY_PLAN.md`](../brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md). Other files in section 7 follow P2-4. Do not defer splits for files already over 500 lines.
 
 ### 8. Deployment Runbook
 
@@ -162,7 +162,7 @@ Each split should preserve tests and public behavior.
 
 - Live dependency probes in `/ready` (Grok/Supabase ping).
 - Experimental Rex Brain module relocation to subpackage.
-- Oversized service file splits.
+- Oversized service file splits (except P0/P1 items tracked in `REX_BRAIN_TRUST_RELIABILITY_PLAN.md`).
 - Remove legacy `call-openai` Edge Function.
 - Manual ops smoke on VPS (restart → `/ready` → chat → voice).
 

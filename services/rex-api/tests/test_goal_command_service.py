@@ -366,3 +366,44 @@ async def test_yes_please_after_hardware_message_saves_goals_from_history():
     assert result is not None
     assert result["memory_changes"]["created"] == 2
     assert len(memory_service.created_plans) == 2
+
+
+@pytest.mark.asyncio
+async def test_list_commitments_question_returns_saved_commitments_without_llm():
+    memory_service = FakeMemoryService()
+    memory_service.commitments.append(
+        {
+            "id": "commitment-1",
+            "title": "Be a goal/commitment",
+            "commitment_text": "be a goal/commitment",
+            "commitment_type": "task",
+            "status": "open",
+            "active": True,
+        }
+    )
+    memory_service.plans.append(
+        {
+            "id": "plan-1",
+            "title": "Buy RAM",
+            "description": "Buy 32-64gb ram",
+            "status": "active",
+            "active": True,
+        }
+    )
+    conversation_id = await memory_service.create_conversation()
+    message = "What commitments do we have saved?"
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert "Open commitments:" in result["response"]
+    assert "Be a goal/commitment" in result["response"]
+    assert "Buy RAM" not in result["response"]
+    assert result["memory_changes"] == {}

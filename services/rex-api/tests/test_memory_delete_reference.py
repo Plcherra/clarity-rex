@@ -35,3 +35,11 @@ def test_intent_parser_parses_reference_delete():
     )
     assert intent.intent_type == CorrectionIntentType.REMOVE_OBSOLETE
     assert "be a goal" in intent.old_value.casefold()
+
+
+def test_intent_parser_delete_saved_commitment_targets_commitment():
+    intent = MemoryCorrectionIntentParser().detect_correction_intent(
+        "Can you delete the commitment we have saved?"
+    )
+    assert intent.intent_type == CorrectionIntentType.REMOVE_OBSOLETE
+    assert intent.old_value == "commitment"

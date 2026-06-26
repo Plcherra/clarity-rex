@@ -8,7 +8,9 @@ from app.models.commitment import CommitmentCreateRequest
 from app.models.plan import PlanCreateRequest
 from app.services.commitment_service import CommitmentService
 from app.services.goal_command_parsing import (
+    goals_inventory_scope,
     is_affirmation_or_goal_prefix,
+    is_goals_inventory_query,
     is_meta_instruction_body,
     looks_like_equipment_goal,
     normalize_equipment_goal_title,
@@ -161,6 +163,14 @@ class GoalCommandService:
         if reclassified is not None:
             return reclassified
 
+        listed = await self._try_list_goals_and_commitments(
+            message,
+            conversation_id=conversation_id,
+            user_message=user_message,
+        )
+        if listed is not None:
+            return listed
+
         if should_defer_to_delete_confirmation(message, conversation_history):
             return None
 
@@ -190,6 +200,135 @@ class GoalCommandService:
             conversation_id=conversation_id,
             user_message=user_message,
         )
+
+    async def _try_list_goals_and_commitments(
+        self,
+        message: str,
+        *,
+        conversation_id: str,
+        user_message: dict,
+    ) -> Optional[dict]:
+        if not is_goals_inventory_query(message):
+            return None
+
+        scope = goals_inventory_scope(message)
+        plans: list[dict] = []
+        commitments: list[dict] = []
+        if scope in {"goals", "both"}:
+            plans = await self._list_active_plans()
+        if scope in {"commitments", "both"}:
+            commitments = await self._list_open_commitments()
+
+        response = self._format_goals_inventory_response(
+            plans=plans,
+            commitments=commitments,
+            scope=scope,
+        )
+        return await self._read_only_result(
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response=response,
+        )
+
+    async def _list_active_plans(self) -> list[dict]:
+        list_plans = getattr(self.memory_service, "list_plans", None)
+        if list_plans is None:
+            return []
+        try:
+            rows = await list_plans(active=True, status="active", limit=20)
+        except TypeError:
+            rows = await list_plans(active=True, limit=20)
+        except Exception:
+            return []
+        if not isinstance(rows, list):
+            return []
+        return [row for row in rows if isinstance(row, dict)]
+
+    async def _list_open_commitments(self) -> list[dict]:
+        list_commitments = getattr(self.memory_service, "list_commitments", None)
+        if list_commitments is None:
+            return []
+        try:
+            rows = await list_commitments(active=True, limit=20)
+        except Exception:
+            return []
+        if not isinstance(rows, list):
+            return []
+        return [
+            row
+            for row in rows
+            if isinstance(row, dict) and self._is_open_commitment(row)
+        ]
+
+    def _is_open_commitment(self, commitment: dict) -> bool:
+        status = str(commitment.get("status") or "open").strip().lower()
+        return status in {"open", "in_progress"}
+
+    def _record_display_title(self, record: dict) -> str:
+        for key in ("title", "commitment_text", "description", "desired_outcome"):
+            value = str(record.get(key) or "").strip()
+            if value:
+                return value
+        return "Untitled"
+
+    def _format_goals_inventory_response(
+        self,
+        *,
+        plans: list[dict],
+        commitments: list[dict],
+        scope: str,
+    ) -> str:
+        sections: list[str] = []
+        if scope in {"goals", "both"}:
+            if plans:
+                lines = "\n".join(
+                    f"- {self._record_display_title(plan)}" for plan in plans
+                )
+                sections.append(f"Active goals:\n{lines}")
+            elif scope == "goals":
+                sections.append("You don't have any active goals saved in Clarity.")
+        if scope in {"commitments", "both"}:
+            if commitments:
+                lines = "\n".join(
+                    f"- {self._record_display_title(commitment)}"
+                    for commitment in commitments
+                )
+                sections.append(f"Open commitments:\n{lines}")
+            elif scope == "commitments":
+                sections.append(
+                    "You don't have any open commitments saved in Clarity."
+                )
+        if not sections:
+            return (
+                "You don't have any active goals or open commitments saved "
+                "in Clarity right now."
+            )
+        return "\n\n".join(sections)
+
+    async def _read_only_result(
+        self,
+        *,
+        conversation_id: str,
+        user_message: dict,
+        response: str,
+    ) -> dict:
+        assistant_message = await self.memory_service.save_message(
+            conversation_id,
+            "assistant",
+            response,
+        )
+        return {
+            "conversation_id": conversation_id,
+            "response": response,
+            "user_message": user_message,
+            "assistant_message": assistant_message,
+            "memory_correction": None,
+            "memory_changes": {},
+            "messages": await self.memory_service.get_recent_messages(
+                conversation_id,
+                limit=20,
+            ),
+        }
 
     def detect_commands(
         self,

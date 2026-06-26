@@ -168,8 +168,11 @@ def safe_unexecuted_delete_response(
         is_delete_clarification_message,
         response_claims_delete_success,
     )
+    from app.services.goal_command_parsing import is_goals_inventory_query
 
     cleaned = response.strip()
+    if is_goals_inventory_query(user_message):
+        return cleaned
     should_guard = request_asks_delete(user_message) or is_delete_clarification_message(
         user_message,
         conversation_history,

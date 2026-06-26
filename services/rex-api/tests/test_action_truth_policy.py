@@ -65,6 +65,25 @@ def test_unexecuted_delete_success_claim_is_blocked():
     assert "don't have a confirmed backend delete" in response
 
 
+def test_unexecuted_delete_guard_skips_goals_inventory_questions():
+    history = [
+        {
+            "role": "assistant",
+            "content": (
+                "I couldn't find an active saved memory matching that, so I "
+                "didn't delete anything."
+            ),
+        }
+    ]
+    response = safe_unexecuted_delete_response(
+        "You have one commitment saved: Be a goal/commitment.",
+        user_message="What commitments do we have saved?",
+        conversation_history=history,
+    )
+
+    assert response == "You have one commitment saved: Be a goal/commitment."
+
+
 def test_degraded_recall_uses_canonical_fallback():
     response = safe_degraded_memory_search_response(
         "I don't know anything about your mom.",

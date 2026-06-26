@@ -70,6 +70,10 @@ def is_delete_clarification_message(
     message: str,
     conversation_history: list[dict] | None = None,
 ) -> bool:
+    from app.services.goal_command_parsing import is_goals_inventory_query
+
+    if is_goals_inventory_query(message):
+        return False
     if extract_reference_delete_target(message):
         return True
     if not conversation_history:

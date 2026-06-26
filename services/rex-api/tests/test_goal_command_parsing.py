@@ -1,5 +1,7 @@
 from app.services.goal_command_parsing import (
+    is_goals_inventory_query,
     is_meta_instruction_body,
+    goals_inventory_scope,
     split_compound_goal_bodies,
     target_date_for_message,
 )
@@ -63,3 +65,26 @@ def test_next_month_resolves_to_last_day():
         "by next month",
         time_context={"date": "2026-06-04"},
     ) == "July 31"
+
+
+def test_goals_inventory_query_detects_commitment_list_question():
+    assert is_goals_inventory_query("What commitments do we have saved?")
+    assert goals_inventory_scope("What commitments do we have saved?") == "commitments"
+
+
+def test_goals_inventory_query_is_not_delete_clarification():
+    history = [
+        {
+            "role": "assistant",
+            "content": (
+                "I couldn't find an active saved memory matching that, so I "
+                "didn't delete anything."
+            ),
+        }
+    ]
+    from app.services.memory_delete_reference import is_delete_clarification_message
+
+    assert not is_delete_clarification_message(
+        "What commitments do we have saved?",
+        history,
+    )

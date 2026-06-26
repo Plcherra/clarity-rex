@@ -27,6 +27,15 @@ GOAL_PROGRESS_PATTERNS = (
     re.compile(r"\bhow\s+am\s+i\s+doing\b", re.IGNORECASE),
     re.compile(r"\bhow\s+(are|is)\s+my\s+(goals?|plans?)\b", re.IGNORECASE),
     re.compile(r"\bwhat\s+should\s+i\s+focus\s+on\b", re.IGNORECASE),
+    re.compile(
+        r"\bwhat\s+(?:goals?|commitments?|plans?)\s+do\s+(?:we|i)\s+have\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:list|show|tell me)\s+(?:me\s+)?(?:my|our)\s+"
+        r"(?:saved\s+)?(?:goals?|commitments?|plans?)\b",
+        re.IGNORECASE,
+    ),
 )
 
 
@@ -144,8 +153,10 @@ class GoalContextService:
         status = commitment.get("status", "open")
         if status not in {"open", "in_progress"}:
             return False
-        plan_id = str(commitment.get("plan_id") or "")
-        return not plan_ids or bool(plan_id and plan_id in plan_ids)
+        plan_id = str(commitment.get("plan_id") or "").strip()
+        if not plan_id:
+            return True
+        return not plan_ids or plan_id in plan_ids
 
     def _with_relevance(self, records: list[dict]) -> list[dict]:
         return [

@@ -213,3 +213,43 @@ def _last_day_of_month(base: date, *, offset_months: int) -> str:
     last_day = calendar.monthrange(year, month)[1]
     month_name = datetime(year, month, 1).strftime("%B")
     return f"{month_name} {last_day}"
+
+
+_GOALS_INVENTORY_PATTERNS = (
+    re.compile(
+        r"\bwhat\s+(?:goals?|commitments?|plans?)\s+do\s+(?:we|i)\s+have\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bwhat\s+(?:saved\s+)?(?:goals?|commitments?|plans?)\s+"
+        r"(?:do\s+(?:we|i)\s+have|are\s+(?:there|saved))\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:list|show|tell me)\s+(?:me\s+)?(?:my|our)\s+"
+        r"(?:saved\s+)?(?:goals?|commitments?|plans?)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bhow many\s+(?:goals?|commitments?|plans?)\s+do\s+(?:we|i)\s+have\b",
+        re.IGNORECASE,
+    ),
+)
+
+
+def is_goals_inventory_query(message: str) -> bool:
+    cleaned = re.sub(r"\s+", " ", str(message or "")).strip()
+    if not cleaned:
+        return False
+    return any(pattern.search(cleaned) for pattern in _GOALS_INVENTORY_PATTERNS)
+
+
+def goals_inventory_scope(message: str) -> str:
+    lowered = re.sub(r"\s+", " ", str(message or "")).lower()
+    has_goal = bool(re.search(r"\b(?:goals?|plans?)\b", lowered))
+    has_commitment = bool(re.search(r"\bcommitments?\b", lowered))
+    if has_goal and not has_commitment:
+        return "goals"
+    if has_commitment and not has_goal:
+        return "commitments"
+    return "both"

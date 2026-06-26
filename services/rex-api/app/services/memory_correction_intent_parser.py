@@ -36,6 +36,30 @@ class MemoryCorrectionIntentParser:
         if not cleaned:
             return CorrectionIntent(CorrectionIntentType.UNKNOWN, confidence=0)
 
+        goal_delete = re.search(
+            r"\b(?:delete|remove|archive)\s+(?:the\s+)?(?P<kind>goal|commitment)s?\b"
+            r"(?:\s+(?:we\s+have(?:\s+saved)?|(?:that\s+)?(?:i\s+)?saved))?"
+            r"(?:\s+['\"](?P<quoted>.+?)['\"])?",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        if goal_delete:
+            quoted = goal_delete.group("quoted")
+            if quoted:
+                return CorrectionIntent(
+                    CorrectionIntentType.REMOVE_OBSOLETE,
+                    old_value=trim_removal_target(quoted),
+                    new_value="[archived]",
+                    confidence=0.9,
+                )
+            kind = str(goal_delete.group("kind") or "goal").strip().lower()
+            return CorrectionIntent(
+                CorrectionIntentType.REMOVE_OBSOLETE,
+                old_value=kind,
+                new_value="[archived]",
+                confidence=0.72,
+            )
+
         removal = re.search(
             (
                 r"\b(?:delete|remove|archive|drop|forget|erase|clear)\s+"
@@ -64,28 +88,6 @@ class MemoryCorrectionIntentParser:
                 old_value=trim_removal_target(removal.group(1)),
                 new_value="[archived]",
                 confidence=0.9,
-            )
-
-        goal_delete = re.search(
-            r"\b(?:delete|remove|archive)\s+(?:the\s+)?(?:old\s+)?(?:goal|commitment)\b"
-            r"(?:\s+['\"](?P<quoted>.+?)['\"])?",
-            cleaned,
-            flags=re.IGNORECASE,
-        )
-        if goal_delete:
-            quoted = goal_delete.group("quoted")
-            if quoted:
-                return CorrectionIntent(
-                    CorrectionIntentType.REMOVE_OBSOLETE,
-                    old_value=trim_removal_target(quoted),
-                    new_value="[archived]",
-                    confidence=0.9,
-                )
-            return CorrectionIntent(
-                CorrectionIntentType.REMOVE_OBSOLETE,
-                old_value="goal",
-                new_value="[archived]",
-                confidence=0.72,
             )
 
         reference_target = extract_reference_delete_target(cleaned)
