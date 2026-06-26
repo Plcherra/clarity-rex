@@ -173,3 +173,57 @@ async def test_goal_write_failure_is_truthful():
     assert result["memory_changes"]["skipped"] == 1
     assert result["memory_changes"]["records"][0]["action"] == "save_failed"
     assert memory_service.created_plans == []
+
+
+@pytest.mark.asyncio
+async def test_purchase_checklist_upgrade_creates_goal_not_memory():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    message = (
+        "Nice, it would be my next checklist for the next month purchase. "
+        "I have to upgrade my ram from 16 to at least 32 or 64 + "
+        "1 or 2 more terabytes of space"
+    )
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert "added this as a goal" in result["response"]
+    assert result["memory_changes"]["created"] == 1
+    assert memory_service.created_plans
+    plan = memory_service.created_plans[0]
+    assert plan["plan_type"] == "personal"
+    assert "upgrade my ram" in plan["description"].casefold()
+    assert plan["target_date"] == "Next month"
+    assert memory_service.created_commitments == []
+    assert memory_service.long_term_memory == []
+
+
+@pytest.mark.asyncio
+async def test_have_to_upgrade_without_timeline_creates_commitment():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    message = "I have to upgrade my RAM from 16GB to 32GB"
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert "saved that commitment" in result["response"]
+    assert result["memory_changes"]["created"] == 1
+    commitment = memory_service.created_commitments[0]
+    assert commitment["commitment_type"] == "task"
+    assert "upgrade my RAM" in commitment["commitment_text"]

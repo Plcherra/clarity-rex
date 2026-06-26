@@ -880,6 +880,27 @@ async def test_chat_service_saves_explicit_commitment_without_llm_call():
 
 
 @pytest.mark.asyncio
+async def test_chat_service_saves_pc_upgrade_checklist_as_goal_without_llm():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    message = (
+        "Nice, it would be my next checklist for the next month purchase. "
+        "I have to upgrade my ram from 16 to at least 32 or 64 + "
+        "1 or 2 more terabytes of space"
+    )
+    result = await chat_service.send_message(message)
+
+    assert ai_service.generate_calls == 0
+    assert "added this as a goal" in result["response"]
+    assert len(memory_service.created_plans) == 1
+    assert memory_service.created_plans[0]["target_date"] == "Next month"
+    assert result["memory_changes"]["records"][0]["kind"] == "plan"
+    assert memory_service.long_term_memory == []
+
+
+@pytest.mark.asyncio
 async def test_chat_service_voice_stream_saves_commitment_without_llm_call():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

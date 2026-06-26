@@ -82,7 +82,7 @@ class MemoryIntentService(
         re.IGNORECASE,
     )
     _device_fact_pattern = re.compile(
-        r"\b(?:i\s+(?:have|own|use)|it(?:'s| is)|that(?:'s| is))\s+"
+        r"\b(?:i\s+(?:have|own|use)(?!\s+to\b)|it(?:'s| is)|that(?:'s| is))\s+"
         r"(?:an?\s+|the\s+)?(?P<device>[^.!?]{2,90}?"
         r"(?:\bpc\b|\bcomputer\b|\blaptop\b|\bdesktop\b|\bphone\b|\btablet\b|"
         r"\bconsole\b|\b[A-Za-z][A-Za-z0-9 -]*\d{1,4}\s*[A-Za-z]{0,3}\b))",
@@ -125,6 +125,9 @@ class MemoryIntentService(
         *,
         time_context: Optional[dict] = None,
     ) -> Optional[SimpleMemoryIntent]:
+        if self._looks_like_goal_or_commitment(message):
+            return None
+
         birthday_intent = self._detect_birthday(message, time_context=time_context)
         if birthday_intent is not None:
             return birthday_intent
@@ -406,3 +409,34 @@ class MemoryIntentService(
             return None
 
         return self._birthday_intent(person, date_text)
+
+    def _looks_like_goal_or_commitment(self, message: str) -> bool:
+        if re.search(
+            r"\b(?:"
+            r"(?:my\s+)?(?:next\s+)?checklist\b|"
+            r"next\s+month(?:'?s)?\s+(?:purchase|checklist|shopping)\b|"
+            r"(?:purchase|shopping)\s+(?:plan|list|checklist)\b|"
+            r"hold\s+me\s+accountable|"
+            r"(?:remind|remember)\s+me\s+to|"
+            r"(?:set|create|add)\s+(?:a\s+)?reminder\s+to|"
+            r"\bmy\s+goal\s+is\b|"
+            r"(?:track|save|add)\s+.+\s+as\s+(?:a\s+)?(?:goal|commitment)\b"
+            r")\b",
+            message,
+            re.IGNORECASE,
+        ):
+            return True
+        if re.search(
+            r"\bi\s+(?:need|have)\s+to\s+"
+            r"(?:upgrade|install|buy|get|replace|purchase|add|pick\s+up)\b",
+            message,
+            re.IGNORECASE,
+        ):
+            return True
+        if re.search(
+            r"\bi\s+(?:need|have)\s+to\s+.+\b(?:on|by)\b",
+            message,
+            re.IGNORECASE,
+        ):
+            return True
+        return False

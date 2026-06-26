@@ -76,8 +76,26 @@ class GoalCommandService:
             re.IGNORECASE,
         ),
     )
+    _plan_timeline_pattern = re.compile(
+        r"\b(?:"
+        r"(?:my\s+)?(?:next\s+)?checklist\b|"
+        r"next\s+month(?:'?s)?\s+(?:purchase|checklist|shopping)\b|"
+        r"(?:purchase|shopping)\s+(?:plan|list|checklist)\b|"
+        r"plan(?:ned|ning)?\s+(?:for|to)\s+(?:next|this)\s+(?:month|week)"
+        r")\b",
+        re.IGNORECASE,
+    )
+    _obligation_action_pattern = re.compile(
+        r"\bi\s+(?:need|have)\s+to\s+"
+        r"(?P<action>(?:upgrade|install|buy|get|replace|purchase|add|pick\s+up)\b.+)",
+        re.IGNORECASE,
+    )
     _due_pattern = re.compile(
         r"\b(?:on|by)\s+(?:the\s+)?(?P<date>[A-Za-z]+(?:\s+\d{1,2}(?:st|nd|rd|th)?)?|\d{1,2}(?:st|nd|rd|th)?)\b",
+        re.IGNORECASE,
+    )
+    _relative_time_pattern = re.compile(
+        r"\b(?P<relative>(?:next|this)\s+(?:month|week|quarter|year))\b",
         re.IGNORECASE,
     )
     _date_normalizer = MemoryDateNormalizer()
@@ -134,6 +152,18 @@ class GoalCommandService:
         commitment = self._detect_commitment(message, time_context=time_context)
         if commitment is not None:
             return commitment
+        future_plan = self._detect_future_plan_goal(
+            message,
+            time_context=time_context,
+        )
+        if future_plan is not None:
+            return future_plan
+        obligation = self._detect_obligation_commitment(
+            message,
+            time_context=time_context,
+        )
+        if obligation is not None:
+            return obligation
         return self._detect_goal(
             message,
             conversation_history=conversation_history,
@@ -167,6 +197,55 @@ class GoalCommandService:
             body=goal_text,
             record_type=self._plan_type(goal_text),
             target_text=target_text,
+        )
+
+    def _detect_future_plan_goal(
+        self,
+        message: str,
+        *,
+        time_context: dict,
+    ) -> Optional[GoalCommand]:
+        if self._plan_timeline_pattern.search(message) is None:
+            return None
+
+        body = self._extract_obligation_action(message) or self._clean(message)
+        if not body or len(body) < 8:
+            return None
+
+        target_text = self._relative_date_from_text(
+            message
+        ) or self._date_from_text(message, time_context=time_context)
+        return GoalCommand(
+            kind="goal",
+            title=self._title(body),
+            body=body,
+            record_type=self._plan_type(body),
+            target_text=target_text,
+        )
+
+    def _detect_obligation_commitment(
+        self,
+        message: str,
+        *,
+        time_context: dict,
+    ) -> Optional[GoalCommand]:
+        if self._plan_timeline_pattern.search(message):
+            return None
+
+        body = self._extract_obligation_action(message)
+        if not body:
+            return None
+
+        due_text = self._date_from_text(
+            message,
+            time_context=time_context,
+        ) or self._relative_date_from_text(message)
+        return GoalCommand(
+            kind="commitment",
+            title=self._title(body),
+            body=body,
+            record_type=self._commitment_type(body),
+            due_text=due_text,
         )
 
     def _detect_commitment(
@@ -409,6 +488,19 @@ class GoalCommandService:
             if message.get("role") == "user":
                 return str(message.get("content") or "")
         return None
+
+    def _extract_obligation_action(self, message: str) -> Optional[str]:
+        match = self._obligation_action_pattern.search(message)
+        if match is None:
+            return None
+        return self._clean(match.group("action"))
+
+    def _relative_date_from_text(self, text: str) -> Optional[str]:
+        match = self._relative_time_pattern.search(text)
+        if match is None:
+            return None
+        relative = match.group("relative")
+        return relative[:1].upper() + relative[1:].lower()
 
     def _date_from_text(self, text: str, *, time_context: dict) -> Optional[str]:
         match = self._due_pattern.search(text)

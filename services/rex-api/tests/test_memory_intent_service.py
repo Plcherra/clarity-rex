@@ -390,6 +390,19 @@ def test_ignores_messages_without_simple_memory_intent():
 
     assert service.detect_simple_memory("Can you help me plan today?") is None
     assert service.detect_simple_memory("Remember.") is None
+    assert (
+        service.detect_simple_memory(
+            "I have to upgrade my RAM from 16GB to 32GB.",
+        )
+        is None
+    )
+    assert (
+        service.detect_simple_memory(
+            "It would be my next checklist for the next month purchase. "
+            "I have to upgrade my ram from 16 to 32.",
+        )
+        is None
+    )
 
 
 def test_simple_memory_intents_cover_allowed_categories():

@@ -100,15 +100,6 @@ class ChatTurnOrchestrator:
         time_context = turn_context.time_context
         accountability_signals = turn_context.accountability_signals
         user_message = turn_context.user_message
-        simple_memory_turn = await self.memory_turn_service.handle_turn(
-            brain_message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_history=conversation_history,
-            time_context=time_context,
-        )
-        if simple_memory_turn:
-            return simple_memory_turn
         goal_command_turn = await self.goal_command_service.handle_turn(
             brain_message,
             conversation_id=conversation_id,
@@ -118,6 +109,15 @@ class ChatTurnOrchestrator:
         )
         if goal_command_turn:
             return goal_command_turn
+        simple_memory_turn = await self.memory_turn_service.handle_turn(
+            brain_message,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            conversation_history=conversation_history,
+            time_context=time_context,
+        )
+        if simple_memory_turn:
+            return simple_memory_turn
         finance_guard_response = self.financial_guard.guard_response(
             intent_decision,
             financial_context,
@@ -254,24 +254,6 @@ class ChatTurnOrchestrator:
         yield {"event": "conversation", "conversation_id": conversation_id}
         if include_turn_trace:
             yield self._turn_trace_event(intent_decision, channel)
-        simple_memory_turn = await self.memory_turn_service.handle_turn(
-            brain_message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_history=conversation_history,
-            time_context=time_context,
-        )
-        if simple_memory_turn:
-            yield {"event": "token", "token": simple_memory_turn["response"]}
-            yield {
-                "event": "done",
-                "conversation_id": conversation_id,
-                "response": simple_memory_turn["response"],
-                "messages": simple_memory_turn["messages"],
-                "memory_changes": simple_memory_turn["memory_changes"],
-                "assistant_message": simple_memory_turn["assistant_message"],
-            }
-            return
         goal_command_turn = await self.goal_command_service.handle_turn(
             brain_message,
             conversation_id=conversation_id,
@@ -288,6 +270,24 @@ class ChatTurnOrchestrator:
                 "messages": goal_command_turn["messages"],
                 "memory_changes": goal_command_turn["memory_changes"],
                 "assistant_message": goal_command_turn["assistant_message"],
+            }
+            return
+        simple_memory_turn = await self.memory_turn_service.handle_turn(
+            brain_message,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            conversation_history=conversation_history,
+            time_context=time_context,
+        )
+        if simple_memory_turn:
+            yield {"event": "token", "token": simple_memory_turn["response"]}
+            yield {
+                "event": "done",
+                "conversation_id": conversation_id,
+                "response": simple_memory_turn["response"],
+                "messages": simple_memory_turn["messages"],
+                "memory_changes": simple_memory_turn["memory_changes"],
+                "assistant_message": simple_memory_turn["assistant_message"],
             }
             return
         finance_guard_response = self.financial_guard.guard_response(
