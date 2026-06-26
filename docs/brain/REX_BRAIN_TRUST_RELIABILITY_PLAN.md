@@ -28,18 +28,19 @@ User message
 
 ## Recently Fixed (Pre-P0 Baseline)
 
-**Verified 2026-06-25:** Code changes exist in the working tree; **not yet committed or deployed**. Tests: **43 passed** (`test_goal_command_*`, `test_goal_context_service`, `test_memory_delete_reference`, `test_action_truth_policy`).
+**Verified 2026-06-25:** Committed and pushed as `902398c` on `main`. Tests: **43 passed** (`test_goal_command_*`, `test_goal_context_service`, `test_memory_delete_reference`, `test_action_truth_policy`). **Deploy Rex API to VPS before treating as live.**
 
 | Item | Files | Code | Committed | Deployed |
 |------|-------|------|-----------|----------|
-| Goals/commitments inventory detection | `goal_command_parsing.py` | [x] | [ ] | [ ] |
-| Direct list handler | `goal_command_service.py` — `_try_list_goals_and_commitments()` | [x] | [ ] | [ ] |
-| Standalone commitment filter | `goal_context_service.py` — `_is_related_commitment()` | [x] | [ ] | [ ] |
-| Skip delete clarification for inventory | `memory_delete_reference.py`, `action_truth_policy.py` | [x] | [ ] | [ ] |
-| Goal/commitment delete before generic memory delete | `memory_correction_intent_parser.py` | [x] | [ ] | [ ] |
-| Regression tests | `test_goal_context_service.py` (new), others updated | [x] | [ ] | n/a |
+| Goals/commitments inventory detection | `goal_command_parsing.py` | [x] | [x] | [ ] |
+| Direct list handler | `goal_command_service.py` — `_try_list_goals_and_commitments()` | [x] | [x] | [ ] |
+| Standalone commitment filter | `goal_context_service.py` — `_is_related_commitment()` | [x] | [x] | [ ] |
+| Skip delete clarification for inventory | `memory_delete_reference.py`, `action_truth_policy.py` | [x] | [x] | [ ] |
+| Goal/commitment delete before generic memory delete | `memory_correction_intent_parser.py` | [x] | [x] | [ ] |
+| Regression tests | `test_goal_context_service.py` (new), others updated | [x] | [x] | n/a |
+| Brain trust plan + master/backend plan links | `REX_BRAIN_TRUST_RELIABILITY_PLAN.md`, completion plans | [x] | [x] | n/a |
 
-**Next step:** Commit and deploy this baseline before starting P0-1.
+**Next step:** Deploy Rex API, then start P0-1.
 
 **Symptoms addressed:** "What commitments do we have?" returning delete fallback; delete commitment failures; malformed single goal bodies from numbered lists.
 
@@ -113,7 +114,7 @@ Target: all modules under 300 lines.
 ## Recommended PR Sequence
 
 1. [x] Rule file + this plan doc + master plan index
-2. [ ] Commit/deploy recent goals/commitments fixes (Pre-P0 baseline above)
+2. [x] Commit/push recent goals/commitments fixes (`902398c`); [ ] deploy Rex API
 3. [ ] P0-1 + P0-2 — snapshot + AccountabilityQueryService + parity tests
 4. [ ] P0-4 — pending_action conversation state
 5. [ ] P0-3 — unified delete/update resolver
@@ -140,4 +141,4 @@ Target: all modules under 300 lines.
 | Date | Change |
 |------|--------|
 | 2026-06-25 | Created plan; added FILE-SIZE-AND-SPLIT rule; linked from completion master plan |
-| 2026-06-25 | Verified pre-P0 baseline: 43 tests pass locally; goals/commitments fixes uncommitted |
+| 2026-06-25 | Verified pre-P0 baseline: 43 tests pass; committed and pushed as `902398c` |
