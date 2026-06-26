@@ -11,7 +11,19 @@ from app.services.action_truth_policy import (
     safe_unexecuted_memory_response,
     safe_unsupported_action_response,
 )
+from app.services.chat_turn_observability import ChatTurnTrace
 from app.services.rex_intent_router import RexIntent
+
+
+def _apply_truth_guard(
+    guard_name: str,
+    before: str,
+    after: str,
+    turn_trace: ChatTurnTrace | None,
+) -> str:
+    if turn_trace is not None and before.strip() != after.strip():
+        turn_trace.record_truth_rewrite(guard_name)
+    return after
 
 
 class ChatResponseTruthService:
@@ -26,47 +38,103 @@ class ChatResponseTruthService:
         memory_status: object = None,
         chat_search_results_loaded: bool = False,
         conversation_history: list[dict] | None = None,
+        turn_trace: ChatTurnTrace | None = None,
     ) -> str:
-        response = safe_pending_action_response(
-            assistant_response,
+        response = assistant_response
+        updated = safe_pending_action_response(
+            response,
             clarity_action_proposals,
+        )
+        response = _apply_truth_guard(
+            "pending_action",
+            response,
+            updated,
+            turn_trace,
         )
         if clarity_action_proposals:
             return response
-        response = safe_unsupported_action_response(response, unsupported_actions)
+        updated = safe_unsupported_action_response(response, unsupported_actions)
+        response = _apply_truth_guard(
+            "unsupported_action",
+            response,
+            updated,
+            turn_trace,
+        )
         if unsupported_actions:
             return response
-        response = safe_degraded_memory_search_response(
+        updated = safe_degraded_memory_search_response(
             response,
             memory_status=memory_status,
         )
-        response = safe_old_chat_search_response(
+        response = _apply_truth_guard(
+            "degraded_memory_search",
+            response,
+            updated,
+            turn_trace,
+        )
+        updated = safe_old_chat_search_response(
             response,
             chat_search_results_loaded=chat_search_results_loaded,
             memory_status=memory_status,
         )
-        response = safe_empty_recall_search_response(
+        response = _apply_truth_guard(
+            "old_chat_search",
+            response,
+            updated,
+            turn_trace,
+        )
+        updated = safe_empty_recall_search_response(
             response,
             memory_status=memory_status,
         )
-        response = safe_chat_search_capability_response(response)
-        response = safe_unexecuted_delete_response(
+        response = _apply_truth_guard(
+            "empty_recall_search",
+            response,
+            updated,
+            turn_trace,
+        )
+        updated = safe_chat_search_capability_response(response)
+        response = _apply_truth_guard(
+            "chat_search_capability",
+            response,
+            updated,
+            turn_trace,
+        )
+        updated = safe_unexecuted_delete_response(
             response,
             user_message=user_message,
             conversation_history=conversation_history,
             intent=intent_decision.intent.value,
         )
+        response = _apply_truth_guard(
+            "unexecuted_delete",
+            response,
+            updated,
+            turn_trace,
+        )
         if intent_decision.intent in {
             RexIntent.GOAL_OR_COMMITMENT,
             RexIntent.UNKNOWN,
         }:
-            response = safe_unexecuted_goal_response(
+            updated = safe_unexecuted_goal_response(
                 response,
                 user_message=user_message,
                 intent=intent_decision.intent.value,
             )
+            response = _apply_truth_guard(
+                "unexecuted_goal",
+                response,
+                updated,
+                turn_trace,
+            )
         if intent_decision.intent in {RexIntent.MEMORY_SAVE, RexIntent.MEMORY_UPDATE}:
-            return safe_unexecuted_memory_response(response)
+            updated = safe_unexecuted_memory_response(response)
+            return _apply_truth_guard(
+                "unexecuted_memory",
+                response,
+                updated,
+                turn_trace,
+            )
         return response
 
     def has_chat_search_results(self, messages: list[dict]) -> bool:

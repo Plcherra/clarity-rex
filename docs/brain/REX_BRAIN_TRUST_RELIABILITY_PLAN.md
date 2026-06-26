@@ -94,10 +94,10 @@ Target: all modules under 300 lines.
 
 | ID | Status | Issue | Work |
 |----|--------|-------|------|
-| P2-1 | [ ] | **Unified user language** | Goal vs Commitment vs Saved memory labels in prompts and direct answers |
-| P2-2 | [ ] | **Legacy data repair** | One-off script: split malformed numbered-list goals (e.g. "2 goals. 1 buy…") |
-| P2-3 | [ ] | **Turn observability** | Structured log per turn: handler short-circuit, resolver result, guard rewrites |
-| P2-4 | [ ] | **Recall file splits** | `chat_recall_search.py`, `recall_intent_helper.py`, `memory_correction_service.py` |
+| P2-1 | [x] | **Unified user language** | Goal vs Commitment vs Saved memory labels in prompts and direct answers |
+| P2-2 | [x] | **Legacy data repair** | One-off script: split malformed numbered-list goals (e.g. "2 goals. 1 buy…") |
+| P2-3 | [x] | **Turn observability** | Structured log per turn: handler short-circuit, resolver result, guard rewrites |
+| P2-4 | [x] | **Recall file splits** | `chat_recall_search.py`, `recall_intent_helper.py`, `memory_correction_service.py` |
 
 ---
 
@@ -120,7 +120,7 @@ Target: all modules under 300 lines.
 5. [x] P0-3 — unified delete/update resolver
 6. [x] P1-1 — GoalCommandService split (refactor only)
 7. [x] P1-3 + P1-4 — scoped guards and save quality
-8. [ ] P2 items
+8. [x] P2 items
 
 ---
 
@@ -128,10 +128,10 @@ Target: all modules under 300 lines.
 
 | Lines | File | Priority |
 |-------|------|----------|
-| 1,408 | `goal_command_service.py` | P1-1 done (~147 lines orchestrator) |
-| ~780 | `memory_correction_service.py` | P2-4 |
-| ~596 | `chat_recall_search.py` | P2-4 |
-| ~592 | `recall_intent_helper.py` | P2-4 |
+| ~147 | `goal_command_service.py` | P1-1 done |
+| ~540 | `memory_correction_service.py` | P2-4 split (ops + delete applier extracted) |
+| ~528 | `chat_recall_search.py` | P2-4 split (query builder + match helpers extracted) |
+| ~42 | `recall_intent_helper.py` | P2-4 done (constants, detection, query modules) |
 | ~454 | `chat_turn_orchestrator.py` | Monitor; split if it grows |
 
 ---
@@ -146,3 +146,4 @@ Target: all modules under 300 lines.
 | 2026-06-25 | P0-3: MemoryDeleteResolver + scoped delete wiring; 1079 tests pass |
 | 2026-06-25 | P1-1/P1-4: GoalCommandService split + writer validation + scoped truth guards + router inventory alignment |
 | 2026-06-25 | P1-1 started: extracted goal_command_types, goal_command_queries, goal_command_results |
+| 2026-06-25 | P2-1..P2-4: clarity knowledge labels, goal repair script, turn observability, recall/memory file splits; 1088 tests pass |

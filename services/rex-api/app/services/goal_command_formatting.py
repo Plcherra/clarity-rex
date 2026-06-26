@@ -6,6 +6,10 @@ import re
 from typing import Any, Optional
 
 from app.services.goal_command_parsing import target_date_for_message
+from app.services.clarity_knowledge_labels import (
+    reclassified_from_memory_message,
+    reclassified_without_memory_message,
+)
 from app.services.goal_command_types import GoalCommand
 from app.services.memory_date_normalizer import MemoryDateNormalizer
 
@@ -128,24 +132,19 @@ def reclassification_response(
     total_goals: int = 1,
     titles: Optional[list[str]] = None,
 ) -> Optional[str]:
+    joined = ", ".join(titles) if titles else None
     if archived_record is None:
-        if total_goals > 1 and titles:
-            joined = ", ".join(titles)
-            return f"Got it, I added {total_goals} goals: {joined}."
-        if total_goals == 1:
-            kind_label = "goal" if command.kind == "goal" else "commitment"
-            return f"Got it, I added that as a {kind_label}: {command.title}."
-        return None
-    if total_goals > 1 and titles:
-        joined = ", ".join(titles)
-        return (
-            "Got it, I removed that from saved memory and added "
-            f"{total_goals} goals: {joined}."
+        return reclassified_without_memory_message(
+            kind=command.kind,
+            title=command.title,
+            total=total_goals,
+            titles=joined,
         )
-    kind_label = "goal" if command.kind == "goal" else "commitment"
-    return (
-        f"Got it, I removed that from saved memory and added it as a "
-        f"{kind_label}: {command.title}."
+    return reclassified_from_memory_message(
+        kind=command.kind,
+        title=command.title,
+        total=total_goals,
+        titles=joined,
     )
 
 

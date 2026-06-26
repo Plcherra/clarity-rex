@@ -15,6 +15,11 @@ from app.services.goal_command_results import (
     failed_command_turn_result,
     multi_goal_turn_result,
 )
+from app.services.clarity_knowledge_labels import (
+    commitment_saved_message,
+    goal_saved_message,
+    goals_saved_message,
+)
 from app.services.goal_command_formatting import goal_title, plan_type
 from app.services.goal_command_types import GoalCommand
 
@@ -98,7 +103,7 @@ class GoalCommandWriter:
                 record_type=command.record_type,
                 title=command.title,
             )
-        resolved_response = response or f"Got it, I added this as a goal: {command.title}."
+        resolved_response = response or goal_saved_message(command.title)
         return await command_turn_result(
             self.memory_service,
             conversation_id=conversation_id,
@@ -166,7 +171,7 @@ class GoalCommandWriter:
 
         if response is None:
             titles = ", ".join(command.title for command in commands)
-            response = f"Got it, I added {len(commands)} goals: {titles}."
+            response = goals_saved_message(count=len(commands), titles=titles)
         return await multi_goal_turn_result(
             self.memory_service,
             conversation_id=conversation_id,
@@ -225,9 +230,7 @@ class GoalCommandWriter:
                 record_type=command.record_type,
                 title=command.title,
             )
-        resolved_response = (
-            response or f"Got it, I saved that commitment: {command.title}."
-        )
+        resolved_response = response or commitment_saved_message(command.title)
         return await command_turn_result(
             self.memory_service,
             conversation_id=conversation_id,

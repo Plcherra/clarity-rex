@@ -9,6 +9,7 @@ from fastapi import UploadFile
 from app.services.chat_financial_guard import ChatFinancialGuard
 from app.services.chat_response_truth import ChatResponseTruthService
 from app.services.chat_turn_context import ChatTurnContextService, MemoryService
+from app.services.chat_turn_observability import ChatTurnObserver, ChatTurnTrace
 from app.services.chat_usage_recorder import ChatUsageRecorder
 from app.services.clarity_action_parser import (
     ClarityActionParser,
@@ -41,6 +42,7 @@ class ChatTurnOrchestrator:
         truth_service: ChatResponseTruthService,
         usage_recorder: ChatUsageRecorder,
         transcript_normalizer: Optional[TranscriptNormalizer] = None,
+        turn_observer: Optional[ChatTurnObserver] = None,
     ) -> None:
         self.ai_service = ai_service
         self.memory_service = memory_service
@@ -55,6 +57,7 @@ class ChatTurnOrchestrator:
         self.transcript_normalizer = (
             transcript_normalizer or DEFAULT_TRANSCRIPT_NORMALIZER
         )
+        self.turn_observer = turn_observer or ChatTurnObserver()
 
     def _brain_messages(self, message: str) -> tuple[str, str]:
         stored_message = message.strip()
@@ -75,6 +78,7 @@ class ChatTurnOrchestrator:
         user_requested_deep_thinking: bool = False,
     ) -> dict:
         stored_message, brain_message = self._brain_messages(message)
+        turn_started_at = time.perf_counter()
         intent_decision = self.simple_rex_brain.classify(
             brain_message,
             has_file=file is not None,
@@ -101,7 +105,15 @@ class ChatTurnOrchestrator:
         time_context = turn_context.time_context
         accountability_signals = turn_context.accountability_signals
         user_message = turn_context.user_message
+        turn_trace = self.turn_observer.new_trace(
+            conversation_id=conversation_id,
+            intent=intent_decision.intent.value,
+        )
         pending_action = await self._load_pending_action(conversation_id)
+        if pending_action is not None:
+            turn_trace.record_pending_action(
+                getattr(pending_action, "action_type", None)
+            )
         goal_command_turn = await self.goal_command_service.handle_turn(
             brain_message,
             conversation_id=conversation_id,
@@ -111,6 +123,8 @@ class ChatTurnOrchestrator:
             pending_action=pending_action,
         )
         if goal_command_turn:
+            turn_trace.record_handler("goal_command")
+            self._log_turn_trace(turn_trace, turn_started_at)
             return goal_command_turn
         simple_memory_turn = await self.memory_turn_service.handle_turn(
             brain_message,
@@ -121,12 +135,16 @@ class ChatTurnOrchestrator:
             pending_action=pending_action,
         )
         if simple_memory_turn:
+            turn_trace.record_handler("memory_turn")
+            self._log_turn_trace(turn_trace, turn_started_at)
             return simple_memory_turn
         finance_guard_response = self.financial_guard.guard_response(
             intent_decision,
             financial_context,
         )
         if finance_guard_response:
+            turn_trace.record_handler("finance_guard")
+            self._log_turn_trace(turn_trace, turn_started_at)
             return await self._guarded_turn_response(
                 conversation_id=conversation_id,
                 response=finance_guard_response,
@@ -193,7 +211,10 @@ class ChatTurnOrchestrator:
                 ai_messages
             ),
             conversation_history=conversation_history,
+            turn_trace=turn_trace,
         )
+        turn_trace.record_handler("llm")
+        self._log_turn_trace(turn_trace, turn_started_at)
         assistant_message = await self.memory_service.save_message(
             conversation_id,
             "assistant",
@@ -489,4 +510,8 @@ class ChatTurnOrchestrator:
         return await ConversationPendingActionService(self.memory_service).get(
             conversation_id
         )
+
+    def _log_turn_trace(self, turn_trace: ChatTurnTrace, started_at: float) -> None:
+        turn_trace.duration_ms = self.usage_recorder.elapsed_ms(started_at)
+        self.turn_observer.log_turn(turn_trace)
 

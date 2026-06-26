@@ -1,3 +1,5 @@
+from app.services.clarity_knowledge_labels import CLARITY_KNOWLEDGE_LANGUAGE_PROMPT
+
 MAX_CONTEXT_CHARACTERS = 24000
 MAX_MEMORY_CONTEXT_CHARACTERS = 2000
 MAX_STRUCTURED_MEMORY_CONTEXT_CHARACTERS = 3000
@@ -22,7 +24,8 @@ MEMORY_DISCIPLINE_PROMPT = (
     "chat history, not saved memory; say they came from chats unless the user "
     "explicitly saved them. Never claim search is limited to the current chat "
     "when full chat search is available. Ask for confirmation before risky or "
-    "account-changing actions."
+    "account-changing actions.\n"
+    f"{CLARITY_KNOWLEDGE_LANGUAGE_PROMPT}"
 )
 FILE_CONTEXT_PREFIX = "Uploaded file content:\n\n"
 PERSONALITY_CONTEXT_PREFIX = "Rex personality and behavior:\n"

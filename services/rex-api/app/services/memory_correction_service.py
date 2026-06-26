@@ -36,6 +36,8 @@ from app.services.memory_correction_types import (
     MemoryCorrectionRepository,
     TableSpec,
 )
+from app.services.memory_correction_delete_applier import MemoryCorrectionDeleteApplier
+from app.services.memory_correction_repository_ops import MemoryCorrectionRepositoryOps
 from app.services.memory_delete_resolver import MemoryDeleteResolver, ParsedDeleteRequest
 from app.services.memory_reference_resolver import KnowsReferenceMatch, MemoryReferenceResolver
 
@@ -58,6 +60,11 @@ class MemoryCorrectionService:
             reference_resolver=self.reference_resolver,
             scan_limit=scan_limit,
         )
+        self.repository_ops = MemoryCorrectionRepositoryOps(
+            memory_service,
+            scan_limit=scan_limit,
+        )
+        self.delete_applier = MemoryCorrectionDeleteApplier(self.repository_ops)
 
     def detect_correction_intent(self, text: str) -> CorrectionIntent:
         return self.intent_parser.detect_correction_intent(text)
@@ -66,7 +73,7 @@ class MemoryCorrectionService:
         if not message_requests_filler_removal(text):
             return None
 
-        entities = await self._safe_list(spec_for_table("entities")) or []
+        entities = await self.repository_ops.safe_list(spec_for_table("entities")) or []
         candidates = [
             entity
             for entity in entities
@@ -135,7 +142,7 @@ class MemoryCorrectionService:
             return report
 
         match = matches[0]
-        affected_record = await self._apply_single_delete_match(match)
+        affected_record = await self.delete_applier.apply_single_delete_match(match)
         if affected_record is None:
             report.errors.append(
                 {
@@ -246,7 +253,7 @@ class MemoryCorrectionService:
         text: str,
     ) -> list[CorrectionAffectedRecord]:
         affected: list[CorrectionAffectedRecord] = []
-        entities = await self._safe_list(spec_for_table("entities"))
+        entities = await self.repository_ops.safe_list(spec_for_table("entities"))
         if not entities:
             return affected
 
@@ -254,7 +261,7 @@ class MemoryCorrectionService:
             updates = person_fact_entity_updates(entity, text)
             if not updates:
                 continue
-            updated = await self._safe_update(
+            updated = await self.repository_ops.safe_update(
                 spec_for_table("entities"),
                 str(entity["id"]),
                 updates,
@@ -294,14 +301,14 @@ class MemoryCorrectionService:
             return affected
 
         for spec in TABLE_SPECS:
-            records = await self._safe_list(spec)
+            records = await self.repository_ops.safe_list(spec)
             for record in records:
                 if not record_contains(record, spec, person_name):
                     continue
                 updates = replace_fired_fact_updates(record, spec, replacement)
                 if not updates:
                     continue
-                updated = await self._safe_update(spec, str(record["id"]), updates)
+                updated = await self.repository_ops.safe_update(spec, str(record["id"]), updates)
                 if updated is None:
                     continue
                 affected.append(
@@ -324,7 +331,7 @@ class MemoryCorrectionService:
             return 0
         count = 0
         for spec in TABLE_SPECS:
-            records = await self._safe_list(spec)
+            records = await self.repository_ops.safe_list(spec)
             for record in records:
                 if intent.intent_type == CorrectionIntentType.REMOVE_OBSOLETE:
                     if record_contains(record, spec, intent.old_value or ""):
@@ -347,12 +354,12 @@ class MemoryCorrectionService:
             return []
         affected: list[CorrectionAffectedRecord] = []
         for spec in TABLE_SPECS:
-            records = await self._safe_list(spec)
+            records = await self.repository_ops.safe_list(spec)
             for record in records:
                 updates = replacement_updates(record, spec, old_value, new_value)
                 if not updates:
                     continue
-                updated = await self._safe_update(spec, str(record["id"]), updates)
+                updated = await self.repository_ops.safe_update(spec, str(record["id"]), updates)
                 if updated is None:
                     continue
                 affected.append(
@@ -377,7 +384,7 @@ class MemoryCorrectionService:
             return []
         affected: list[CorrectionAffectedRecord] = []
         for match in await self._records_matching_removal(old_value):
-            affected_record = await self._apply_single_delete_match(match)
+            affected_record = await self.delete_applier.apply_single_delete_match(match)
             if affected_record is None:
                 continue
             affected.append(affected_record)
@@ -431,117 +438,6 @@ class MemoryCorrectionService:
             previous=previous,
         )
 
-    async def _apply_single_delete_match(
-        self,
-        match: CorrectionAffectedRecord,
-    ) -> Optional[CorrectionAffectedRecord]:
-        if match.action == "would_remove_attribute":
-            updated = await self._safe_remove_entity_attribute(match)
-            if updated is None:
-                return None
-            return CorrectionAffectedRecord(
-                table=match.table,
-                id=match.id,
-                action="updated",
-                title=match.title,
-                previous=match.previous,
-                updated=updated,
-            )
-
-        archived = await self._safe_archive(spec_for_table(match.table), match.id)
-        if not archived:
-            return None
-        return CorrectionAffectedRecord(
-            table=match.table,
-            id=match.id,
-            action="archived",
-            title=match.title,
-            previous=match.previous,
-        )
-
-    async def _safe_remove_entity_attribute(
-        self,
-        match: CorrectionAffectedRecord,
-    ) -> Optional[dict[str, Any]]:
-        resolution = match.previous.get("__delete_resolution")
-        if not isinstance(resolution, dict):
-            return None
-        attribute_key = str(resolution.get("attribute_key") or "").strip()
-        if not attribute_key:
-            return None
-
-        previous = {
-            key: value
-            for key, value in match.previous.items()
-            if key != "__delete_resolution"
-        }
-        metadata = previous.get("metadata")
-        if not isinstance(metadata, dict):
-            return None
-        updated_metadata = dict(metadata)
-        attributes = dict(updated_metadata.get("attributes") or {})
-        if attribute_key not in attributes:
-            return None
-
-        attribute_value = str(attributes.pop(attribute_key) or "").strip()
-        updated_metadata["attributes"] = attributes
-
-        attribute_sources = updated_metadata.get("attribute_source_memory_ids")
-        if isinstance(attribute_sources, dict):
-            updated_sources = dict(attribute_sources)
-            updated_sources.pop(attribute_key, None)
-            updated_metadata["attribute_source_memory_ids"] = updated_sources
-
-        summary = _summary_without_attribute(
-            str(previous.get("summary") or ""),
-            attribute_key,
-            attribute_value,
-        )
-
-        updated = await self._safe_update(
-            spec_for_table("entities"),
-            match.id,
-            {
-                "metadata": updated_metadata,
-                "summary": summary,
-            },
-        )
-        if updated is None:
-            return None
-
-        active_sources = await self._active_source_memories(
-            resolution.get("source_memory_ids") or [],
-        )
-        for source_memory in active_sources:
-            archived = await self._safe_archive(
-                spec_for_table("long_term_memory"),
-                str(source_memory["id"]),
-            )
-            if not archived:
-                return None
-
-        if _entity_attribute_still_present(updated, attribute_key, attribute_value):
-            return None
-        return updated
-
-    async def _active_source_memories(
-        self,
-        source_memory_ids: list,
-    ) -> list[dict[str, Any]]:
-        source_ids = {
-            str(source_id).strip()
-            for source_id in source_memory_ids
-            if str(source_id).strip()
-        }
-        if not source_ids:
-            return []
-        active_memories = await self._safe_list(spec_for_table("long_term_memory"))
-        return [
-            memory
-            for memory in active_memories
-            if str(memory.get("id") or "") in source_ids
-        ]
-
     async def _archive_superseded_entities(
         self,
         old_value: str,
@@ -551,7 +447,7 @@ class MemoryCorrectionService:
         new_key = normalize_key(new_value)
         if not old_key or not new_key or old_key == new_key:
             return []
-        entities = await self._safe_list(spec_for_table("entities"))
+        entities = await self.repository_ops.safe_list(spec_for_table("entities"))
         canonical = next(
             (
                 entity
@@ -575,7 +471,7 @@ class MemoryCorrectionService:
             ]
             if old_key not in {normalize_key(name) for name in names}:
                 continue
-            archived = await self._safe_archive(spec_for_table("entities"), str(entity["id"]))
+            archived = await self.repository_ops.safe_archive(spec_for_table("entities"), str(entity["id"]))
             if archived:
                 affected.append(
                     CorrectionAffectedRecord(
@@ -592,7 +488,7 @@ class MemoryCorrectionService:
         obsolete.add(old_key)
         metadata["obsolete_aliases"] = sorted(obsolete)
         metadata["correction_confidence"] = 0.9
-        updated_canonical = await self._safe_update(
+        updated_canonical = await self.repository_ops.safe_update(
             spec_for_table("entities"),
             str(canonical["id"]),
             {"metadata": metadata},
@@ -642,110 +538,3 @@ class MemoryCorrectionService:
             return await create_correction(payload)
         except Exception:
             return None
-
-    async def _safe_list(self, spec: TableSpec) -> list[dict[str, Any]]:
-        method = getattr(self.memory_service, spec.list_method, None)
-        if method is None:
-            return []
-        try:
-            return await method(active=True, limit=self.scan_limit)
-        except TypeError:
-            try:
-                return await method(limit=self.scan_limit)
-            except Exception:
-                return []
-        except Exception:
-            return []
-
-    async def _safe_update(
-        self,
-        spec: TableSpec,
-        record_id: str,
-        updates: dict[str, Any],
-    ) -> Optional[dict[str, Any]]:
-        method = getattr(self.memory_service, spec.update_method, None)
-        if method is None:
-            return None
-        try:
-            return await method(record_id, **updates)
-        except Exception:
-            return None
-
-    async def _safe_archive(self, spec: TableSpec, record_id: str) -> bool:
-        method = getattr(self.memory_service, spec.deactivate_method, None)
-        if method is None:
-            return False
-        try:
-            archived = await method(record_id)
-        except Exception:
-            return False
-        return await self._archive_was_confirmed(spec, record_id, archived)
-
-    async def _archive_was_confirmed(
-        self,
-        spec: TableSpec,
-        record_id: str,
-        archived: object,
-    ) -> bool:
-        if not archived:
-            return False
-        if isinstance(archived, dict) and archived.get("active") is not False:
-            return False
-        active_records = await self._verified_active_list(spec)
-        if active_records is None:
-            return False
-        return all(str(record.get("id") or "") != record_id for record in active_records)
-
-    async def _verified_active_list(
-        self,
-        spec: TableSpec,
-    ) -> Optional[list[dict[str, Any]]]:
-        method = getattr(self.memory_service, spec.list_method, None)
-        if method is None:
-            return None
-        try:
-            return await method(active=True, limit=self.scan_limit)
-        except TypeError:
-            try:
-                return await method(limit=self.scan_limit)
-            except Exception:
-                return None
-        except Exception:
-            return None
-
-
-def _summary_without_attribute(
-    summary: str,
-    attribute_key: str,
-    attribute_value: str,
-) -> str:
-    if not summary or not attribute_value:
-        return summary
-    value_key = normalize_key(attribute_value)
-    attribute_label = normalize_key(attribute_key.replace("_", " "))
-    kept_sentences = []
-    for sentence in re.split(r"(?<=[.!?])\s+", summary):
-        sentence_key = normalize_key(sentence)
-        if value_key and value_key in sentence_key:
-            continue
-        if attribute_label and sentence_key.startswith(attribute_label):
-            continue
-        kept_sentences.append(sentence.strip())
-    return " ".join(sentence for sentence in kept_sentences if sentence).strip()
-
-
-def _entity_attribute_still_present(
-    entity: dict[str, Any],
-    attribute_key: str,
-    attribute_value: str,
-) -> bool:
-    metadata = entity.get("metadata")
-    if not isinstance(metadata, dict):
-        return False
-    attributes = metadata.get("attributes")
-    if not isinstance(attributes, dict):
-        return False
-    if attribute_key in attributes:
-        return True
-    value_key = normalize_key(attribute_value)
-    return bool(value_key and value_key in normalize_key(attributes))
