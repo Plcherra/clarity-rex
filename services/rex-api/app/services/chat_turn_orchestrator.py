@@ -416,6 +416,8 @@ class ChatTurnOrchestrator:
                 continue
             content = updated_messages[index].get("content", "")
             text = content if isinstance(content, str) else str(content)
+            if not text.strip():
+                text = "Please look at this image."
             updated_messages[index]["content"] = [
                 {"type": "text", "text": text},
                 {

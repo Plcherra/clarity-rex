@@ -22,7 +22,7 @@ async def chat(
 ):
     chat_request, file = await _parse_chat_request(request)
     message = chat_request.message.strip()
-    if not message:
+    if not message and file is None:
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
     if chat_request.stream:

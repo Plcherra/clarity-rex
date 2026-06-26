@@ -238,6 +238,21 @@ def test_chat_rejects_empty_json_message(client):
     assert response.json()["detail"] == "Message cannot be empty."
 
 
+def test_chat_accepts_image_only_multipart_upload(client):
+    fake_chat_service = FakeChatService()
+    override_chat_service(fake_chat_service)
+
+    response = client.post(
+        "/chat",
+        data={"message": "   "},
+        files={"file": ("games.png", b"image-bytes", "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert fake_chat_service.calls[0]["message"] == ""
+    assert fake_chat_service.calls[0]["file"].filename == "games.png"
+
+
 def test_chat_rejects_unsupported_content_type(client):
     override_chat_service(FakeChatService())
 

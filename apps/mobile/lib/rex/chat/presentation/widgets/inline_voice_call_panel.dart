@@ -41,7 +41,6 @@ class VoiceLiveTranscript extends StatelessWidget {
           visibleText,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: colors.textSecondary,
-            fontStyle: FontStyle.italic,
             height: 1.45,
           ),
         ),
@@ -63,7 +62,6 @@ class VoiceLiveTranscript extends StatelessWidget {
               'Start talking',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colors.textMuted,
-                fontStyle: FontStyle.italic,
               ),
             ),
           ],
@@ -82,7 +80,6 @@ class VoiceLiveTranscript extends StatelessWidget {
               'Processing…',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colors.textMuted,
-                fontStyle: FontStyle.italic,
               ),
             ),
           ],

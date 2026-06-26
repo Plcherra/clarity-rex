@@ -1,3 +1,7 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
@@ -14,6 +18,8 @@ class ChatInputBar extends StatelessWidget {
     this.onPickAttachment,
     this.onRemoveAttachment,
     this.onStartVoice,
+    this.attachment,
+    this.attachmentPreviewBytes,
     this.attachmentName,
     this.attachmentSize,
     this.attachmentError,
@@ -26,6 +32,8 @@ class ChatInputBar extends StatelessWidget {
   final VoidCallback? onPickAttachment;
   final VoidCallback? onRemoveAttachment;
   final VoidCallback? onStartVoice;
+  final XFile? attachment;
+  final Uint8List? attachmentPreviewBytes;
   final String? attachmentName;
   final int? attachmentSize;
   final String? attachmentError;
@@ -37,6 +45,7 @@ class ChatInputBar extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
     final hasBlockingAttachmentError = attachmentError != null;
+    final hasAttachment = attachment != null || attachmentName != null;
 
     return Material(
       color: colors.background,
@@ -54,8 +63,10 @@ class ChatInputBar extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (attachmentName != null || attachmentError != null)
+                  if (hasAttachment || attachmentError != null)
                     _AttachmentPreview(
+                      attachment: attachment,
+                      previewBytes: attachmentPreviewBytes,
                       fileName: attachmentName,
                       fileSize: attachmentSize,
                       errorMessage: attachmentError,
@@ -95,10 +106,13 @@ class ChatInputBar extends StatelessWidget {
                           textCapitalization: TextCapitalization.sentences,
                           cursorColor: colors.accent,
                           onSubmitted: (_) {
-                            final text = controller.text.trim();
-                            if (text.isNotEmpty &&
-                                !isLoading &&
-                                !hasBlockingAttachmentError) {
+                            if (_canSend(
+                              controller.text,
+                              hasAttachment: hasAttachment,
+                              isLoading: isLoading,
+                              hasBlockingAttachmentError:
+                                  hasBlockingAttachmentError,
+                            )) {
                               onSend?.call();
                             }
                           },
@@ -126,16 +140,17 @@ class ChatInputBar extends StatelessWidget {
                       ValueListenableBuilder<TextEditingValue>(
                         valueListenable: controller,
                         builder: (context, value, child) {
-                          final hasText = value.text.trim().isNotEmpty;
+                          final canSend = _canSend(
+                            value.text,
+                            hasAttachment: hasAttachment,
+                            isLoading: isLoading,
+                            hasBlockingAttachmentError:
+                                hasBlockingAttachmentError,
+                          );
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 4),
                             child: IconButton(
-                              onPressed:
-                                  hasText &&
-                                      !isLoading &&
-                                      !hasBlockingAttachmentError
-                                  ? onSend
-                                  : null,
+                              onPressed: canSend ? onSend : null,
                               style: IconButton.styleFrom(
                                 minimumSize: const Size.square(40),
                                 fixedSize: const Size.square(40),
@@ -174,6 +189,18 @@ class ChatInputBar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static bool _canSend(
+    String text, {
+    required bool hasAttachment,
+    required bool isLoading,
+    required bool hasBlockingAttachmentError,
+  }) {
+    if (isLoading || hasBlockingAttachmentError) {
+      return false;
+    }
+    return text.trim().isNotEmpty || hasAttachment;
   }
 }
 
@@ -218,6 +245,8 @@ class _ComposerIconButton extends StatelessWidget {
         backgroundColor: background,
         foregroundColor: foreground,
         disabledForegroundColor: colors.textMuted.withValues(alpha: 0.45),
+        shadowColor: Colors.transparent,
+        elevation: 0,
       ),
     );
   }
@@ -225,12 +254,16 @@ class _ComposerIconButton extends StatelessWidget {
 
 class _AttachmentPreview extends StatelessWidget {
   const _AttachmentPreview({
+    required this.attachment,
+    required this.previewBytes,
     required this.fileName,
     required this.fileSize,
     required this.errorMessage,
     required this.onRemove,
   });
 
+  final XFile? attachment;
+  final Uint8List? previewBytes;
   final String? fileName;
   final int? fileSize;
   final String? errorMessage;
@@ -242,12 +275,62 @@ class _AttachmentPreview extends StatelessWidget {
     final colors = context.clarityColors;
     final hasError = errorMessage != null;
     final title = fileName ?? 'Attachment';
-    final isImage = fileName != null && isChatImageAttachmentName(fileName!);
+    final isImage = !hasError && _isImageAttachment(title, attachment, previewBytes);
     final subtitle = hasError
         ? errorMessage!
         : fileSize == null
         ? null
         : formatAttachmentSize(fileSize!);
+
+    if (isImage) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 132),
+                child: _ImagePreview(
+                  attachment: attachment,
+                  previewBytes: previewBytes,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 6,
+              right: 6,
+              child: _RemoveAttachmentButton(onRemove: onRemove),
+            ),
+            if (subtitle != null)
+              Positioned(
+                left: 8,
+                bottom: 8,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.52),
+                    borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      subtitle,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
@@ -270,8 +353,6 @@ class _AttachmentPreview extends StatelessWidget {
               Icon(
                 hasError
                     ? Icons.error_outline_rounded
-                    : isImage
-                    ? Icons.image_outlined
                     : Icons.description_outlined,
                 color: hasError ? colors.danger : colors.textSecondary,
                 size: 19,
@@ -314,6 +395,81 @@ class _AttachmentPreview extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  bool _isImageAttachment(
+    String title,
+    XFile? attachment,
+    Uint8List? previewBytes,
+  ) {
+    if (previewBytes != null && previewBytes.isNotEmpty) {
+      return true;
+    }
+    if (isChatImageAttachmentName(title)) {
+      return true;
+    }
+    final path = attachment?.path.trim() ?? '';
+    return path.isNotEmpty && isChatImageAttachmentName(path);
+  }
+}
+
+class _ImagePreview extends StatelessWidget {
+  const _ImagePreview({
+    required this.attachment,
+    required this.previewBytes,
+  });
+
+  final XFile? attachment;
+  final Uint8List? previewBytes;
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = previewBytes;
+    if (bytes != null && bytes.isNotEmpty) {
+      return Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        filterQuality: FilterQuality.medium,
+      );
+    }
+
+    final path = attachment?.path.trim() ?? '';
+    if (path.isNotEmpty) {
+      return Image.file(
+        File(path),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        filterQuality: FilterQuality.medium,
+      );
+    }
+
+    return const SizedBox(
+      height: 96,
+      child: Center(child: Icon(Icons.image_outlined)),
+    );
+  }
+}
+
+class _RemoveAttachmentButton extends StatelessWidget {
+  const _RemoveAttachmentButton({required this.onRemove});
+
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.56),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onRemove,
+        customBorder: const CircleBorder(),
+        child: const SizedBox.square(
+          dimension: 28,
+          child: Icon(Icons.close_rounded, size: 16, color: Colors.white),
         ),
       ),
     );

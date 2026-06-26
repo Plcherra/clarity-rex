@@ -6,6 +6,7 @@ import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.da
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/theme/clarity_colors.dart';
+import 'package:clarity/widgets/clarity_path_loader.dart';
 
 class ChatTranscript extends StatelessWidget {
   const ChatTranscript({
@@ -74,6 +75,9 @@ class ChatTranscript extends StatelessWidget {
                         text: message.content,
                         isUser: message.role == ChatMessageRole.user,
                         isStreaming: message.isStreaming,
+                        attachmentLocalPath: message.attachmentLocalPath,
+                        attachmentPreviewBytes: message.attachmentPreviewBytes,
+                        attachmentName: message.attachmentName,
                         clarityActions: message.clarityActions,
                         onConfirmClarityAction: onConfirmClarityAction,
                         onDismissClarityAction: onDismissClarityAction,
@@ -82,7 +86,13 @@ class ChatTranscript extends StatelessWidget {
                   ),
                 if (isLoading && !hasStreamingAssistant) ...[
                   const SizedBox(height: 2),
-                  const ChatMessageBubble(text: '', isLoading: true),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 2, bottom: 4),
+                      child: ClarityInlineLoader(size: 22, strokeWidth: 2),
+                    ),
+                  ),
                 ],
                 if (showVoiceTranscript)
                   VoiceLiveTranscript(state: voiceState!),

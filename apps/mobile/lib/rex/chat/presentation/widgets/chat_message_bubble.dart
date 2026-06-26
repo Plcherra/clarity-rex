@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/chat/domain/chat_message.dart';
@@ -16,6 +19,9 @@ class ChatMessageBubble extends StatelessWidget {
     this.isLoading = false,
     this.isStreaming = false,
     this.clarityActions = const [],
+    this.attachmentLocalPath,
+    this.attachmentPreviewBytes,
+    this.attachmentName,
     this.onConfirmClarityAction,
     this.onDismissClarityAction,
   });
@@ -25,6 +31,9 @@ class ChatMessageBubble extends StatelessWidget {
   final bool isLoading;
   final bool isStreaming;
   final List<ClarityActionCard> clarityActions;
+  final String? attachmentLocalPath;
+  final List<int>? attachmentPreviewBytes;
+  final String? attachmentName;
   final ValueChanged<ClarityActionCard>? onConfirmClarityAction;
   final ValueChanged<ClarityActionCard>? onDismissClarityAction;
 
@@ -45,6 +54,7 @@ class ChatMessageBubble extends StatelessWidget {
     final codeBackground = isUser
         ? foreground.withValues(alpha: isDark ? 0.16 : 0.20)
         : colors.background.withValues(alpha: isDark ? 0.42 : 0.54);
+    final imageAttachment = _buildImageAttachment(maxWidth);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -90,32 +100,39 @@ class ChatMessageBubble extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SelectableText.rich(
-                              TextSpan(
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: foreground,
-                                  height: 1.45,
-                                  letterSpacing: 0,
-                                ),
-                                children: [
-                                  ..._inlineMarkdownSpans(
-                                    text,
-                                    theme,
-                                    foreground,
-                                    codeBackground,
+                            if (imageAttachment != null) ...[
+                              imageAttachment,
+                              if (text.trim().isNotEmpty)
+                                const SizedBox(height: RexUiTokens.space8),
+                            ],
+                            if (text.trim().isNotEmpty)
+                              SelectableText.rich(
+                                TextSpan(
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: foreground,
+                                    height: 1.45,
+                                    letterSpacing: 0,
                                   ),
-                                  if (isStreaming)
-                                    WidgetSpan(
-                                      alignment: PlaceholderAlignment.middle,
-                                      child: ChatStreamingCursor(
-                                        color: foreground,
-                                      ),
+                                  children: [
+                                    ..._inlineMarkdownSpans(
+                                      text,
+                                      theme,
+                                      foreground,
+                                      codeBackground,
                                     ),
-                                ],
+                                    if (isStreaming)
+                                      WidgetSpan(
+                                        alignment: PlaceholderAlignment.middle,
+                                        child: ChatStreamingCursor(
+                                          color: foreground,
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
                             if (!isUser && clarityActions.isNotEmpty) ...[
-                              const SizedBox(height: RexUiTokens.space12),
+                              if (text.trim().isNotEmpty || imageAttachment != null)
+                                const SizedBox(height: RexUiTokens.space12),
                               _ClarityActionCards(
                                 actions: clarityActions,
                                 onConfirm: onConfirmClarityAction,
@@ -129,6 +146,39 @@ class ChatMessageBubble extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget? _buildImageAttachment(double maxWidth) {
+    final path = attachmentLocalPath?.trim();
+    final bytes = attachmentPreviewBytes;
+    final hasPath = path != null && path.isNotEmpty;
+    final hasBytes = bytes != null && bytes.isNotEmpty;
+    if (!hasPath && !hasBytes) {
+      return null;
+    }
+
+    final image = hasPath
+        ? Image.file(
+            File(path),
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.medium,
+          )
+        : Image.memory(
+            Uint8List.fromList(bytes!),
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.medium,
+          );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: maxWidth,
+          maxHeight: 280,
+        ),
+        child: image,
       ),
     );
   }

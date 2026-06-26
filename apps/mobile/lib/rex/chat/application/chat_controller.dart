@@ -200,7 +200,7 @@ class ChatController extends Notifier<ChatState> {
     bool stream = true,
   }) async {
     final message = content.trim();
-    if (message.isEmpty || state.isLoading) {
+    if ((message.isEmpty && attachment == null) || state.isLoading) {
       return null;
     }
 
@@ -212,11 +212,15 @@ class ChatController extends Notifier<ChatState> {
       }
     }
 
+    final attachmentMeta = await _attachmentMetadata(attachment);
     final userMessage = ChatMessage(
       id: 'local-user-${DateTime.now().microsecondsSinceEpoch}',
       role: ChatMessageRole.user,
       content: message,
       timestamp: DateTime.now(),
+      attachmentLocalPath: attachmentMeta.localPath,
+      attachmentPreviewBytes: attachmentMeta.previewBytes,
+      attachmentName: attachmentMeta.name,
     );
     state = state.copyWith(
       messages: List.unmodifiable([...state.messages, userMessage]),
@@ -455,10 +459,77 @@ class ChatController extends Notifier<ChatState> {
   ChatMessage _messageFromApi(ChatApiMessage message) => message.toDomain();
 
   List<ChatMessage> _messagesFromApiResponse(ChatApiResponse response) {
-    return _messagesFromApiMessages(
-      response.messages,
-      memoryChanges: response.memoryChanges,
+    return _mergePendingAttachments(
+      state.messages,
+      _messagesFromApiMessages(
+        response.messages,
+        memoryChanges: response.memoryChanges,
+      ),
     );
+  }
+
+  List<ChatMessage> _mergePendingAttachments(
+    List<ChatMessage> previousMessages,
+    List<ChatMessage> mappedMessages,
+  ) {
+    final pendingAttachments = [
+      for (final message in previousMessages)
+        if (message.hasImageAttachment)
+          (
+            content: message.content,
+            localPath: message.attachmentLocalPath,
+            previewBytes: message.attachmentPreviewBytes,
+            name: message.attachmentName,
+          ),
+    ];
+    if (pendingAttachments.isEmpty) {
+      return mappedMessages;
+    }
+
+    var pendingIndex = pendingAttachments.length - 1;
+    final merged = mappedMessages.toList(growable: true);
+    for (var index = merged.length - 1;
+        index >= 0 && pendingIndex >= 0;
+        index--) {
+      final message = merged[index];
+      if (message.role != ChatMessageRole.user || message.hasImageAttachment) {
+        continue;
+      }
+
+      final pending = pendingAttachments[pendingIndex];
+      merged[index] = message.copyWith(
+        attachmentLocalPath: pending.localPath,
+        attachmentPreviewBytes: pending.previewBytes,
+        attachmentName: pending.name,
+      );
+      pendingIndex--;
+    }
+
+    return List.unmodifiable(merged);
+  }
+
+  Future<({String? localPath, List<int>? previewBytes, String? name})>
+  _attachmentMetadata(XFile? attachment) async {
+    if (attachment == null) {
+      return (localPath: null, previewBytes: null, name: null);
+    }
+
+    final name = chatAttachmentName(attachment);
+    if (!isChatImageAttachmentName(name)) {
+      return (localPath: null, previewBytes: null, name: name);
+    }
+
+    final path = attachment.path.trim();
+    if (path.isNotEmpty) {
+      return (localPath: path, previewBytes: null, name: name);
+    }
+
+    try {
+      final bytes = await attachment.readAsBytes();
+      return (localPath: null, previewBytes: bytes, name: name);
+    } on Object {
+      return (localPath: null, previewBytes: null, name: name);
+    }
   }
 
   List<ChatMessage> _messagesFromApiMessages(

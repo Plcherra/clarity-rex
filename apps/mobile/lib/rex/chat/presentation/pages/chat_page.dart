@@ -33,6 +33,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   XFile? _attachment;
+  Uint8List? _attachmentPreviewBytes;
   String? _attachmentName;
   int? _attachmentSize;
   String? _attachmentError;
@@ -102,7 +103,10 @@ class _ChatPageState extends ConsumerState<ChatPage>
     _messageController.clear();
 
     if (voiceWasActive) {
-      voiceController.beginTypedTextTurn(message);
+      final voiceLabel = message.trim().isEmpty && attachment != null
+          ? 'Sending image…'
+          : message;
+      voiceController.beginTypedTextTurn(voiceLabel);
     }
 
     final response = await ref
@@ -116,6 +120,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
     if (sent) {
       setState(() {
         _attachment = null;
+        _attachmentPreviewBytes = null;
         _attachmentName = null;
         _attachmentSize = null;
         _attachmentError = null;
@@ -194,6 +199,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
     if (file.path == null && bytes == null) {
       setState(() {
         _attachment = null;
+        _attachmentPreviewBytes = null;
         _attachmentName = file.name;
         _attachmentSize = file.size;
         _attachmentError = 'Could not read selected file.';
@@ -235,6 +241,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
     if (validationError != null) {
       setState(() {
         _attachment = null;
+        _attachmentPreviewBytes = null;
         _attachmentName = fileName;
         _attachmentSize = fileSize;
         _attachmentError = validationError;
@@ -243,8 +250,22 @@ class _ChatPageState extends ConsumerState<ChatPage>
       return;
     }
 
+    Uint8List? previewBytes;
+    if (isChatImageAttachmentName(fileName)) {
+      if (bytes != null) {
+        previewBytes = bytes;
+      } else if (attachment.path.trim().isEmpty) {
+        try {
+          previewBytes = Uint8List.fromList(await attachment.readAsBytes());
+        } on Object {
+          previewBytes = null;
+        }
+      }
+    }
+
     setState(() {
       _attachment = attachment;
+      _attachmentPreviewBytes = previewBytes;
       _attachmentName = fileName;
       _attachmentSize = fileSize;
       _attachmentError = null;
@@ -254,6 +275,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
   void _removeAttachment() {
     setState(() {
       _attachment = null;
+      _attachmentPreviewBytes = null;
       _attachmentName = null;
       _attachmentSize = null;
       _attachmentError = null;
@@ -400,6 +422,8 @@ class _ChatPageState extends ConsumerState<ChatPage>
               onRemoveAttachment: _removeAttachment,
               onStartVoice: _startVoiceCall,
               isVoiceCallActive: voiceCall.isCallActive,
+              attachment: _attachment,
+              attachmentPreviewBytes: _attachmentPreviewBytes,
               attachmentName: _attachmentName,
               attachmentSize: _attachmentSize,
               attachmentError: _attachmentError,

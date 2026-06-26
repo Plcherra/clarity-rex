@@ -1,3 +1,4 @@
+import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 
 enum ChatMessageRole { user, assistant }
@@ -10,6 +11,9 @@ class ChatMessage {
     this.timestamp,
     this.isStreaming = false,
     this.clarityActions = const [],
+    this.attachmentLocalPath,
+    this.attachmentPreviewBytes,
+    this.attachmentName,
   });
 
   final String id;
@@ -18,8 +22,21 @@ class ChatMessage {
   final DateTime? timestamp;
   final bool isStreaming;
   final List<ClarityActionCard> clarityActions;
+  final String? attachmentLocalPath;
+  final List<int>? attachmentPreviewBytes;
+  final String? attachmentName;
 
   bool get isUser => role == ChatMessageRole.user;
+
+  bool get hasImageAttachment {
+    if (attachmentPreviewBytes != null && attachmentPreviewBytes!.isNotEmpty) {
+      return true;
+    }
+    final name = attachmentName ?? attachmentLocalPath ?? '';
+    return attachmentLocalPath != null &&
+        attachmentLocalPath!.isNotEmpty &&
+        isChatImageAttachmentName(name);
+  }
 
   ChatMessage copyWith({
     String? id,
@@ -28,6 +45,12 @@ class ChatMessage {
     DateTime? timestamp,
     bool? isStreaming,
     List<ClarityActionCard>? clarityActions,
+    String? attachmentLocalPath,
+    List<int>? attachmentPreviewBytes,
+    String? attachmentName,
+    bool clearAttachmentLocalPath = false,
+    bool clearAttachmentPreviewBytes = false,
+    bool clearAttachmentName = false,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -36,6 +59,15 @@ class ChatMessage {
       timestamp: timestamp ?? this.timestamp,
       isStreaming: isStreaming ?? this.isStreaming,
       clarityActions: clarityActions ?? this.clarityActions,
+      attachmentLocalPath: clearAttachmentLocalPath
+          ? null
+          : attachmentLocalPath ?? this.attachmentLocalPath,
+      attachmentPreviewBytes: clearAttachmentPreviewBytes
+          ? null
+          : attachmentPreviewBytes ?? this.attachmentPreviewBytes,
+      attachmentName: clearAttachmentName
+          ? null
+          : attachmentName ?? this.attachmentName,
     );
   }
 }

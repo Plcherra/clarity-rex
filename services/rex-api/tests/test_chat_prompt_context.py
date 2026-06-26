@@ -173,6 +173,28 @@ async def test_chat_service_sends_image_upload_as_multimodal_message():
 
 
 @pytest.mark.asyncio
+async def test_chat_service_sends_image_only_upload_with_default_prompt():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+    upload = FakeUpload("games.png", b"image-bytes", content_type="image/png")
+
+    result = await chat_service.send_message("", file=upload)
+
+    assert result["response"] == "Rex response"
+    assert ai_service.messages[-1]["content"] == [
+        {"type": "text", "text": "Please look at this image."},
+        {
+            "type": "image_url",
+            "image_url": {
+                "url": "data:image/png;base64,aW1hZ2UtYnl0ZXM=",
+                "detail": "auto",
+            },
+        },
+    ]
+
+
+@pytest.mark.asyncio
 async def test_chat_service_includes_long_term_memory():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
