@@ -57,6 +57,7 @@ class ChatRecallExcerptBuilder:
         sorted_groups = sorted(
             grouped.items(),
             key=lambda item: (
+                self.group_inventory_score(item[1]),
                 self.group_detail_score(item[1]),
                 self.group_factual_count(item[1]),
                 -self.group_noise_count(item[1]),
@@ -331,6 +332,28 @@ class ChatRecallExcerptBuilder:
             if is_chat_search_user_content_message(message)
             and self.message_has_detail_marker(message)
         )
+
+    def group_inventory_score(self, messages: list[dict]) -> int:
+        return sum(
+            1 for message in messages if self.message_has_inventory_detail(message)
+        )
+
+    def message_has_inventory_detail(self, message: dict) -> bool:
+        content = str(message.get("content") or "").lower()
+        if not content:
+            return False
+        if re.search(
+            r"\b(?:bought|purchased|downloaded|grabbed|picked up|added|"
+            r"preordered|snagged|gog|steam|epic games)\b",
+            content,
+        ):
+            return True
+        if str(message.get("role") or "") == "assistant" and re.search(
+            r"\b(?:solid picks|nice haul|you (?:got|have|bought))\b",
+            content,
+        ):
+            return True
+        return False
 
     def group_factual_count(self, messages: list[dict]) -> int:
         return sum(1 for message in messages if is_chat_search_user_content_message(message))

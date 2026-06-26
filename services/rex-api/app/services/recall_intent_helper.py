@@ -240,6 +240,12 @@ class RecallIntentHelper:
         ):
             return None
         normalized = self.normalized_recall_text(message)
+        history_topic = self.recall_topic_from_history(
+            message,
+            conversation_history=conversation_history,
+        )
+        if history_topic:
+            return history_topic
         is_followup = self.is_contextual_memory_followup(
             normalized,
         ) or self.is_about_recall_followup(normalized)
@@ -255,6 +261,15 @@ class RecallIntentHelper:
             return topic
         if focused:
             return focused
+        if self.is_search_recall_request(normalized):
+            subject = self.recent_memory_subject(conversation_history)
+            if subject:
+                return (
+                    self.focused_topic_query(subject)
+                    or self.chat_topic_query(subject)
+                    or subject
+                )
+            return None
         return message
 
     def _prefer_focused_over_topic(self, topic: str, focused: str) -> bool:
@@ -377,6 +392,12 @@ class RecallIntentHelper:
                 "search your chat",
                 "search your chats",
                 "search conversations",
+                "search into",
+                "search our",
+                "search older",
+                "search old",
+                "older chats",
+                "older chat",
             )
         )
 
@@ -500,6 +521,31 @@ class RecallIntentHelper:
             return False
         return True
 
+    def recall_topic_from_history(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+    ) -> Optional[str]:
+        normalized = self.normalized_recall_text(message)
+        if not conversation_history:
+            return None
+        needs_history_topic = (
+            self.is_contextual_memory_followup(normalized)
+            or self.is_search_recall_request(normalized)
+            or self.is_about_recall_followup(normalized)
+        )
+        if not needs_history_topic:
+            return None
+        subject = self.recent_memory_subject(conversation_history)
+        if not subject:
+            return None
+        return (
+            self.focused_topic_query(subject)
+            or self.chat_topic_query(subject)
+            or self.chat_topic_query(f"{subject} {message}")
+        )
+
     def chat_topic_query(self, message: str) -> str:
         return self.search_terms.assistant_topic_query(message)
 
@@ -550,7 +596,7 @@ class RecallIntentHelper:
             content = str(message.get("content") or "").strip()
             if not content:
                 continue
-            normalized = " ".join(content.lower().split())
+            normalized = self.normalized_recall_text(content)
             if self.is_contextual_memory_followup(normalized):
                 continue
             if any(
@@ -568,6 +614,10 @@ class RecallIntentHelper:
                     "what do you know about",
                     "what do you remember about",
                 )
+            ):
+                return content
+            if self.is_direct_recall_question(normalized) or self.is_subject_recall_question(
+                normalized,
             ):
                 return content
         return ""

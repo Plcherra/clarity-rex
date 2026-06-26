@@ -103,7 +103,7 @@ class ChatContextService:
                     query=load_plan.recall_query or message,
                     raw_query=message,
                     limit=CHAT_SEARCH_RESULTS_LIMIT,
-                    exclude_conversation_id=None,
+                    exclude_conversation_id=conversation_id,
                 ),
                 timings_ms,
             )
@@ -190,7 +190,11 @@ class ChatContextService:
                     query=load_plan.recall_query or message,
                     raw_query=message,
                     limit=CHAT_SEARCH_RESULTS_LIMIT,
-                    exclude_conversation_id=None,
+                    exclude_conversation_id=self._exclude_recall_conversation_id(
+                        message=message,
+                        conversation_id=conversation_id,
+                        conversation_history=conversation_history,
+                    ),
                 ),
                 timings_ms,
             )
@@ -240,6 +244,22 @@ class ChatContextService:
             fetch_started=fetch_started,
             initial_failures=memory_failures,
         )
+
+    def _exclude_recall_conversation_id(
+        self,
+        *,
+        message: str,
+        conversation_id: Optional[str],
+        conversation_history: list[dict],
+    ) -> Optional[str]:
+        if not conversation_id:
+            return None
+        if self.recall_policy.should_exclude_current_conversation(
+            message,
+            conversation_history=conversation_history,
+        ):
+            return conversation_id
+        return None
 
     def _assemble_prompt_context(
         self,

@@ -61,3 +61,16 @@ class ChatContextRecallPolicy:
             message,
             conversation_history=conversation_history,
         )
+
+    def should_exclude_current_conversation(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+    ) -> bool:
+        normalized = self.recall_intent.normalized_recall_text(message)
+        if self.recall_intent.is_contextual_memory_followup(normalized):
+            return True
+        if self.recall_intent.is_search_recall_request(normalized):
+            return True
+        return False

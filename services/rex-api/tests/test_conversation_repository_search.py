@@ -98,6 +98,22 @@ class _SearchStore:
                 "timestamp": "2026-06-03T10:01:00Z",
             },
             {
+                "id": "message-pc-game",
+                "user_id": "user-123",
+                "conversation_id": "conversation-games",
+                "role": "user",
+                "content": "Awesome. I'm going to buy my first PC game.",
+                "timestamp": "2026-06-03T10:02:00Z",
+            },
+            {
+                "id": "message-legacy",
+                "user_id": "user-123",
+                "conversation_id": "conversation-games",
+                "role": "user",
+                "content": "It's Legacy of Kain on GOG.",
+                "timestamp": "2026-06-03T10:03:00Z",
+            },
+            {
                 "id": "message-random-name",
                 "user_id": "user-123",
                 "conversation_id": "conversation-random-name",
@@ -169,6 +185,12 @@ class _SearchStore:
                 "id": "conversation-pc",
                 "user_id": "user-123",
                 "title": "PC details",
+                "timestamp": "2026-06-03T10:00:00Z",
+            },
+            "conversation-games": {
+                "id": "conversation-games",
+                "user_id": "user-123",
+                "title": "PC gaming",
                 "timestamp": "2026-06-03T10:00:00Z",
             },
             "conversation-random-name": {
@@ -285,6 +307,16 @@ class _RpcSearchStore(_SearchStore):
                 "matched_terms": ["pc", "45"],
             }
         ]
+
+
+class _EmptyRpcSearchStore(_SearchStore):
+    def __init__(self, *, user_id: str = "user-123"):
+        super().__init__(user_id=user_id)
+        self.rpc_calls = []
+
+    async def _rpc(self, function_name, body=None):
+        self.rpc_calls.append({"function_name": function_name, "body": body or {}})
+        return []
 
 
 class _FakeEmbeddingService:
@@ -469,6 +501,7 @@ async def test_conversation_repository_uses_ranked_chat_search_rpc_when_availabl
     assert store.rpc_calls[0]["function_name"] == "search_user_chat_messages"
     assert store.rpc_calls[0]["body"]["search_query"] == "What kind PC do I have?"
     assert "pc" in store.rpc_calls[0]["body"]["search_terms"]
+    assert store.rpc_calls[0]["body"]["match_user_id"] == "user-123"
     assert results[0]["conversation_id"] == "conversation-omen"
     assert results[0]["message"]["id"] == "message-omen"
     assert results[0]["matched_terms"] == ["pc", "45"]
@@ -502,10 +535,22 @@ async def test_conversation_repository_passes_exclusion_to_ranked_chat_search_rp
     assert store.rpc_calls[0]["body"]["exclude_conversation_id"] == (
         "conversation-current"
     )
+    assert store.rpc_calls[0]["body"]["match_user_id"] == "user-123"
 
 
 @pytest.mark.asyncio
-async def test_conversation_repository_merges_semantic_chat_results():
+async def test_conversation_repository_falls_back_when_ranked_rpc_returns_empty():
+    store = _EmptyRpcSearchStore(user_id="user-123")
+    repository = ConversationRepository(store)
+
+    results = await repository.search_conversations("games")
+
+    assert store.rpc_calls
+    assert any(
+        result["conversation_id"] == "conversation-games"
+        and "first PC game" in result["preview"]
+        for result in results
+    )
     store = _HybridSearchStore(user_id="user-123")
     repository = ConversationRepository(store)
 
@@ -560,6 +605,8 @@ async def test_conversation_repository_saves_message_embedding_when_configured()
         ("Bom Dough payroll", "conversation-payroll", "payroll should land"),
         ("immigration", "conversation-immigration", "immigration status"),
         ("PC", "conversation-pc", "Omen PC"),
+        ("games", "conversation-games", "first PC game"),
+        ("gog", "conversation-games", "Legacy of Kain"),
         ("Marisol", "conversation-random-name", "Marisol recommended"),
     ],
 )

@@ -668,7 +668,11 @@ async def test_chat_context_uses_recent_subject_for_old_chat_followup():
         for item in structured_context["chat_search_results"]
     )
     assert store.shared_conversation_search_queries[:1] == [
-        {"query": "mom", "limit": 200, "exclude_conversation_id": None}
+        {
+            "query": "mom",
+            "limit": 200,
+            "exclude_conversation_id": "conversation-1",
+        }
     ]
 
 
@@ -722,7 +726,7 @@ async def test_chat_context_uses_recent_subject_for_short_chat_followup():
     assert store.shared_conversation_search_queries[0] == {
         "query": "mom",
         "limit": 200,
-        "exclude_conversation_id": None,
+        "exclude_conversation_id": "conversation-1",
     }
 
 
@@ -1156,6 +1160,83 @@ async def test_chat_context_searches_games_as_generic_conversation_history():
 
 
 @pytest.mark.asyncio
+async def test_chat_context_recall_finds_prior_gog_games_while_excluding_current_chat():
+    store = FakeContextMemoryStore()
+    store.messages = [
+        {
+            "id": "current-question",
+            "conversation_id": "conversation-current",
+            "role": "user",
+            "content": "Don't you know the games ai bought? I thought i said you earlier",
+            "timestamp": "2026-06-15T22:04:00Z",
+        },
+        {
+            "id": "current-denial",
+            "conversation_id": "conversation-current",
+            "role": "assistant",
+            "content": (
+                "No, I don't have any saved details on the games you bought—"
+                "nothing like that came up in our chats or memory."
+            ),
+            "timestamp": "2026-06-15T22:04:10Z",
+        },
+        {
+            "id": "current-followup",
+            "conversation_id": "conversation-current",
+            "role": "user",
+            "content": "Are you sure? I sent you the games i bought already",
+            "timestamp": "2026-06-15T22:51:00Z",
+        },
+    ]
+    store.past_messages = [
+        {
+            "id": "gog-user",
+            "conversation_id": "conversation-gog",
+            "role": "user",
+            "content": (
+                "I just bought some awesome games that I bought also games on GOG."
+            ),
+            "timestamp": "2026-06-15T21:18:00Z",
+        },
+        {
+            "id": "gog-assistant",
+            "conversation_id": "conversation-gog",
+            "role": "assistant",
+            "content": (
+                "Nice haul on GOG! Solid picks like Arkham Knight, Shadow of War, "
+                "Witcher 2, and the Tomb Raider games."
+            ),
+            "timestamp": "2026-06-15T21:18:10Z",
+        },
+        {
+            "id": "current-echo",
+            "conversation_id": "conversation-current",
+            "role": "user",
+            "content": "Don't you know the games ai bought? I thought i said you earlier",
+            "timestamp": "2026-06-15T22:04:00Z",
+        },
+    ]
+    service = ChatContextService(store)
+
+    _, memories, structured_context = await service.fetch_prompt_context(
+        message="Can you search into our older chats?",
+        conversation_id="conversation-current",
+        intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
+    )
+
+    assert all(not memory["id"].startswith("chat-") for memory in memories)
+    results = structured_context["chat_search_results"]
+    assert results
+    assert results[0]["id"] == "chat-conversation-gog"
+    assert "Arkham Knight" in results[0]["content"]
+    assert "Legacy of Kain" not in results[0]["content"]
+    assert store.shared_conversation_search_queries[0]["exclude_conversation_id"] == (
+        "conversation-current"
+    )
+    assert store.shared_conversation_search_queries[0]["query"] == "games"
+
+
+@pytest.mark.asyncio
 async def test_chat_context_forces_chat_search_for_recall_even_when_intent_skips_memory():
     store = FakeContextMemoryStore()
     store.past_messages = [
@@ -1473,11 +1554,17 @@ async def test_chat_context_keyword_search_finds_manual_cases_without_full_scan(
 @pytest.mark.asyncio
 async def test_chat_context_uses_conversation_search_when_message_search_misses():
     class ChatsTabSearchStore(FakeContextMemoryStore):
-        async def search_conversations(self, query, limit=50):
+        async def search_conversations(
+            self,
+            query,
+            limit=50,
+            exclude_conversation_id=None,
+        ):
             self.shared_conversation_search_queries.append(
                 {
                     "query": query,
                     "limit": limit,
+                    "exclude_conversation_id": exclude_conversation_id,
                     "source": "conversation_search",
                 }
             )
@@ -1520,11 +1607,17 @@ async def test_chat_context_uses_conversation_search_when_message_search_misses(
 @pytest.mark.asyncio
 async def test_chat_context_uses_chats_tab_title_matches_as_recall_context():
     class ChatsTabTitleSearchStore(FakeContextMemoryStore):
-        async def search_conversations(self, query, limit=50):
+        async def search_conversations(
+            self,
+            query,
+            limit=50,
+            exclude_conversation_id=None,
+        ):
             self.shared_conversation_search_queries.append(
                 {
                     "query": query,
                     "limit": limit,
+                    "exclude_conversation_id": exclude_conversation_id,
                     "source": "conversation_search",
                 }
             )

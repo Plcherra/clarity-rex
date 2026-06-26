@@ -6,6 +6,7 @@ import re
 from typing import Optional
 
 from app.services.chat_search_terms import ChatSearchTermBuilder
+from app.services.chat_recall_filters import is_recall_question_user_content
 from app.services.recall_intent_helper import RecallIntentHelper
 
 
@@ -145,6 +146,7 @@ class ChatContinuityPolicy:
             str(item.get("content") or "")
             for item in conversation_history[-20:]
             if item.get("role") == "user"
+            and not is_recall_question_user_content(str(item.get("content") or ""))
         ).lower()
         if not recent_user_text.strip():
             return False

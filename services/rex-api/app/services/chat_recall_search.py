@@ -98,6 +98,7 @@ class ChatRecallSearch:
                     conversation_results = await shared_conversation_search(
                         search_query,
                         limit=PAST_CHAT_SEARCH_PAGE_LIMIT,
+                        exclude_conversation_id=exclude_conversation_id,
                     )
                     result.scanned_messages += len(conversation_results)
                     for item in conversation_results:
@@ -548,15 +549,19 @@ class ChatRecallSearch:
         target_match_count: int,
     ) -> bool:
         factual_count = self.factual_user_match_count(messages_by_id)
+        detail_count = self.detail_rich_match_count(messages_by_id)
         if self.query_needs_detail(query):
-            return self.detail_rich_match_count(messages_by_id) >= min(
+            return detail_count >= min(
                 SHARED_SEARCH_MIN_FACTUAL_MATCHES,
                 target_match_count,
             )
-        if factual_count >= min(SHARED_SEARCH_MIN_FACTUAL_MATCHES, target_match_count):
+        if detail_count >= min(SHARED_SEARCH_MIN_FACTUAL_MATCHES, target_match_count):
             return True
+        if factual_count >= min(SHARED_SEARCH_MIN_FACTUAL_MATCHES, target_match_count):
+            return detail_count >= 1
         return (
             factual_count >= 2
+            and detail_count >= 1
             and self.best_match_score(messages_by_id) >= SHARED_SEARCH_STRONG_MATCH_SCORE
         )
 
@@ -575,7 +580,8 @@ class ChatRecallSearch:
             return False
         return bool(
             re.search(
-                r"\$\s*\d|\b\d+(?:\.\d{2})?\b|\b(?:birthday|june|model|for\s+her|for\s+his|for\s+their)\b",
+                r"\$\s*\d|\b\d+(?:\.\d{2})?\b|\b(?:birthday|june|model|for\s+her|"
+                r"for\s+his|for\s+their|bought|purchased|downloaded|gog|steam)\b",
                 text,
             )
         )

@@ -16,6 +16,14 @@ EMBEDDINGS_MIGRATION_PATH = (
 )
 
 
+FIXED_CHAT_SEARCH_MIGRATION_PATH = (
+    PROJECT_ROOT
+    / "supabase"
+    / "migrations"
+    / "20260625000100_fix_chat_search_user_scope_and_inflection.sql"
+)
+
+
 def test_chat_search_migration_keeps_search_user_scoped():
     sql = MIGRATION_PATH.read_text(encoding="utf-8").lower()
 
@@ -37,7 +45,15 @@ def test_chat_search_migration_adds_scale_indexes():
     assert "conversations_title_trgm_idx" in sql
 
 
-def test_chat_search_embeddings_migration_is_user_scoped_vector_scaffold():
+def test_chat_search_fix_migration_adds_explicit_user_scope_and_inflection():
+    sql = FIXED_CHAT_SEARCH_MIGRATION_PATH.read_text(encoding="utf-8").lower()
+
+    assert "match_user_id uuid default null" in sql
+    assert "coalesce(auth.uid(), match_user_id)" in sql
+    assert "expanded_terms as" in sql
+    assert "grant execute on function public.search_user_chat_messages" in sql
+    assert "security definer" not in sql
+
     sql = EMBEDDINGS_MIGRATION_PATH.read_text(encoding="utf-8").lower()
 
     assert "create extension if not exists vector" in sql

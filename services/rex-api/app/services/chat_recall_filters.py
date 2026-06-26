@@ -50,24 +50,21 @@ def is_chat_search_no_result_message(message: dict) -> bool:
     return any(marker in content for marker in CHAT_SEARCH_NO_RESULT_MARKERS)
 
 
-def is_chat_search_user_content_message(message: dict) -> bool:
-    if str(message.get("role") or "") != "user":
+def is_recall_question_user_content(content: str) -> bool:
+    normalized = str(content or "").strip().lower()
+    if not normalized:
         return False
-    content = str(message.get("content") or "").strip().lower()
-    if not content or is_chat_search_no_result_message(message):
-        return False
-    if is_memory_rejection_message(message):
-        return False
-    if CHAT_SEARCH_SCORER.is_search_question_text(content):
-        return False
-    if any(
-        marker in content
+    if CHAT_SEARCH_SCORER.is_search_question_text(normalized):
+        return True
+    return any(
+        marker in normalized
         for marker in (
             "do you know",
             "do you remember",
             "can you search",
             "search old",
             "search the old",
+            "search into",
             "check old",
             "check the old",
             "look into the chats",
@@ -76,8 +73,23 @@ def is_chat_search_user_content_message(message: dict) -> bool:
             "double-checked",
             "pretty sure",
             "have access to the chat",
+            "are you sure",
+            "sent you the",
+            "i thought i said",
+            "i told you",
         )
-    ):
+    )
+
+
+def is_chat_search_user_content_message(message: dict) -> bool:
+    if str(message.get("role") or "") != "user":
+        return False
+    content = str(message.get("content") or "").strip().lower()
+    if not content or is_chat_search_no_result_message(message):
+        return False
+    if is_memory_rejection_message(message):
+        return False
+    if is_recall_question_user_content(content):
         return False
     return True
 

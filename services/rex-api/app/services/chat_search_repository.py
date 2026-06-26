@@ -34,7 +34,7 @@ class ChatSearchRepository:
             exclude_conversation_id=exclude_conversation_id,
             offset=offset,
         )
-        if rpc_rows is not None:
+        if rpc_rows:
             return [
                 message
                 for row in rpc_rows[offset : offset + limit]
@@ -74,7 +74,7 @@ class ChatSearchRepository:
             limit=limit,
             exclude_conversation_id=exclude_conversation_id,
         )
-        if rpc_rows is not None:
+        if rpc_rows:
             return [
                 conversation_result_from_ranked_row(row)
                 for row in rpc_rows[:limit]
@@ -289,7 +289,7 @@ class ChatSearchRepository:
         return rows[0] if rows else {}
 
     def _search_terms(self, query: str) -> list[str]:
-        return self.search_ranking.expand_terms(query, max_terms=8)
+        return self.search_ranking.search_terms(query, max_terms=16)
 
     def _normalize_search_term(self, term: str) -> str:
         return self.search_ranking.normalize_term(term)
@@ -316,18 +316,25 @@ class ChatSearchRepository:
         if not search_terms:
             search_terms = list(self.search_ranking.content_terms(query))
         if not search_terms:
-            return []
+            return None
 
-        rows = await rpc(
-            CHAT_SEARCH_RPC,
-            {
-                "search_query": query,
-                "search_terms": search_terms,
-                "match_count": min(max(limit + offset, limit), 200),
-                "exclude_conversation_id": exclude_conversation_id,
-            },
-        )
-        return rows
+        payload: dict = {
+            "search_query": query,
+            "search_terms": search_terms,
+            "match_count": min(max(limit + offset, limit), 200),
+            "exclude_conversation_id": exclude_conversation_id,
+        }
+        user_id = getattr(self.store, "user_id", None)
+        if user_id:
+            payload["match_user_id"] = user_id
+
+        try:
+            rows = await rpc(CHAT_SEARCH_RPC, payload)
+        except Exception:
+            LOGGER.warning("rex_memory_fetch_failed source=indexed_chat_search")
+            return None
+
+        return rows or None
 
     def _rank_messages(self, query: str, rows: list[dict]) -> list[dict]:
         ranked = []
