@@ -748,6 +748,58 @@ async def test_relationship_person_save_after_mom_birthday_does_not_reuse_birthd
 
 
 @pytest.mark.asyncio
+async def test_possessive_third_party_birthday_saves_correct_person_label():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    saved = await chat_service.send_message("Pedro's mom birthday is june 18")
+
+    assert saved["response"] == "Got it, Pedro's Mom's birthday is June 18."
+    assert saved["memory_changes"]["created"] == 1
+    assert memory_service.long_term_memory[0]["content"] == (
+        "Pedro's Mom's birthday is June 18."
+    )
+    assert memory_service.entities[0]["display_name"] == "Pedro's Mom"
+    assert memory_service.entities[0]["relationship"] == "mother"
+    assert memory_service.entities[0]["metadata"]["attributes"] == {
+        "birthday": "June 18",
+    }
+    assert ai_service.generate_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_name_correction_updates_saved_person_card():
+    ai_service = FakeAIService(response="Rex follow-up")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    saved = await chat_service.send_message("Pedro's mom birthday is june 18")
+    memory_service.entities[0]["display_name"] = "S Mom"
+    memory_service.entities[0]["normalized_name"] = "s mom"
+
+    corrected = await chat_service.send_message(
+        "The S Mom is actually Pedro's Mom",
+        saved["conversation_id"],
+    )
+
+    assert corrected["memory_changes"]["updated"] >= 1
+    assert "updated saved memory from S Mom to Pedro's Mom" in corrected["response"]
+    assert memory_service.entities[0]["display_name"] == "Pedro's Mom"
+    assert ai_service.generate_calls == 0
+
+
+@pytest.mark.asyncio
 async def test_person_memory_card_merges_multiple_high_confidence_facts():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

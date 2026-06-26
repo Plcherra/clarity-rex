@@ -46,6 +46,13 @@ class MemoryIntentService(
         r"(?P<date>[^,.!?]{2,60})",
         re.IGNORECASE,
     )
+    _possessive_birthday_pattern = re.compile(
+        r"\b(?P<owner>[A-Za-z][A-Za-z\s.'-]{0,40}?)'s\s+"
+        r"(?:(?P<person>[A-Za-z][A-Za-z\s_-]{0,40}?)\s*(?:'s)?\s+)?"
+        r"birthday\s+(?:is|was|will be|on)\s+"
+        r"(?P<date>[^,.!?]{2,60})",
+        re.IGNORECASE,
+    )
     _remember_that_pattern = re.compile(
         r"\bremember\s+that\s+(?P<fact>[^.!?]+)",
         re.IGNORECASE,

@@ -102,13 +102,28 @@ class PersonMemoryMaterializer:
             return None
 
         label = self._clean_label(metadata.get("entity_label"))
-        relationship = PERSON_RELATIONSHIPS.get(label) or "person"
+        entity_owner = self._clean_text(metadata.get("entity_owner"))
+        entity_relation = self._clean_text(metadata.get("entity_relation"))
+        relation_key = entity_relation or label
+        relationship = (
+            PERSON_RELATIONSHIPS.get(relation_key)
+            or PERSON_RELATIONSHIPS.get(label)
+            or entity_relation
+            or "person"
+        )
         birthday = self._clean_text(metadata.get("normalized_date"))
         memory_id = self._clean_text(memory.get("id"))
         if not label or not birthday:
             return None
 
-        display_name = self._display_name(label)
+        if entity_owner and entity_relation:
+            display_name = (
+                f"{entity_owner.title()}'s "
+                f"{self._display_name(entity_relation)}"
+            )
+        else:
+            raw_label = self._clean_text(metadata.get("entity_label"))
+            display_name = self._display_possessive_label(raw_label or label)
         metadata_payload = {
             "person_card_version": 1,
             "attributes": {
@@ -492,6 +507,17 @@ class PersonMemoryMaterializer:
         if label in {"dad", "father", "papa"}:
             return "Dad"
         return label.title()
+
+    def _display_possessive_label(self, label: str) -> str:
+        cleaned = self._clean_text(label)
+        if not cleaned:
+            return ""
+        if "'s" not in cleaned.lower():
+            return self._display_name(cleaned)
+        owner, _, relation = cleaned.lower().partition("'s")
+        owner_display = owner.strip().title()
+        relation_display = self._display_name(relation.strip())
+        return f"{owner_display}'s {relation_display}"
 
     def _aliases_for(self, label: str, relationship: str, display_name: str) -> list[str]:
         return [

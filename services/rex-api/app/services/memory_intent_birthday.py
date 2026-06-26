@@ -20,6 +20,24 @@ class MemoryIntentBirthdayMixin:
             if date_text:
                 return self._birthday_intent("self", date_text)
 
+        possessive_match = self._possessive_birthday_pattern.search(message)
+        if possessive_match is not None:
+            raw_person = possessive_match.group("person")
+            if raw_person is not None:
+                owner = self._clean_fact(possessive_match.group("owner"))
+                person = self._clean_birthday_person(raw_person)
+                date_text = self._normalize_date_phrase(
+                    possessive_match.group("date"),
+                    time_context=time_context,
+                )
+                if (
+                    owner
+                    and person
+                    and date_text
+                    and not self._is_first_party_possessive_owner(owner)
+                ):
+                    return self._third_party_birthday_intent(owner, person, date_text)
+
         match = self._birthday_pattern.search(message)
         if match is None:
             match = self._birthday_correction_pattern.search(message)
@@ -45,7 +63,58 @@ class MemoryIntentBirthdayMixin:
         if not person or not date_text:
             return None
 
+        if self._is_broken_apostrophe_person_label(person):
+            return None
+
         return self._birthday_intent(person, date_text)
+
+    def _third_party_birthday_intent(
+        self,
+        owner: str,
+        person: str,
+        date_text: str,
+    ) -> SimpleMemoryIntent:
+        owner_clean = self._clean_fact(owner)
+        person_clean = self._clean_birthday_person(person)
+        entity_label = f"{owner_clean.lower()}'s {person_clean}"
+        display = self._format_possessive_display_name(owner_clean, person_clean)
+        return SimpleMemoryIntent(
+            memory_type="fact",
+            content=f"{display}'s birthday is {date_text}.",
+            importance=5,
+            metadata={
+                "fact_kind": "birthday",
+                "memory_category": "Events",
+                "entity_label": entity_label,
+                "entity_owner": owner_clean.lower(),
+                "entity_relation": person_clean,
+                "normalized_date": date_text,
+                "topic_fingerprint": f"fact:birthday:{self._fingerprint(entity_label)}",
+            },
+        )
+
+    def _format_possessive_display_name(self, owner: str, person: str) -> str:
+        owner_display = owner.strip().title()
+        person_display = self._relationship_display_name(person)
+        return f"{owner_display}'s {person_display}"
+
+    def _relationship_display_name(self, person: str) -> str:
+        cleaned = self._clean_person(person)
+        if cleaned in {"mom", "mother", "mum", "mama"}:
+            return "Mom"
+        if cleaned in {"dad", "father", "papa"}:
+            return "Dad"
+        return person.strip().title()
+
+    def _is_broken_apostrophe_person_label(self, person: str) -> bool:
+        normalized = self._clean_person(person)
+        return bool(re.match(r"^s\s+\w+", normalized))
+
+    def _is_first_party_possessive_owner(self, owner: str) -> bool:
+        normalized = self._clean_person(owner)
+        if normalized in {"my", "your", "our", "their", "i", "me", "we", "us"}:
+            return True
+        return normalized.startswith(("my ", "your ", "our ", "their "))
 
     def _birthday_intent(
         self,

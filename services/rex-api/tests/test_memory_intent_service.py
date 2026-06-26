@@ -1,3 +1,4 @@
+from app.services.memory_correction_intent_parser import MemoryCorrectionIntentParser
 from app.services.memory_intent_service import (
     MemoryIntentService,
     SimpleMemoryIntent,
@@ -428,7 +429,57 @@ def test_detects_relationship_person_save_request():
     assert intent.metadata["entity_label"] == "pedro"
 
 
+def test_detects_possessive_third_party_birthday():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory(
+        "Pedro's mom birthday is june 18",
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert intent is not None
+    assert intent.content == "Pedro's Mom's birthday is June 18."
+    assert intent.metadata["entity_label"] == "pedro's mom"
+    assert intent.metadata["entity_owner"] == "pedro"
+    assert intent.metadata["entity_relation"] == "mom"
+
+
+def test_detects_is_actually_name_correction():
+    service = MemoryCorrectionIntentParser()
+
+    intent = service.detect_correction_intent("The S Mom is actually Pedro's Mom")
+
+    assert intent.intent_type.value == "replace_value"
+    assert intent.old_value == "S Mom"
+    assert intent.new_value == "Pedro's Mom"
+
+
 def test_yes_after_unrelated_birthday_does_not_reconfirm_birthday():
+    service = MemoryIntentService()
+    history = [
+        {"role": "user", "content": "Can you save my mom's birthday?"},
+        {
+            "role": "assistant",
+            "content": "Sure, what's your mom's birthday date? I'll save it once you confirm.",
+        },
+        {"role": "user", "content": "Jan 1"},
+        {"role": "assistant", "content": "Got it, your mom's birthday is January 1."},
+        {"role": "user", "content": "Can you save my best friend Pedro?"},
+        {
+            "role": "assistant",
+            "content": "Want me to save Pedro as your best friend? Confirm with yes.",
+        },
+    ]
+
+    intent = service.detect_contextual_memory(
+        "Yes",
+        conversation_history=history,
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert intent is not None
+    assert intent.content == "User's best friend is Pedro."
+    assert intent.metadata["fact_kind"] == "relationship"
     service = MemoryIntentService()
     history = [
         {"role": "user", "content": "Can you save my mom's birthday?"},

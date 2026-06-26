@@ -74,27 +74,17 @@ class MemoryCorrectionIntentParser:
                 confidence=0.9,
             )
 
-        pairs = self.entity_normalization_service.correction_pairs_from_text(cleaned)
-        if pairs:
-            pair = pairs[0]
-            return CorrectionIntent(
-                CorrectionIntentType.REPLACE_VALUE,
-                old_value=pair.old_value,
-                new_value=pair.new_value,
-                confidence=pair.confidence,
-            )
-
-        replace = re.search(
-            r"\b(?:replace|rename|change)\s+(.+?)\s+(?:with|to)\s+(.+)$",
+        actually_correction = re.search(
+            r"\b(?:the\s+)?(.+?)\s+is\s+actually\s+(.+)$",
             cleaned,
             flags=re.IGNORECASE,
         )
-        if replace:
+        if actually_correction:
             return CorrectionIntent(
                 CorrectionIntentType.REPLACE_VALUE,
-                old_value=trim_text(replace.group(1)),
-                new_value=trim_text(replace.group(2)),
-                confidence=0.86,
+                old_value=trim_text(actually_correction.group(1)),
+                new_value=trim_text(actually_correction.group(2)),
+                confidence=0.9,
             )
 
         if re.search(r"\bmerge\b.*\bplans?\b|\bplans?\b.*\bmerge\b", lowered):
@@ -116,6 +106,42 @@ class MemoryCorrectionIntentParser:
                 target_hint=trim_text(move.group(1)),
                 confidence=0.72,
                 requires_confirmation=True,
+            )
+
+        meant_correction = re.search(
+            r"\b(.+?)\s+(?:should be|meant to be|is really)\s+(.+)$",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        if meant_correction:
+            return CorrectionIntent(
+                CorrectionIntentType.REPLACE_VALUE,
+                old_value=trim_text(meant_correction.group(1)),
+                new_value=trim_text(meant_correction.group(2)),
+                confidence=0.88,
+            )
+
+        pairs = self.entity_normalization_service.correction_pairs_from_text(cleaned)
+        if pairs:
+            pair = pairs[0]
+            return CorrectionIntent(
+                CorrectionIntentType.REPLACE_VALUE,
+                old_value=pair.old_value,
+                new_value=pair.new_value,
+                confidence=pair.confidence,
+            )
+
+        replace = re.search(
+            r"\b(?:replace|rename|change)\s+(.+?)\s+(?:with|to)\s+(.+)$",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        if replace:
+            return CorrectionIntent(
+                CorrectionIntentType.REPLACE_VALUE,
+                old_value=trim_text(replace.group(1)),
+                new_value=trim_text(replace.group(2)),
+                confidence=0.86,
             )
 
         return CorrectionIntent(CorrectionIntentType.UNKNOWN, confidence=0.2)

@@ -10,6 +10,7 @@ from app.services.memory_intent_service import MemoryIntentService, SimpleMemory
 from app.services.memory_path_policy import (
     direct_save_metadata,
 )
+from app.services.memory_turn_correction_helpers import MemoryTurnCorrectionHelpers
 from app.services.memory_turn_delete_helpers import MemoryTurnDeleteHelpers
 from app.services.memory_turn_direct_helpers import MemoryTurnDirectHelpers
 from app.services.memory_turn_summaries import MemoryTurnSummaries
@@ -63,6 +64,7 @@ class MemoryTurnStore(Protocol):
 
 class MemoryTurnService(
     MemoryTurnDeleteHelpers,
+    MemoryTurnCorrectionHelpers,
     MemoryTurnDirectHelpers,
     MemoryTurnSummaries,
 ):
@@ -103,6 +105,14 @@ class MemoryTurnService(
                     conversation_id=conversation_id,
                     user_message=user_message,
                 )
+
+        correction_turn = await self._try_apply_direct_correction(
+            message,
+            conversation_id=conversation_id,
+            user_message=user_message,
+        )
+        if correction_turn is not None:
+            return correction_turn
 
         delete_intent = self.memory_correction_service.detect_correction_intent(
             message,
