@@ -10,13 +10,20 @@ from app.services.chat_financial_guard import ChatFinancialGuard
 from app.services.chat_response_truth import ChatResponseTruthService
 from app.services.chat_turn_context import ChatTurnContextService, MemoryService
 from app.services.chat_turn_observability import ChatTurnObserver, ChatTurnTrace
+from app.services.chat_turn_orchestrator_support import (
+    annotate_pending_action,
+    brain_messages,
+    finish_short_circuit,
+    guarded_turn_response,
+    load_pending_action,
+    messages_with_attachment,
+    turn_trace_event,
+)
 from app.services.chat_usage_recorder import ChatUsageRecorder
 from app.services.clarity_action_parser import (
     ClarityActionParser,
     ClarityActionStreamFilter,
 )
-from app.services.file_service import AttachmentContext
-from app.services.conversation_pending_action import ConversationPendingActionService
 from app.services.goal_command_service import GoalCommandService
 from app.services.memory_turn_service import MemoryTurnService
 from app.services.rex_channel import RexBrainChannel
@@ -59,13 +66,6 @@ class ChatTurnOrchestrator:
         )
         self.turn_observer = turn_observer or ChatTurnObserver()
 
-    def _brain_messages(self, message: str) -> tuple[str, str]:
-        stored_message = message.strip()
-        brain_message = self.transcript_normalizer.normalize(stored_message)
-        if not brain_message:
-            brain_message = stored_message
-        return stored_message, brain_message
-
     async def send_message(
         self,
         message: str,
@@ -77,7 +77,10 @@ class ChatTurnOrchestrator:
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
     ) -> dict:
-        stored_message, brain_message = self._brain_messages(message)
+        stored_message, brain_message = brain_messages(
+            self.transcript_normalizer,
+            message,
+        )
         turn_started_at = time.perf_counter()
         intent_decision = self.simple_rex_brain.classify(
             brain_message,
@@ -97,142 +100,70 @@ class ChatTurnOrchestrator:
             intent_decision=intent_decision,
         )
         conversation_id = turn_context.conversation_id
-        file_text = turn_context.file_text
-        attachment_context = turn_context.attachment_context
-        conversation_history = turn_context.conversation_history
-        long_term_memory = turn_context.long_term_memory
-        structured_context = turn_context.structured_context
-        time_context = turn_context.time_context
-        accountability_signals = turn_context.accountability_signals
-        user_message = turn_context.user_message
         turn_trace = self.turn_observer.new_trace(
             conversation_id=conversation_id,
             intent=intent_decision.intent.value,
         )
-        pending_action = await self._load_pending_action(conversation_id)
-        if pending_action is not None:
-            turn_trace.record_pending_action(
-                getattr(pending_action, "action_type", None)
-            )
-        goal_command_turn = await self.goal_command_service.handle_turn(
-            brain_message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_history=conversation_history,
-            time_context=time_context,
+        pending_action = await load_pending_action(self.memory_service, conversation_id)
+        annotate_pending_action(turn_trace, pending_action)
+        short_circuit = await self._try_short_circuit_turn(
+            brain_message=brain_message,
+            turn_context=turn_context,
             pending_action=pending_action,
+            intent_decision=intent_decision,
+            financial_context=financial_context,
+            turn_trace=turn_trace,
+            turn_started_at=turn_started_at,
         )
-        if goal_command_turn:
-            turn_trace.record_handler("goal_command")
-            self._log_turn_trace(turn_trace, turn_started_at)
-            return goal_command_turn
-        simple_memory_turn = await self.memory_turn_service.handle_turn(
-            brain_message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_history=conversation_history,
-            time_context=time_context,
-            pending_action=pending_action,
-        )
-        if simple_memory_turn:
-            turn_trace.record_handler("memory_turn")
-            self._log_turn_trace(turn_trace, turn_started_at)
-            return simple_memory_turn
-        finance_guard_response = self.financial_guard.guard_response(
-            intent_decision,
-            financial_context,
-        )
-        if finance_guard_response:
-            turn_trace.record_handler("finance_guard")
-            self._log_turn_trace(turn_trace, turn_started_at)
-            return await self._guarded_turn_response(
-                conversation_id=conversation_id,
-                response=finance_guard_response,
-                user_message=user_message,
-            )
+        if short_circuit is not None:
+            return short_circuit
+
         conversation_history = self.memory_turn_service.public_messages(
-            conversation_history
+            turn_context.conversation_history
         )
-        ai_messages = self.simple_rex_brain.build_prompt_messages(
-            message=brain_message,
+        ai_messages = self._build_llm_messages(
+            brain_message=brain_message,
             conversation_id=conversation_id,
             conversation_history=conversation_history,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-            accountability_signals=accountability_signals,
-            file_text=file_text,
-            time_context=time_context,
+            turn_context=turn_context,
+            intent_decision=intent_decision,
             financial_context=financial_context,
             channel=channel,
+            attachment_context=turn_context.attachment_context,
+            response_instructions=response_instructions,
         )
-
-        if response_instructions:
-            ai_messages.append({"role": "system", "content": response_instructions})
-
-        ai_messages = self._messages_with_attachment(ai_messages, attachment_context)
-
-        ai_kwargs = {}
-        if max_response_tokens is not None:
-            ai_kwargs["max_tokens"] = max_response_tokens
-        llm_started_at = time.perf_counter()
-        try:
-            rex_response = await self.ai_service.generate_response(
-                ai_messages,
-                **ai_kwargs,
-            )
-        except Exception as error:
-            await self.usage_recorder.record_llm_usage(
-                channel=channel,
-                ai_kwargs=ai_kwargs,
-                latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
-                status="failure",
-                error_class=error.__class__.__name__,
-            )
-            raise
-        await self.usage_recorder.record_llm_usage(
+        assistant_response, clarity_action_proposals = await self._generate_truthful_response(
+            ai_messages=ai_messages,
             channel=channel,
-            ai_kwargs=ai_kwargs,
-            latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
-        )
-        unsupported_actions = self.clarity_action_parser.unsupported_actions(
-            rex_response,
-        )
-        assistant_response, clarity_action_proposals = (
-            self.clarity_action_parser.extract_proposals(rex_response)
-        )
-        assistant_response = self.truth_service.truthful_generated_response(
-            assistant_response,
-            clarity_action_proposals,
-            unsupported_actions=unsupported_actions,
+            max_response_tokens=max_response_tokens,
             intent_decision=intent_decision,
-            user_message=brain_message,
-            memory_status=structured_context.get("memory_status"),
-            chat_search_results_loaded=self.truth_service.has_chat_search_results(
-                ai_messages
-            ),
+            brain_message=brain_message,
+            structured_context=turn_context.structured_context,
             conversation_history=conversation_history,
             turn_trace=turn_trace,
         )
-        turn_trace.record_handler("llm")
-        self._log_turn_trace(turn_trace, turn_started_at)
+        finish_short_circuit(
+            self.turn_observer,
+            self.usage_recorder,
+            turn_trace,
+            turn_started_at,
+            "llm",
+        )
         assistant_message = await self.memory_service.save_message(
             conversation_id,
             "assistant",
             assistant_response,
         )
-
-        memory_changes = self.clarity_action_parser.with_memory_changes(
-            None,
-            clarity_action_proposals,
-        )
-
         return {
             "conversation_id": conversation_id,
             "response": assistant_response,
-            "user_message": user_message,
+            "user_message": turn_context.user_message,
             "assistant_message": assistant_message,
             "memory_correction": None,
-            "memory_changes": memory_changes,
+            "memory_changes": self.clarity_action_parser.with_memory_changes(
+                None,
+                clarity_action_proposals,
+            ),
             "messages": await self.memory_turn_service.recent_public_messages(
                 conversation_id
             ),
@@ -250,7 +181,10 @@ class ChatTurnOrchestrator:
         user_requested_deep_thinking: bool = False,
         include_turn_trace: bool = False,
     ) -> AsyncIterator[dict]:
-        stored_message, brain_message = self._brain_messages(message)
+        stored_message, brain_message = brain_messages(
+            self.transcript_normalizer,
+            message,
+        )
         turn_started_at = time.perf_counter()
         intent_decision = self.simple_rex_brain.classify(
             brain_message,
@@ -270,122 +204,58 @@ class ChatTurnOrchestrator:
             intent_decision=intent_decision,
         )
         conversation_id = turn_context.conversation_id
-        file_text = turn_context.file_text
-        attachment_context = turn_context.attachment_context
-        conversation_history = turn_context.conversation_history
-        long_term_memory = turn_context.long_term_memory
-        structured_context = turn_context.structured_context
-        time_context = turn_context.time_context
-        accountability_signals = turn_context.accountability_signals
-        user_message = turn_context.user_message
         turn_trace = self.turn_observer.new_trace(
             conversation_id=conversation_id,
             intent=intent_decision.intent.value,
         )
         yield {"event": "conversation", "conversation_id": conversation_id}
         if include_turn_trace:
-            yield self._turn_trace_event(intent_decision, channel)
-        pending_action = await self._load_pending_action(conversation_id)
-        if pending_action is not None:
-            turn_trace.record_pending_action(
-                getattr(pending_action, "action_type", None)
-            )
-        goal_command_turn = await self.goal_command_service.handle_turn(
-            brain_message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_history=conversation_history,
-            time_context=time_context,
+            yield turn_trace_event(intent_decision, channel)
+        pending_action = await load_pending_action(self.memory_service, conversation_id)
+        annotate_pending_action(turn_trace, pending_action)
+        short_circuit = await self._try_short_circuit_turn(
+            brain_message=brain_message,
+            turn_context=turn_context,
             pending_action=pending_action,
+            intent_decision=intent_decision,
+            financial_context=financial_context,
+            turn_trace=turn_trace,
+            turn_started_at=turn_started_at,
         )
-        if goal_command_turn:
-            turn_trace.record_handler("goal_command")
-            self._log_turn_trace(turn_trace, turn_started_at)
-            yield {"event": "token", "token": goal_command_turn["response"]}
+        if short_circuit is not None:
+            yield {"event": "token", "token": short_circuit["response"]}
             yield {
                 "event": "done",
                 "conversation_id": conversation_id,
-                "response": goal_command_turn["response"],
-                "messages": goal_command_turn["messages"],
-                "memory_changes": goal_command_turn["memory_changes"],
-                "assistant_message": goal_command_turn["assistant_message"],
+                "response": short_circuit["response"],
+                "messages": short_circuit["messages"],
+                "memory_changes": short_circuit["memory_changes"],
+                "assistant_message": short_circuit["assistant_message"],
             }
             return
-        simple_memory_turn = await self.memory_turn_service.handle_turn(
-            brain_message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_history=conversation_history,
-            time_context=time_context,
-            pending_action=pending_action,
-        )
-        if simple_memory_turn:
-            turn_trace.record_handler("memory_turn")
-            self._log_turn_trace(turn_trace, turn_started_at)
-            yield {"event": "token", "token": simple_memory_turn["response"]}
-            yield {
-                "event": "done",
-                "conversation_id": conversation_id,
-                "response": simple_memory_turn["response"],
-                "messages": simple_memory_turn["messages"],
-                "memory_changes": simple_memory_turn["memory_changes"],
-                "assistant_message": simple_memory_turn["assistant_message"],
-            }
-            return
-        finance_guard_response = self.financial_guard.guard_response(
-            intent_decision,
-            financial_context,
-        )
-        if finance_guard_response:
-            turn_trace.record_handler("finance_guard")
-            self._log_turn_trace(turn_trace, turn_started_at)
-            yield {"event": "token", "token": finance_guard_response}
-            assistant_message = await self.memory_service.save_message(
-                conversation_id,
-                "assistant",
-                finance_guard_response,
-            )
-            yield {
-                "event": "done",
-                "conversation_id": conversation_id,
-                "response": finance_guard_response,
-                "messages": await self.memory_turn_service.recent_public_messages(
-                    conversation_id
-                ),
-                "memory_changes": None,
-                "assistant_message": assistant_message,
-            }
-            return
+
         conversation_history = self.memory_turn_service.public_messages(
-            conversation_history
+            turn_context.conversation_history
         )
-        ai_messages = self.simple_rex_brain.build_prompt_messages(
-            message=brain_message,
+        ai_messages = self._build_llm_messages(
+            brain_message=brain_message,
             conversation_id=conversation_id,
             conversation_history=conversation_history,
-            long_term_memory=long_term_memory,
-            structured_context=structured_context,
-            accountability_signals=accountability_signals,
-            file_text=file_text,
-            time_context=time_context,
+            turn_context=turn_context,
+            intent_decision=intent_decision,
             financial_context=financial_context,
             channel=channel,
+            attachment_context=turn_context.attachment_context,
+            response_instructions=response_instructions,
         )
-
-        if response_instructions:
-            ai_messages.append({"role": "system", "content": response_instructions})
-
-        ai_messages = self._messages_with_attachment(ai_messages, attachment_context)
-
         response_parts = []
         stream_filter = ClarityActionStreamFilter()
         ai_kwargs = {}
         if max_response_tokens is not None:
             ai_kwargs["max_tokens"] = max_response_tokens
-        token_stream = self.ai_service.stream_response(ai_messages, **ai_kwargs)
         llm_started_at = time.perf_counter()
         try:
-            async for token in token_stream:
+            async for token in self.ai_service.stream_response(ai_messages, **ai_kwargs):
                 response_parts.append(token)
                 for visible_token in stream_filter.feed(token):
                     if visible_token:
@@ -421,26 +291,25 @@ class ChatTurnOrchestrator:
             unsupported_actions=unsupported_actions,
             intent_decision=intent_decision,
             user_message=brain_message,
-            memory_status=structured_context.get("memory_status"),
+            memory_status=turn_context.structured_context.get("memory_status"),
             chat_search_results_loaded=self.truth_service.has_chat_search_results(
                 ai_messages
             ),
             conversation_history=conversation_history,
             turn_trace=turn_trace,
         )
-        turn_trace.record_handler("llm")
-        self._log_turn_trace(turn_trace, turn_started_at)
+        finish_short_circuit(
+            self.turn_observer,
+            self.usage_recorder,
+            turn_trace,
+            turn_started_at,
+            "llm",
+        )
         await self.memory_service.save_message(
             conversation_id,
             "assistant",
             assistant_response,
         )
-
-        memory_changes = self.clarity_action_parser.with_memory_changes(
-            None,
-            clarity_action_proposals,
-        )
-
         yield {
             "event": "done",
             "conversation_id": conversation_id,
@@ -448,88 +317,162 @@ class ChatTurnOrchestrator:
             "messages": await self.memory_turn_service.recent_public_messages(
                 conversation_id
             ),
-            "memory_changes": memory_changes,
-        }
-
-    def _turn_trace_event(self, intent_decision, channel: RexBrainChannel) -> dict:
-        return {
-            "event": "turn.trace",
-            "intent": intent_decision.intent.value,
-            "intent_reasons": list(intent_decision.reasons),
-            "channel": channel.value,
-            "loaded_context": {
-                "long_term_memory": intent_decision.should_load_long_term_memory,
-                "profile_memory": intent_decision.should_load_profile_memory,
-                "structured_memory": intent_decision.should_load_structured_memory,
-                "goal_context": intent_decision.should_load_goal_context,
-                "accountability": intent_decision.should_load_accountability,
-                "financial_context": intent_decision.should_use_financial_context,
-            },
-        }
-
-    def _messages_with_attachment(
-        self,
-        messages: list[dict],
-        attachment_context: Optional[AttachmentContext],
-    ) -> list[dict]:
-        if attachment_context is None or attachment_context.kind != "image":
-            return messages
-        if not attachment_context.data_url:
-            return messages
-
-        updated_messages = [dict(message) for message in messages]
-        for index in range(len(updated_messages) - 1, -1, -1):
-            if updated_messages[index].get("role") != "user":
-                continue
-            content = updated_messages[index].get("content", "")
-            text = content if isinstance(content, str) else str(content)
-            if not text.strip():
-                text = "Please look at this image."
-            updated_messages[index]["content"] = [
-                {"type": "text", "text": text},
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": attachment_context.data_url,
-                        "detail": "auto",
-                    },
-                },
-            ]
-            return updated_messages
-        return updated_messages
-
-    async def _guarded_turn_response(
-        self,
-        *,
-        conversation_id: str,
-        response: str,
-        user_message: dict,
-    ) -> dict:
-        assistant_message = await self.memory_service.save_message(
-            conversation_id,
-            "assistant",
-            response,
-        )
-        return {
-            "conversation_id": conversation_id,
-            "response": response,
-            "user_message": user_message,
-            "assistant_message": assistant_message,
-            "memory_correction": None,
-            "memory_changes": None,
-            "messages": await self.memory_turn_service.recent_public_messages(
-                conversation_id
+            "memory_changes": self.clarity_action_parser.with_memory_changes(
+                None,
+                clarity_action_proposals,
             ),
         }
 
-    async def _load_pending_action(self, conversation_id: str):
-        if not conversation_id:
-            return None
-        return await ConversationPendingActionService(self.memory_service).get(
-            conversation_id
+    async def _try_short_circuit_turn(
+        self,
+        *,
+        brain_message: str,
+        turn_context,
+        pending_action,
+        intent_decision,
+        financial_context,
+        turn_trace: ChatTurnTrace,
+        turn_started_at: float,
+    ) -> Optional[dict]:
+        conversation_id = turn_context.conversation_id
+        goal_command_turn = await self.goal_command_service.handle_turn(
+            brain_message,
+            conversation_id=conversation_id,
+            user_message=turn_context.user_message,
+            conversation_history=turn_context.conversation_history,
+            time_context=turn_context.time_context,
+            pending_action=pending_action,
         )
+        if goal_command_turn:
+            finish_short_circuit(
+                self.turn_observer,
+                self.usage_recorder,
+                turn_trace,
+                turn_started_at,
+                "goal_command",
+            )
+            return goal_command_turn
+        simple_memory_turn = await self.memory_turn_service.handle_turn(
+            brain_message,
+            conversation_id=conversation_id,
+            user_message=turn_context.user_message,
+            conversation_history=turn_context.conversation_history,
+            time_context=turn_context.time_context,
+            pending_action=pending_action,
+        )
+        if simple_memory_turn:
+            finish_short_circuit(
+                self.turn_observer,
+                self.usage_recorder,
+                turn_trace,
+                turn_started_at,
+                "memory_turn",
+            )
+            return simple_memory_turn
+        finance_guard_response = self.financial_guard.guard_response(
+            intent_decision,
+            financial_context,
+        )
+        if finance_guard_response:
+            finish_short_circuit(
+                self.turn_observer,
+                self.usage_recorder,
+                turn_trace,
+                turn_started_at,
+                "finance_guard",
+            )
+            return await guarded_turn_response(
+                memory_service=self.memory_service,
+                memory_turn_service=self.memory_turn_service,
+                conversation_id=conversation_id,
+                response=finance_guard_response,
+                user_message=turn_context.user_message,
+            )
+        return None
 
-    def _log_turn_trace(self, turn_trace: ChatTurnTrace, started_at: float) -> None:
-        turn_trace.duration_ms = self.usage_recorder.elapsed_ms(started_at)
-        self.turn_observer.log_turn(turn_trace)
+    def _build_llm_messages(
+        self,
+        *,
+        brain_message: str,
+        conversation_id: str,
+        conversation_history: list[dict],
+        turn_context,
+        intent_decision,
+        financial_context,
+        channel: RexBrainChannel,
+        attachment_context,
+        response_instructions: Optional[str],
+    ) -> list[dict]:
+        ai_messages = self.simple_rex_brain.build_prompt_messages(
+            message=brain_message,
+            conversation_id=conversation_id,
+            conversation_history=conversation_history,
+            long_term_memory=turn_context.long_term_memory,
+            structured_context=turn_context.structured_context,
+            accountability_signals=turn_context.accountability_signals,
+            file_text=turn_context.file_text,
+            time_context=turn_context.time_context,
+            financial_context=financial_context,
+            channel=channel,
+        )
+        if response_instructions:
+            ai_messages.append({"role": "system", "content": response_instructions})
+        return messages_with_attachment(ai_messages, attachment_context)
 
+    async def _generate_truthful_response(
+        self,
+        *,
+        ai_messages: list[dict],
+        channel: RexBrainChannel,
+        max_response_tokens: Optional[int],
+        intent_decision,
+        brain_message: str,
+        structured_context: dict,
+        conversation_history: list[dict],
+        turn_trace: ChatTurnTrace,
+    ) -> tuple[str, list]:
+        ai_kwargs = {}
+        if max_response_tokens is not None:
+            ai_kwargs["max_tokens"] = max_response_tokens
+        llm_started_at = time.perf_counter()
+        try:
+            rex_response = await self.ai_service.generate_response(
+                ai_messages,
+                **ai_kwargs,
+            )
+        except Exception as error:
+            await self.usage_recorder.record_llm_usage(
+                channel=channel,
+                ai_kwargs=ai_kwargs,
+                latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
+                status="failure",
+                error_class=error.__class__.__name__,
+            )
+            raise
+        await self.usage_recorder.record_llm_usage(
+            channel=channel,
+            ai_kwargs=ai_kwargs,
+            latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
+        )
+        unsupported_actions = self.clarity_action_parser.unsupported_actions(
+            rex_response,
+        )
+        assistant_response, clarity_action_proposals = (
+            self.clarity_action_parser.extract_proposals(rex_response)
+        )
+        return (
+            self.truth_service.truthful_generated_response(
+                assistant_response,
+                clarity_action_proposals,
+                unsupported_actions=unsupported_actions,
+                intent_decision=intent_decision,
+                user_message=brain_message,
+                memory_status=structured_context.get("memory_status"),
+                chat_search_results_loaded=self.truth_service.has_chat_search_results(
+                    ai_messages
+                ),
+                conversation_history=conversation_history,
+                turn_trace=turn_trace,
+            ),
+            clarity_action_proposals,
+        )

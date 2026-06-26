@@ -15,6 +15,8 @@ class ChatTurnTrace:
     intent: str
     handler: str = "pending"
     pending_action_type: Optional[str] = None
+    resolver_target_type: Optional[str] = None
+    resolver_target: Optional[str] = None
     truth_guard_rewrites: list[str] = field(default_factory=list)
     duration_ms: Optional[int] = None
 
@@ -23,6 +25,14 @@ class ChatTurnTrace:
 
     def record_pending_action(self, action_type: Optional[str]) -> None:
         self.pending_action_type = action_type
+
+    def record_resolver_target(
+        self,
+        target_type: Optional[str],
+        resolver_target: Optional[str],
+    ) -> None:
+        self.resolver_target_type = target_type
+        self.resolver_target = resolver_target
 
     def record_truth_rewrite(self, guard_name: str) -> None:
         if guard_name not in self.truth_guard_rewrites:
@@ -36,6 +46,10 @@ class ChatTurnTrace:
         }
         if self.pending_action_type:
             payload["pending_action_type"] = self.pending_action_type
+        if self.resolver_target_type:
+            payload["resolver_target_type"] = self.resolver_target_type
+        if self.resolver_target:
+            payload["resolver_target"] = self.resolver_target
         if self.truth_guard_rewrites:
             payload["truth_guard_rewrites"] = list(self.truth_guard_rewrites)
         if self.duration_ms is not None:

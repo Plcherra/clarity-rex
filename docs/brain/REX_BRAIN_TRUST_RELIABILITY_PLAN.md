@@ -11,7 +11,7 @@ Single follow-up plan for making Rex Brain trustworthy at 500–1k users. Tracks
 ## Problem Statement
 
 - **Parser/guard fragility does not scale** — one regex or phrase-order bug affects every user.
-- **God files make fixes riskier** — `goal_command_service.py` is ~1,408 lines (2.8× the hard limit).
+- **God files make fixes riskier** — large goal/memory modules were split; keep new modules under 300 lines.
 - **Three truth paths can disagree** — Goals tab (`/accountability/overview`), Rex context loaders, and direct pre-LLM handlers filter goals/commitments differently.
 - **Pre-LLM parsers and post-LLM truth guards fight each other** — inventory questions rewritten as delete clarifications; valid list answers blocked.
 
@@ -57,12 +57,14 @@ Run P0 **before** adding more goal/memory parser patches.
 | P0-3 | [x] | **Unified delete/update resolver** | Competing parsers (memory vs goal vs commitment) | `memory_delete_resolver.py`, `memory_correction_intent_parser.py`, `goal_command_parsing.py` | Delete/update via TABLE_SPECS + resolver; no phrase-order luck |
 | P0-4 | [x] | **Explicit pending_action state** | History marker scavenging misroutes follow-ups | `conversation_pending_action.py`, orchestrator wiring, `conversations.pending_action` | "Yes delete it" uses stored pending action, not regex on last N messages |
 
+**Next step:** Deploy Rex API and run P3-4 ops smoke before treating trust work as live.
+
 ### P0 Tests To Add
 
-- Parity: `AccountabilityQueryService.list_open_commitments()` == `/accountability/overview` open commitments for same user.
-- Inventory: "What commitments do we have saved?" never triggers delete clarification or truth rewrite.
-- Delete flow: confirm → "yes" resolves via pending_action, not substring on history.
-- Resolver: goal delete, commitment delete, memory delete each hit correct TABLE_SPEC regardless of message order.
+- [x] Parity: `AccountabilityQueryService.list_open_commitments()` == `/accountability/overview` open commitments for same user.
+- [x] Inventory: "What commitments do we have saved?" never triggers delete clarification or truth rewrite (`test_brain_trust_e2e.py`, `test_action_truth_policy.py`).
+- [x] Delete flow: confirm → "yes" resolves via pending_action, not substring on history (`test_brain_trust_e2e.py`).
+- [x] Resolver: goal delete, commitment delete, memory delete each hit correct TABLE_SPEC (`test_memory_delete_resolver.py`).
 
 ---
 
@@ -143,9 +145,9 @@ Target: all modules under 300 lines.
 |-------|------|----------|
 | ~147 | `goal_command_service.py` | P1-1 done |
 | ~240 | `memory_correction_service.py` | P3-1 done (apply module extracted) |
-| ~300 | `chat_recall_search.py` | P3-1 done (runners extracted) |
+| ~312 | `chat_recall_search.py` | P3-1 done (runners extracted) |
+| ~478 | `chat_turn_orchestrator.py` | P3 support module + short-circuit helper extracted |
 | ~42 | `recall_intent_helper.py` | P2-4 done (constants, detection, query modules) |
-| ~454 | `chat_turn_orchestrator.py` | Monitor; split if it grows |
 
 ---
 
@@ -161,3 +163,4 @@ Target: all modules under 300 lines.
 | 2026-06-25 | P1-1 started: extracted goal_command_types, goal_command_queries, goal_command_results |
 | 2026-06-25 | P2-1..P2-4: clarity knowledge labels, goal repair script, turn observability, recall/memory file splits; 1088 tests pass |
 | 2026-06-25 | P3-1..P3-3: memory/recall runner splits, stream observability parity, trust regression tests |
+| 2026-06-25 | Gap fix: E2E pending_action delete + inventory tests, goal resolver test, orchestrator support split, resolver turn trace fields |

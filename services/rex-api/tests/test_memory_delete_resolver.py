@@ -137,3 +137,33 @@ async def test_resolver_unscoped_delete_can_match_memory():
     assert len(matches) == 1
     assert matches[0].table == "long_term_memory"
     assert matches[0].id == "m-1"
+
+
+@pytest.mark.asyncio
+async def test_resolver_scoped_goal_delete_skips_commitments():
+    store = FakeDeleteMemoryStore(
+        plans=[
+            {
+                "id": "p-1",
+                "title": "Buy RAM",
+                "description": "Buy 32GB RAM",
+                "active": True,
+            }
+        ],
+        commitments=[
+            {
+                "id": "c-1",
+                "title": "Buy RAM every month",
+                "commitment_text": "Buy RAM every month",
+                "active": True,
+            }
+        ],
+    )
+    resolver = MemoryDeleteResolver(store)
+    parsed = parse_delete_request('Delete the goal "Buy RAM"')
+    assert parsed is not None
+
+    matches = await resolver.resolve(parsed)
+    assert len(matches) == 1
+    assert matches[0].table == "plans"
+    assert matches[0].id == "p-1"
