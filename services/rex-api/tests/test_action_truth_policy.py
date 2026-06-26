@@ -10,6 +10,7 @@ from app.services.action_truth_policy import (
     safe_old_chat_search_response,
     safe_pending_action_response,
     safe_unexecuted_delete_response,
+    safe_unexecuted_goal_response,
     safe_unexecuted_memory_response,
     safe_unsupported_action_response,
 )
@@ -34,6 +35,26 @@ def test_unsupported_action_success_claim_is_blocked():
         "I can't complete send email from Clarity yet. I can help you think it "
         "through or draft it, but I won't claim it was done."
     )
+
+
+def test_unexecuted_goal_guard_skips_goals_inventory_questions():
+    response = safe_unexecuted_goal_response(
+        "I added it as a goal: Be a goal/commitment.",
+        user_message="What goals do we have saved?",
+        intent="goal_or_commitment",
+    )
+
+    assert response == "I added it as a goal: Be a goal/commitment."
+
+
+def test_unexecuted_goal_guard_skips_non_goal_intents():
+    response = safe_unexecuted_goal_response(
+        "I added it as a goal: Buy RAM.",
+        user_message="How much did I spend?",
+        intent="finance",
+    )
+
+    assert response == "I added it as a goal: Buy RAM."
 
 
 def test_unexecuted_memory_success_claim_is_blocked():

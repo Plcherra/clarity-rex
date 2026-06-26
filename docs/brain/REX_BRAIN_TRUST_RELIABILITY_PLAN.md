@@ -70,10 +70,10 @@ Run P0 **before** adding more goal/memory parser patches.
 
 | ID | Status | Issue | Work |
 |----|--------|-------|------|
-| P1-1 | [ ] | **Split GoalCommandService** | See split map below; no behavior change PR |
-| P1-2 | [ ] | **Intent router alignment** | `SimpleRexBrain.classify` intents match direct-handler coverage |
-| P1-3 | [ ] | **Scoped truth guards** | `action_truth_policy.py` scoped by action type, not global "saved"/"delete" substring |
-| P1-4 | [ ] | **Goal save quality** | Reject meta bodies; split numbered lists before persist; validation in writer module |
+| P1-1 | [x] | **Split GoalCommandService** | See split map below; no behavior change PR |
+| P1-2 | [x] | **Intent router alignment** | `SimpleRexBrain.classify` intents match direct-handler coverage |
+| P1-3 | [x] | **Scoped truth guards** | `action_truth_policy.py` scoped by action type, not global "saved"/"delete" substring |
+| P1-4 | [x] | **Goal save quality** | Reject meta bodies; split numbered lists before persist; validation in writer module |
 
 ### GoalCommandService Split Map
 
@@ -118,8 +118,8 @@ Target: all modules under 300 lines.
 3. [x] P0-1 + P0-2 — snapshot + AccountabilityQueryService + parity tests
 4. [x] P0-4 — pending_action conversation state
 5. [x] P0-3 — unified delete/update resolver
-6. [ ] P1-1 — GoalCommandService split (refactor only)
-7. [ ] P1-3 + P1-4 — scoped guards and save quality
+6. [x] P1-1 — GoalCommandService split (refactor only)
+7. [x] P1-3 + P1-4 — scoped guards and save quality
 8. [ ] P2 items
 
 ---
@@ -128,7 +128,7 @@ Target: all modules under 300 lines.
 
 | Lines | File | Priority |
 |-------|------|----------|
-| 1,408 | `goal_command_service.py` | P1-1 (after P0) |
+| 1,408 | `goal_command_service.py` | P1-1 done (~147 lines orchestrator) |
 | ~780 | `memory_correction_service.py` | P2-4 |
 | ~596 | `chat_recall_search.py` | P2-4 |
 | ~592 | `recall_intent_helper.py` | P2-4 |
@@ -144,4 +144,5 @@ Target: all modules under 300 lines.
 | 2026-06-25 | P0-4: durable `conversations.pending_action` + ConversationPendingActionService |
 | 2026-06-25 | P0-1/P0-2: accountability snapshot + AccountabilityQueryService + parity tests |
 | 2026-06-25 | P0-3: MemoryDeleteResolver + scoped delete wiring; 1079 tests pass |
+| 2026-06-25 | P1-1/P1-4: GoalCommandService split + writer validation + scoped truth guards + router inventory alignment |
 | 2026-06-25 | P1-1 started: extracted goal_command_types, goal_command_queries, goal_command_results |

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+from app.services.goal_command_parsing import is_goals_inventory_query
 from app.services.recall_intent_helper import RecallIntentHelper
 from app.services.rex_intent_finance import RexIntentFinanceHelper
 from app.services.rex_intent_memory import RexIntentMemoryHelper
@@ -112,6 +113,18 @@ class RexIntentRouter:
                 has_financial_context,
                 finance_relevant,
                 user_requested_deep_thinking,
+            )
+
+        if is_goals_inventory_query(message):
+            reasons.append("goals_inventory_query")
+            return self._decision(
+                RexIntent.GOAL_OR_COMMITMENT,
+                reasons,
+                has_file,
+                has_financial_context,
+                finance_relevant,
+                user_requested_deep_thinking,
+                load_structured_memory_override=True,
             )
 
         if self.memory_helper.looks_like_memory_recall_question(

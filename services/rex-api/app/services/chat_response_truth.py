@@ -54,8 +54,17 @@ class ChatResponseTruthService:
             response,
             user_message=user_message,
             conversation_history=conversation_history,
+            intent=intent_decision.intent.value,
         )
-        response = safe_unexecuted_goal_response(response)
+        if intent_decision.intent in {
+            RexIntent.GOAL_OR_COMMITMENT,
+            RexIntent.UNKNOWN,
+        }:
+            response = safe_unexecuted_goal_response(
+                response,
+                user_message=user_message,
+                intent=intent_decision.intent.value,
+            )
         if intent_decision.intent in {RexIntent.MEMORY_SAVE, RexIntent.MEMORY_UPDATE}:
             return safe_unexecuted_memory_response(response)
         return response

@@ -163,6 +163,7 @@ def safe_unexecuted_delete_response(
     *,
     user_message: str,
     conversation_history: list[dict] | None = None,
+    intent: str | None = None,
 ) -> str:
     from app.services.memory_delete_reference import (
         is_delete_clarification_message,
@@ -177,6 +178,10 @@ def safe_unexecuted_delete_response(
         user_message,
         conversation_history,
     )
+    if intent == "finance":
+        should_guard = should_guard and request_asks_delete(user_message)
+    if intent == "goal_or_commitment" and not request_asks_delete(user_message):
+        should_guard = False
     if not should_guard:
         return cleaned
     if response_claims_delete_success(cleaned) or response_claims_unconfirmed_success(
@@ -186,10 +191,20 @@ def safe_unexecuted_delete_response(
     return cleaned
 
 
-def safe_unexecuted_goal_response(response: str) -> str:
+def safe_unexecuted_goal_response(
+    response: str,
+    *,
+    user_message: str = "",
+    intent: str | None = None,
+) -> str:
     from app.services.memory_delete_reference import response_claims_goal_success
+    from app.services.goal_command_parsing import is_goals_inventory_query
 
     cleaned = response.strip()
+    if is_goals_inventory_query(user_message):
+        return cleaned
+    if intent is not None and intent not in {"goal_or_commitment", "unknown"}:
+        return cleaned
     if not response_claims_goal_success(cleaned):
         return cleaned
     if not response_claims_unconfirmed_success(cleaned):
