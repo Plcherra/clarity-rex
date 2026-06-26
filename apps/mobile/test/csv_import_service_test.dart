@@ -27,12 +27,12 @@ void main() {
       expect(result.insertedCount, 1505);
       expect(result.skippedDuplicateCount, 0);
       expect(result.categorizedCount, 1505);
-      expect(result.fallbackCategoryCount, 0);
+      expect(result.miscellaneousCategoryCount, 0);
       expect(result.aiSucceeded, isTrue);
       expect(harness.createdInputs, hasLength(1505));
       expect(
         harness.createdInputs.every(
-          (transaction) => transaction.categoryId == 'cat-unknown',
+          (transaction) => transaction.categoryId == 'cat-shopping',
         ),
         isTrue,
       );
@@ -59,16 +59,14 @@ void main() {
       expect(result, isNotNull);
       expect(result!.insertedCount, 1549);
       expect(result.aiSucceeded, isFalse);
-      expect(result.fallbackCategoryCount, 0);
+      expect(result.miscellaneousCategoryCount, 1549);
       expect(
         harness.createdInputs.every(
-          (transaction) => transaction.categoryId == 'cat-unknown',
+          (transaction) => transaction.categoryId == 'cat-shopping',
         ),
         isTrue,
       );
-      expect(harness.categoryUpdates, hasLength(1));
-      expect(harness.categoryUpdates.single.categoryId, 'cat-miscellaneous');
-      expect(harness.categoryUpdates.single.ids, hasLength(1549));
+      expect(harness.categoryUpdates, isEmpty);
     },
   );
 
@@ -109,16 +107,15 @@ void main() {
       expect(result.insertedCount, 1500);
       expect(result.skippedDuplicateCount, 1);
       expect(result.aiSucceeded, isFalse);
-      expect(result.fallbackCategoryCount, 0);
+      expect(result.miscellaneousCategoryCount, 1500);
       expect(harness.createdInputs, hasLength(1500));
       expect(
         harness.createdInputs.every(
-          (transaction) => transaction.categoryId == 'cat-unknown',
+          (transaction) => transaction.categoryId == 'cat-shopping',
         ),
         isTrue,
       );
-      expect(harness.categoryUpdates.single.categoryId, 'cat-miscellaneous');
-      expect(harness.categoryUpdates.single.ids, hasLength(1500));
+      expect(harness.categoryUpdates, isEmpty);
     },
   );
 
@@ -152,7 +149,7 @@ void main() {
   });
 
   test(
-    'repair import categories retries Unknown rows for one import',
+    'repair import categories retries legacy Unknown rows for one import',
     () async {
       final harness = _CsvImportHarness(
         existingTransactions: [
@@ -208,7 +205,7 @@ void main() {
       expect(result.scannedCount, 2);
       expect(result.repairableCount, 2);
       expect(result.updatedCount, 2);
-      expect(result.remainingReviewCount, 0);
+      expect(result.remainingUncategorizedCount, 0);
       expect(harness.createdCategoryTypes['Income / Payroll'], 'income');
       expect(
         harness.categoryUpdates.map((update) => update.categoryId).toSet(),
@@ -267,14 +264,13 @@ void main() {
       expect(result!.insertedCount, 3);
       expect(result.aiSucceeded, isFalse);
       expect(result.aiErrorMessage, contains('AI unavailable'));
-      expect(result.fallbackCategoryCount, 0);
-      expect(result.aiCategorizedCount, 0);
+      expect(result.miscellaneousCategoryCount, 1);
       expect(result.learnedRuleCategorizedCount, 0);
       expect(result.deterministicFallbackCategorizedCount, 3);
       expect(result.categoryUpdateFailureCount, 0);
       expect(
         harness.createdInputs.every(
-          (transaction) => transaction.categoryId == 'cat-unknown',
+          (transaction) => transaction.categoryId == 'cat-shopping',
         ),
         isTrue,
       );
@@ -284,7 +280,7 @@ void main() {
       };
       expect(updatesByCategory['cat-pharmacy-health'], ['txn-0']);
       expect(updatesByCategory['cat-shoes-clothing'], ['txn-1']);
-      expect(updatesByCategory['cat-miscellaneous'], ['txn-2']);
+      expect(updatesByCategory.containsKey('cat-miscellaneous'), isFalse);
     },
   );
 
@@ -352,7 +348,7 @@ void main() {
   });
 
   test(
-    'missing invalid duplicate AI suggestions fall back to Miscellaneous',
+    'missing invalid duplicate AI suggestions fall back to best-guess categories',
     () async {
       final harness = _CsvImportHarness(
         categorizeTransactions: (_) async => {
@@ -374,19 +370,17 @@ void main() {
       final result = events.last.result;
       expect(result, isNotNull);
       expect(result!.aiSucceeded, isTrue);
-      expect(result.fallbackCategoryCount, 0);
-      expect(result.aiCategorizedCount, 1);
-      expect(harness.categoryUpdates, hasLength(2));
+      expect(result.miscellaneousCategoryCount, 3);
+      expect(harness.categoryUpdates, hasLength(1));
 
       final idsByCategoryId = {
         for (final update in harness.categoryUpdates)
           update.categoryId: update.ids,
       };
       expect(idsByCategoryId['cat-food'], ['txn-0']);
-      expect(idsByCategoryId['cat-miscellaneous'], ['txn-1', 'txn-2', 'txn-3']);
       expect(
         harness.createdInputs.every(
-          (transaction) => transaction.categoryId == 'cat-unknown',
+          (transaction) => transaction.categoryId == 'cat-shopping',
         ),
         isTrue,
       );
@@ -411,7 +405,7 @@ void main() {
     final result = events.last.result;
     expect(result, isNotNull);
     expect(result!.aiSucceeded, isTrue);
-    expect(result.fallbackCategoryCount, 0);
+    expect(result.miscellaneousCategoryCount, 0);
     expect(harness.createdCategoryNames, ['Pet Care']);
     expect(harness.categoryUpdates, hasLength(1));
     expect(harness.categoryUpdates.single.categoryId, 'cat-pet-care');
@@ -442,7 +436,7 @@ void main() {
       final result = events.last.result;
       expect(result, isNotNull);
       expect(result!.categoryUpdateFailureCount, 0);
-      expect(result.fallbackCategoryCount, 0);
+      expect(result.miscellaneousCategoryCount, 0);
       expect(harness.createdCategoryNames, isEmpty);
       expect(harness.categoryUpdates.single.categoryId, 'cat-food');
     },
@@ -476,7 +470,7 @@ void main() {
     expect(result, isNotNull);
     expect(result!.insertedCount, 2);
     expect(result.aiSucceeded, isTrue);
-    expect(result.fallbackCategoryCount, 0);
+    expect(result.miscellaneousCategoryCount, 0);
     expect(result.learnedRuleCategorizedCount, 2);
     expect(result.aiCategorizedCount, 0);
     expect(result.deterministicFallbackCategorizedCount, 0);
@@ -558,7 +552,7 @@ void main() {
     },
   );
 
-  test('category improvement failure keeps inserted rows as Unknown', () async {
+  test('category assignment failure keeps rows on placeholder category', () async {
     final harness = _CsvImportHarness(
       updateTransactionsCategory: ({required ids, required categoryId}) async {
         throw const FormatException('bulk update failed');
@@ -575,14 +569,14 @@ void main() {
     expect(result!.insertedCount, 2);
     expect(result.aiSucceeded, isTrue);
     expect(result.aiErrorMessage, contains('bulk update failed'));
-    expect(result.fallbackCategoryCount, 2);
     expect(result.categoryUpdateFailureCount, 2);
     expect(
       harness.createdInputs.every(
-        (transaction) => transaction.categoryId == 'cat-unknown',
+        (transaction) => transaction.categoryId == 'cat-shopping',
       ),
       isTrue,
     );
+    expect(harness.categoryUpdates, isEmpty);
   });
 }
 
@@ -647,6 +641,10 @@ class _CsvImportHarness {
     'miscellaneous': _categoryRecord(
       id: 'cat-miscellaneous',
       name: kAutomaticFallbackCategoryName,
+    ),
+    'shopping': _categoryRecord(
+      id: 'cat-shopping',
+      name: kBestEffortExpenseCategoryName,
     ),
     'unknown': _categoryRecord(id: 'cat-unknown', name: kUnknownCategoryName),
   };

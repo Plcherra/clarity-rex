@@ -1,5 +1,16 @@
 const String kUnknownCategoryName = 'Unknown';
 const String kAutomaticFallbackCategoryName = 'Miscellaneous';
+const String kBestEffortExpenseCategoryName = 'Shopping';
+const String kBestEffortIncomeCategoryName = 'Income / Payroll';
+
+/// Catch-all buckets that hide uncategorized spend; never auto-assign or offer to AI.
+bool isCatchAllCategoryLabel(String label) {
+  final normalized = label.trim().toLowerCase();
+  return normalized == kAutomaticFallbackCategoryName.toLowerCase() ||
+      normalized == kUnknownCategoryName.toLowerCase() ||
+      normalized == 'uncategorized' ||
+      normalized == 'other';
+}
 
 const int _maxCategoryNameLength = 40;
 const int _minMeaningfulCategoryCharacters = 3;

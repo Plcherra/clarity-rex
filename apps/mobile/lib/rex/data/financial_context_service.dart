@@ -313,9 +313,6 @@ final class AssistantFinancialContextService {
             'transaction_count': statementImport.transactionCount,
           },
       ],
-      'internal_payment_review_count': model
-          .internalPaymentReviewQueue(scope)
-          .length,
       'transaction_slices': buildRexDrilldownIndex(
         resolvedTransactions: resolvedViews,
         accountsById: accountById,

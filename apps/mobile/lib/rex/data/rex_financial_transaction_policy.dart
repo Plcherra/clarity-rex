@@ -1,14 +1,11 @@
 import 'package:clarity/core/models/account.dart';
-import 'package:clarity/core/models/transaction.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/transactions/domain/spend_categories.dart';
-import 'package:clarity/features/transactions/domain/transaction_review.dart';
 import 'package:clarity/features/transactions/domain/transaction_resolution.dart';
 
 const int kMaxRexTransactionContextRows = 120;
 const int kMaxRexDrilldownGroups = 18;
 const int kMaxRexDrilldownSampleIds = 8;
-const int kMaxRexReviewQueueSampleIds = 50;
 
 List<TransactionRecord> selectRexTransactionContextRows({
   required List<TransactionRecord> transactions,
@@ -18,32 +15,13 @@ List<TransactionRecord> selectRexTransactionContextRows({
   if (transactions.length <= maxRows) {
     return transactions;
   }
-  final reviewIds = <String>{};
-  for (final resolved in resolvedTransactions) {
-    if (transactionReviewReasons(resolved).isNotEmpty) {
-      final id = _recordIdForResolvedTransaction(resolved, transactions);
-      if (id != null && id.isNotEmpty) reviewIds.add(id);
-    }
-  }
   final newest = [...transactions]
     ..sort((a, b) {
       final byDate = b.date.compareTo(a.date);
       if (byDate != 0) return byDate;
       return b.id.compareTo(a.id);
     });
-  final selectedIds = <String>{};
-  for (final record in newest) {
-    if (selectedIds.length >= maxRows) break;
-    if (reviewIds.contains(record.id)) selectedIds.add(record.id);
-  }
-  for (final record in newest) {
-    if (selectedIds.length >= maxRows) break;
-    selectedIds.add(record.id);
-  }
-  return [
-    for (final record in newest)
-      if (selectedIds.contains(record.id)) record,
-  ];
+  return newest.take(maxRows).toList(growable: false);
 }
 
 Map<String, dynamic> buildRexDrilldownIndex({
@@ -53,7 +31,6 @@ Map<String, dynamic> buildRexDrilldownIndex({
   final byMonth = <String, _RexSliceAccumulator>{};
   final byAccount = <String, _RexSliceAccumulator>{};
   final byCategory = <String, _RexSliceAccumulator>{};
-  final byReview = <String, _RexSliceAccumulator>{};
 
   for (final resolved in resolvedTransactions) {
     final transaction = resolved.transaction;
@@ -85,30 +62,12 @@ Map<String, dynamic> buildRexDrilldownIndex({
           )
           .add(resolved);
     }
-
-    for (final reason in transactionReviewReasons(resolved)) {
-      final key = reason.name;
-      byReview
-          .putIfAbsent(
-            key,
-            () => _RexSliceAccumulator(
-              key: key,
-              label: _reviewReasonLabel(reason),
-            ),
-          )
-          .add(resolved);
-    }
   }
 
   return {
     'months': _sliceContexts(byMonth.values, sortByLatest: true),
     'accounts': _sliceContexts(byAccount.values),
     'categories': _sliceContexts(byCategory.values, sortBySpend: true),
-    'review_queues': _sliceContexts(
-      byReview.values,
-      sampleLimit: kMaxRexReviewQueueSampleIds,
-      userFacingCategory: false,
-    ),
   };
 }
 
@@ -212,41 +171,6 @@ bool _isVisibleFinancialCategorySlice(ResolvedTransaction resolved) {
       !transaction.pending;
 }
 
-String? _recordIdForResolvedTransaction(
-  ResolvedTransaction resolved,
-  List<TransactionRecord> records,
-) {
-  final fingerprint = resolved.transaction.fingerprint;
-  if (fingerprint != null &&
-      fingerprint.isNotEmpty &&
-      records.any((record) => record.id == fingerprint)) {
-    return fingerprint;
-  }
-
-  final key = transactionCategoryKey(resolved.transaction);
-  for (final record in records) {
-    if (_recordIdentityKey(record) == key) {
-      return record.id;
-    }
-  }
-  return fingerprint;
-}
-
-String _recordIdentityKey(TransactionRecord record) {
-  return transactionCategoryKey(
-    Transaction(
-      date: record.date,
-      description: record.description ?? record.merchant ?? '',
-      amount: record.type == 'expense' ? -record.amount.abs() : record.amount,
-      accountId: record.accountId,
-      categoryLabel: record.categoryId,
-      fingerprint: record.id,
-      source: record.source,
-      pending: record.pending,
-    ),
-  );
-}
-
 String _transactionId(ResolvedTransaction resolved) {
   return resolved.transaction.fingerprint ??
       transactionCategoryKey(resolved.transaction);
@@ -263,15 +187,6 @@ Map<String, dynamic> _sampleTransactionContext(ResolvedTransaction resolved) {
     'category': resolved.displayCategory,
     'source': transaction.source,
     'pending': transaction.pending,
-  };
-}
-
-String _reviewReasonLabel(TransactionReviewReason reason) {
-  return switch (reason) {
-    TransactionReviewReason.needsCategory => 'Category data issue',
-    TransactionReviewReason.internalPayment => 'Possible internal payment',
-    TransactionReviewReason.manualRole => 'Manual role',
-    TransactionReviewReason.ignored => 'Ignored',
   };
 }
 

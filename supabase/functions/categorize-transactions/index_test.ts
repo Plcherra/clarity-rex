@@ -9,18 +9,18 @@ Deno.test("normalizes AI-created category names", () => {
   assertEquals(normalizeCategoryName("PET   care"), "Pet Care");
 });
 
-Deno.test("short category names fall back to Unknown", () => {
-  assertEquals(normalizeCategoryName("C"), "Unknown");
-  assertEquals(normalizeCategoryName("x"), "Unknown");
-  assertEquals(normalizeCategoryName("--a--"), "Unknown");
+Deno.test("short category names fall back to Shopping", () => {
+  assertEquals(normalizeCategoryName("C"), "Shopping");
+  assertEquals(normalizeCategoryName("x"), "Shopping");
+  assertEquals(normalizeCategoryName("--a--"), "Shopping");
   assertEquals(normalizeCategoryName("Gas"), "Gas");
 });
 
-Deno.test("unsafe category names fall back to Unknown", () => {
-  assertEquals(normalizeCategoryName("https://example.com"), "Unknown");
-  assertEquals(normalizeCategoryName("person@example.com"), "Unknown");
-  assertEquals(normalizeCategoryName("<script>"), "Unknown");
-  assertEquals(normalizeCategoryName("!!!"), "Unknown");
+Deno.test("unsafe category names fall back to Shopping", () => {
+  assertEquals(normalizeCategoryName("https://example.com"), "Shopping");
+  assertEquals(normalizeCategoryName("person@example.com"), "Shopping");
+  assertEquals(normalizeCategoryName("<script>"), "Shopping");
+  assertEquals(normalizeCategoryName("!!!"), "Shopping");
 });
 
 Deno.test("rejects invalid request shape before OpenAI call", async () => {
@@ -32,7 +32,7 @@ Deno.test("rejects invalid request shape before OpenAI call", async () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        allowedCategories: ["Unknown"],
+        allowedCategories: ["Shopping", "Food & Drink", "Subscriptions"],
         transactions: [],
       }),
     }),
@@ -74,7 +74,7 @@ Deno.test("chunks large imports into smaller OpenAI calls", async () => {
   }
 });
 
-Deno.test("invalid model output falls back to Miscellaneous per transaction", async () => {
+Deno.test("invalid model output falls back to Shopping per transaction", async () => {
   const restore = setOpenAiTestEnv();
   globalThis.fetch = async () =>
     openAiCompactJsonResponse({
@@ -89,16 +89,16 @@ Deno.test("invalid model output falls back to Miscellaneous per transaction", as
     assertEquals(response.status, 200);
     assertEquals(body.errors, []);
     assertEquals(body.suggestions, [
-      { key: "txn-0", categoryName: "Miscellaneous" },
+      { key: "txn-0", categoryName: "Shopping" },
       { key: "txn-1", categoryName: "Gas" },
-      { key: "txn-2", categoryName: "Miscellaneous" },
+      { key: "txn-2", categoryName: "Shopping" },
     ]);
   } finally {
     restore();
   }
 });
 
-Deno.test("failed chunks return Miscellaneous instead of failing the whole import", async () => {
+Deno.test("failed chunks return Shopping instead of failing the whole import", async () => {
   const restore = setOpenAiTestEnv();
   globalThis.fetch = async () =>
     new Response(JSON.stringify({ error: "rate limited" }), {
@@ -117,7 +117,7 @@ Deno.test("failed chunks return Miscellaneous instead of failing the whole impor
     assertEquals(body.suggestions.length, 120);
     assertEquals(
       body.suggestions.every((suggestion: { categoryName: string }) =>
-        suggestion.categoryName === "Miscellaneous"
+        suggestion.categoryName === "Shopping"
       ),
       true,
     );
@@ -257,7 +257,7 @@ Deno.test("missing AI suggestions use deterministic fallback when available", as
     assertEquals(body.errors, []);
     assertEquals(body.suggestions, [
       { key: "amazon", categoryName: "Subscriptions" },
-      { key: "generic", categoryName: "Miscellaneous" },
+      { key: "generic", categoryName: "Shopping" },
     ]);
   } finally {
     restore();
@@ -292,7 +292,7 @@ Deno.test("truncated AI response falls back per row", async () => {
     assertEquals(body.errors.length, 1);
     assertEquals(body.suggestions, [
       { key: "cvs", categoryName: "Pharmacy / Health" },
-      { key: "generic", categoryName: "Miscellaneous" },
+      { key: "generic", categoryName: "Shopping" },
     ]);
   } finally {
     restore();
@@ -313,7 +313,7 @@ Deno.test("negative AI income suggestions fall back safely", async () => {
     assertEquals(response.status, 200);
     assertEquals(body.errors, []);
     assertEquals(body.suggestions, [
-      { key: "txn-0", categoryName: "Miscellaneous" },
+      { key: "txn-0", categoryName: "Shopping" },
     ]);
   } finally {
     restore();
@@ -353,7 +353,7 @@ function validRequestWithTransactions(transactions: TransactionFixture[]) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      allowedCategories: ["Unknown"],
+      allowedCategories: ["Shopping", "Food & Drink", "Subscriptions"],
       transactions,
     }),
   });

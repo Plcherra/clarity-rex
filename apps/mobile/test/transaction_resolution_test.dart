@@ -2,7 +2,6 @@ import 'package:clarity/core/models/models.dart';
 import 'package:clarity/features/categories/domain/category_normalization.dart';
 import 'package:clarity/features/transactions/domain/spend_categories.dart';
 import 'package:clarity/features/transactions/domain/transaction_resolution.dart';
-import 'package:clarity/features/transactions/domain/transaction_review.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -41,10 +40,6 @@ void main() {
     expect(resolved.financialRole, FinancialRole.adjustment);
     expect(resolved.countsAsSpend, isFalse);
     expect(resolved.countsAsIncome, isFalse);
-    expect(
-      transactionReviewReasons(resolved),
-      contains(TransactionReviewReason.ignored),
-    );
   });
 
   test('positive refund descriptions do not count as income', () {
@@ -155,15 +150,11 @@ void main() {
       allTransactions: [transaction],
     );
 
-    expect(resolved.displayCategory, kAutomaticFallbackCategoryName);
+    expect(resolved.displayCategory, kBestEffortExpenseCategoryName);
     expect(resolved.needsCategorization, isFalse);
-    expect(
-      transactionReviewReasons(resolved),
-      isNot(contains(TransactionReviewReason.needsCategory)),
-    );
   });
 
-  test('unconfirmed credit card payments are marked for review', () {
+  test('unconfirmed credit card payments stay expenses until matched', () {
     final transaction = Transaction(
       date: DateTime(2026, 3, 10),
       description: 'ONLINE BANKING PAYMENT TO CRD VISA',
@@ -182,13 +173,10 @@ void main() {
     );
 
     expect(resolved.financialRole, FinancialRole.expense);
-    expect(
-      transactionReviewReasons(resolved),
-      contains(TransactionReviewReason.internalPayment),
-    );
+    expect(resolved.countsAsSpend, isTrue);
   });
 
-  test('manual financial roles are visible in the review reasons', () {
+  test('manual financial roles are preserved on resolved transactions', () {
     final transaction = Transaction(
       date: DateTime(2026, 3, 11),
       description: 'MANUAL TRANSFER OVERRIDE',
@@ -207,9 +195,7 @@ void main() {
       allTransactions: [transaction],
     );
 
-    expect(
-      transactionReviewReasons(resolved),
-      contains(TransactionReviewReason.manualRole),
-    );
+    expect(resolved.financialRole, FinancialRole.transfer);
+    expect(resolved.transaction.financialRole, FinancialRole.transfer);
   });
 }

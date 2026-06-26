@@ -297,16 +297,6 @@ final class FinancialReadModel {
     );
   }
 
-  List<ResolvedTransaction> internalPaymentReviewQueue(DashboardScope scope) {
-    return resolvedTransactionsForScope(scope)
-        .where(
-          (resolved) => transactionReviewReasons(
-            resolved,
-          ).contains(TransactionReviewReason.internalPayment),
-        )
-        .toList(growable: false);
-  }
-
   DashboardSnapshot dashboardSnapshot({
     required DashboardScope scope,
     required DateTime reference,

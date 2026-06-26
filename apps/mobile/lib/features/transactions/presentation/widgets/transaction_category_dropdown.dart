@@ -691,7 +691,7 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
       final preview = await controller.previewMerchantLearningImpact(
         transaction,
       );
-      var applyToSimilarMerchants = false;
+      var applyToSimilarMerchants = true;
       if (preview != null && preview.matchingTransactionCount > 1) {
         if (!dialogContext.mounted) return;
         final confirmed = await _confirmSimilarMerchantUpdate(

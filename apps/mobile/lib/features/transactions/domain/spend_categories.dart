@@ -368,6 +368,14 @@ String spendGroupLabelForDisplay(
 /// Resolution order matches the private `_trySuggest…` helpers (income/transfers
 /// first, then merchant anchors, housing, food/transport/shopping mid-tier,
 /// then remaining grocery/pharmacy/subscription/bills buckets).
+/// Last-resort category when keywords and AI cannot pick a specific bucket.
+String bestEffortCategoryName({double? amount}) {
+  if (amount != null && amount > 0) {
+    return kBestEffortIncomeCategoryName;
+  }
+  return kBestEffortExpenseCategoryName;
+}
+
 String suggestCategoryFromDescription(String description, {double? amount}) {
   final h = description.toLowerCase();
   return _trySuggestIncomeTransfersAndPayments(h, amount: amount) ??
@@ -376,7 +384,7 @@ String suggestCategoryFromDescription(String description, {double? amount}) {
       _trySuggestHousing(h) ??
       _trySuggestFoodTransportShoppingMid(h) ??
       _trySuggestRemainingBuckets(h) ??
-      kAutomaticFallbackCategoryName;
+      bestEffortCategoryName(amount: amount);
 }
 
 /// True for spend buckets that represent money in, not spending (case-insensitive).

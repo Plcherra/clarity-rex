@@ -96,7 +96,7 @@ final class SupabaseOpenAiProxyClient implements OpenAiProxyClient {
           .timeout(categorizeTransactionsRequestTimeout);
     } on TimeoutException {
       throw const FormatException(
-        'AI categorization timed out. Transactions were imported and marked Unknown.',
+        'AI categorization timed out. Transactions were imported with fallback categories.',
       );
     } on FunctionException catch (e) {
       throw FormatException(_friendlyFunctionError(e.status, e.details));

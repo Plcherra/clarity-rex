@@ -1,6 +1,7 @@
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
+import 'package:clarity/rex/data/rex_financial_transaction_policy.dart';
 import 'package:clarity/features/categories/domain/category_normalization.dart';
 import 'package:clarity/features/finance/application/financial_read_model_service.dart';
 import 'package:clarity/features/transactions/domain/transaction_resolution.dart';
@@ -167,7 +168,7 @@ void main() {
   });
 
   test(
-    'Rex drilldown index summarizes months accounts categories and review',
+    'Rex drilldown index summarizes months accounts and categories',
     () {
       const checking = Account(
         id: 'checking',
@@ -236,75 +237,10 @@ void main() {
         (item) => item['label'] == 'Coffee / Quick Food',
       );
       expect(coffee['spend'], 8.25);
-      final miscellaneous = categories.singleWhere(
-        (item) => item['label'] == kAutomaticFallbackCategoryName,
+      final shopping = categories.singleWhere(
+        (item) => item['label'] == kBestEffortExpenseCategoryName,
       );
-      expect(miscellaneous['spend'], 12);
-
-      final reviewQueues = index['review_queues'] as List<Map<String, dynamic>>;
-      expect(
-        reviewQueues.map((item) => item['key']),
-        isNot(contains('needsCategory')),
-      );
-    },
-  );
-
-  test(
-    'Rex resolves unknown spend rows to the fallback category instead of review',
-    () {
-      const account = Account(
-        id: 'checking',
-        name: 'Checking',
-        type: AccountType.checking,
-      );
-      final transactions = [
-        for (var i = 0; i < 12; i += 1)
-          Transaction(
-            date: DateTime(2026, 6, 1 + i),
-            description: 'Unknown merchant $i',
-            amount: -10 - i.toDouble(),
-            accountId: account.id,
-            categoryLabel: i.isEven ? kUnknownCategoryName : 'Other',
-            fingerprint: 'unknown-$i',
-          ),
-        Transaction(
-          date: DateTime(2026, 6, 20),
-          description: 'Coffee',
-          amount: -8,
-          accountId: account.id,
-          categoryLabel: 'Coffee / Quick Food',
-          fingerprint: 'coffee',
-        ),
-      ];
-      final resolved = resolveTransactions(
-        transactions,
-        categoryOverrides: const {},
-        categoryDisplayRenamesLower: const {},
-        accountsById: {account.id: account},
-        allTransactions: transactions,
-      );
-
-      final index = buildRexDrilldownIndex(
-        resolvedTransactions: resolved,
-        accountsById: {account.id: account},
-      );
-
-      final categories = index['categories'] as List<Map<String, dynamic>>;
-      expect(categories.map((item) => item['label']), [
-        kAutomaticFallbackCategoryName,
-        'Coffee / Quick Food',
-      ]);
-      final miscellaneous = categories.singleWhere(
-        (item) => item['label'] == kAutomaticFallbackCategoryName,
-      );
-      expect(miscellaneous['transaction_count'], 12);
-      expect(miscellaneous['included_sample_count'], 8);
-
-      final reviewQueues = index['review_queues'] as List<Map<String, dynamic>>;
-      expect(
-        reviewQueues.map((item) => item['key']),
-        isNot(contains('needsCategory')),
-      );
+      expect(shopping['spend'], 12);
     },
   );
 

@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 CsvImportResult _importResult({
   int insertedCount = 10,
   int skippedDuplicateCount = 0,
-  int fallbackCategoryCount = 0,
+  int miscellaneousCategoryCount = 0,
   int deterministicFallbackCategorizedCount = 0,
   int categoryUpdateFailureCount = 0,
   bool aiSucceeded = true,
@@ -17,7 +17,7 @@ CsvImportResult _importResult({
     insertedCount: insertedCount,
     skippedDuplicateCount: skippedDuplicateCount,
     categorizedCount: insertedCount,
-    fallbackCategoryCount: fallbackCategoryCount,
+    miscellaneousCategoryCount: miscellaneousCategoryCount,
     aiSucceeded: aiSucceeded,
     aiErrorMessage: aiSucceeded ? null : 'AI unavailable',
     spendReference: DateTime(2026, 5),
@@ -74,14 +74,14 @@ void main() {
     expect(service.persistentImportMessageHasFallbackCategories, isFalse);
   });
 
-  test('unknown category rows are retry state, not import failure', () {
+  test('miscellaneous categories are reported as successful import', () {
     final service = ImportJobStatusService();
 
     service.applyCsvImportProgress(
       CsvImportProgress.complete(
         _importResult(
           insertedCount: 269,
-          fallbackCategoryCount: 4,
+          miscellaneousCategoryCount: 4,
           aiSucceeded: false,
         ),
       ),
@@ -90,23 +90,12 @@ void main() {
 
     expect(
       service.importSnackMessage,
-      'Imported 269 transactions. Retrying 4 uncategorized rows is available.',
+      'Imported 269 transactions. Categorized all; 4 used a best-guess category.',
     );
-    expect(
-      service.persistentImportMessage,
-      'Imported 269 transactions. 4 still need automatic categories.',
-    );
+    expect(service.persistentImportMessage, isNull);
     expect(service.persistentImportMessageIsError, isFalse);
-    expect(service.persistentImportMessageHasFallbackCategories, isTrue);
-    expect(service.persistentImportMessageCanRetry, isTrue);
-    expect(
-      service.persistentImportSummary?.title,
-      'Import needs category retry',
-    );
-    expect(
-      service.persistentImportSummary?.lines.join(' '),
-      contains('Uncategorized 4'),
-    );
+    expect(service.persistentImportMessageHasFallbackCategories, isFalse);
+    expect(service.persistentImportMessageCanRetry, isFalse);
   });
 
   test('duplicate-only import does not report a failed categorization', () {
@@ -157,7 +146,6 @@ void main() {
       CsvImportProgress.complete(
         _importResult(
           insertedCount: 10,
-          fallbackCategoryCount: 10,
           categoryUpdateFailureCount: 10,
           aiSucceeded: false,
         ),
@@ -183,7 +171,7 @@ void main() {
     expect(service.repairImportId, 'import-1');
   });
 
-  test('category repair result reports resolved and remaining rows', () {
+  test('category repair result reports updated rows', () {
     final service = ImportJobStatusService();
 
     service.startImportRepair(notifyStatusChanged: () {});
@@ -193,8 +181,8 @@ void main() {
         importId: 'import-1',
         scannedCount: 10,
         repairableCount: 10,
-        updatedCount: 6,
-        remainingReviewCount: 4,
+        updatedCount: 10,
+        remainingUncategorizedCount: 0,
       ),
       notifyStatusChanged: () {},
     );
@@ -202,15 +190,11 @@ void main() {
     expect(service.importRunning, isFalse);
     expect(
       service.importSnackMessage,
-      'Retried categories. 4 remain uncategorized.',
+      'Retried categories. Updated 10 transactions.',
     );
-    expect(service.persistentImportMessage, contains('4 transactions'));
-    expect(service.persistentImportMessageCanRetry, isTrue);
+    expect(service.persistentImportMessage, contains('Updated 10'));
+    expect(service.persistentImportMessageCanRetry, isFalse);
     expect(service.persistentImportSummary?.title, 'Category retry complete');
-    expect(
-      service.persistentImportSummary?.lines.join(' '),
-      contains('Updated 6; still uncategorized 4'),
-    );
   });
 
   test('category repair success remains visible as a repair summary', () {
@@ -224,7 +208,7 @@ void main() {
         scannedCount: 10,
         repairableCount: 10,
         updatedCount: 10,
-        remainingReviewCount: 0,
+        remainingUncategorizedCount: 0,
       ),
       notifyStatusChanged: () {},
     );

@@ -28,7 +28,7 @@ class ResolvedTransaction {
   /// Dashboard income should use this only (never recompute role logic).
   final bool countsAsIncome;
 
-  /// Review queue and “needs attention” should use this only.
+  /// Uncategorized statement rows that still need a category assignment.
   final bool needsCategorization;
 }
 

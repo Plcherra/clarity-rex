@@ -516,7 +516,7 @@ void main() {
     );
   });
 
-  test('unconfirmed credit card payments enter review queue', () {
+  test('unconfirmed credit card payments count as spend until matched', () {
     final model = FinancialReadModel.fromRecords(
       accounts: const [
         Account(id: 'checking', name: 'Checking', type: AccountType.checking),
@@ -535,13 +535,14 @@ void main() {
       categoryNameById: const {'cat-cc-payment': 'Credit Card Payment'},
     );
 
-    final queue = model.internalPaymentReviewQueue(
+    final resolved = model.resolvedTransactionsForScope(
       const GlobalDashboardScope(),
     );
 
-    expect(queue, hasLength(1));
-    expect(queue.single.transaction.description, contains('VISA'));
-    expect(queue.single.financialRole, FinancialRole.expense);
+    expect(resolved, hasLength(1));
+    expect(resolved.single.transaction.description, contains('VISA'));
+    expect(resolved.single.financialRole, FinancialRole.expense);
+    expect(resolved.single.countsAsSpend, isTrue);
   });
 
   test(

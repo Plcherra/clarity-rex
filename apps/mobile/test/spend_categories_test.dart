@@ -55,7 +55,7 @@ void main() {
         'INDN:MARTINS PEDRO DES:PAYROLL',
         amount: -100,
       ),
-      kAutomaticFallbackCategoryName,
+      kBestEffortExpenseCategoryName,
     );
   });
 
@@ -91,7 +91,7 @@ void main() {
   test('unknown merchants resolve to a real fallback category', () {
     expect(
       suggestCategoryFromDescription('MYSTERY POS PURCHASE', amount: -12.34),
-      kAutomaticFallbackCategoryName,
+      kBestEffortExpenseCategoryName,
     );
 
     final transaction = Transaction(
@@ -102,6 +102,6 @@ void main() {
       categoryLabel: kUnknownCategoryName,
     );
 
-    expect(spendGroupLabel(transaction), kAutomaticFallbackCategoryName);
+    expect(spendGroupLabel(transaction), kBestEffortExpenseCategoryName);
   });
 }

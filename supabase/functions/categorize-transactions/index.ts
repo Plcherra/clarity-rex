@@ -11,8 +11,14 @@ const maxOpenAiConcurrency = 6;
 const maxOpenAiAttempts = 1;
 const openAiRequestTimeoutMs = 20_000;
 const openAiMaxTokens = 12_000;
-const unknownCategoryName = "Unknown";
-const automaticFallbackCategoryName = "Miscellaneous";
+const bestEffortExpenseCategoryName = "Shopping";
+const bestEffortIncomeCategoryName = "Income / Payroll";
+const catchAllCategoryNames = new Set([
+  "miscellaneous",
+  "unknown",
+  "uncategorized",
+  "other",
+]);
 const maxCategoryNameLength = 40;
 const minMeaningfulCategoryCharacters = 3;
 const maxDescriptionLength = 80;
@@ -53,6 +59,16 @@ function normalizedDescription(description: string): string {
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function isCatchAllCategoryName(categoryName: string): boolean {
+  return catchAllCategoryNames.has(categoryName.trim().toLowerCase());
+}
+
+function bestEffortCategoryName(amount: number): string {
+  return amount > 0
+    ? bestEffortIncomeCategoryName
+    : bestEffortExpenseCategoryName;
 }
 
 function isIncomeCategoryName(categoryName: string): boolean {
@@ -237,12 +253,17 @@ function normalizeSuggestionForTransaction(
     categoryName,
     rejectedCategoryCounts,
   );
-  if (normalized === unknownCategoryName) {
-    return automaticFallbackCategoryName;
+  if (isCatchAllCategoryName(normalized)) {
+    return fallbackCategoryNameForTransaction(
+      transaction,
+      rejectedCategoryCounts,
+    );
   }
   if (transaction.amount < 0 && isIncomeCategoryName(normalized)) {
-    return deterministicCategoryName(transaction) ??
-      automaticFallbackCategoryName;
+    return fallbackCategoryNameForTransaction(
+      transaction,
+      rejectedCategoryCounts,
+    );
   }
   return normalized;
 }
@@ -252,12 +273,16 @@ function fallbackCategoryNameForTransaction(
   rejectedCategoryCounts?: Map<CategoryRejectionReason, number>,
 ): string {
   const deterministic = deterministicCategoryName(transaction);
-  if (!deterministic) return automaticFallbackCategoryName;
-  return normalizeSuggestionForTransaction(
-    deterministic,
-    transaction,
-    rejectedCategoryCounts,
-  );
+  if (deterministic) {
+    const normalized = normalizeCategoryName(
+      deterministic,
+      rejectedCategoryCounts,
+    );
+    if (!isCatchAllCategoryName(normalized)) {
+      return normalized;
+    }
+  }
+  return bestEffortCategoryName(transaction.amount);
 }
 
 function jsonResponse(body: unknown, status: number) {
@@ -289,7 +314,7 @@ function compactTransaction(transaction: TransactionInput) {
 function unknownSuggestions(transactions: TransactionInput[]): Suggestion[] {
   return transactions.map((transaction) => ({
     key: transaction.key,
-    categoryName: automaticFallbackCategoryName,
+    categoryName: fallbackCategoryNameForTransaction(transaction),
   }));
 }
 
@@ -413,16 +438,16 @@ export function normalizeCategoryName(
 ): string {
   if (typeof raw !== "string") {
     recordCategoryRejection("non_string", rejectedCategoryCounts);
-    return unknownCategoryName;
+    return bestEffortExpenseCategoryName;
   }
   const trimmed = raw.trim();
   if (trimmed.length === 0) {
     recordCategoryRejection("empty", rejectedCategoryCounts);
-    return unknownCategoryName;
+    return bestEffortExpenseCategoryName;
   }
   if (trimmed.length > maxCategoryNameLength) {
     recordCategoryRejection("too_long", rejectedCategoryCounts);
-    return unknownCategoryName;
+    return bestEffortExpenseCategoryName;
   }
   const lower = trimmed.toLowerCase();
   if (
@@ -432,11 +457,11 @@ export function normalizeCategoryName(
     /[<>{}\[\]\\`~^=]/.test(trimmed)
   ) {
     recordCategoryRejection("unsafe", rejectedCategoryCounts);
-    return unknownCategoryName;
+    return bestEffortExpenseCategoryName;
   }
   if (!/[A-Za-z0-9]/.test(trimmed)) {
     recordCategoryRejection("no_alphanumeric", rejectedCategoryCounts);
-    return unknownCategoryName;
+    return bestEffortExpenseCategoryName;
   }
   const display = trimmed
     .replaceAll("&", " and ")
@@ -452,7 +477,7 @@ export function normalizeCategoryName(
       minMeaningfulCategoryCharacters
   ) {
     recordCategoryRejection("too_short", rejectedCategoryCounts);
-    return unknownCategoryName;
+    return bestEffortExpenseCategoryName;
   }
   if (
     display.length === 0 ||
@@ -460,7 +485,10 @@ export function normalizeCategoryName(
     normalizedCategoryKey(display).length === 0
   ) {
     recordCategoryRejection("empty_normalized", rejectedCategoryCounts);
-    return unknownCategoryName;
+    return bestEffortExpenseCategoryName;
+  }
+  if (isCatchAllCategoryName(display)) {
+    return bestEffortExpenseCategoryName;
   }
   return display;
 }
@@ -492,8 +520,10 @@ async function categorizeChunk({
   }
 
   const system = `JSON only. Return {"s":{"KEY":"Category"}}. ` +
-    `Categorize each tx. Use an allowed category if it fits; else short new category. ` +
-    `No income for negative amounts. No merchant/private data. Unsafe/unsure="${automaticFallbackCategoryName}".`;
+    `Categorize each tx. Pick the closest allowed category. ` +
+    `If none fit, return a short specific new category name. ` +
+    `Never use Miscellaneous, Unknown, or Uncategorized. ` +
+    `No income for negative amounts. No merchant/private data.`;
   const user = `C:${JSON.stringify(allowedCategories)}\n` +
     `T:${JSON.stringify(aiTransactions.map(compactTransaction))}`;
 
@@ -706,12 +736,16 @@ export async function handleCategorizeTransactionsRequest(req: Request) {
   const apiKey = openAiApiKey;
 
   const allowedCategories = Array.from(
-    new Set([
-      ...requestedCategories,
-      unknownCategoryName,
-      automaticFallbackCategoryName,
-    ]),
+    new Set(
+      requestedCategories.filter((category) => !isCatchAllCategoryName(category)),
+    ),
   );
+  if (allowedCategories.length === 0) {
+    return jsonResponse(
+      { error: "allowedCategories must include at least one usable category" },
+      400,
+    );
+  }
   const categoryByNormalizedName = new Map(
     allowedCategories.map((
       category,

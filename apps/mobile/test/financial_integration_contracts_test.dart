@@ -6,8 +6,8 @@ import 'package:clarity/features/budgets/domain/budget_models.dart';
 import 'package:clarity/features/categories/domain/category_normalization.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_snapshot.dart';
 import 'package:clarity/features/finance/application/financial_read_model_service.dart';
-import 'package:clarity/features/transactions/domain/transaction_review.dart';
 import 'package:clarity/features/transactions/domain/transaction_fingerprint.dart';
+import 'package:clarity/rex/data/rex_financial_transaction_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -149,35 +149,21 @@ void main() {
       final resolved = model.resolvedTransactionsForScope(
         const GlobalDashboardScope(),
       );
-      final reviewRows = resolved
-          .where(
-            (transaction) => transactionReviewReasons(
-              transaction,
-            ).contains(TransactionReviewReason.needsCategory),
-          )
-          .toList(growable: false);
-      expect(reviewRows.map((row) => row.transaction.fingerprint), isEmpty);
       final unknown = resolved.singleWhere(
         (row) => row.transaction.fingerprint == 'unknown',
       );
-      expect(unknown.displayCategory, kAutomaticFallbackCategoryName);
+      expect(unknown.displayCategory, kBestEffortExpenseCategoryName);
 
       final rexIndex = buildRexDrilldownIndex(
         resolvedTransactions: resolved,
         accountsById: model.accountsById,
       );
-      final reviewQueues =
-          rexIndex['review_queues'] as List<Map<String, dynamic>>;
-      expect(
-        reviewQueues.map((queue) => queue['key']),
-        isNot(contains('needsCategory')),
-      );
 
       final categories = rexIndex['categories'] as List<Map<String, dynamic>>;
-      final miscellaneous = categories.singleWhere(
-        (category) => category['label'] == kAutomaticFallbackCategoryName,
+      final shopping = categories.singleWhere(
+        (category) => category['label'] == kBestEffortExpenseCategoryName,
       );
-      expect(miscellaneous['spend'], 7);
+      expect(shopping['spend'], 7);
       final grocery = categories.singleWhere(
         (category) => category['label'] == 'Grocery / Supermarket',
       );
@@ -273,7 +259,7 @@ void main() {
   );
 
   test(
-    'Rex default transaction selection keeps true review rows in large ledgers',
+    'Rex default transaction selection keeps newest rows in large ledgers',
     () {
       final records = [
         _record(
@@ -310,7 +296,7 @@ void main() {
       );
 
       expect(selected, hasLength(120));
-      expect(selected.map((record) => record.id), contains('old-card-payment'));
+      expect(selected.map((record) => record.id), isNot(contains('old-card-payment')));
       expect(selected.first.id, 'recent-159');
     },
   );

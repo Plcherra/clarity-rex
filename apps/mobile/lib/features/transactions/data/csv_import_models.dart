@@ -30,7 +30,7 @@ class CsvImportResult {
     required this.insertedCount,
     required this.skippedDuplicateCount,
     required this.categorizedCount,
-    required this.fallbackCategoryCount,
+    required this.miscellaneousCategoryCount,
     required this.aiSucceeded,
     required this.aiErrorMessage,
     required this.spendReference,
@@ -50,7 +50,7 @@ class CsvImportResult {
   final int insertedCount;
   final int skippedDuplicateCount;
   final int categorizedCount;
-  final int fallbackCategoryCount;
+  final int miscellaneousCategoryCount;
   final bool aiSucceeded;
   final String? aiErrorMessage;
   final DateTime spendReference;
@@ -71,7 +71,7 @@ class CsvImportRepairResult {
     required this.scannedCount,
     required this.repairableCount,
     required this.updatedCount,
-    required this.remainingReviewCount,
+    required this.remainingUncategorizedCount,
   });
 
   final String accountId;
@@ -79,7 +79,7 @@ class CsvImportRepairResult {
   final int scannedCount;
   final int repairableCount;
   final int updatedCount;
-  final int remainingReviewCount;
+  final int remainingUncategorizedCount;
 }
 
 class CsvImportPreview {
@@ -125,8 +125,6 @@ class CsvImportProgress {
         value: 1,
         message: result.categoryUpdateFailureCount > 0
             ? 'Imported with category assignment errors.'
-            : result.fallbackCategoryCount > 0
-            ? 'Imported transactions; some still need automatic categories.'
             : 'Import complete.',
         result: result,
       );

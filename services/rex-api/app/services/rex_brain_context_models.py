@@ -124,7 +124,6 @@ FINANCIAL_ROLLUP_KEYS = (
     "categories",
     "budgets",
     "transaction_slices",
-    "review_queue",
     "statement_imports",
 )
 RAW_FINANCIAL_RECORD_KEYS = {"transactions"}

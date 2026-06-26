@@ -80,27 +80,17 @@ class ImportJobStatusService {
           persistentImportSummary = null;
           repairImportAccountId = null;
           repairImportId = null;
-        } else if (result.fallbackCategoryCount > 0) {
-          importSnackMessage =
-              'Imported ${result.insertedCount} transactions. Retrying ${result.fallbackCategoryCount} uncategorized rows is available.';
-          persistentImportMessage =
-              'Imported ${result.insertedCount} transactions. ${result.fallbackCategoryCount} still need automatic categories.';
-          persistentImportMessageIsError = false;
-          persistentImportMessageHasFallbackCategories = true;
-          persistentImportSummary = _summaryForImportResult(
-            result,
-            title: 'Import needs category retry',
-            canReview: false,
-            canRetry: true,
-          );
-          repairImportAccountId = result.accountId;
-          repairImportId = result.importId;
         } else {
           final localCategoryCount =
               result.learnedRuleCategorizedCount +
               result.deterministicFallbackCategorizedCount;
+          final miscCount = result.miscellaneousCategoryCount;
           importSnackMessage = localCategoryCount > 0
-              ? 'Imported ${result.insertedCount} transactions. Categorized all; $localCategoryCount used local rules.'
+              ? miscCount > 0
+                    ? 'Imported ${result.insertedCount} transactions. Categorized all; $localCategoryCount used local rules; $miscCount used a best-guess category.'
+                    : 'Imported ${result.insertedCount} transactions. Categorized all; $localCategoryCount used local rules.'
+              : miscCount > 0
+              ? 'Imported ${result.insertedCount} transactions. Categorized all; $miscCount used a best-guess category.'
               : 'Imported ${result.insertedCount} transactions. Categorized all transactions.';
           persistentImportMessage = null;
           persistentImportMessageIsError = false;
@@ -176,21 +166,6 @@ class ImportJobStatusService {
       );
       repairImportAccountId = null;
       repairImportId = null;
-    } else if (result.remainingReviewCount > 0) {
-      importSnackMessage =
-          'Retried categories. ${result.remainingReviewCount} remain uncategorized.';
-      persistentImportMessage =
-          'Retried categories. ${result.remainingReviewCount} transactions still need automatic categories.';
-      persistentImportMessageIsError = false;
-      persistentImportMessageHasFallbackCategories = true;
-      persistentImportSummary = _summaryForRepairResult(
-        result,
-        title: 'Category retry complete',
-        canReview: false,
-        canRetry: true,
-      );
-      repairImportAccountId = result.accountId;
-      repairImportId = result.importId;
     } else {
       importSnackMessage =
           'Retried categories. Updated ${result.updatedCount} transactions.';
@@ -279,13 +254,11 @@ class ImportJobStatusService {
       lines: [
         'Parsed ${result.parsedCount}; imported ${result.insertedCount}; skipped ${result.skippedDuplicateCount} duplicates.',
         'AI ${result.aiSucceeded ? 'completed' : 'unavailable'}; AI rows ${result.aiCategorizedCount}; local-rule rows $localCount.',
-        'Uncategorized ${result.fallbackCategoryCount}; category update failures ${result.categoryUpdateFailureCount}.',
+        'Best-guess categories ${result.miscellaneousCategoryCount}; category update failures ${result.categoryUpdateFailureCount}.',
       ],
       canReview: canReview,
       canRetry: canRetry,
-      canOpenCategoryManagement:
-          result.fallbackCategoryCount > 0 ||
-          result.categoryUpdateFailureCount > 0,
+      canOpenCategoryManagement: result.categoryUpdateFailureCount > 0,
     );
   }
 
@@ -299,11 +272,11 @@ class ImportJobStatusService {
       title: title,
       lines: [
         'Scanned ${result.scannedCount}; retryable ${result.repairableCount}.',
-        'Updated ${result.updatedCount}; still uncategorized ${result.remainingReviewCount}.',
+        'Updated ${result.updatedCount}; still uncategorized ${result.remainingUncategorizedCount}.',
       ],
       canReview: canReview,
       canRetry: canRetry,
-      canOpenCategoryManagement: result.remainingReviewCount > 0,
+      canOpenCategoryManagement: result.remainingUncategorizedCount > 0,
     );
   }
 }

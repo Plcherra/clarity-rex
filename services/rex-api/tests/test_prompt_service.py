@@ -187,16 +187,16 @@ def test_prompt_service_injects_unified_financial_context():
                 }
             ],
             "transaction_slices": {
-                "review_queues": [
+                "categories": [
                     {
-                        "key": "needsCategory",
-                        "label": "Uncategorized review",
+                        "key": "Miscellaneous",
+                        "label": "Miscellaneous",
                         "transaction_count": 6,
                         "spend": 59.5,
                         "income": 0,
                         "net": -59.5,
                         "latest_date": "2026-05-21",
-                        "user_facing_category": False,
+                        "user_facing_category": True,
                         "detail_status": "all_rows_included",
                         "included_sample_count": 6,
                         "sample_transactions": [
@@ -284,7 +284,7 @@ def test_prompt_service_injects_unified_financial_context():
     assert FINANCIAL_CONTEXT_PREFIX in system_content
     assert "Rex is inside Clarity" in system_content
     assert "specific accounts, account names, budgets" in system_content
-    assert "Review queues are not user-facing dashboard categories" in system_content
+    assert "Review queues are not user-facing dashboard categories" not in system_content
     assert (
         "Do not offer to pull, check, fetch, or list transaction details later"
         in system_content
@@ -296,15 +296,13 @@ def test_prompt_service_injects_unified_financial_context():
     assert "Food: 500 -> 900 (80%)" in system_content
     assert "Main Checking" in system_content
     assert "Coffee Shop" in system_content
-    assert "Unknown Merchant 6" in system_content
-    assert "Category data issue count=6" in system_content
-    assert "user_facing_category=false" in system_content
-    assert "review_queue_not_dashboard_category" in system_content
-    assert "sample_transactions" in system_content
+    assert "Unknown Merchant 2" in system_content
+    assert "Miscellaneous count=6" in system_content
+    assert "samples=" in system_content
     assert "create_transaction" in system_content
 
 
-def test_prompt_service_marks_aggregate_only_review_queue_without_rows():
+def test_prompt_service_marks_aggregate_only_category_slice_without_rows():
     service = PromptService()
 
     messages = service.build_messages(
@@ -318,16 +316,16 @@ def test_prompt_service_marks_aggregate_only_review_queue_without_rows():
                 "load_errors": [],
             },
             "transaction_slices": {
-                "review_queues": [
+                "categories": [
                     {
-                        "key": "needsCategory",
-                        "label": "Uncategorized review",
+                        "key": "Miscellaneous",
+                        "label": "Miscellaneous",
                         "transaction_count": 36,
                         "spend": 36,
                         "income": 0,
                         "net": -36,
                         "latest_date": "2026-06-07",
-                        "user_facing_category": False,
+                        "user_facing_category": True,
                     }
                 ]
             },
@@ -335,11 +333,8 @@ def test_prompt_service_marks_aggregate_only_review_queue_without_rows():
     )
 
     system_content = messages[0]["content"]
-    assert "Category data issue count=36" in system_content
-    assert "user_facing_category=false" in system_content
-    assert "review_queue_not_dashboard_category" in system_content
+    assert "Miscellaneous count=36" in system_content
     assert "detail_status=aggregate_only" in system_content
-    assert "exact rows are not included in this turn" in system_content
 
 
 def test_prompt_service_warns_when_financial_context_is_degraded_or_stale():

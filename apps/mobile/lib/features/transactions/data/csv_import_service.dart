@@ -47,6 +47,12 @@ typedef _CategorizeTransactions =
     Future<Map<String, dynamic>> Function(Map<String, dynamic> body);
 typedef _UpsertStatementImport =
     Future<void> Function(AccountStatementImportInput input);
+typedef _UpsertMerchantCategoryRule =
+    Future<void> Function({
+      required String merchantKey,
+      String? merchantDisplay,
+      required String categoryId,
+    });
 
 class CsvImportService {
   CsvImportService({
@@ -70,6 +76,17 @@ class CsvImportService {
              transactionService.updateTransactionsCategory,
          isAiConfigured: () => openAiClient.isConfigured,
          categorizeTransactions: openAiClient.categorizeTransactions,
+         upsertMerchantCategoryRule: ({
+           required merchantKey,
+           merchantDisplay,
+           required categoryId,
+         }) async {
+           await merchantCategoryRuleService.upsertRule(
+             merchantKey: merchantKey,
+             merchantDisplay: merchantDisplay,
+             categoryId: categoryId,
+           );
+         },
        );
 
   @visibleForTesting
@@ -101,6 +118,7 @@ class CsvImportService {
     required bool Function() isAiConfigured,
     required Future<Map<String, dynamic>> Function(Map<String, dynamic> body)
     categorizeTransactions,
+    _UpsertMerchantCategoryRule? upsertMerchantCategoryRule,
   }) : this._(
          fetchAccounts: fetchAccounts,
          fetchTransactions: fetchTransactions,
@@ -112,6 +130,13 @@ class CsvImportService {
          updateTransactionsCategory: updateTransactionsCategory,
          isAiConfigured: isAiConfigured,
          categorizeTransactions: categorizeTransactions,
+         upsertMerchantCategoryRule:
+             upsertMerchantCategoryRule ??
+             ({
+               required String merchantKey,
+               String? merchantDisplay,
+               required String categoryId,
+             }) async {},
        );
 
   CsvImportService._({
@@ -125,6 +150,7 @@ class CsvImportService {
     required _UpdateTransactionsCategory updateTransactionsCategory,
     required bool Function() isAiConfigured,
     required _CategorizeTransactions categorizeTransactions,
+    required _UpsertMerchantCategoryRule upsertMerchantCategoryRule,
   }) : _fetchAccounts = fetchAccounts,
        _fetchTransactions = fetchTransactions,
        _createTransactions = createTransactions,
@@ -136,6 +162,7 @@ class CsvImportService {
          updateTransactionsCategory: updateTransactionsCategory,
          isAiConfigured: isAiConfigured,
          categorizeTransactions: categorizeTransactions,
+         upsertMerchantCategoryRule: upsertMerchantCategoryRule,
        );
 
   final _FetchAccounts _fetchAccounts;
@@ -241,7 +268,7 @@ class CsvImportService {
         for (final record in existingRecords)
           transactionFingerprint(transactionFromRecord(record)),
       };
-      final unknownCategoryId = await _categorizer.ensureUnknownCategoryId();
+      final fallbackCategoryId = await _categorizer.ensureFallbackCategoryId();
 
       final rowsToInsert = <TransactionCreateInput>[];
       var skippedDuplicateCount = 0;
@@ -256,7 +283,7 @@ class CsvImportService {
         rowsToInsert.add(
           TransactionCreateInput(
             accountId: id,
-            categoryId: unknownCategoryId,
+            categoryId: fallbackCategoryId,
             amount: stamped.amount.abs(),
             type: stamped.amount < 0 ? 'expense' : 'income',
             description: stamped.description,
@@ -290,7 +317,7 @@ class CsvImportService {
 
       var aiSucceeded = true;
       String? aiErrorMessage;
-      var fallbackCategoryCount = 0;
+      var miscellaneousCategoryCount = 0;
       var aiCategorizedCount = 0;
       var learnedRuleCategorizedCount = 0;
       var deterministicFallbackCategorizedCount = 0;
@@ -388,10 +415,9 @@ class CsvImportService {
             insertedRecords,
             suggestedCategoryByTransactionId,
           );
-          fallbackCategoryCount = applied.fallbackCategoryCount;
+          miscellaneousCategoryCount = applied.miscellaneousCategoryCount;
         } on Object catch (error) {
           aiErrorMessage ??= '$error';
-          fallbackCategoryCount = insertedRecords.length;
           categoryUpdateFailureCount = insertedRecords.length;
         }
       }
@@ -403,7 +429,7 @@ class CsvImportService {
         insertedCount: insertedRecords.length,
         skippedDuplicateCount: skippedDuplicateCount,
         categorizedCount: insertedRecords.length,
-        fallbackCategoryCount: fallbackCategoryCount,
+        miscellaneousCategoryCount: miscellaneousCategoryCount,
         aiSucceeded: aiSucceeded,
         aiErrorMessage: aiErrorMessage,
         spendReference: spendReference,
@@ -453,17 +479,18 @@ class CsvImportService {
         scannedCount: 0,
         repairableCount: 0,
         updatedCount: 0,
-        remainingReviewCount: 0,
+        remainingUncategorizedCount: 0,
       );
     }
 
-    final unknownCategoryId = await _categorizer.ensureUnknownCategoryId();
+    final uncategorizedCategoryIds =
+        await _categorizer.legacyUncategorizedCategoryIds();
     final repairable = batch
         .where((record) {
           final categoryId = record.categoryId?.trim();
           return categoryId == null ||
               categoryId.isEmpty ||
-              categoryId == unknownCategoryId;
+              uncategorizedCategoryIds.contains(categoryId);
         })
         .toList(growable: false);
     if (repairable.isEmpty) {
@@ -473,7 +500,7 @@ class CsvImportService {
         scannedCount: batch.length,
         repairableCount: 0,
         updatedCount: 0,
-        remainingReviewCount: 0,
+        remainingUncategorizedCount: 0,
       );
     }
 
@@ -487,7 +514,7 @@ class CsvImportService {
       scannedCount: batch.length,
       repairableCount: repairable.length,
       updatedCount: applied.updatedTransactionCount,
-      remainingReviewCount: applied.fallbackCategoryCount,
+      remainingUncategorizedCount: 0,
     );
   }
 }

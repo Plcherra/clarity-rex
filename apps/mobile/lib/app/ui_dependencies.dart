@@ -353,7 +353,7 @@ final class TransactionUiController extends _UiController {
   Future<CategoryAssignmentResult> setCategoryOverride(
     Transaction transaction,
     String category, {
-    bool applyToSimilarMerchants = false,
+    bool applyToSimilarMerchants = true,
   }) {
     return bindings.categoryWorkflowService.setCategoryOverride(
       transaction,
@@ -379,7 +379,7 @@ final class TransactionUiController extends _UiController {
   Future<CategoryAssignmentResult> createCategoryAndAssign(
     Transaction transaction,
     String rawName, {
-    bool applyToSimilarMerchants = false,
+    bool applyToSimilarMerchants = true,
   }) {
     return bindings.categoryWorkflowService.createCategoryAndAssign(
       transaction,
