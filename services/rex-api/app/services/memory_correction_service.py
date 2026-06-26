@@ -3,7 +3,12 @@ from __future__ import annotations
 import re
 from typing import Any, Optional
 
-from app.services.memory_correction_intent_parser import MemoryCorrectionIntentParser
+from app.services.memory_correction_intent_parser import (
+    MemoryCorrectionIntentParser,
+    has_trailing_conversational_filler,
+    message_requests_filler_removal,
+    trim_correction_value,
+)
 from app.services.memory_correction_record_rules import (
     confirmation_payload,
     correction_type_for_table,
@@ -48,6 +53,33 @@ class MemoryCorrectionService:
 
     def detect_correction_intent(self, text: str) -> CorrectionIntent:
         return self.intent_parser.detect_correction_intent(text)
+
+    async def resolve_filler_strip_intent(self, text: str) -> CorrectionIntent | None:
+        if not message_requests_filler_removal(text):
+            return None
+
+        entities = await self._safe_list(spec_for_table("entities")) or []
+        candidates = [
+            entity
+            for entity in entities
+            if has_trailing_conversational_filler(
+                str(entity.get("display_name") or "")
+            )
+        ]
+        if len(candidates) != 1:
+            return None
+
+        display_name = str(candidates[0].get("display_name") or "").strip()
+        cleaned_name = trim_correction_value(display_name)
+        if not display_name or not cleaned_name or display_name.casefold() == cleaned_name.casefold():
+            return None
+
+        return CorrectionIntent(
+            CorrectionIntentType.REPLACE_VALUE,
+            old_value=display_name,
+            new_value=cleaned_name,
+            confidence=0.84,
+        )
 
     async def preview_remove_obsolete(
         self,
@@ -124,8 +156,9 @@ class MemoryCorrectionService:
         source_conversation_id: Optional[str] = None,
         source_message_id: Optional[str] = None,
         force: bool = False,
+        intent_override: CorrectionIntent | None = None,
     ) -> CorrectionReport:
-        intent = self.detect_correction_intent(text)
+        intent = intent_override or self.detect_correction_intent(text)
         report = CorrectionReport(intent=intent)
         if intent.intent_type == CorrectionIntentType.UNKNOWN:
             person_affected = await self._apply_person_fact_correction(text)

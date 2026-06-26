@@ -454,6 +454,30 @@ def test_detects_is_actually_name_correction():
     assert intent.new_value == "Pedro's Mom"
 
 
+def test_change_name_strips_trailing_please_from_new_value():
+    service = MemoryCorrectionIntentParser()
+
+    intent = service.detect_correction_intent(
+        "Can you change S Mom to Pedro's Mom please?"
+    )
+
+    assert intent.intent_type.value == "replace_value"
+    assert intent.old_value == "S Mom"
+    assert intent.new_value == "Pedro's Mom"
+
+
+def test_update_name_without_please_suffix():
+    service = MemoryCorrectionIntentParser()
+
+    intent = service.detect_correction_intent(
+        "Update Pedro's Mom please to Pedro's Mom"
+    )
+
+    assert intent.intent_type.value == "replace_value"
+    assert intent.old_value == "Pedro's Mom please"
+    assert intent.new_value == "Pedro's Mom"
+
+
 def test_yes_after_unrelated_birthday_does_not_reconfirm_birthday():
     service = MemoryIntentService()
     history = [

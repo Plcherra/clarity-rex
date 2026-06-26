@@ -10,8 +10,15 @@ class MemoryTurnCorrectionHelpers:
         user_message: dict,
     ) -> dict | None:
         intent = self.memory_correction_service.detect_correction_intent(message)
+        intent_override = None
         if intent.intent_type != CorrectionIntentType.REPLACE_VALUE:
-            return None
+            intent_override = (
+                await self.memory_correction_service.resolve_filler_strip_intent(message)
+            )
+            if intent_override is not None:
+                intent = intent_override
+            else:
+                return None
         if not intent.old_value or not intent.new_value:
             return None
 
@@ -19,6 +26,7 @@ class MemoryTurnCorrectionHelpers:
             message,
             source_conversation_id=conversation_id,
             source_message_id=str(user_message.get("id") or "") or None,
+            intent_override=intent_override,
         )
 
         if report.requires_confirmation:

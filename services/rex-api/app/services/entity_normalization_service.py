@@ -418,5 +418,6 @@ def _replace_obsolete_name_refs(value: Any, replacements: dict[str, str]) -> Any
 
 
 def _trim_correction_value(value: str) -> str:
-    value = re.sub(r"\b(?:and|or|too|also)$", "", value.strip(), flags=re.I).strip()
-    return re.sub(r"[.!?,;:]+$", "", value).strip()
+    from app.services.memory_correction_intent_parser import trim_correction_value
+
+    return trim_correction_value(value)

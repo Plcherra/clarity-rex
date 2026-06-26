@@ -5,7 +5,19 @@ import re
 from app.services.entity_normalization_service import EntityNormalizationService
 from app.services.memory_correction_types import CorrectionIntent, CorrectionIntentType
 
-
+_POLITE_SUFFIX_PATTERN = re.compile(
+    r"(?:\s+|^)(?:please|thanks|thank you|thx|haha|ha ha|lol|ok|okay)\.?$",
+    re.IGNORECASE,
+)
+_POLITE_PREFIX_PATTERN = re.compile(r"^(?:please\s+)", re.IGNORECASE)
+_QUOTED_POLITE_SUFFIX_PATTERN = re.compile(
+    r"\s+['\"]?(?:please|thanks|thank you)['\"]?\s*$",
+    re.IGNORECASE,
+)
+_FILLER_REMOVAL_PATTERN = re.compile(
+    r"\b(?:without|remove|drop|no)\s+(?:the\s+)?['\"]?(?P<filler>please|thanks|thank you)['\"]?\b",
+    re.IGNORECASE,
+)
 class MemoryCorrectionIntentParser:
     """Parses explicit user correction language into correction intents."""
 
@@ -67,10 +79,14 @@ class MemoryCorrectionIntentParser:
             flags=re.IGNORECASE,
         )
         if direct_correction:
+            old_value, new_value = normalize_correction_pair(
+                direct_correction.group(1),
+                direct_correction.group(2),
+            )
             return CorrectionIntent(
                 CorrectionIntentType.REPLACE_VALUE,
-                old_value=trim_text(direct_correction.group(1)),
-                new_value=trim_text(direct_correction.group(2)),
+                old_value=old_value,
+                new_value=new_value,
                 confidence=0.9,
             )
 
@@ -80,10 +96,14 @@ class MemoryCorrectionIntentParser:
             flags=re.IGNORECASE,
         )
         if actually_correction:
+            old_value, new_value = normalize_correction_pair(
+                actually_correction.group(1),
+                actually_correction.group(2),
+            )
             return CorrectionIntent(
                 CorrectionIntentType.REPLACE_VALUE,
-                old_value=trim_text(actually_correction.group(1)),
-                new_value=trim_text(actually_correction.group(2)),
+                old_value=old_value,
+                new_value=new_value,
                 confidence=0.9,
             )
 
@@ -114,10 +134,14 @@ class MemoryCorrectionIntentParser:
             flags=re.IGNORECASE,
         )
         if meant_correction:
+            old_value, new_value = normalize_correction_pair(
+                meant_correction.group(1),
+                meant_correction.group(2),
+            )
             return CorrectionIntent(
                 CorrectionIntentType.REPLACE_VALUE,
-                old_value=trim_text(meant_correction.group(1)),
-                new_value=trim_text(meant_correction.group(2)),
+                old_value=old_value,
+                new_value=new_value,
                 confidence=0.88,
             )
 
@@ -132,15 +156,22 @@ class MemoryCorrectionIntentParser:
             )
 
         replace = re.search(
-            r"\b(?:replace|rename|change)\s+(.+?)\s+(?:with|to)\s+(.+)$",
+            (
+                r"(?:\bcan you\s+|\bcould you\s+)?"
+                r"\b(?:replace|rename|change|update|fix|edit)\s+(.+?)\s+(?:with|to)\s+(.+)$"
+            ),
             cleaned,
             flags=re.IGNORECASE,
         )
         if replace:
+            old_value, new_value = normalize_correction_pair(
+                replace.group(1),
+                replace.group(2),
+            )
             return CorrectionIntent(
                 CorrectionIntentType.REPLACE_VALUE,
-                old_value=trim_text(replace.group(1)),
-                new_value=trim_text(replace.group(2)),
+                old_value=old_value,
+                new_value=new_value,
                 confidence=0.86,
             )
 
@@ -151,11 +182,49 @@ def clean_text(value: object) -> str:
     return re.sub(r"\s+", " ", str(value or "")).strip()
 
 
+def message_requests_filler_removal(text: str) -> bool:
+    return bool(_FILLER_REMOVAL_PATTERN.search(clean_text(text)))
+
+
 def trim_text(value: str) -> str:
     value = clean_text(value)
     value = re.sub(r"[.!?]+$", "", value).strip()
     return value.strip("\"'")
 
+
+def trim_correction_value(value: str) -> str:
+    value = trim_text(value)
+    while True:
+        updated = _QUOTED_POLITE_SUFFIX_PATTERN.sub("", value).strip()
+        updated = _POLITE_SUFFIX_PATTERN.sub("", updated).strip()
+        updated = _POLITE_PREFIX_PATTERN.sub("", updated).strip()
+        if updated == value:
+            break
+        value = updated
+    return value.strip("\"'")
+
+
+def has_trailing_conversational_filler(value: str) -> bool:
+    cleaned = trim_text(value)
+    if _QUOTED_POLITE_SUFFIX_PATTERN.search(cleaned):
+        return True
+    return bool(_POLITE_SUFFIX_PATTERN.search(f" {cleaned}"))
+
+
+def normalize_correction_pair(old_value: str, new_value: str) -> tuple[str, str]:
+    raw_old = trim_text(old_value)
+    raw_new = trim_text(new_value)
+    trimmed_old = trim_correction_value(raw_old)
+    trimmed_new = trim_correction_value(raw_new)
+
+    if trimmed_old.casefold() == trimmed_new.casefold():
+        if has_trailing_conversational_filler(raw_old):
+            return raw_old, trimmed_new
+        if has_trailing_conversational_filler(raw_new):
+            return trimmed_old, trimmed_new
+        return trimmed_old, trimmed_new
+
+    return trimmed_old, trimmed_new
 
 def trim_removal_target(value: str) -> str:
     value = trim_text(value)

@@ -800,6 +800,56 @@ async def test_name_correction_updates_saved_person_card():
 
 
 @pytest.mark.asyncio
+async def test_change_name_does_not_save_trailing_please():
+    ai_service = FakeAIService(response="Rex follow-up")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    saved = await chat_service.send_message("Pedro's mom birthday is june 18")
+    memory_service.entities[0]["display_name"] = "S Mom"
+    memory_service.entities[0]["normalized_name"] = "s mom"
+
+    corrected = await chat_service.send_message(
+        "Can you change S Mom to Pedro's Mom please?",
+        saved["conversation_id"],
+    )
+
+    assert corrected["memory_changes"]["updated"] >= 1
+    assert memory_service.entities[0]["display_name"] == "Pedro's Mom"
+    assert ai_service.generate_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_without_please_strips_saved_entity_name():
+    ai_service = FakeAIService(response="Rex follow-up")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    saved = await chat_service.send_message("Pedro's mom birthday is june 18")
+    memory_service.entities[0]["display_name"] = "Pedro's Mom please"
+    memory_service.entities[0]["normalized_name"] = "pedro s mom please"
+
+    corrected = await chat_service.send_message(
+        "Yes but without the 'please' haha",
+        saved["conversation_id"],
+    )
+
+    assert corrected["memory_changes"]["updated"] >= 1
+    assert memory_service.entities[0]["display_name"] == "Pedro's Mom"
+    assert ai_service.generate_calls == 0
+
+
+@pytest.mark.asyncio
 async def test_person_memory_card_merges_multiple_high_confidence_facts():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
