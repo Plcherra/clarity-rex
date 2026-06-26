@@ -895,7 +895,7 @@ async def test_chat_service_saves_pc_upgrade_checklist_as_goal_without_llm():
     assert ai_service.generate_calls == 0
     assert "added this as a goal" in result["response"]
     assert len(memory_service.created_plans) == 1
-    assert memory_service.created_plans[0]["target_date"] == "Next month"
+    assert memory_service.created_plans[0]["target_date"] == "July 31"
     assert result["memory_changes"]["records"][0]["kind"] == "plan"
     assert memory_service.long_term_memory == []
 

@@ -7,6 +7,15 @@ from typing import Any, Optional, Protocol
 from app.models.commitment import CommitmentCreateRequest
 from app.models.plan import PlanCreateRequest
 from app.services.commitment_service import CommitmentService
+from app.services.goal_command_parsing import (
+    is_affirmation_or_goal_prefix,
+    is_meta_instruction_body,
+    looks_like_equipment_goal,
+    normalize_equipment_goal_title,
+    split_compound_goal_bodies,
+    substantive_goal_from_history,
+    target_date_for_message,
+)
 from app.services.memory_date_normalizer import MemoryDateNormalizer
 from app.services.plan_service import PlanService
 
@@ -101,8 +110,10 @@ class GoalCommandService:
     _reclassify_request_pattern = re.compile(
         r"\b(?:"
         r"move\s+(?:it|this|that)\s+(?:from\s+)?memory|"
+        r"move\s+or\s+delete\s+(?:it|this|that)\s+from\s+(?:saved\s+)?memory|"
         r"move\s+from\s+memory|"
         r"remove\s+(?:it|this|that)\s+from\s+(?:saved\s+)?memory|"
+        r"delete\s+(?:it|this|that)\s+from\s+(?:saved\s+)?memory|"
         r"(?:this|that)\s+is\s+(?:actually\s+)?(?:a\s+)?(?:goal|commitment)|"
         r"(?:actually|really)\s+(?:a\s+)?(?:goal|commitment)|"
         r"(?:goal|commitment)\s+(?:not|instead\s+of)\s+(?:saved\s+)?memory|"
@@ -112,7 +123,7 @@ class GoalCommandService:
         re.IGNORECASE,
     )
     _clarified_goal_body_pattern = re.compile(
-        r"\b(?:meant|meant\s+to|should)\s+(?:be|to)\s+(?P<body>.+)$",
+        r"\b(?:meant\s+to\s+be|should\s+be|was\s+supposed\s+to\s+be)\s+(?P<body>.+)$",
         re.IGNORECASE,
     )
     _date_normalizer = MemoryDateNormalizer()
@@ -149,25 +160,66 @@ class GoalCommandService:
         if reclassified is not None:
             return reclassified
 
+        commands = self.detect_commands(
+            message,
+            conversation_history=conversation_history,
+            time_context=time_context,
+        )
+        if not commands:
+            return None
+
+        if len(commands) == 1:
+            command = commands[0]
+            if command.kind == "goal":
+                return await self._save_goal(
+                    command,
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                )
+            return await self._save_commitment(
+                command,
+                conversation_id=conversation_id,
+                user_message=user_message,
+            )
+        return await self._save_multiple_goals(
+            commands,
+            conversation_id=conversation_id,
+            user_message=user_message,
+        )
+
+    def detect_commands(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+        time_context: dict,
+    ) -> list[GoalCommand]:
+        equipment_goals = self._detect_equipment_goals(
+            message,
+            conversation_history=conversation_history,
+            time_context=time_context,
+        )
+        if equipment_goals:
+            return equipment_goals
+
+        if is_affirmation_or_goal_prefix(message):
+            substantive = substantive_goal_from_history(conversation_history)
+            if substantive:
+                affirmed = self._goal_commands_from_text(
+                    substantive,
+                    message=message,
+                    conversation_history=conversation_history,
+                    time_context=time_context,
+                )
+                if affirmed:
+                    return affirmed
+
         command = self.detect_command(
             message,
             conversation_history=conversation_history,
             time_context=time_context,
         )
-        if command is None:
-            return None
-
-        if command.kind == "goal":
-            return await self._save_goal(
-                command,
-                conversation_id=conversation_id,
-                user_message=user_message,
-            )
-        return await self._save_commitment(
-            command,
-            conversation_id=conversation_id,
-            user_message=user_message,
-        )
+        return [command] if command is not None else []
 
     def detect_command(
         self,
@@ -247,7 +299,8 @@ class GoalCommandService:
             return None
 
         target_text = self._relative_date_from_text(
-            message
+            message,
+            time_context=time_context,
         ) or self._date_from_text(message, time_context=time_context)
         return GoalCommand(
             kind="goal",
@@ -273,7 +326,7 @@ class GoalCommandService:
         due_text = self._date_from_text(
             message,
             time_context=time_context,
-        ) or self._relative_date_from_text(message)
+        ) or self._relative_date_from_text(message, time_context=time_context)
         return GoalCommand(
             kind="commitment",
             title=self._title(body),
@@ -354,6 +407,121 @@ class GoalCommandService:
             extra_records=extra_records,
         )
 
+    def _detect_equipment_goals(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+        time_context: dict,
+    ) -> list[GoalCommand]:
+        items = split_compound_goal_bodies(message)
+        if not items:
+            return []
+        return self._goal_commands_from_items(
+            items,
+            message=message,
+            conversation_history=conversation_history,
+            time_context=time_context,
+        )
+
+    def _goal_commands_from_text(
+        self,
+        text: str,
+        *,
+        message: str,
+        conversation_history: list[dict],
+        time_context: dict,
+    ) -> list[GoalCommand]:
+        items = split_compound_goal_bodies(text)
+        if not items and looks_like_equipment_goal(text):
+            items = [normalize_equipment_goal_title(text)]
+        if not items:
+            return []
+        return self._goal_commands_from_items(
+            items,
+            message=f"{message} {text}",
+            conversation_history=conversation_history,
+            time_context=time_context,
+        )
+
+    def _goal_commands_from_items(
+        self,
+        items: list[str],
+        *,
+        message: str,
+        conversation_history: list[dict],
+        time_context: dict,
+    ) -> list[GoalCommand]:
+        combined = self._combined_recent_text(message, conversation_history)
+        target_text = target_date_for_message(
+            combined,
+            time_context=time_context,
+        ) or self._relative_date_from_text(
+            combined,
+            time_context=time_context,
+        ) or self._date_from_text(combined, time_context=time_context)
+        return [
+            GoalCommand(
+                kind="goal",
+                title=item,
+                body=item,
+                record_type=self._plan_type(item),
+                target_text=target_text,
+            )
+            for item in items
+        ]
+
+    async def _save_multiple_goals(
+        self,
+        commands: list[GoalCommand],
+        *,
+        conversation_id: str,
+        user_message: dict,
+        response: Optional[str] = None,
+        extra_records: Optional[list[dict]] = None,
+    ) -> dict:
+        saved_records: list[dict] = []
+        for command in commands:
+            try:
+                record = await self.plan_service.create_plan(
+                    PlanCreateRequest(
+                        plan_type=command.record_type,
+                        title=command.title,
+                        description=command.body,
+                        desired_outcome=command.body,
+                        source_conversation_id=conversation_id,
+                        source_message_id=str(user_message.get("id") or "") or None,
+                        target_date=command.target_text,
+                        priority=4,
+                        metadata={"source": "explicit_goal_command"},
+                    )
+                )
+            except Exception:
+                return await self._failed_command_result(
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                    response=(
+                        "I understood those goals, but I couldn't save them just now. "
+                        "Please try again in a moment."
+                    ),
+                    kind="plan",
+                    record_type=commands[0].record_type,
+                    title=commands[0].title,
+                )
+            saved_records.append(record)
+
+        if response is None:
+            titles = ", ".join(command.title for command in commands)
+            response = f"Got it, I added {len(commands)} goals: {titles}."
+        return await self._multi_goal_result(
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response=response,
+            commands=commands,
+            records=saved_records,
+            extra_records=extra_records,
+        )
+
     async def _save_commitment(
         self,
         command: GoalCommand,
@@ -401,6 +569,91 @@ class GoalCommandService:
             title=command.title,
             extra_records=extra_records,
         )
+
+    async def _multi_goal_result(
+        self,
+        *,
+        conversation_id: str,
+        user_message: dict,
+        response: str,
+        commands: list[GoalCommand],
+        records: list[dict],
+        extra_records: Optional[list[dict]] = None,
+    ) -> dict:
+        assistant_message = await self.memory_service.save_message(
+            conversation_id,
+            "assistant",
+            response,
+        )
+        record_summaries = [
+            {
+                "kind": "plan",
+                "type": command.record_type,
+                "action": "direct_saved",
+                "id": record.get("id"),
+                "title": command.title,
+                "metadata": {"source": "explicit_goal_command"},
+            }
+            for command, record in zip(commands, records, strict=True)
+        ]
+        if extra_records:
+            record_summaries.extend(extra_records)
+        archived_count = sum(
+            1 for item in record_summaries if item.get("action") == "archived"
+        )
+        return {
+            "conversation_id": conversation_id,
+            "response": response,
+            "user_message": user_message,
+            "assistant_message": assistant_message,
+            "memory_correction": None,
+            "memory_changes": {
+                "created": len(records),
+                "updated": 0,
+                "archived": archived_count,
+                "merged": 0,
+                "skipped": 0,
+                "confirmation_required": 0,
+                "records": record_summaries,
+            },
+            "messages": await self.memory_service.get_recent_messages(
+                conversation_id,
+                limit=20,
+            ),
+        }
+
+    async def _clarification_result(
+        self,
+        *,
+        conversation_id: str,
+        user_message: dict,
+        response: str,
+    ) -> dict:
+        assistant_message = await self.memory_service.save_message(
+            conversation_id,
+            "assistant",
+            response,
+        )
+        return {
+            "conversation_id": conversation_id,
+            "response": response,
+            "user_message": user_message,
+            "assistant_message": assistant_message,
+            "memory_correction": None,
+            "memory_changes": {
+                "created": 0,
+                "updated": 0,
+                "archived": 0,
+                "merged": 0,
+                "skipped": 0,
+                "confirmation_required": 0,
+                "records": [],
+            },
+            "messages": await self.memory_service.get_recent_messages(
+                conversation_id,
+                limit=20,
+            ),
+        }
 
     async def _command_result(
         self,
@@ -560,14 +813,23 @@ class GoalCommandService:
             message,
             conversation_history=conversation_history,
         )
-        if not body:
-            return None
-
-        command = self._reclassified_goal_command(
+        commands = self._reclassified_goal_commands(
             body,
             message=message,
+            conversation_history=conversation_history,
             time_context=time_context,
         )
+        if not commands:
+            return await self._clarification_result(
+                conversation_id=conversation_id,
+                user_message=user_message,
+                response=(
+                    "I can move that out of saved memory once I know the exact goal. "
+                    "Tell me what to track—for example, separate goals for RAM and "
+                    "storage with a deadline like next month."
+                ),
+            )
+
         memory = await self._find_memory_to_archive(
             message,
             conversation_history=conversation_history,
@@ -576,29 +838,43 @@ class GoalCommandService:
         if memory is not None:
             archived_record = await self._archive_memory(memory)
 
-        if command.kind == "goal":
-            result = await self._save_goal(
+        extra_records = self._archived_memory_record(archived_record)
+        if len(commands) == 1:
+            command = commands[0]
+            response = self._reclassification_response(
+                command,
+                archived_record=archived_record,
+                total_goals=1,
+            )
+            if command.kind == "goal":
+                return await self._save_goal(
+                    command,
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                    response=response,
+                    extra_records=extra_records,
+                )
+            return await self._save_commitment(
                 command,
                 conversation_id=conversation_id,
                 user_message=user_message,
-                response=self._reclassification_response(
-                    command,
-                    archived_record=archived_record,
-                ),
-                extra_records=self._archived_memory_record(archived_record),
+                response=response,
+                extra_records=extra_records,
             )
-        else:
-            result = await self._save_commitment(
-                command,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                response=self._reclassification_response(
-                    command,
-                    archived_record=archived_record,
-                ),
-                extra_records=self._archived_memory_record(archived_record),
-            )
-        return result
+
+        response = self._reclassification_response(
+            commands[0],
+            archived_record=archived_record,
+            total_goals=len(commands),
+            titles=[command.title for command in commands],
+        )
+        return await self._save_multiple_goals(
+            commands,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response=response,
+            extra_records=extra_records,
+        )
 
     def _detect_clarified_misclassified_goal(
         self,
@@ -616,13 +892,13 @@ class GoalCommandService:
             message,
             conversation_history=conversation_history,
         )
-        if not body:
-            return None
-        return self._reclassified_goal_command(
+        commands = self._reclassified_goal_commands(
             body,
             message=message,
+            conversation_history=conversation_history,
             time_context=time_context,
         )
+        return commands[0] if len(commands) == 1 else None
 
     def _is_memory_reclassification_request(
         self,
@@ -668,12 +944,16 @@ class GoalCommandService:
         match = self._clarified_goal_body_pattern.search(message)
         if match is not None:
             body = self._clean_reclassified_body(match.group("body"))
-            if body:
+            if body and not is_meta_instruction_body(body):
                 return body
 
         obligation = self._extract_obligation_action(message)
-        if obligation:
+        if obligation and not is_meta_instruction_body(obligation):
             return self._clean_reclassified_body(obligation)
+
+        substantive = substantive_goal_from_history(conversation_history)
+        if substantive:
+            return substantive
 
         for item in reversed(conversation_history[-8:]):
             if item.get("role") != "user":
@@ -682,43 +962,78 @@ class GoalCommandService:
             nested = self._clarified_goal_body_pattern.search(content)
             if nested is not None:
                 body = self._clean_reclassified_body(nested.group("body"))
-                if body:
+                if body and not is_meta_instruction_body(body):
                     return body
             obligation = self._extract_obligation_action(content)
-            if obligation:
+            if obligation and not is_meta_instruction_body(obligation):
                 return self._clean_reclassified_body(obligation)
         return None
 
-    def _reclassified_goal_command(
+    def _reclassified_goal_commands(
         self,
-        body: str,
+        body: Optional[str],
         *,
         message: str,
+        conversation_history: list[dict],
         time_context: dict,
-    ) -> GoalCommand:
+    ) -> list[GoalCommand]:
+        if not body or is_meta_instruction_body(body):
+            return []
+
+        items = split_compound_goal_bodies(body)
+        if not items:
+            if looks_like_equipment_goal(body):
+                items = [normalize_equipment_goal_title(body)]
+            else:
+                items = [self._title(body)]
+
+        combined = self._combined_recent_text(message, conversation_history)
+        target_text = target_date_for_message(
+            combined,
+            time_context=time_context,
+        ) or self._relative_date_from_text(
+            combined,
+            time_context=time_context,
+        ) or self._date_from_text(combined, time_context=time_context)
         prefer_goal = bool(
-            self._plan_timeline_pattern.search(message)
-            or self._relative_time_pattern.search(message)
-            or re.search(r"\b(?:purchase|checklist|plan)\b", message, re.I)
+            self._plan_timeline_pattern.search(combined)
+            or self._relative_time_pattern.search(combined)
+            or re.search(r"\b(?:purchase|checklist|plan)\b", combined, re.I)
+            or len(items) > 1
+            or any(looks_like_equipment_goal(item) for item in items)
         )
-        target_text = self._relative_date_from_text(
-            message
-        ) or self._date_from_text(message, time_context=time_context)
         if prefer_goal:
-            return GoalCommand(
-                kind="goal",
-                title=self._title(body),
-                body=body,
-                record_type=self._plan_type(body),
-                target_text=target_text,
+            return [
+                GoalCommand(
+                    kind="goal",
+                    title=item,
+                    body=item,
+                    record_type=self._plan_type(item),
+                    target_text=target_text,
+                )
+                for item in items
+            ]
+        return [
+            GoalCommand(
+                kind="commitment",
+                title=item,
+                body=item,
+                record_type=self._commitment_type(item),
+                due_text=target_text,
             )
-        return GoalCommand(
-            kind="commitment",
-            title=self._title(body),
-            body=body,
-            record_type=self._commitment_type(body),
-            due_text=target_text,
+            for item in items
+        ]
+
+    def _combined_recent_text(
+        self,
+        message: str,
+        conversation_history: list[dict],
+    ) -> str:
+        recent = " ".join(
+            str(item.get("content") or "")
+            for item in conversation_history[-8:]
         )
+        return f"{message} {recent}".strip()
 
     async def _find_memory_to_archive(
         self,
@@ -746,9 +1061,25 @@ class GoalCommandService:
             if score > best_score:
                 best_score = score
                 best_match = memory
-        if best_score < 2 or best_match is None:
+        if best_match is None:
             return None
-        return best_match
+        if best_score >= 2:
+            return best_match
+
+        upgrade_memories = [
+            memory
+            for memory in memories
+            if re.search(
+                r"\b(?:ram|upgrade|storage|ssd|terabyte|tb)\b",
+                str(memory.get("content") or ""),
+                re.I,
+            )
+        ]
+        if len(upgrade_memories) == 1:
+            return upgrade_memories[0]
+        if best_score >= 1:
+            return best_match
+        return None
 
     async def _archive_memory(self, memory: dict) -> Optional[dict]:
         deactivate = getattr(self.memory_service, "deactivate_long_term_memory", None)
@@ -823,9 +1154,25 @@ class GoalCommandService:
         command: GoalCommand,
         *,
         archived_record: Optional[dict],
+        total_goals: int = 1,
+        titles: Optional[list[str]] = None,
     ) -> Optional[str]:
         if archived_record is None:
+            if total_goals > 1 and titles:
+                joined = ", ".join(titles)
+                return f"Got it, I added {total_goals} goals: {joined}."
+            if total_goals == 1:
+                kind_label = "goal" if command.kind == "goal" else "commitment"
+                return (
+                    f"Got it, I added that as a {kind_label}: {command.title}."
+                )
             return None
+        if total_goals > 1 and titles:
+            joined = ", ".join(titles)
+            return (
+                "Got it, I removed that from saved memory and added "
+                f"{total_goals} goals: {joined}."
+            )
         kind_label = "goal" if command.kind == "goal" else "commitment"
         return (
             f"Got it, I removed that from saved memory and added it as a "
@@ -855,7 +1202,15 @@ class GoalCommandService:
             return None
         return self._clean(match.group("action"))
 
-    def _relative_date_from_text(self, text: str) -> Optional[str]:
+    def _relative_date_from_text(
+        self,
+        text: str,
+        *,
+        time_context: Optional[dict] = None,
+    ) -> Optional[str]:
+        month_target = target_date_for_message(text, time_context=time_context)
+        if month_target:
+            return month_target
         match = self._relative_time_pattern.search(text)
         if match is None:
             return None

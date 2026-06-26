@@ -201,7 +201,7 @@ async def test_purchase_checklist_upgrade_creates_goal_not_memory():
     plan = memory_service.created_plans[0]
     assert plan["plan_type"] == "personal"
     assert "upgrade my ram" in plan["description"].casefold()
-    assert plan["target_date"] == "Next month"
+    assert plan["target_date"] == "July 31"
     assert memory_service.created_commitments == []
     assert memory_service.long_term_memory == []
 
@@ -222,11 +222,11 @@ async def test_have_to_upgrade_without_timeline_creates_commitment():
     )
 
     assert result is not None
-    assert "saved that commitment" in result["response"]
+    assert "added this as a goal" in result["response"]
     assert result["memory_changes"]["created"] == 1
-    commitment = memory_service.created_commitments[0]
-    assert commitment["commitment_type"] == "task"
-    assert "upgrade my RAM" in commitment["commitment_text"]
+    commitment = memory_service.created_plans[0]
+    assert "upgrade my ram" in commitment["description"].casefold()
+    assert memory_service.created_commitments == []
 
 
 @pytest.mark.asyncio
@@ -264,8 +264,105 @@ async def test_move_misclassified_memory_to_goal_archives_and_creates_plan():
 
     assert result is not None
     assert "removed that from saved memory" in result["response"]
-    assert result["memory_changes"]["created"] == 1
+    assert result["memory_changes"]["created"] == 2
     assert result["memory_changes"]["archived"] == 1
-    assert memory_service.created_plans
+    assert len(memory_service.created_plans) == 2
     assert memory_service.long_term_memory[0]["active"] is False
-    assert "32gb" in memory_service.created_plans[0]["description"].casefold()
+    titles = {plan["title"].casefold() for plan in memory_service.created_plans}
+    assert any("ram" in title for title in titles)
+    assert any("storage" in title or "tb" in title for title in titles)
+
+
+@pytest.mark.asyncio
+async def test_meta_reclassification_request_asks_for_details_without_saving():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-ram",
+            "memory_type": "fact",
+            "content": "User has a to upgrade my RAM from 16TO at least 32OR 64.",
+            "active": True,
+        }
+    )
+    history = [
+        {
+            "role": "assistant",
+            "content": "Got it, you have a to upgrade my RAM from 16TO at least 32OR 64.",
+        }
+    ]
+    message = (
+        "Can you move or delete this from memory? It meant to be a goal/commitment"
+    )
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[*history, user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert "exact goal" in result["response"].casefold()
+    assert result["memory_changes"]["created"] == 0
+    assert memory_service.created_plans == []
+    assert memory_service.created_commitments == []
+    assert memory_service.long_term_memory[0]["active"] is True
+
+
+@pytest.mark.asyncio
+async def test_hardware_list_creates_two_separate_goals():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    message = "Get 32gb-64gb ram and 1tb-2tb storage by next month"
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["created"] == 2
+    assert len(memory_service.created_plans) == 2
+    titles = {plan["title"].casefold() for plan in memory_service.created_plans}
+    assert any("ram" in title for title in titles)
+    assert any("storage" in title or "tb" in title for title in titles)
+    assert memory_service.created_plans[0]["target_date"] == "July 31"
+
+
+@pytest.mark.asyncio
+async def test_yes_please_after_hardware_message_saves_goals_from_history():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    history = [
+        await _user_message(
+            memory_service,
+            conversation_id,
+            "Get 32gb-64gb ram and 1tb-2tb storage",
+        ),
+        await memory_service.save_message(
+            conversation_id,
+            "assistant",
+            "Sure, what's the exact goal or commitment you'd like me to set?",
+        ),
+    ]
+    message = "Yes please"
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[*history, user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["created"] == 2
+    assert len(memory_service.created_plans) == 2
