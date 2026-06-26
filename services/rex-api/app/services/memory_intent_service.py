@@ -125,6 +125,7 @@ class MemoryIntentService(
         for detector in (
             self._detect_identity_fact,
             self._detect_work_fact,
+            self._detect_relationship_person,
             self._detect_device_fact,
             self._detect_preference,
             self._detect_personal_plan,
@@ -149,6 +150,13 @@ class MemoryIntentService(
         if contextual_location is not None:
             return contextual_location
 
+        contextual_save_proposal = self._detect_contextual_save_proposal_memory(
+            message,
+            conversation_history=conversation_history,
+        )
+        if contextual_save_proposal is not None:
+            return contextual_save_proposal
+
         contextual_birthday = self._detect_contextual_birthday_memory(
             message,
             conversation_history=conversation_history,
@@ -156,13 +164,6 @@ class MemoryIntentService(
         )
         if contextual_birthday is not None:
             return contextual_birthday
-
-        contextual_save_proposal = self._detect_contextual_save_proposal_memory(
-            message,
-            conversation_history=conversation_history,
-        )
-        if contextual_save_proposal is not None:
-            return contextual_save_proposal
 
         personal_plan = self._detect_personal_plan(
             message,

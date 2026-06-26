@@ -709,6 +709,45 @@ async def test_simple_memory_repeated_fact_does_not_save_duplicate_memory():
 
 
 @pytest.mark.asyncio
+async def test_relationship_person_save_after_mom_birthday_does_not_reuse_birthday_memory():
+    ai_service = FakeAIService(response="Rex follow-up")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    mom_saved = await chat_service.send_message("My mom's birthday is January 1.")
+    conversation_id = mom_saved["conversation_id"]
+    assert mom_saved["memory_changes"]["created"] == 1
+
+    await memory_service.save_message(
+        conversation_id,
+        "user",
+        "Can you save my best friend Pedro?",
+    )
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        "Want me to save Pedro as your best friend? Confirm with yes.",
+    )
+    confirmed = await chat_service.send_message("Yes", conversation_id)
+
+    assert confirmed["response"] == "Got it, your best friend is Pedro."
+    assert confirmed["memory_changes"]["created"] == 1
+    assert len(memory_service.long_term_memory) == 2
+    assert len(memory_service.entities) == 2
+    pedro = next(
+        entity
+        for entity in memory_service.entities
+        if entity["display_name"] == "Pedro"
+    )
+    assert pedro["relationship"] == "best friend"
+
+
+@pytest.mark.asyncio
 async def test_person_memory_card_merges_multiple_high_confidence_facts():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

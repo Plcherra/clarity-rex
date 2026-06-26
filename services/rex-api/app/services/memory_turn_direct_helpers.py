@@ -202,6 +202,16 @@ class MemoryTurnDirectHelpers:
             return self._memory_preference_topic_matches(normalized_content, intent)
         if fact_kind == "personal_plan":
             return self._memory_plan_topic_matches(normalized_content, intent)
+        if fact_kind == "relationship":
+            entity = self._normalize_memory_text(
+                str(intent.metadata.get("entity_label") or "")
+            )
+            relationship = self._normalize_memory_text(
+                str(intent.metadata.get("relationship") or "")
+            )
+            return bool(entity and relationship) and entity in normalized_content and (
+                relationship in normalized_content
+            )
         return False
 
     def _normalize_memory_text(self, text: str) -> str:

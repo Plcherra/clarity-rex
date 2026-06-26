@@ -95,6 +95,9 @@ class PersonMemoryMaterializer:
         if self_card is not None:
             return self_card
 
+        if metadata.get("fact_kind") == "relationship":
+            return self._relationship_card_from_memory(memory, metadata)
+
         if metadata.get("fact_kind") != "birthday":
             return None
 
@@ -121,6 +124,42 @@ class PersonMemoryMaterializer:
             "aliases": self._aliases_for(label, relationship, display_name),
             "relationship": relationship,
             "summary": f"Birthday: {birthday}.",
+            "source_conversation_id": memory.get("source_conversation_id"),
+            "source_message_id": memory.get("source_message_id"),
+            "source_memory_id": memory_id,
+            "importance": max(3, min(int(memory.get("importance") or 3), 5)),
+            "status": "active",
+            "active": True,
+            "metadata": metadata_payload,
+        }
+
+    def _relationship_card_from_memory(
+        self,
+        memory: dict,
+        metadata: dict[str, Any],
+    ) -> Optional[dict[str, Any]]:
+        label = self._clean_label(metadata.get("entity_label"))
+        relationship = self._clean_text(metadata.get("relationship")) or "person"
+        memory_id = self._clean_text(memory.get("id"))
+        if not label:
+            return None
+
+        display_name = self._display_name(label)
+        metadata_payload = {
+            "person_card_version": 1,
+            "attributes": {
+                "relationship_to_user": relationship,
+            },
+            "source_memory_ids": [memory_id] if memory_id else [],
+            "materialized_from": "long_term_memory",
+        }
+        return {
+            "entity_type": "person",
+            "display_name": display_name,
+            "normalized_name": self._normalize_name(label),
+            "aliases": self._aliases_for(label, relationship, display_name),
+            "relationship": relationship,
+            "summary": f"{relationship.title()}: {display_name}.",
             "source_conversation_id": memory.get("source_conversation_id"),
             "source_message_id": memory.get("source_message_id"),
             "source_memory_id": memory_id,

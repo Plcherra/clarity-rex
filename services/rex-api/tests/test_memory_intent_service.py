@@ -415,3 +415,42 @@ def test_simple_memory_intents_cover_allowed_categories():
         )
         assert intent is not None
         assert intent.metadata["memory_category"] == expected_category
+
+
+def test_detects_relationship_person_save_request():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory("Can you save my best friend Pedro?")
+
+    assert intent is not None
+    assert intent.content == "User's best friend is Pedro."
+    assert intent.metadata["fact_kind"] == "relationship"
+    assert intent.metadata["entity_label"] == "pedro"
+
+
+def test_yes_after_unrelated_birthday_does_not_reconfirm_birthday():
+    service = MemoryIntentService()
+    history = [
+        {"role": "user", "content": "Can you save my mom's birthday?"},
+        {
+            "role": "assistant",
+            "content": "Sure, what's your mom's birthday date? I'll save it once you confirm.",
+        },
+        {"role": "user", "content": "Jan 1"},
+        {"role": "assistant", "content": "Got it, your mom's birthday is January 1."},
+        {"role": "user", "content": "Can you save my best friend Pedro?"},
+        {
+            "role": "assistant",
+            "content": "Want me to save Pedro as your best friend? Confirm with yes.",
+        },
+    ]
+
+    intent = service.detect_contextual_memory(
+        "Yes",
+        conversation_history=history,
+        time_context={"date": "2026-06-01"},
+    )
+
+    assert intent is not None
+    assert intent.content == "User's best friend is Pedro."
+    assert intent.metadata["fact_kind"] == "relationship"

@@ -105,13 +105,24 @@ class MemoryIntentBirthdayMixin:
         if self.is_contextual_memory_save_request(normalized) or (
             self.is_contextual_memory_reject_request(normalized)
         ):
-            if (
-                self._recent_birthday_person(conversation_history) is not None
-                and self._recent_birthday_save_prompt(conversation_history)
-            ):
+            recent_assistant = self._most_recent_assistant_message(conversation_history)
+            if self._assistant_message_mentions_birthday_save(recent_assistant):
                 return True
-            return any(token in normalized for token in {"this", "that", "memory"})
+            if any(token in normalized for token in {"this", "that", "memory"}):
+                return self._recent_birthday_person(conversation_history) is not None
         return False
+
+    def _most_recent_assistant_message(self, conversation_history: list[dict]) -> str:
+        for message in reversed(conversation_history):
+            if message.get("role") == "assistant":
+                return str(message.get("content") or "")
+        return ""
+
+    def _assistant_message_mentions_birthday_save(self, content: str) -> bool:
+        normalized = content.lower()
+        if "birthday" not in normalized:
+            return False
+        return bool(re.search(r"\b(?:save|remember|keep|memory)\b", normalized))
 
     def _recent_birthday_intent(
         self,

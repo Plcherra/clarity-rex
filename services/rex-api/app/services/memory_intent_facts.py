@@ -3,6 +3,34 @@ from typing import Optional
 
 from app.services.memory_intent_models import SimpleMemoryIntent
 
+_RELATIONSHIP_ROLES = (
+    "best friend",
+    "friend",
+    "brother",
+    "sister",
+    "cousin",
+    "partner",
+    "wife",
+    "husband",
+    "boyfriend",
+    "girlfriend",
+    "fiancé",
+    "fiance",
+    "fiancée",
+    "fiancee",
+)
+_RELATIONSHIP_SAVE_USER_PATTERN = re.compile(
+    r"\b(?:save|remember|keep)\s+my\s+"
+    rf"(?P<relationship>{'|'.join(re.escape(role) for role in _RELATIONSHIP_ROLES)})\s+"
+    r"(?P<name>[A-Za-z][A-Za-z\s.'-]{1,60})",
+    re.IGNORECASE,
+)
+_ASSISTANT_RELATIONSHIP_SAVE_PATTERN = re.compile(
+    r"\bsave\s+(?P<name>[A-Za-z][A-Za-z\s.'-]{1,40}?)\s+as\s+your\s+"
+    r"(?P<relationship>[^?.!]+)",
+    re.IGNORECASE,
+)
+
 
 class MemoryIntentFactMixin:
     def _detect_remember_that(self, message: str) -> Optional[SimpleMemoryIntent]:
@@ -110,6 +138,49 @@ class MemoryIntentFactMixin:
             },
         )
 
+    def _detect_relationship_person(self, message: str) -> Optional[SimpleMemoryIntent]:
+        match = _RELATIONSHIP_SAVE_USER_PATTERN.search(message)
+        if match is None:
+            match = _ASSISTANT_RELATIONSHIP_SAVE_PATTERN.search(message)
+        if match is None:
+            return None
+        return self._relationship_person_intent(
+            match.group("name"),
+            match.group("relationship"),
+        )
+
+    def _relationship_person_intent(
+        self,
+        name: str,
+        relationship: str,
+    ) -> Optional[SimpleMemoryIntent]:
+        clean_name = self._clean_fact(name)
+        clean_relationship = self._clean_fact(relationship).lower()
+        if len(clean_name) < 2 or len(clean_relationship) < 2:
+            return None
+        if clean_name.lower() in {"birthday", "memory", "friend"}:
+            return None
+        display_name = clean_name.title()
+        entity_label = self._normalize_name(clean_name)
+        return SimpleMemoryIntent(
+            memory_type="fact",
+            content=f"User's {clean_relationship} is {display_name}.",
+            importance=4,
+            metadata={
+                "fact_kind": "relationship",
+                "memory_category": "People",
+                "entity_label": entity_label,
+                "relationship": clean_relationship,
+                "topic_fingerprint": (
+                    f"fact:relationship:{entity_label}:"
+                    f"{self._fingerprint(clean_relationship)}"
+                ),
+            },
+        )
+
+    def _normalize_name(self, value: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+
     def _detect_contextual_save_proposal_memory(
         self,
         message: str,
@@ -135,8 +206,17 @@ class MemoryIntentFactMixin:
                 )
             ):
                 continue
+            intent = self._detect_relationship_person(content)
+            if intent is not None:
+                return intent
             candidate = re.sub(r"\byou\b", "I", content, flags=re.IGNORECASE)
             intent = self._detect_device_fact(candidate)
+            if intent is not None:
+                return intent
+        for item in reversed(conversation_history[-4:]):
+            if item.get("role") != "user":
+                continue
+            intent = self._detect_relationship_person(str(item.get("content") or ""))
             if intent is not None:
                 return intent
         return None
