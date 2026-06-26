@@ -156,20 +156,37 @@ class MemoryTurnDeleteHelpers:
         message: str,
         conversation_history: list[dict],
     ) -> Optional[str]:
+        from app.services.memory_delete_reference import (
+            extract_delete_target_from_assistant_prompt,
+            is_delete_confirmation_reply,
+            pending_delete_target_from_history,
+        )
+
         if not (
             self._is_delete_confirmation(message)
             or self._is_delete_rejection(message)
+            or is_delete_confirmation_reply(message)
         ):
             return None
+
+        pending_target = pending_delete_target_from_history(conversation_history)
+        if pending_target and self._is_delete_confirmation(message):
+            return pending_target
 
         saw_delete_confirmation = False
         confirmation_target: Optional[str] = None
         for past_message in reversed(conversation_history[-8:]):
             role = past_message.get("role")
             content = str(past_message.get("content") or "")
-            if role == "assistant" and self._looks_like_delete_confirmation(content):
+            if role == "assistant" and (
+                self._looks_like_delete_confirmation(content)
+                or extract_delete_target_from_assistant_prompt(content)
+            ):
                 saw_delete_confirmation = True
-                confirmation_target = self._delete_confirmation_target(content)
+                confirmation_target = (
+                    self._delete_confirmation_target(content)
+                    or extract_delete_target_from_assistant_prompt(content)
+                )
                 continue
             if saw_delete_confirmation and role == "user":
                 intent = self.memory_correction_service.detect_correction_intent(
@@ -183,6 +200,10 @@ class MemoryTurnDeleteHelpers:
         return None
 
     def _looks_like_delete_confirmation(self, message: str) -> bool:
+        from app.services.memory_delete_reference import assistant_prompts_delete
+
+        if assistant_prompts_delete(message):
+            return True
         normalized = self._normalize_delete_text(message)
         return (
             "confirm" in normalized
@@ -224,13 +245,23 @@ class MemoryTurnDeleteHelpers:
             return target
 
         candidates = self._recent_quoted_saved_items(conversation_history)
-        confirmed_targets = []
+        confirmed_targets: list[str] = []
         for candidate in candidates:
             matches = await self.memory_correction_service.preview_remove_obsolete(
                 candidate,
             )
             if len(matches) == 1:
                 confirmed_targets.append(candidate)
+
+        if not confirmed_targets:
+            for candidate in self._recent_delete_reference_candidates(
+                conversation_history,
+            ):
+                matches = await self.memory_correction_service.preview_remove_obsolete(
+                    candidate,
+                )
+                if len(matches) == 1:
+                    confirmed_targets.append(candidate)
 
         unique_targets = []
         for candidate in confirmed_targets:
@@ -256,6 +287,10 @@ class MemoryTurnDeleteHelpers:
             "this note",
             "that saved note",
             "this saved note",
+            "the old one",
+            "old one",
+            "the old goal",
+            "old goal",
         }
 
     def _recent_quoted_saved_items(self, conversation_history: list[dict]) -> list[str]:
@@ -273,7 +308,38 @@ class MemoryTurnDeleteHelpers:
                     candidates.append(candidate)
         return candidates
 
+    def _recent_delete_reference_candidates(
+        self,
+        conversation_history: list[dict],
+    ) -> list[str]:
+        candidates: list[str] = []
+        for past_message in reversed(conversation_history[-8:]):
+            content = str(past_message.get("content") or "")
+            lowered = content.lower()
+            if "delete" not in lowered and "remove" not in lowered:
+                continue
+            for match in re.finditer(r"['\"]([^'\n\"]{3,240})['\"]", content):
+                candidate = match.group(1).strip()
+                if candidate and candidate not in candidates:
+                    candidates.append(candidate)
+            for match in re.finditer(
+                r"\b(?:starting as|old one|be a goal)\s+['\"]?([^'\n\"]{3,240})['\"]?",
+                content,
+                flags=re.IGNORECASE,
+            ):
+                candidate = match.group(1).strip(" .")
+                if candidate and candidate not in candidates:
+                    candidates.append(candidate)
+        return candidates
+
     def _delete_confirmation_target(self, message: str) -> Optional[str]:
+        from app.services.memory_delete_reference import (
+            extract_delete_target_from_assistant_prompt,
+        )
+
+        target = extract_delete_target_from_assistant_prompt(message)
+        if target:
+            return target
         match = re.search(
             r"delete this saved memory:\s*(.+?)(?:\n|$)",
             message,

@@ -95,6 +95,77 @@ def response_claims_delete_success(response: str) -> bool:
     )
 
 
+_DELETE_CONFIRMATION_REPLY = re.compile(
+    r"^(?:yes(?:\s+please)?|yeah|yep|sure|ok(?:ay)?|confirmed?|do it|go ahead|"
+    r"go ahead delete it|delete it|yes delete it)\.?$",
+    re.IGNORECASE,
+)
+
+_DELETE_PROMPT_PATTERNS = (
+    re.compile(
+        r"delete this saved memory:\s*(.+?)(?:\n|$)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"do you want me to delete (?:the )?(?:commitment|goal)\s+['\"](.+?)['\"]",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"delete (?:the )?(?:commitment|goal)\s+['\"](.+?)['\"]",
+        re.IGNORECASE,
+    ),
+)
+
+
+def is_delete_confirmation_reply(message: str) -> bool:
+    cleaned = re.sub(r"\s+", " ", str(message or "")).strip()
+    return bool(_DELETE_CONFIRMATION_REPLY.fullmatch(cleaned))
+
+
+def assistant_prompts_delete(content: str) -> bool:
+    lowered = str(content or "").lower()
+    if "do you want me to delete" in lowered:
+        return True
+    if "delete this saved memory" in lowered and "confirm" in lowered:
+        return True
+    if "just to confirm" in lowered and "delete" in lowered:
+        return True
+    return False
+
+
+def extract_delete_target_from_assistant_prompt(content: str) -> str | None:
+    for pattern in _DELETE_PROMPT_PATTERNS:
+        match = pattern.search(str(content or ""))
+        if match is None:
+            continue
+        target = match.group(1).strip(" .\"'")
+        if target:
+            return target
+    return None
+
+
+def pending_delete_target_from_history(conversation_history: list[dict]) -> str | None:
+    for item in reversed(conversation_history[-8:]):
+        if item.get("role") != "assistant":
+            continue
+        content = str(item.get("content") or "")
+        if not assistant_prompts_delete(content):
+            continue
+        target = extract_delete_target_from_assistant_prompt(content)
+        if target:
+            return target
+    return None
+
+
+def should_defer_to_delete_confirmation(
+    message: str,
+    conversation_history: list[dict],
+) -> bool:
+    if not is_delete_confirmation_reply(message):
+        return False
+    return pending_delete_target_from_history(conversation_history) is not None
+
+
 def response_claims_goal_success(response: str) -> bool:
     text = f" {str(response or '').lower()} "
     return any(

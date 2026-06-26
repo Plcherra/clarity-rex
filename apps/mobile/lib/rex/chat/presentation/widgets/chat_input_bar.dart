@@ -91,20 +91,10 @@ class ChatInputBar extends StatelessWidget {
                       controller: controller,
                       minLines: 1,
                       maxLines: 7,
-                      textInputAction: TextInputAction.send,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
                       textCapitalization: TextCapitalization.sentences,
                       cursorColor: colors.accent,
-                      onSubmitted: (_) {
-                        if (_canSend(
-                          controller.text,
-                          hasAttachment: hasAttachment,
-                          isLoading: isLoading,
-                          hasBlockingAttachmentError:
-                              hasBlockingAttachmentError,
-                        )) {
-                          onSend?.call();
-                        }
-                      },
                       decoration: InputDecoration(
                         hintText: 'Message Assistant…',
                         border: InputBorder.none,

@@ -66,6 +66,28 @@ class MemoryCorrectionIntentParser:
                 confidence=0.9,
             )
 
+        goal_delete = re.search(
+            r"\b(?:delete|remove|archive)\s+(?:the\s+)?(?:old\s+)?(?:goal|commitment)\b"
+            r"(?:\s+['\"](?P<quoted>.+?)['\"])?",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        if goal_delete:
+            quoted = goal_delete.group("quoted")
+            if quoted:
+                return CorrectionIntent(
+                    CorrectionIntentType.REMOVE_OBSOLETE,
+                    old_value=trim_removal_target(quoted),
+                    new_value="[archived]",
+                    confidence=0.9,
+                )
+            return CorrectionIntent(
+                CorrectionIntentType.REMOVE_OBSOLETE,
+                old_value="goal",
+                new_value="[archived]",
+                confidence=0.72,
+            )
+
         reference_target = extract_reference_delete_target(cleaned)
         if reference_target:
             return CorrectionIntent(

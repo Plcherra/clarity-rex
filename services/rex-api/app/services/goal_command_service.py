@@ -16,6 +16,7 @@ from app.services.goal_command_parsing import (
     substantive_goal_from_history,
     target_date_for_message,
 )
+from app.services.memory_delete_reference import should_defer_to_delete_confirmation
 from app.services.memory_date_normalizer import MemoryDateNormalizer
 from app.services.plan_service import PlanService
 
@@ -160,6 +161,9 @@ class GoalCommandService:
         if reclassified is not None:
             return reclassified
 
+        if should_defer_to_delete_confirmation(message, conversation_history):
+            return None
+
         commands = self.detect_commands(
             message,
             conversation_history=conversation_history,
@@ -203,6 +207,8 @@ class GoalCommandService:
             return equipment_goals
 
         if is_affirmation_or_goal_prefix(message):
+            if should_defer_to_delete_confirmation(message, conversation_history):
+                return []
             substantive = substantive_goal_from_history(conversation_history)
             if substantive:
                 affirmed = self._goal_commands_from_text(

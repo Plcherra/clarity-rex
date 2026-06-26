@@ -86,10 +86,62 @@ def normalize_equipment_goal_title(text: str) -> str:
     return cleaned
 
 
+def split_numbered_goal_bodies(text: str) -> list[str]:
+    cleaned = re.sub(r"\s+", " ", str(text or "")).strip(" .")
+    if not cleaned:
+        return []
+
+    body = re.sub(r"^\d+\s+goals?[.:]?\s*", "", cleaned, flags=re.IGNORECASE)
+    item_start = r"\d+[.)]?\s+(?:buy|get|upgrade|install|purchase|add)\b"
+    if not re.search(item_start, body, re.IGNORECASE):
+        if re.search(r"\d+[.)]\s+", body):
+            parts = [
+                part.strip(" .")
+                for part in re.split(r"\d+[.)]\s+", body, flags=re.IGNORECASE)
+            ]
+            items = [
+                normalize_equipment_goal_title(part)
+                for part in parts
+                if part and _looks_like_goal_clause(part)
+            ]
+            if len(items) >= 2:
+                return items
+        return []
+
+    parts = re.split(
+        rf"(?<=\.)\s*(?={item_start})|(?<=\S)\s+(?={item_start})",
+        body,
+        flags=re.IGNORECASE,
+    )
+    items = [
+        normalize_equipment_goal_title(part)
+        for part in parts
+        if part and _looks_like_goal_clause(part)
+    ]
+    if len(items) >= 2:
+        return items
+    return []
+
+
+def _looks_like_goal_clause(text: str) -> bool:
+    cleaned = re.sub(r"\s+", " ", str(text or "")).strip(" .")
+    if len(cleaned) < 4:
+        return False
+    if re.fullmatch(r"\d+\s*goals?", cleaned, re.IGNORECASE):
+        return False
+    if looks_like_equipment_goal(cleaned):
+        return True
+    return bool(_PURCHASE_VERB.search(cleaned) and re.search(r"\d", cleaned))
+
+
 def split_compound_goal_bodies(text: str) -> list[str]:
     cleaned = re.sub(r"\s+", " ", str(text or "")).strip(" .")
     if not cleaned:
         return []
+
+    numbered = split_numbered_goal_bodies(cleaned)
+    if numbered:
+        return numbered
 
     if re.search(r"\band\b", cleaned, re.IGNORECASE):
         parts = [
@@ -105,6 +157,8 @@ def split_compound_goal_bodies(text: str) -> list[str]:
             return items
 
     if looks_like_equipment_goal(cleaned):
+        return [normalize_equipment_goal_title(cleaned)]
+    if _looks_like_goal_clause(cleaned):
         return [normalize_equipment_goal_title(cleaned)]
     return []
 
