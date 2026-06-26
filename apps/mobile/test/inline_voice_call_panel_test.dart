@@ -16,8 +16,8 @@ void main() {
       find.textContaining('Your Clarity session needs to reconnect'),
       findsOneWidget,
     );
-    expect(find.text('Try again'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
+    expect(find.byTooltip('Try again'), findsOneWidget);
+    expect(find.byTooltip('Settings'), findsOneWidget);
   });
 
   testWidgets('shows microphone recovery message for capture failures', (
@@ -73,15 +73,25 @@ Future<void> _pumpFailedVoicePanel(
   return tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
-        body: InlineVoiceCallPanel(
-          state: VoiceCallState(
-            phase: VoiceCallPhase.failed,
-            errorMessage: errorMessage,
-          ),
-          onRetry: () {},
-          onEnd: () {},
-          onToggleMute: () {},
-          onOpenSettings: () {},
+        body: Column(
+          children: [
+            VoiceLiveTranscript(
+              state: VoiceCallState(
+                phase: VoiceCallPhase.failed,
+                errorMessage: errorMessage,
+              ),
+            ),
+            InlineVoiceCallPanel(
+              state: VoiceCallState(
+                phase: VoiceCallPhase.failed,
+                errorMessage: errorMessage,
+              ),
+              onRetry: () {},
+              onEnd: () {},
+              onToggleMute: () {},
+              onOpenSettings: () {},
+            ),
+          ],
         ),
       ),
     ),

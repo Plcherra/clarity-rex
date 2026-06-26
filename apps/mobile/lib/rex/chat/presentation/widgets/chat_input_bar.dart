@@ -89,7 +89,6 @@ class ChatInputBar extends StatelessWidget {
                       Expanded(
                         child: TextField(
                           controller: controller,
-                          enabled: !isLoading,
                           minLines: 1,
                           maxLines: 7,
                           textInputAction: TextInputAction.send,

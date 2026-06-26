@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_message_bubble.dart';
+import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
 class ChatTranscript extends StatelessWidget {
@@ -16,7 +18,7 @@ class ChatTranscript extends StatelessWidget {
     required this.onPromptSelected,
     required this.onConfirmClarityAction,
     required this.onDismissClarityAction,
-    this.bottomPadding = 0,
+    this.voiceState,
   });
 
   final List<ChatMessage> messages;
@@ -27,7 +29,7 @@ class ChatTranscript extends StatelessWidget {
   final ValueChanged<String> onPromptSelected;
   final ValueChanged<ClarityActionCard> onConfirmClarityAction;
   final ValueChanged<ClarityActionCard> onDismissClarityAction;
-  final double bottomPadding;
+  final VoiceCallState? voiceState;
 
   static const _welcomeMessage =
       "I'm Rex. Tell me what's happening, what changed, or what you want me to remember.";
@@ -35,6 +37,8 @@ class ChatTranscript extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasMessages = messages.isNotEmpty;
+    final showVoiceTranscript =
+        voiceState != null && !voiceState!.isIdle;
     final baseBottomPadding = MediaQuery.viewInsetsOf(context).bottom > 0
         ? RexUiTokens.space12
         : RexUiTokens.space24;
@@ -53,7 +57,7 @@ class ChatTranscript extends StatelessWidget {
               RexUiTokens.space16,
               RexUiTokens.space8,
               RexUiTokens.space16,
-              baseBottomPadding + bottomPadding,
+              baseBottomPadding,
             ),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
@@ -80,6 +84,8 @@ class ChatTranscript extends StatelessWidget {
                   const SizedBox(height: 2),
                   const ChatMessageBubble(text: '', isLoading: true),
                 ],
+                if (showVoiceTranscript)
+                  VoiceLiveTranscript(state: voiceState!),
                 if (errorMessage != null) ...[
                   const SizedBox(height: RexUiTokens.space12),
                   _ChatErrorBanner(message: errorMessage!),

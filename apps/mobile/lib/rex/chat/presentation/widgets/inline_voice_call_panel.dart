@@ -5,6 +5,96 @@ import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_diamond_loader.dart';
 
+/// Inline live transcript shown at the bottom of the chat scroll area.
+class VoiceLiveTranscript extends StatelessWidget {
+  const VoiceLiveTranscript({super.key, required this.state});
+
+  final VoiceCallState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.clarityColors;
+    final isFailed = state.phase == VoiceCallPhase.failed;
+    final transcript = state.currentTranscript.trim();
+    final visibleText = isFailed
+        ? voiceFailureMessage(state.errorMessage)
+        : transcript;
+
+    if (isFailed) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 12),
+        child: Text(
+          visibleText,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: colors.textPrimary,
+            height: 1.45,
+          ),
+        ),
+      );
+    }
+
+    if (visibleText.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 12),
+        child: Text(
+          visibleText,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: colors.textSecondary,
+            fontStyle: FontStyle.italic,
+            height: 1.45,
+          ),
+        ),
+      );
+    }
+
+    if (state.phase == VoiceCallPhase.listening && !state.isMuted) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 12),
+        child: Row(
+          children: [
+            _VoiceWaveIndicator(
+              phase: state.phase,
+              color: colors.textMuted,
+              compact: true,
+            ),
+            const SizedBox(width: RexUiTokens.space8),
+            Text(
+              'Start talking',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.textMuted,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (state.phase == VoiceCallPhase.thinking) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 12),
+        child: Row(
+          children: [
+            const ClarityDiamondLoader(size: 16),
+            const SizedBox(width: RexUiTokens.space8),
+            Text(
+              'Processing…',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.textMuted,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+}
+
+/// Compact voice controls above the composer — flat icons, no overlay box.
 class InlineVoiceCallPanel extends StatelessWidget {
   const InlineVoiceCallPanel({
     super.key,
@@ -23,192 +113,61 @@ class InlineVoiceCallPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.clarityColors;
     final isFailed = state.phase == VoiceCallPhase.failed;
-    final transcript = state.currentTranscript.trim();
-    final error = state.errorMessage?.trim();
-    final statusColor = isFailed ? colors.danger : colors.accent;
-    final statusLabel = _voiceSemanticLabel(state);
-    final visibleText = isFailed ? _voiceFailureMessage(error) : transcript;
-    final hasVisibleText = visibleText.isNotEmpty;
 
-    return Material(
-      color: Colors.transparent,
-      elevation: 0,
-      child: SafeArea(
-        top: false,
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: isFailed
-                  ? colors.danger.withValues(alpha: 0.10)
-                  : colors.surfaceElevated.withValues(alpha: 0.66),
-              borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge + 2),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Semantics(
-                        label: statusLabel,
-                        liveRegion: true,
-                        child: _VoiceActivityOrb(
-                          phase: state.phase,
-                          isMuted: state.isMuted,
-                          color: statusColor,
-                          isFailed: isFailed,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (state.isMuted && !isFailed) ...[
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: colors.surfaceSoft.withValues(
-                              alpha: 0.72,
-                            ),
-                            borderRadius: BorderRadius.circular(
-                              RexUiTokens.radiusPill,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 5,
-                            ),
-                            child: Text(
-                              'Muted',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colors.textSecondary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: RexUiTokens.space4),
-                      ],
-                      if (!isFailed)
-                        IconButton(
-                          onPressed: onToggleMute,
-                          icon: Icon(
-                            state.isMuted
-                                ? Icons.mic_off_rounded
-                                : Icons.mic_rounded,
-                          ),
-                          tooltip: state.isMuted ? 'Unmute mic' : 'Mute mic',
-                          style: IconButton.styleFrom(
-                            minimumSize: const Size.square(40),
-                            fixedSize: const Size.square(40),
-                            padding: EdgeInsets.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            backgroundColor: colors.surfaceSoft.withValues(
-                              alpha: 0.58,
-                            ),
-                            foregroundColor: state.isMuted
-                                ? colors.textSecondary
-                                : colors.textPrimary,
-                          ),
-                        ),
-                      const SizedBox(width: RexUiTokens.space4),
-                      IconButton(
-                        onPressed: onEnd,
-                        icon: const Icon(Icons.call_end_rounded, size: 20),
-                        tooltip: 'End voice',
-                        style: IconButton.styleFrom(
-                          minimumSize: const Size.square(40),
-                          fixedSize: const Size.square(40),
-                          padding: EdgeInsets.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          backgroundColor: colors.danger.withValues(
-                            alpha: 0.16,
-                          ),
-                          foregroundColor: colors.danger,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (hasVisibleText) ...[
-                    const SizedBox(height: RexUiTokens.space8),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: isFailed
-                            ? colors.danger.withValues(alpha: 0.08)
-                            : colors.background.withValues(alpha: 0.28),
-                        borderRadius: BorderRadius.circular(
-                          RexUiTokens.radiusMedium,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 72),
-                          child: SingleChildScrollView(
-                            child: Text(
-                              visibleText,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: isFailed
-                                    ? colors.textPrimary
-                                    : colors.textSecondary,
-                                height: 1.35,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (isFailed) ...[
-                    const SizedBox(height: RexUiTokens.space8),
-                    Row(
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: onOpenSettings,
-                          icon: const Icon(Icons.settings_rounded, size: 18),
-                          label: const Text('Settings'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: colors.textSecondary,
-                            side: BorderSide(color: colors.divider),
-                            textStyle: theme.textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: RexUiTokens.space8),
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: onRetry,
-                            icon: const Icon(Icons.refresh_rounded, size: 18),
-                            label: const Text('Try again'),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: colors.accent,
-                              foregroundColor:
-                                  Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.black
-                                  : Colors.white,
-                              textStyle: theme.textTheme.labelMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+      child: Row(
+        children: [
+          Semantics(
+            label: _voiceSemanticLabel(state),
+            liveRegion: true,
+            child: _VoiceWaveIndicator(
+              phase: state.phase,
+              isMuted: state.isMuted,
+              color: isFailed ? colors.danger : colors.accent,
+              isFailed: isFailed,
             ),
           ),
-        ),
+          const SizedBox(width: RexUiTokens.space8),
+          if (state.isMuted && !isFailed)
+            Text(
+              'Muted',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: colors.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          const Spacer(),
+          if (isFailed) ...[
+            _VoiceFlatIconButton(
+              icon: Icons.settings_outlined,
+              tooltip: 'Settings',
+              onPressed: onOpenSettings,
+            ),
+            const SizedBox(width: RexUiTokens.space4),
+            _VoiceFlatIconButton(
+              icon: Icons.refresh_rounded,
+              tooltip: 'Try again',
+              onPressed: onRetry,
+            ),
+            const SizedBox(width: RexUiTokens.space4),
+          ] else ...[
+            _VoiceFlatIconButton(
+              icon: state.isMuted ? Icons.mic_off_outlined : Icons.mic_none_outlined,
+              tooltip: state.isMuted ? 'Unmute mic' : 'Mute mic',
+              onPressed: onToggleMute,
+            ),
+            const SizedBox(width: RexUiTokens.space4),
+          ],
+          _VoiceFlatIconButton(
+            icon: Icons.stop_rounded,
+            tooltip: 'End voice',
+            onPressed: onEnd,
+            foregroundColor: colors.danger,
+          ),
+        ],
       ),
     );
   }
@@ -225,111 +184,63 @@ class InlineVoiceCallPanel extends StatelessWidget {
       VoiceCallPhase.failed => 'Voice paused',
     };
   }
-
-  String _voiceFailureMessage(String? error) {
-    final message = error?.toLowerCase() ?? '';
-    if (message.contains('auth') ||
-        message.contains('token') ||
-        message.contains('session') ||
-        message.contains('expired') ||
-        message.contains('unauthorized') ||
-        message.contains('401')) {
-      return 'Your Clarity session needs to reconnect before voice can continue. Sign in again if this keeps happening.';
-    }
-    if (message.contains('permission') ||
-        message.contains('capture') ||
-        message.contains('microphone') ||
-        message.contains('microphone access') ||
-        message.contains('settings')) {
-      return 'Microphone access is needed for voice. Check Settings, then try again.';
-    }
-    if (message.contains('empty_audio') ||
-        message.contains('no audio') ||
-        message.contains('did not catch') ||
-        message.contains('did not hear') ||
-        message.contains('blank transcript')) {
-      return "I didn't catch that. Tap Try again when you are ready.";
-    }
-    if (message.contains('disconnect') ||
-        message.contains('connection') ||
-        message.contains('socket') ||
-        message.contains('stream')) {
-      return 'Voice connection dropped. Tap Try again to reconnect.';
-    }
-    if (message.contains('transcript')) {
-      return "I couldn't read that transcript. Tap Try again and say it once more.";
-    }
-    if (message.contains('tts') ||
-        message.contains('synthesize') ||
-        message.contains('playback') ||
-        message.contains('play rex voice') ||
-        message.contains('play audio')) {
-      return "Rex answered, but I couldn't play the audio. Tap Try again to hear the reply.";
-    }
-    return 'Voice paused. Tap Try again when you are ready to continue.';
-  }
 }
 
-class _VoiceActivityOrb extends StatelessWidget {
-  const _VoiceActivityOrb({
-    required this.phase,
-    required this.isMuted,
-    required this.color,
-    required this.isFailed,
+class _VoiceFlatIconButton extends StatelessWidget {
+  const _VoiceFlatIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.foregroundColor,
   });
 
-  final VoiceCallPhase phase;
-  final bool isMuted;
-  final Color color;
-  final bool isFailed;
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isFailed
-            ? colors.danger.withValues(alpha: 0.12)
-            : colors.accent.withValues(alpha: 0.10),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: isFailed ? 0.08 : 0.12),
-            blurRadius: 18,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: SizedBox.square(
-        dimension: 46,
-        child: Center(
-          child: _VoiceActivityGlyph(
-            phase: phase,
-            isMuted: isMuted,
-            color: color,
-          ),
-        ),
+
+    return IconButton(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 22),
+      tooltip: tooltip,
+      style: IconButton.styleFrom(
+        minimumSize: const Size.square(40),
+        fixedSize: const Size.square(40),
+        padding: EdgeInsets.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        backgroundColor: Colors.transparent,
+        foregroundColor: foregroundColor ?? colors.textSecondary,
+        shadowColor: Colors.transparent,
+        elevation: 0,
       ),
     );
   }
 }
 
-class _VoiceActivityGlyph extends StatefulWidget {
-  const _VoiceActivityGlyph({
+class _VoiceWaveIndicator extends StatefulWidget {
+  const _VoiceWaveIndicator({
     required this.phase,
-    required this.isMuted,
     required this.color,
+    this.isMuted = false,
+    this.isFailed = false,
+    this.compact = false,
   });
 
   final VoiceCallPhase phase;
-  final bool isMuted;
   final Color color;
+  final bool isMuted;
+  final bool isFailed;
+  final bool compact;
 
   @override
-  State<_VoiceActivityGlyph> createState() => _VoiceActivityGlyphState();
+  State<_VoiceWaveIndicator> createState() => _VoiceWaveIndicatorState();
 }
 
-class _VoiceActivityGlyphState extends State<_VoiceActivityGlyph>
+class _VoiceWaveIndicatorState extends State<_VoiceWaveIndicator>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
@@ -350,14 +261,17 @@ class _VoiceActivityGlyphState extends State<_VoiceActivityGlyph>
 
   @override
   Widget build(BuildContext context) {
-    if (widget.phase == VoiceCallPhase.failed) {
+    if (widget.isFailed) {
       return Icon(Icons.error_outline_rounded, color: widget.color, size: 20);
     }
     if (widget.isMuted && widget.phase == VoiceCallPhase.listening) {
-      return Icon(Icons.mic_off_rounded, color: widget.color, size: 20);
+      return Icon(Icons.mic_off_outlined, color: widget.color, size: 20);
     }
     if (widget.phase == VoiceCallPhase.thinking) {
-      return const ClarityDiamondLoader(size: 24);
+      return ClarityDiamondLoader(size: widget.compact ? 16 : 20);
+    }
+    if (widget.phase == VoiceCallPhase.speaking) {
+      return Icon(Icons.volume_up_outlined, color: widget.color, size: 20);
     }
 
     return AnimatedBuilder(
@@ -367,22 +281,22 @@ class _VoiceActivityGlyphState extends State<_VoiceActivityGlyph>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            for (var index = 0; index < 4; index++)
+            for (var index = 0; index < (widget.compact ? 3 : 4); index++)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 1.2),
+                padding: const EdgeInsets.symmetric(horizontal: 1.1),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: widget.color,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(1.5),
                   ),
                   child: SizedBox(
-                    width: 3,
+                    width: 2.5,
                     height:
-                        8 +
+                        (widget.compact ? 6 : 8) +
                         (((index.isEven
                                     ? _controller.value
                                     : 1 - _controller.value) *
-                                10)
+                                (widget.compact ? 8 : 10))
                             .roundToDouble()),
                   ),
                 ),
@@ -392,4 +306,47 @@ class _VoiceActivityGlyphState extends State<_VoiceActivityGlyph>
       },
     );
   }
+}
+
+String voiceFailureMessage(String? error) {
+  final message = error?.toLowerCase() ?? '';
+  if (message.contains('auth') ||
+      message.contains('token') ||
+      message.contains('session') ||
+      message.contains('expired') ||
+      message.contains('unauthorized') ||
+      message.contains('401')) {
+    return 'Your Clarity session needs to reconnect before voice can continue. Sign in again if this keeps happening.';
+  }
+  if (message.contains('permission') ||
+      message.contains('capture') ||
+      message.contains('microphone') ||
+      message.contains('microphone access') ||
+      message.contains('settings')) {
+    return 'Microphone access is needed for voice. Check Settings, then try again.';
+  }
+  if (message.contains('empty_audio') ||
+      message.contains('no audio') ||
+      message.contains('did not catch') ||
+      message.contains('did not hear') ||
+      message.contains('blank transcript')) {
+    return "I didn't catch that. Tap Try again when you are ready.";
+  }
+  if (message.contains('disconnect') ||
+      message.contains('connection') ||
+      message.contains('socket') ||
+      message.contains('stream')) {
+    return 'Voice connection dropped. Tap Try again to reconnect.';
+  }
+  if (message.contains('transcript')) {
+    return "I couldn't read that transcript. Tap Try again and say it once more.";
+  }
+  if (message.contains('tts') ||
+      message.contains('synthesize') ||
+      message.contains('playback') ||
+      message.contains('play rex voice') ||
+      message.contains('play audio')) {
+    return "Rex answered, but I couldn't play the audio. Tap Try again to hear the reply.";
+  }
+  return 'Voice paused. Tap Try again when you are ready to continue.';
 }
