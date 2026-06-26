@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
-from typing import Any, Optional, Protocol
+from typing import Any, Optional
 
 from app.models.commitment import CommitmentCreateRequest
 from app.models.plan import PlanCreateRequest
+from app.services.accountability_query_service import AccountabilityQueryService
 from app.services.commitment_service import CommitmentService
 from app.services.goal_command_parsing import (
-    goals_inventory_scope,
     is_affirmation_or_goal_prefix,
-    is_goals_inventory_query,
     is_meta_instruction_body,
     looks_like_equipment_goal,
     normalize_equipment_goal_title,
@@ -18,31 +16,18 @@ from app.services.goal_command_parsing import (
     substantive_goal_from_history,
     target_date_for_message,
 )
+from app.services.goal_command_queries import try_list_goals_and_commitments
+from app.services.goal_command_results import (
+    clarification_turn_result,
+    command_turn_result,
+    failed_command_turn_result,
+    multi_goal_turn_result,
+    read_only_turn_result,
+)
+from app.services.goal_command_types import GoalCommand, GoalCommandStore
 from app.services.memory_delete_reference import should_defer_to_delete_confirmation
 from app.services.memory_date_normalizer import MemoryDateNormalizer
 from app.services.plan_service import PlanService
-
-
-class GoalCommandStore(Protocol):
-    async def save_message(self, conversation_id: str, role: str, content: str) -> dict:
-        pass
-
-    async def get_recent_messages(
-        self,
-        conversation_id: str,
-        limit: int = 20,
-    ) -> list[dict]:
-        pass
-
-
-@dataclass(frozen=True)
-class GoalCommand:
-    kind: str
-    title: str
-    body: str
-    record_type: str
-    due_text: Optional[str] = None
-    target_text: Optional[str] = None
 
 
 class GoalCommandService:
@@ -137,11 +122,16 @@ class GoalCommandService:
         *,
         plan_service: Optional[PlanService] = None,
         commitment_service: Optional[CommitmentService] = None,
+        accountability_query_service: Optional[AccountabilityQueryService] = None,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service or PlanService(memory_service)
         self.commitment_service = commitment_service or CommitmentService(
             memory_service
+        )
+        self.accountability_query_service = (
+            accountability_query_service
+            or AccountabilityQueryService(memory_service)
         )
 
     async def handle_turn(
@@ -152,6 +142,7 @@ class GoalCommandService:
         user_message: dict,
         conversation_history: list[dict],
         time_context: dict,
+        pending_action=None,
     ) -> Optional[dict]:
         reclassified = await self._try_move_memory_to_goal(
             message,
@@ -171,13 +162,18 @@ class GoalCommandService:
         if listed is not None:
             return listed
 
-        if should_defer_to_delete_confirmation(message, conversation_history):
+        if should_defer_to_delete_confirmation(
+            message,
+            conversation_history,
+            self._pending_action_payload(pending_action),
+        ):
             return None
 
         commands = self.detect_commands(
             message,
             conversation_history=conversation_history,
             time_context=time_context,
+            pending_action=pending_action,
         )
         if not commands:
             return None
@@ -208,102 +204,24 @@ class GoalCommandService:
         conversation_id: str,
         user_message: dict,
     ) -> Optional[dict]:
-        if not is_goals_inventory_query(message):
-            return None
-
-        scope = goals_inventory_scope(message)
-        plans: list[dict] = []
-        commitments: list[dict] = []
-        if scope in {"goals", "both"}:
-            plans = await self._list_active_plans()
-        if scope in {"commitments", "both"}:
-            commitments = await self._list_open_commitments()
-
-        response = self._format_goals_inventory_response(
-            plans=plans,
-            commitments=commitments,
-            scope=scope,
-        )
-        return await self._read_only_result(
+        return await try_list_goals_and_commitments(
+            message,
             conversation_id=conversation_id,
             user_message=user_message,
-            response=response,
+            accountability_query_service=self.accountability_query_service,
+            memory_service=self.memory_service,
         )
 
-    async def _list_active_plans(self) -> list[dict]:
-        list_plans = getattr(self.memory_service, "list_plans", None)
-        if list_plans is None:
-            return []
-        try:
-            rows = await list_plans(active=True, status="active", limit=20)
-        except TypeError:
-            rows = await list_plans(active=True, limit=20)
-        except Exception:
-            return []
-        if not isinstance(rows, list):
-            return []
-        return [row for row in rows if isinstance(row, dict)]
-
-    async def _list_open_commitments(self) -> list[dict]:
-        list_commitments = getattr(self.memory_service, "list_commitments", None)
-        if list_commitments is None:
-            return []
-        try:
-            rows = await list_commitments(active=True, limit=20)
-        except Exception:
-            return []
-        if not isinstance(rows, list):
-            return []
-        return [
-            row
-            for row in rows
-            if isinstance(row, dict) and self._is_open_commitment(row)
-        ]
-
-    def _is_open_commitment(self, commitment: dict) -> bool:
-        status = str(commitment.get("status") or "open").strip().lower()
-        return status in {"open", "in_progress"}
-
-    def _record_display_title(self, record: dict) -> str:
-        for key in ("title", "commitment_text", "description", "desired_outcome"):
-            value = str(record.get(key) or "").strip()
-            if value:
-                return value
-        return "Untitled"
-
-    def _format_goals_inventory_response(
-        self,
-        *,
-        plans: list[dict],
-        commitments: list[dict],
-        scope: str,
-    ) -> str:
-        sections: list[str] = []
-        if scope in {"goals", "both"}:
-            if plans:
-                lines = "\n".join(
-                    f"- {self._record_display_title(plan)}" for plan in plans
-                )
-                sections.append(f"Active goals:\n{lines}")
-            elif scope == "goals":
-                sections.append("You don't have any active goals saved in Clarity.")
-        if scope in {"commitments", "both"}:
-            if commitments:
-                lines = "\n".join(
-                    f"- {self._record_display_title(commitment)}"
-                    for commitment in commitments
-                )
-                sections.append(f"Open commitments:\n{lines}")
-            elif scope == "commitments":
-                sections.append(
-                    "You don't have any open commitments saved in Clarity."
-                )
-        if not sections:
-            return (
-                "You don't have any active goals or open commitments saved "
-                "in Clarity right now."
-            )
-        return "\n\n".join(sections)
+    @staticmethod
+    def _pending_action_payload(pending_action) -> dict | None:
+        if pending_action is None:
+            return None
+        to_dict = getattr(pending_action, "to_dict", None)
+        if callable(to_dict):
+            return to_dict()
+        if isinstance(pending_action, dict):
+            return pending_action
+        return None
 
     async def _read_only_result(
         self,
@@ -312,23 +230,12 @@ class GoalCommandService:
         user_message: dict,
         response: str,
     ) -> dict:
-        assistant_message = await self.memory_service.save_message(
-            conversation_id,
-            "assistant",
-            response,
+        return await read_only_turn_result(
+            self.memory_service,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response=response,
         )
-        return {
-            "conversation_id": conversation_id,
-            "response": response,
-            "user_message": user_message,
-            "assistant_message": assistant_message,
-            "memory_correction": None,
-            "memory_changes": {},
-            "messages": await self.memory_service.get_recent_messages(
-                conversation_id,
-                limit=20,
-            ),
-        }
 
     def detect_commands(
         self,
@@ -336,6 +243,7 @@ class GoalCommandService:
         *,
         conversation_history: list[dict],
         time_context: dict,
+        pending_action=None,
     ) -> list[GoalCommand]:
         equipment_goals = self._detect_equipment_goals(
             message,
@@ -346,7 +254,11 @@ class GoalCommandService:
             return equipment_goals
 
         if is_affirmation_or_goal_prefix(message):
-            if should_defer_to_delete_confirmation(message, conversation_history):
+            if should_defer_to_delete_confirmation(
+                message,
+                conversation_history,
+                self._pending_action_payload(pending_action),
+            ):
                 return []
             substantive = substantive_goal_from_history(conversation_history)
             if substantive:
@@ -725,47 +637,15 @@ class GoalCommandService:
         records: list[dict],
         extra_records: Optional[list[dict]] = None,
     ) -> dict:
-        assistant_message = await self.memory_service.save_message(
-            conversation_id,
-            "assistant",
-            response,
+        return await multi_goal_turn_result(
+            self.memory_service,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response=response,
+            commands=commands,
+            records=records,
+            extra_records=extra_records,
         )
-        record_summaries = [
-            {
-                "kind": "plan",
-                "type": command.record_type,
-                "action": "direct_saved",
-                "id": record.get("id"),
-                "title": command.title,
-                "metadata": {"source": "explicit_goal_command"},
-            }
-            for command, record in zip(commands, records, strict=True)
-        ]
-        if extra_records:
-            record_summaries.extend(extra_records)
-        archived_count = sum(
-            1 for item in record_summaries if item.get("action") == "archived"
-        )
-        return {
-            "conversation_id": conversation_id,
-            "response": response,
-            "user_message": user_message,
-            "assistant_message": assistant_message,
-            "memory_correction": None,
-            "memory_changes": {
-                "created": len(records),
-                "updated": 0,
-                "archived": archived_count,
-                "merged": 0,
-                "skipped": 0,
-                "confirmation_required": 0,
-                "records": record_summaries,
-            },
-            "messages": await self.memory_service.get_recent_messages(
-                conversation_id,
-                limit=20,
-            ),
-        }
 
     async def _clarification_result(
         self,
@@ -774,31 +654,12 @@ class GoalCommandService:
         user_message: dict,
         response: str,
     ) -> dict:
-        assistant_message = await self.memory_service.save_message(
-            conversation_id,
-            "assistant",
-            response,
+        return await clarification_turn_result(
+            self.memory_service,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response=response,
         )
-        return {
-            "conversation_id": conversation_id,
-            "response": response,
-            "user_message": user_message,
-            "assistant_message": assistant_message,
-            "memory_correction": None,
-            "memory_changes": {
-                "created": 0,
-                "updated": 0,
-                "archived": 0,
-                "merged": 0,
-                "skipped": 0,
-                "confirmation_required": 0,
-                "records": [],
-            },
-            "messages": await self.memory_service.get_recent_messages(
-                conversation_id,
-                limit=20,
-            ),
-        }
 
     async def _command_result(
         self,
@@ -812,30 +673,17 @@ class GoalCommandService:
         title: str,
         extra_records: Optional[list[dict]] = None,
     ) -> dict:
-        assistant_message = await self.memory_service.save_message(
-            conversation_id,
-            "assistant",
-            response,
-        )
-        memory_changes = self._summary(
+        return await command_turn_result(
+            self.memory_service,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response=response,
             kind=kind,
             record_type=record_type,
             record=record,
             title=title,
             extra_records=extra_records,
         )
-        return {
-            "conversation_id": conversation_id,
-            "response": response,
-            "user_message": user_message,
-            "assistant_message": assistant_message,
-            "memory_correction": None,
-            "memory_changes": memory_changes,
-            "messages": await self.memory_service.get_recent_messages(
-                conversation_id,
-                limit=20,
-            ),
-        }
 
     async def _failed_command_result(
         self,
@@ -847,91 +695,15 @@ class GoalCommandService:
         record_type: str,
         title: str,
     ) -> dict:
-        assistant_message = await self.memory_service.save_message(
-            conversation_id,
-            "assistant",
-            response,
+        return await failed_command_turn_result(
+            self.memory_service,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response=response,
+            kind=kind,
+            record_type=record_type,
+            title=title,
         )
-        return {
-            "conversation_id": conversation_id,
-            "response": response,
-            "user_message": user_message,
-            "assistant_message": assistant_message,
-            "memory_correction": None,
-            "memory_changes": self._failed_summary(
-                kind=kind,
-                record_type=record_type,
-                title=title,
-            ),
-            "messages": await self.memory_service.get_recent_messages(
-                conversation_id,
-                limit=20,
-            ),
-        }
-
-    def _summary(
-        self,
-        *,
-        kind: str,
-        record_type: str,
-        record: dict,
-        title: str,
-        extra_records: Optional[list[dict]] = None,
-    ) -> dict:
-        source = (
-            "explicit_goal_command"
-            if kind == "plan"
-            else "explicit_commitment_command"
-        )
-        records = [
-            {
-                "kind": kind,
-                "type": record_type,
-                "action": "direct_saved",
-                "id": record.get("id"),
-                "title": title,
-                "metadata": {"source": source},
-            }
-        ]
-        if extra_records:
-            records.extend(extra_records)
-        archived_count = sum(
-            1 for item in records if item.get("action") == "archived"
-        )
-        return {
-            "created": 1,
-            "updated": 0,
-            "archived": archived_count,
-            "merged": 0,
-            "skipped": 0,
-            "confirmation_required": 0,
-            "records": records,
-        }
-
-    def _failed_summary(
-        self,
-        *,
-        kind: str,
-        record_type: str,
-        title: str,
-    ) -> dict:
-        return {
-            "created": 0,
-            "updated": 0,
-            "archived": 0,
-            "merged": 0,
-            "skipped": 1,
-            "confirmation_required": 0,
-            "records": [
-                {
-                    "kind": kind,
-                    "type": record_type,
-                    "action": "save_failed",
-                    "title": title,
-                    "metadata": {"source": "explicit_command", "degraded": True},
-                }
-            ],
-        }
 
     def _recent_user_content(self, conversation_history: list[dict]) -> Optional[str]:
         for message in reversed(conversation_history):

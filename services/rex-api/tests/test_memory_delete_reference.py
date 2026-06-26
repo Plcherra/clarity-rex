@@ -43,3 +43,5 @@ def test_intent_parser_delete_saved_commitment_targets_commitment():
     )
     assert intent.intent_type == CorrectionIntentType.REMOVE_OBSOLETE
     assert intent.old_value == "commitment"
+    assert intent.delete_scope_tables == ("commitments",)
+    assert intent.is_vague_delete_reference is True

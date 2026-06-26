@@ -105,6 +105,11 @@ _DELETE_CONFIRMATION_REPLY = re.compile(
     re.IGNORECASE,
 )
 
+_DELETE_REJECTION_REPLY = re.compile(
+    r"^(?:no(?:pe)?|cancel|do not|dont|don't)\.?$",
+    re.IGNORECASE,
+)
+
 _DELETE_PROMPT_PATTERNS = (
     re.compile(
         r"delete this saved memory:\s*(.+?)(?:\n|$)",
@@ -124,6 +129,11 @@ _DELETE_PROMPT_PATTERNS = (
 def is_delete_confirmation_reply(message: str) -> bool:
     cleaned = re.sub(r"\s+", " ", str(message or "")).strip()
     return bool(_DELETE_CONFIRMATION_REPLY.fullmatch(cleaned))
+
+
+def is_delete_rejection_reply(message: str) -> bool:
+    cleaned = re.sub(r"\s+", " ", str(message or "")).strip()
+    return bool(_DELETE_REJECTION_REPLY.fullmatch(cleaned))
 
 
 def assistant_prompts_delete(content: str) -> bool:
@@ -164,9 +174,32 @@ def pending_delete_target_from_history(conversation_history: list[dict]) -> str 
 def should_defer_to_delete_confirmation(
     message: str,
     conversation_history: list[dict],
+    pending_action: dict | None = None,
 ) -> bool:
     if not is_delete_confirmation_reply(message):
-        return False
+        normalized = re.sub(r"[^a-z0-9']+", " ", str(message or "").lower())
+        normalized = re.sub(r"\s+", " ", normalized).strip()
+        if normalized not in {
+            "yes",
+            "yes please",
+            "confirm",
+            "confirmed",
+            "do it",
+            "go ahead",
+            "go ahead delete it",
+            "delete it",
+            "yes delete it",
+        }:
+            return False
+    if isinstance(pending_action, dict):
+        action_type = str(pending_action.get("action_type") or "")
+        resolver_target = str(
+            pending_action.get("resolver_target")
+            or pending_action.get("delete_target")
+            or ""
+        ).strip()
+        if action_type == "delete" and resolver_target:
+            return True
     return pending_delete_target_from_history(conversation_history) is not None
 
 

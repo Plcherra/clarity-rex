@@ -3,8 +3,9 @@ from __future__ import annotations
 import re
 
 from app.services.entity_normalization_service import EntityNormalizationService
+from app.services.memory_correction_text import clean_text, trim_text, trim_removal_target
 from app.services.memory_correction_types import CorrectionIntent, CorrectionIntentType
-from app.services.memory_delete_reference import extract_reference_delete_target
+from app.services.memory_delete_resolver import parse_delete_request
 
 _POLITE_SUFFIX_PATTERN = re.compile(
     r"(?:\s+|^)(?:please|thanks|thank you|thx|haha|ha ha|lol|ok|okay)\.?$",
@@ -36,67 +37,15 @@ class MemoryCorrectionIntentParser:
         if not cleaned:
             return CorrectionIntent(CorrectionIntentType.UNKNOWN, confidence=0)
 
-        goal_delete = re.search(
-            r"\b(?:delete|remove|archive)\s+(?:the\s+)?(?P<kind>goal|commitment)s?\b"
-            r"(?:\s+(?:we\s+have(?:\s+saved)?|(?:that\s+)?(?:i\s+)?saved))?"
-            r"(?:\s+['\"](?P<quoted>.+?)['\"])?",
-            cleaned,
-            flags=re.IGNORECASE,
-        )
-        if goal_delete:
-            quoted = goal_delete.group("quoted")
-            if quoted:
-                return CorrectionIntent(
-                    CorrectionIntentType.REMOVE_OBSOLETE,
-                    old_value=trim_removal_target(quoted),
-                    new_value="[archived]",
-                    confidence=0.9,
-                )
-            kind = str(goal_delete.group("kind") or "goal").strip().lower()
+        delete_request = parse_delete_request(cleaned)
+        if delete_request is not None:
             return CorrectionIntent(
                 CorrectionIntentType.REMOVE_OBSOLETE,
-                old_value=kind,
+                old_value=delete_request.reference,
                 new_value="[archived]",
-                confidence=0.72,
-            )
-
-        removal = re.search(
-            (
-                r"\b(?:delete|remove|archive|drop|forget|erase|clear)\s+"
-                r"(?:any\s+)?"
-                r"(?:mention|mentions|memory|memories|record|records)\s*"
-                r"(?:of|about|for)?\s+(.+)$"
-            ),
-            cleaned,
-            flags=re.IGNORECASE,
-        )
-        if removal is None:
-            removal = re.search(
-                r"\b(?:delete|remove|archive|drop|forget|erase|clear)\s+(.+)$",
-                cleaned,
-                flags=re.IGNORECASE,
-            )
-        if removal is None:
-            removal = re.search(
-                r"\bget\s+rid\s+of\s+(.+)$",
-                cleaned,
-                flags=re.IGNORECASE,
-            )
-        if removal:
-            return CorrectionIntent(
-                CorrectionIntentType.REMOVE_OBSOLETE,
-                old_value=trim_removal_target(removal.group(1)),
-                new_value="[archived]",
-                confidence=0.9,
-            )
-
-        reference_target = extract_reference_delete_target(cleaned)
-        if reference_target:
-            return CorrectionIntent(
-                CorrectionIntentType.REMOVE_OBSOLETE,
-                old_value=trim_removal_target(reference_target),
-                new_value="[archived]",
-                confidence=0.88,
+                confidence=0.9 if not delete_request.is_vague else 0.72,
+                delete_scope_tables=delete_request.scope_tables,
+                is_vague_delete_reference=delete_request.is_vague,
             )
 
         if re.search(r"\bnot\s+a\s+plan\b.*\b(?:task|commitment|checklist)\b", lowered):
@@ -212,18 +161,8 @@ class MemoryCorrectionIntentParser:
         return CorrectionIntent(CorrectionIntentType.UNKNOWN, confidence=0.2)
 
 
-def clean_text(value: object) -> str:
-    return re.sub(r"\s+", " ", str(value or "")).strip()
-
-
 def message_requests_filler_removal(text: str) -> bool:
     return bool(_FILLER_REMOVAL_PATTERN.search(clean_text(text)))
-
-
-def trim_text(value: str) -> str:
-    value = clean_text(value)
-    value = re.sub(r"[.!?]+$", "", value).strip()
-    return value.strip("\"'")
 
 
 def trim_correction_value(value: str) -> str:
@@ -259,23 +198,3 @@ def normalize_correction_pair(old_value: str, new_value: str) -> tuple[str, str]
         return trimmed_old, trimmed_new
 
     return trimmed_old, trimmed_new
-
-def trim_removal_target(value: str) -> str:
-    value = trim_text(value)
-    value = re.sub(
-        r"^(?:please\s+)?(?:about\s+)?(?:that|this|the)\s+",
-        "",
-        value,
-        flags=re.IGNORECASE,
-    )
-    value = re.sub(
-        (
-            r"^(?:saved\s+)?"
-            r"(?:mention|mentions|memory|memories|record|records)\s*"
-            r"(?:of|about|for)?\s+"
-        ),
-        "",
-        value,
-        flags=re.IGNORECASE,
-    )
-    return value.strip()

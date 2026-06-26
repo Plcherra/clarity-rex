@@ -1,6 +1,13 @@
 import re
 from typing import Optional
 
+from app.services.conversation_pending_action import (
+    ConversationPendingActionService,
+    is_delete_confirmation_message,
+    is_delete_rejection_message,
+    pending_action_for_delete,
+    pending_delete_resolver_target,
+)
 from app.services.memory_correction_types import CorrectionIntentType
 
 
@@ -12,12 +19,18 @@ class MemoryTurnDeleteHelpers:
         conversation_id: str,
         user_message: dict,
         conversation_history: Optional[list[dict]] = None,
+        scope_tables: tuple[str, ...] = (),
+        is_vague: bool = False,
     ) -> dict:
         target = await self._resolved_delete_target(
             target,
             conversation_history=conversation_history or [],
         )
-        matches = await self.memory_correction_service.preview_remove_obsolete(target)
+        matches = await self.memory_correction_service.preview_remove_obsolete(
+            target,
+            scope_tables=scope_tables,
+            is_vague=is_vague,
+        )
         if not matches:
             response = (
                 "I couldn't find an active saved memory matching that, so I "
@@ -45,6 +58,12 @@ class MemoryTurnDeleteHelpers:
         response = (
             f"Got it--you want to delete this saved memory: {title}\n\n"
             "Just to confirm before I do that: yes or no?"
+        )
+        await self._persist_pending_delete(
+            conversation_id,
+            target=target,
+            match=matches[0],
+            scope_tables=scope_tables,
         )
         return await self._delete_turn_result(
             response,
@@ -84,12 +103,17 @@ class MemoryTurnDeleteHelpers:
         *,
         conversation_id: str,
         user_message: dict,
+        scope_tables: tuple[str, ...] = (),
+        is_vague: bool = False,
     ) -> dict:
         report = await self.memory_correction_service.apply_confirmed_remove_obsolete(
             target,
             source_conversation_id=conversation_id,
             source_message_id=str(user_message.get("id") or "") or None,
+            scope_tables=scope_tables,
+            is_vague=is_vague,
         )
+        await self._clear_pending_delete(conversation_id)
         if not report.applied or not report.affected_records:
             response = (
                 "I couldn't confirm that delete in saved memory, so I didn't "
@@ -120,6 +144,7 @@ class MemoryTurnDeleteHelpers:
         conversation_id: str,
         user_message: dict,
     ) -> dict:
+        await self._clear_pending_delete(conversation_id)
         response = "No problem. I won't delete anything."
         return await self._delete_turn_result(
             response,
@@ -151,26 +176,61 @@ class MemoryTurnDeleteHelpers:
             "messages": await self.recent_public_messages(conversation_id),
         }
 
+    def _pending_action_service(self) -> ConversationPendingActionService:
+        return ConversationPendingActionService(self.memory_service)
+
+    async def _persist_pending_delete(
+        self,
+        conversation_id: str,
+        *,
+        target: str,
+        match,
+        scope_tables: tuple[str, ...] = (),
+    ) -> None:
+        await self._pending_action_service().set(
+            conversation_id,
+            pending_action_for_delete(
+                target=target,
+                match=match,
+                scope_tables=scope_tables,
+            ),
+        )
+
+    async def _clear_pending_delete(self, conversation_id: str) -> None:
+        await self._pending_action_service().clear(conversation_id)
+
     def _pending_delete_request_for_confirmation(
         self,
         message: str,
         conversation_history: list[dict],
+        pending_action=None,
     ) -> Optional[str]:
+        from app.services.conversation_pending_action import PendingAction
         from app.services.memory_delete_reference import (
             extract_delete_target_from_assistant_prompt,
-            is_delete_confirmation_reply,
             pending_delete_target_from_history,
         )
 
         if not (
-            self._is_delete_confirmation(message)
-            or self._is_delete_rejection(message)
-            or is_delete_confirmation_reply(message)
+            is_delete_confirmation_message(message)
+            or is_delete_rejection_message(message)
         ):
             return None
 
+        resolved = (
+            pending_action
+            if isinstance(pending_action, PendingAction)
+            else PendingAction.from_dict(pending_action)
+        )
+        resolver_target = pending_delete_resolver_target(
+            pending_action=resolved,
+            conversation_history=conversation_history,
+        )
+        if resolver_target and is_delete_confirmation_message(message):
+            return resolver_target
+
         pending_target = pending_delete_target_from_history(conversation_history)
-        if pending_target and self._is_delete_confirmation(message):
+        if pending_target and is_delete_confirmation_message(message):
             return pending_target
 
         saw_delete_confirmation = False
@@ -197,6 +257,8 @@ class MemoryTurnDeleteHelpers:
                     and intent.old_value
                 ):
                     return confirmation_target or intent.old_value
+        if resolved and is_delete_rejection_message(message):
+            return resolved.resolver_target
         return None
 
     def _looks_like_delete_confirmation(self, message: str) -> bool:

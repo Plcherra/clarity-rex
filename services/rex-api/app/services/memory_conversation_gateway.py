@@ -109,6 +109,24 @@ class MemoryConversationGateway:
             conversation_id,
         )
 
+    async def get_conversation_pending_action(
+        self,
+        conversation_id: str,
+    ) -> Optional[dict]:
+        return await self._get_conversation_repository().get_conversation_pending_action(
+            conversation_id,
+        )
+
+    async def set_conversation_pending_action(
+        self,
+        conversation_id: str,
+        pending_action: Optional[dict],
+    ) -> None:
+        await self._get_conversation_repository().set_conversation_pending_action(
+            conversation_id,
+            pending_action,
+        )
+
     async def save_voice_turn(
         self,
         conversation_id: str,

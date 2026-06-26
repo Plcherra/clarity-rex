@@ -77,6 +77,20 @@ class FakeMemoryService:
         self.created_plans = []
         self.created_commitments = []
         self.memory_corrections = []
+        self.pending_actions: dict[str, dict] = {}
+
+    async def get_conversation_pending_action(self, conversation_id: str):
+        return self.pending_actions.get(conversation_id)
+
+    async def set_conversation_pending_action(
+        self,
+        conversation_id: str,
+        pending_action,
+    ) -> None:
+        if pending_action is None:
+            self.pending_actions.pop(conversation_id, None)
+        else:
+            self.pending_actions[conversation_id] = pending_action
 
     async def create_conversation(self):
         conversation_id = f"conversation-{self.next_conversation_id}"

@@ -15,6 +15,7 @@ from app.services.clarity_action_parser import (
     ClarityActionStreamFilter,
 )
 from app.services.file_service import AttachmentContext
+from app.services.conversation_pending_action import ConversationPendingActionService
 from app.services.goal_command_service import GoalCommandService
 from app.services.memory_turn_service import MemoryTurnService
 from app.services.rex_channel import RexBrainChannel
@@ -100,12 +101,14 @@ class ChatTurnOrchestrator:
         time_context = turn_context.time_context
         accountability_signals = turn_context.accountability_signals
         user_message = turn_context.user_message
+        pending_action = await self._load_pending_action(conversation_id)
         goal_command_turn = await self.goal_command_service.handle_turn(
             brain_message,
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_history=conversation_history,
             time_context=time_context,
+            pending_action=pending_action,
         )
         if goal_command_turn:
             return goal_command_turn
@@ -115,6 +118,7 @@ class ChatTurnOrchestrator:
             user_message=user_message,
             conversation_history=conversation_history,
             time_context=time_context,
+            pending_action=pending_action,
         )
         if simple_memory_turn:
             return simple_memory_turn
@@ -255,12 +259,14 @@ class ChatTurnOrchestrator:
         yield {"event": "conversation", "conversation_id": conversation_id}
         if include_turn_trace:
             yield self._turn_trace_event(intent_decision, channel)
+        pending_action = await self._load_pending_action(conversation_id)
         goal_command_turn = await self.goal_command_service.handle_turn(
             brain_message,
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_history=conversation_history,
             time_context=time_context,
+            pending_action=pending_action,
         )
         if goal_command_turn:
             yield {"event": "token", "token": goal_command_turn["response"]}
@@ -279,6 +285,7 @@ class ChatTurnOrchestrator:
             user_message=user_message,
             conversation_history=conversation_history,
             time_context=time_context,
+            pending_action=pending_action,
         )
         if simple_memory_turn:
             yield {"event": "token", "token": simple_memory_turn["response"]}
@@ -475,4 +482,11 @@ class ChatTurnOrchestrator:
                 conversation_id
             ),
         }
+
+    async def _load_pending_action(self, conversation_id: str):
+        if not conversation_id:
+            return None
+        return await ConversationPendingActionService(self.memory_service).get(
+            conversation_id
+        )
 

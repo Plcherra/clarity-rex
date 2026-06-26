@@ -5,6 +5,12 @@ from app.models.accountability import (
     AccountabilitySignalResponse,
 )
 from app.routes.accountability_signal_filters import filter_signals
+from app.services.accountability_snapshot import (
+    active_plans_for,
+    completed_milestones_for,
+    open_commitments_for,
+    open_milestones_for,
+)
 
 
 def build_accountability_overview(
@@ -36,14 +42,15 @@ def build_accountability_overview(
     open_commitments = open_commitments_for(context["commitments"])
     open_milestones = open_milestones_for(context["plan_milestones"])
     completed_milestones = completed_milestones_for(context["plan_milestones"])
+    active_plans = active_plans_for(context["plans"])
     plan_hierarchy = plan_hierarchy_for(
-        plans=context["plans"],
+        plans=active_plans,
         milestones=open_milestones,
         completed_milestones=completed_milestones,
         commitments=open_commitments,
     )
     duplicate_warnings = duplicate_warnings_for(
-        plans=context["plans"],
+        plans=active_plans,
         rules=context["personal_rules"],
         milestones=open_milestones,
         commitments=open_commitments,
@@ -63,7 +70,7 @@ def build_accountability_overview(
         recent_patterns=recent_patterns,
         active_rules=context["personal_rules"],
         open_commitments=open_commitments,
-        active_plans=context["plans"],
+        active_plans=active_plans,
         open_milestones=open_milestones,
         completed_milestones=completed_milestones,
         plan_hierarchy=plan_hierarchy,
@@ -73,7 +80,7 @@ def build_accountability_overview(
             "signal_count": len(active_signals),
             "active_rule_count": len(context["personal_rules"]),
             "open_commitment_count": len(open_commitments),
-            "active_plan_count": len(context["plans"]),
+            "active_plan_count": len(active_plans),
             "open_milestone_count": len(open_milestones),
             "completed_milestone_count": len(completed_milestones),
             "open_task_count": len(open_commitments),
@@ -81,36 +88,6 @@ def build_accountability_overview(
             "loader_diagnostics": context.get("loader_diagnostics", []),
         },
     )
-
-
-def open_commitments_for(commitments: list[dict]) -> list[dict]:
-    return [
-        commitment
-        for commitment in commitments
-        if commitment.get("active") is not False
-        and commitment.get("status", "open") in {"open", "in_progress"}
-    ]
-
-
-def open_milestones_for(milestones: list[dict]) -> list[dict]:
-    return [
-        milestone
-        for milestone in milestones
-        if milestone.get("active") is not False
-        and milestone.get("status", "open") in {"open", "in_progress"}
-    ]
-
-
-def completed_milestones_for(milestones: list[dict]) -> list[dict]:
-    return [
-        milestone
-        for milestone in milestones
-        if milestone.get("active") is not False
-        and (
-            milestone.get("status") in {"completed", "done"}
-            or bool(milestone.get("completed_at"))
-        )
-    ]
 
 
 def plan_hierarchy_for(

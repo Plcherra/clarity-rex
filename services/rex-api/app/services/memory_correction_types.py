@@ -26,6 +26,8 @@ class CorrectionIntent:
     target_hint: Optional[str] = None
     confidence: float = 0.75
     requires_confirmation: bool = False
+    delete_scope_tables: tuple[str, ...] = ()
+    is_vague_delete_reference: bool = False
 
 
 @dataclass

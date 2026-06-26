@@ -1,6 +1,10 @@
-import asyncio
 import re
 from typing import Any, Awaitable, Callable, Optional
+
+from app.services.accountability_snapshot import (
+    active_plans_for,
+    open_commitments_for,
+)
 
 
 GOAL_CONTEXT_LIMIT = 12
@@ -44,29 +48,28 @@ class GoalContextService:
         if not self.is_goal_progress_query(message):
             return {}
 
-        plans_task = self._call_list(
-            memory_service,
-            "list_plans",
-            active=True,
-            status="active",
-            limit=GOAL_CONTEXT_LIMIT,
+        plans = active_plans_for(
+            await self._call_list(
+                memory_service,
+                "list_plans",
+                active=True,
+                status="active",
+                limit=GOAL_CONTEXT_LIMIT,
+            )
         )
-        milestones_task = self._call_list(
+        milestones = await self._call_list(
             memory_service,
             "list_plan_milestones",
             active=True,
             limit=GOAL_RELATED_MILESTONE_LIMIT,
         )
-        commitments_task = self._call_list(
-            memory_service,
-            "list_commitments",
-            active=True,
-            limit=GOAL_RELATED_MILESTONE_LIMIT,
-        )
-        plans, milestones, commitments = await asyncio.gather(
-            plans_task,
-            milestones_task,
-            commitments_task,
+        commitments = open_commitments_for(
+            await self._call_list(
+                memory_service,
+                "list_commitments",
+                active=True,
+                limit=GOAL_RELATED_MILESTONE_LIMIT,
+            )
         )
 
         plan_ids = {str(plan.get("id")) for plan in plans if plan.get("id")}
@@ -150,9 +153,6 @@ class GoalContextService:
         commitment: dict,
         plan_ids: set[str],
     ) -> bool:
-        status = commitment.get("status", "open")
-        if status not in {"open", "in_progress"}:
-            return False
         plan_id = str(commitment.get("plan_id") or "").strip()
         if not plan_id:
             return True

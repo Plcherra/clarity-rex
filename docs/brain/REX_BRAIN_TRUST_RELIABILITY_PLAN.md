@@ -52,10 +52,10 @@ Run P0 **before** adding more goal/memory parser patches.
 
 | ID | Status | Issue | Generic failure class | Primary files | Acceptance criteria |
 |----|--------|-------|----------------------|---------------|---------------------|
-| P0-1 | [ ] | **Single accountability snapshot** | UI and Rex read different filtered sets | `accountability_context_loader.py`, `goal_context_service.py`, new `accountability_snapshot.py` | "What commitments do we have?" matches Goals tab exactly |
-| P0-2 | [ ] | **AccountabilityQueryService** | Ad-hoc list logic in god file | Extract from `goal_command_service.py` | All inventory/list/show turns use one read-only service |
-| P0-3 | [ ] | **Unified delete/update resolver** | Competing parsers (memory vs goal vs commitment) | `memory_reference_resolver.py`, `memory_correction_intent_parser.py`, `goal_command_parsing.py` | Delete/update via TABLE_SPECS + resolver; no phrase-order luck |
-| P0-4 | [ ] | **Explicit pending_action state** | History marker scavenging misroutes follow-ups | New `conversation_pending_action.py` + orchestrator wiring | "Yes delete it" uses stored pending action, not regex on last N messages |
+| P0-1 | [x] | **Single accountability snapshot** | UI and Rex read different filtered sets | `accountability_snapshot.py`, `goal_context_service.py`, `accountability_overview_builder.py` | "What commitments do we have?" matches Goals tab exactly |
+| P0-2 | [x] | **AccountabilityQueryService** | Ad-hoc list logic in god file | `accountability_query_service.py`, `goal_command_service.py` | All inventory/list/show turns use one read-only service |
+| P0-3 | [x] | **Unified delete/update resolver** | Competing parsers (memory vs goal vs commitment) | `memory_delete_resolver.py`, `memory_correction_intent_parser.py`, `goal_command_parsing.py` | Delete/update via TABLE_SPECS + resolver; no phrase-order luck |
+| P0-4 | [x] | **Explicit pending_action state** | History marker scavenging misroutes follow-ups | `conversation_pending_action.py`, orchestrator wiring, `conversations.pending_action` | "Yes delete it" uses stored pending action, not regex on last N messages |
 
 ### P0 Tests To Add
 
@@ -115,9 +115,9 @@ Target: all modules under 300 lines.
 
 1. [x] Rule file + this plan doc + master plan index
 2. [x] Commit/push recent goals/commitments fixes (`902398c`); [ ] deploy Rex API
-3. [ ] P0-1 + P0-2 — snapshot + AccountabilityQueryService + parity tests
-4. [ ] P0-4 — pending_action conversation state
-5. [ ] P0-3 — unified delete/update resolver
+3. [x] P0-1 + P0-2 — snapshot + AccountabilityQueryService + parity tests
+4. [x] P0-4 — pending_action conversation state
+5. [x] P0-3 — unified delete/update resolver
 6. [ ] P1-1 — GoalCommandService split (refactor only)
 7. [ ] P1-3 + P1-4 — scoped guards and save quality
 8. [ ] P2 items
@@ -141,4 +141,7 @@ Target: all modules under 300 lines.
 | Date | Change |
 |------|--------|
 | 2026-06-25 | Created plan; added FILE-SIZE-AND-SPLIT rule; linked from completion master plan |
-| 2026-06-25 | Verified pre-P0 baseline: 43 tests pass; committed and pushed as `902398c` |
+| 2026-06-25 | P0-4: durable `conversations.pending_action` + ConversationPendingActionService |
+| 2026-06-25 | P0-1/P0-2: accountability snapshot + AccountabilityQueryService + parity tests |
+| 2026-06-25 | P0-3: MemoryDeleteResolver + scoped delete wiring; 1079 tests pass |
+| 2026-06-25 | P1-1 started: extracted goal_command_types, goal_command_queries, goal_command_results |

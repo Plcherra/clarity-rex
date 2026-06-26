@@ -18,7 +18,9 @@ from app.services.memory_correction_record_rules import (
     person_fact_entity_updates,
     person_fact_stale_terms,
     record_contains,
+    record_contains_all_terms,
     record_title,
+    removal_match_terms,
     replacement_updates,
     replace_fired_fact_updates,
     spec_for_table,
@@ -34,6 +36,7 @@ from app.services.memory_correction_types import (
     MemoryCorrectionRepository,
     TableSpec,
 )
+from app.services.memory_delete_resolver import MemoryDeleteResolver, ParsedDeleteRequest
 from app.services.memory_reference_resolver import KnowsReferenceMatch, MemoryReferenceResolver
 
 
@@ -50,6 +53,11 @@ class MemoryCorrectionService:
         self.scan_limit = scan_limit
         self.intent_parser = MemoryCorrectionIntentParser()
         self.reference_resolver = MemoryReferenceResolver(memory_service)
+        self.delete_resolver = MemoryDeleteResolver(
+            memory_service,
+            reference_resolver=self.reference_resolver,
+            scan_limit=scan_limit,
+        )
 
     def detect_correction_intent(self, text: str) -> CorrectionIntent:
         return self.intent_parser.detect_correction_intent(text)
@@ -84,8 +92,15 @@ class MemoryCorrectionService:
     async def preview_remove_obsolete(
         self,
         old_value: str,
+        *,
+        scope_tables: tuple[str, ...] = (),
+        is_vague: bool = False,
     ) -> list[CorrectionAffectedRecord]:
-        return await self._records_matching_removal(old_value)
+        return await self._records_matching_removal(
+            old_value,
+            scope_tables=scope_tables,
+            is_vague=is_vague,
+        )
 
     async def apply_confirmed_remove_obsolete(
         self,
@@ -93,15 +108,23 @@ class MemoryCorrectionService:
         *,
         source_conversation_id: Optional[str] = None,
         source_message_id: Optional[str] = None,
+        scope_tables: tuple[str, ...] = (),
+        is_vague: bool = False,
     ) -> CorrectionReport:
         intent = CorrectionIntent(
             CorrectionIntentType.REMOVE_OBSOLETE,
             old_value=old_value,
             new_value="[archived]",
             confidence=0.9,
+            delete_scope_tables=scope_tables,
+            is_vague_delete_reference=is_vague,
         )
         report = CorrectionReport(intent=intent)
-        matches = await self.preview_remove_obsolete(old_value)
+        matches = await self.preview_remove_obsolete(
+            old_value,
+            scope_tables=scope_tables,
+            is_vague=is_vague,
+        )
         if len(matches) != 1:
             report.requires_confirmation = len(matches) > 1
             if len(matches) > 1:
@@ -124,7 +147,11 @@ class MemoryCorrectionService:
 
         remaining_matches = [
             remaining
-            for remaining in await self.preview_remove_obsolete(old_value)
+            for remaining in await self.preview_remove_obsolete(
+                old_value,
+                scope_tables=scope_tables,
+                is_vague=is_vague,
+            )
             if not (remaining.table == match.table and remaining.id == match.id)
         ]
         if remaining_matches:
@@ -359,26 +386,16 @@ class MemoryCorrectionService:
     async def _records_matching_removal(
         self,
         old_value: str,
+        *,
+        scope_tables: tuple[str, ...] = (),
+        is_vague: bool = False,
     ) -> list[CorrectionAffectedRecord]:
-        exact_matches: list[CorrectionAffectedRecord] = []
-        fuzzy_matches: list[CorrectionAffectedRecord] = []
-        terms = removal_match_terms(old_value)
-        for spec in TABLE_SPECS:
-            records = await self._safe_list(spec)
-            for record in records:
-                if record_contains(record, spec, old_value):
-                    exact_matches.append(self._affected_preview(spec, record))
-                elif terms and record_contains_all_terms(record, spec, terms):
-                    fuzzy_matches.append(self._affected_preview(spec, record))
-        if exact_matches or fuzzy_matches:
-            return dedupe_affected(exact_matches or fuzzy_matches)
-
-        knows_matches = await self.reference_resolver.resolve_knows_delete_reference(
-            old_value,
-            limit=self.scan_limit,
-        )
-        return dedupe_affected(
-            [self._affected_preview_for_knows_match(match) for match in knows_matches]
+        return await self.delete_resolver.resolve(
+            ParsedDeleteRequest(
+                reference=old_value,
+                scope_tables=scope_tables,
+                is_vague=is_vague,
+            )
         )
 
     def _affected_preview(
@@ -695,52 +712,6 @@ class MemoryCorrectionService:
                 return None
         except Exception:
             return None
-
-
-REMOVAL_MATCH_STOP_WORDS = {
-    "a",
-    "about",
-    "an",
-    "any",
-    "event",
-    "fact",
-    "for",
-    "it",
-    "memory",
-    "memories",
-    "mention",
-    "mentions",
-    "of",
-    "plan",
-    "planning",
-    "plans",
-    "record",
-    "records",
-    "saved",
-    "that",
-    "the",
-    "this",
-    "to",
-}
-
-
-def removal_match_terms(value: str) -> set[str]:
-    return {
-        term
-        for term in normalize_key(value).split()
-        if len(term) >= 3 and term not in REMOVAL_MATCH_STOP_WORDS
-    }
-
-
-def record_contains_all_terms(
-    record: dict[str, Any],
-    spec: TableSpec,
-    terms: set[str],
-) -> bool:
-    if not terms:
-        return False
-    haystack = normalize_key([record.get(field_name) for field_name in spec.text_fields])
-    return all(term in haystack for term in terms)
 
 
 def _summary_without_attribute(

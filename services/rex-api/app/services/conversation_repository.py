@@ -5,7 +5,7 @@ from app.services.chat_search_repository import ChatSearchRepository
 from app.services.memory_errors import MemoryServiceError
 
 
-CONVERSATION_SELECT = "id,title,timestamp"
+CONVERSATION_SELECT = "id,title,timestamp,pending_action"
 MESSAGE_SELECT = "id,conversation_id,role,content,timestamp"
 VOICE_TURN_SELECT = (
     "id,conversation_id,user_message_id,assistant_message_id,"
@@ -246,6 +246,37 @@ class ConversationRepository:
             query={"id": f"eq.{conversation_id}"},
         )
         return True
+
+    async def get_conversation_pending_action(
+        self,
+        conversation_id: str,
+    ) -> Optional[dict]:
+        rows = await self.store._request(
+            "GET",
+            self.store.settings.supabase_conversations_table,
+            query={
+                "id": f"eq.{conversation_id}",
+                "select": "pending_action",
+                "limit": "1",
+            },
+        )
+        row = self.store._first_row(rows)
+        if not row:
+            return None
+        pending_action = row.get("pending_action")
+        return pending_action if isinstance(pending_action, dict) else None
+
+    async def set_conversation_pending_action(
+        self,
+        conversation_id: str,
+        pending_action: Optional[dict],
+    ) -> None:
+        await self.store._request(
+            "PATCH",
+            self.store.settings.supabase_conversations_table,
+            body={"pending_action": pending_action},
+            query={"id": f"eq.{conversation_id}"},
+        )
 
     async def save_voice_turn(
         self,

@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any, Optional
 
-from app.services.memory_correction_intent_parser import trim_text
+from app.services.memory_correction_text import clean_text, trim_text
 from app.services.memory_correction_types import (
     CORRECTION_VERSION,
     TABLE_SPECS,
@@ -261,3 +261,49 @@ def normalize_key(value: Any) -> str:
     if isinstance(value, list):
         value = " ".join(str(item) for item in value)
     return re.sub(r"[^a-z0-9]+", " ", str(value or "").lower()).strip()
+
+
+REMOVAL_MATCH_STOP_WORDS = {
+    "a",
+    "about",
+    "an",
+    "any",
+    "event",
+    "fact",
+    "for",
+    "it",
+    "memory",
+    "memories",
+    "mention",
+    "mentions",
+    "of",
+    "plan",
+    "planning",
+    "plans",
+    "record",
+    "records",
+    "saved",
+    "that",
+    "the",
+    "this",
+    "to",
+}
+
+
+def removal_match_terms(value: str) -> set[str]:
+    return {
+        term
+        for term in normalize_key(value).split()
+        if len(term) >= 3 and term not in REMOVAL_MATCH_STOP_WORDS
+    }
+
+
+def record_contains_all_terms(
+    record: dict[str, Any],
+    spec: TableSpec,
+    terms: set[str],
+) -> bool:
+    if not terms:
+        return False
+    haystack = normalize_key([record.get(field_name) for field_name in spec.text_fields])
+    return all(term in haystack for term in terms)
