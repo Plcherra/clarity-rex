@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/memory/presentation/widgets/memory_meta_chip.dart';
-import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
@@ -74,12 +73,8 @@ class SavedMemoryTileShell extends StatelessWidget {
         RexUiTokens.space16,
         RexUiTokens.space8,
       ),
-      child: RexSurface(
-        color: active
-            ? colors.surface.withValues(alpha: 0.72)
-            : colors.surfaceSoft.withValues(alpha: 0.48),
-        radius: RexUiTokens.radiusMedium,
-        padding: const EdgeInsets.all(RexUiTokens.space16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: RexUiTokens.space4),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onEdit,
@@ -94,9 +89,9 @@ class SavedMemoryTileShell extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: theme.textTheme.bodyLarge?.copyWith(
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         color: active ? colors.textPrimary : colors.textMuted,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         height: 1.3,
                       ),
                     ),
@@ -170,21 +165,10 @@ class _MemoryIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: active
-            ? colors.accent.withValues(alpha: 0.14)
-            : colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-      ),
-      child: SizedBox.square(
-        dimension: 44,
-        child: Icon(
-          icon,
-          color: active ? colors.accent : colors.textMuted,
-          size: 22,
-        ),
-      ),
+    return Icon(
+      icon,
+      color: active ? colors.accent : colors.textMuted,
+      size: 20,
     );
   }
 }

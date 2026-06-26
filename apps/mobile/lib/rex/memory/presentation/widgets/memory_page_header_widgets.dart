@@ -235,54 +235,36 @@ class _EmptyMemoryShell extends StatelessWidget {
         ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 380),
-          child: RexSurface(
-            padding: EdgeInsets.all(
-              compact ? RexUiTokens.space12 : RexUiTokens.space20,
-            ),
-            color: colors.surface.withValues(alpha: 0.82),
-            radius: RexUiTokens.radiusLarge,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!compact) ...[
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: colors.accent.withValues(alpha: 0.13),
-                      borderRadius: BorderRadius.circular(
-                        RexUiTokens.radiusLarge,
-                      ),
-                    ),
-                    child: SizedBox(
-                      width: 50,
-                      height: 50,
-                      child: Icon(icon, color: colors.accent, size: 27),
-                    ),
-                  ),
-                  const SizedBox(height: RexUiTokens.space12),
-                ],
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(
-                  height: compact ? RexUiTokens.space2 : RexUiTokens.space4,
-                ),
-                Text(
-                  body,
-                  textAlign: TextAlign.center,
-                  maxLines: compact ? 2 : 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.textSecondary,
-                    height: 1.25,
-                  ),
-                ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!compact) ...[
+                Icon(icon, color: colors.accent, size: 28),
+                const SizedBox(height: RexUiTokens.space12),
               ],
-            ),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(
+                height: compact ? RexUiTokens.space2 : RexUiTokens.space4,
+              ),
+              Text(
+                body,
+                textAlign: TextAlign.center,
+                maxLines: compact ? 2 : 3,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.textSecondary,
+                  height: 1.25,
+                  fontSize: 14,
+                ),
+              ),
+            ],
           ),
         ),
       ),

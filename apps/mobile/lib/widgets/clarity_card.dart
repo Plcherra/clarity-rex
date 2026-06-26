@@ -7,7 +7,7 @@ class ClarityCard extends StatelessWidget {
   const ClarityCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(18),
+    this.padding = const EdgeInsets.all(16),
     this.margin,
     this.onTap,
     this.backgroundColor,

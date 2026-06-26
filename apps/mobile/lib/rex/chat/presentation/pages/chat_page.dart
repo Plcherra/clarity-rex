@@ -8,7 +8,6 @@ import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart'
     show ChatState;
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
-import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/attachment_source_sheet.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_input_bar.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_transcript.dart';
@@ -353,11 +352,6 @@ class _ChatPageState extends ConsumerState<ChatPage>
     final voiceCall = ref.watch(voiceCallProvider);
     final voiceController = ref.read(voiceCallProvider.notifier);
     final currentConversation = ref.watch(currentConversationProvider);
-    final hasMessages = chat.messages.isNotEmpty;
-    final hasStreamingAssistant =
-        hasMessages &&
-        chat.messages.last.role == ChatMessageRole.assistant &&
-        chat.messages.last.isStreaming;
 
     return RexScaffold(
       appBar: widget.showAppBar
@@ -386,9 +380,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
             Expanded(
               child: ChatTranscript(
                 messages: chat.messages,
-                isLoading: chat.isLoading,
                 errorMessage: chat.errorMessage,
-                hasStreamingAssistant: hasStreamingAssistant,
                 scrollController: _scrollController,
                 voiceState: voiceCall.isIdle ? null : voiceCall,
                 onPromptSelected: (prompt) {

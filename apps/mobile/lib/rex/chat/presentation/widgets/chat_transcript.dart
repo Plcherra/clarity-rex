@@ -6,15 +6,12 @@ import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.da
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/theme/clarity_colors.dart';
-import 'package:clarity/widgets/clarity_path_loader.dart';
 
 class ChatTranscript extends StatelessWidget {
   const ChatTranscript({
     super.key,
     required this.messages,
-    required this.isLoading,
     required this.errorMessage,
-    required this.hasStreamingAssistant,
     required this.scrollController,
     required this.onPromptSelected,
     required this.onConfirmClarityAction,
@@ -23,9 +20,7 @@ class ChatTranscript extends StatelessWidget {
   });
 
   final List<ChatMessage> messages;
-  final bool isLoading;
   final String? errorMessage;
-  final bool hasStreamingAssistant;
   final ScrollController scrollController;
   final ValueChanged<String> onPromptSelected;
   final ValueChanged<ClarityActionCard> onConfirmClarityAction;
@@ -84,16 +79,6 @@ class ChatTranscript extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (isLoading && !hasStreamingAssistant) ...[
-                  const SizedBox(height: 2),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 2, bottom: 4),
-                      child: ClarityInlineLoader(size: 22, strokeWidth: 2),
-                    ),
-                  ),
-                ],
                 if (showVoiceTranscript)
                   VoiceLiveTranscript(state: voiceState!),
                 if (errorMessage != null) ...[

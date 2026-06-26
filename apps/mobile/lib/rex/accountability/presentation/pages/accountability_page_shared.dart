@@ -14,25 +14,31 @@ class _GoalActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
-    return RexSurface(
-      color: colors.surface.withValues(alpha: 0.66),
-      radius: RexUiTokens.radiusLarge,
-      padding: const EdgeInsets.all(RexUiTokens.space12),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Row(
         children: [
           Expanded(
             child: FilledButton.icon(
               onPressed: isBusy ? null : onAddCommitment,
-              icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+              icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
               label: const Text('Add commitment'),
+              style: FilledButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
             ),
           ),
           const SizedBox(width: RexUiTokens.space8),
           Expanded(
-            child: OutlinedButton.icon(
+            child: TextButton.icon(
               onPressed: isBusy ? null : onAddGoal,
-              icon: const Icon(Icons.flag_outlined, size: 18),
-              label: const Text('Add goal'),
+              icon: Icon(Icons.flag_outlined, size: 16, color: colors.accent),
+              label: Text('Add goal', style: TextStyle(color: colors.accent)),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
             ),
           ),
         ],
@@ -69,22 +75,20 @@ class _Section extends StatelessWidget {
         ),
         const SizedBox(height: RexUiTokens.space8),
         if (children.isEmpty)
-          RexSurface(
-            color: colors.surface.withValues(alpha: 0.58),
-            radius: RexUiTokens.radiusLarge,
-            padding: const EdgeInsets.all(RexUiTokens.space16),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: RexUiTokens.space4),
             child: Row(
               children: [
                 Icon(
                   Icons.check_circle_outline_rounded,
                   color: colors.textMuted,
-                  size: 18,
+                  size: 16,
                 ),
                 const SizedBox(width: RexUiTokens.space8),
                 Expanded(
                   child: Text(
                     emptyText,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: colors.textSecondary,
                     ),
                   ),
@@ -126,24 +130,12 @@ class _GoalTileShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
     final resolvedIconColor = iconColor ?? colors.accent;
-    return RexSurface(
-      color: colors.surface.withValues(alpha: 0.66),
-      radius: RexUiTokens.radiusLarge,
-      padding: const EdgeInsets.all(RexUiTokens.space16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: RexUiTokens.space4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: resolvedIconColor.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-            ),
-            child: SizedBox(
-              width: 38,
-              height: 38,
-              child: Icon(icon, color: resolvedIconColor, size: 20),
-            ),
-          ),
+          Icon(icon, color: resolvedIconColor, size: 18),
           const SizedBox(width: RexUiTokens.space12),
           Expanded(
             child: Column(
@@ -338,14 +330,14 @@ class _EmptyAccountabilityState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (!compact) ...[
-              Icon(Icons.flag_outlined, size: 34, color: colors.accent),
-              const SizedBox(height: RexUiTokens.space12),
+              Icon(Icons.flag_outlined, size: 28, color: colors.accent),
+              const SizedBox(height: RexUiTokens.space8),
             ],
             Text(
               'No goals yet',
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: theme.textTheme.titleSmall?.copyWith(
                 color: colors.textPrimary,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: RexUiTokens.space4),

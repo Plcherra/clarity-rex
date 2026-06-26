@@ -72,17 +72,11 @@ class VoiceLiveTranscript extends StatelessWidget {
     if (state.phase == VoiceCallPhase.thinking) {
       return Padding(
         padding: const EdgeInsets.only(top: 4, bottom: 12),
-        child: Row(
-          children: [
-            const ClarityDiamondLoader(size: 16),
-            const SizedBox(width: RexUiTokens.space8),
-            Text(
-              'Processing…',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colors.textMuted,
-              ),
-            ),
-          ],
+        child: Text(
+          'Processing…',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colors.textMuted,
+          ),
         ),
       );
     }

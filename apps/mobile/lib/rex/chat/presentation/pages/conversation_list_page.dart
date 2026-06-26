@@ -225,9 +225,9 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                   children: [
                     Text(
                       'Chats',
-                      style: Theme.of(context).textTheme.headlineSmall
+                      style: Theme.of(context).textTheme.titleMedium
                           ?.copyWith(
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                             color: colors.textPrimary,
                           ),
                     ),
@@ -238,7 +238,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                       tooltip: 'New conversation',
                       color: colors.accent,
                       style: IconButton.styleFrom(
-                        backgroundColor: colors.accent.withValues(alpha: 0.12),
+                        visualDensity: VisualDensity.compact,
                       ),
                     ),
                   ],
@@ -596,68 +596,49 @@ class _EmptyConversationState extends StatelessWidget {
     final colors = context.clarityColors;
     final compact = MediaQuery.sizeOf(context).height < 650;
 
-    return RexSurface(
-      padding: EdgeInsets.all(
-        compact ? RexUiTokens.space12 : RexUiTokens.space24,
-      ),
-      color: colors.surface.withValues(alpha: 0.82),
-      radius: RexUiTokens.radiusLarge,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!compact) ...[
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: colors.accent.withValues(alpha: 0.13),
-                borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
-              ),
-              child: SizedBox(
-                width: 52,
-                height: 52,
-                child: Icon(
-                  Icons.forum_outlined,
-                  color: colors.accent,
-                  size: 28,
-                ),
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(
+          compact ? RexUiTokens.space12 : RexUiTokens.space16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!compact) ...[
+              Icon(Icons.forum_outlined, color: colors.accent, size: 28),
+              const SizedBox(height: RexUiTokens.space12),
+            ],
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: RexUiTokens.space16),
+            SizedBox(height: compact ? RexUiTokens.space4 : RexUiTokens.space8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              maxLines: compact ? 2 : 3,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.textSecondary,
+                height: 1.25,
+                fontSize: 14,
+              ),
+            ),
+            SizedBox(height: compact ? RexUiTokens.space12 : RexUiTokens.space16),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              onPressed: isLoading ? null : onNewConversation,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('New chat'),
+            ),
           ],
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          SizedBox(height: compact ? RexUiTokens.space4 : RexUiTokens.space8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            maxLines: compact ? 2 : 3,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.textSecondary,
-              height: 1.25,
-            ),
-          ),
-          SizedBox(height: compact ? RexUiTokens.space12 : RexUiTokens.space20),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.accent,
-              foregroundColor: theme.brightness == Brightness.dark
-                  ? Colors.black
-                  : Colors.white,
-              minimumSize: compact ? const Size(0, 40) : null,
-              padding: compact
-                  ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
-                  : null,
-            ),
-            onPressed: isLoading ? null : onNewConversation,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('New chat'),
-          ),
-        ],
+        ),
       ),
     );
   }

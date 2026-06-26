@@ -11,7 +11,7 @@ import 'rex_surfaces.dart';
 import 'rex_ui_tokens.dart';
 
 const _assistantCompactWidth = 360.0;
-const _assistantTabHeight = 46.0;
+const _assistantTabHeight = 40.0;
 
 class AssistantScreen extends ConsumerStatefulWidget {
   const AssistantScreen({super.key});
@@ -100,7 +100,6 @@ class _AssistantTopSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final colors = context.clarityColors;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -119,7 +118,7 @@ class _AssistantTopSurface extends StatelessWidget {
                         ? theme.textTheme.titleMedium
                         : theme.textTheme.titleLarge)
                     ?.copyWith(
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                       color: scheme.onSurface,
                       height: 1.05,
                     ),
@@ -163,10 +162,10 @@ class _AssistantTabNavigation extends StatelessWidget {
       labelColor: scheme.onSurface,
       unselectedLabelColor: colors.textMuted,
       labelStyle: theme.textTheme.labelSmall?.copyWith(
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w700,
       ),
       unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w500,
       ),
       labelPadding: const EdgeInsets.symmetric(horizontal: 4),
       tabs: [

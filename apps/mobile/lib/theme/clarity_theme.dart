@@ -71,7 +71,7 @@ class ClarityTheme {
         foregroundColor: colors.textPrimary,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: TextStyle(
-          fontSize: 18,
+          fontSize: 17,
           fontWeight: FontWeight.w700,
           letterSpacing: 0,
           color: colors.textPrimary,
@@ -157,9 +157,9 @@ class ClarityTheme {
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        height: 68,
+        height: 58,
         backgroundColor: colors.background,
-        indicatorColor: colors.accent.withValues(alpha: isDark ? 0.16 : 0.12),
+        indicatorColor: Colors.transparent,
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(ClarityRadius.pill),
         ),
@@ -169,15 +169,15 @@ class ClarityTheme {
           final selected = states.contains(WidgetState.selected);
           return IconThemeData(
             color: selected ? colors.accent : colors.textMuted,
-            size: selected ? 25 : 24,
+            size: selected ? 22 : 21,
           );
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
           return TextStyle(
             color: selected ? colors.textPrimary : colors.textMuted,
-            fontSize: 12,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+            fontSize: 11,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             letterSpacing: 0.05,
           );
         }),
@@ -209,12 +209,12 @@ class ClarityTheme {
               backgroundColor: colors.accent,
               disabledForegroundColor: colors.textMuted,
               disabledBackgroundColor: colors.surfaceSoft,
-              minimumSize: const Size(64, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+              minimumSize: const Size(64, 40),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               textStyle: const TextStyle(
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.15,
-                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.1,
+                fontSize: 14,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(ClarityRadius.medium),
@@ -240,14 +240,14 @@ class ClarityTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: colors.textPrimary,
           disabledForegroundColor: colors.textMuted,
-          minimumSize: const Size(64, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+          minimumSize: const Size(64, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
           textStyle: const TextStyle(
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.15,
-            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.1,
+            fontSize: 14,
           ),
-          side: BorderSide(color: outlineSoft),
+          side: BorderSide.none,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(ClarityRadius.medium),
           ),
@@ -257,7 +257,7 @@ class ClarityTheme {
         style: TextButton.styleFrom(
           foregroundColor: colors.accent,
           disabledForegroundColor: colors.textMuted,
-          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

@@ -227,3 +227,45 @@ async def test_have_to_upgrade_without_timeline_creates_commitment():
     commitment = memory_service.created_commitments[0]
     assert commitment["commitment_type"] == "task"
     assert "upgrade my RAM" in commitment["commitment_text"]
+
+
+@pytest.mark.asyncio
+async def test_move_misclassified_memory_to_goal_archives_and_creates_plan():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-ram",
+            "memory_type": "fact",
+            "content": "User has a to upgrade my RAM from 16TO at least 32OR 64.",
+            "active": True,
+        }
+    )
+    history = [
+        {
+            "role": "assistant",
+            "content": "Got it, you have a to upgrade my RAM from 16TO at least 32OR 64.",
+        }
+    ]
+    message = (
+        "This that you saved: RAM from 16TO at least 32OR 64. "
+        "It would meant to be buy or get 32gb or 64gb ram and "
+        "1terab or 2terab of storage next month"
+    )
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[*history, user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert "removed that from saved memory" in result["response"]
+    assert result["memory_changes"]["created"] == 1
+    assert result["memory_changes"]["archived"] == 1
+    assert memory_service.created_plans
+    assert memory_service.long_term_memory[0]["active"] is False
+    assert "32gb" in memory_service.created_plans[0]["description"].casefold()

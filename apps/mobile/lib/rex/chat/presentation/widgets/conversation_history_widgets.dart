@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:clarity/rex/chat/application/conversation_controller.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
-import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
@@ -24,19 +23,19 @@ class ConversationDateHeader extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        RexUiTokens.space24,
-        RexUiTokens.space20,
-        RexUiTokens.space24,
-        RexUiTokens.space8,
+        RexUiTokens.space16,
+        RexUiTokens.space12,
+        RexUiTokens.space16,
+        RexUiTokens.space4,
       ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
-              style: theme.textTheme.labelLarge?.copyWith(
+              style: theme.textTheme.labelMedium?.copyWith(
                 color: colors.textMuted,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -44,7 +43,7 @@ class ConversationDateHeader extends StatelessWidget {
             '$count',
             style: theme.textTheme.labelSmall?.copyWith(
               color: colors.textMuted.withValues(alpha: 0.72),
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -73,24 +72,22 @@ class ConversationHistoryTile extends StatelessWidget {
     final colors = context.clarityColors;
     final preview = _conversationPreview(conversation);
 
-    return RexSurface(
-      margin: const EdgeInsets.fromLTRB(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
         RexUiTokens.space16,
         0,
         RexUiTokens.space16,
-        RexUiTokens.space12,
+        RexUiTokens.space8,
       ),
-      padding: EdgeInsets.zero,
-      color: isSelected
-          ? colors.accent.withValues(alpha: 0.10)
-          : Colors.transparent,
-      radius: RexUiTokens.radiusLarge,
       child: InkWell(
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
         onTap: onTap,
         onLongPress: onDelete,
         child: Padding(
-          padding: const EdgeInsets.all(RexUiTokens.space16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: RexUiTokens.space4,
+            vertical: RexUiTokens.space12,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -108,9 +105,9 @@ class ConversationHistoryTile extends StatelessWidget {
                             conversationTitle(conversation),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleMedium?.copyWith(
+                            style: theme.textTheme.titleSmall?.copyWith(
                               color: colors.textPrimary,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -172,38 +169,28 @@ class ConversationSearchResultTile extends StatelessWidget {
       result.message?.timestamp ?? result.conversationTimestamp,
     );
 
-    return RexSurface(
-      margin: const EdgeInsets.fromLTRB(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
         RexUiTokens.space16,
         0,
         RexUiTokens.space16,
-        RexUiTokens.space12,
+        RexUiTokens.space8,
       ),
-      padding: EdgeInsets.zero,
-      color: colors.surface.withValues(alpha: 0.64),
-      radius: RexUiTokens.radiusLarge,
       child: InkWell(
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(RexUiTokens.space16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: RexUiTokens.space4,
+            vertical: RexUiTokens.space12,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colors.accent.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-                ),
-                child: SizedBox(
-                  width: 42,
-                  height: 42,
-                  child: Icon(
-                    Icons.manage_search_rounded,
-                    color: colors.accent,
-                    size: 23,
-                  ),
-                ),
+              Icon(
+                Icons.manage_search_rounded,
+                color: colors.accent,
+                size: 20,
               ),
               const SizedBox(width: RexUiTokens.space12),
               Expanded(
@@ -218,9 +205,9 @@ class ConversationSearchResultTile extends StatelessWidget {
                             title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleMedium?.copyWith(
+                            style: theme.textTheme.titleSmall?.copyWith(
                               color: colors.textPrimary,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -499,22 +486,10 @@ class _ConversationGlyph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: isSelected
-            ? colors.accent.withValues(alpha: 0.14)
-            : colors.surfaceElevated.withValues(alpha: 0.52),
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-      ),
-      child: SizedBox(
-        width: 42,
-        height: 42,
-        child: Icon(
-          Icons.chat_bubble_outline_rounded,
-          color: colors.accent,
-          size: 20,
-        ),
-      ),
+    return Icon(
+      Icons.chat_bubble_outline_rounded,
+      color: isSelected ? colors.accent : colors.textMuted,
+      size: 20,
     );
   }
 }
