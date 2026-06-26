@@ -2,6 +2,10 @@ import re
 from typing import Optional
 
 from app.services.chat_search_terms import ChatSearchTermBuilder
+from app.services.transcript_normalizer import (
+    DEFAULT_TRANSCRIPT_NORMALIZER,
+    TranscriptNormalizer,
+)
 
 
 PROFILE_MEMORY_QUERY = (
@@ -131,6 +135,67 @@ CHAT_SCOPE_TERMS = (
     "talked",
     "told",
 )
+FOCUSED_DEFINITE_REFERENCE_PATTERN = re.compile(
+    r"\b(?:the|those|these)\s+[a-z0-9']+(?:\s+[a-z0-9']+){0,3}\b"
+)
+FOCUSED_RELATIVE_REFERENCE_PATTERN = re.compile(
+    r"\b([a-z0-9']+)\s+i\s+([a-z0-9']+)\b"
+)
+FOCUSED_MODAL_BEFORE_I = frozenset(
+    {
+        "am",
+        "are",
+        "can",
+        "could",
+        "did",
+        "do",
+        "does",
+        "had",
+        "has",
+        "have",
+        "how",
+        "is",
+        "may",
+        "might",
+        "must",
+        "shall",
+        "should",
+        "was",
+        "were",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "why",
+        "will",
+        "would",
+        "thought",
+        "said",
+        "told",
+        "mentioned",
+        "meant",
+        "mean",
+    }
+)
+FOCUSED_TRAILING_USER_CLAUSE_PATTERN = re.compile(
+    r"\s+(?:i|ai)\s+(?:bought|purchased|got|gotten|downloaded|installed|"
+    r"owned|ordered|grabbed|picked up|wanted|said|told|mentioned|play|"
+    r"played|get).*$"
+)
+RECALL_QUERY_NOISE_TERMS = frozenset(
+    {
+        "ai",
+        "dont",
+        "don't",
+        "earlier",
+        "know",
+        "remember",
+        "said",
+        "thought",
+        "you",
+    }
+)
 
 
 class RecallIntentHelper:
@@ -138,8 +203,12 @@ class RecallIntentHelper:
         self,
         *,
         search_terms: Optional[ChatSearchTermBuilder] = None,
+        transcript_normalizer: Optional[TranscriptNormalizer] = None,
     ) -> None:
         self.search_terms = search_terms or ChatSearchTermBuilder()
+        self.transcript_normalizer = (
+            transcript_normalizer or DEFAULT_TRANSCRIPT_NORMALIZER
+        )
 
     def memory_retrieval_query(
         self,
@@ -178,7 +247,22 @@ class RecallIntentHelper:
             subject = self.recent_memory_subject(conversation_history)
             if subject:
                 return self.chat_topic_query(f"{subject} {message}") or subject
-        return self.chat_topic_query(message) or message
+        focused = self.focused_topic_query(message)
+        topic = self.chat_topic_query(message)
+        if focused and self._prefer_focused_over_topic(topic, focused):
+            return focused
+        if topic:
+            return topic
+        if focused:
+            return focused
+        return message
+
+    def _prefer_focused_over_topic(self, topic: str, focused: str) -> bool:
+        if not focused:
+            return False
+        if not topic:
+            return True
+        return bool(set(topic.split()) & RECALL_QUERY_NOISE_TERMS)
 
     def is_recall_request(
         self,
@@ -419,9 +503,41 @@ class RecallIntentHelper:
     def chat_topic_query(self, message: str) -> str:
         return self.search_terms.assistant_topic_query(message)
 
+    def focused_topic_query(self, message: str) -> str:
+        normalized = self.normalized_recall_text(message)
+        relative_topics: list[str] = []
+        for relative in FOCUSED_RELATIVE_REFERENCE_PATTERN.finditer(normalized):
+            if relative.group(1) in FOCUSED_MODAL_BEFORE_I:
+                continue
+            cleaned = self._clean_focused_topic_phrase(relative.group(0))
+            if len(cleaned) >= 3:
+                relative_topics.append(cleaned)
+        if relative_topics:
+            return relative_topics[-1]
+
+        definite_topics: list[str] = []
+        for match in FOCUSED_DEFINITE_REFERENCE_PATTERN.finditer(normalized):
+            cleaned = self._clean_focused_topic_phrase(match.group(0))
+            if len(cleaned) >= 3:
+                definite_topics.append(cleaned)
+        if definite_topics:
+            return definite_topics[-1]
+        return ""
+
+    def _clean_focused_topic_phrase(self, phrase: str) -> str:
+        cleaned = re.sub(
+            r"^(?:the|those|these)\s+",
+            "",
+            phrase.strip(),
+        )
+        cleaned = FOCUSED_TRAILING_USER_CLAUSE_PATTERN.sub("", cleaned).strip()
+        cleaned = re.sub(r"\s+", " ", cleaned)
+        if len(cleaned) < 3:
+            return ""
+        return self.chat_topic_query(cleaned) or cleaned
+
     def normalized_recall_text(self, message: str) -> str:
-        normalized = " ".join(str(message or "").lower().split())
-        return re.sub(r"\bchet\b", "chat", normalized)
+        return self.transcript_normalizer.normalize_for_matching(message)
 
     def is_about_recall_followup(self, normalized_message: str) -> bool:
         stripped = self.normalized_recall_text(normalized_message).strip("?.! ")

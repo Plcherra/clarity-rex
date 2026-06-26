@@ -55,6 +55,12 @@ class ChatContinuityPolicy:
             "why",
             "will",
             "would",
+            "thought",
+            "said",
+            "told",
+            "mentioned",
+            "meant",
+            "mean",
         }
     )
     RECENT_ACQUISITION_PATTERN = re.compile(
@@ -92,11 +98,16 @@ class ChatContinuityPolicy:
         )
 
     def search_query(self, message: str) -> str:
-        return (
-            self.recall_intent.chat_topic_query(message)
-            or " ".join(self.search_terms.search_terms(message, max_terms=6))
-            or message.strip()
-        )
+        topic = self.recall_intent.chat_topic_query(message)
+        focused = self.recall_intent.focused_topic_query(message)
+        if focused and self.recall_intent._prefer_focused_over_topic(topic, focused):
+            return focused
+        if topic:
+            return topic
+        if focused:
+            return focused
+        terms = self.search_terms.search_terms(message, max_terms=6)
+        return " ".join(terms) if terms else message.strip()
 
     def _is_user_scoped_question(self, normalized_message: str) -> bool:
         if not self.USER_SCOPED_PATTERN.search(normalized_message):

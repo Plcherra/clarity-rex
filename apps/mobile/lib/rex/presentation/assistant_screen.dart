@@ -104,55 +104,34 @@ class _AssistantTopSurface extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        isCompactWidth ? 8 : 16,
-        isCompactWidth ? 6 : 8,
-        isCompactWidth ? 8 : 16,
-        isCompactWidth ? 6 : 10,
+        isCompactWidth ? 12 : 16,
+        isCompactWidth ? 4 : 8,
+        isCompactWidth ? 12 : 16,
+        isCompactWidth ? 4 : 8,
       ),
-      child: RexSurface(
-        padding: EdgeInsets.fromLTRB(
-          isCompactWidth ? 10 : 16,
-          isCompactWidth ? 8 : 12,
-          isCompactWidth ? 10 : 16,
-          isCompactWidth ? 8 : 10,
-        ),
-        color: colors.surface.withValues(alpha: 0.70),
-        radius: RexUiTokens.radiusLarge,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Assistant',
-                        style:
-                            (isCompactWidth
-                                    ? theme.textTheme.titleMedium
-                                    : theme.textTheme.titleLarge)
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: scheme.onSurface,
-                                  height: 1.05,
-                                ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(
-              height: isCompactWidth ? RexUiTokens.space8 : RexUiTokens.space12,
-            ),
-            _AssistantTabNavigation(
-              controller: controller,
-              isCompactWidth: isCompactWidth,
-            ),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Assistant',
+            style:
+                (isCompactWidth
+                        ? theme.textTheme.titleMedium
+                        : theme.textTheme.titleLarge)
+                    ?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: scheme.onSurface,
+                      height: 1.05,
+                    ),
+          ),
+          SizedBox(
+            height: isCompactWidth ? RexUiTokens.space8 : RexUiTokens.space12,
+          ),
+          _AssistantTabNavigation(
+            controller: controller,
+            isCompactWidth: isCompactWidth,
+          ),
+        ],
       ),
     );
   }
@@ -173,38 +152,31 @@ class _AssistantTabNavigation extends StatelessWidget {
     final scheme = theme.colorScheme;
     final colors = context.clarityColors;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated.withValues(alpha: 0.42),
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+    return TabBar(
+      controller: controller,
+      dividerColor: Colors.transparent,
+      indicatorSize: TabBarIndicatorSize.label,
+      indicator: UnderlineTabIndicator(
+        borderSide: BorderSide(color: colors.accent, width: 2),
+        insets: const EdgeInsets.symmetric(horizontal: 8),
       ),
-      child: TabBar(
-        controller: controller,
-        dividerColor: Colors.transparent,
-        indicatorSize: TabBarIndicatorSize.tab,
-        indicatorPadding: const EdgeInsets.all(3),
-        indicator: BoxDecoration(
-          color: colors.surfaceSoft.withValues(alpha: 0.82),
-          borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-        ),
-        labelColor: scheme.onSurface,
-        unselectedLabelColor: colors.textMuted,
-        labelStyle: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w800,
-        ),
-        unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
-        labelPadding: EdgeInsets.zero,
-        tabs: [
-          for (final tab in AssistantTab.values)
-            Tab(
-              key: tab.key,
-              height: _assistantTabHeight,
-              child: _AssistantTabItem(tab: tab),
-            ),
-        ],
+      labelColor: scheme.onSurface,
+      unselectedLabelColor: colors.textMuted,
+      labelStyle: theme.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w800,
       ),
+      unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w700,
+      ),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+      tabs: [
+        for (final tab in AssistantTab.values)
+          Tab(
+            key: tab.key,
+            height: _assistantTabHeight,
+            child: _AssistantTabItem(tab: tab),
+          ),
+      ],
     );
   }
 }

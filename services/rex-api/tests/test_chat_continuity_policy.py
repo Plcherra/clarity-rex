@@ -96,3 +96,12 @@ def test_continuity_policy_searches_when_current_chat_lacks_topic_terms():
         )
         is True
     )
+
+
+def test_continuity_policy_focuses_search_for_voice_transcript_typos():
+    policy = ChatContextRecallPolicy()
+    message = "Don't you know the games ai bought? I thought i said you earlier"
+
+    assert policy.needs_chat_search(message, conversation_history=[]) is True
+    query = policy.recall_query(message, conversation_history=[])
+    assert query == "games"

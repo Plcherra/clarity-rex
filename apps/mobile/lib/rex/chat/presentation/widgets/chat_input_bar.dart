@@ -52,117 +52,102 @@ class ChatInputBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.surfaceElevated.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(RexUiTokens.radiusLarge),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasAttachment || attachmentError != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
+                  child: _AttachmentPreview(
+                    attachment: attachment,
+                    previewBytes: attachmentPreviewBytes,
+                    fileName: attachmentName,
+                    fileSize: attachmentSize,
+                    errorMessage: attachmentError,
+                    onRemove: isLoading ? null : onRemoveAttachment,
+                  ),
+                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if (hasAttachment || attachmentError != null)
-                    _AttachmentPreview(
-                      attachment: attachment,
-                      previewBytes: attachmentPreviewBytes,
-                      fileName: attachmentName,
-                      fileSize: attachmentSize,
-                      errorMessage: attachmentError,
-                      onRemove: isLoading ? null : onRemoveAttachment,
+                  _ComposerIconButton(
+                    icon: Icons.attach_file_rounded,
+                    tooltip: 'Attach file or image',
+                    onPressed: isLoading ? null : onPickAttachment,
+                  ),
+                  _ComposerIconButton(
+                    icon: isVoiceCallActive
+                        ? Icons.graphic_eq_rounded
+                        : Icons.mic_rounded,
+                    tooltip: isVoiceCallActive
+                        ? 'Show voice call'
+                        : 'Start voice mode',
+                    onPressed: isLoading ? null : onStartVoice,
+                    isActive: isVoiceCallActive,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      minLines: 1,
+                      maxLines: 7,
+                      textInputAction: TextInputAction.send,
+                      textCapitalization: TextCapitalization.sentences,
+                      cursorColor: colors.accent,
+                      onSubmitted: (_) {
+                        if (_canSend(
+                          controller.text,
+                          hasAttachment: hasAttachment,
+                          isLoading: isLoading,
+                          hasBlockingAttachmentError:
+                              hasBlockingAttachmentError,
+                        )) {
+                          onSend?.call();
+                        }
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Message Assistant…',
+                        border: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 12,
+                        ),
+                        hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                          color: colors.textMuted.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                      ),
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: colors.textPrimary,
+                        height: 1.35,
+                      ),
                     ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: _ComposerIconButton(
-                          icon: Icons.attach_file_rounded,
-                          tooltip: 'Attach file or image',
-                          onPressed: isLoading ? null : onPickAttachment,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: _ComposerIconButton(
-                          icon: isVoiceCallActive
-                              ? Icons.graphic_eq_rounded
-                              : Icons.mic_rounded,
-                          tooltip: isVoiceCallActive
-                              ? 'Show voice call'
-                              : 'Start voice mode',
-                          onPressed: isLoading ? null : onStartVoice,
-                          isActive: isVoiceCallActive,
-                        ),
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: controller,
-                          minLines: 1,
-                          maxLines: 7,
-                          textInputAction: TextInputAction.send,
-                          textCapitalization: TextCapitalization.sentences,
-                          cursorColor: colors.accent,
-                          onSubmitted: (_) {
-                            if (_canSend(
-                              controller.text,
-                              hasAttachment: hasAttachment,
-                              isLoading: isLoading,
-                              hasBlockingAttachmentError:
-                                  hasBlockingAttachmentError,
-                            )) {
-                              onSend?.call();
-                            }
-                          },
-                          decoration: InputDecoration(
-                            hintText: 'Message Assistant…',
-                            border: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 11,
-                            ),
-                            hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                              color: colors.textMuted.withValues(
-                                alpha: 0.7,
-                              ),
-                            ),
-                          ),
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: colors.textPrimary,
-                            height: 1.35,
-                          ),
-                        ),
-                      ),
-                      ValueListenableBuilder<TextEditingValue>(
-                        valueListenable: controller,
-                        builder: (context, value, child) {
-                          final canSend = _canSend(
-                            value.text,
-                            hasAttachment: hasAttachment,
-                            isLoading: isLoading,
-                            hasBlockingAttachmentError:
-                                hasBlockingAttachmentError,
-                          );
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: _ComposerIconButton(
-                              icon: Icons.arrow_upward_rounded,
-                              tooltip: 'Send',
-                              onPressed: canSend ? onSend : null,
-                              isActive: canSend,
-                              isLoading: isLoading,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                  ),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: controller,
+                    builder: (context, value, child) {
+                      final canSend = _canSend(
+                        value.text,
+                        hasAttachment: hasAttachment,
+                        isLoading: isLoading,
+                        hasBlockingAttachmentError:
+                            hasBlockingAttachmentError,
+                      );
+                      return _ComposerIconButton(
+                        icon: Icons.arrow_upward_rounded,
+                        tooltip: 'Send',
+                        onPressed: canSend ? onSend : null,
+                        isActive: canSend,
+                        isLoading: isLoading,
+                      );
+                    },
                   ),
                 ],
               ),
-            ),
+            ],
           ),
         ),
       ),

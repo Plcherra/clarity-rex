@@ -19,6 +19,10 @@ from app.services.goal_command_service import GoalCommandService
 from app.services.memory_turn_service import MemoryTurnService
 from app.services.rex_channel import RexBrainChannel
 from app.services.simple_rex_brain import SimpleRexBrain
+from app.services.transcript_normalizer import (
+    DEFAULT_TRANSCRIPT_NORMALIZER,
+    TranscriptNormalizer,
+)
 
 
 class ChatTurnOrchestrator:
@@ -35,6 +39,7 @@ class ChatTurnOrchestrator:
         financial_guard: ChatFinancialGuard,
         truth_service: ChatResponseTruthService,
         usage_recorder: ChatUsageRecorder,
+        transcript_normalizer: Optional[TranscriptNormalizer] = None,
     ) -> None:
         self.ai_service = ai_service
         self.memory_service = memory_service
@@ -46,6 +51,16 @@ class ChatTurnOrchestrator:
         self.financial_guard = financial_guard
         self.truth_service = truth_service
         self.usage_recorder = usage_recorder
+        self.transcript_normalizer = (
+            transcript_normalizer or DEFAULT_TRANSCRIPT_NORMALIZER
+        )
+
+    def _brain_messages(self, message: str) -> tuple[str, str]:
+        stored_message = message.strip()
+        brain_message = self.transcript_normalizer.normalize(stored_message)
+        if not brain_message:
+            brain_message = stored_message
+        return stored_message, brain_message
 
     async def send_message(
         self,
@@ -58,8 +73,9 @@ class ChatTurnOrchestrator:
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
     ) -> dict:
+        stored_message, brain_message = self._brain_messages(message)
         intent_decision = self.simple_rex_brain.classify(
-            message,
+            brain_message,
             has_file=file is not None,
             has_financial_context=financial_context is not None,
             user_requested_deep_thinking=user_requested_deep_thinking,
@@ -69,7 +85,8 @@ class ChatTurnOrchestrator:
             financial_context,
         )
         turn_context = await self.chat_turn_context_service.prepare(
-            message=message,
+            message=brain_message,
+            stored_message=stored_message,
             conversation_id=conversation_id,
             file=file,
             intent_decision=intent_decision,
@@ -84,7 +101,7 @@ class ChatTurnOrchestrator:
         accountability_signals = turn_context.accountability_signals
         user_message = turn_context.user_message
         simple_memory_turn = await self.memory_turn_service.handle_turn(
-            message,
+            brain_message,
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_history=conversation_history,
@@ -93,7 +110,7 @@ class ChatTurnOrchestrator:
         if simple_memory_turn:
             return simple_memory_turn
         goal_command_turn = await self.goal_command_service.handle_turn(
-            message,
+            brain_message,
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_history=conversation_history,
@@ -115,7 +132,7 @@ class ChatTurnOrchestrator:
             conversation_history
         )
         ai_messages = self.simple_rex_brain.build_prompt_messages(
-            message=message,
+            message=brain_message,
             conversation_id=conversation_id,
             conversation_history=conversation_history,
             long_term_memory=long_term_memory,
@@ -166,7 +183,7 @@ class ChatTurnOrchestrator:
             clarity_action_proposals,
             unsupported_actions=unsupported_actions,
             intent_decision=intent_decision,
-            user_message=message,
+            user_message=brain_message,
             memory_status=structured_context.get("memory_status"),
             chat_search_results_loaded=self.truth_service.has_chat_search_results(
                 ai_messages
@@ -207,8 +224,9 @@ class ChatTurnOrchestrator:
         user_requested_deep_thinking: bool = False,
         include_turn_trace: bool = False,
     ) -> AsyncIterator[dict]:
+        stored_message, brain_message = self._brain_messages(message)
         intent_decision = self.simple_rex_brain.classify(
-            message,
+            brain_message,
             has_file=file is not None,
             has_financial_context=financial_context is not None,
             user_requested_deep_thinking=user_requested_deep_thinking,
@@ -218,7 +236,8 @@ class ChatTurnOrchestrator:
             financial_context,
         )
         turn_context = await self.chat_turn_context_service.prepare(
-            message=message,
+            message=brain_message,
+            stored_message=stored_message,
             conversation_id=conversation_id,
             file=file,
             intent_decision=intent_decision,
@@ -236,7 +255,7 @@ class ChatTurnOrchestrator:
         if include_turn_trace:
             yield self._turn_trace_event(intent_decision, channel)
         simple_memory_turn = await self.memory_turn_service.handle_turn(
-            message,
+            brain_message,
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_history=conversation_history,
@@ -254,7 +273,7 @@ class ChatTurnOrchestrator:
             }
             return
         goal_command_turn = await self.goal_command_service.handle_turn(
-            message,
+            brain_message,
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_history=conversation_history,
@@ -297,7 +316,7 @@ class ChatTurnOrchestrator:
             conversation_history
         )
         ai_messages = self.simple_rex_brain.build_prompt_messages(
-            message=message,
+            message=brain_message,
             conversation_id=conversation_id,
             conversation_history=conversation_history,
             long_term_memory=long_term_memory,
@@ -357,7 +376,7 @@ class ChatTurnOrchestrator:
             clarity_action_proposals,
             unsupported_actions=unsupported_actions,
             intent_decision=intent_decision,
-            user_message=message,
+            user_message=brain_message,
             memory_status=structured_context.get("memory_status"),
             chat_search_results_loaded=self.truth_service.has_chat_search_results(
                 ai_messages

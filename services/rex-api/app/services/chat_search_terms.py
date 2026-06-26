@@ -61,6 +61,8 @@ CHAT_SEARCH_CONCEPT_GROUPS = (
     ("money", "cash", "gift", "amount"),
     ("send", "sent", "sending", "transfer", "transferring", "transferred"),
     ("pc", "computer", "desktop", "model"),
+    ("game", "games", "gaming", "gog", "steam"),
+    ("buy", "bought", "purchase", "purchased", "grab", "grabbed", "picked"),
 )
 CHAT_SEARCH_CONCEPT_ALIASES = {
     term: group

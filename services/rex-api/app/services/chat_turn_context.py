@@ -117,12 +117,14 @@ class ChatTurnContextService:
         conversation_id: Optional[str],
         file: Optional[UploadFile],
         intent_decision: Optional[RexIntentDecision] = None,
+        stored_message: Optional[str] = None,
     ) -> ChatTurnContext:
         conversation_id = await self.existing_conversation_id(conversation_id)
         attachment_context = (
             await self.file_service.read_attachment(file) if file else None
         )
         file_text = attachment_context.prompt_context if attachment_context else None
+        message_for_storage = stored_message if stored_message is not None else message
 
         (
             conversation_history,
@@ -153,7 +155,7 @@ class ChatTurnContextService:
         user_message = await self.memory_service.save_message(
             conversation_id,
             "user",
-            message,
+            message_for_storage,
         )
 
         return ChatTurnContext(
