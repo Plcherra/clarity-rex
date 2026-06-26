@@ -322,7 +322,8 @@ class RecallIntentHelper:
         if any(phrase in normalized for phrase in RECALL_TRIGGER_PHRASES):
             return True
         has_question_language = re.search(
-            r"\b(?:did|do|have|had|how|what|when|where|who|why)\b",
+            r"\b(?:can|could|did|do|have|had|how|should|what|when|where|who|"
+            r"why|will|would)\b",
             normalized,
         )
         has_recall_verb = re.search(
@@ -398,6 +399,8 @@ class RecallIntentHelper:
             r"tell|told|talk|talked|discuss|discussed)\b",
             stripped,
         ):
+            return True
+        if re.search(r"\bwhat\s+(?:did|have|do)\s+i\s+\w+\b", stripped):
             return True
         if re.search(r"\b(?:know|have)\b", stripped):
             return bool(

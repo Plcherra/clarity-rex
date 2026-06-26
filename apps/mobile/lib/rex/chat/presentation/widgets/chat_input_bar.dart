@@ -94,7 +94,6 @@ class ChatInputBar extends StatelessWidget {
                               : 'Start voice mode',
                           onPressed: isLoading ? null : onStartVoice,
                           isActive: isVoiceCallActive,
-                          isProminent: true,
                         ),
                       ),
                       Expanded(
@@ -149,33 +148,12 @@ class ChatInputBar extends StatelessWidget {
                           );
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 4),
-                            child: IconButton(
-                              onPressed: canSend ? onSend : null,
-                              style: IconButton.styleFrom(
-                                minimumSize: const Size.square(40),
-                                fixedSize: const Size.square(40),
-                                padding: EdgeInsets.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                backgroundColor: colors.accent,
-                                foregroundColor:
-                                    Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? Colors.black
-                                    : Colors.white,
-                                disabledBackgroundColor: colors.surfaceSoft,
-                                disabledForegroundColor: colors.textMuted
-                                    .withValues(alpha: 0.55),
-                              ),
-                              icon: isLoading
-                                  ? const ClarityInlineLoader(
-                                      size: 18,
-                                      strokeWidth: 2,
-                                    )
-                                  : const Icon(
-                                      Icons.arrow_upward_rounded,
-                                      size: 22,
-                                    ),
+                            child: _ComposerIconButton(
+                              icon: Icons.arrow_upward_rounded,
                               tooltip: 'Send',
+                              onPressed: canSend ? onSend : null,
+                              isActive: canSend,
+                              isLoading: isLoading,
                             ),
                           );
                         },
@@ -210,39 +188,40 @@ class _ComposerIconButton extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.isActive = false,
-    this.isProminent = false,
+    this.isLoading = false,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
   final bool isActive;
-  final bool isProminent;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
-    final foreground = isActive
+    final enabled = onPressed != null;
+    final foreground = isActive && enabled
         ? colors.accent
-        : isProminent
+        : enabled
         ? colors.textPrimary
-        : colors.textSecondary;
-    final background = isActive
-        ? colors.accent.withValues(alpha: 0.14)
-        : isProminent
-        ? colors.surfaceSoft
-        : Colors.transparent;
+        : colors.textMuted.withValues(alpha: 0.45);
 
     return IconButton(
       onPressed: onPressed,
-      icon: Icon(icon, size: 21),
+      icon: isLoading
+          ? const ClarityInlineLoader(
+              size: 18,
+              strokeWidth: 2,
+            )
+          : Icon(icon, size: 22),
       tooltip: tooltip,
       style: IconButton.styleFrom(
-        minimumSize: const Size.square(38),
-        fixedSize: const Size.square(38),
+        minimumSize: const Size.square(40),
+        fixedSize: const Size.square(40),
         padding: EdgeInsets.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        backgroundColor: background,
+        backgroundColor: Colors.transparent,
         foregroundColor: foreground,
         disabledForegroundColor: colors.textMuted.withValues(alpha: 0.45),
         shadowColor: Colors.transparent,
