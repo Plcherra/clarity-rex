@@ -1,6 +1,6 @@
 # Rex Brain Trust And Reliability Plan
 
-Single follow-up plan for making Rex Brain trustworthy at 500–1k users. Tracks P0/P1/P2 work, failure classes, file splits, and PR order so context is not lost across sessions.
+Single follow-up plan for making Rex Brain trustworthy at 500–1k users. Tracks P0/P1/P2/P3 work, failure classes, file splits, and PR order so context is not lost across sessions.
 
 **Related plans:** [04_GOALS_ACCOUNTABILITY_PLAN](../project-completion/04_GOALS_ACCOUNTABILITY_PLAN.md) · [03_REX_MEMORY_AND_RECALL_PLAN](../project-completion/03_REX_MEMORY_AND_RECALL_PLAN.md) · [07_BACKEND_INFRASTRUCTURE_PLAN](../project-completion/07_BACKEND_INFRASTRUCTURE_PLAN.md)
 
@@ -101,6 +101,17 @@ Target: all modules under 300 lines.
 
 ---
 
+## P3 — Production Hardening
+
+| ID | Status | Issue | Work |
+|----|--------|-------|------|
+| P3-1 | [x] | **Finish oversized splits** | `memory_correction_apply.py`, `chat_recall_search_runners.py`; all brain modules under 500 lines |
+| P3-2 | [x] | **Stream observability parity** | `stream_message()` logs handler short-circuits and truth guard rewrites like `send_message()` |
+| P3-3 | [x] | **Trust regression pack** | Inventory/delete-clarification guard tests; stream turn trace coverage |
+| P3-4 | [ ] | **Deploy + ops smoke** | Deploy Rex API; run manual smoke from `BACKEND_DEPLOY_RUNBOOK.md` |
+
+---
+
 ## Multi-User (500–1k) Notes
 
 - Prefer **deterministic read paths** over LLM for inventory, list, and delete confirmation.
@@ -121,6 +132,8 @@ Target: all modules under 300 lines.
 6. [x] P1-1 — GoalCommandService split (refactor only)
 7. [x] P1-3 + P1-4 — scoped guards and save quality
 8. [x] P2 items
+9. [x] P3-1..P3-3 — finish splits, stream observability, trust regressions
+10. [ ] P3-4 — deploy Rex API + manual ops smoke
 
 ---
 
@@ -129,8 +142,8 @@ Target: all modules under 300 lines.
 | Lines | File | Priority |
 |-------|------|----------|
 | ~147 | `goal_command_service.py` | P1-1 done |
-| ~540 | `memory_correction_service.py` | P2-4 split (ops + delete applier extracted) |
-| ~528 | `chat_recall_search.py` | P2-4 split (query builder + match helpers extracted) |
+| ~240 | `memory_correction_service.py` | P3-1 done (apply module extracted) |
+| ~300 | `chat_recall_search.py` | P3-1 done (runners extracted) |
 | ~42 | `recall_intent_helper.py` | P2-4 done (constants, detection, query modules) |
 | ~454 | `chat_turn_orchestrator.py` | Monitor; split if it grows |
 
@@ -147,3 +160,4 @@ Target: all modules under 300 lines.
 | 2026-06-25 | P1-1/P1-4: GoalCommandService split + writer validation + scoped truth guards + router inventory alignment |
 | 2026-06-25 | P1-1 started: extracted goal_command_types, goal_command_queries, goal_command_results |
 | 2026-06-25 | P2-1..P2-4: clarity knowledge labels, goal repair script, turn observability, recall/memory file splits; 1088 tests pass |
+| 2026-06-25 | P3-1..P3-3: memory/recall runner splits, stream observability parity, trust regression tests |

@@ -251,6 +251,7 @@ class ChatTurnOrchestrator:
         include_turn_trace: bool = False,
     ) -> AsyncIterator[dict]:
         stored_message, brain_message = self._brain_messages(message)
+        turn_started_at = time.perf_counter()
         intent_decision = self.simple_rex_brain.classify(
             brain_message,
             has_file=file is not None,
@@ -277,10 +278,18 @@ class ChatTurnOrchestrator:
         time_context = turn_context.time_context
         accountability_signals = turn_context.accountability_signals
         user_message = turn_context.user_message
+        turn_trace = self.turn_observer.new_trace(
+            conversation_id=conversation_id,
+            intent=intent_decision.intent.value,
+        )
         yield {"event": "conversation", "conversation_id": conversation_id}
         if include_turn_trace:
             yield self._turn_trace_event(intent_decision, channel)
         pending_action = await self._load_pending_action(conversation_id)
+        if pending_action is not None:
+            turn_trace.record_pending_action(
+                getattr(pending_action, "action_type", None)
+            )
         goal_command_turn = await self.goal_command_service.handle_turn(
             brain_message,
             conversation_id=conversation_id,
@@ -290,6 +299,8 @@ class ChatTurnOrchestrator:
             pending_action=pending_action,
         )
         if goal_command_turn:
+            turn_trace.record_handler("goal_command")
+            self._log_turn_trace(turn_trace, turn_started_at)
             yield {"event": "token", "token": goal_command_turn["response"]}
             yield {
                 "event": "done",
@@ -309,6 +320,8 @@ class ChatTurnOrchestrator:
             pending_action=pending_action,
         )
         if simple_memory_turn:
+            turn_trace.record_handler("memory_turn")
+            self._log_turn_trace(turn_trace, turn_started_at)
             yield {"event": "token", "token": simple_memory_turn["response"]}
             yield {
                 "event": "done",
@@ -324,6 +337,8 @@ class ChatTurnOrchestrator:
             financial_context,
         )
         if finance_guard_response:
+            turn_trace.record_handler("finance_guard")
+            self._log_turn_trace(turn_trace, turn_started_at)
             yield {"event": "token", "token": finance_guard_response}
             assistant_message = await self.memory_service.save_message(
                 conversation_id,
@@ -411,7 +426,10 @@ class ChatTurnOrchestrator:
                 ai_messages
             ),
             conversation_history=conversation_history,
+            turn_trace=turn_trace,
         )
+        turn_trace.record_handler("llm")
+        self._log_turn_trace(turn_trace, turn_started_at)
         await self.memory_service.save_message(
             conversation_id,
             "assistant",

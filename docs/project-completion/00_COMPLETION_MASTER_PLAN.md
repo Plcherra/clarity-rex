@@ -24,7 +24,7 @@ Clarity should feel like one coherent app:
 7. `07_BACKEND_INFRASTRUCTURE_PLAN.md` - reduce backend risk, simplify service organization, and harden readiness.
 8. `08_QA_RELEASE_PLAN.md` - define the final verification, smoke, test, and launch checklist.
 
-**Cross-cutting (brain trust):** [`docs/brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md`](../brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md) — P0/P1/P2 brain trust, file splits, multi-user reliability. Execute alongside plans 03, 04, and 07. **Run P0 trust blockers before adding more goal/memory parser patches.**
+**Cross-cutting (brain trust):** [`docs/brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md`](../brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md) — P0/P1/P2/P3 brain trust, file splits, multi-user reliability. Execute alongside plans 03, 04, and 07. **Run P0 trust blockers before adding more goal/memory parser patches.**
 
 ## Priority Order
 
