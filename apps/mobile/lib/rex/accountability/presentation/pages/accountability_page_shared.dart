@@ -20,9 +20,9 @@ class _GoalActionBar extends StatelessWidget {
         children: [
           Expanded(
             child: FilledButton.icon(
-              onPressed: isBusy ? null : onAddCommitment,
-              icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
-              label: const Text('Add commitment'),
+              onPressed: isBusy ? null : onAddGoal,
+              icon: const Icon(Icons.flag_outlined, size: 16),
+              label: const Text('Add goal'),
               style: FilledButton.styleFrom(
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -32,9 +32,16 @@ class _GoalActionBar extends StatelessWidget {
           const SizedBox(width: RexUiTokens.space8),
           Expanded(
             child: TextButton.icon(
-              onPressed: isBusy ? null : onAddGoal,
-              icon: Icon(Icons.flag_outlined, size: 16, color: colors.accent),
-              label: Text('Add goal', style: TextStyle(color: colors.accent)),
+              onPressed: isBusy ? null : onAddCommitment,
+              icon: Icon(
+                Icons.check_circle_outline_rounded,
+                size: 16,
+                color: colors.accent,
+              ),
+              label: Text(
+                'Add commitment',
+                style: TextStyle(color: colors.accent),
+              ),
               style: TextButton.styleFrom(
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -117,25 +124,22 @@ class _GoalTileShell extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.trailing,
-    this.iconColor,
   });
 
   final IconData icon;
   final Widget title;
   final Widget subtitle;
   final Widget? trailing;
-  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
-    final resolvedIconColor = iconColor ?? colors.accent;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: RexUiTokens.space4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: resolvedIconColor, size: 18),
+          Icon(icon, color: colors.accent, size: 18),
           const SizedBox(width: RexUiTokens.space12),
           Expanded(
             child: Column(
@@ -153,113 +157,51 @@ class _GoalTileShell extends StatelessWidget {
   }
 }
 
-class _InlineWarning extends StatelessWidget {
-  const _InlineWarning({required this.text});
+class _SimpleGoalDetails extends StatelessWidget {
+  const _SimpleGoalDetails({
+    required this.description,
+    required this.deadline,
+    required this.priority,
+    required this.status,
+  });
 
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.clarityColors;
-
-    return RexSurface(
-      radius: RexUiTokens.radiusSmall,
-      color: colors.danger.withValues(alpha: 0.1),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.warning_amber_rounded, size: 17, color: colors.danger),
-          const SizedBox(width: RexUiTokens.space8),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colors.danger,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecordSubtitle extends StatelessWidget {
-  const _RecordSubtitle({required this.text, required this.chips});
-
-  final String text;
-  final List<String> chips;
+  final String description;
+  final DateTime? deadline;
+  final int priority;
+  final String status;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final meta = <String>[
+      if (deadline != null) 'By ${_shortDate(deadline!)}',
+      _priorityLabel(priority),
+      _statusLabel(status),
+    ];
 
     return Padding(
       padding: const EdgeInsets.only(top: RexUiTokens.space8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (text.trim().isNotEmpty)
+          if (description.trim().isNotEmpty)
             Text(
-              text,
+              description.trim(),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colors.textMuted,
               ),
             ),
-          if (text.trim().isNotEmpty)
+          if (description.trim().isNotEmpty)
             const SizedBox(height: RexUiTokens.space8),
-          Wrap(
-            spacing: RexUiTokens.space8,
-            runSpacing: RexUiTokens.space8,
-            children: chips
-                .where((chip) => chip.trim().isNotEmpty)
-                .map((chip) => _MetaChip(label: chip))
-                .toList(growable: false),
+          Text(
+            meta.join(' · '),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.clarityColors;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 15, color: colors.accent),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -271,35 +213,6 @@ TextStyle? _tileTitleStyle(BuildContext context) {
     color: colors.textPrimary,
     fontWeight: FontWeight.w700,
   );
-}
-
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.clarityColors;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaceElevated.withValues(alpha: 0.62),
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusSmall),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: colors.textSecondary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _InitialLoading extends StatelessWidget {
@@ -342,7 +255,7 @@ class _EmptyAccountabilityState extends StatelessWidget {
             ),
             const SizedBox(height: RexUiTokens.space4),
             Text(
-              'Plans, commitments, and helpful nudges will show up here.',
+              'Add a goal or commitment above, or tell Rex in chat.',
               textAlign: TextAlign.center,
               maxLines: compact ? 2 : 3,
               overflow: TextOverflow.ellipsis,
@@ -397,47 +310,28 @@ class _ErrorBanner extends StatelessWidget {
   }
 }
 
-IconData _signalIcon(AccountabilitySignalType type) {
-  switch (type) {
-    case AccountabilitySignalType.ruleViolation:
-      return Icons.rule_rounded;
-    case AccountabilitySignalType.missedCommitment:
-      return Icons.event_busy_rounded;
-    case AccountabilitySignalType.planDrift:
-      return Icons.route_rounded;
-    case AccountabilitySignalType.repeatedPattern:
-      return Icons.repeat_rounded;
-    case AccountabilitySignalType.upcomingDeadline:
-      return Icons.event_rounded;
-    case AccountabilitySignalType.budgetRisk:
-      return Icons.savings_rounded;
-    case AccountabilitySignalType.positiveFollowThrough:
-      return Icons.check_circle_rounded;
-    case AccountabilitySignalType.unknown:
-      return Icons.info_outline_rounded;
-  }
-}
-
-Color _severityColor(BuildContext context, AccountabilitySeverity severity) {
-  final colors = context.clarityColors;
-  switch (severity) {
-    case AccountabilitySeverity.critical:
-    case AccountabilitySeverity.high:
-      return colors.danger;
-    case AccountabilitySeverity.medium:
-      return colors.accentStrong;
-    case AccountabilitySeverity.low:
-    case AccountabilitySeverity.info:
-    case AccountabilitySeverity.unknown:
-      return colors.accent;
-  }
-}
-
-String _sourceLabel(AccountabilitySourceRef source) {
-  return source.displayLabel;
-}
-
 String _shortDate(DateTime dateTime) {
   final local = dateTime.toLocal();
   return '${local.month}/${local.day}/${local.year}';
+}
+
+String _priorityLabel(int priority) {
+  if (priority >= 5) {
+    return 'High priority';
+  }
+  if (priority >= 4) {
+    return 'Medium priority';
+  }
+  if (priority >= 3) {
+    return 'Normal priority';
+  }
+  return 'Low priority';
+}
+
+String _statusLabel(String status) {
+  final normalized = status.trim().toLowerCase().replaceAll('_', ' ');
+  if (normalized.isEmpty) {
+    return 'Open';
+  }
+  return normalized[0].toUpperCase() + normalized.substring(1);
 }

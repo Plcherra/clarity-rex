@@ -1,48 +1,24 @@
 part of 'accountability_page.dart';
 
-class _SignalTile extends StatelessWidget {
-  const _SignalTile({required this.signal});
+class _GoalTile extends StatelessWidget {
+  const _GoalTile({required this.plan, required this.onArchive});
 
-  final AccountabilitySignal signal;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = _severityColor(context, signal.severity);
-
-    return _GoalTileShell(
-      icon: _signalIcon(signal.signalType),
-      iconColor: accent,
-      title: Text(signal.title, style: _tileTitleStyle(context)),
-      subtitle: _RecordSubtitle(
-        text: signal.summary.isEmpty ? signal.reason : signal.summary,
-        chips: [
-          signal.signalType.label,
-          signal.severity.label,
-          if (signal.sourceRefs.isNotEmpty)
-            _sourceLabel(signal.sourceRefs.first),
-        ],
-      ),
-    );
-  }
-}
-
-class _RuleTile extends StatelessWidget {
-  const _RuleTile({required this.rule});
-
-  final PersonalRule rule;
+  final PlanRecord plan;
+  final VoidCallback onArchive;
 
   @override
   Widget build(BuildContext context) {
+    final description = plan.description ?? plan.desiredOutcome ?? '';
+
     return _GoalTileShell(
-      icon: Icons.rule_rounded,
-      title: Text(rule.title),
-      subtitle: _RecordSubtitle(
-        text: rule.ruleText,
-        chips: [
-          rule.ruleType.accountabilityLabel,
-          'Priority ${rule.priority}',
-          rule.enforcementStyle.accountabilityLabel,
-        ],
+      icon: Icons.flag_rounded,
+      title: Text(plan.title, style: _tileTitleStyle(context)),
+      trailing: _GoalActions(onArchive: onArchive),
+      subtitle: _SimpleGoalDetails(
+        description: description,
+        deadline: plan.targetDate,
+        priority: plan.priority,
+        status: plan.status,
       ),
     );
   }
@@ -63,107 +39,30 @@ class _CommitmentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final description = commitment.commitmentText == commitment.title
+        ? ''
+        : commitment.commitmentText;
+
     return _GoalTileShell(
       icon: Icons.check_circle_outline_rounded,
-      title: Text(commitment.title),
+      title: Text(commitment.title, style: _tileTitleStyle(context)),
       trailing: _CommitmentActions(
         onComplete: onComplete,
         onMissed: onMissed,
         onArchive: onArchive,
       ),
-      subtitle: _RecordSubtitle(
-        text: commitment.commitmentText,
-        chips: [
-          commitment.commitmentType.accountabilityLabel,
-          commitment.status.accountabilityLabel,
-          if (commitment.dueAt != null) 'Due ${_shortDate(commitment.dueAt!)}',
-        ],
+      subtitle: _SimpleGoalDetails(
+        description: description,
+        deadline: commitment.dueAt,
+        priority: commitment.priority,
+        status: commitment.status,
       ),
     );
   }
 }
 
-class _PlanTile extends StatelessWidget {
-  const _PlanTile({required this.item, required this.onArchive});
-
-  final PlanHierarchyItem item;
-  final VoidCallback onArchive;
-
-  @override
-  Widget build(BuildContext context) {
-    final plan = item.plan;
-    final milestones = item.openMilestones;
-    final completed = item.completedMilestones;
-    final details = plan.description ?? plan.desiredOutcome ?? '';
-    final tasks = <Commitment>[
-      ...item.openCommitments,
-      for (final milestone in milestones) ...milestone.openCommitments,
-    ];
-    final achievementTargets = milestones
-        .where((milestone) => milestone.openCommitments.isEmpty)
-        .take(3)
-        .toList(growable: false);
-
-    return Column(
-      children: [
-        _GoalTileShell(
-          icon: Icons.flag_rounded,
-          title: Text(plan.title),
-          trailing: _PlanActions(onArchive: onArchive),
-          subtitle: _RecordSubtitle(
-            text: details,
-            chips: [
-              plan.planType.accountabilityLabel,
-              plan.status.accountabilityLabel,
-              if (plan.targetDate != null)
-                'Target ${_shortDate(plan.targetDate!)}',
-            ],
-          ),
-        ),
-        if (tasks.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(48, 8, 4, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: tasks
-                  .map((commitment) => _ChecklistRow(commitment: commitment))
-                  .toList(growable: false),
-            ),
-          ),
-        if (completed.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(48, 0, 4, 10),
-            child: _MilestoneBadgeWrap(milestones: completed),
-          ),
-        if (achievementTargets.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(48, 0, 4, 10),
-            child: _UpcomingTargets(milestones: achievementTargets),
-          ),
-        if (milestones.length >= 8)
-          const Padding(
-            padding: EdgeInsets.fromLTRB(48, 0, 4, 10),
-            child: _InlineWarning(text: 'This plan has many open milestones.'),
-          ),
-        if (milestones.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(48, 0, 4, 10),
-            child: _NestedGoalGroup(
-              title: 'Milestones',
-              children: milestones
-                  .map(
-                    (milestone) => _InternalMilestoneRow(milestone: milestone),
-                  )
-                  .toList(growable: false),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _PlanActions extends StatelessWidget {
-  const _PlanActions({required this.onArchive});
+class _GoalActions extends StatelessWidget {
+  const _GoalActions({required this.onArchive});
 
   final VoidCallback onArchive;
 
@@ -171,7 +70,7 @@ class _PlanActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
     return PopupMenuButton<String>(
-      tooltip: 'Plan actions',
+      tooltip: 'Goal actions',
       color: colors.surfaceSoft,
       iconColor: colors.textMuted,
       itemBuilder: (context) => const [
@@ -219,240 +118,6 @@ class _CommitmentActions extends StatelessWidget {
             onArchive();
         }
       },
-    );
-  }
-}
-
-class _UpcomingTargets extends StatelessWidget {
-  const _UpcomingTargets({required this.milestones});
-
-  final List<PlanMilestone> milestones;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.clarityColors;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Next targets',
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: colors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 7),
-        Wrap(
-          spacing: 7,
-          runSpacing: 7,
-          children: milestones
-              .map(
-                (milestone) => _MetaChip(
-                  label: milestone.targetDate == null
-                      ? milestone.title
-                      : '${milestone.title} - ${_shortDate(milestone.targetDate!)}',
-                ),
-              )
-              .toList(growable: false),
-        ),
-      ],
-    );
-  }
-}
-
-class _MilestoneBadgeWrap extends StatelessWidget {
-  const _MilestoneBadgeWrap({required this.milestones});
-
-  final List<PlanMilestone> milestones;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Completed milestones',
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 7),
-        Wrap(
-          spacing: 7,
-          runSpacing: 7,
-          children: milestones
-              .map(
-                (milestone) => _StatusChip(
-                  icon: Icons.emoji_events_outlined,
-                  label: milestone.title,
-                ),
-              )
-              .toList(growable: false),
-        ),
-      ],
-    );
-  }
-}
-
-class _NestedGoalGroup extends StatelessWidget {
-  const _NestedGoalGroup({required this.title, required this.children});
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.clarityColors;
-
-    return RexSurface(
-      color: colors.surfaceSoft.withValues(alpha: 0.66),
-      borderColor: colors.divider.withValues(alpha: 0.62),
-      radius: RexUiTokens.radiusSmall,
-      padding: const EdgeInsets.all(RexUiTokens.space12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$title / ${children.length}',
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: RexUiTokens.space4),
-          ...children,
-        ],
-      ),
-    );
-  }
-}
-
-class _InternalMilestoneRow extends StatelessWidget {
-  const _InternalMilestoneRow({required this.milestone});
-
-  final PlanMilestone milestone;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.clarityColors;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.subdirectory_arrow_right_rounded,
-            size: 18,
-            color: colors.accent,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  milestone.title,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Wrap(
-                  spacing: 7,
-                  runSpacing: 7,
-                  children: [
-                    _MetaChip(
-                      label: milestone.milestoneType.accountabilityLabel,
-                    ),
-                    _MetaChip(label: milestone.status.accountabilityLabel),
-                    if (milestone.targetDate != null)
-                      _MetaChip(
-                        label: 'Due ${_shortDate(milestone.targetDate!)}',
-                      ),
-                  ],
-                ),
-                if (milestone.openCommitments.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Column(
-                    children: milestone.openCommitments
-                        .map(
-                          (commitment) => _ChecklistRow(commitment: commitment),
-                        )
-                        .toList(growable: false),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChecklistRow extends StatelessWidget {
-  const _ChecklistRow({required this.commitment});
-
-  final Commitment commitment;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.clarityColors;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 7),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.check_circle_outline_rounded,
-            size: 17,
-            color: colors.accent,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              commitment.commitmentText.isEmpty
-                  ? commitment.title
-                  : commitment.commitmentText,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colors.textMuted,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DuplicateWarningTile extends StatelessWidget {
-  const _DuplicateWarningTile({required this.warning});
-
-  final DuplicateWarning warning;
-
-  @override
-  Widget build(BuildContext context) {
-    return _GoalTileShell(
-      icon: Icons.merge_type_rounded,
-      title: Text(warning.title),
-      subtitle: _RecordSubtitle(
-        text:
-            'Multiple active ${warning.recordType.accountabilityLabel}s may overlap.',
-        chips: [
-          warning.recordType.accountabilityLabel,
-          '${warning.recordIds.length} records',
-        ],
-      ),
     );
   }
 }

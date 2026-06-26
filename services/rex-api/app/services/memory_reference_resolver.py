@@ -201,6 +201,68 @@ class MemoryReferenceResolver:
         items.extend(await self._long_term_memory_items(limit=limit))
         items.extend(await self._entity_event_items(limit=limit))
         items.extend(await self._entity_items(limit=limit))
+        items.extend(await self._plan_items(limit=limit))
+        items.extend(await self._commitment_items(limit=limit))
+        return items
+
+    async def _plan_items(self, *, limit: int) -> list[KnowsReferenceMatch]:
+        method = getattr(self.memory_service, "list_plans", None)
+        if method is None:
+            return []
+        try:
+            records = await method(active=True, limit=limit)
+        except TypeError:
+            try:
+                records = await method(limit=limit)
+            except Exception:
+                return []
+        except Exception:
+            return []
+
+        items: list[KnowsReferenceMatch] = []
+        for record in records:
+            record_id = clean_text(record.get("id"))
+            title = clean_text(record.get("title") or record.get("description"))
+            if not record_id or not title:
+                continue
+            items.append(
+                KnowsReferenceMatch(
+                    table="plans",
+                    id=record_id,
+                    title=title,
+                    record=record,
+                )
+            )
+        return items
+
+    async def _commitment_items(self, *, limit: int) -> list[KnowsReferenceMatch]:
+        method = getattr(self.memory_service, "list_commitments", None)
+        if method is None:
+            return []
+        try:
+            records = await method(active=True, limit=limit)
+        except TypeError:
+            try:
+                records = await method(limit=limit)
+            except Exception:
+                return []
+        except Exception:
+            return []
+
+        items: list[KnowsReferenceMatch] = []
+        for record in records:
+            record_id = clean_text(record.get("id"))
+            title = clean_text(record.get("title") or record.get("commitment_text"))
+            if not record_id or not title:
+                continue
+            items.append(
+                KnowsReferenceMatch(
+                    table="commitments",
+                    id=record_id,
+                    title=title,
+                    record=record,
+                )
+            )
         return items
 
     async def _long_term_memory_items(
@@ -425,6 +487,12 @@ def _record_kind_labels(table: str, record: dict[str, Any]) -> list[str]:
             if entity_type == "person":
                 labels.append("people")
         labels.append(clean_text(record.get("relationship")))
+    elif table == "plans":
+        labels.extend(["plan", "plans", "goal", "goals"])
+        labels.append(clean_text(record.get("plan_type")))
+    elif table == "commitments":
+        labels.extend(["commitment", "commitments", "goal", "goals", "task"])
+        labels.append(clean_text(record.get("commitment_type")))
     return [label for label in labels if label]
 
 
@@ -464,6 +532,17 @@ def _record_visible_text_fields(table: str, record: dict[str, Any]) -> list[str]
                 clean_text(alias)
                 for alias in record.get("aliases") or []
             ],
+        ]
+    if table == "plans":
+        return [
+            clean_text(record.get("title")),
+            clean_text(record.get("description")),
+            clean_text(record.get("desired_outcome")),
+        ]
+    if table == "commitments":
+        return [
+            clean_text(record.get("title")),
+            clean_text(record.get("commitment_text")),
         ]
     return []
 

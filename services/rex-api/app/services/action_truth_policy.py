@@ -34,6 +34,10 @@ UNEXECUTED_DELETE_FALLBACK = (
     "from this turn. Tell me the exact saved item to delete and I'll ask for "
     "confirmation before changing it."
 )
+UNEXECUTED_GOAL_FALLBACK = (
+    "I can help save that as a goal, but I don't have a confirmed backend save "
+    "from this turn. Tell me the exact goal again and I'll save it directly."
+)
 
 _SUCCESS_TERMS = tuple(
     "saved|saving|updated|updating|fixed|fixing|changed|changing|deleted|deleting|"
@@ -154,13 +158,40 @@ def safe_unexecuted_memory_response(response: str) -> str:
         "I can help with that, but I don't have a confirmed saved change from this "
         "turn. Tell me the exact fact to save or try again."
     )
-def safe_unexecuted_delete_response(response: str, *, user_message: str) -> str:
+def safe_unexecuted_delete_response(
+    response: str,
+    *,
+    user_message: str,
+    conversation_history: list[dict] | None = None,
+) -> str:
+    from app.services.memory_delete_reference import (
+        is_delete_clarification_message,
+        response_claims_delete_success,
+    )
+
     cleaned = response.strip()
-    if not request_asks_delete(user_message):
+    should_guard = request_asks_delete(user_message) or is_delete_clarification_message(
+        user_message,
+        conversation_history,
+    )
+    if not should_guard:
+        return cleaned
+    if response_claims_delete_success(cleaned) or response_claims_unconfirmed_success(
+        cleaned
+    ):
+        return UNEXECUTED_DELETE_FALLBACK
+    return cleaned
+
+
+def safe_unexecuted_goal_response(response: str) -> str:
+    from app.services.memory_delete_reference import response_claims_goal_success
+
+    cleaned = response.strip()
+    if not response_claims_goal_success(cleaned):
         return cleaned
     if not response_claims_unconfirmed_success(cleaned):
         return cleaned
-    return UNEXECUTED_DELETE_FALLBACK
+    return UNEXECUTED_GOAL_FALLBACK
 def safe_unsupported_action_response(response: str, unsupported_actions: list[str]) -> str:
     cleaned = response.strip()
     if not unsupported_actions:

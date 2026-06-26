@@ -441,6 +441,14 @@ class FakeMemoryService:
                 return commitment
         return None
 
+    async def deactivate_commitment(self, commitment_id):
+        for commitment in self.commitments:
+            if commitment["id"] == commitment_id:
+                commitment["active"] = False
+                commitment["updated_at"] = "2026-05-11T00:00:00Z"
+                return commitment
+        return None
+
 
 class FakeAccountabilityService:
     def __init__(self, signals=None, should_fail=False):

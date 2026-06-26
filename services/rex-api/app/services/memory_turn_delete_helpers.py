@@ -53,6 +53,31 @@ class MemoryTurnDeleteHelpers:
             memory_changes=self._delete_confirmation_summary(target, matches[0]),
         )
 
+    async def _ask_delete_specifics(
+        self,
+        *,
+        conversation_id: str,
+        user_message: dict,
+    ) -> dict:
+        response = (
+            "Tell me the exact saved item to delete—for example, its title or "
+            "the words it starts with."
+        )
+        return await self._delete_turn_result(
+            response,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            memory_changes={
+                "created": 0,
+                "updated": 0,
+                "archived": 0,
+                "merged": 0,
+                "skipped": 0,
+                "confirmation_required": 0,
+                "records": [],
+            },
+        )
+
     async def _apply_confirmed_delete(
         self,
         target: str,

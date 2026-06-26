@@ -71,35 +71,10 @@ class SavedMemoryGroupList extends StatelessWidget {
       MemoryGroup.places,
       saved.places.map(_memoryTile).toList(growable: false),
     );
-    addGroup(MemoryGroup.goals, [
-      ...saved.goalMemories.map(_memoryTile),
-      ...saved.plans.map(
-        (plan) => PlanMemoryTile(
-          plan: plan,
-          onEdit: () => onEditPlan(plan),
-          onDeactivate: plan.active
-              ? () => onArchiveStructuredMemory(
-                  MemoryLayer.plans,
-                  plan.id,
-                  'plan',
-                )
-              : null,
-        ),
-      ),
-      ...saved.commitments.map(
-        (commitment) => CommitmentMemoryTile(
-          commitment: commitment,
-          onEdit: () => onEditCommitment(commitment),
-          onDeactivate: commitment.active
-              ? () => onArchiveStructuredMemory(
-                  MemoryLayer.commitments,
-                  commitment.id,
-                  'commitment',
-                )
-              : null,
-        ),
-      ),
-    ]);
+    addGroup(
+      MemoryGroup.goals,
+      saved.goalMemories.map(_memoryTile).toList(growable: false),
+    );
     addGroup(
       MemoryGroup.rules,
       saved.rules

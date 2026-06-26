@@ -6,6 +6,7 @@ from app.services.memory_failure_reporting import (
 )
 from app.services.memory_correction_service import MemoryCorrectionService
 from app.services.memory_correction_types import CorrectionIntentType
+from app.services.memory_delete_reference import is_vague_delete_target
 from app.services.memory_intent_service import MemoryIntentService, SimpleMemoryIntent
 from app.services.memory_path_policy import (
     direct_save_metadata,
@@ -121,6 +122,11 @@ class MemoryTurnService(
             delete_intent.intent_type == CorrectionIntentType.REMOVE_OBSOLETE
             and delete_intent.old_value
         ):
+            if is_vague_delete_target(delete_intent.old_value):
+                return await self._ask_delete_specifics(
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                )
             return await self._ask_delete_confirmation(
                 delete_intent.old_value,
                 conversation_id=conversation_id,

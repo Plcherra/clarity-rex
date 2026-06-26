@@ -213,12 +213,11 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                   else if (overview == null || overview.isEmpty)
                     const _EmptyAccountabilityState()
                   else ...[
-                    _OverviewSummary(overview: overview),
-                    const SizedBox(height: 20),
-                    _SignalSection(signals: overview.signals),
-                    const SizedBox(height: 20),
-                    _RuleSection(rules: overview.activeRules),
-                    const SizedBox(height: 20),
+                    _GoalsSection(
+                      plans: overview.activePlans,
+                      onArchivePlan: _archivePlan,
+                    ),
+                    const SizedBox(height: 24),
                     _CommitmentSection(
                       commitments: overview.openCommitments
                           .where(
@@ -231,20 +230,6 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                       onMissed: _missCommitment,
                       onArchive: _archiveCommitment,
                     ),
-                    const SizedBox(height: 20),
-                    _PlanSection(
-                      planHierarchy: overview.planHierarchy,
-                      plans: overview.activePlans,
-                      milestones: overview.openMilestones,
-                      completedMilestones: overview.completedMilestones,
-                      onArchivePlan: _archivePlan,
-                    ),
-                    if (overview.duplicateWarnings.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      _DuplicateWarningSection(
-                        warnings: overview.duplicateWarnings,
-                      ),
-                    ],
                   ],
                 ]),
               ),

@@ -188,6 +188,7 @@ class ChatTurnOrchestrator:
             chat_search_results_loaded=self.truth_service.has_chat_search_results(
                 ai_messages
             ),
+            conversation_history=conversation_history,
         )
         assistant_message = await self.memory_service.save_message(
             conversation_id,
@@ -381,6 +382,7 @@ class ChatTurnOrchestrator:
             chat_search_results_loaded=self.truth_service.has_chat_search_results(
                 ai_messages
             ),
+            conversation_history=conversation_history,
         )
         await self.memory_service.save_message(
             conversation_id,

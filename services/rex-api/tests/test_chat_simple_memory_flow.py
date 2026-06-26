@@ -1059,3 +1059,75 @@ async def test_simple_memory_non_confirmation_continues_normal_chat_without_save
         "User's mom's birthday is June 18."
     )
     assert ai_service.messages[-1]["content"] == "Why does that matter?"
+
+
+@pytest.mark.asyncio
+async def test_vague_delete_memory_asks_for_specific_title():
+    ai_service = FakeAIService(response="Deleted everything.")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    result = await chat_service.send_message("Can you delete a memory please?")
+
+    assert "exact saved item" in result["response"].casefold()
+    assert result["memory_changes"]["archived"] == 0
+    assert ai_service.messages == []
+
+
+@pytest.mark.asyncio
+async def test_delete_commitment_by_starting_as_reference():
+    ai_service = FakeAIService(response="Deleted the bad commitment.")
+    memory_service = FakeMemoryService()
+    memory_service.commitments.append(
+        {
+            "id": "commitment-junk",
+            "title": "Be a goal/commitment",
+            "commitment_text": "be a goal/commitment",
+            "commitment_type": "task",
+            "active": True,
+        }
+    )
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    requested = await chat_service.send_message("Can you delete a memory please?")
+    clarified = await chat_service.send_message(
+        "The one starting as 'be a goal...'",
+        requested["conversation_id"],
+    )
+    confirmed = await chat_service.send_message("Yes", clarified["conversation_id"])
+
+    assert "exact saved item" in requested["response"].casefold()
+    assert "Just to confirm" in clarified["response"]
+    assert confirmed["memory_changes"]["archived"] == 1
+    assert memory_service.commitments[0]["active"] is False
+    assert ai_service.messages == []
+
+
+@pytest.mark.asyncio
+async def test_hardware_goal_message_creates_two_plans_without_llm():
+    ai_service = FakeAIService(response="Confirmed—your next-month goal is set.")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    result = await chat_service.send_message(
+        "Get 32gb-64gb ram and 1tb-2tb storage by next month"
+    )
+
+    assert ai_service.generate_calls == 0
+    assert result["memory_changes"]["created"] == 2
+    assert len(memory_service.created_plans) == 2

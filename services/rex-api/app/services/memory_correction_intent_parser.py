@@ -4,6 +4,7 @@ import re
 
 from app.services.entity_normalization_service import EntityNormalizationService
 from app.services.memory_correction_types import CorrectionIntent, CorrectionIntentType
+from app.services.memory_delete_reference import extract_reference_delete_target
 
 _POLITE_SUFFIX_PATTERN = re.compile(
     r"(?:\s+|^)(?:please|thanks|thank you|thx|haha|ha ha|lol|ok|okay)\.?$",
@@ -63,6 +64,15 @@ class MemoryCorrectionIntentParser:
                 old_value=trim_removal_target(removal.group(1)),
                 new_value="[archived]",
                 confidence=0.9,
+            )
+
+        reference_target = extract_reference_delete_target(cleaned)
+        if reference_target:
+            return CorrectionIntent(
+                CorrectionIntentType.REMOVE_OBSOLETE,
+                old_value=trim_removal_target(reference_target),
+                new_value="[archived]",
+                confidence=0.88,
             )
 
         if re.search(r"\bnot\s+a\s+plan\b.*\b(?:task|commitment|checklist)\b", lowered):

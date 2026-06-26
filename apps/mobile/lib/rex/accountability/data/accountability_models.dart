@@ -84,15 +84,15 @@ class AccountabilityOverview {
   final List<DuplicateWarning> duplicateWarnings;
   final Map<String, dynamic> metadata;
 
-  bool get isEmpty =>
-      signals.isEmpty &&
-      activeRules.isEmpty &&
-      openCommitments.isEmpty &&
-      activePlans.isEmpty &&
-      openMilestones.isEmpty &&
-      completedMilestones.isEmpty &&
-      planHierarchy.isEmpty &&
-      duplicateWarnings.isEmpty;
+  bool get isEmpty => !hasGoalsOrCommitments;
+
+  bool get hasGoalsOrCommitments {
+    final standaloneCommitments = openCommitments.where(
+      (commitment) =>
+          commitment.planId == null && commitment.milestoneId == null,
+    );
+    return activePlans.isNotEmpty || standaloneCommitments.isNotEmpty;
+  }
 
   int get activePlanCount =>
       _int(metadata['active_plan_count']) ?? activePlans.length;
