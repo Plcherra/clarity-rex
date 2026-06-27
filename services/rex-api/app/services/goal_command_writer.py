@@ -7,7 +7,9 @@ from typing import Any, Optional
 from app.models.commitment import CommitmentCreateRequest
 from app.models.plan import PlanCreateRequest
 from app.services.goal_command_parsing import (
+    expand_goal_save_items,
     is_meta_instruction_body,
+    normalize_equipment_goal_title,
     split_compound_goal_bodies,
 )
 from app.services.goal_command_results import (
@@ -57,12 +59,15 @@ class GoalCommandWriter:
                 record_type=command.record_type,
                 title=command.title,
             )
-        split_items = split_compound_goal_bodies(command.body)
+        split_items = expand_goal_save_items(
+            title=command.title,
+            description=command.body,
+        ) or split_compound_goal_bodies(command.body)
         if len(split_items) > 1:
             split_commands = [
                 GoalCommand(
                     kind="goal",
-                    title=goal_title(item),
+                    title=normalize_equipment_goal_title(item),
                     body=item,
                     record_type=plan_type(item),
                     target_text=command.target_text,
@@ -87,7 +92,10 @@ class GoalCommandWriter:
                     source_message_id=str(user_message.get("id") or "") or None,
                     target_date=command.target_text,
                     priority=4,
-                    metadata={"source": "explicit_goal_command"},
+                    metadata={
+                        "source": "explicit_goal_command",
+                        "prevent_related_merge": True,
+                    },
                 )
             )
         except Exception:
@@ -151,7 +159,10 @@ class GoalCommandWriter:
                         source_message_id=str(user_message.get("id") or "") or None,
                         target_date=command.target_text,
                         priority=4,
-                        metadata={"source": "explicit_goal_command"},
+                        metadata={
+                            "source": "explicit_goal_command",
+                            "prevent_related_merge": True,
+                        },
                     )
                 )
             except Exception:

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/accountability/data/accountability_models.dart';
+import 'package:clarity/rex/accountability/presentation/accountability_display_helpers.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
@@ -11,6 +12,7 @@ import 'package:clarity/widgets/clarity_path_loader.dart';
 part 'accountability_page_sections.dart';
 part 'accountability_page_shared.dart';
 part 'accountability_page_tiles.dart';
+part 'accountability_page_detail_sheets.dart';
 
 class AccountabilityPage extends ConsumerStatefulWidget {
   const AccountabilityPage({super.key, this.showAppBar = true});
@@ -131,6 +133,54 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     _showMutationResult(saved ? 'Goal archived.' : null);
   }
 
+  Future<void> _openPlanDetail(PlanRecord plan) async {
+    await _showPlanDetailSheet(
+      context,
+      plan: plan,
+      onSave: ({
+        title,
+        description,
+        priority,
+        status,
+        targetDate,
+      }) async {
+        final saved = await ref.read(accountabilityProvider.notifier).updatePlan(
+          plan.id,
+          title: title,
+          description: description,
+          priority: priority,
+          status: status,
+          targetDateIso: targetDate?.toUtc().toIso8601String(),
+        );
+        if (mounted) {
+          _showMutationResult(saved ? 'Goal updated.' : null);
+        }
+        return saved;
+      },
+      onArchive: () => _archivePlan(plan),
+    );
+  }
+
+  Future<void> _editCommitment(Commitment commitment) async {
+    await _showCommitmentEditSheet(
+      context,
+      commitment: commitment,
+      onSave: ({title, commitmentText, priority}) async {
+        final saved =
+            await ref.read(accountabilityProvider.notifier).updateCommitment(
+          commitment.id,
+          title: title,
+          commitmentText: commitmentText,
+          priority: priority,
+        );
+        if (mounted) {
+          _showMutationResult(saved ? 'Commitment updated.' : null);
+        }
+        return saved;
+      },
+    );
+  }
+
   Future<bool?> _confirmArchive({
     required String title,
     required String body,
@@ -211,11 +261,13 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                   if (state.isLoading && overview == null)
                     const _InitialLoading()
                   else if (overview == null || overview.isEmpty)
-                    const _EmptyAccountabilityState()
+                    _EmptyAccountabilityState(onAddGoal: _createPlan)
                   else ...[
                     _GoalsSection(
                       plans: overview.activePlans,
+                      onOpenPlan: _openPlanDetail,
                       onArchivePlan: _archivePlan,
+                      onAddGoal: _createPlan,
                     ),
                     const SizedBox(height: 24),
                     _CommitmentSection(
@@ -229,6 +281,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                       onComplete: _completeCommitment,
                       onMissed: _missCommitment,
                       onArchive: _archiveCommitment,
+                      onEdit: _editCommitment,
                     ),
                   ],
                 ]),

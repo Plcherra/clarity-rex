@@ -80,7 +80,9 @@ class PlanMergeService:
                     _corrected_plan_payload(payload, wrong_names),
                 )
             else:
-                related_duplicate = _best_related_plan(existing, payload)
+                related_duplicate = None
+                if not (payload.get("metadata") or {}).get("prevent_related_merge"):
+                    related_duplicate = _best_related_plan(existing, payload)
                 if related_duplicate:
                     plan = await self._merge_existing_plan(
                         related_duplicate,

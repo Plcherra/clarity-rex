@@ -6,7 +6,9 @@ import re
 from typing import Any
 
 from app.services.goal_command_parsing import (
+    expand_goal_save_items,
     is_meta_instruction_body,
+    normalize_equipment_goal_title,
     split_compound_goal_bodies,
 )
 
@@ -35,14 +37,20 @@ def is_malformed_numbered_goal(plan: dict[str, Any]) -> bool:
 
 
 def split_plan_bodies(plan: dict[str, Any]) -> list[str]:
-    source = (
-        str(plan.get("description") or "").strip()
-        or str(plan.get("desired_outcome") or "").strip()
-        or str(plan.get("title") or "").strip()
+    items = expand_goal_save_items(
+        title=str(plan.get("title") or "").strip() or None,
+        description=str(plan.get("description") or "").strip() or None,
+        desired_outcome=str(plan.get("desired_outcome") or "").strip() or None,
     )
-    items = split_compound_goal_bodies(source)
+    if not items:
+        source = (
+            str(plan.get("description") or "").strip()
+            or str(plan.get("desired_outcome") or "").strip()
+            or str(plan.get("title") or "").strip()
+        )
+        items = split_compound_goal_bodies(source)
     return [
-        _clean_repair_item(item)
+        normalize_equipment_goal_title(_clean_repair_item(item))
         for item in items
         if item and not is_meta_instruction_body(_clean_repair_item(item))
     ]

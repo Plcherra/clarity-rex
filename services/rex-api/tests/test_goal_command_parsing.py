@@ -32,8 +32,20 @@ def test_split_numbered_hardware_goals():
         "2 goals. 1 buy 32-64gb ram. 2 buy 1-2tb storage"
     )
     assert len(items) == 2
+    assert items[0].casefold().startswith("get 32")
     assert "ram" in items[0].casefold()
     assert "storage" in items[1].casefold() or "tb" in items[1].casefold()
+    assert not items[0].startswith("1 ")
+    assert not items[1].startswith("2 ")
+
+
+def test_expand_goal_save_items_uses_title_or_body():
+    from app.services.goal_command_parsing import expand_goal_save_items
+
+    items = expand_goal_save_items(
+        title="2 goals. 1 buy 32-64gb ram. 2 buy 1-2tb storage",
+    )
+    assert len(items) == 2
 
 
 def test_should_defer_to_delete_confirmation():

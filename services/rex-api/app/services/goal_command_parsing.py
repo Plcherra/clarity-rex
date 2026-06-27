@@ -77,13 +77,34 @@ def clean_purchase_clause(text: str) -> str:
     return cleaned
 
 
+_NUMBERED_ITEM_PREFIX = re.compile(r"^\d+[.)]?\s+", re.IGNORECASE)
+
+
 def normalize_equipment_goal_title(text: str) -> str:
-    cleaned = clean_purchase_clause(text)
+    cleaned = re.sub(r"\s+", " ", str(text or "")).strip(" .")
+    cleaned = _NUMBERED_ITEM_PREFIX.sub("", cleaned).strip()
+    cleaned = clean_purchase_clause(cleaned)
     if not cleaned:
         return "Untitled"
     if not _PURCHASE_VERB.search(cleaned):
         cleaned = f"Get {cleaned}"
     return cleaned
+
+
+def expand_goal_save_items(
+    *,
+    title: str | None = None,
+    description: str | None = None,
+    desired_outcome: str | None = None,
+) -> list[str]:
+    for source in (description, desired_outcome, title):
+        text = re.sub(r"\s+", " ", str(source or "")).strip(" .")
+        if not text:
+            continue
+        items = split_compound_goal_bodies(text)
+        if len(items) >= 2:
+            return items
+    return []
 
 
 def split_numbered_goal_bodies(text: str) -> list[str]:

@@ -10,6 +10,7 @@ from typing import Any
 
 from app.models.plan import PlanCreateRequest
 from app.services.goal_command_formatting import goal_title, plan_type
+from app.services.goal_command_parsing import normalize_equipment_goal_title
 from app.services.goal_repair_helpers import is_malformed_numbered_goal, split_plan_bodies
 from app.services.http_client import shutdown_http_client, startup_http_client
 from app.services.memory_service import SupabaseMemoryService
@@ -77,7 +78,7 @@ async def repair_malformed_goals(
                 created = await plan_service.create_plan(
                     PlanCreateRequest(
                         plan_type=plan_type(item),
-                        title=goal_title(item),
+                        title=goal_title(normalize_equipment_goal_title(item)),
                         description=item,
                         desired_outcome=item,
                         source_conversation_id=plan.get("source_conversation_id"),

@@ -68,6 +68,41 @@ class AccountabilityApi {
     return PlanRecord.fromJson(data);
   }
 
+  Future<PlanRecord> updatePlan(
+    String planId, {
+    String? title,
+    String? description,
+    int? priority,
+    String? status,
+    String? targetDateIso,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (title != null) {
+      payload['title'] = title;
+    }
+    if (description != null) {
+      payload['description'] = description;
+      payload['desired_outcome'] = description;
+    }
+    if (priority != null) {
+      payload['priority'] = priority;
+    }
+    if (status != null) {
+      payload['status'] = status;
+    }
+    if (targetDateIso != null) {
+      payload['target_date'] = targetDateIso;
+    }
+    final response = await _apiClient.patchJson('/plans/$planId', payload);
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const AccountabilityApiException(
+        'Backend returned an invalid plan response.',
+      );
+    }
+    return PlanRecord.fromJson(data);
+  }
+
   Future<void> archivePlan(String planId) async {
     final response = await _apiClient.delete('/plans/$planId');
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -92,6 +127,33 @@ class AccountabilityApi {
         if (_isMorningRoutine(commitmentText)) 'routine': 'morning',
       },
     });
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const AccountabilityApiException(
+        'Backend returned an invalid commitment response.',
+      );
+    }
+    return Commitment.fromJson(data);
+  }
+
+  Future<Commitment> updateCommitment(
+    String commitmentId, {
+    String? title,
+    String? commitmentText,
+    int? priority,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (title != null) {
+      payload['title'] = title;
+    }
+    if (commitmentText != null) {
+      payload['commitment_text'] = commitmentText;
+    }
+    if (priority != null) {
+      payload['priority'] = priority;
+    }
+    final response =
+        await _apiClient.patchJson('/commitments/$commitmentId', payload);
     final data = _decodeResponse(response);
     if (data is! Map<String, dynamic>) {
       throw const AccountabilityApiException(

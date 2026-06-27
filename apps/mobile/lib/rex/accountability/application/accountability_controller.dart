@@ -60,6 +60,26 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     );
   }
 
+  Future<bool> updatePlan(
+    String planId, {
+    String? title,
+    String? description,
+    int? priority,
+    String? status,
+    String? targetDateIso,
+  }) {
+    return _runMutation(
+      () => ref.read(accountabilityApiProvider).updatePlan(
+        planId,
+        title: title,
+        description: description,
+        priority: priority,
+        status: status,
+        targetDateIso: targetDateIso,
+      ),
+    );
+  }
+
   Future<bool> archivePlan(String planId) {
     return _runMutation(
       () => ref.read(accountabilityApiProvider).archivePlan(planId),
@@ -79,6 +99,22 @@ class AccountabilityController extends Notifier<AccountabilityState> {
             commitmentText: commitmentText,
             commitmentType: commitmentType,
           ),
+    );
+  }
+
+  Future<bool> updateCommitment(
+    String commitmentId, {
+    String? title,
+    String? commitmentText,
+    int? priority,
+  }) {
+    return _runMutation(
+      () => ref.read(accountabilityApiProvider).updateCommitment(
+        commitmentId,
+        title: title,
+        commitmentText: commitmentText,
+        priority: priority,
+      ),
     );
   }
 

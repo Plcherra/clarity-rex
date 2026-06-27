@@ -337,6 +337,30 @@ async def test_hardware_list_creates_two_separate_goals():
 
 
 @pytest.mark.asyncio
+async def test_numbered_goals_phrase_creates_two_separate_goals():
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    message = "2 goals. 1 buy 32-64gb ram. 2 buy 1-2tb storage"
+    user_message = await _user_message(memory_service, conversation_id, message)
+
+    result = await GoalCommandService(memory_service).handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["created"] == 2
+    assert len(memory_service.created_plans) == 2
+    titles = [plan["title"].casefold() for plan in memory_service.created_plans]
+    assert any("ram" in title for title in titles)
+    assert any("storage" in title or "tb" in title for title in titles)
+    assert all("2 goals" not in title for title in titles)
+
+
+@pytest.mark.asyncio
 async def test_yes_please_after_hardware_message_saves_goals_from_history():
     memory_service = FakeMemoryService()
     conversation_id = await memory_service.create_conversation()

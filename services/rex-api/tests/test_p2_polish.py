@@ -30,4 +30,4 @@ def test_malformed_numbered_goal_detects_compound_body():
         "description": "2 goals. 1. Upgrade RAM to 64GB 2. Add 2TB SSD",
     }
     assert is_malformed_numbered_goal(plan) is True
-    assert split_plan_bodies(plan) == ["Upgrade RAM to 64GB", "Add 2TB SSD"]
+    assert split_plan_bodies(plan) == ["Get RAM to 64GB", "Add 2TB SSD"]

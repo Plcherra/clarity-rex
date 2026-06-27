@@ -17,6 +17,7 @@ from app.services.goal_command_formatting import (
     target_date_for_combined_text,
 )
 from app.services.goal_command_parsing import (
+    expand_goal_save_items,
     is_affirmation_or_goal_prefix,
     looks_like_equipment_goal,
     normalize_equipment_goal_title,
@@ -126,7 +127,21 @@ class GoalCommandDetector:
             conversation_history=conversation_history,
             time_context=time_context,
         )
-        return [command] if command is not None else []
+        if command is None:
+            return []
+        if command.kind == "goal":
+            items = expand_goal_save_items(
+                title=command.title,
+                description=command.body,
+            )
+            if len(items) >= 2:
+                return self.goal_commands_from_items(
+                    items,
+                    message=message,
+                    conversation_history=conversation_history,
+                    time_context=time_context,
+                )
+        return [command]
 
     def detect_command(
         self,
@@ -320,7 +335,7 @@ class GoalCommandDetector:
         return [
             GoalCommand(
                 kind="goal",
-                title=item,
+                title=normalize_equipment_goal_title(item),
                 body=item,
                 record_type=plan_type(item),
                 target_text=target_text,
