@@ -42,6 +42,8 @@ class PlaidSyncResult:
     transactions_modified: int
     transactions_removed: int
     next_cursor: Optional[str]
+    balances_refreshed: bool = False
+    transactions_refresh_status: str = "skipped"
 
 
 def required_string(data: dict[str, Any], key: str) -> str:

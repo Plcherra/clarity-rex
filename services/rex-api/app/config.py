@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     plaid_account_filters_json: Optional[str] = None
     plaid_timeout_seconds: int = 30
     plaid_token_encryption_secret: Optional[str] = None
+    plaid_enable_transactions_refresh: bool = False
 
     deepgram_api_key: Optional[str] = None
     deepgram_model: str = "nova-3"

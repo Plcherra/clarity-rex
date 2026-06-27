@@ -129,6 +129,9 @@ final class PlaidAccountService {
       transactionsAdded: _intOrZero(decoded['transactions_added']),
       transactionsModified: _intOrZero(decoded['transactions_modified']),
       transactionsRemoved: _intOrZero(decoded['transactions_removed']),
+      balancesRefreshed: decoded['balances_refreshed'] == true,
+      transactionsRefreshStatus:
+          _stringOrNull(decoded['transactions_refresh_status']) ?? 'skipped',
     );
   }
 

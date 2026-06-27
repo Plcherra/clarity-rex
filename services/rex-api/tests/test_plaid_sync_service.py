@@ -697,9 +697,11 @@ async def test_sync_item_persists_accounts_transactions_and_cursor(monkeypatch):
 async def test_sync_item_with_bank_refresh_requests_fresh_data(monkeypatch):
     calls = []
     plaid_client = FullSyncPlaidClient()
+    active_settings = settings()
+    active_settings.plaid_enable_transactions_refresh = True
     service = PlaidSyncService(
         plaid_client=plaid_client,
-        settings=settings(),
+        settings=active_settings,
     )
     token_ref = service._encrypted_access_token_ref("access-token-secret")
 
@@ -718,7 +720,37 @@ async def test_sync_item_with_bank_refresh_requests_fresh_data(monkeypatch):
     )
 
     assert result.accounts_synced == 2
+    assert result.balances_refreshed is True
+    assert result.transactions_refresh_status == "ok"
     assert plaid_client.refresh_calls == 1
+    assert plaid_client.balance_get_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_sync_item_skips_transactions_refresh_when_disabled(monkeypatch):
+    plaid_client = FullSyncPlaidClient()
+    service = PlaidSyncService(
+        plaid_client=plaid_client,
+        settings=settings(),
+    )
+    token_ref = service._encrypted_access_token_ref("access-token-secret")
+
+    async def fake_request(method, url, **kwargs):
+        return sync_storage_response(url, kwargs.get("json"), token_ref)
+
+    monkeypatch.setattr(
+        "app.services.plaid_cursor_service.request_with_retries",
+        fake_request,
+    )
+
+    result = await service.sync_item(
+        "item-record-1",
+        request_bank_refresh=True,
+    )
+
+    assert result.balances_refreshed is True
+    assert result.transactions_refresh_status == "skipped"
+    assert plaid_client.refresh_calls == 0
     assert plaid_client.balance_get_calls == 1
 
 

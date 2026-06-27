@@ -108,28 +108,51 @@ class PlaidSyncService:
             phase = "decrypt_access_token"
             access_token = self._decrypt_access_token_ref(access_token_ref)
             user_id = required_string(item, "user_id")
+            balances_refreshed = False
+            transactions_refresh_status = "skipped"
             accounts_response = None
             if request_bank_refresh:
-                phase = "refresh_transactions"
                 logger.info(
                     "Plaid manual refresh started user=%s item=%s",
                     _safe_user_label(user_id),
                     _safe_item_label(normalized_item_id),
                 )
-                try:
-                    await self.plaid_client.refresh_transactions(access_token)
-                except PlaidApiClientError as error:
-                    logger.warning(
-                        "Plaid transaction refresh failed user=%s item=%s code=%s",
+                if self.settings.plaid_enable_transactions_refresh:
+                    phase = "refresh_transactions"
+                    try:
+                        await self.plaid_client.refresh_transactions(access_token)
+                        transactions_refresh_status = "ok"
+                    except PlaidApiClientError as error:
+                        error_code = _safe_error_detail(error.plaid_error_code)
+                        if error_code == "INVALID_PRODUCT":
+                            transactions_refresh_status = "unavailable"
+                            logger.info(
+                                "Plaid transactions refresh unavailable user=%s item=%s "
+                                "(Plaid transactions_refresh add-on not enabled for this client)",
+                                _safe_user_label(user_id),
+                                _safe_item_label(normalized_item_id),
+                            )
+                        else:
+                            transactions_refresh_status = "failed"
+                            logger.warning(
+                                "Plaid transaction refresh failed user=%s item=%s code=%s",
+                                _safe_user_label(user_id),
+                                _safe_item_label(normalized_item_id),
+                                error_code,
+                            )
+                else:
+                    logger.info(
+                        "Plaid transactions refresh skipped user=%s item=%s "
+                        "(PLAID_ENABLE_TRANSACTIONS_REFRESH is false)",
                         _safe_user_label(user_id),
                         _safe_item_label(normalized_item_id),
-                        _safe_error_detail(error.plaid_error_code),
                     )
                 phase = "fetch_balances"
                 try:
                     accounts_response = await self.plaid_client.get_account_balances(
                         access_token
                     )
+                    balances_refreshed = True
                 except PlaidApiClientError as error:
                     logger.warning(
                         "Plaid balance fetch failed user=%s item=%s code=%s",
@@ -160,13 +183,16 @@ class PlaidSyncService:
                 account_map=account_map,
             )
             logger.info(
-                "Plaid transaction sync completed user=%s item=%s added=%s modified=%s removed=%s bank_refresh=%s",
+                "Plaid transaction sync completed user=%s item=%s added=%s modified=%s removed=%s "
+                "bank_refresh=%s balances_refreshed=%s transactions_refresh=%s",
                 _safe_user_label(user_id),
                 _safe_item_label(normalized_item_id),
                 sync_counts["added"],
                 sync_counts["modified"],
                 sync_counts["removed"],
                 request_bank_refresh,
+                balances_refreshed,
+                transactions_refresh_status,
             )
         except PlaidApiClientError as error:
             logger.warning(
@@ -203,6 +229,8 @@ class PlaidSyncService:
             transactions_modified=sync_counts["modified"],
             transactions_removed=sync_counts["removed"],
             next_cursor=sync_counts["next_cursor"],
+            balances_refreshed=balances_refreshed,
+            transactions_refresh_status=transactions_refresh_status,
         )
 
     async def sanitized_accounts_for_item(

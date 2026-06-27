@@ -92,6 +92,8 @@ class PlaidSyncItemResponse(BaseModel):
     transactions_modified: int
     transactions_removed: int
     next_cursor: Optional[str] = None
+    balances_refreshed: bool = False
+    transactions_refresh_status: str = "skipped"
 
 
 @router.get("/oauth", include_in_schema=False)
@@ -358,6 +360,8 @@ async def sync_item(
         transactions_modified=result.transactions_modified,
         transactions_removed=result.transactions_removed,
         next_cursor=result.next_cursor,
+        balances_refreshed=result.balances_refreshed,
+        transactions_refresh_status=result.transactions_refresh_status,
     )
 
 

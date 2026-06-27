@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/models/models.dart';
+import '../../plaid/application/plaid_connection_models.dart';
 import '../../plaid/application/plaid_link_service.dart';
 import '../data/connect_bank_entry_point_tracker.dart';
 import '../data/plaid_account_service.dart';
@@ -245,13 +246,16 @@ class _AccountsScreenState extends State<AccountsScreen> {
       );
       final transactionCount = summaries.fold<int>(
         0,
-        (sum, item) => sum + item.transactionsAdded + item.transactionsModified,
+        (sum, item) => sum + item.transactionUpdates,
       );
-      final message = transactionCount > 0
-          ? 'Accounts refreshed: $accountCount account${accountCount == 1 ? '' : 's'}, '
-              '$transactionCount transaction update${transactionCount == 1 ? '' : 's'}.'
-          : 'Accounts refreshed: $accountCount account${accountCount == 1 ? '' : 's'}. '
-              'Balances updated; no new transactions since last sync.';
+      final anyRefreshUnavailable = summaries.any(
+        (item) => item.transactionsRefreshUnavailable,
+      );
+      final message = buildPlaidRefreshMessage(
+        accountCount: accountCount,
+        transactionUpdates: transactionCount,
+        anyRefreshUnavailable: anyRefreshUnavailable,
+      );
       setState(() => _accountNotice = message);
       _refreshAfterPlaidConnection();
       ScaffoldMessenger.of(
@@ -289,12 +293,11 @@ class _AccountsScreenState extends State<AccountsScreen> {
     try {
       final summary = await _resyncItem(itemId);
       if (!context.mounted) return;
-      final updates = summary.transactionsAdded + summary.transactionsModified;
-      final message = updates > 0
-          ? 'Account refreshed: ${summary.accountsSynced} account${summary.accountsSynced == 1 ? '' : 's'}, '
-              '$updates transaction update${updates == 1 ? '' : 's'}.'
-          : 'Account refreshed: ${summary.accountsSynced} account${summary.accountsSynced == 1 ? '' : 's'}. '
-              'Balances updated; no new transactions since last sync.';
+      final message = buildPlaidRefreshMessage(
+        accountCount: summary.accountsSynced,
+        transactionUpdates: summary.transactionUpdates,
+        anyRefreshUnavailable: summary.transactionsRefreshUnavailable,
+      );
       setState(() => _accountNotice = message);
       _refreshAfterPlaidConnection();
       ScaffoldMessenger.of(

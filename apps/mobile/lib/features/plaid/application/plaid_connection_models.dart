@@ -124,6 +124,8 @@ final class PlaidSyncSummary {
     required this.transactionsAdded,
     required this.transactionsModified,
     required this.transactionsRemoved,
+    this.balancesRefreshed = false,
+    this.transactionsRefreshStatus = 'skipped',
   });
 
   final String itemId;
@@ -131,6 +133,33 @@ final class PlaidSyncSummary {
   final int transactionsAdded;
   final int transactionsModified;
   final int transactionsRemoved;
+  final bool balancesRefreshed;
+  final String transactionsRefreshStatus;
+
+  int get transactionUpdates => transactionsAdded + transactionsModified;
+
+  bool get transactionsRefreshUnavailable =>
+      transactionsRefreshStatus == 'unavailable';
+}
+
+String buildPlaidRefreshMessage({
+  required int accountCount,
+  required int transactionUpdates,
+  required bool anyRefreshUnavailable,
+}) {
+  final accountLabel =
+      '$accountCount account${accountCount == 1 ? '' : 's'}';
+  if (transactionUpdates > 0) {
+    return 'Accounts refreshed: $accountLabel, '
+        '$transactionUpdates transaction update${transactionUpdates == 1 ? '' : 's'}.';
+  }
+  if (anyRefreshUnavailable) {
+    return 'Accounts refreshed: $accountLabel. Balances updated. '
+        'No new transactions yet — Plaid will sync on its schedule '
+        '(on-demand transaction pull is not enabled on this Plaid plan).';
+  }
+  return 'Accounts refreshed: $accountLabel. '
+      'Balances updated; no new transactions since last sync.';
 }
 
 abstract interface class PlaidLinkTokenApi {
