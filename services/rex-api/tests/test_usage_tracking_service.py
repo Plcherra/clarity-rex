@@ -53,7 +53,11 @@ async def test_record_event_uses_service_role_insert(monkeypatch):
         return FakeResponse()
 
     monkeypatch.setattr(usage_module, "request_with_retries", fake_request)
-    service = UsageTrackingService(settings=_settings())
+    settings = _settings()
+    settings.usage_grok_cents_per_1k_tokens = 50
+    settings.usage_grok_input_cents_per_1k_tokens = 0
+    settings.usage_grok_output_cents_per_1k_tokens = 0
+    service = UsageTrackingService(settings=settings)
 
     ok = await service.record_llm_turn(
         user_id="00000000-0000-0000-0000-000000000001",
@@ -71,20 +75,9 @@ async def test_record_event_uses_service_role_insert(monkeypatch):
     assert calls[0]["headers"]["Authorization"] == "Bearer service-key"
     assert calls[0]["json"]["event_type"] == "llm"
     assert calls[0]["json"]["provider"] == "grok"
-    assert "estimated_cost_cents" not in calls[0]["json"]
+    assert calls[0]["json"]["unit_count"] == 450.0
+    assert calls[0]["json"]["estimated_cost_cents"] == 22.5
     assert "metadata" not in calls[0]["json"]
-    assert "unit_count" not in calls[0]["json"]
-    assert set(calls[0]["json"]) == {
-        "user_id",
-        "event_type",
-        "surface",
-        "feature",
-        "channel",
-        "provider",
-        "model",
-        "latency_ms",
-        "status",
-    }
 
 
 @pytest.mark.asyncio
@@ -111,7 +104,7 @@ async def test_record_event_fails_quietly_on_rejected_event_type(monkeypatch):
 async def test_user_voice_usage_summarizes_today_week_and_month(monkeypatch):
     async def fake_request(method, url, headers=None, json=None):
         assert method == "GET"
-        assert "user_voice_summaries" in url
+        assert "owner_usage_daily" in url
         assert "usage_date=gte.2026-06-01" in url
         assert "user_id=eq.user-1" in url
         response = FakeResponse()
@@ -121,8 +114,11 @@ async def test_user_voice_usage_summarizes_today_week_and_month(monkeypatch):
                 "usage_date": "2026-06-06",
                 "voice_seconds": 60,
                 "llm_calls": 2,
+                "chat_llm_calls": 1,
+                "voice_llm_calls": 1,
                 "stt_seconds": 55,
                 "tts_seconds": 20,
+                "estimated_cost_cents": 12.5,
             },
             {
                 "user_id": "user-1",
@@ -170,8 +166,11 @@ async def test_owner_usage_allows_configured_owner_without_client_secret(monkeyp
                 "usage_date": "2026-06-06",
                 "voice_seconds": 60,
                 "llm_calls": 2,
+                "chat_llm_calls": 1,
+                "voice_llm_calls": 1,
                 "stt_seconds": 55,
                 "tts_seconds": 20,
+                "estimated_cost_cents": 12.5,
             }
         ]
         return response

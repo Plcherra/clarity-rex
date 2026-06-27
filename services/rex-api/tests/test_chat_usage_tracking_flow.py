@@ -40,6 +40,9 @@ async def test_send_message_records_one_llm_usage_event_for_normal_chat_turn():
     assert usage.llm_turns[0]["surface"] == "assistant"
     assert usage.llm_turns[0]["channel"] == "chat"
     assert usage.llm_turns[0]["status"] == "success"
+    assert usage.llm_turns[0]["prompt_tokens"] == 100
+    assert usage.llm_turns[0]["completion_tokens"] == 40
+    assert usage.llm_turns[0]["token_count"] == 140
     assert "How is my day?" not in str(usage.llm_turns[0])
 
 

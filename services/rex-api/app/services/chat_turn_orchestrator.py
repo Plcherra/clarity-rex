@@ -20,6 +20,7 @@ from app.services.chat_turn_orchestrator_support import (
     turn_trace_event,
 )
 from app.services.chat_usage_recorder import ChatUsageRecorder
+from app.services.grok_usage import GrokUsageHolder
 from app.services.clarity_action_parser import (
     ClarityActionParser,
     ClarityActionStreamFilter,
@@ -254,8 +255,13 @@ class ChatTurnOrchestrator:
         if max_response_tokens is not None:
             ai_kwargs["max_tokens"] = max_response_tokens
         llm_started_at = time.perf_counter()
+        usage_holder = GrokUsageHolder()
         try:
-            async for token in self.ai_service.stream_response(ai_messages, **ai_kwargs):
+            async for token in self.ai_service.stream_response(
+                ai_messages,
+                usage_holder=usage_holder,
+                **ai_kwargs,
+            ):
                 response_parts.append(token)
                 for visible_token in stream_filter.feed(token):
                     if visible_token:
@@ -267,12 +273,14 @@ class ChatTurnOrchestrator:
                 latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
                 status="failure",
                 error_class=error.__class__.__name__,
+                usage=usage_holder.usage,
             )
             raise
         await self.usage_recorder.record_llm_usage(
             channel=channel,
             ai_kwargs=ai_kwargs,
             latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
+            usage=usage_holder.usage,
         )
         for visible_token in stream_filter.finish():
             if visible_token:
@@ -436,7 +444,7 @@ class ChatTurnOrchestrator:
             ai_kwargs["max_tokens"] = max_response_tokens
         llm_started_at = time.perf_counter()
         try:
-            rex_response = await self.ai_service.generate_response(
+            grok_result = await self.ai_service.generate_response(
                 ai_messages,
                 **ai_kwargs,
             )
@@ -453,7 +461,9 @@ class ChatTurnOrchestrator:
             channel=channel,
             ai_kwargs=ai_kwargs,
             latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
+            usage=grok_result.usage,
         )
+        rex_response = grok_result.text
         unsupported_actions = self.clarity_action_parser.unsupported_actions(
             rex_response,
         )

@@ -16,9 +16,9 @@ and the data source behind each one.
 
 | Tab | Surface | Controller/service | Data source | Empty/degraded state |
 | --- | --- | --- | --- | --- |
-| Dashboard | `DashboardScreen` -> `FinancialDashboardView` | `DashboardUiController`, `FinancialReadModelService` | Supabase finance tables | Connect bank setup, resolving imported transactions, load error |
+| Dashboard | `DashboardScreen` -> `FinancialDashboardView` | `DashboardUiController`, `FinancialReadModelService` | Supabase finance tables | Connect bank setup, resolving imported transactions, load error; cash flow, category, leak, and trend charts |
 | Accounts | `AccountsScreen` | `AccountUiController`, `PlaidAccountService` | Supabase `accounts`/`plaid_accounts`, Rex `/plaid/*` | Empty accounts, Plaid degraded status |
-| Budgets | `BudgetsScreen` | `BudgetUiController`, `BudgetWorkflowService` | Supabase `budgets`, `categories`, `transactions` | Empty budgets/categories |
+| Budgets | `BudgetsScreen` | `BudgetUiController`, `BudgetWorkflowService` | Supabase `budgets`, `categories`, `transactions` | Empty budgets/categories; budget vs spent chart |
 | Assistant | `AssistantScreen` | Riverpod Rex providers | Rex API and Supabase-backed assistant tables | Per-tab assistant empty/error states |
 | Profile | `ProfileScreen` | `ProfileController`, `AuthController`, `ThemeModeController` | Supabase profile/auth, local theme preference | Profile load/update errors |
 
@@ -32,7 +32,9 @@ and the data source behind each one.
 | Month detail | Dashboard month card | `DashboardUiController`, `TransactionUiController` | Supabase finance read model | Empty month/error states |
 | Category management | Budgets and import banner | `BudgetUiController`, `CategoryWorkflowService` | Supabase categories, transactions, merchant rules | Empty/error states |
 | MFA settings | Profile account row | `AuthController` | Supabase MFA | MFA enrollment errors |
-| Voice usage | Profile voice usage row | `UsageSummaryController`, `UsageSummaryService` | Supabase `user_voice_summaries` | Usage load error |
+| Voice usage | Profile voice usage row | `UsageSummaryController`, `UsageSummaryService` | Supabase `user_voice_summaries` | Usage load error; daily charts on screen |
+| Usage administration | Profile owner section (owner only) | `OwnerAccessController`, `UsageAdminApi` | Rex `/usage/admin/*` | Hidden for non-owners |
+| Owner usage detail | Usage administration user row | `OwnerUsageController`, `UsageAdminApi` | Rex `/usage/admin/users/{id}/daily` | Daily line/bar + radar charts |
 | Theme picker | Profile theme row | `ThemeModeController` | Local shared preferences | Current theme remains active |
 
 ## Assistant Inner Tabs
@@ -56,7 +58,7 @@ and the data source behind each one.
 
 | Category | Routes |
 | --- | --- |
-| User-facing now | `/chat`, `/conversations`, `/memory`, `/entities`, `/rules`, `/plans`, `/commitments`, `/accountability/overview`, `/clarity/actions`, `/voice/*`, `/plaid/link-token`, `/plaid/exchange-token`, `/plaid/item-status`, `/plaid/sync-item`, `/plaid/disconnect-item` |
+| User-facing now | `/chat`, `/conversations`, `/memory`, `/entities`, `/rules`, `/plans`, `/commitments`, `/accountability/overview`, `/clarity/actions`, `/voice/*`, `/usage/admin/access`, `/usage/admin/summary`, `/usage/admin/users`, `/usage/admin/users/{user_id}/daily`, `/plaid/link-token`, `/plaid/exchange-token`, `/plaid/item-status`, `/plaid/sync-item`, `/plaid/disconnect-item` |
 | Backend-only by design | `/plaid/webhook`, Plaid OAuth fallback routes, Apple app site association, `/ready`, `/` |
-| Future or underused UI | `/memory/corrections`, entity events, plan milestones, accountability drill-down routes, `/usage/me`, `/usage/admin/users` |
+| Future or underused UI | `/memory/corrections`, entity events, plan milestones, accountability drill-down routes, `/usage/me` |
 | Legacy/dead path to review | Supabase `call-openai` client/function path for non-Rex chat completion |

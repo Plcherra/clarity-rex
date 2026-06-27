@@ -10,6 +10,7 @@ import 'budget_category_list.dart';
 import 'budgets_header.dart';
 import 'budgets_viewmodel.dart';
 import 'category_management_sheet.dart';
+import '../../dashboard/presentation/charts/finance_charts.dart';
 
 part 'budgets_screen_widgets.dart';
 

@@ -5,6 +5,7 @@ from typing import Optional
 
 from app.services.ai_service import AIService
 from app.services.chat_turn_context import MemoryService
+from app.services.grok_usage import GrokUsage
 from app.services.rex_channel import RexBrainChannel
 from app.services.usage_tracking_service import UsageTrackingService
 
@@ -29,16 +30,25 @@ class ChatUsageRecorder:
         latency_ms: int,
         status: str = "success",
         error_class: Optional[str] = None,
+        usage: GrokUsage | None = None,
     ) -> None:
         user_id = getattr(self.memory_service, "user_id", None)
         if not user_id:
             return
+        prompt_tokens = usage.prompt_tokens if usage else None
+        completion_tokens = usage.completion_tokens if usage else None
+        token_count = usage.total_tokens if usage and usage.total_tokens > 0 else None
+        grok_cost_cents = usage.cost_cents() if usage else None
         await self.usage_tracking_service.record_llm_turn(
             user_id=user_id,
             surface="assistant",
             channel=channel.value,
             model=self._usage_model(ai_kwargs),
             latency_ms=latency_ms,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            token_count=token_count,
+            grok_cost_cents=grok_cost_cents,
             status=status,
             error_class=error_class,
         )

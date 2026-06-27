@@ -129,7 +129,7 @@ Pick one primary path per platform:
 - Native iOS voice bridge as a production path.
 - Advanced live reconnection UI beyond the current retry/fallback states.
 - Push/local notifications for voice/accountability follow-up.
-- Admin or owner usage dashboards in the mobile app.
+- Admin or owner usage dashboards in the mobile app — see [`09_CHARTS_USAGE_AND_FINANCE_VIZ_PLAN.md`](09_CHARTS_USAGE_AND_FINANCE_VIZ_PLAN.md) Phase 1.
 - Full real-device audio route matrix across Bluetooth, speaker, background,
   and OS interruptions.
 

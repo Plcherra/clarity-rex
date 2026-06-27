@@ -42,6 +42,7 @@ final class VoiceUsageTotals {
     required this.todayLlmCalls,
     required this.weekLlmCalls,
     required this.monthLlmCalls,
+    required this.dailyRows,
   });
 
   final double todayVoiceSeconds;
@@ -50,6 +51,7 @@ final class VoiceUsageTotals {
   final int todayLlmCalls;
   final int weekLlmCalls;
   final int monthLlmCalls;
+  final List<UserVoiceSummaryRecord> dailyRows;
 
   factory VoiceUsageTotals.empty() {
     return const VoiceUsageTotals(
@@ -59,6 +61,7 @@ final class VoiceUsageTotals {
       todayLlmCalls: 0,
       weekLlmCalls: 0,
       monthLlmCalls: 0,
+      dailyRows: [],
     );
   }
 
@@ -98,6 +101,7 @@ final class VoiceUsageTotals {
       todayLlmCalls: todayLlmCalls,
       weekLlmCalls: weekLlmCalls,
       monthLlmCalls: monthLlmCalls,
+      dailyRows: rows,
     );
   }
 }

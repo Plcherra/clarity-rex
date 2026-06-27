@@ -2,6 +2,7 @@ import pytest
 
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
+from app.services.grok_usage import GrokChatResult, GrokUsage
 from app.services.rex_brain_contracts import RexBrainChannel
 from app.services.voice_stream_session import (
     VOICE_DEEP_RESPONSE_MAX_TOKENS,
@@ -19,11 +20,14 @@ class FakeAIService:
     async def generate_response(self, messages, **kwargs):
         self.messages = messages
         self.kwargs = kwargs
-        return self.response
+        return GrokChatResult(text=self.response, usage=GrokUsage(prompt_tokens=50, completion_tokens=25))
 
     async def stream_response(self, messages, **kwargs):
         self.messages = messages
         self.kwargs = kwargs
+        usage_holder = kwargs.get("usage_holder")
+        if usage_holder is not None:
+            usage_holder.usage = GrokUsage(prompt_tokens=50, completion_tokens=25)
         for token in self.stream_tokens:
             yield token
 

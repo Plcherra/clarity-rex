@@ -200,6 +200,23 @@ class _BudgetsLoadedContent extends StatelessWidget {
         const SizedBox(height: 14),
         _BudgetSummaryStrip(metrics: metrics),
         const SizedBox(height: 14),
+        ClarityCard(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Budget vs spent',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              BudgetVsSpentChart(performance: metrics.performance),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
         Expanded(
           child: BudgetCategoryList(
             items: data.categoryItems,

@@ -23,6 +23,7 @@ Clarity should feel like one coherent app:
 6. `06_UI_UX_COMPLETION_PLAN.md` - finish visual polish, navigation, accessibility, and empty/error states.
 7. `07_BACKEND_INFRASTRUCTURE_PLAN.md` - reduce backend risk, simplify service organization, and harden readiness.
 8. `08_QA_RELEASE_PLAN.md` - define the final verification, smoke, test, and launch checklist.
+9. `09_CHARTS_USAGE_AND_FINANCE_VIZ_PLAN.md` - owner usage admin, voice usage charts, and finance visualizations (phased).
 
 **Cross-cutting (brain trust):** [`docs/brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md`](../brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md) — P0/P1/P2/P3 brain trust, file splits, multi-user reliability. Execute alongside plans 03, 04, and 07. **Run P0 trust blockers before adding more goal/memory parser patches.**
 

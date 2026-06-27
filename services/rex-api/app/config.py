@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     supabase_memory_corrections_table: str = "memory_corrections"
     supabase_voice_turns_table: str = "voice_turns"
     usage_owner_user_id: Optional[str] = None
+    usage_grok_cents_per_1k_tokens: float = 0.0
+    usage_grok_input_cents_per_1k_tokens: float = 0.125
+    usage_grok_output_cents_per_1k_tokens: float = 0.25
+    usage_deepgram_cents_per_minute: float = 0.0
+    usage_tts_cents_per_minute: float = 0.0
+    usage_tts_cents_per_1k_chars: float = 1.6
 
     plaid_client_id: Optional[str] = None
     plaid_secret: Optional[str] = None

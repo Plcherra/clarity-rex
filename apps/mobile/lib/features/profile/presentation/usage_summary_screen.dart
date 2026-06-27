@@ -4,6 +4,7 @@ import '../../../core/supabase/supabase_service.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
+import '../../../widgets/clarity_usage_charts.dart';
 import '../application/usage_summary_controller.dart';
 import '../application/usage_summary_service.dart';
 
@@ -64,6 +65,15 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
             return _UsageError(message: error, onRetry: _controller.load);
           }
           final totals = _controller.totals;
+          final voiceValues = totals.dailyRows
+              .map((row) => row.voiceSeconds)
+              .toList(growable: false);
+          final callValues = totals.dailyRows
+              .map((row) => row.llmCalls.toDouble())
+              .toList(growable: false);
+          final labels = totals.dailyRows
+              .map((row) => shortDayLabel(row.usageDate))
+              .toList(growable: false);
           return RefreshIndicator(
             onRefresh: _controller.load,
             child: ListView(
@@ -73,6 +83,27 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
                   totalMinutes: _minutes(totals.monthVoiceSeconds),
                   totalCalls: totals.monthLlmCalls,
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  'Daily voice minutes',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                VoiceUsageDailyLineChart(
+                  values: voiceValues,
+                  labels: labels,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Daily Grok calls',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                UsageDailyBarChart(values: callValues, labels: labels),
                 const SizedBox(height: 16),
                 _UsageStatTile(
                   title: 'Today',

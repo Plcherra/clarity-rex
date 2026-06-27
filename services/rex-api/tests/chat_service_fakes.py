@@ -1,13 +1,15 @@
 import re
 
+from app.services.grok_usage import GrokChatResult, GrokUsage
 from app.services.memory_correction_service import CorrectionIntentType
 
 
 class FakeAIService:
-    def __init__(self, response="Rex response", stream_tokens=None):
+    def __init__(self, response="Rex response", stream_tokens=None, usage=None):
         self.messages = []
         self.response = response
         self.stream_tokens = stream_tokens or ["Rex ", "stream"]
+        self.usage = usage or GrokUsage(prompt_tokens=100, completion_tokens=40)
         self.generate_calls = 0
         self.stream_calls = 0
 
@@ -15,12 +17,15 @@ class FakeAIService:
         self.generate_calls += 1
         self.messages = messages
         self.kwargs = kwargs
-        return self.response
+        return GrokChatResult(text=self.response, usage=self.usage)
 
     async def stream_response(self, messages, **kwargs):
         self.stream_calls += 1
         self.messages = messages
         self.kwargs = kwargs
+        usage_holder = kwargs.get("usage_holder")
+        if usage_holder is not None:
+            usage_holder.usage = self.usage
         for token in self.stream_tokens:
             yield token
 

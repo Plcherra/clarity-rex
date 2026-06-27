@@ -18,12 +18,18 @@ class FakeUsageTrackingService:
             "month_llm_calls": 7,
         }
 
+    async def is_usage_owner(self, user_id):
+        return False
+
     async def get_owner_usage(self, *, requester_user_id):
         assert requester_user_id == "00000000-0000-0000-0000-000000000001"
         return {"authorized": False, "users": []}
 
 
 class FakeOwnerUsageTrackingService(FakeUsageTrackingService):
+    async def is_usage_owner(self, user_id):
+        return True
+
     async def get_owner_usage(self, *, requester_user_id):
         return {
             "authorized": True,
@@ -73,3 +79,14 @@ def test_owner_usage_route_returns_all_users_for_owner():
 
     assert response.status_code == 200
     assert response.json()["users"][0]["user_id"] == "user-1"
+
+
+def test_owner_access_route():
+    app.dependency_overrides[get_usage_tracking_service] = (
+        lambda: FakeOwnerUsageTrackingService()
+    )
+    with TestClient(app) as client:
+        response = client.get("/usage/admin/access")
+
+    assert response.status_code == 200
+    assert response.json()["authorized"] is True

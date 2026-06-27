@@ -18,6 +18,7 @@ import '../../../widgets/clarity_card.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
 import '../../../widgets/clarity_path_loader.dart';
 import 'month_detail_screen.dart';
+import 'charts/finance_charts.dart';
 
 part 'financial_dashboard_transactions.dart';
 part 'financial_dashboard_transaction_controls.dart';
@@ -25,6 +26,7 @@ part 'financial_dashboard_transaction_lists.dart';
 part 'financial_dashboard_shell.dart';
 part 'financial_dashboard_summary_sections.dart';
 part 'financial_dashboard_cards.dart';
+part 'financial_dashboard_charts.dart';
 
 const double _sectionGap = 20.0;
 const double _cardRadius = ClarityRadius.card;

@@ -3,6 +3,29 @@ import httpx
 
 from app.config import Settings
 from app.services.ai_service import AIService, AIServiceError
+from app.services.grok_usage import GrokUsage
+
+
+def test_ai_service_parse_grok_response_text():
+    service = AIService(Settings(grok_api_key="test-key", grok_model="grok-test"))
+    text = service._parse_grok_response(
+        {
+            "choices": [{"message": {"content": " Hello Rex "}}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+        }
+    )
+    assert text == "Hello Rex"
+
+
+def test_grok_usage_from_non_stream_response_shape():
+    usage = GrokUsage.from_api_payload(
+        {
+            "choices": [{"message": {"content": "Hi"}}],
+            "usage": {"prompt_tokens": 42, "completion_tokens": 18},
+        }
+    )
+    assert usage is not None
+    assert usage.total_tokens == 60
 
 
 def test_ai_service_does_not_inject_personality_prompt():
@@ -120,6 +143,7 @@ def test_ai_service_payload_uses_model_override_and_max_tokens():
         "model": "grok-reasoning",
         "messages": messages,
         "stream": True,
+        "stream_options": {"include_usage": True},
         "max_tokens": 3000,
     }
 

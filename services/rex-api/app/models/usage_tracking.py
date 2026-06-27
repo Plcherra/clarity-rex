@@ -53,6 +53,8 @@ class UsageTrackingEvent:
     model: str = "none"
     duration_ms: int | None = None
     latency_ms: int | None = None
+    unit_count: float | None = None
+    estimated_cost_cents: float | None = None
     status: UsageStatus = "success"
     error_class: str | None = None
 
@@ -77,6 +79,8 @@ class UsageTrackingEvent:
             "model": self.model or "none",
             "duration_ms": self.duration_ms,
             "latency_ms": self.latency_ms,
+            "unit_count": self.unit_count,
+            "estimated_cost_cents": self.estimated_cost_cents,
             "status": self.status,
             "error_class": self.error_class,
         }

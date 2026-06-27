@@ -5,6 +5,7 @@ from typing import Optional
 import httpx
 
 from app.config import Settings, get_settings
+from app.services.grok_usage import GrokChatResult, GrokUsage, GrokUsageHolder
 from app.services.http_client import request_with_retries
 
 
@@ -27,7 +28,7 @@ class AIService:
         model_override: Optional[str] = None,
         max_tokens: Optional[int] = None,
         max_prompt_characters: Optional[int] = None,
-    ) -> str:
+    ) -> GrokChatResult:
         prompt_messages = self._validated_prompt_messages(
             messages,
             model_override=model_override,
@@ -54,7 +55,11 @@ class AIService:
             )
             response.raise_for_status()
 
-            return self._parse_grok_response(response.text)
+            data = json.loads(response.text)
+            return GrokChatResult(
+                text=self._parse_grok_response(data),
+                usage=GrokUsage.from_api_payload(data),
+            )
         except httpx.HTTPStatusError as error:
             raise self._http_status_error(error.response) from error
         except (httpx.RequestError, TimeoutError) as error:
@@ -71,6 +76,7 @@ class AIService:
         max_tokens: Optional[int] = None,
         model_override: Optional[str] = None,
         max_prompt_characters: Optional[int] = None,
+        usage_holder: GrokUsageHolder | None = None,
     ) -> AsyncIterator[str]:
         prompt_messages = self._validated_prompt_messages(
             messages,
@@ -99,8 +105,14 @@ class AIService:
                 timeout=self.settings.grok_timeout_seconds,
             ) as response:
                 response.raise_for_status()
-                async for token in self._parse_grok_stream(response):
-                    yield token
+                captured_usage: GrokUsage | None = None
+                async for token, chunk_usage in self._parse_grok_stream(response):
+                    if chunk_usage is not None:
+                        captured_usage = chunk_usage
+                    if token:
+                        yield token
+                if usage_holder is not None:
+                    usage_holder.usage = captured_usage
         except httpx.HTTPStatusError as error:
             raise self._http_status_error(error.response) from error
         except (httpx.RequestError, TimeoutError) as error:
@@ -145,6 +157,8 @@ class AIService:
             "messages": messages,
             "stream": stream,
         }
+        if stream:
+            payload["stream_options"] = {"include_usage": True}
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
         return payload
@@ -196,8 +210,7 @@ class AIService:
             return len(str(part.get("text", "")))
         return len(str(part))
 
-    def _parse_grok_response(self, raw_response: str) -> str:
-        data = json.loads(raw_response)
+    def _parse_grok_response(self, data: dict) -> str:
         choices = data.get("choices", [])
         if not choices:
             raise AIServiceError("Grok API returned no response.", status_code=502)
@@ -209,7 +222,7 @@ class AIService:
     async def _parse_grok_stream(
         self,
         response: httpx.Response,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[tuple[str, GrokUsage | None]]:
         async for line in response.aiter_lines():
             line = line.strip()
             if not line or line.startswith(":"):
@@ -220,14 +233,16 @@ class AIService:
                 break
 
             data = json.loads(line)
+            usage = GrokUsage.from_api_payload(data)
+            token = ""
             choices = data.get("choices", [])
-            if not choices:
-                continue
-
-            delta = choices[0].get("delta", {})
-            content = delta.get("content")
-            if content:
-                yield str(content)
+            if choices:
+                delta = choices[0].get("delta", {})
+                content = delta.get("content")
+                if content:
+                    token = str(content)
+            if token or usage is not None:
+                yield token, usage
 
     def _http_status_error(self, response: httpx.Response) -> AIServiceError:
         detail = self._grok_error_detail(response)

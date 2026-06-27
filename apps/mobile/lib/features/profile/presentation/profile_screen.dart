@@ -7,6 +7,7 @@ import '../../auth/presentation/mfa_enrollment_screen.dart';
 import '../application/profile_controller.dart';
 import '../application/theme_mode_controller.dart';
 import 'usage_summary_screen.dart';
+import 'package:clarity/features/usage_admin/presentation/owner_usage_profile_entry.dart';
 
 final class ProfileScreen extends StatelessWidget {
   const ProfileScreen({
@@ -222,6 +223,7 @@ final class ProfileScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              const OwnerUsageProfileEntry(),
               const SizedBox(height: 18),
               const _ProfileSectionLabel('Appearance'),
               const SizedBox(height: 8),

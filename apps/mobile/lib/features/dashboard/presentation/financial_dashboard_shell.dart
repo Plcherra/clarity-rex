@@ -53,6 +53,43 @@ class _DashboardScrollBody extends StatelessWidget {
                   ],
                   _CashFlowSummaryCard(snapshot: snapshot),
                   const SizedBox(height: _sectionGap),
+                  _SectionTitle(theme: theme, title: 'Monthly cash flow'),
+                  const SizedBox(height: 16),
+                  _DashboardChartPanel(
+                    child: MonthlyCashFlowChart(
+                      monthlyGroups: _chronologicalMonthlyGroups(
+                        snapshot.monthlyGroups,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: _sectionGap),
+                  _SectionTitle(theme: theme, title: 'Spending by category'),
+                  const SizedBox(height: 16),
+                  _DashboardChartPanel(
+                    child: CategorySpendChart(
+                      categories: snapshot.topCategories,
+                    ),
+                  ),
+                  const SizedBox(height: _sectionGap),
+                  _SectionTitle(theme: theme, title: 'Income vs spending'),
+                  const SizedBox(height: 16),
+                  _DashboardChartPanel(
+                    child: IncomeSpendRatioChart(
+                      income: snapshot.incomeThisMonth,
+                      spent: snapshot.spentThisMonth,
+                    ),
+                  ),
+                  const SizedBox(height: _sectionGap),
+                  _SectionTitle(theme: theme, title: 'Six-month spend trend'),
+                  const SizedBox(height: 16),
+                  _DashboardChartPanel(
+                    child: SixMonthSpendTrendChart(
+                      monthlyGroups: _chronologicalMonthlyGroups(
+                        snapshot.monthlyGroups,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: _sectionGap),
                   _DashboardTransactionsSection(
                     snapshot: snapshot,
                     controller: controller,
@@ -62,7 +99,11 @@ class _DashboardScrollBody extends StatelessWidget {
                   const SizedBox(height: _sectionGap),
                   _SectionTitle(theme: theme, title: 'Spending pressure'),
                   const SizedBox(height: 16),
-                  _BiggestLeaksCard(leaks: snapshot.biggestLeaksThisMonth),
+                  _DashboardChartPanel(
+                    child: BiggestLeaksChart(
+                      leaks: snapshot.biggestLeaksThisMonth,
+                    ),
+                  ),
                   const SizedBox(height: _sectionGap),
                   _SectionTitle(theme: theme, title: 'Budget performance'),
                   const SizedBox(height: 16),
