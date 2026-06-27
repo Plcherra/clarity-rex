@@ -5,6 +5,7 @@ import 'package:clarity/rex/memory/application/memory_controller.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_archive_dialogs.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_dialogs.dart';
+import 'package:clarity/rex/memory/presentation/widgets/memory_edit_sheets.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_filters.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_header_widgets.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_quick_filter.dart';
@@ -64,10 +65,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       ref.read(memoryProvider.notifier).loadSavedOverview();
 
   Future<void> _editMemory(MemoryItem memory) async {
-    final result = await showDialog<MemoryEditResult>(
-      context: context,
-      builder: (context) => MemoryEditDialog(memory: memory),
-    );
+    final result = await showMemoryEditSheet(context, memory: memory);
     if (result == null) {
       return;
     }
@@ -105,21 +103,20 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
   }
 
   Future<void> _editPerson(PersonMemoryItem person) async {
-    final result = await showDialog<StructuredEditResult>(
-      context: context,
-      builder: (context) => StructuredEditDialog(
-        title: 'Edit person',
-        primaryLabel: 'Name',
-        primaryValue: person.displayName,
-        detailLabel: 'Summary',
-        detailValue: person.summary,
-        extraLabel: 'Relationship',
-        extraValue: person.relationship,
-        importanceLabel: 'Importance',
-        importance: person.importance,
-        status: person.status,
-        active: person.active,
-      ),
+    final result = await showStructuredEditSheet(
+      context,
+      title: 'Edit person',
+      typeLabel: 'Person',
+      primaryLabel: 'Name',
+      primaryValue: person.displayName,
+      detailLabel: 'Summary',
+      detailValue: person.summary,
+      importanceLabel: 'Importance',
+      importance: person.importance,
+      status: person.status,
+      active: person.active,
+      updatedAt: person.updatedAt,
+      createdAt: person.createdAt,
     );
     if (result == null) {
       return;
@@ -131,7 +128,6 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           person.id,
           displayName: result.primary,
           summary: result.detail,
-          relationship: result.extra,
           importance: result.importance,
           status: result.status,
           active: result.active,
@@ -142,21 +138,22 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
   }
 
   Future<void> _editRule(RuleMemoryItem rule) async {
-    final result = await showDialog<StructuredEditResult>(
-      context: context,
-      builder: (context) => StructuredEditDialog(
-        title: 'Edit rule',
-        primaryLabel: 'Title',
-        primaryValue: rule.title,
-        detailLabel: 'Rule text',
-        detailValue: rule.ruleText,
-        extraLabel: 'Trigger keywords',
-        extraValue: rule.triggerKeywords.join(', '),
-        importanceLabel: 'Priority',
-        importance: rule.priority,
-        status: rule.status,
-        active: rule.active,
-      ),
+    final result = await showStructuredEditSheet(
+      context,
+      title: 'Edit rule',
+      typeLabel: rule.ruleType.memoryRecordLabel,
+      primaryLabel: 'Title',
+      primaryValue: rule.title,
+      detailLabel: 'Rule text',
+      detailValue: rule.ruleText,
+      extraLabel: 'Trigger keywords',
+      extraValue: rule.triggerKeywords.join(', '),
+      importanceLabel: 'Priority',
+      importance: rule.priority,
+      status: rule.status,
+      active: rule.active,
+      updatedAt: rule.updatedAt,
+      createdAt: rule.createdAt,
     );
     if (result == null) {
       return;
@@ -179,21 +176,22 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
   }
 
   Future<void> _editPlan(PlanMemoryItem plan) async {
-    final result = await showDialog<StructuredEditResult>(
-      context: context,
-      builder: (context) => StructuredEditDialog(
-        title: 'Edit plan',
-        primaryLabel: 'Title',
-        primaryValue: plan.title,
-        detailLabel: 'Description',
-        detailValue: plan.description,
-        extraLabel: 'Desired outcome',
-        extraValue: plan.desiredOutcome,
-        importanceLabel: 'Priority',
-        importance: plan.priority,
-        status: plan.status,
-        active: plan.active,
-      ),
+    final result = await showStructuredEditSheet(
+      context,
+      title: 'Edit plan',
+      typeLabel: plan.planType.memoryRecordLabel,
+      primaryLabel: 'Title',
+      primaryValue: plan.title,
+      detailLabel: 'Description',
+      detailValue: plan.description,
+      extraLabel: 'Desired outcome',
+      extraValue: plan.desiredOutcome,
+      importanceLabel: 'Priority',
+      importance: plan.priority,
+      status: plan.status,
+      active: plan.active,
+      updatedAt: plan.updatedAt,
+      createdAt: plan.createdAt,
     );
     if (result == null) {
       return;
@@ -216,19 +214,20 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
   }
 
   Future<void> _editCommitment(CommitmentMemoryItem commitment) async {
-    final result = await showDialog<StructuredEditResult>(
-      context: context,
-      builder: (context) => StructuredEditDialog(
-        title: 'Edit commitment',
-        primaryLabel: 'Title',
-        primaryValue: commitment.title,
-        detailLabel: 'Commitment',
-        detailValue: commitment.commitmentText,
-        importanceLabel: 'Priority',
-        importance: commitment.priority,
-        status: commitment.status,
-        active: commitment.active,
-      ),
+    final result = await showStructuredEditSheet(
+      context,
+      title: 'Edit commitment',
+      typeLabel: commitment.commitmentType.memoryRecordLabel,
+      primaryLabel: 'Title',
+      primaryValue: commitment.title,
+      detailLabel: 'Commitment',
+      detailValue: commitment.commitmentText,
+      importanceLabel: 'Priority',
+      importance: commitment.priority,
+      status: commitment.status,
+      active: commitment.active,
+      updatedAt: commitment.updatedAt,
+      createdAt: commitment.createdAt,
     );
     if (result == null) {
       return;

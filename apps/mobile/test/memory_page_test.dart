@@ -15,9 +15,9 @@ void main() {
     expect(find.text('Pending'), findsNothing);
     expect(find.text('Corrections'), findsNothing);
     expect(listTileText('Pedro Martins'), findsOneWidget);
-    expect(find.text('Location: Somerville'), findsOneWidget);
-    expect(find.text('Birthday: June 18'), findsOneWidget);
-    expect(find.text('Workplace: Bom Dough'), findsOneWidget);
+    expect(find.text('Location: Somerville'), findsNothing);
+    expect(find.text('Birthday: June 18'), findsNothing);
+    expect(find.text('Workplace: Bom Dough'), findsNothing);
     expect(
       find.text('Important date: Launch review: 2026-06-20'),
       findsOneWidget,
@@ -26,8 +26,8 @@ void main() {
     expect(find.textContaining('payroll'), findsNothing);
 
     expect(find.text('My name is Pedro Martins.'), findsNothing);
-    expect(find.text('Structured memory'), findsWidgets);
-    expect(find.text('Updated 05/31/2026'), findsWidgets);
+    expect(find.text('Structured memory'), findsNothing);
+    expect(find.textContaining('Updated 05/31/2026'), findsWidgets);
 
     await tester.scrollUntilVisible(
       find.text('Pedro is building Clarity.'),
@@ -36,9 +36,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Facts'), findsWidgets);
-    expect(find.text('Saved memory'), findsWidgets);
-    expect(find.text('Preferences'), findsWidgets);
+    expect(find.text('Pedro is building Clarity.'), findsOneWidget);
+    expect(find.textContaining('Fact ·'), findsWidgets);
+    expect(find.textContaining('Preference ·'), findsWidgets);
 
     await tester.scrollUntilVisible(
       find.text('Pedro prefers email updates.'),
@@ -122,7 +122,11 @@ void main() {
 
       expect(find.text('Inactive Person'), findsOneWidget);
 
-      await tester.drag(find.byType(Scrollable).first, const Offset(0, -500));
+      await tester.scrollUntilVisible(
+        find.text('Inactive flat fallback memory.'),
+        120,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Inactive flat fallback memory.'), findsOneWidget);

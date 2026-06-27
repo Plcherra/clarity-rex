@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/memory/data/memory_models.dart';
-import 'package:clarity/rex/memory/presentation/widgets/memory_meta_chip.dart';
+import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
 import 'package:clarity/rex/memory/presentation/widgets/saved_memory_tile_shell.dart';
 
 class MemoryTile extends StatelessWidget {
@@ -22,11 +22,10 @@ class MemoryTile extends StatelessWidget {
       icon: _iconForGroup(memory.memoryGroup),
       active: memory.active,
       title: memory.content,
-      chips: baseMemoryChips(
-        typeLabel: memory.categoryLabel,
-        active: memory.active,
-        savedAt: savedMemoryDate(memory.updatedAt, memory.createdAt),
-      ),
+      typeLabel: memory.memoryType.label,
+      importance: memory.importance,
+      updatedAt: memory.updatedAt,
+      createdAt: memory.createdAt,
       onEdit: onEdit,
       onDeactivate: onDeactivate,
     );
@@ -72,38 +71,15 @@ class PersonMemoryTile extends StatelessWidget {
       icon: Icons.person_outline_rounded,
       active: person.active,
       title: person.displayName,
-      subtitle: person.summary ?? person.relationship ?? 'Person memory',
-      chips: [
-        if (person.relationship != null)
-          MemoryMetaChip(label: person.relationship!.memoryRecordLabel),
-        ..._attributeChips(person),
-        if (savedMemoryDate(person.updatedAt, person.createdAt) != null)
-          MemoryMetaChip(
-            label:
-                'Updated ${shortMemoryDate(savedMemoryDate(person.updatedAt, person.createdAt)!)}',
-          ),
-        if (!person.active) const MemoryMetaChip(label: 'Inactive'),
-      ],
+      subtitle: personMemorySubtitle(person),
+      typeLabel: 'Person',
+      importance: person.importance,
+      updatedAt: person.updatedAt,
+      createdAt: person.createdAt,
+      supplementalLabels: personSupplementalLabels(person),
       onEdit: onEdit,
       onDeactivate: onDeactivate,
     );
-  }
-
-  List<Widget> _attributeChips(PersonMemoryItem person) {
-    return [
-      if (person.fullName != null)
-        MemoryMetaChip(label: 'Name: ${person.fullName}'),
-      if (person.location != null)
-        MemoryMetaChip(label: 'Location: ${person.location}'),
-      if (person.birthday != null)
-        MemoryMetaChip(label: 'Birthday: ${person.birthday}'),
-      if (person.job != null) MemoryMetaChip(label: 'Job: ${person.job}'),
-      if (person.workplace != null)
-        MemoryMetaChip(label: 'Workplace: ${person.workplace}'),
-      if (person.notes != null) MemoryMetaChip(label: 'Notes: ${person.notes}'),
-      for (final date in person.importantDates)
-        MemoryMetaChip(label: 'Important date: $date'),
-    ];
   }
 }
 
@@ -121,22 +97,21 @@ class RuleMemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final supplementalLabels = <String>[
+      if (rule.triggerKeywords.isNotEmpty)
+        rule.triggerKeywords.join(', '),
+    ];
+
     return StructuredMemoryTile(
       icon: Icons.rule_rounded,
       active: rule.active,
       title: rule.title,
-      subtitle: rule.ruleText,
-      chips: [
-        MemoryMetaChip(label: rule.ruleType.memoryRecordLabel),
-        if (savedMemoryDate(rule.updatedAt, rule.createdAt) != null)
-          MemoryMetaChip(
-            label:
-                'Updated ${shortMemoryDate(savedMemoryDate(rule.updatedAt, rule.createdAt)!)}',
-          ),
-        if (rule.triggerKeywords.isNotEmpty)
-          MemoryMetaChip(label: rule.triggerKeywords.join(', ')),
-        if (!rule.active) const MemoryMetaChip(label: 'Inactive'),
-      ],
+      subtitle: ruleMemorySubtitle(rule),
+      typeLabel: rule.ruleType.memoryRecordLabel,
+      importance: rule.priority,
+      updatedAt: rule.updatedAt,
+      createdAt: rule.createdAt,
+      supplementalLabels: supplementalLabels,
       onEdit: onEdit,
       onDeactivate: onDeactivate,
     );
@@ -157,22 +132,21 @@ class PlanMemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final supplementalLabels = <String>[
+      if (plan.targetDate != null)
+        'Target ${shortMemoryDate(plan.targetDate!)}',
+    ];
+
     return StructuredMemoryTile(
       icon: Icons.flag_outlined,
       active: plan.active,
       title: plan.title,
-      subtitle: plan.desiredOutcome ?? plan.description ?? 'Plan memory',
-      chips: [
-        MemoryMetaChip(label: plan.planType.memoryRecordLabel),
-        if (plan.targetDate != null)
-          MemoryMetaChip(label: 'Target ${shortMemoryDate(plan.targetDate!)}'),
-        if (savedMemoryDate(plan.updatedAt, plan.createdAt) != null)
-          MemoryMetaChip(
-            label:
-                'Updated ${shortMemoryDate(savedMemoryDate(plan.updatedAt, plan.createdAt)!)}',
-          ),
-        if (!plan.active) const MemoryMetaChip(label: 'Inactive'),
-      ],
+      subtitle: planMemorySubtitle(plan),
+      typeLabel: plan.planType.memoryRecordLabel,
+      importance: plan.priority,
+      updatedAt: plan.updatedAt,
+      createdAt: plan.createdAt,
+      supplementalLabels: supplementalLabels,
       onEdit: onEdit,
       onDeactivate: onDeactivate,
     );
@@ -193,22 +167,21 @@ class CommitmentMemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final supplementalLabels = <String>[
+      if (commitment.dueAt != null)
+        'Due ${shortMemoryDate(commitment.dueAt!)}',
+    ];
+
     return StructuredMemoryTile(
       icon: Icons.check_circle_outline_rounded,
       active: commitment.active,
       title: commitment.title,
-      subtitle: commitment.commitmentText,
-      chips: [
-        MemoryMetaChip(label: commitment.commitmentType.memoryRecordLabel),
-        if (commitment.dueAt != null)
-          MemoryMetaChip(label: 'Due ${shortMemoryDate(commitment.dueAt!)}'),
-        if (savedMemoryDate(commitment.updatedAt, commitment.createdAt) != null)
-          MemoryMetaChip(
-            label:
-                'Updated ${shortMemoryDate(savedMemoryDate(commitment.updatedAt, commitment.createdAt)!)}',
-          ),
-        if (!commitment.active) const MemoryMetaChip(label: 'Inactive'),
-      ],
+      subtitle: commitmentMemorySubtitle(commitment),
+      typeLabel: commitment.commitmentType.memoryRecordLabel,
+      importance: commitment.priority,
+      updatedAt: commitment.updatedAt,
+      createdAt: commitment.createdAt,
+      supplementalLabels: supplementalLabels,
       onEdit: onEdit,
       onDeactivate: onDeactivate,
     );

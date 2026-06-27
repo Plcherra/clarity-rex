@@ -284,7 +284,9 @@ class MemoryEmptyState extends StatelessWidget {
   }
 
   String get _emptyBody {
-    return 'Facts saved from chat or voice will appear here.';
+    return activeOnly
+        ? 'Ask Rex in chat or voice to save something, and it will show up here.'
+        : 'Saved facts, people, and preferences from chat or voice will appear here.';
   }
 
   @override

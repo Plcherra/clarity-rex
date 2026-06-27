@@ -71,10 +71,35 @@ class SavedMemoryGroupList extends StatelessWidget {
       MemoryGroup.places,
       saved.places.map(_memoryTile).toList(growable: false),
     );
-    addGroup(
-      MemoryGroup.goals,
-      saved.goalMemories.map(_memoryTile).toList(growable: false),
-    );
+    addGroup(MemoryGroup.goals, [
+      ...saved.plans.map(
+        (plan) => PlanMemoryTile(
+          plan: plan,
+          onEdit: () => onEditPlan(plan),
+          onDeactivate: plan.active
+              ? () => onArchiveStructuredMemory(
+                  MemoryLayer.plans,
+                  plan.id,
+                  'plan',
+                )
+              : null,
+        ),
+      ),
+      ...saved.commitments.map(
+        (commitment) => CommitmentMemoryTile(
+          commitment: commitment,
+          onEdit: () => onEditCommitment(commitment),
+          onDeactivate: commitment.active
+              ? () => onArchiveStructuredMemory(
+                  MemoryLayer.commitments,
+                  commitment.id,
+                  'commitment',
+                )
+              : null,
+        ),
+      ),
+      ...saved.goalMemories.map(_memoryTile),
+    ]);
     addGroup(
       MemoryGroup.rules,
       saved.rules
@@ -132,9 +157,10 @@ class _MemoryGroupHeader extends StatelessWidget {
       ),
       child: Text(
         group.label,
-        style: theme.textTheme.titleSmall?.copyWith(
-          color: colors.textPrimary,
-          fontWeight: FontWeight.w800,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: colors.textSecondary,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
         ),
       ),
     );
