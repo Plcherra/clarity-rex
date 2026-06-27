@@ -95,6 +95,14 @@ class AuthController extends ChangeNotifier {
     });
   }
 
+  Future<void> requestPasswordReset({required String email}) async {
+    await _runAuthAction(() async {
+      await _authService.requestPasswordReset(email: email);
+      infoMessage =
+          'If an account exists for $email, we sent a password reset link.';
+    });
+  }
+
   Future<void> signOut() async {
     await _runAuthAction(() async {
       await _authService.signOut();

@@ -98,7 +98,11 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          formatUsageCost(summary.monthEstimatedCostCents),
+                          formatUsageCost(
+                            summary.monthEstimatedCostCents,
+                            hasUsageWithoutCost: summary.monthLlmCalls > 0 ||
+                                summary.monthVoiceSeconds > 0,
+                          ),
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
@@ -107,7 +111,7 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                         Text(
                           '${summary.activeUserCount} active users · '
                           '${formatUsageMinutes(summary.monthVoiceSeconds)} voice · '
-                          '${summary.monthLlmCalls} Grok calls',
+                          '${summary.monthLlmCalls} AI calls',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colors.textMuted,
                           ),
@@ -198,7 +202,11 @@ class _OwnerUserTile extends StatelessWidget {
                 ),
               ),
               Text(
-                formatUsageCost(user.monthEstimatedCostCents),
+                formatUsageCost(
+                  user.monthEstimatedCostCents,
+                  hasUsageWithoutCost: user.monthLlmCalls > 0 ||
+                      user.monthVoiceSeconds > 0,
+                ),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: colors.accent,

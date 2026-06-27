@@ -97,7 +97,7 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Daily Grok calls',
+                  'Daily AI calls',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -180,7 +180,7 @@ final class _UsageStatTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$calls Grok calls',
+                  '$calls AI calls',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.58),
                     fontWeight: FontWeight.w600,
@@ -238,7 +238,7 @@ final class _UsageHeader extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '$totalCalls Grok calls this month',
+            '$totalCalls AI calls this month',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: cs.onSurfaceVariant,
               height: 1.35,

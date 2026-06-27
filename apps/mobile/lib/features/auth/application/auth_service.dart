@@ -105,6 +105,13 @@ class AuthService {
     return _supabaseService.auth.signOut();
   }
 
+  Future<void> requestPasswordReset({required String email}) {
+    return _supabaseService.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: AuthConfig.emailRedirectUrl,
+    );
+  }
+
   AuthMFAGetAuthenticatorAssuranceLevelResponse
   getAuthenticatorAssuranceLevel() {
     return _supabaseService.auth.mfa.getAuthenticatorAssuranceLevel();

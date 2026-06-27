@@ -348,15 +348,17 @@ class UsageTrackingService:
     ) -> list[dict[str, Any]]:
         params: dict[str, str] = {
             "select": "*",
-            "usage_date": f"gte.{start_date.isoformat()}",
             "order": "usage_date.asc",
         }
+        if end_date is not None:
+            params["and"] = (
+                f"(usage_date.gte.{start_date.isoformat()},"
+                f"usage_date.lte.{end_date.isoformat()})"
+            )
+        else:
+            params["usage_date"] = f"gte.{start_date.isoformat()}"
         if user_id is not None:
             params["user_id"] = f"eq.{user_id}"
-        if end_date is not None:
-            params["usage_date"] = (
-                f"gte.{start_date.isoformat()},lte.{end_date.isoformat()}"
-            )
         return await self._select_rows(OWNER_USAGE_DAILY_VIEW, params)
 
     async def _select_voice_summaries(

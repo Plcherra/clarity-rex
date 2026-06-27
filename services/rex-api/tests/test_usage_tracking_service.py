@@ -214,6 +214,43 @@ async def test_owner_usage_allowlist_requires_owner_or_admin_role(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_owner_user_daily_uses_postgrest_and_date_filter(monkeypatch):
+    calls = []
+
+    async def fake_request(method, url, headers=None, json=None):
+        calls.append(url)
+        response = FakeResponse()
+        response.json = lambda: [
+            {
+                "user_id": "user-1",
+                "usage_date": "2026-06-06",
+                "voice_seconds": 60,
+                "llm_calls": 2,
+                "estimated_cost_cents": 12.5,
+            }
+        ]
+        return response
+
+    monkeypatch.setattr(usage_module, "request_with_retries", fake_request)
+    settings = _settings()
+    settings.usage_owner_user_id = "owner-1"
+    service = UsageTrackingService(settings=settings)
+
+    result = await service.get_owner_user_daily(
+        requester_user_id="owner-1",
+        user_id="user-1",
+        start_date=usage_module.date(2026, 6, 1),
+        end_date=usage_module.date(2026, 6, 6),
+    )
+
+    assert result["authorized"] is True
+    assert len(result["daily"]) == 1
+    assert "usage_date.gte.2026-06-01" in calls[0]
+    assert "usage_date.lte.2026-06-06" in calls[0]
+    assert "user_id=eq.user-1" in calls[0]
+
+
+@pytest.mark.asyncio
 async def test_tracking_failure_does_not_raise(monkeypatch):
     async def fake_request(method, url, headers=None, json=None):
         raise TimeoutError("network down")

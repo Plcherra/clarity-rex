@@ -19,6 +19,7 @@ final class _AuthScreenState extends State<AuthScreen> {
   final _passwordController = TextEditingController();
   final _fullNameController = TextEditingController();
   bool _isSignUp = false;
+  bool _obscurePassword = true;
   String? _localError;
 
   @override
@@ -53,6 +54,16 @@ final class _AuthScreenState extends State<AuthScreen> {
     } else {
       await widget.controller.signInWithEmail(email: email, password: password);
     }
+  }
+
+  Future<void> _requestPasswordReset() async {
+    final email = _emailController.text.trim();
+    setState(() => _localError = null);
+    if (email.isEmpty) {
+      setState(() => _localError = 'Enter your email to reset your password.');
+      return;
+    }
+    await widget.controller.requestPasswordReset(email: email);
   }
 
   @override
@@ -130,12 +141,39 @@ final class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 14),
                           TextField(
                             controller: _passwordController,
-                            obscureText: true,
+                            obscureText: _obscurePassword,
                             onSubmitted: (_) => _submit(),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Password',
+                              suffixIcon: IconButton(
+                                tooltip: _obscurePassword
+                                    ? 'Show password'
+                                    : 'Hide password',
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                              ),
                             ),
                           ),
+                          if (!_isSignUp) ...[
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: widget.controller.isLoading
+                                    ? null
+                                    : _requestPasswordReset,
+                                child: const Text('Forgot password?'),
+                              ),
+                            ),
+                          ],
                           if (error != null && error.isNotEmpty) ...[
                             const SizedBox(height: 14),
                             Text(

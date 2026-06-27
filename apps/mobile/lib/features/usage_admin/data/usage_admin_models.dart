@@ -116,7 +116,7 @@ class OwnerDailyUsageRow {
 
   factory OwnerDailyUsageRow.fromJson(Map<String, dynamic> json) {
     return OwnerDailyUsageRow(
-      usageDate: DateTime.parse(_string(json['usage_date']) ?? '1970-01-01'),
+      usageDate: _parseUsageDate(json['usage_date']),
       voiceSeconds: _double(json['voice_seconds']),
       llmCalls: _int(json['llm_calls']),
       chatLlmCalls: _int(json['chat_llm_calls']),
@@ -153,11 +153,24 @@ int _int(Object? value) {
   return 0;
 }
 
-String formatUsageCost(double cents) {
+String formatUsageCost(double cents, {bool hasUsageWithoutCost = false}) {
   if (cents <= 0) {
+    if (hasUsageWithoutCost) {
+      return 'Not tracked';
+    }
     return r'$0.00';
   }
   return '\$${(cents / 100).toStringAsFixed(2)}';
+}
+
+DateTime _parseUsageDate(Object? value) {
+  if (value is String && value.trim().isNotEmpty) {
+    final parsed = DateTime.tryParse(value.trim());
+    if (parsed != null) {
+      return parsed;
+    }
+  }
+  return DateTime.utc(1970, 1, 1);
 }
 
 String formatUsageMinutes(double seconds) {

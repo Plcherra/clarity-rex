@@ -87,7 +87,11 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      formatUsageCost(widget.user.monthEstimatedCostCents),
+                      formatUsageCost(
+                        widget.user.monthEstimatedCostCents,
+                        hasUsageWithoutCost: widget.user.monthLlmCalls > 0 ||
+                            widget.user.monthVoiceSeconds > 0,
+                      ),
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
@@ -106,7 +110,7 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
               VoiceUsageDailyLineChart(values: voiceValues, labels: labels),
               const SizedBox(height: 16),
               Text(
-                'Daily Grok calls',
+                'Daily AI calls',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),

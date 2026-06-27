@@ -127,26 +127,29 @@ class PlaidAccountService:
         account: dict[str, Any],
     ) -> dict[str, Any]:
         balances = dict_or_empty(account.get("balances"))
+        body: dict[str, Any] = {
+            "user_id": user_id,
+            "name": _account_name(account, institution_name=institution_name),
+            "type": string_or_none(account.get("subtype"))
+            or string_or_none(account.get("type"))
+            or "account",
+            "institution": institution_name,
+            "currency": string_or_none(balances.get("iso_currency_code"))
+            or "USD",
+            "is_active": True,
+            "source": "plaid",
+            "plaid_item_record_id": item_id,
+            "plaid_account_id": plaid_account_id,
+            "sync_status": "active",
+            "last_synced_at": utc_now_iso(),
+        }
+        resolved_balance = _resolve_plaid_balance(balances)
+        if resolved_balance is not None:
+            body["balance"] = resolved_balance
         rows = await self.cursor_service.supabase_request(
             "POST",
             ACCOUNTS_TABLE,
-            body={
-                "user_id": user_id,
-                "name": _account_name(account, institution_name=institution_name),
-                "type": string_or_none(account.get("subtype"))
-                or string_or_none(account.get("type"))
-                or "account",
-                "institution": institution_name,
-                "balance": number_or_zero(balances.get("current")),
-                "currency": string_or_none(balances.get("iso_currency_code"))
-                or "USD",
-                "is_active": True,
-                "source": "plaid",
-                "plaid_item_record_id": item_id,
-                "plaid_account_id": plaid_account_id,
-                "sync_status": "active",
-                "last_synced_at": utc_now_iso(),
-            },
+            body=body,
             query={
                 "on_conflict": "user_id,plaid_account_id",
                 "select": "id,plaid_account_id",
@@ -166,29 +169,36 @@ class PlaidAccountService:
         account: dict[str, Any],
     ) -> None:
         balances = dict_or_empty(account.get("balances"))
+        body: dict[str, Any] = {
+            "user_id": user_id,
+            "item_id": item_id,
+            "plaid_account_id": plaid_account_id,
+            "linked_account_id": linked_account_id,
+            "institution_name": institution_name,
+            "name": _account_name(account, institution_name=institution_name),
+            "official_name": string_or_none(account.get("official_name")),
+            "mask": string_or_none(account.get("mask")),
+            "account_type": string_or_none(account.get("type")),
+            "account_subtype": string_or_none(account.get("subtype")),
+            "status": "active",
+            "iso_currency_code": string_or_none(balances.get("iso_currency_code")),
+            "unofficial_currency_code": string_or_none(
+                balances.get("unofficial_currency_code")
+            ),
+            "metadata": {},
+        }
+        current_balance = number_or_none(balances.get("current"))
+        available_balance = number_or_none(balances.get("available"))
+        if current_balance is not None:
+            body["current_balance"] = current_balance
+        elif available_balance is not None:
+            body["current_balance"] = available_balance
+        if available_balance is not None:
+            body["available_balance"] = available_balance
         await self.cursor_service.supabase_request(
             "POST",
             PLAID_ACCOUNTS_TABLE,
-            body={
-                "user_id": user_id,
-                "item_id": item_id,
-                "plaid_account_id": plaid_account_id,
-                "linked_account_id": linked_account_id,
-                "institution_name": institution_name,
-                "name": _account_name(account, institution_name=institution_name),
-                "official_name": string_or_none(account.get("official_name")),
-                "mask": string_or_none(account.get("mask")),
-                "account_type": string_or_none(account.get("type")),
-                "account_subtype": string_or_none(account.get("subtype")),
-                "status": "active",
-                "current_balance": number_or_none(balances.get("current")),
-                "available_balance": number_or_none(balances.get("available")),
-                "iso_currency_code": string_or_none(balances.get("iso_currency_code")),
-                "unofficial_currency_code": string_or_none(
-                    balances.get("unofficial_currency_code")
-                ),
-                "metadata": {},
-            },
+            body=body,
             query={"on_conflict": "user_id,plaid_account_id"},
             prefer="resolution=merge-duplicates,return=minimal",
         )
@@ -294,6 +304,13 @@ def _is_generic_account_name(
         without_mask = normalized[: -len(mask)].strip()
         return without_mask in generic_names
     return False
+
+
+def _resolve_plaid_balance(balances: dict[str, Any]) -> float | None:
+    current = number_or_none(balances.get("current"))
+    if current is not None:
+        return current
+    return number_or_none(balances.get("available"))
 
 
 def _account_list(value: Any) -> list[dict[str, Any]]:
