@@ -221,6 +221,15 @@ _GOALS_INVENTORY_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"\bwhat\s+do\s+(?:you|we|i)\s+have\s+saved\s+on\s+"
+        r"(?:goals?|commitments?|plans?)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bwhat\s+kind\s+of\s+(?:goals?|commitments?|plans?)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"\bwhat\s+(?:saved\s+)?(?:goals?|commitments?|plans?)\s+"
         r"(?:do\s+(?:we|i)\s+have|are\s+(?:there|saved))\b",
         re.IGNORECASE,

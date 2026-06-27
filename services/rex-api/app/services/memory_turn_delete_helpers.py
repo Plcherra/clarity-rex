@@ -1,6 +1,11 @@
 import re
 from typing import Optional
 
+from app.services.clarity_knowledge_labels import (
+    COMMITMENT_SINGULAR,
+    GOAL_SINGULAR,
+    SAVED_MEMORY_SINGULAR,
+)
 from app.services.conversation_pending_action import (
     ConversationPendingActionService,
     is_delete_confirmation_message,
@@ -9,6 +14,15 @@ from app.services.conversation_pending_action import (
     pending_delete_resolver_target,
 )
 from app.services.memory_correction_types import CorrectionIntentType
+from app.services.memory_delete_resolver import (
+    ACCOUNTABILITY_DELETE_SCOPE,
+    COMMITMENT_DELETE_SCOPE,
+    GOAL_DELETE_SCOPE,
+)
+
+_ACCOUNTABILITY_SCOPE = frozenset(ACCOUNTABILITY_DELETE_SCOPE)
+_COMMITMENT_SCOPE = frozenset(COMMITMENT_DELETE_SCOPE)
+_GOAL_SCOPE = frozenset(GOAL_DELETE_SCOPE)
 
 
 class MemoryTurnDeleteHelpers:
@@ -26,16 +40,17 @@ class MemoryTurnDeleteHelpers:
             target,
             conversation_history=conversation_history or [],
         )
+        resolved_scope = scope_tables or self._infer_delete_scope_from_history(
+            conversation_history or [],
+            target=target,
+        )
         matches = await self.memory_correction_service.preview_remove_obsolete(
             target,
-            scope_tables=scope_tables,
+            scope_tables=resolved_scope,
             is_vague=is_vague,
         )
         if not matches:
-            response = (
-                "I couldn't find an active saved memory matching that, so I "
-                "didn't delete anything."
-            )
+            response = self._delete_not_found_message(resolved_scope)
             return await self._delete_turn_result(
                 response,
                 conversation_id=conversation_id,
@@ -56,14 +71,14 @@ class MemoryTurnDeleteHelpers:
 
         title = matches[0].title or target
         response = (
-            f"Got it--you want to delete this saved memory: {title}\n\n"
-            "Just to confirm before I do that: yes or no?"
+            f"Got it--you want to delete this {self._delete_item_label(matches[0].table)}: "
+            f"{title}\n\nJust to confirm before I do that: yes or no?"
         )
         await self._persist_pending_delete(
             conversation_id,
             target=target,
             match=matches[0],
-            scope_tables=scope_tables,
+            scope_tables=resolved_scope,
         )
         return await self._delete_turn_result(
             response,
@@ -307,8 +322,18 @@ class MemoryTurnDeleteHelpers:
             return target
 
         candidates = self._recent_quoted_saved_items(conversation_history)
+        candidates.extend(
+            self._recent_accountability_titles_from_history(conversation_history)
+        )
         confirmed_targets: list[str] = []
         for candidate in candidates:
+            matches = await self.memory_correction_service.preview_remove_obsolete(
+                candidate,
+                scope_tables=ACCOUNTABILITY_DELETE_SCOPE,
+            )
+            if len(matches) == 1:
+                confirmed_targets.append(candidate)
+                continue
             matches = await self.memory_correction_service.preview_remove_obsolete(
                 candidate,
             )
@@ -321,6 +346,13 @@ class MemoryTurnDeleteHelpers:
             ):
                 matches = await self.memory_correction_service.preview_remove_obsolete(
                     candidate,
+                    scope_tables=ACCOUNTABILITY_DELETE_SCOPE,
+                )
+                if len(matches) == 1:
+                    confirmed_targets.append(candidate)
+                    continue
+                matches = await self.memory_correction_service.preview_remove_obsolete(
+                    candidate,
                 )
                 if len(matches) == 1:
                     confirmed_targets.append(candidate)
@@ -331,12 +363,56 @@ class MemoryTurnDeleteHelpers:
                 unique_targets.append(candidate)
         return unique_targets[0] if len(unique_targets) == 1 else target
 
+    def _delete_item_label(self, table: str) -> str:
+        if table == "commitments":
+            return COMMITMENT_SINGULAR
+        if table in {"plans", "plan_milestones"}:
+            return GOAL_SINGULAR
+        return SAVED_MEMORY_SINGULAR
+
+    def _delete_not_found_message(self, scope_tables: tuple[str, ...]) -> str:
+        scope = frozenset(scope_tables)
+        if scope and scope <= _COMMITMENT_SCOPE:
+            label = f"active {COMMITMENT_SINGULAR}"
+        elif scope and scope <= _GOAL_SCOPE:
+            label = f"active {GOAL_SINGULAR}"
+        elif scope and scope <= _ACCOUNTABILITY_SCOPE:
+            label = f"active {GOAL_SINGULAR} or {COMMITMENT_SINGULAR}"
+        else:
+            label = f"active {SAVED_MEMORY_SINGULAR}"
+        return (
+            f"I couldn't find an {label} matching that, so I didn't delete anything."
+        )
+
+    def _infer_delete_scope_from_history(
+        self,
+        conversation_history: list[dict],
+        *,
+        target: str,
+    ) -> tuple[str, ...]:
+        if not self._is_contextual_delete_target(target):
+            return ()
+        for past_message in reversed(conversation_history[-8:]):
+            if past_message.get("role") != "assistant":
+                continue
+            content = str(past_message.get("content") or "").lower()
+            if "commitment" in content and "goal" not in content:
+                return COMMITMENT_DELETE_SCOPE
+            if "commitment" in content:
+                return ACCOUNTABILITY_DELETE_SCOPE
+            if re.search(r"\bgoals?\b", content) and "goals tab" in content:
+                return ACCOUNTABILITY_DELETE_SCOPE
+        return ()
+
     def _is_contextual_delete_target(self, target: str) -> bool:
         normalized = self._normalize_delete_text(target)
-        return normalized in {
+        if normalized in {
             "it",
             "that",
             "this",
+            "that please",
+            "this please",
+            "it please",
             "that memory",
             "this memory",
             "that saved memory",
@@ -353,7 +429,14 @@ class MemoryTurnDeleteHelpers:
             "old one",
             "the old goal",
             "old goal",
-        }
+        }:
+            return True
+        return bool(
+            re.fullmatch(
+                r"(?:that|this|it)(?:\s+please)?",
+                normalized,
+            )
+        )
 
     def _recent_quoted_saved_items(self, conversation_history: list[dict]) -> list[str]:
         candidates = []
@@ -362,9 +445,49 @@ class MemoryTurnDeleteHelpers:
                 continue
             content = str(past_message.get("content") or "")
             lowered = content.lower()
-            if "saved" not in lowered and "clarity knows" not in lowered:
+            if (
+                "saved" not in lowered
+                and "clarity knows" not in lowered
+                and "goals tab" not in lowered
+                and "commitment" not in lowered
+                and "goal" not in lowered
+            ):
                 continue
-            for match in re.finditer(r'"([^"\n]{3,240})"', content):
+            for match in re.finditer(r"['\"]([^'\"\n]{3,240})['\"]", content):
+                candidate = match.group(1).strip()
+                if candidate and candidate not in candidates:
+                    candidates.append(candidate)
+        return candidates
+
+    def _recent_accountability_titles_from_history(
+        self,
+        conversation_history: list[dict],
+    ) -> list[str]:
+        candidates: list[str] = []
+        for past_message in reversed(conversation_history[-8:]):
+            if past_message.get("role") != "assistant":
+                continue
+            content = str(past_message.get("content") or "")
+            lowered = content.lower()
+            if not any(
+                marker in lowered
+                for marker in (
+                    "commitment",
+                    "goals tab",
+                    "active goals",
+                    "open commitments",
+                )
+            ):
+                continue
+            for match in re.finditer(
+                r"\b(?:called|titled|named)\s+['\"]([^'\"\n]{3,240})['\"]",
+                content,
+                flags=re.IGNORECASE,
+            ):
+                candidate = match.group(1).strip()
+                if candidate and candidate not in candidates:
+                    candidates.append(candidate)
+            for match in re.finditer(r"['\"]([^'\"\n]{3,240})['\"]", content):
                 candidate = match.group(1).strip()
                 if candidate and candidate not in candidates:
                     candidates.append(candidate)

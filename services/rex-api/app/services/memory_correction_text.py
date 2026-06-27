@@ -15,6 +15,12 @@ def trim_text(value: str) -> str:
     return value.strip("\"'")
 
 
+_POLITE_SUFFIX_PATTERN = re.compile(
+    r"(?:\s+|^)(?:please|thanks|thank you|thx|ok|okay)\.?$",
+    re.IGNORECASE,
+)
+
+
 def trim_removal_target(value: str) -> str:
     value = trim_text(value)
     value = re.sub(
@@ -33,4 +39,5 @@ def trim_removal_target(value: str) -> str:
         value,
         flags=re.IGNORECASE,
     )
-    return value.strip()
+    value = re.sub(_POLITE_SUFFIX_PATTERN, "", value).strip()
+    return value.strip(" ,.")

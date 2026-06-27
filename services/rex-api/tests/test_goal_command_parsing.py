@@ -70,6 +70,10 @@ def test_next_month_resolves_to_last_day():
 def test_goals_inventory_query_detects_commitment_list_question():
     assert is_goals_inventory_query("What commitments do we have saved?")
     assert goals_inventory_scope("What commitments do we have saved?") == "commitments"
+    assert is_goals_inventory_query("What do you have saved on goals?")
+    assert goals_inventory_scope("What do you have saved on goals?") == "goals"
+    assert is_goals_inventory_query("What kind of commitment do I have then?")
+    assert goals_inventory_scope("What kind of commitment do I have then?") == "commitments"
 
 
 def test_goals_inventory_query_is_not_delete_clarification():
