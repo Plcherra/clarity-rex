@@ -43,7 +43,8 @@ void main() {
 
       expect(find.text('Bank of Test Checking • 1234'), findsOneWidget);
       expect(find.text('Everyday Checking'), findsOneWidget);
-      expect(find.text('Balance \$1,200.50'), findsOneWidget);
+      expect(find.text('\$1,200.50'), findsOneWidget);
+      expect(find.text('Balance'), findsOneWidget);
       expect(find.text('Available \$1,000.25'), findsOneWidget);
       expect(find.text('Recent transactions'), findsNothing);
       expect(find.text('Plaid'), findsOneWidget);

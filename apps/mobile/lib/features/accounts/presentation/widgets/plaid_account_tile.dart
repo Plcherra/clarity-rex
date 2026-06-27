@@ -30,8 +30,13 @@ class PlaidAccountTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final account = item.account;
-    final balance = account.currentBalance;
+    final balance = item.displayBalanceAmount;
     final availableBalance = account.plaidAvailableBalance;
+    final showAvailable =
+        availableBalance != null &&
+        (balance == null || (availableBalance - balance).abs() > 0.01);
+    final hasMonthlyActivity =
+        item.incomeThisMonth != 0 || item.spentThisMonth != 0;
     return Material(
       color: cs.surfaceContainerLow,
       borderRadius: BorderRadius.circular(14),
@@ -50,7 +55,7 @@ class PlaidAccountTile extends StatelessWidget {
                 onResync: onResync,
                 onDisconnect: onDisconnect,
               ),
-              if (balance != null || availableBalance != null) ...[
+              if (showAvailable || hasMonthlyActivity) ...[
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerLeft,
@@ -58,15 +63,16 @@ class PlaidAccountTile extends StatelessWidget {
                     spacing: 10,
                     runSpacing: 6,
                     children: [
-                      if (balance != null)
-                        PlaidAccountDetailChip(
-                          label: 'Balance',
-                          value: formatMoney(balance),
-                        ),
-                      if (availableBalance != null)
+                      if (showAvailable)
                         PlaidAccountDetailChip(
                           label: 'Available',
                           value: formatMoney(availableBalance),
+                        ),
+                      if (hasMonthlyActivity)
+                        PlaidAccountDetailChip(
+                          label: 'This month',
+                          value:
+                              '${formatMoney(item.incomeThisMonth)} in / ${formatMoney(item.spentThisMonth)} out',
                         ),
                     ],
                   ),

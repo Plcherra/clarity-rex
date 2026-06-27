@@ -10,6 +10,7 @@ class _DashboardScrollBody extends StatelessWidget {
     required this.budgetPerformance,
     required this.transactionCount,
     required this.loadIssues,
+    required this.accountCount,
   });
 
   final String title;
@@ -20,6 +21,7 @@ class _DashboardScrollBody extends StatelessWidget {
   final BudgetPerformanceSnapshot budgetPerformance;
   final int transactionCount;
   final List<FinancialReadModelLoadIssue> loadIssues;
+  final int accountCount;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +53,13 @@ class _DashboardScrollBody extends StatelessWidget {
                     _FinancialDataStatusBanner(loadIssues: loadIssues),
                     const SizedBox(height: 14),
                   ],
-                  _CashFlowSummaryCard(snapshot: snapshot),
+                  _FinancialOverviewCard(
+                    snapshot: snapshot,
+                    isGlobalScope: scope is GlobalDashboardScope,
+                    accountCount: scope is GlobalDashboardScope
+                        ? accountCount
+                        : null,
+                  ),
                   const SizedBox(height: _sectionGap),
                   _SectionTitle(theme: theme, title: 'Monthly cash flow'),
                   const SizedBox(height: 16),

@@ -194,7 +194,7 @@ class _AccountHealthCard extends StatelessWidget {
           const SizedBox(height: 18),
           _HealthMetricRow(
             icon: Icons.sync_alt_rounded,
-            label: 'Cash flow',
+            label: 'This month net',
             value: formatMoney(snapshot.availableThisMonth),
             detail:
                 'Income ${formatMoney(snapshot.incomeThisMonth)} / Spending ${formatMoney(snapshot.spentThisMonth)}',

@@ -22,7 +22,11 @@ class ManualAccountTile extends StatelessWidget {
       account.type.displayLabel,
       if (inst != null && inst.isNotEmpty) inst,
     ].join(' / ');
-    final netCashFlow = item.netCashFlow;
+    final balance = item.displayBalanceAmount;
+    final hasMonthlyActivity =
+        item.incomeThisMonth != 0 ||
+        item.spentThisMonth != 0 ||
+        item.netCashFlow != 0;
     return Material(
       color: cs.surfaceContainerLow,
       borderRadius: BorderRadius.circular(14),
@@ -77,22 +81,42 @@ class ManualAccountTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    formatMoney(netCashFlow),
-                    style: theme.textTheme.labelLarge?.copyWith(
+                    item.balanceLabel,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.48),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    balance == null ? 'Unavailable' : formatMoney(balance),
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: netCashFlow > 0
-                          ? ClarityColors.financePositive
-                          : netCashFlow < 0
-                          ? ClarityColors.financeNegative
+                      color: balance == null
+                          ? cs.onSurface.withValues(alpha: 0.46)
                           : cs.onSurface,
                     ),
                   ),
+                  if (hasMonthlyActivity) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      'This month ${formatMoney(item.netCashFlow)} net',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: item.netCashFlow > 0
+                            ? ClarityColors.financePositive
+                            : item.netCashFlow < 0
+                            ? ClarityColors.financeNegative
+                            : cs.onSurface.withValues(alpha: 0.46),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 3),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'monthly net',
+                        'View account',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: cs.onSurface.withValues(alpha: 0.46),
                           fontWeight: FontWeight.w700,

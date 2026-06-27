@@ -181,6 +181,28 @@ final class AccountOverviewItem {
   final double netCashFlow;
 
   double get cashFlowThisMonth => availableThisMonth;
+
+  /// Signed balance for net-worth math (credit debt is negative).
+  double? get signedBalance => statementBalance;
+
+  /// Balance shown on account cards (credit debt as a positive amount owed).
+  double? get displayBalanceAmount {
+    final normalized = statementBalance;
+    if (normalized != null) {
+      return switch (account.type) {
+        AccountType.creditCard => normalized.abs(),
+        AccountType.checking || AccountType.savings => normalized,
+      };
+    }
+    return account.currentBalance;
+  }
+
+  String get balanceLabel {
+    return switch (account.type) {
+      AccountType.creditCard => 'Balance owed',
+      AccountType.checking || AccountType.savings => 'Balance',
+    };
+  }
 }
 
 final class DashboardViewData {

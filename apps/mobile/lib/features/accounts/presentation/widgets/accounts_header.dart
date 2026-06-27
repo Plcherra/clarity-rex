@@ -10,15 +10,20 @@ class AccountsSummaryCard extends StatelessWidget {
 
   final List<AccountOverviewItem> accounts;
 
+  double? get _totalSignedBalance {
+    return accounts.fold<double?>(null, (sum, item) {
+      final balance = item.signedBalance;
+      if (balance == null) return sum;
+      return (sum ?? 0) + balance;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final colors = context.clarityColors;
-    final netCashFlowTotal = accounts.fold<double>(
-      0,
-      (sum, item) => sum + item.netCashFlow,
-    );
+    final totalBalance = _totalSignedBalance;
     final incomeTotal = accounts.fold<double>(
       0,
       (sum, item) => sum + item.incomeThisMonth,
@@ -27,65 +32,107 @@ class AccountsSummaryCard extends StatelessWidget {
       0,
       (sum, item) => sum + item.spentThisMonth,
     );
+    final netCashFlowTotal = incomeTotal - spendingTotal;
     return ClarityCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       backgroundColor: colors.surface.withValues(alpha: 0.72),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${accounts.length} connected account${accounts.length == 1 ? '' : 's'}',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 2,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _InlineMoneyLabel(
-                      label: 'Income',
-                      value: incomeTotal,
-                      color: colors.financePositive,
+                    Text(
+                      'Total balance',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.5),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    _InlineMoneyLabel(
-                      label: 'Spending',
-                      value: spendingTotal,
-                      color: colors.financeSpending,
+                    const SizedBox(height: 4),
+                    Text(
+                      totalBalance == null
+                          ? 'Unavailable'
+                          : formatMoney(totalBalance),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: totalBalance == null
+                            ? cs.onSurface.withValues(alpha: 0.46)
+                            : totalBalance >= 0
+                            ? colors.financePositive
+                            : colors.financeNegative,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${accounts.length} connected account${accounts.length == 1 ? '' : 's'}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.56),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                formatMoney(netCashFlowTotal),
-                textAlign: TextAlign.right,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: netCashFlowTotal >= 0
-                      ? colors.financePositive
-                      : colors.financeNegative,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'monthly net',
-                textAlign: TextAlign.right,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: cs.onSurface.withValues(alpha: 0.46),
-                  fontWeight: FontWeight.w700,
-                ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: cs.onSurface.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'This month',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.48),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 4,
+                    children: [
+                      _InlineMoneyLabel(
+                        label: 'Income',
+                        value: incomeTotal,
+                        color: colors.financePositive,
+                      ),
+                      _InlineMoneyLabel(
+                        label: 'Spending',
+                        value: spendingTotal,
+                        color: colors.financeSpending,
+                      ),
+                      _InlineMoneyLabel(
+                        label: 'Net',
+                        value: netCashFlowTotal,
+                        color: netCashFlowTotal >= 0
+                            ? colors.financePositive
+                            : colors.financeNegative,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Activity this month — not the same as balance',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.42),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

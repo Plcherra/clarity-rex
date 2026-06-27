@@ -71,6 +71,7 @@ const List<String> kSelectableSpendCategories = [
   'Shoes / Clothing',
   'Shopping',
   'Subscriptions',
+  'Transfer In',
   'Transfer Out',
   'Transportation',
 ];
@@ -220,6 +221,26 @@ String? _trySuggestIncomeTransfersAndPayments(
       has('zelle') &&
       (has('payment from') || has('transfer from'))) {
     return 'Income / Zelle Received';
+  }
+  if (!isOutflow &&
+      (has('transfer from') ||
+          has('online transfer from') ||
+          has('xfer from') ||
+          has('transfer deposit') ||
+          (has('transfer') && has(' from ')) ||
+          has('from savings') ||
+          has('from checking') ||
+          has('from sav'))) {
+    return 'Transfer In';
+  }
+  if (isOutflow &&
+      (has('transfer to') ||
+          has('online transfer to') ||
+          has('xfer to') ||
+          (has('transfer') && has(' to ')) ||
+          has('to savings') ||
+          has('to checking'))) {
+    return 'Transfer Out';
   }
   if (has('online banking payment to crd') || has('payment to crd')) {
     return 'Credit Card Payment';
@@ -371,7 +392,7 @@ String spendGroupLabelForDisplay(
 /// Last-resort category when keywords and AI cannot pick a specific bucket.
 String bestEffortCategoryName({double? amount}) {
   if (amount != null && amount > 0) {
-    return kBestEffortIncomeCategoryName;
+    return kAutomaticFallbackCategoryName;
   }
   return kBestEffortExpenseCategoryName;
 }

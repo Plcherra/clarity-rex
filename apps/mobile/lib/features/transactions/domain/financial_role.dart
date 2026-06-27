@@ -1,5 +1,6 @@
 import '../../../core/models/models.dart';
 import 'internal_payment_matcher.dart';
+import 'internal_transfer_matcher.dart';
 import 'spend_categories.dart';
 
 bool _looksLikeRefundDescription(String description) {
@@ -33,14 +34,29 @@ FinancialRole effectiveFinancialRole({
     return FinancialRole.refund;
   }
 
-  if (effectiveCategoryLabel.trim().toLowerCase() == 'transfer out') {
+  if (effectiveCategoryLabel.trim().toLowerCase() == 'transfer out' ||
+      effectiveCategoryLabel.trim().toLowerCase() == 'transfer in') {
     return FinancialRole.transfer;
   }
+
+  if (looksLikeInternalTransferDescription(
+    t.description,
+    amount: t.amount,
+  )) {
+    return FinancialRole.transfer;
+  }
+
+  final internalTransfer = findConfirmedInternalTransferMatch(
+    t: t,
+    allTransactions: allTransactions,
+    accountsById: accountsById,
+  );
+  if (internalTransfer != null) return FinancialRole.transfer;
 
   // Credit card payment: confirm by finding the opposite-side payment row.
   if (effectiveCategoryLabel.trim().toLowerCase() ==
       'credit card payment'.toLowerCase()) {
-    final match = findConfirmedCreditCardPaymentMatch(
+    final match = findConfirmedCreditCardPaymentForTransaction(
       t: t,
       allTransactions: allTransactions,
       accountsById: accountsById,
@@ -53,8 +69,9 @@ FinancialRole effectiveFinancialRole({
     return FinancialRole.income;
   }
 
-  // Fallback by sign.
+  // Fallback by sign: outflows are expenses; inflows only count as income when
+  // the category already says income (payroll/zelle heuristics land there).
   if (t.amount < 0) return FinancialRole.expense;
-  if (t.amount > 0) return FinancialRole.income;
+  if (t.amount > 0) return FinancialRole.adjustment;
   return FinancialRole.adjustment;
 }

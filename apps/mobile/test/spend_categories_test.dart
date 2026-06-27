@@ -76,6 +76,30 @@ void main() {
     );
   });
 
+  test('unknown positive deposits fall back to miscellaneous not payroll', () {
+    expect(
+      suggestCategoryFromDescription('MYSTERY DEPOSIT', amount: 75),
+      kAutomaticFallbackCategoryName,
+    );
+  });
+
+  test('transfer descriptions map to transfer categories', () {
+    expect(
+      suggestCategoryFromDescription(
+        'ONLINE TRANSFER FROM SAV 1234',
+        amount: 500,
+      ),
+      'Transfer In',
+    );
+    expect(
+      suggestCategoryFromDescription(
+        'ONLINE TRANSFER TO SAV 1234',
+        amount: -500,
+      ),
+      'Transfer Out',
+    );
+  });
+
   test('stored Unknown category falls through to deterministic category', () {
     final transaction = Transaction(
       date: DateTime(2026, 3, 2),

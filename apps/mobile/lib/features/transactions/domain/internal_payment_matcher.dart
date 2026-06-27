@@ -13,11 +13,7 @@ class ConfirmedPaymentMatch {
   final Transaction counterpart;
 }
 
-int _daysBetween(DateTime a, DateTime b) {
-  final da = DateTime(a.year, a.month, a.day);
-  final db = DateTime(b.year, b.month, b.day);
-  return (da.difference(db).inDays).abs();
-}
+int _daysBetween(DateTime a, DateTime b) => daysBetweenTransactions(a, b);
 
 bool _containsHint(String haystack, String needle) {
   final h = haystack.toLowerCase();
@@ -112,4 +108,87 @@ ConfirmedPaymentMatch? findConfirmedCreditCardPaymentMatch({
   }
 
   return best;
+}
+
+/// Confirms a credit-card payment row on the card account (inflow side).
+ConfirmedPaymentMatch? findConfirmedCreditCardPaymentInflowMatch({
+  required Transaction t,
+  required List<Transaction> allTransactions,
+  required Map<String, Account> accountsById,
+  int maxDayDelta = 3,
+}) {
+  final srcAccount = accountsById[t.accountId];
+  if (srcAccount == null || srcAccount.type != AccountType.creditCard) {
+    return null;
+  }
+  if (t.amount <= 0) return null;
+
+  final absAmount = t.amount.abs();
+  if (!absAmount.isFinite || absAmount <= 0) return null;
+
+  ConfirmedPaymentMatch? best;
+  var bestScore = -1.0;
+
+  for (final c in allTransactions) {
+    if (c.accountId == t.accountId) continue;
+    final source = accountsById[c.accountId];
+    if (source == null || source.type == AccountType.creditCard) continue;
+    if (c.amount >= 0) continue;
+    if ((c.amount.abs() - absAmount).abs() > 0.0001) continue;
+
+    final dayDelta = daysBetweenTransactions(t.date, c.date);
+    if (dayDelta > maxDayDelta) continue;
+
+    var score = 1.0;
+    score += (maxDayDelta - dayDelta) * 0.2;
+    if (_looksLikePaymentDescription(c.description)) score += 0.25;
+    if (_looksLikePaymentDescription(t.description)) score += 0.25;
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = ConfirmedPaymentMatch(source: c, counterpart: t);
+    }
+  }
+
+  return best;
+}
+
+/// Returns a confirmed credit-card payment match involving [t], if any.
+ConfirmedPaymentMatch? findConfirmedCreditCardPaymentForTransaction({
+  required Transaction t,
+  required List<Transaction> allTransactions,
+  required Map<String, Account> accountsById,
+  int maxDayDelta = 3,
+}) {
+  final outflowMatch = findConfirmedCreditCardPaymentMatch(
+    t: t,
+    allTransactions: allTransactions,
+    accountsById: accountsById,
+    maxDayDelta: maxDayDelta,
+  );
+  if (outflowMatch != null &&
+      (outflowMatch.source.fingerprint == t.fingerprint ||
+          outflowMatch.counterpart.fingerprint == t.fingerprint)) {
+    return outflowMatch;
+  }
+
+  final inflowMatch = findConfirmedCreditCardPaymentInflowMatch(
+    t: t,
+    allTransactions: allTransactions,
+    accountsById: accountsById,
+    maxDayDelta: maxDayDelta,
+  );
+  if (inflowMatch != null &&
+      (inflowMatch.source.fingerprint == t.fingerprint ||
+          inflowMatch.counterpart.fingerprint == t.fingerprint)) {
+    return inflowMatch;
+  }
+
+  return null;
+}
+
+int daysBetweenTransactions(DateTime a, DateTime b) {
+  final da = DateTime(a.year, a.month, a.day);
+  final db = DateTime(b.year, b.month, b.day);
+  return (da.difference(db).inDays).abs();
 }

@@ -356,6 +356,7 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             budgetPerformance: data.budgetPerformance,
             transactionCount: data.scopedTransactionCount,
             loadIssues: data.loadIssues,
+            accountCount: data.accountCount,
           );
           return widget.showBackButton
               ? ImportJobStatusHost(

@@ -181,8 +181,8 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
         const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerRight,
-          child: _PlaidAccountNetAndSync(
-            netCashFlow: item.netCashFlow,
+          child: _PlaidAccountBalanceAndSync(
+            item: item,
             status: status,
             onResync: onResync,
             onDisconnect: onDisconnect,
@@ -269,15 +269,15 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
   }
 }
 
-class _PlaidAccountNetAndSync extends StatelessWidget {
-  const _PlaidAccountNetAndSync({
-    required this.netCashFlow,
+class _PlaidAccountBalanceAndSync extends StatelessWidget {
+  const _PlaidAccountBalanceAndSync({
+    required this.item,
     required this.status,
     required this.onResync,
     required this.onDisconnect,
   });
 
-  final double netCashFlow;
+  final AccountOverviewItem item;
   final PlaidAccountConnectionStatus status;
   final VoidCallback onResync;
   final VoidCallback onDisconnect;
@@ -286,24 +286,36 @@ class _PlaidAccountNetAndSync extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final balance = item.displayBalanceAmount;
+    final hasMonthlyActivity =
+        item.incomeThisMonth != 0 ||
+        item.spentThisMonth != 0 ||
+        item.netCashFlow != 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
+        Text(
+          item.balanceLabel,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: cs.onSurface.withValues(alpha: 0.48),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
         Row(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              formatMoney(netCashFlow),
-              style: theme.textTheme.labelLarge?.copyWith(
+              balance == null ? 'Unavailable' : formatMoney(balance),
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: netCashFlow > 0
-                    ? ClarityColors.financePositive
-                    : netCashFlow < 0
-                    ? ClarityColors.financeNegative
+                color: balance == null
+                    ? cs.onSurface.withValues(alpha: 0.46)
                     : cs.onSurface,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 2),
             IconButton(
               tooltip: switch (status) {
                 PlaidAccountConnectionStatus.syncing => 'Syncing',
@@ -332,12 +344,25 @@ class _PlaidAccountNetAndSync extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 3),
+        if (hasMonthlyActivity) ...[
+          Text(
+            'This month ${formatMoney(item.netCashFlow)} net',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: item.netCashFlow > 0
+                  ? ClarityColors.financePositive
+                  : item.netCashFlow < 0
+                  ? ClarityColors.financeNegative
+                  : cs.onSurface.withValues(alpha: 0.46),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+        ],
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'monthly net',
+              'View account',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: cs.onSurface.withValues(alpha: 0.46),
                 fontWeight: FontWeight.w700,
