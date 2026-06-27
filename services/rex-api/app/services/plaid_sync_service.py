@@ -89,7 +89,12 @@ class PlaidSyncService:
             institution_name=string_or_none(item.get("institution_name")),
         )
 
-    async def sync_item(self, item_id: str) -> PlaidSyncResult:
+    async def sync_item(
+        self,
+        item_id: str,
+        *,
+        request_bank_refresh: bool = False,
+    ) -> PlaidSyncResult:
         normalized_item_id = item_id.strip()
         if not normalized_item_id:
             raise PlaidSyncServiceError("item_id is required.", status_code=400)
@@ -103,12 +108,42 @@ class PlaidSyncService:
             phase = "decrypt_access_token"
             access_token = self._decrypt_access_token_ref(access_token_ref)
             user_id = required_string(item, "user_id")
+            accounts_response = None
+            if request_bank_refresh:
+                phase = "refresh_transactions"
+                logger.info(
+                    "Plaid manual refresh started user=%s item=%s",
+                    _safe_user_label(user_id),
+                    _safe_item_label(normalized_item_id),
+                )
+                try:
+                    await self.plaid_client.refresh_transactions(access_token)
+                except PlaidApiClientError as error:
+                    logger.warning(
+                        "Plaid transaction refresh failed user=%s item=%s code=%s",
+                        _safe_user_label(user_id),
+                        _safe_item_label(normalized_item_id),
+                        _safe_error_detail(error.plaid_error_code),
+                    )
+                phase = "fetch_balances"
+                try:
+                    accounts_response = await self.plaid_client.get_account_balances(
+                        access_token
+                    )
+                except PlaidApiClientError as error:
+                    logger.warning(
+                        "Plaid balance fetch failed user=%s item=%s code=%s",
+                        _safe_user_label(user_id),
+                        _safe_item_label(normalized_item_id),
+                        _safe_error_detail(error.plaid_error_code),
+                    )
             phase = "sync_accounts"
             account_map = await self.account_service.sync_accounts(
                 user_id=user_id,
                 item_id=normalized_item_id,
                 access_token=access_token,
                 institution_name=string_or_none(item.get("institution_name")),
+                accounts_response=accounts_response,
             )
             logger.info(
                 "Plaid account sync completed user=%s item=%s accounts=%s",
@@ -125,12 +160,13 @@ class PlaidSyncService:
                 account_map=account_map,
             )
             logger.info(
-                "Plaid transaction sync completed user=%s item=%s added=%s modified=%s removed=%s",
+                "Plaid transaction sync completed user=%s item=%s added=%s modified=%s removed=%s bank_refresh=%s",
                 _safe_user_label(user_id),
                 _safe_item_label(normalized_item_id),
                 sync_counts["added"],
                 sync_counts["modified"],
                 sync_counts["removed"],
+                request_bank_refresh,
             )
         except PlaidApiClientError as error:
             logger.warning(

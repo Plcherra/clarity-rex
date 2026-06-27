@@ -247,9 +247,11 @@ class _AccountsScreenState extends State<AccountsScreen> {
         0,
         (sum, item) => sum + item.transactionsAdded + item.transactionsModified,
       );
-      final message =
-          'Accounts refreshed: $accountCount account${accountCount == 1 ? '' : 's'}, '
-          '$transactionCount transaction update${transactionCount == 1 ? '' : 's'}.';
+      final message = transactionCount > 0
+          ? 'Accounts refreshed: $accountCount account${accountCount == 1 ? '' : 's'}, '
+              '$transactionCount transaction update${transactionCount == 1 ? '' : 's'}.'
+          : 'Accounts refreshed: $accountCount account${accountCount == 1 ? '' : 's'}. '
+              'Balances updated; no new transactions since last sync.';
       setState(() => _accountNotice = message);
       _refreshAfterPlaidConnection();
       ScaffoldMessenger.of(
@@ -288,9 +290,11 @@ class _AccountsScreenState extends State<AccountsScreen> {
       final summary = await _resyncItem(itemId);
       if (!context.mounted) return;
       final updates = summary.transactionsAdded + summary.transactionsModified;
-      final message =
-          'Account refreshed: ${summary.accountsSynced} account${summary.accountsSynced == 1 ? '' : 's'}, '
-          '$updates transaction update${updates == 1 ? '' : 's'}.';
+      final message = updates > 0
+          ? 'Account refreshed: ${summary.accountsSynced} account${summary.accountsSynced == 1 ? '' : 's'}, '
+              '$updates transaction update${updates == 1 ? '' : 's'}.'
+          : 'Account refreshed: ${summary.accountsSynced} account${summary.accountsSynced == 1 ? '' : 's'}. '
+              'Balances updated; no new transactions since last sync.';
       setState(() => _accountNotice = message);
       _refreshAfterPlaidConnection();
       ScaffoldMessenger.of(

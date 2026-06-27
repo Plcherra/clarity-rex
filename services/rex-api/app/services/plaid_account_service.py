@@ -36,8 +36,10 @@ class PlaidAccountService:
         item_id: str,
         access_token: str,
         institution_name: str | None = None,
+        accounts_response: dict[str, Any] | None = None,
     ) -> dict[str, str]:
-        accounts_response = await self.plaid_client.get_accounts(access_token)
+        if accounts_response is None:
+            accounts_response = await self.plaid_client.get_accounts(access_token)
         account_map: dict[str, str] = {}
         for account in _account_list(accounts_response.get("accounts")):
             plaid_account_id = required_string(account, "account_id")

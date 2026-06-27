@@ -336,7 +336,10 @@ async def sync_item(
             user_id=current_user.id,
             item_id=item_id,
         )
-        result = await plaid_sync_service.sync_item(item_id)
+        result = await plaid_sync_service.sync_item(
+            item_id,
+            request_bank_refresh=True,
+        )
     except PlaidApiClientError as error:
         raise HTTPException(
             status_code=error.status_code,

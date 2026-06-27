@@ -24,9 +24,21 @@ class MissingAccessTokenPlaidClient:
 class FullSyncPlaidClient:
     def __init__(self):
         self.sync_cursors = []
+        self.refresh_calls = 0
+        self.balance_get_calls = 0
 
     async def exchange_public_token(self, public_token):
         raise AssertionError("exchange should not be called during sync")
+
+    async def refresh_transactions(self, access_token):
+        assert access_token == "access-token-secret"
+        self.refresh_calls += 1
+        return {"request_id": "refresh-1"}
+
+    async def get_account_balances(self, access_token):
+        assert access_token == "access-token-secret"
+        self.balance_get_calls += 1
+        return await self.get_accounts(access_token)
 
     async def get_accounts(self, access_token):
         assert access_token == "access-token-secret"
@@ -679,6 +691,35 @@ async def test_sync_item_persists_accounts_transactions_and_cursor(monkeypatch):
     )
     assert cursor_call["json"]["sync_cursor"] == "cursor-final"
     assert "access-token-secret" not in str(calls)
+
+
+@pytest.mark.asyncio
+async def test_sync_item_with_bank_refresh_requests_fresh_data(monkeypatch):
+    calls = []
+    plaid_client = FullSyncPlaidClient()
+    service = PlaidSyncService(
+        plaid_client=plaid_client,
+        settings=settings(),
+    )
+    token_ref = service._encrypted_access_token_ref("access-token-secret")
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return sync_storage_response(url, kwargs.get("json"), token_ref)
+
+    monkeypatch.setattr(
+        "app.services.plaid_cursor_service.request_with_retries",
+        fake_request,
+    )
+
+    result = await service.sync_item(
+        "item-record-1",
+        request_bank_refresh=True,
+    )
+
+    assert result.accounts_synced == 2
+    assert plaid_client.refresh_calls == 1
+    assert plaid_client.balance_get_calls == 1
 
 
 @pytest.mark.asyncio
