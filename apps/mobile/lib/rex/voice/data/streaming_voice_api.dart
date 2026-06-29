@@ -142,11 +142,14 @@ class StreamingVoiceApi {
     String? baseUrl,
     VoiceWebSocketConnector? connector,
     RexApiClient? apiClient,
+    String? Function()? resolveLocale,
   }) : _apiClient = apiClient ?? RexApiClient(baseUrl: baseUrl),
-       _connector = connector ?? _connectIoWebSocket;
+       _connector = connector ?? _connectIoWebSocket,
+       _resolveLocale = resolveLocale;
 
   final RexApiClient _apiClient;
   final VoiceWebSocketConnector _connector;
+  final String? Function()? _resolveLocale;
 
   Future<StreamingVoiceSession> connect({
     String? conversationId,
@@ -170,6 +173,10 @@ class StreamingVoiceApi {
     }
     if (financialContext != null) {
       payload['financial_context'] = financialContext;
+    }
+    final locale = _resolveLocale?.call()?.trim();
+    if (locale != null && locale.isNotEmpty) {
+      payload['locale'] = locale;
     }
     socket.add(jsonEncode(payload));
     return StreamingVoiceSession(socket);

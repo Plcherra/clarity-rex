@@ -42,6 +42,7 @@ final class ProfileService {
     String? email,
     String? fullName,
     String? avatarUrl,
+    String? preferredLocale,
   }) async {
     final user = _currentUser;
     try {
@@ -52,6 +53,7 @@ final class ProfileService {
             'email': email ?? user.email,
             'full_name': fullName,
             'avatar_url': avatarUrl,
+            if (preferredLocale != null) 'preferred_locale': preferredLocale,
           })
           .select()
           .single();
@@ -72,12 +74,14 @@ final class ProfileService {
     String? email,
     String? fullName,
     String? avatarUrl,
+    String? preferredLocale,
   }) async {
     final user = _currentUser;
     final payload = <String, dynamic>{};
     if (email != null) payload['email'] = email;
     if (fullName != null) payload['full_name'] = fullName;
     if (avatarUrl != null) payload['avatar_url'] = avatarUrl;
+    if (preferredLocale != null) payload['preferred_locale'] = preferredLocale;
     if (payload.isEmpty) {
       throw const SupabaseDataException(
         table: 'profiles',

@@ -70,6 +70,7 @@ class VoiceStreamSession(
         self._active_audio_flush_tasks: set[asyncio.Task[Any]] = set()
         self._assistant_audio_started = False
         self._turn_generation = 0
+        self.locale: Optional[str] = None
 
     async def run(self) -> None:
         await self.websocket.accept()
@@ -154,6 +155,9 @@ class VoiceStreamSession(
             self.conversation_id = payload.get("conversation_id") or self.conversation_id
             self.input_mime_type = payload.get("input_mime_type") or self.input_mime_type
             self.client = str(payload.get("client") or self.client or "")
+            locale_value = payload.get("locale")
+            if isinstance(locale_value, str) and locale_value.strip():
+                self.locale = locale_value.strip()
             sample_rate = payload.get("sample_rate")
             if isinstance(sample_rate, int) and sample_rate > 0:
                 self.sample_rate = sample_rate

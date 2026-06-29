@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_l10n.dart';
 import '../../../theme/clarity_gradients.dart';
 import '../../../widgets/clarity_button.dart';
 import '../../../widgets/clarity_card.dart';
@@ -37,11 +38,11 @@ final class _AuthScreenState extends State<AuthScreen> {
 
     setState(() => _localError = null);
     if (email.isEmpty || password.isEmpty) {
-      setState(() => _localError = 'Enter your email and password.');
+      setState(() => _localError = context.l10n.authEnterEmailPassword);
       return;
     }
     if (_isSignUp && fullName.isEmpty) {
-      setState(() => _localError = 'Enter your name to create a profile.');
+      setState(() => _localError = context.l10n.authEnterName);
       return;
     }
 
@@ -60,7 +61,7 @@ final class _AuthScreenState extends State<AuthScreen> {
     final email = _emailController.text.trim();
     setState(() => _localError = null);
     if (email.isEmpty) {
-      setState(() => _localError = 'Enter your email to reset your password.');
+      setState(() => _localError = context.l10n.authEnterEmailForReset);
       return;
     }
     await widget.controller.requestPasswordReset(email: email);
@@ -73,6 +74,7 @@ final class _AuthScreenState extends State<AuthScreen> {
       builder: (context, _) {
         final theme = Theme.of(context);
         final cs = theme.colorScheme;
+        final l10n = context.l10n;
         final error = _localError ?? widget.controller.errorMessage;
         return Scaffold(
           body: DecoratedBox(
@@ -102,8 +104,8 @@ final class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 22),
                           Text(
                             _isSignUp
-                                ? 'Create your account'
-                                : 'Sign in to Clarity',
+                                ? l10n.authSignUpTitle
+                                : l10n.authSignInTitle,
                             style: theme.textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.4,
@@ -112,8 +114,8 @@ final class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 8),
                           Text(
                             _isSignUp
-                                ? 'Use email and password to start your local finance workspace.'
-                                : 'Use your email and password to continue.',
+                                ? l10n.authSignUpSubtitle
+                                : l10n.authSignInSubtitle,
                             style: theme.textTheme.bodyLarge?.copyWith(
                               color: cs.onSurfaceVariant,
                               height: 1.35,
@@ -124,8 +126,8 @@ final class _AuthScreenState extends State<AuthScreen> {
                             TextField(
                               controller: _fullNameController,
                               textInputAction: TextInputAction.next,
-                              decoration: const InputDecoration(
-                                labelText: 'Full name',
+                              decoration: InputDecoration(
+                                labelText: l10n.authFullNameLabel,
                               ),
                             ),
                             const SizedBox(height: 14),
@@ -134,8 +136,8 @@ final class _AuthScreenState extends State<AuthScreen> {
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
+                            decoration: InputDecoration(
+                              labelText: l10n.authEmailLabel,
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -144,11 +146,11 @@ final class _AuthScreenState extends State<AuthScreen> {
                             obscureText: _obscurePassword,
                             onSubmitted: (_) => _submit(),
                             decoration: InputDecoration(
-                              labelText: 'Password',
+                              labelText: l10n.authPasswordLabel,
                               suffixIcon: IconButton(
                                 tooltip: _obscurePassword
-                                    ? 'Show password'
-                                    : 'Hide password',
+                                    ? l10n.authShowPassword
+                                    : l10n.authHidePassword,
                                 onPressed: () {
                                   setState(() {
                                     _obscurePassword = !_obscurePassword;
@@ -170,7 +172,7 @@ final class _AuthScreenState extends State<AuthScreen> {
                                 onPressed: widget.controller.isLoading
                                     ? null
                                     : _requestPasswordReset,
-                                child: const Text('Forgot password?'),
+                                child: Text(l10n.authForgotPassword),
                               ),
                             ),
                           ],
@@ -196,7 +198,9 @@ final class _AuthScreenState extends State<AuthScreen> {
                           ],
                           const SizedBox(height: 22),
                           ClarityButton.filled(
-                            label: _isSignUp ? 'Create account' : 'Sign in',
+                            label: _isSignUp
+                                ? l10n.authCreateAccountButton
+                                : l10n.authSignInButton,
                             onPressed: _submit,
                             isLoading: widget.controller.isLoading,
                             expanded: true,
@@ -204,8 +208,8 @@ final class _AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 12),
                           ClarityButton.text(
                             label: _isSignUp
-                                ? 'Already have an account? Sign in'
-                                : 'Need an account? Create one',
+                                ? l10n.authSwitchToSignIn
+                                : l10n.authSwitchToSignUp,
                             onPressed: widget.controller.isLoading
                                 ? null
                                 : () {

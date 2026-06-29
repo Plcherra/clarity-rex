@@ -77,6 +77,7 @@ class ChatTurnOrchestrator:
         max_response_tokens: Optional[int] = None,
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
+        locale: Optional[str] = None,
     ) -> dict:
         stored_message, brain_message = brain_messages(
             self.transcript_normalizer,
@@ -132,6 +133,7 @@ class ChatTurnOrchestrator:
             channel=channel,
             attachment_context=turn_context.attachment_context,
             response_instructions=response_instructions,
+            locale=locale,
         )
         assistant_response, clarity_action_proposals = await self._generate_truthful_response(
             ai_messages=ai_messages,
@@ -181,6 +183,7 @@ class ChatTurnOrchestrator:
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
         include_turn_trace: bool = False,
+        locale: Optional[str] = None,
     ) -> AsyncIterator[dict]:
         stored_message, brain_message = brain_messages(
             self.transcript_normalizer,
@@ -248,6 +251,7 @@ class ChatTurnOrchestrator:
             channel=channel,
             attachment_context=turn_context.attachment_context,
             response_instructions=response_instructions,
+            locale=locale,
         )
         response_parts = []
         stream_filter = ClarityActionStreamFilter()
@@ -410,6 +414,7 @@ class ChatTurnOrchestrator:
         channel: RexBrainChannel,
         attachment_context,
         response_instructions: Optional[str],
+        locale: Optional[str] = None,
     ) -> list[dict]:
         ai_messages = self.simple_rex_brain.build_prompt_messages(
             message=brain_message,
@@ -422,6 +427,7 @@ class ChatTurnOrchestrator:
             time_context=turn_context.time_context,
             financial_context=financial_context,
             channel=channel,
+            locale=locale,
         )
         if response_instructions:
             ai_messages.append({"role": "system", "content": response_instructions})

@@ -37,7 +37,12 @@ class GoogleTTSService:
         self._cached_access_token: Optional[str] = None
         self._cached_access_token_expires_at = 0.0
 
-    async def synthesize_speech(self, text: str) -> dict[str, Any]:
+    async def synthesize_speech(
+        self,
+        text: str,
+        *,
+        language_code: Optional[str] = None,
+    ) -> dict[str, Any]:
         normalized_text = text.strip()
         if not normalized_text:
             raise GoogleTTSServiceError("Text to speak cannot be empty.", status_code=400)
@@ -53,7 +58,10 @@ class GoogleTTSService:
             )
 
         access_token = await self._access_token()
-        payload = self._synthesis_payload(normalized_text)
+        payload = self._synthesis_payload(
+            normalized_text,
+            language_code=language_code,
+        )
 
         try:
             response = await request_with_retries(
@@ -76,7 +84,10 @@ class GoogleTTSService:
                 status_code=503,
             ) from error
 
-        result = self._parse_synthesis_response(response)
+        result = self._parse_synthesis_response(
+            response,
+            language_code=language_code,
+        )
         result["metadata"]["text_character_count"] = len(normalized_text)
         return result
 
@@ -145,11 +156,17 @@ class GoogleTTSService:
                 status_code=503,
             ) from error
 
-    def _synthesis_payload(self, text: str) -> dict[str, Any]:
+    def _synthesis_payload(
+        self,
+        text: str,
+        *,
+        language_code: Optional[str] = None,
+    ) -> dict[str, Any]:
+        active_language = language_code or self.settings.google_tts_language_code
         return {
             "input": {"text": text},
             "voice": {
-                "languageCode": self.settings.google_tts_language_code,
+                "languageCode": active_language,
                 "name": self.settings.google_tts_voice_name,
             },
             "audioConfig": {
@@ -160,7 +177,12 @@ class GoogleTTSService:
             },
         }
 
-    def _parse_synthesis_response(self, response: httpx.Response) -> dict[str, Any]:
+    def _parse_synthesis_response(
+        self,
+        response: httpx.Response,
+        *,
+        language_code: Optional[str] = None,
+    ) -> dict[str, Any]:
         try:
             data = response.json()
         except (ValueError, binascii.Error) as error:
@@ -189,7 +211,7 @@ class GoogleTTSService:
             "audio_base64": audio_base64,
             "audio_encoding": self.settings.google_tts_audio_encoding,
             "voice_name": self.settings.google_tts_voice_name,
-            "language_code": self.settings.google_tts_language_code,
+            "language_code": language_code or self.settings.google_tts_language_code,
             "metadata": {
                 "vendor": "google_tts",
                 "text_character_count": None,

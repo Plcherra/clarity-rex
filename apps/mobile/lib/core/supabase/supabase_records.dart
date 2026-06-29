@@ -4,6 +4,7 @@ final class ProfileRecord {
     this.email,
     this.fullName,
     this.avatarUrl,
+    this.preferredLocale,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -12,6 +13,7 @@ final class ProfileRecord {
   final String? email;
   final String? fullName;
   final String? avatarUrl;
+  final String? preferredLocale;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,6 +23,7 @@ final class ProfileRecord {
       email: _nullableString(json, 'email'),
       fullName: _nullableString(json, 'full_name'),
       avatarUrl: _nullableString(json, 'avatar_url'),
+      preferredLocale: _nullableString(json, 'preferred_locale'),
       createdAt: _dateTime(json, 'created_at'),
       updatedAt: _dateTime(json, 'updated_at'),
     );
@@ -31,12 +34,14 @@ final class ProfileRecord {
     'email': email,
     'full_name': fullName,
     'avatar_url': avatarUrl,
+    if (preferredLocale != null) 'preferred_locale': preferredLocale,
   };
 
   Map<String, dynamic> toUpdateJson() => {
     if (email != null) 'email': email,
     if (fullName != null) 'full_name': fullName,
     if (avatarUrl != null) 'avatar_url': avatarUrl,
+    if (preferredLocale != null) 'preferred_locale': preferredLocale,
   };
 }
 

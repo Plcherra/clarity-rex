@@ -34,6 +34,7 @@ async def chat(
                 file=file,
                 financial_context=chat_request.financial_context,
                 user_requested_deep_thinking=chat_request.deep_think,
+                locale=chat_request.locale,
             ),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
@@ -46,6 +47,7 @@ async def chat(
             file=file,
             financial_context=chat_request.financial_context,
             user_requested_deep_thinking=chat_request.deep_think,
+            locale=chat_request.locale,
         )
     except ConversationNotFoundError as error:
         raise HTTPException(status_code=404, detail="Conversation not found.") from error
@@ -76,6 +78,7 @@ async def _stream_chat_events(
     file: Optional[UploadFile],
     financial_context: Optional[dict],
     user_requested_deep_thinking: bool = False,
+    locale: Optional[str] = None,
 ):
     try:
         async for event in chat_service.stream_message(
@@ -84,6 +87,7 @@ async def _stream_chat_events(
             file=file,
             financial_context=financial_context,
             user_requested_deep_thinking=user_requested_deep_thinking,
+            locale=locale,
         ):
             yield _sse_event(event.pop("event"), event)
     except ConversationNotFoundError:
@@ -111,6 +115,8 @@ async def _parse_chat_request(request: Request) -> tuple[ChatRequest, Optional[U
                 str(conversation_id_value) if conversation_id_value else None
             )
             stream = _as_bool(form.get("stream"))
+            locale_value = form.get("locale")
+            locale = str(locale_value).strip() if locale_value else None
             file_value = form.get("file")
             if hasattr(file_value, "filename") and hasattr(file_value, "read"):
                 file = file_value
@@ -123,6 +129,7 @@ async def _parse_chat_request(request: Request) -> tuple[ChatRequest, Optional[U
                     stream=stream,
                     financial_context=_json_dict(form.get("financial_context")),
                     deep_think=_as_bool(form.get("deep_think")),
+                    locale=locale or None,
                 ),
                 file,
             )

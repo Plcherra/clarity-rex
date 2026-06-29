@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import '../core/l10n/app_l10n.dart';
+import '../core/l10n/clarity_material_app.dart';
 import '../core/rex/rex_config.dart';
 import '../core/supabase/supabase_service.dart';
+import '../features/profile/application/locale_controller.dart';
 import '../features/profile/application/theme_mode_controller.dart';
 import '../screens/splash/clarity_splash_screen.dart';
 import '../widgets/clarity_diamond_loader.dart';
@@ -32,6 +35,7 @@ final class ClarityBootApp extends StatefulWidget {
 
 final class _ClarityBootAppState extends State<ClarityBootApp> {
   final ThemeModeController _themeModeController = ThemeModeController();
+  final LocaleController _localeController = LocaleController();
   Future<AppComposition>? _bootFuture;
   AppComposition? _composition;
 
@@ -43,13 +47,21 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
 
   Future<AppComposition> _boot() async {
     await _themeModeController.load();
+    await _localeController.load(
+      deviceLocale: WidgetsBinding.instance.platformDispatcher.locale,
+    );
     await dotenv.load(fileName: '.env', isOptional: true);
     _logReleaseConfig();
     await SupabaseService.initializeFromEnv();
 
     final composition = AppComposition(
       themeModeController: _themeModeController,
+      localeController: _localeController,
     );
+    composition.localeController.bindProfilePersistence((localeTag) async {
+      if (composition.authService.currentUser == null) return;
+      await composition.profileController.updatePreferredLocale(localeTag);
+    });
     try {
       await composition.startupService.hydrateForStartup();
       await composition.profileController.hydrateProfileForCurrentUser();
@@ -70,7 +82,6 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
   @override
   void dispose() {
     _composition?.dispose();
-    _themeModeController.dispose();
     super.dispose();
   }
 
@@ -85,6 +96,7 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
             error: snapshot.error,
             retry: _retry,
             themeModeController: _themeModeController,
+            localeController: _localeController,
           );
         }
         return ClaritySplashScreen(
@@ -95,8 +107,12 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
                   authController: composition.authController,
                   profileController: composition.profileController,
                   themeModeController: composition.themeModeController,
+                  localeController: composition.localeController,
                 )
-              : _BootLoadingApp(themeModeController: _themeModeController),
+              : _BootLoadingApp(
+                  themeModeController: _themeModeController,
+                  localeController: _localeController,
+                ),
         );
       },
     );
@@ -116,17 +132,27 @@ void _logReleaseConfig() {
 }
 
 final class _BootLoadingApp extends StatelessWidget {
-  const _BootLoadingApp({required this.themeModeController});
+  const _BootLoadingApp({
+    required this.themeModeController,
+    required this.localeController,
+  });
 
   final ThemeModeController themeModeController;
+  final LocaleController localeController;
 
   @override
   Widget build(BuildContext context) {
-    return _BootMaterialApp(
+    return ClarityMaterialApp(
       themeModeController: themeModeController,
-      home: const Scaffold(
+      localeController: localeController,
+      home: Scaffold(
         body: Center(
-          child: ClarityDiamondLoader(size: 64, label: 'Starting Clarity'),
+          child: Builder(
+            builder: (context) => ClarityDiamondLoader(
+              size: 64,
+              label: context.l10n.startingClarity,
+            ),
+          ),
         ),
       ),
     );
@@ -138,16 +164,19 @@ final class _BootErrorApp extends StatelessWidget {
     required this.error,
     required this.retry,
     required this.themeModeController,
+    required this.localeController,
   });
 
   final Object? error;
   final VoidCallback retry;
   final ThemeModeController themeModeController;
+  final LocaleController localeController;
 
   @override
   Widget build(BuildContext context) {
-    return _BootMaterialApp(
+    return ClarityMaterialApp(
       themeModeController: themeModeController,
+      localeController: localeController,
       home: Scaffold(
         body: SafeArea(
           child: Padding(
@@ -186,33 +215,6 @@ final class _BootErrorApp extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-final class _BootMaterialApp extends StatelessWidget {
-  const _BootMaterialApp({
-    required this.themeModeController,
-    required this.home,
-  });
-
-  final ThemeModeController themeModeController;
-  final Widget home;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: themeModeController,
-      builder: (context, _) {
-        return MaterialApp(
-          title: 'Clarity',
-          debugShowCheckedModeBanner: false,
-          theme: ClarityApp.buildLightTheme(),
-          darkTheme: ClarityApp.buildTheme(),
-          themeMode: themeModeController.themeMode,
-          home: home,
-        );
-      },
     );
   }
 }

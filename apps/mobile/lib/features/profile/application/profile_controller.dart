@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../../core/supabase/supabase_exceptions.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../auth/application/auth_service.dart';
+import 'locale_controller.dart';
 import 'profile_service.dart';
 
 final class ProfileController extends ChangeNotifier {
@@ -12,7 +13,8 @@ final class ProfileController extends ChangeNotifier {
     required this.profileService,
     required this.authService,
     required this.syncAfterProfileChanged,
-  }) {
+    LocaleController? localeController,
+  }) : _localeController = localeController {
     _authSubscription = authService.authStateChanges.listen((_) async {
       await hydrateProfileForCurrentUser();
     });
@@ -21,6 +23,7 @@ final class ProfileController extends ChangeNotifier {
   final ProfileService profileService;
   final AuthService authService;
   final Future<void> Function() syncAfterProfileChanged;
+  final LocaleController? _localeController;
   StreamSubscription<dynamic>? _authSubscription;
   StreamSubscription<ProfileRecord?>? _profileSubscription;
 
@@ -48,10 +51,12 @@ final class ProfileController extends ChangeNotifier {
       }
 
       profile = await profileService.fetchCurrentProfile();
+      await _localeController?.applyFromProfile(profile?.preferredLocale);
       _profileSubscription = profileService.watchCurrentProfile().listen((
         next,
-      ) {
+      ) async {
         profile = next;
+        await _localeController?.applyFromProfile(next?.preferredLocale);
         notifyListeners();
       });
     } on SupabaseAuthRequiredException {
@@ -71,6 +76,7 @@ final class ProfileController extends ChangeNotifier {
     String? email,
     String? fullName,
     String? avatarUrl,
+    String? preferredLocale,
   }) async {
     isLoading = true;
     errorMessage = null;
@@ -81,6 +87,7 @@ final class ProfileController extends ChangeNotifier {
         email: email,
         fullName: fullName,
         avatarUrl: avatarUrl,
+        preferredLocale: preferredLocale,
       );
       await syncAfterProfileChanged();
     } catch (e) {
@@ -96,6 +103,7 @@ final class ProfileController extends ChangeNotifier {
     String? email,
     String? fullName,
     String? avatarUrl,
+    String? preferredLocale,
   }) async {
     isLoading = true;
     errorMessage = null;
@@ -106,6 +114,7 @@ final class ProfileController extends ChangeNotifier {
         email: email,
         fullName: fullName,
         avatarUrl: avatarUrl,
+        preferredLocale: preferredLocale,
       );
       await syncAfterProfileChanged();
     } catch (e) {
@@ -115,6 +124,10 @@ final class ProfileController extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> updatePreferredLocale(String localeTag) async {
+    await updateCurrentProfile(preferredLocale: localeTag);
   }
 
   @override

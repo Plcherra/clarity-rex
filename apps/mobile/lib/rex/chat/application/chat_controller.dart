@@ -83,7 +83,10 @@ class ChatController extends Notifier<ChatState> {
         ChatMessage(
           id: 'local-assistant-action-${DateTime.now().microsecondsSinceEpoch}',
           role: ChatMessageRole.assistant,
-          content: actionResultMessage(action.action, result.result),
+          content: ref.read(actionResultMessageFormatterProvider)(
+            action.action,
+            result.result,
+          ),
           timestamp: DateTime.now(),
         ),
       );

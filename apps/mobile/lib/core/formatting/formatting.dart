@@ -1,56 +1,51 @@
-String formatMoney(double? value) {
-  if (value == null || value.isNaN) return '—';
-  final neg = value < 0;
-  final a = value.abs();
-  final parts = a.toStringAsFixed(2).split('.');
-  final intDigits = parts[0];
-  final buf = StringBuffer();
-  for (var i = 0; i < intDigits.length; i++) {
-    final fromEnd = intDigits.length - i;
-    if (i > 0 && fromEnd % 3 == 0) buf.write(',');
-    buf.write(intDigits[i]);
-  }
-  return '${neg ? '−' : ''}\$$buf.${parts[1]}';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+Locale _defaultFormattingLocale = const Locale('en');
+
+/// Updates the locale used by [formatMoney] / date helpers when no locale is passed.
+void setDefaultFormattingLocale(Locale locale) {
+  _defaultFormattingLocale = locale;
 }
 
-/// Turns `YYYY-MM` into e.g. `April 2026`.
-String formatYearMonthLabel(String yearMonth) {
+Locale get defaultFormattingLocale => _defaultFormattingLocale;
+
+String _formatLocaleTag(Locale locale) {
+  if (locale.countryCode != null && locale.countryCode!.isNotEmpty) {
+    return '${locale.languageCode}_${locale.countryCode}';
+  }
+  return locale.languageCode;
+}
+
+String formatMoney(double? value, {Locale? locale}) {
+  final activeLocale = locale ?? _defaultFormattingLocale;
+  if (value == null || value.isNaN) return '—';
+  final tag = _formatLocaleTag(activeLocale);
+  final formatter = NumberFormat.simpleCurrency(
+    locale: tag,
+    name: 'USD',
+  );
+  final formatted = formatter.format(value.abs());
+  if (value < 0) {
+    return '−$formatted';
+  }
+  return formatted;
+}
+
+/// Turns `YYYY-MM` into a localized month label, e.g. `April 2026`.
+String formatYearMonthLabel(String yearMonth, {Locale? locale}) {
   final parts = yearMonth.split('-');
   if (parts.length != 2) return yearMonth;
   final y = int.tryParse(parts[0]);
   final m = int.tryParse(parts[1]);
   if (y == null || m == null || m < 1 || m > 12) return yearMonth;
-  const names = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-  return '${names[m - 1]} $y';
+  final activeLocale = locale ?? _defaultFormattingLocale;
+  final tag = _formatLocaleTag(activeLocale);
+  return DateFormat.yMMMM(tag).format(DateTime(y, m));
 }
 
-String formatShortDate(DateTime d) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${months[d.month - 1]} ${d.day}';
+String formatShortDate(DateTime date, {Locale? locale}) {
+  final activeLocale = locale ?? _defaultFormattingLocale;
+  final tag = _formatLocaleTag(activeLocale);
+  return DateFormat.MMMd(tag).format(date);
 }

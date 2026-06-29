@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/l10n/app_l10n.dart';
+import '../core/l10n/clarity_material_app.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/presentation/auth_screen.dart';
 import '../features/auth/presentation/mfa_verification_screen.dart';
+import '../features/profile/application/locale_controller.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/profile/application/theme_mode_controller.dart';
 import '../features/shell/presentation/home_shell.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
+import '../l10n/app_localizations.dart';
+import '../rex/chat/application/chat_action_result_formatter.dart';
+import '../rex/chat/application/chat_controller.dart';
+import '../rex/chat/data/chat_api.dart';
 import '../rex/data/financial_context_service.dart';
-import '../theme/clarity_theme.dart';
+import '../rex/voice/application/voice_call_controller_providers.dart';
+import '../rex/voice/data/streaming_voice_api.dart';
 import '../widgets/clarity_diamond_loader.dart';
 import 'ui_dependencies.dart';
+
+export 'package:clarity/features/profile/application/locale_controller.dart'
+    show localeControllerProvider;
 
 final class ClarityApp extends StatelessWidget {
   const ClarityApp({
@@ -20,20 +31,14 @@ final class ClarityApp extends StatelessWidget {
     required this.authController,
     required this.profileController,
     required this.themeModeController,
+    required this.localeController,
   });
 
   final AppUiDependencies ui;
   final AuthController authController;
   final ProfileController profileController;
   final ThemeModeController themeModeController;
-
-  static ThemeData buildTheme() {
-    return ClarityTheme.dark();
-  }
-
-  static ThemeData buildLightTheme() {
-    return ClarityTheme.light();
-  }
+  final LocaleController localeController;
 
   @override
   Widget build(BuildContext context) {
@@ -46,20 +51,37 @@ final class ClarityApp extends StatelessWidget {
             notifyDataChanged: ui.notifyDataChanged,
           ),
         ),
+        localeControllerProvider.overrideWithValue(localeController),
+        chatApiProvider.overrideWith(
+          (ref) => ChatApi(
+            resolveLocale: () => ref.read(localeControllerProvider).languageCode,
+          ),
+        ),
+        streamingVoiceApiProvider.overrideWith(
+          (ref) => StreamingVoiceApi(
+            resolveLocale: () => ref.read(localeControllerProvider).languageCode,
+          ),
+        ),
+        actionResultMessageFormatterProvider.overrideWith(
+          (ref) {
+            final languageCode = ref.watch(localeControllerProvider).languageCode;
+            final l10n = lookupAppLocalizations(Locale(languageCode));
+            return (action, result) =>
+                actionResultMessage(l10n, action, result);
+          },
+        ),
       ],
       child: ListenableBuilder(
         listenable: Listenable.merge([
           authController,
           profileController,
           themeModeController,
+          localeController,
         ]),
         builder: (context, _) {
-          return MaterialApp(
-            title: 'Clarity',
-            debugShowCheckedModeBanner: false,
-            theme: buildLightTheme(),
-            darkTheme: buildTheme(),
-            themeMode: themeModeController.themeMode,
+          return ClarityMaterialApp(
+            themeModeController: themeModeController,
+            localeController: localeController,
             home: _homeForCurrentState(),
           );
         },
@@ -93,6 +115,7 @@ final class ClarityApp extends StatelessWidget {
       authController: authController,
       profileController: profileController,
       themeModeController: themeModeController,
+      localeController: localeController,
       signOut: authController.signOut,
     );
   }
@@ -103,9 +126,12 @@ final class _AppLoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
-        child: ClarityDiamondLoader(size: 64, label: 'Loading Clarity'),
+        child: ClarityDiamondLoader(
+          size: 64,
+          label: context.l10n.loadingClarity,
+        ),
       ),
     );
   }

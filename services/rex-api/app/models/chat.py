@@ -10,6 +10,7 @@ class ChatRequest(BaseModel):
     stream: bool = False
     financial_context: Optional[dict[str, Any]] = None
     deep_think: bool = False
+    locale: Optional[str] = None
 
 
 class ChatResponse(BaseModel):

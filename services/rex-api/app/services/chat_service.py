@@ -117,6 +117,7 @@ class ChatService(ChatVoiceMetadataMixin):
         max_response_tokens: Optional[int] = None,
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
+        locale: Optional[str] = None,
     ) -> dict:
         return await self.turn_orchestrator.send_message(
             message=message,
@@ -127,6 +128,7 @@ class ChatService(ChatVoiceMetadataMixin):
             max_response_tokens=max_response_tokens,
             channel=channel,
             user_requested_deep_thinking=user_requested_deep_thinking,
+            locale=locale,
         )
 
     async def stream_message(
@@ -140,6 +142,7 @@ class ChatService(ChatVoiceMetadataMixin):
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
         include_turn_trace: bool = False,
+        locale: Optional[str] = None,
     ) -> AsyncIterator[dict]:
         async for event in self.turn_orchestrator.stream_message(
             message=message,
@@ -151,5 +154,6 @@ class ChatService(ChatVoiceMetadataMixin):
             channel=channel,
             user_requested_deep_thinking=user_requested_deep_thinking,
             include_turn_trace=include_turn_trace,
+            locale=locale,
         ):
             yield event

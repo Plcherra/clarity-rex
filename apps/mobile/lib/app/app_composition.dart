@@ -16,6 +16,7 @@ import '../features/dashboard/application/dashboard_service.dart';
 import '../features/finance/application/financial_read_model_service.dart';
 import '../features/finance/data/financial_audit_service.dart';
 import '../features/plaid/application/plaid_link_service.dart';
+import '../features/profile/application/locale_controller.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/profile/application/profile_service.dart';
 import '../features/profile/application/theme_mode_controller.dart';
@@ -37,14 +38,18 @@ final class AppComposition {
     SupabaseService? supabaseService,
     bool initialAuthenticated = false,
     ThemeModeController? themeModeController,
+    LocaleController? localeController,
   }) : supabaseService = supabaseService ?? const SupabaseService(),
        _initialAuthenticated = initialAuthenticated,
        themeModeController = themeModeController ?? ThemeModeController(),
-       _ownsThemeModeController = themeModeController == null;
+       localeController = localeController ?? LocaleController(),
+       _ownsThemeModeController = themeModeController == null,
+       _ownsLocaleController = localeController == null;
 
   final SupabaseService supabaseService;
   final bool _initialAuthenticated;
   final bool _ownsThemeModeController;
+  final bool _ownsLocaleController;
 
   late final SupabaseRepository supabaseRepository = SupabaseRepository(
     supabaseService: supabaseService,
@@ -64,6 +69,7 @@ final class AppComposition {
   // This preserves existing picker/controller APIs without local persistence.
   late final CategoryReadModel categoryReadModel = CategoryReadModel(
     categoryService: categoryService,
+    localeController: localeController,
   );
   late final ProfileService profileService = supabaseRepository.profiles;
   late final BudgetService budgetService = supabaseRepository.budgets;
@@ -91,6 +97,7 @@ final class AppComposition {
   final ImportJobStatusService importJobStatusService =
       ImportJobStatusService();
   final ThemeModeController themeModeController;
+  final LocaleController localeController;
 
   late final AuthService authService = AuthService(
     supabaseService: supabaseService,
@@ -104,6 +111,7 @@ final class AppComposition {
   late final ProfileController profileController = ProfileController(
     profileService: profileService,
     authService: authService,
+    localeController: localeController,
     syncAfterProfileChanged: () async {
       // No local profile or merchant-memory hydration remains after auth/profile
       // changes; scoped UI controllers only need to refresh their Supabase data.
@@ -242,6 +250,9 @@ final class AppComposition {
     _tryDispose(() => profileController.dispose());
     if (_ownsThemeModeController) {
       _tryDispose(() => themeModeController.dispose());
+    }
+    if (_ownsLocaleController) {
+      _tryDispose(() => localeController.dispose());
     }
   }
 }

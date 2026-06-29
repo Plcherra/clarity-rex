@@ -28,7 +28,7 @@ from app.services.google_tts_service import (
 from app.services.memory_service import MemoryServiceError
 from app.services.rex_channel import RexBrainChannel
 from app.services.usage_tracking_service import UsageTrackingService
-from app.services.voice_stream_session import (
+from app.services.voice_stream_config import (
     VOICE_RESPONSE_INSTRUCTIONS,
     voice_response_max_tokens,
 )

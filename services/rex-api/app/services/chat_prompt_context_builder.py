@@ -103,6 +103,7 @@ class ChatPromptContextBuilder:
         time_context: dict,
         financial_context: Optional[dict],
         max_context_characters: Optional[int] = None,
+        locale: Optional[str] = None,
     ) -> list[dict]:
         last_message_timestamp = self.last_message_timestamp(conversation_history)
         return self.prompt_service.build_messages(
@@ -120,6 +121,7 @@ class ChatPromptContextBuilder:
             time_context=time_context,
             financial_context=financial_context,
             max_context_characters=max_context_characters,
+            locale=locale,
         )
 
     def last_message_timestamp(self, conversation_history: list[dict]) -> Optional[str]:

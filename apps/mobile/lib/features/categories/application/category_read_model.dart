@@ -3,19 +3,29 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/supabase/supabase_records.dart';
+import '../../profile/application/locale_controller.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../data/category_service.dart';
+import '../domain/category_display_labels.dart';
 import '../domain/category_normalization.dart';
 
 final class CategoryReadModel extends ChangeNotifier {
-  CategoryReadModel({required CategoryService categoryService})
-    : _categoryService = categoryService;
+  CategoryReadModel({
+    required CategoryService categoryService,
+    LocaleController? localeController,
+  }) : _categoryService = categoryService,
+       _localeController = localeController {
+    _localeController?.addListener(_onLocaleChanged);
+  }
 
   final CategoryService _categoryService;
+  final LocaleController? _localeController;
   StreamSubscription<List<CategoryRecord>>? _subscription;
   List<CategoryRecord> _categories = const [];
 
   List<CategoryRecord> get categories => List.unmodifiable(_categories);
+
+  String get _languageCode => _localeController?.languageCode ?? 'en';
 
   List<String> get customCategories {
     final builtIns = {
@@ -44,7 +54,8 @@ final class CategoryReadModel extends ChangeNotifier {
     return List.unmodifiable(names);
   }
 
-  Map<String, String> get categoryDisplayRenames => const {};
+  Map<String, String> get categoryDisplayRenames =>
+      CategoryLabelResolver.displayRenamesForLanguage(_languageCode);
 
   Set<String> get categoriesHiddenFromPicker {
     final hidden = <String>{};
@@ -63,6 +74,21 @@ final class CategoryReadModel extends ChangeNotifier {
     customCategories: customCategories,
     hiddenLower: categoriesHiddenFromPicker,
   );
+
+  String displayLabelForCategory(CategoryRecord category) {
+    final normalized = category.normalizedName?.trim();
+    if (normalized != null && normalized.isNotEmpty) {
+      return CategoryLabelResolver.resolve(
+        normalizedName: normalized,
+        languageCode: _languageCode,
+        fallbackName: category.name,
+      );
+    }
+    return CategoryLabelResolver.resolveFromCanonicalName(
+      canonicalName: category.name,
+      languageCode: _languageCode,
+    );
+  }
 
   Future<void> refresh() async {
     _setCategories(await _categoryService.fetchCategories());
@@ -106,7 +132,11 @@ final class CategoryReadModel extends ChangeNotifier {
     return null;
   }
 
-  String? categoryNameForId(String? id) => categoryById(id)?.name;
+  String? categoryNameForId(String? id) {
+    final category = categoryById(id);
+    if (category == null) return null;
+    return displayLabelForCategory(category);
+  }
 
   Future<CategoryRecord> ensureExpenseCategory(String name) async {
     final normalized = normalizeCategoryName(name);
@@ -125,6 +155,10 @@ final class CategoryReadModel extends ChangeNotifier {
     return created;
   }
 
+  void _onLocaleChanged() {
+    notifyListeners();
+  }
+
   void _setCategories(List<CategoryRecord> categories) {
     _categories = List.unmodifiable(categories);
     notifyListeners();
@@ -132,6 +166,7 @@ final class CategoryReadModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _localeController?.removeListener(_onLocaleChanged);
     unawaited(_subscription?.cancel());
     _subscription = null;
     super.dispose();

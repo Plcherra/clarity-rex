@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as p;
@@ -38,15 +39,31 @@ class ChatApi {
     String? baseUrl,
     RexAuthHeaders? authHeaders,
     RexApiClient? apiClient,
+    String? Function()? resolveLocale,
   }) : _apiClient =
            apiClient ??
            RexApiClient(
              httpClient: client,
              baseUrl: baseUrl,
              authHeaders: authHeaders,
-           );
+           ),
+       _resolveLocale = resolveLocale;
 
   final RexApiClient _apiClient;
+  final String? Function()? _resolveLocale;
+
+  void _attachLocale(Map<String, dynamic> payload) {
+    final locale = _resolveLocale?.call()?.trim();
+    if (locale != null && locale.isNotEmpty) {
+      payload['locale'] = locale;
+    }
+  }
+
+  @visibleForTesting
+  Map<String, dynamic> attachLocaleForTesting(Map<String, dynamic> payload) {
+    _attachLocale(payload);
+    return payload;
+  }
 
   Future<ChatApiResponse> sendMessage(
     String message, {
@@ -200,6 +217,7 @@ class ChatApi {
     if (financialContext != null) {
       payload['financial_context'] = financialContext;
     }
+    _attachLocale(payload);
 
     return _apiClient.postJson('/chat', payload);
   }
@@ -218,6 +236,10 @@ class ChatApi {
     }
     if (financialContext != null) {
       request.fields['financial_context'] = jsonEncode(financialContext);
+    }
+    final locale = _resolveLocale?.call()?.trim();
+    if (locale != null && locale.isNotEmpty) {
+      request.fields['locale'] = locale;
     }
 
     final fileName = attachment.name.trim().isNotEmpty
@@ -249,6 +271,10 @@ class ChatApi {
     if (financialContext != null) {
       payload['financial_context'] = financialContext;
     }
+    final locale = _resolveLocale?.call()?.trim();
+    if (locale != null && locale.isNotEmpty) {
+      payload['locale'] = locale;
+    }
 
     return http.Request('POST', uri)
       ..headers['Content-Type'] = 'application/json'
@@ -270,6 +296,10 @@ class ChatApi {
     }
     if (financialContext != null) {
       request.fields['financial_context'] = jsonEncode(financialContext);
+    }
+    final locale = _resolveLocale?.call()?.trim();
+    if (locale != null && locale.isNotEmpty) {
+      request.fields['locale'] = locale;
     }
 
     final fileName = attachment.name.trim().isNotEmpty

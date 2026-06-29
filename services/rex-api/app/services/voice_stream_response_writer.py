@@ -7,7 +7,7 @@ from typing import Any, Optional
 from app.services.google_tts_service import estimate_tts_duration_ms
 from app.services.rex_channel import RexBrainChannel
 from app.services.voice_stream_config import (
-    VOICE_RESPONSE_INSTRUCTIONS,
+    voice_response_instructions,
     voice_response_max_tokens,
 )
 
@@ -124,11 +124,14 @@ class VoiceStreamResponseWriterMixin:
         async for event in self.chat_service.stream_message(
             transcript,
             conversation_id=self.conversation_id,
-            response_instructions=VOICE_RESPONSE_INSTRUCTIONS,
+            response_instructions=voice_response_instructions(
+                getattr(self, "locale", None),
+            ),
             max_response_tokens=voice_response_max_tokens(transcript),
             financial_context=self.financial_context,
             channel=RexBrainChannel.VOICE,
             include_turn_trace=True,
+            locale=getattr(self, "locale", None),
         ):
             event_name = event.get("event")
             if event_name == "conversation":
@@ -207,9 +210,14 @@ class VoiceStreamResponseWriterMixin:
         text: str,
         timings: dict[str, int],
     ) -> dict[str, Any]:
+        from app.services.locale_utils import locale_to_tts_code
+
         synthesis_started_at = time.perf_counter()
         try:
-            synthesis = await self.google_tts_service.synthesize_speech(text)
+            synthesis = await self.google_tts_service.synthesize_speech(
+                text,
+                language_code=locale_to_tts_code(getattr(self, "locale", None)),
+            )
         except Exception as error:
             await self._record_tts_usage(
                 latency_ms=self._elapsed_ms(synthesis_started_at),

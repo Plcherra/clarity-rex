@@ -19,10 +19,20 @@ class ImportRepairSummary {
 }
 
 class ImportJobStatusService {
+  ImportJobStatusService({String? idleProgressMessage})
+    : idleProgressMessage =
+          idleProgressMessage ?? _defaultIdleProgressMessage,
+      importProgressMessage =
+          idleProgressMessage ?? _defaultIdleProgressMessage;
+
+  static const _defaultIdleProgressMessage = 'Uploading transactions...';
+
+  String idleProgressMessage;
+
   bool importRunning = false;
   int importProgressCompleted = 0;
   int importProgressTotal = 100;
-  String importProgressMessage = 'Uploading transactions...';
+  late String importProgressMessage;
 
   String? importSnackMessage;
   String? persistentImportMessage;
@@ -36,6 +46,13 @@ class ImportJobStatusService {
       !importRunning &&
       repairImportAccountId?.trim().isNotEmpty == true &&
       repairImportId?.trim().isNotEmpty == true;
+
+  void configureIdleProgressMessage(String message) {
+    idleProgressMessage = message;
+    if (!importRunning) {
+      importProgressMessage = message;
+    }
+  }
 
   void applyCsvImportProgress(
     CsvImportProgress progress, {
@@ -229,7 +246,7 @@ class ImportJobStatusService {
     importRunning = false;
     importProgressCompleted = 0;
     importProgressTotal = 100;
-    importProgressMessage = 'Uploading transactions...';
+    importProgressMessage = idleProgressMessage;
     importSnackMessage = null;
     persistentImportMessage = null;
     persistentImportMessageIsError = false;

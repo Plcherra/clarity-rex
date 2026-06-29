@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/l10n/app_l10n.dart';
 import '../../../widgets/clarity_card.dart';
 
 /// Floating panel for the unified CSV upload + AI categorization job.
@@ -95,6 +96,14 @@ class ImportJobStatusHost extends StatefulWidget {
 }
 
 class _ImportJobStatusHostState extends State<ImportJobStatusHost> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    widget.controller.configureIdleProgressMessage(
+      context.l10n.importUploadingTransactions,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(

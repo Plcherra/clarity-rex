@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_l10n.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../auth/application/auth_controller.dart';
@@ -53,7 +54,7 @@ final class ProfileScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Appearance',
+                      context.l10n.profileAppearance,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
@@ -62,7 +63,7 @@ final class ProfileScreen extends StatelessWidget {
                     for (final mode in ThemeMode.values)
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text(_themeModeLabel(mode)),
+                        title: Text(_themeModeLabel(context, mode)),
                         trailing: themeModeController.themeMode == mode
                             ? const Icon(Icons.check_rounded)
                             : null,
@@ -225,7 +226,7 @@ final class ProfileScreen extends StatelessWidget {
               ),
               const OwnerUsageProfileEntry(),
               const SizedBox(height: 18),
-              const _ProfileSectionLabel('Appearance'),
+              _ProfileSectionLabel(context.l10n.profileAppearance),
               const SizedBox(height: 8),
               ListenableBuilder(
                 listenable: themeModeController,
@@ -234,13 +235,26 @@ final class ProfileScreen extends StatelessWidget {
                     children: [
                       _ProfileActionTile(
                         icon: Icons.contrast_rounded,
-                        title: 'Theme',
+                        title: context.l10n.profileAppearance,
                         subtitle: themeModeController.label,
                         onTap: () => _openAppearance(context),
                       ),
                     ],
                   );
                 },
+              ),
+              const SizedBox(height: 18),
+              _ProfileSectionLabel(context.l10n.profileLanguage),
+              const SizedBox(height: 8),
+              _ProfileActionGroup(
+                children: [
+                  _ProfileActionTile(
+                    icon: Icons.translate_rounded,
+                    title: context.l10n.profileLanguage,
+                    subtitle: context.l10n.profileLanguageComingSoon,
+                    onTap: () {},
+                  ),
+                ],
               ),
               if (signOut != null) ...[
                 const SizedBox(height: 18),
@@ -473,10 +487,11 @@ final class _ProfileActionTile extends StatelessWidget {
   }
 }
 
-String _themeModeLabel(ThemeMode mode) {
+String _themeModeLabel(BuildContext context, ThemeMode mode) {
+  final l10n = context.l10n;
   return switch (mode) {
-    ThemeMode.system => 'System',
-    ThemeMode.dark => 'Dark',
-    ThemeMode.light => 'Light',
+    ThemeMode.system => l10n.themeSystem,
+    ThemeMode.dark => l10n.themeDark,
+    ThemeMode.light => l10n.themeLight,
   };
 }

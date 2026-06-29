@@ -48,6 +48,7 @@ void main() {
         authController: app.authController,
         profileController: app.profileController,
         themeModeController: app.themeModeController,
+        localeController: app.localeController,
       ),
     );
 
@@ -66,6 +67,7 @@ void main() {
         authController: app.authController,
         profileController: app.profileController,
         themeModeController: app.themeModeController,
+        localeController: app.localeController,
       ),
     );
 
@@ -94,6 +96,7 @@ void main() {
         authController: app.authController,
         profileController: app.profileController,
         themeModeController: app.themeModeController,
+        localeController: app.localeController,
       ),
     );
 
@@ -122,6 +125,7 @@ void main() {
         authController: app.authController,
         profileController: app.profileController,
         themeModeController: app.themeModeController,
+        localeController: app.localeController,
       ),
     );
 
@@ -144,12 +148,13 @@ void main() {
       find.text('Minutes today, this week, and this month'),
       findsOneWidget,
     );
-    expect(find.text('Theme'), findsOneWidget);
+    expect(find.text('Appearance'), findsNWidgets(2));
     expect(find.text('System'), findsOneWidget);
 
     await tester.drag(find.byType(ListView), const Offset(0, -260));
     await tester.pumpAndSettle();
 
+    expect(find.text('Language'), findsNWidgets(2));
     expect(find.text('Sign out'), findsOneWidget);
   });
 
@@ -173,6 +178,7 @@ void main() {
         authController: app.authController,
         profileController: app.profileController,
         themeModeController: app.themeModeController,
+        localeController: app.localeController,
       ),
     );
 
@@ -210,6 +216,7 @@ void main() {
         authController: app.authController,
         profileController: app.profileController,
         themeModeController: app.themeModeController,
+        localeController: app.localeController,
       ),
     );
 

@@ -758,6 +758,10 @@ final class ImportJobStatusController extends _UiController {
   String get importProgressMessage =>
       bindings.importJobStatusService.importProgressMessage;
 
+  void configureIdleProgressMessage(String message) {
+    bindings.importJobStatusService.configureIdleProgressMessage(message);
+  }
+
   String? get persistentImportMessage =>
       bindings.importJobStatusService.persistentImportMessage;
 

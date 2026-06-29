@@ -50,6 +50,7 @@ class SimpleRexBrain:
         time_context: dict,
         financial_context: Optional[dict],
         channel: RexBrainChannel,
+        locale: Optional[str] = None,
     ) -> list[dict]:
         # Channel is intentionally accepted at the brain boundary. The launch
         # brain uses the same prompt path for chat and voice, while leaving room
@@ -65,4 +66,5 @@ class SimpleRexBrain:
             file_text=file_text,
             time_context=time_context,
             financial_context=financial_context,
+            locale=locale,
         )

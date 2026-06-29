@@ -315,6 +315,7 @@ class ChatContextService:
         time_context: dict,
         financial_context: Optional[dict],
         max_context_characters: Optional[int] = None,
+        locale: Optional[str] = None,
     ) -> list[dict]:
         return self.prompt_context_builder.build_prompt_messages(
             message=message,
@@ -327,6 +328,7 @@ class ChatContextService:
             time_context=time_context,
             financial_context=financial_context,
             max_context_characters=max_context_characters,
+            locale=locale,
         )
 
     def current_time_context(self, conversation_history: list[dict]) -> dict:

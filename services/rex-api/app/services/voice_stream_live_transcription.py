@@ -3,6 +3,8 @@ import contextlib
 import time
 from typing import Any
 
+from app.services.locale_utils import locale_to_stt_code
+
 
 class VoiceStreamLiveTranscriptionMixin:
     def _supports_live_transcription(self) -> bool:
@@ -16,6 +18,7 @@ class VoiceStreamLiveTranscriptionMixin:
                 content_type=self.input_mime_type,
                 sample_rate=self.sample_rate,
                 on_transcript=self._handle_live_transcript_event,
+                language=locale_to_stt_code(getattr(self, "locale", None)),
             )
         )
         return self._live_transcription

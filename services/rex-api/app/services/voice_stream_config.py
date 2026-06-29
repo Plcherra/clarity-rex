@@ -18,6 +18,15 @@ VOICE_DEEP_THINKING_PHRASES = (
 )
 
 
+def voice_response_instructions(locale: str | None = None) -> str:
+    from app.services.locale_utils import locale_response_rule
+
+    rule = locale_response_rule(locale)
+    if rule:
+        return f"{VOICE_RESPONSE_INSTRUCTIONS}\n{rule}"
+    return VOICE_RESPONSE_INSTRUCTIONS
+
+
 def voice_response_max_tokens(transcript: str) -> int:
     normalized = transcript.lower()
     if any(phrase in normalized for phrase in VOICE_DEEP_THINKING_PHRASES):

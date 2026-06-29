@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/l10n/app_l10n.dart';
 import '../../auth/application/auth_controller.dart';
 import 'import_job_progress_banner.dart';
 import '../../accounts/data/connect_bank_entry_point_tracker.dart';
@@ -9,6 +10,7 @@ import '../../accounts/presentation/accounts_screen.dart';
 import '../../budgets/presentation/budgets_screen.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
 import '../../plaid/application/plaid_link_service.dart';
+import '../../profile/application/locale_controller.dart';
 import '../../profile/application/profile_controller.dart';
 import '../../profile/application/theme_mode_controller.dart';
 import '../../profile/presentation/profile_screen.dart';
@@ -21,6 +23,7 @@ class HomeShell extends StatefulWidget {
     required this.authController,
     required this.profileController,
     required this.themeModeController,
+    required this.localeController,
     this.signOut,
   });
 
@@ -28,6 +31,7 @@ class HomeShell extends StatefulWidget {
   final AuthController authController;
   final ProfileController profileController;
   final ThemeModeController themeModeController;
+  final LocaleController localeController;
   final Future<void> Function()? signOut;
 
   @override
@@ -120,6 +124,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final pages = <Widget>[
       DashboardScreen(
         controller: widget.ui.dashboard,
@@ -165,31 +170,31 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
             NavigationBar(
               selectedIndex: _idx,
               onDestinationSelected: (i) => setState(() => _selectIndex(i)),
-              destinations: const [
+              destinations: [
                 NavigationDestination(
-                  icon: Icon(Icons.dashboard_outlined),
-                  selectedIcon: Icon(Icons.dashboard_rounded),
-                  label: 'Dashboard',
+                  icon: const Icon(Icons.dashboard_outlined),
+                  selectedIcon: const Icon(Icons.dashboard_rounded),
+                  label: l10n.navDashboard,
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.account_balance_outlined),
-                  selectedIcon: Icon(Icons.account_balance_rounded),
-                  label: 'Accounts',
+                  icon: const Icon(Icons.account_balance_outlined),
+                  selectedIcon: const Icon(Icons.account_balance_rounded),
+                  label: l10n.navAccounts,
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.savings_outlined),
-                  selectedIcon: Icon(Icons.savings_rounded),
-                  label: 'Budgets',
+                  icon: const Icon(Icons.savings_outlined),
+                  selectedIcon: const Icon(Icons.savings_rounded),
+                  label: l10n.navBudgets,
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.psychology_alt_outlined),
-                  selectedIcon: Icon(Icons.psychology_alt_rounded),
-                  label: 'Assistant',
+                  icon: const Icon(Icons.psychology_alt_outlined),
+                  selectedIcon: const Icon(Icons.psychology_alt_rounded),
+                  label: l10n.navAssistant,
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.person_outline_rounded),
-                  selectedIcon: Icon(Icons.person_rounded),
-                  label: 'Profile',
+                  icon: const Icon(Icons.person_outline_rounded),
+                  selectedIcon: const Icon(Icons.person_rounded),
+                  label: l10n.navProfile,
                 ),
               ],
             ),

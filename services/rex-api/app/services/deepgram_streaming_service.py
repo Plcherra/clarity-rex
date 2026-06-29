@@ -229,6 +229,7 @@ class DeepgramStreamingService:
         content_type: str,
         sample_rate: int = 16000,
         on_transcript: Optional[TranscriptCallback] = None,
+        language: Optional[str] = None,
     ) -> DeepgramLiveTranscriptionSession:
         if not self.settings.deepgram_api_key:
             raise DeepgramServiceError(
@@ -238,7 +239,7 @@ class DeepgramStreamingService:
 
         try:
             websocket = await websockets.connect(
-                self._stream_url(sample_rate=sample_rate),
+                self._stream_url(sample_rate=sample_rate, language=language),
                 additional_headers={
                     "Authorization": f"Token {self.settings.deepgram_api_key}",
                 },
@@ -261,7 +262,7 @@ class DeepgramStreamingService:
             append_final_segment=self._append_final_segment,
         )
 
-    def _stream_url(self, sample_rate: int) -> str:
+    def _stream_url(self, sample_rate: int, language: Optional[str] = None) -> str:
         base_url = self.settings.deepgram_base_url.rstrip("/").replace(
             "https://",
             "wss://",
@@ -270,7 +271,7 @@ class DeepgramStreamingService:
         query = urlencode(
             {
                 "model": self.settings.deepgram_model,
-                "language": self.settings.deepgram_language,
+                "language": language or self.settings.deepgram_language,
                 "smart_format": "true",
                 "interim_results": "true",
                 "endpointing": str(self.settings.deepgram_endpointing_ms),

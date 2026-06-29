@@ -1,0 +1,74 @@
+{
+  "@@locale": "en",
+  "@@context": "Clarity UI strings. Add new keys here before hardcoding user-facing copy. Widget tests should use test/helpers/l10n_test_wrapper.dart with Locale('en'). Services must not hardcode user strings; callers pass localized text or callbacks.",
+  "appTitle": "Clarity",
+  "navDashboard": "Dashboard",
+  "navAccounts": "Accounts",
+  "navBudgets": "Budgets",
+  "navAssistant": "Assistant",
+  "navProfile": "Profile",
+  "loadingClarity": "Loading Clarity",
+  "startingClarity": "Starting Clarity",
+  "authSignInTitle": "Sign in to Clarity",
+  "authSignUpTitle": "Create your account",
+  "authSignInSubtitle": "Use your email and password to continue.",
+  "authSignUpSubtitle": "Use email and password to start your local finance workspace.",
+  "authFullNameLabel": "Full name",
+  "authEmailLabel": "Email",
+  "authPasswordLabel": "Password",
+  "authShowPassword": "Show password",
+  "authHidePassword": "Hide password",
+  "authForgotPassword": "Forgot password?",
+  "authSignInButton": "Sign in",
+  "authCreateAccountButton": "Create account",
+  "authSwitchToSignIn": "Already have an account? Sign in",
+  "authSwitchToSignUp": "Need an account? Create one",
+  "authEnterEmailPassword": "Enter your email and password.",
+  "authEnterName": "Enter your name to create a profile.",
+  "authEnterEmailForReset": "Enter your email to reset your password.",
+  "profileAppearance": "Appearance",
+  "profileLanguage": "Language",
+  "profileLanguageComingSoon": "Language preferences will appear here.",
+  "themeSystem": "System",
+  "themeDark": "Dark",
+  "themeLight": "Light",
+  "importUploadingTransactions": "Uploading transactions...",
+  "chatActionDoneSingle": "Done. I applied the {action} change.",
+  "@chatActionDoneSingle": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "chatActionDoneForSubject": "Done. I applied the {action} change for {subject}.",
+  "@chatActionDoneForSubject": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "subject": {
+        "type": "String"
+      }
+    }
+  },
+  "chatActionDoneMultiple": "Done. I applied the {action} change to {count} records.",
+  "@chatActionDoneMultiple": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatActionDoneMultipleOne": "Done. I applied the {action} change to 1 record.",
+  "@chatActionDoneMultipleOne": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  }
+}
