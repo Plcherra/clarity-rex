@@ -9,409 +9,411 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
-  String get appTitle => 'Clarity';
+  String get appTitle => 'Claridad';
 
   @override
-  String get navDashboard => 'Dashboard';
+  String get navDashboard => 'Panel';
 
   @override
-  String get navAccounts => 'Accounts';
+  String get navAccounts => 'Cuentas';
 
   @override
-  String get navBudgets => 'Budgets';
+  String get navBudgets => 'Presupuestos';
 
   @override
-  String get navAssistant => 'Assistant';
+  String get navAssistant => 'Asistente';
 
   @override
-  String get navProfile => 'Profile';
+  String get navProfile => 'Perfil';
 
   @override
-  String get loadingClarity => 'Loading Clarity';
+  String get loadingClarity => 'Cargando claridad';
 
   @override
-  String get startingClarity => 'Starting Clarity';
+  String get startingClarity => 'Claridad inicial';
 
   @override
-  String get authSignInTitle => 'Sign in to Clarity';
+  String get authSignInTitle => 'Iniciar sesión en Claridad';
 
   @override
-  String get authSignUpTitle => 'Create your account';
+  String get authSignUpTitle => 'Crea tu cuenta';
 
   @override
-  String get authSignInSubtitle => 'Use your email and password to continue.';
+  String get authSignInSubtitle =>
+      'Utilice su correo electrónico y contraseña para continuar.';
 
   @override
   String get authSignUpSubtitle =>
-      'Use email and password to start your local finance workspace.';
+      'Utilice el correo electrónico y la contraseña para iniciar su espacio de trabajo de finanzas local.';
 
   @override
-  String get authFullNameLabel => 'Full name';
+  String get authFullNameLabel => 'nombre completo';
 
   @override
-  String get authEmailLabel => 'Email';
+  String get authEmailLabel => 'Correo electrónico';
 
   @override
-  String get authPasswordLabel => 'Password';
+  String get authPasswordLabel => 'Contraseña';
 
   @override
-  String get authShowPassword => 'Show password';
+  String get authShowPassword => 'Mostrar contraseña';
 
   @override
-  String get authHidePassword => 'Hide password';
+  String get authHidePassword => 'Ocultar contraseña';
 
   @override
-  String get authForgotPassword => 'Forgot password?';
+  String get authForgotPassword => '¿Has olvidado tu contraseña?';
 
   @override
-  String get authSignInButton => 'Sign in';
+  String get authSignInButton => 'Iniciar sesión';
 
   @override
-  String get authCreateAccountButton => 'Create account';
+  String get authCreateAccountButton => 'Crear una cuenta';
 
   @override
-  String get authSwitchToSignIn => 'Already have an account? Sign in';
+  String get authSwitchToSignIn => '¿Ya tienes una cuenta? Iniciar sesión';
 
   @override
-  String get authSwitchToSignUp => 'Need an account? Create one';
+  String get authSwitchToSignUp => '¿Necesitas una cuenta? Crea uno';
 
   @override
-  String get authEnterEmailPassword => 'Enter your email and password.';
+  String get authEnterEmailPassword =>
+      'Ingrese su correo electrónico y contraseña.';
 
   @override
-  String get authEnterName => 'Enter your name to create a profile.';
+  String get authEnterName => 'Ingrese su nombre para crear un perfil.';
 
   @override
   String get authEnterEmailForReset =>
-      'Enter your email to reset your password.';
+      'Ingrese su correo electrónico para restablecer su contraseña.';
 
   @override
-  String get profileAppearance => 'Appearance';
+  String get profileAppearance => 'Apariencia';
 
   @override
-  String get profileLanguage => 'Language';
+  String get profileLanguage => 'Idioma';
 
   @override
   String profileLanguageUpdated(String language) {
-    return 'Language set to $language.';
+    return 'Idioma establecido en $language.';
   }
 
   @override
-  String get themeSystem => 'System';
+  String get themeSystem => 'Sistema';
 
   @override
-  String get themeDark => 'Dark';
+  String get themeDark => 'Oscuro';
 
   @override
-  String get themeLight => 'Light';
+  String get themeLight => 'Luz';
 
   @override
-  String get importUploadingTransactions => 'Uploading transactions...';
+  String get importUploadingTransactions => 'Subiendo transacciones...';
 
   @override
   String chatActionDoneSingle(String action) {
-    return 'Done. I applied the $action change.';
+    return 'Hecho. Apliqué el cambio $action.';
   }
 
   @override
   String chatActionDoneForSubject(String action, String subject) {
-    return 'Done. I applied the $action change for $subject.';
+    return 'Hecho. Apliqué el cambio $action para $subject.';
   }
 
   @override
   String chatActionDoneMultiple(String action, int count) {
-    return 'Done. I applied the $action change to $count records.';
+    return 'Hecho. Apliqué el cambio $action a los registros $count.';
   }
 
   @override
   String chatActionDoneMultipleOne(String action) {
-    return 'Done. I applied the $action change to 1 record.';
+    return 'Hecho. Apliqué el cambio $action a 1 registro.';
   }
 
   @override
-  String get commonCancel => 'Cancel';
+  String get commonCancel => 'Cancelar';
 
   @override
-  String get commonSave => 'Save';
+  String get commonSave => 'Ahorrar';
 
   @override
-  String get commonDelete => 'Delete';
+  String get commonDelete => 'Borrar';
 
   @override
-  String get commonRetry => 'Retry';
+  String get commonRetry => 'Rever';
 
   @override
-  String get commonClose => 'Close';
+  String get commonClose => 'Cerca';
 
   @override
-  String get commonArchive => 'Archive';
+  String get commonArchive => 'Archivo';
 
   @override
-  String get commonMerge => 'Merge';
+  String get commonMerge => 'Unir';
 
   @override
-  String get commonEnable => 'Enable';
+  String get commonEnable => 'Permitir';
 
   @override
-  String get commonDisable => 'Disable';
+  String get commonDisable => 'Desactivar';
 
   @override
-  String get commonOk => 'OK';
+  String get commonOk => 'DE ACUERDO';
 
   @override
-  String get commonKeep => 'Keep';
+  String get commonKeep => 'Mantener';
 
   @override
-  String get commonDiscard => 'Discard';
+  String get commonDiscard => 'Desechar';
 
   @override
-  String get commonContinue => 'Continue';
+  String get commonContinue => 'Continuar';
 
   @override
-  String get commonIncome => 'Income';
+  String get commonIncome => 'Ingreso';
 
   @override
-  String get commonSpending => 'Spending';
+  String get commonSpending => 'Gasto';
 
   @override
-  String get commonNet => 'Net';
+  String get commonNet => 'Neto';
 
   @override
-  String get commonUnavailable => 'Unavailable';
+  String get commonUnavailable => 'Indisponible';
 
   @override
-  String get commonSignOut => 'Sign out';
+  String get commonSignOut => 'desconectar';
 
   @override
-  String get commonEdit => 'Edit';
+  String get commonEdit => 'Editar';
 
   @override
-  String get commonImport => 'Import';
+  String get commonImport => 'Importar';
 
   @override
-  String get commonLoading => 'Loading';
+  String get commonLoading => 'Cargando';
 
   @override
-  String get commonRemove => 'Remove';
+  String get commonRemove => 'Eliminar';
 
   @override
-  String get commonConfirm => 'Confirm';
+  String get commonConfirm => 'Confirmar';
 
   @override
-  String get commonDismiss => 'Dismiss';
+  String get commonDismiss => 'Despedir';
 
   @override
-  String get commonToday => 'Today';
+  String get commonToday => 'Hoy';
 
   @override
-  String get commonThisWeek => 'This week';
+  String get commonThisWeek => 'Esta semana';
 
   @override
-  String get commonThisMonth => 'This month';
+  String get commonThisMonth => 'este mes';
 
   @override
-  String get commonAll => 'All';
+  String get commonAll => 'Todo';
 
   @override
-  String get commonCustom => 'Custom';
+  String get commonCustom => 'Personalizado';
 
   @override
-  String get commonActive => 'Active';
+  String get commonActive => 'Activo';
 
   @override
-  String get commonTitle => 'Title';
+  String get commonTitle => 'Título';
 
   @override
-  String get commonName => 'Name';
+  String get commonName => 'Nombre';
 
   @override
-  String get commonDescription => 'Description';
+  String get commonDescription => 'Descripción';
 
   @override
-  String get commonStatus => 'Status';
+  String get commonStatus => 'Estado';
 
   @override
-  String get commonPriority => 'Priority';
+  String get commonPriority => 'Prioridad';
 
   @override
-  String get commonImportance => 'Importance';
+  String get commonImportance => 'Importancia';
 
   @override
-  String get commonSummary => 'Summary';
+  String get commonSummary => 'Resumen';
 
   @override
-  String get commonNotes => 'Notes';
+  String get commonNotes => 'Notas';
 
   @override
-  String get commonType => 'Type';
+  String get commonType => 'Tipo';
 
   @override
-  String get commonLow => 'Low';
+  String get commonLow => 'Bajo';
 
   @override
   String get commonNormal => 'Normal';
 
   @override
-  String get commonMedium => 'Medium';
+  String get commonMedium => 'Medio';
 
   @override
-  String get commonHigh => 'High';
+  String get commonHigh => 'Alto';
 
   @override
-  String get commonNotSet => 'Not set';
+  String get commonNotSet => 'No establecido';
 
   @override
-  String get commonDueDate => 'Due date';
+  String get commonDueDate => 'Fecha de vencimiento';
 
   @override
-  String get commonAccount => 'Account';
+  String get commonAccount => 'Cuenta';
 
   @override
-  String get commonUnknown => 'Unknown';
+  String get commonUnknown => 'Desconocido';
 
   @override
-  String get commonExpense => 'Expense';
+  String get commonExpense => 'Gastos';
 
   @override
-  String get commonTransfer => 'Transfer';
+  String get commonTransfer => 'Transferir';
 
   @override
-  String get commonRefund => 'Refund';
+  String get commonRefund => 'Reembolso';
 
   @override
-  String get commonAdjustment => 'Adjustment';
+  String get commonAdjustment => 'Ajuste';
 
   @override
-  String get commonCreditCardPayment => 'Credit card payment';
+  String get commonCreditCardPayment => 'pago con tarjeta de crédito';
 
   @override
-  String get commonChecking => 'Checking';
+  String get commonChecking => 'De cheques';
 
   @override
-  String get commonSavings => 'Savings';
+  String get commonSavings => 'Ahorros';
 
   @override
-  String get commonCard => 'Card';
+  String get commonCard => 'Tarjeta';
 
   @override
-  String get commonBuiltIn => 'Built-in';
+  String get commonBuiltIn => 'Incorporado';
 
   @override
-  String get commonHidden => 'Hidden';
+  String get commonHidden => 'Oculto';
 
   @override
   String get commonVisible => 'Visible';
 
   @override
-  String get commonDisabled => 'Disabled';
+  String get commonDisabled => 'Desactivado';
 
   @override
-  String get commonCategories => 'Categories';
+  String get commonCategories => 'Categorías';
 
   @override
-  String get commonRules => 'Rules';
+  String get commonRules => 'Normas';
 
   @override
-  String get commonHistory => 'History';
+  String get commonHistory => 'Historia';
 
   @override
-  String get commonPeople => 'People';
+  String get commonPeople => 'Gente';
 
   @override
-  String get commonPreferences => 'Preferences';
+  String get commonPreferences => 'Preferencias';
 
   @override
-  String get commonPerson => 'Person';
+  String get commonPerson => 'Persona';
 
   @override
   String get commonPlan => 'Plan';
 
   @override
-  String get commonCommitment => 'Commitment';
+  String get commonCommitment => 'Compromiso';
 
   @override
-  String get commonRule => 'Rule';
+  String get commonRule => 'Regla';
 
   @override
-  String get commonMemory => 'Memory';
+  String get commonMemory => 'Memoria';
 
   @override
-  String get commonConversation => 'Conversation';
+  String get commonConversation => 'Conversación';
 
   @override
-  String get commonUndated => 'Undated';
+  String get commonUndated => 'Sin fecha';
 
   @override
-  String get commonYesterday => 'Yesterday';
+  String get commonYesterday => 'Ayer';
 
   @override
-  String get commonOlder => 'Older';
+  String get commonOlder => 'Más viejo';
 
   @override
-  String get commonUpcoming => 'Upcoming';
+  String get commonUpcoming => 'Próximo';
 
   @override
-  String get commonInactive => 'Inactive';
+  String get commonInactive => 'Inactivo';
 
   @override
-  String get commonAttachment => 'Attachment';
+  String get commonAttachment => 'Adjunto';
 
   @override
-  String get commonStart => 'Start';
+  String get commonStart => 'Comenzar';
 
   @override
-  String get commonEnd => 'End';
+  String get commonEnd => 'Fin';
 
   @override
-  String get commonLeft => 'Left';
+  String get commonLeft => 'Izquierda';
 
   @override
-  String get commonOver => 'Over';
+  String get commonOver => 'Encima';
 
   @override
-  String get commonSpent => 'Spent';
+  String get commonSpent => 'Gastado';
 
   @override
-  String get commonBudgeted => 'Budgeted';
+  String get commonBudgeted => 'Presupuestado';
 
   @override
-  String get commonMonthly => 'Monthly';
+  String get commonMonthly => 'Mensual';
 
   @override
-  String get commonWeekly => 'Weekly';
+  String get commonWeekly => 'Semanalmente';
 
   @override
   String commonOnTrack(int onTrack, int budgeted) {
-    return '$onTrack/$budgeted on track';
+    return '$onTrack/$budgeted en camino';
   }
 
   @override
   String commonTransactionCount(int count) {
-    return '$count transactions';
+    return '$count transacciones';
   }
 
   @override
-  String get commonTransactionCountOne => '1 transaction';
+  String get commonTransactionCountOne => '1 transacción';
 
   @override
   String commonRecordsApplied(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count records',
-      one: '1 record',
+      other: '$count registros',
+      one: '1 registro',
     );
-    return 'Applied to $_temp0.';
+    return 'Aplicado a $_temp0.';
   }
 
   @override
   String commonAiCalls(int count) {
-    return '$count AI calls';
+    return '$count llamadas de IA';
   }
 
   @override
   String commonAiCallsThisMonth(int count) {
-    return '$count AI calls this month';
+    return '$count Llamadas de IA este mes';
   }
 
   @override
@@ -420,26 +422,26 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get commonMinutesUnderOne => '<1 min';
+  String get commonMinutesUnderOne => '<1 minuto';
 
   @override
   String commonAddedDate(String date) {
-    return 'Added $date';
+    return 'Añadido $date';
   }
 
   @override
   String commonUpdatedDate(String date) {
-    return 'Updated $date';
+    return 'Actualizado $date';
   }
 
   @override
   String commonDueDateValue(String date) {
-    return 'Due $date';
+    return 'Vencimiento $date';
   }
 
   @override
   String commonTargetDateValue(String date) {
-    return 'Target $date';
+    return 'Objetivo $date';
   }
 
   @override
@@ -449,26 +451,26 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String commonAcrossAccounts(int accountCount, String accountCountSuffix) {
-    return 'Across $accountCount connected account$accountCountSuffix';
+    return 'En $accountCount cuenta conectada $accountCountSuffix';
   }
 
   @override
   String commonConnectedAccountCount(int count, String countSuffix) {
-    return '$count connected account$countSuffix';
+    return '$count cuenta conectada$countSuffix';
   }
 
   @override
   String commonCopiedLabel(String label) {
-    return '$label copied.';
+    return '$label copiado.';
   }
 
   @override
   String commonArchivedNamed(String label) {
-    return '$label archived';
+    return '$label archivado';
   }
 
   @override
-  String get commonCommaSeparated => 'Comma-separated';
+  String get commonCommaSeparated => 'Separados por comas';
 
   @override
   String get commonAmountHintDash => '—';
@@ -479,43 +481,43 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get commonMonthJanuary => 'January';
+  String get commonMonthJanuary => 'Enero';
 
   @override
-  String get commonMonthFebruary => 'February';
+  String get commonMonthFebruary => 'Febrero';
 
   @override
-  String get commonMonthMarch => 'March';
+  String get commonMonthMarch => 'Marzo';
 
   @override
-  String get commonMonthApril => 'April';
+  String get commonMonthApril => 'Abril';
 
   @override
-  String get commonMonthMay => 'May';
+  String get commonMonthMay => 'Puede';
 
   @override
-  String get commonMonthJune => 'June';
+  String get commonMonthJune => 'Junio';
 
   @override
-  String get commonMonthJuly => 'July';
+  String get commonMonthJuly => 'Julio';
 
   @override
-  String get commonMonthAugust => 'August';
+  String get commonMonthAugust => 'Agosto';
 
   @override
-  String get commonMonthSeptember => 'September';
+  String get commonMonthSeptember => 'Septiembre';
 
   @override
-  String get commonMonthOctober => 'October';
+  String get commonMonthOctober => 'Octubre';
 
   @override
-  String get commonMonthNovember => 'November';
+  String get commonMonthNovember => 'Noviembre';
 
   @override
-  String get commonMonthDecember => 'December';
+  String get commonMonthDecember => 'Diciembre';
 
   @override
-  String get commonMonthShortJan => 'Jan';
+  String get commonMonthShortJan => 'Ene';
 
   @override
   String get commonMonthShortFeb => 'Feb';
@@ -524,10 +526,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonMonthShortMar => 'Mar';
 
   @override
-  String get commonMonthShortApr => 'Apr';
+  String get commonMonthShortApr => 'Abr';
 
   @override
-  String get commonMonthShortMay => 'May';
+  String get commonMonthShortMay => 'Puede';
 
   @override
   String get commonMonthShortJun => 'Jun';
@@ -536,7 +538,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonMonthShortJul => 'Jul';
 
   @override
-  String get commonMonthShortAug => 'Aug';
+  String get commonMonthShortAug => 'Ago';
 
   @override
   String get commonMonthShortSep => 'Sep';
@@ -548,324 +550,331 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonMonthShortNov => 'Nov';
 
   @override
-  String get commonMonthShortDec => 'Dec';
+  String get commonMonthShortDec => 'Dic';
 
   @override
-  String get commonMonthShortOld => 'Old';
+  String get commonMonthShortOld => 'Viejo';
 
   @override
-  String get bootErrorTitle => 'Clarity could not start';
+  String get bootErrorTitle => 'La claridad no pudo comenzar.';
 
   @override
-  String get bootErrorTryAgain => 'Try again';
+  String get bootErrorTryAgain => 'Intentar otra vez';
 
   @override
-  String get bootErrorFallbackMessage => 'Check your connection and try again.';
+  String get bootErrorFallbackMessage =>
+      'Comprueba tu conexión y vuelve a intentarlo.';
 
   @override
-  String get onboardingWelcomeTitle => 'Welcome to Clarity';
+  String get onboardingWelcomeTitle => 'Bienvenido a Claridad';
 
   @override
   String get onboardingSubtitle =>
-      'Name your Clarity space. Next, you can connect your bank or use CSV as a manual fallback.';
+      'Nombra tu espacio de Clarity. A continuación, puede conectar su banco o utilizar CSV como respaldo manual.';
 
   @override
-  String get onboardingNameLabel => 'Your name';
+  String get onboardingNameLabel => 'Su nombre';
 
   @override
-  String get onboardingNameHint => 'Pedro';
+  String get onboardingNameHint => 'pedro';
 
   @override
-  String get profileScreenTitle => 'Profile';
+  String get profileScreenTitle => 'Perfil';
 
   @override
-  String get profileEditNameTitle => 'Edit profile name';
+  String get profileEditNameTitle => 'Editar nombre de perfil';
 
   @override
-  String get profileUpdatedSnackBar => 'Profile updated.';
+  String get profileUpdatedSnackBar => 'Perfil actualizado.';
 
   @override
-  String get profileUpdateFailed => 'Could not update profile.';
+  String get profileUpdateFailed => 'No se pudo actualizar el perfil.';
 
   @override
-  String get profileSignOutTitle => 'Sign out?';
+  String get profileSignOutTitle => '¿Desconectar?';
 
   @override
-  String get profileSignOutBody => 'You can sign back in when you are ready.';
+  String get profileSignOutBody =>
+      'Puedes volver a iniciar sesión cuando estés listo.';
 
   @override
-  String get profileDefaultUserName => 'Clarity user';
+  String get profileDefaultUserName => 'Usuario de claridad';
 
   @override
-  String get profileAccountSection => 'Account';
+  String get profileAccountSection => 'Cuenta';
 
   @override
-  String get profileNameTitle => 'Profile name';
+  String get profileNameTitle => 'Nombre del perfil';
 
   @override
-  String get profileAddYourName => 'Add your name';
+  String get profileAddYourName => 'Añade tu nombre';
 
   @override
-  String get profileMfaTitle => 'Multi-factor authentication';
+  String get profileMfaTitle => 'Autenticación multifactor';
 
   @override
   String get profileMfaSubtitle =>
-      'Authenticator app setup and security options';
+      'Opciones de seguridad y configuración de la aplicación de autenticación';
 
   @override
-  String get profileRexVoiceSection => 'Rex and voice';
+  String get profileRexVoiceSection => 'rex y voz';
 
   @override
-  String get profileVoiceUsageTitle => 'Voice usage';
+  String get profileVoiceUsageTitle => 'Uso de voz';
 
   @override
   String get profileVoiceUsageSubtitle =>
-      'Minutes today, this week, and this month';
+      'Minutos de hoy, esta semana y este mes.';
 
   @override
-  String get profileSessionSection => 'Session';
+  String get profileSessionSection => 'Sesión';
 
   @override
   String get profileSignOutSubtitle =>
-      'Leave this device signed out of Clarity';
+      'Dejar este dispositivo fuera de Clarity';
 
   @override
-  String get profileHeaderLabel => 'Clarity profile';
+  String get profileHeaderLabel => 'Perfil de claridad';
 
   @override
-  String get usageSummaryTitle => 'Voice usage';
+  String get usageSummaryTitle => 'Uso de voz';
 
   @override
-  String get usageSummaryLoading => 'Loading usage';
+  String get usageSummaryLoading => 'Cargando uso';
 
   @override
-  String get usageSummaryDailyVoiceMinutes => 'Daily voice minutes';
+  String get usageSummaryDailyVoiceMinutes => 'Minutos de voz diarios';
 
   @override
-  String get usageSummaryDailyAiCalls => 'Daily AI calls';
+  String get usageSummaryDailyAiCalls => 'Llamadas diarias de IA';
 
   @override
-  String get usageSummaryHeaderLabel => 'Rex voice activity';
+  String get usageSummaryHeaderLabel => 'Actividad de voz de Rex';
 
   @override
   String homeShellBankConnectedSuccess(
     String institutionName,
     String accountsSyncedSuffix,
   ) {
-    return 'Bank connected successfully: $institutionName$accountsSyncedSuffix.';
+    return 'Banco conectado exitosamente: $institutionName$accountsSyncedSuffix.';
   }
 
   @override
-  String get homeShellBankConnectedYourBank => 'your bank';
+  String get homeShellBankConnectedYourBank => 'tu banco';
 
   @override
   String homeShellBankConnectedAccountsSynced(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count accounts',
-      one: '1 account',
+      other: '$count cuentas',
+      one: '1 cuenta',
     );
-    return ' and synced $_temp0';
+    return ' y sincronizó $_temp0';
   }
 
   @override
   String homeShellBankConnectionStoppedWithCode(String errorCode) {
-    return 'Bank connection stopped before it finished. You can try again. ($errorCode)';
+    return 'La conexión bancaria se detuvo antes de finalizar. Puedes intentarlo de nuevo. ($errorCode)';
   }
 
   @override
   String homeShellBankConnectionStoppedWithStatus(String status) {
-    return 'Bank connection stopped before it finished. Plaid status: $status.';
+    return 'La conexión bancaria se detuvo antes de finalizar. Estado del cuadro: $status.';
   }
 
   @override
   String get homeShellBankConnectionCancelled =>
-      'Bank connection cancelled. No account was added.';
+      'Conexión bancaria cancelada. No se agregó ninguna cuenta.';
 
   @override
   String get homeShellBankConnectionOpenFailed =>
-      'Could not open bank connection.';
+      'No se pudo abrir la conexión bancaria.';
 
   @override
-  String get dashboardOverviewTitle => 'Overview';
+  String get dashboardOverviewTitle => 'Descripción general';
 
   @override
-  String get dashboardOverviewImportCsvTooltip => 'Import CSV instead';
+  String get dashboardOverviewImportCsvTooltip => 'Importar CSV en su lugar';
 
   @override
-  String get dashboardOverviewDeleteCsvUploadTooltip => 'Delete CSV upload';
+  String get dashboardOverviewDeleteCsvUploadTooltip => 'Eliminar carga CSV';
 
   @override
-  String get dashboardOverviewDeleteAccountTooltip => 'Delete account';
+  String get dashboardOverviewDeleteAccountTooltip => 'Eliminar cuenta';
 
   @override
-  String get dashboardOverviewMonthlyCashFlow => 'Monthly cash flow';
+  String get dashboardOverviewMonthlyCashFlow => 'flujo de caja mensual';
 
   @override
-  String get dashboardOverviewSpendingByCategory => 'Spending by category';
+  String get dashboardOverviewSpendingByCategory => 'Gasto por categoría';
 
   @override
-  String get dashboardOverviewIncomeVsSpending => 'Income vs spending';
+  String get dashboardOverviewIncomeVsSpending => 'Ingresos versus gastos';
 
   @override
-  String get dashboardOverviewSixMonthTrend => 'Six-month spend trend';
+  String get dashboardOverviewSixMonthTrend =>
+      'Tendencia de gasto de seis meses';
 
   @override
-  String get dashboardOverviewSpendingPressure => 'Spending pressure';
+  String get dashboardOverviewSpendingPressure => 'Presión de gasto';
 
   @override
-  String get dashboardOverviewBudgetPerformance => 'Budget performance';
+  String get dashboardOverviewBudgetPerformance => 'Desempeño del presupuesto';
 
   @override
-  String get dashboardOverviewAccountHealth => 'Account health';
+  String get dashboardOverviewAccountHealth => 'Estado de la cuenta';
 
   @override
   String get dashboardOverviewDataLoadBannerTitle =>
-      'Some financial data could not load';
+      'Algunos datos financieros no se pudieron cargar.';
 
   @override
   String dashboardOverviewDataLoadBannerBody(String sourceLabel) {
-    return 'Clarity is showing the available records, but $sourceLabel may be incomplete. Rex will treat finance answers as degraded until this refreshes.';
+    return 'Claridad muestra los registros disponibles, pero $sourceLabel puede estar incompleto. Rex tratará las respuestas financieras como degradadas hasta que se actualice.';
   }
 
   @override
-  String get dashboardOverviewDataLoadBannerFallbackSource => 'financial data';
+  String get dashboardOverviewDataLoadBannerFallbackSource =>
+      'datos financieros';
 
   @override
-  String get dashboardOverviewLoadingLabel => 'Loading your financial data...';
+  String get dashboardOverviewLoadingLabel =>
+      'Cargando tus datos financieros...';
 
   @override
-  String get dashboardEmptyConnectFirstBankTitle => 'Connect your first bank';
+  String get dashboardEmptyConnectFirstBankTitle => 'Conecta tu primer banco';
 
   @override
   String get dashboardEmptyConnectFirstBankBody =>
-      'Clarity works best with connected accounts, so balances and transactions stay current automatically.';
+      'Clarity funciona mejor con cuentas conectadas, por lo que los saldos y las transacciones se mantienen actualizados automáticamente.';
 
   @override
-  String get dashboardResolvingTitle => 'Resolving imported transactions';
+  String get dashboardResolvingTitle => 'Resolver transacciones importadas';
 
   @override
   String get dashboardResolvingBody =>
-      'Your statement is connected, but the transaction rows are still loading. Values will appear when the read model is complete.';
+      'Su extracto está conectado, pero las filas de transacciones aún se están cargando. Los valores aparecerán cuando se complete la lectura del modelo.';
 
   @override
-  String get dashboardOverviewTotalBalance => 'Total balance';
+  String get dashboardOverviewTotalBalance => 'saldo total';
 
   @override
-  String get dashboardOverviewAccountBalance => 'Account balance';
+  String get dashboardOverviewAccountBalance => 'Saldo de cuenta';
 
   @override
   String get dashboardOverviewFromConnectedAccounts =>
-      'From your connected accounts';
+      'Desde tus cuentas conectadas';
 
   @override
-  String get dashboardOverviewThisMonthLabel => 'This month';
+  String get dashboardOverviewThisMonthLabel => 'este mes';
 
   @override
   String get dashboardOverviewActivityNotBalanceNote =>
-      'Activity this month — not the same as balance';
+      'Actividad este mes: no es lo mismo que el saldo';
 
   @override
-  String get dashboardTransactionsSectionTitle => 'Transactions';
+  String get dashboardTransactionsSectionTitle => 'Actas';
 
   @override
-  String get dashboardTransactionsClearFilters => 'Clear';
+  String get dashboardTransactionsClearFilters => 'Claro';
 
   @override
-  String get dashboardTransactionsLoadingLabel => 'Loading transactions';
+  String get dashboardTransactionsLoadingLabel => 'Cargando transacciones';
 
   @override
-  String get dashboardTransactionsLoadError => 'Could not load transactions.';
+  String get dashboardTransactionsLoadError =>
+      'No se pudieron cargar transacciones.';
 
   @override
-  String get dashboardTransactionsNoImportedHistory => 'No imported history';
+  String get dashboardTransactionsNoImportedHistory => 'Sin historia importada';
 
   @override
-  String get dashboardTransactionsModeMonths => 'Months';
+  String get dashboardTransactionsModeMonths => 'Meses';
 
   @override
-  String get dashboardTransactionsModeCategories => 'Categories';
+  String get dashboardTransactionsModeCategories => 'Categorías';
 
   @override
   String get dashboardTransactionsSearchHint =>
-      'Search merchant, category, month, or amount';
+      'Buscar comerciante, categoría, mes o monto';
 
   @override
-  String get dashboardTransactionsFilterCategory => 'Category';
+  String get dashboardTransactionsFilterCategory => 'Categoría';
 
   @override
-  String get dashboardTransactionsFilterAllCategories => 'All categories';
+  String get dashboardTransactionsFilterAllCategories => 'Todas las categorias';
 
   @override
-  String get dashboardTransactionsFilterAccount => 'Account';
+  String get dashboardTransactionsFilterAccount => 'Cuenta';
 
   @override
-  String get dashboardTransactionsFilterAllAccounts => 'All accounts';
+  String get dashboardTransactionsFilterAllAccounts => 'Todas las cuentas';
 
   @override
   String get dashboardTransactionsFilterRole => 'Role';
 
   @override
-  String get dashboardTransactionsFilterAllRoles => 'All roles';
+  String get dashboardTransactionsFilterAllRoles => 'Todos los roles';
 
   @override
-  String get dashboardTransactionsTimeFilterAllHistory => 'All history';
+  String get dashboardTransactionsTimeFilterAllHistory => 'toda la historia';
 
   @override
-  String get dashboardTransactionsTimeFilterDashboardMonth => 'Dashboard month';
+  String get dashboardTransactionsTimeFilterDashboardMonth => 'Mes del panel';
 
   @override
-  String get dashboardTransactionsTimeFilterLatestTxMonth => 'Latest tx month';
+  String get dashboardTransactionsTimeFilterLatestTxMonth => 'Último mes de tx';
 
   @override
-  String get dashboardTransactionsTimeFilterLatestTxYear => 'Latest tx year';
+  String get dashboardTransactionsTimeFilterLatestTxYear => 'último año de tx';
 
   @override
-  String get dashboardTransactionsSortNewest => 'Newest';
+  String get dashboardTransactionsSortNewest => 'El más nuevo';
 
   @override
-  String get dashboardTransactionsSortOldest => 'Oldest';
+  String get dashboardTransactionsSortOldest => 'más antiguo';
 
   @override
-  String get dashboardTransactionsSortLargest => 'Largest';
+  String get dashboardTransactionsSortLargest => 'más grande';
 
   @override
-  String get dashboardTransactionsSortMerchant => 'Merchant A-Z';
+  String get dashboardTransactionsSortMerchant => 'Comerciante A-Z';
 
   @override
-  String get dashboardTransactionsNoCategoriesMatch => 'No categories match.';
+  String get dashboardTransactionsNoCategoriesMatch =>
+      'Ninguna categoría coincide.';
 
   @override
   String get dashboardTransactionsNoMonthsAfterFilter =>
-      'No months to show after filtering this file.';
+      'No se muestran meses después de filtrar este archivo.';
 
   @override
-  String get dashboardTransactionsNetLabel => 'net';
+  String get dashboardTransactionsNetLabel => 'neto';
 
   @override
   String dashboardTransactionsHistoryRange(String dateRange) {
-    return 'History: $dateRange';
+    return 'Historia: $dateRange';
   }
 
   @override
   String dashboardTransactionsDashboardMonthRange(String dateRange) {
-    return 'Dashboard month: $dateRange';
+    return 'Mes del panel: $dateRange';
   }
 
   @override
   String dashboardTransactionsLatestTxMonthRange(String dateRange) {
-    return 'Latest transaction month: $dateRange';
+    return 'Último mes de transacción: $dateRange';
   }
 
   @override
   String dashboardTransactionsLatestTxYearRange(String dateRange) {
-    return 'Latest transaction year: $dateRange';
+    return 'Año de la última transacción: $dateRange';
   }
 
   @override
   String dashboardTransactionsTapMonthHint(String dateRangeDescription) {
-    return 'Tap a month to inspect transactions | $dateRangeDescription';
+    return 'Toque un mes para inspeccionar las transacciones | $dateRangeDescription';
   }
 
   @override
@@ -874,682 +883,701 @@ class AppLocalizationsEs extends AppLocalizations {
     int total,
     String dateRangeDescription,
   ) {
-    return '$filtered of $total transactions | $dateRangeDescription';
+    return '$filtered de $total transacciones | $dateRangeDescription';
   }
 
   @override
-  String get accountsScreenRefreshTooltip => 'Refresh accounts';
+  String get accountsScreenRefreshTooltip => 'Actualizar cuentas';
 
   @override
-  String get accountsScreenAddAccountTooltip => 'Add account';
+  String get accountsScreenAddAccountTooltip => 'Agregar cuenta';
 
   @override
-  String get accountsScreenLoadError => 'Could not load accounts.';
+  String get accountsScreenLoadError => 'No se pudieron cargar cuentas.';
 
   @override
-  String get accountsScreenLoadingLabel => 'Loading accounts';
+  String get accountsScreenLoadingLabel => 'Cargando cuentas';
 
   @override
-  String get accountsSummaryTotalBalance => 'Total balance';
+  String get accountsSummaryTotalBalance => 'saldo total';
 
   @override
-  String get accountsEmptyTitle => 'Connect your accounts';
+  String get accountsEmptyTitle => 'Conecta tus cuentas';
 
   @override
   String get accountsEmptyBody =>
-      'Start with connected bank accounts so Clarity can keep balances and transactions current.';
+      'Comience con cuentas bancarias conectadas para que Clarity pueda mantener los saldos y las transacciones actualizados.';
 
   @override
-  String get connectBankCardConnectButton => 'Connect Bank';
+  String get connectBankCardConnectButton => 'Conectar banco';
 
   @override
-  String get connectBankCardImportCsvButton => 'Import CSV instead';
+  String get connectBankCardImportCsvButton => 'Importar CSV en su lugar';
 
   @override
-  String get connectBankCardAddManualButton => 'Add manual account';
+  String get connectBankCardAddManualButton => 'Agregar cuenta manual';
 
   @override
-  String get accountsNoticeDismissTooltip => 'Dismiss';
+  String get accountsNoticeDismissTooltip => 'Despedir';
 
   @override
   String accountTileThisMonthNet(String amount) {
-    return 'This month $amount net';
+    return 'Este mes $amount neto';
   }
 
   @override
-  String get accountTileViewAccount => 'View account';
+  String get accountTileViewAccount => 'Ver cuenta';
 
   @override
-  String get plaidAccountAvailableLabel => 'Available';
+  String get plaidAccountAvailableLabel => 'Disponible';
 
   @override
-  String get plaidAccountThisMonthLabel => 'This month';
+  String get plaidAccountThisMonthLabel => 'este mes';
 
   @override
   String plaidAccountInOutSummary(String income, String spending) {
-    return '$income in / $spending out';
+    return '$income entrada / $spending salida';
   }
 
   @override
-  String get plaidAccountLastSyncedUnavailable => 'Last synced unavailable';
+  String get plaidAccountLastSyncedUnavailable =>
+      'Última sincronización no disponible';
 
   @override
-  String get plaidAccountLastSyncedJustNow => 'Last synced just now';
+  String get plaidAccountLastSyncedJustNow =>
+      'Última sincronización hace un momento';
 
   @override
   String plaidAccountLastSyncedMinutesAgo(int minutes) {
-    return 'Last synced ${minutes}m ago';
+    return 'Última sincronización hace ${minutes}m';
   }
 
   @override
   String plaidAccountLastSyncedHoursAgo(int hours) {
-    return 'Last synced ${hours}h ago';
+    return 'Última sincronización hace ${hours}h';
   }
 
   @override
   String plaidAccountLastSyncedDate(String date) {
-    return 'Last synced $date';
+    return 'Última sincronización $date';
   }
 
   @override
-  String get plaidAccountResyncTooltipSyncing => 'Syncing';
+  String get plaidAccountResyncTooltipSyncing => 'Sincronización';
 
   @override
-  String get plaidAccountResyncTooltipLoginRequired => 'Login required';
+  String get plaidAccountResyncTooltipLoginRequired =>
+      'Iniciar sesión requerido';
 
   @override
-  String get plaidAccountResyncTooltipExpiringSoon => 'Expiring soon';
+  String get plaidAccountResyncTooltipExpiringSoon => 'Expira pronto';
 
   @override
-  String get plaidAccountResyncTooltipDisconnected => 'Disconnected';
+  String get plaidAccountResyncTooltipDisconnected => 'Desconectado';
 
   @override
-  String get plaidAccountResyncTooltipDefault => 'Resync';
+  String get plaidAccountResyncTooltipDefault => 'resincronizar';
 
   @override
-  String get plaidAccountDisconnectTooltip => 'Disconnect bank';
+  String get plaidAccountDisconnectTooltip => 'Desconectar banco';
 
   @override
-  String get addAccountDialogTitle => 'New account';
+  String get addAccountDialogTitle => 'Nueva cuenta';
 
   @override
-  String get addAccountDialogInstitutionLabel => 'Institution (optional)';
+  String get addAccountDialogInstitutionLabel => 'Institución (opcional)';
 
   @override
-  String get addAccountDialogTypeLabel => 'Type';
+  String get addAccountDialogTypeLabel => 'Tipo';
 
   @override
-  String get addAccountDialogBalanceLabel => 'Current balance (optional)';
+  String get addAccountDialogBalanceLabel => 'Saldo actual (opcional)';
 
   @override
   String get addAccountDialogInvalidBalance =>
-      'Enter a valid balance or leave it blank.';
+      'Ingrese un saldo válido o déjelo en blanco.';
 
   @override
-  String get accountsSheetAddAccountTitle => 'Add account';
+  String get accountsSheetAddAccountTitle => 'Agregar cuenta';
 
   @override
   String get accountsSheetAddAccountSubtitle =>
-      'Connect another bank with Plaid, or use manual tools when you need a fallback.';
+      'Conecte otro banco con Plaid o utilice herramientas manuales cuando necesite un respaldo.';
 
   @override
-  String get accountsSheetConnectBankTitle => 'Connect bank';
+  String get accountsSheetConnectBankTitle => 'Conectar banco';
 
   @override
   String get accountsSheetConnectBankSubtitle =>
-      'Use Plaid to add another bank.';
+      'Utilice Plaid para agregar otro banco.';
 
   @override
-  String get accountsSheetImportCsvTitle => 'Import CSV instead';
+  String get accountsSheetImportCsvTitle => 'Importar CSV en su lugar';
 
   @override
   String get accountsSheetImportCsvSubtitle =>
-      'Create a manual account for bank files.';
+      'Cree una cuenta manual para archivos bancarios.';
 
   @override
-  String get accountsSheetAddManualTitle => 'Add manual account';
+  String get accountsSheetAddManualTitle => 'Agregar cuenta manual';
 
   @override
   String get accountsSheetAddManualSubtitle =>
-      'Track an account without Plaid.';
+      'Seguimiento de una cuenta sin cuadros.';
 
   @override
-  String get accountsScreenDisconnectTitle => 'Disconnect bank?';
+  String get accountsScreenDisconnectTitle => '¿Desconectar el banco?';
 
   @override
   String accountsScreenDisconnectContent(String accountName) {
-    return 'Disconnect $accountName? This stops future Plaid sync for this bank. Existing history stays in Clarity.';
+    return '¿Desconectar $accountName? Esto detiene la futura sincronización de Plaid para este banco. La historia existente permanece en Claridad.';
   }
 
   @override
-  String get accountsScreenDisconnectButton => 'Disconnect bank';
+  String get accountsScreenDisconnectButton => 'Desconectar banco';
 
   @override
-  String get accountsScreenBankDisconnectedSnack => 'Bank disconnected.';
+  String get accountsScreenBankDisconnectedSnack => 'Banco desconectado.';
 
   @override
-  String get accountsNavigationCouldNotSaveAccount => 'Could not save account.';
+  String get accountsNavigationCouldNotSaveAccount =>
+      'No se pudo guardar la cuenta.';
 
   @override
-  String get csvPlaidWarningTitle => 'Import CSV into connected account?';
+  String get csvPlaidWarningTitle => '¿Importar CSV a la cuenta conectada?';
 
   @override
   String csvPlaidWarningContent(String accountName) {
-    return '$accountName already syncs through Plaid. Importing a CSV here can add duplicate rows if the file overlaps with synced transactions.';
+    return '$accountName ya se sincroniza a través de Plaid. Importar un CSV aquí puede agregar filas duplicadas si el archivo se superpone con transacciones sincronizadas.';
   }
 
   @override
-  String get csvPlaidWarningContinue => 'Continue import';
+  String get csvPlaidWarningContinue => 'Continuar importando';
 
   @override
-  String get accountSelectionAppBarTitle => 'Import CSV instead';
+  String get accountSelectionAppBarTitle => 'Importar CSV en su lugar';
 
   @override
-  String get accountSelectionPreviewingCsv => 'Previewing CSV...';
+  String get accountSelectionPreviewingCsv => 'Vista previa CSV...';
 
   @override
-  String get accountSelectionCouldNotImport => 'Could not import this file.';
+  String get accountSelectionCouldNotImport =>
+      'No se pudo importar este archivo.';
 
   @override
-  String get accountSelectionEmptyTitle => 'Add a manual account for this CSV';
+  String get accountSelectionEmptyTitle =>
+      'Agregar una cuenta manual para este CSV';
 
   @override
-  String get accountSelectionAddManualButton => 'Add manual account';
+  String get accountSelectionAddManualButton => 'Agregar cuenta manual';
 
   @override
   String get accountSelectionInstructions =>
-      'CSV import is manual. Choose the account this file belongs to; connected bank accounts update automatically.';
+      'La importación CSV es manual. Elija la cuenta a la que pertenece este archivo; Las cuentas bancarias conectadas se actualizan automáticamente.';
 
   @override
-  String get accountSelectionCsvMayDuplicate => 'CSV may duplicate synced rows';
+  String get accountSelectionCsvMayDuplicate =>
+      'CSV puede duplicar filas sincronizadas';
 
   @override
-  String get csvPreviewDialogTitle => 'CSV import preview';
+  String get csvPreviewDialogTitle => 'Vista previa de importación CSV';
 
   @override
-  String get csvPreviewDialogDateRange => 'Date range';
+  String get csvPreviewDialogDateRange => 'Rango de fechas';
 
   @override
-  String get csvPreviewDialogRowsFound => 'Rows found';
+  String get csvPreviewDialogRowsFound => 'Filas encontradas';
 
   @override
-  String get csvPreviewDialogNewRows => 'New rows';
+  String get csvPreviewDialogNewRows => 'Nuevas filas';
 
   @override
-  String get csvPreviewDialogDuplicates => 'Duplicates';
+  String get csvPreviewDialogDuplicates => 'Duplicados';
 
   @override
-  String get csvPreviewDialogSpendingRows => 'Spending rows';
+  String get csvPreviewDialogSpendingRows => 'Filas de gasto';
 
   @override
-  String get csvPreviewDialogIncomeRows => 'Income rows';
+  String get csvPreviewDialogIncomeRows => 'Filas de ingresos';
 
   @override
-  String get csvPreviewDialogEndingBalance => 'Ending balance';
+  String get csvPreviewDialogEndingBalance => 'Saldo final';
 
   @override
-  String get csvPreviewDialogNoNewRows => 'No new rows';
+  String get csvPreviewDialogNoNewRows => 'No hay filas nuevas';
 
   @override
-  String get accountDetailFallbackTitle => 'Account';
+  String get accountDetailFallbackTitle => 'Cuenta';
 
   @override
-  String get accountDetailLoadingLabel => 'Loading account';
+  String get accountDetailLoadingLabel => 'Cargando cuenta';
 
   @override
-  String get accountDetailLoadError => 'Could not load account.';
+  String get accountDetailLoadError => 'No se pudo cargar la cuenta.';
 
   @override
-  String get accountDetailDeletingCsvProgress => 'Deleting CSV upload...';
+  String get accountDetailDeletingCsvProgress => 'Eliminando carga CSV...';
 
   @override
-  String get accountDetailDeleteCsvUploadTitle => 'Delete CSV upload';
+  String get accountDetailDeleteCsvUploadTitle => 'Eliminar carga CSV';
 
   @override
-  String get accountDetailConfirmDeleteCsvTitle => 'Delete this CSV upload?';
+  String get accountDetailConfirmDeleteCsvTitle => '¿Eliminar esta carga CSV?';
 
   @override
-  String get accountDetailDeleteUploadButton => 'Delete upload';
+  String get accountDetailDeleteUploadButton => 'Eliminar carga';
 
   @override
-  String get accountDetailDeleteAccountTitle => 'Delete account?';
+  String get accountDetailDeleteAccountTitle => '¿Eliminar cuenta?';
 
   @override
   String get accountDetailDeleteAccountContent =>
-      'Delete this account and all its transactions? This cannot be undone.';
+      '¿Eliminar esta cuenta y todas sus transacciones? Esto no se puede deshacer.';
 
   @override
-  String get accountDetailDeleteAccountButton => 'Delete account';
+  String get accountDetailDeleteAccountButton => 'Eliminar cuenta';
 
   @override
-  String get accountDetailKeepCategories => 'Keep';
+  String get accountDetailKeepCategories => 'Mantener';
 
   @override
-  String get accountDetailDeleteCategories => 'Delete';
+  String get accountDetailDeleteCategories => 'Borrar';
 
   @override
   String get chatPageDefaultTitle => 'Rex';
 
   @override
-  String get chatPageSendingImage => 'Sending image…';
+  String get chatPageSendingImage => 'Enviando imagen…';
 
   @override
-  String get chatPageSendFailed => 'Could not send message.';
+  String get chatPageSendFailed => 'No se pudo enviar el mensaje.';
 
   @override
-  String get chatPageReadFileFailed => 'Could not read selected file.';
+  String get chatPageReadFileFailed =>
+      'No se pudo leer el archivo seleccionado.';
 
   @override
-  String get chatPageStartVoiceFailed => 'Could not start Rex.';
+  String get chatPageStartVoiceFailed => 'No se pudo iniciar Rex.';
 
   @override
-  String get chatPageShowVoiceCallTooltip => 'Show voice call';
+  String get chatPageShowVoiceCallTooltip => 'Mostrar llamada de voz';
 
   @override
-  String get chatPageCallRexTooltip => 'Call Rex';
+  String get chatPageCallRexTooltip => 'llamar a rex';
 
   @override
-  String get chatInputAttachTooltip => 'Attach file or image';
+  String get chatInputAttachTooltip => 'Adjuntar archivo o imagen';
 
   @override
-  String get chatInputStartVoiceModeTooltip => 'Start voice mode';
+  String get chatInputStartVoiceModeTooltip => 'Iniciar modo de voz';
 
   @override
-  String get chatInputMessageHint => 'Message Assistant…';
+  String get chatInputMessageHint => 'Asistente de mensajes…';
 
   @override
-  String get chatInputSendTooltip => 'Send';
+  String get chatInputSendTooltip => 'Enviar';
 
   @override
-  String get chatInputRemoveAttachmentTooltip => 'Remove attachment';
+  String get chatInputRemoveAttachmentTooltip => 'Quitar archivo adjunto';
 
   @override
-  String get attachmentSheetTitle => 'Attach';
+  String get attachmentSheetTitle => 'Adjuntar';
 
   @override
-  String get attachmentSheetGalleryTitle => 'Gallery';
+  String get attachmentSheetGalleryTitle => 'Galería';
 
   @override
-  String get attachmentSheetGallerySubtitle => 'Choose an image from photos.';
+  String get attachmentSheetGallerySubtitle => 'Elija una imagen de las fotos.';
 
   @override
-  String get attachmentSheetCameraTitle => 'Camera';
+  String get attachmentSheetCameraTitle => 'Cámara';
 
   @override
-  String get attachmentSheetCameraSubtitle => 'Take a new photo.';
+  String get attachmentSheetCameraSubtitle => 'Toma una nueva foto.';
 
   @override
-  String get attachmentSheetFilesTitle => 'Files';
+  String get attachmentSheetFilesTitle => 'Archivos';
 
   @override
   String get attachmentSheetFilesSubtitle =>
-      'Choose PDF, text, CSV, markdown, or image files.';
+      'Elija archivos PDF, de texto, CSV, de rebajas o de imagen.';
 
   @override
   String get chatTranscriptWelcomeMessage =>
-      'I\'m Rex. Tell me what\'s happening, what changed, or what you want me to remember.';
+      'Soy Rex. Cuéntame qué está pasando, qué cambió o qué quieres que recuerde.';
 
   @override
-  String get chatTranscriptReadyTitle => 'Rex is ready';
+  String get chatTranscriptReadyTitle => 'Rex está listo';
 
   @override
-  String get chatTranscriptPromptRemember => 'What should I remember?';
+  String get chatTranscriptPromptRemember => '¿Qué debo recordar?';
 
   @override
-  String get chatTranscriptPromptThinkTonight =>
-      'Help me think through tonight.';
+  String get chatTranscriptPromptThinkTonight => 'Ayúdame a pensar esta noche.';
 
   @override
-  String get chatTranscriptPromptCheckKnows => 'Check what Clarity knows.';
+  String get chatTranscriptPromptCheckKnows => 'Comprueba lo que sabe Clarity.';
 
   @override
-  String get chatBubbleClarityAction => 'Clarity action';
+  String get chatBubbleClarityAction => 'Acción de claridad';
 
   @override
-  String get voicePanelStartTalking => 'Start talking';
+  String get voicePanelStartTalking => 'empezar a hablar';
 
   @override
-  String get voicePanelProcessing => 'Processing…';
+  String get voicePanelProcessing => 'Tratamiento…';
 
   @override
-  String get voicePanelMuted => 'Muted';
+  String get voicePanelMuted => 'Apagado';
 
   @override
-  String get voicePanelSettingsTooltip => 'Settings';
+  String get voicePanelSettingsTooltip => 'Ajustes';
 
   @override
-  String get voicePanelTryAgainTooltip => 'Try again';
+  String get voicePanelTryAgainTooltip => 'Intentar otra vez';
 
   @override
-  String get voicePanelUnmuteMicTooltip => 'Unmute mic';
+  String get voicePanelUnmuteMicTooltip => 'Activar micrófono';
 
   @override
-  String get voicePanelMuteMicTooltip => 'Mute mic';
+  String get voicePanelMuteMicTooltip => 'Silenciar micrófono';
 
   @override
-  String get voicePanelEndVoiceTooltip => 'End voice';
+  String get voicePanelEndVoiceTooltip => 'Fin de voz';
 
   @override
-  String get conversationListTitle => 'Chats';
+  String get conversationListTitle => 'Charlas';
 
   @override
-  String get conversationListDeleteTitle => 'Delete conversation?';
+  String get conversationListDeleteTitle => '¿Eliminar conversación?';
 
   @override
   String get conversationListDeleteBody =>
-      'This removes the conversation and its messages.';
+      'Esto elimina la conversación y sus mensajes.';
 
   @override
-  String get conversationListDeleteFailed => 'Could not delete conversation.';
+  String get conversationListDeleteFailed =>
+      'No se pudo eliminar la conversación.';
 
   @override
-  String get conversationListDeletedSnackBar => 'Conversation deleted';
+  String get conversationListDeletedSnackBar => 'Conversación eliminada';
 
   @override
-  String get conversationListNewConversationTooltip => 'New conversation';
+  String get conversationListNewConversationTooltip => 'Nueva conversación';
 
   @override
-  String get conversationListLoading => 'Loading chats';
+  String get conversationListLoading => 'Cargando chats';
 
   @override
-  String get conversationListEmptyTitle => 'No chats yet';
+  String get conversationListEmptyTitle => 'Aún no hay chats';
 
   @override
   String get conversationListEmptyMessage =>
-      'Start a fresh conversation when you are ready.';
+      'Inicie una nueva conversación cuando esté listo.';
 
   @override
-  String get conversationListSearchHint => 'Search chats';
+  String get conversationListSearchHint => 'Buscar chats';
 
   @override
-  String get conversationListClearSearchTooltip => 'Clear search';
+  String get conversationListClearSearchTooltip => 'Borrar búsqueda';
 
   @override
-  String get conversationListSearching => 'Searching chats';
+  String get conversationListSearching => 'Buscando chats';
 
   @override
-  String get conversationListNoMatchesTitle => 'No matching chats';
+  String get conversationListNoMatchesTitle => 'No hay chats coincidentes';
 
   @override
-  String get conversationListNewChat => 'New chat';
+  String get conversationListNewChat => 'Nuevo chat';
 
   @override
-  String get conversationHistoryNewConversation => 'New conversation';
+  String get conversationHistoryNewConversation => 'Nueva conversación';
 
   @override
-  String get conversationHistoryMatchedConversation => 'Matched conversation';
+  String get conversationHistoryMatchedConversation =>
+      'Conversación coincidente';
 
   @override
-  String get conversationHistoryNoMessagesYet => 'No messages yet';
+  String get conversationHistoryNoMessagesYet => 'Aún no hay mensajes';
 
   @override
-  String get conversationHistoryActionsTooltip => 'Conversation actions';
+  String get conversationHistoryActionsTooltip => 'Acciones de conversación';
 
   @override
-  String get memoryPageTitle => 'What Clarity Knows';
+  String get memoryPageTitle => 'Lo que la claridad sabe';
 
   @override
-  String get memoryPageRefreshTooltip => 'Refresh information';
+  String get memoryPageRefreshTooltip => 'Actualizar información';
 
   @override
-  String get memoryPageMemoryUpdated => 'Memory updated';
+  String get memoryPageMemoryUpdated => 'Memoria actualizada';
 
   @override
-  String get memoryPageMemoryArchived => 'Memory archived';
+  String get memoryPageMemoryArchived => 'Memoria archivada';
 
   @override
-  String get memoryPageActionFailed => 'Memory action failed.';
+  String get memoryPageActionFailed => 'La acción de la memoria falló.';
 
   @override
-  String get memoryHeaderSearchHint => 'Search what Clarity knows';
+  String get memoryHeaderSearchHint => 'Busca lo que Clarity sabe';
 
   @override
-  String get memoryHeaderClearSearchTooltip => 'Clear search';
+  String get memoryHeaderClearSearchTooltip => 'Borrar búsqueda';
 
   @override
-  String get memoryHeaderSectionTitle => 'What Clarity knows';
+  String get memoryHeaderSectionTitle => 'Lo que la claridad sabe';
 
   @override
-  String get memoryHeaderActiveOnly => 'Active information only';
+  String get memoryHeaderActiveOnly => 'Sólo información activa';
 
   @override
-  String get memoryHeaderLoading => 'Loading memory';
+  String get memoryHeaderLoading => 'Cargando memoria';
 
   @override
-  String get memoryHeaderEmptyActiveTitle => 'Clarity is still learning';
+  String get memoryHeaderEmptyActiveTitle =>
+      'La claridad todavía está aprendiendo.';
 
   @override
-  String get memoryHeaderEmptyTitle => 'No saved information yet';
+  String get memoryHeaderEmptyTitle => 'Aún no hay información guardada';
 
   @override
-  String get memoryArchiveTitle => 'Archive saved information?';
+  String get memoryArchiveTitle => '¿Archivar información guardada?';
 
   @override
   String get memoryArchiveBody =>
-      'This saved information will stop being used in future conversations. It will remain in information history.';
+      'Esta información guardada dejará de usarse en futuras conversaciones. Permanecerá en la historia de la información.';
 
   @override
-  String get memoryTileActionsTooltip => 'Memory actions';
+  String get memoryTileActionsTooltip => 'Acciones de memoria';
 
   @override
-  String get memoryTileQuickEdit => 'Quick edit';
+  String get memoryTileQuickEdit => 'Edición rápida';
 
   @override
-  String get memoryEditEditMemoryTitle => 'Edit memory';
+  String get memoryEditEditMemoryTitle => 'Editar memoria';
 
   @override
-  String get memoryEditSummaryHint => 'What Clarity should remember';
+  String get memoryEditSummaryHint => 'Lo que la claridad debe recordar.';
 
   @override
-  String get accountabilityPageTitle => 'Goals';
+  String get accountabilityPageTitle => 'Objetivos';
 
   @override
-  String get accountabilityPageRefreshTooltip => 'Refresh goals';
+  String get accountabilityPageRefreshTooltip => 'Actualizar objetivos';
 
   @override
-  String get accountabilitySharedAddGoal => 'Add goal';
+  String get accountabilitySharedAddGoal => 'Añadir objetivo';
 
   @override
-  String get accountabilitySharedAddCommitment => 'Add commitment';
+  String get accountabilitySharedAddCommitment => 'Agregar compromiso';
 
   @override
-  String get accountabilitySharedLoading => 'Loading goals';
+  String get accountabilitySharedLoading => 'Cargando objetivos';
 
   @override
-  String get accountabilitySharedEmptyTitle => 'No goals yet';
+  String get accountabilitySharedEmptyTitle => 'Aún no hay goles';
 
   @override
   String get accountabilitySharedEmptyBody =>
-      'Start with one simple goal or tell Rex in chat.';
+      'Comience con un objetivo simple o dígaselo a Rex en el chat.';
 
   @override
-  String get accountabilitySharedAddFirstGoal => 'Add your first goal';
+  String get accountabilitySharedAddFirstGoal => 'Añade tu primer objetivo';
 
   @override
-  String get accountabilitySectionsActiveGoals => 'Active Goals';
+  String get accountabilitySectionsActiveGoals => 'Metas activas';
 
   @override
-  String get accountabilitySectionsNoActiveGoals => 'No active goals yet.';
+  String get accountabilitySectionsNoActiveGoals =>
+      'Aún no hay objetivos activos.';
 
   @override
-  String get accountabilitySectionsOpenCommitments => 'Open Commitments';
+  String get accountabilitySectionsOpenCommitments => 'Compromisos abiertos';
 
   @override
-  String get accountabilitySectionsNoOpenCommitments => 'No open commitments.';
+  String get accountabilitySectionsNoOpenCommitments =>
+      'Sin compromisos abiertos.';
 
   @override
-  String get accountabilityTilesGoalActionsTooltip => 'Goal actions';
+  String get accountabilityTilesGoalActionsTooltip => 'Acciones de objetivos';
 
   @override
   String get accountabilityTilesCommitmentActionsTooltip =>
-      'Commitment actions';
+      'Acciones de compromiso';
 
   @override
-  String get accountabilityTilesMarkMissed => 'Mark missed';
+  String get accountabilityTilesMarkMissed => 'marca perdida';
 
   @override
-  String get accountabilityDetailGoalDetails => 'Goal details';
+  String get accountabilityDetailGoalDetails => 'Detalles del objetivo';
 
   @override
-  String get accountabilityDetailEditCommitment => 'Edit commitment';
+  String get accountabilityDetailEditCommitment => 'Editar compromiso';
 
   @override
-  String get accountabilityDetailNotesHint => 'Why this matters';
+  String get accountabilityDetailNotesHint => 'Por qué esto importa';
 
   @override
-  String get budgetsScreenManageCategoriesTooltip => 'Manage categories';
+  String get budgetsScreenManageCategoriesTooltip => 'Administrar categorías';
 
   @override
-  String get budgetsScreenSaveChangesTooltip => 'Save changes';
+  String get budgetsScreenSaveChangesTooltip => 'Guardar cambios';
 
   @override
-  String get budgetsScreenLoadError => 'Could not load budgets.';
+  String get budgetsScreenLoadError =>
+      'No se pudieron cargar los presupuestos.';
 
   @override
-  String get budgetsScreenLoadingLabel => 'Loading budgets';
+  String get budgetsScreenLoadingLabel => 'Cargando presupuestos';
 
   @override
-  String get budgetsScreenBudgetVsSpentTitle => 'Budget vs spent';
+  String get budgetsScreenBudgetVsSpentTitle => 'Presupuesto vs gastado';
 
   @override
-  String get budgetsHeaderSelectMonth => 'Select month';
+  String get budgetsHeaderSelectMonth => 'Seleccionar mes';
 
   @override
-  String get budgetsHeaderPickWeekStart => 'Pick week start';
+  String get budgetsHeaderPickWeekStart => 'Elige el inicio de la semana';
 
   @override
-  String get budgetsHeaderNoMonthsAvailable => 'No months available.';
+  String get budgetsHeaderNoMonthsAvailable => 'No hay meses disponibles.';
 
   @override
   String get budgetsScreenUnsavedChangesTitle =>
-      'Save changes before switching period?';
+      '¿Guardar cambios antes del período de cambio?';
 
   @override
   String get budgetsScreenUnsavedChangesContent =>
-      'You have unsaved budget changes for this period.';
+      'Tiene cambios de presupuesto no guardados para este período.';
 
   @override
   String get budgetsScreenSaveFailedSnack =>
-      'Could not save budgets. Try again.';
+      'No se pudieron ahorrar presupuestos. Intentar otra vez.';
 
   @override
-  String get budgetCategoryListTitle => 'Categories';
+  String get budgetCategoryListTitle => 'Categorías';
 
   @override
-  String get budgetCategoryListEmpty => 'No active budget categories yet.';
+  String get budgetCategoryListEmpty =>
+      'Aún no hay categorías de presupuesto activas.';
 
   @override
   String budgetCategoryRowStatusNoBudget(String spent) {
-    return 'Spent $spent · No budget';
+    return 'Gastado $spent · Sin presupuesto';
   }
 
   @override
   String budgetCategoryRowStatusOver(String spent, String amount) {
-    return 'Spent $spent · Over $amount';
+    return 'Gastado $spent · Más de $amount';
   }
 
   @override
   String budgetCategoryRowStatusLeft(String spent, String amount) {
-    return 'Spent $spent · Left $amount';
+    return 'Gastado $spent · Izquierdo $amount';
   }
 
   @override
-  String get categorySheetHeaderTitle => 'Manage categories';
+  String get categorySheetHeaderTitle => 'Administrar categorías';
 
   @override
-  String get categorySheetAddCustomCategory => 'Add custom category';
+  String get categorySheetAddCustomCategory =>
+      'Agregar categoría personalizada';
 
   @override
-  String get categorySheetSavedCategoriesLabel => 'Saved categories';
+  String get categorySheetSavedCategoriesLabel => 'Categorías guardadas';
 
   @override
-  String get categorySheetNoSavedCategories => 'No saved categories yet.';
+  String get categorySheetNoSavedCategories =>
+      'Aún no hay categorías guardadas.';
 
   @override
-  String get categorySheetMerchantRulesLabel => 'Merchant rules';
+  String get categorySheetMerchantRulesLabel => 'Reglas comerciales';
 
   @override
-  String get categorySheetNoMerchantRules => 'No learned merchant rules yet.';
+  String get categorySheetNoMerchantRules =>
+      'Aún no hay reglas comerciales aprendidas.';
 
   @override
-  String get categorySheetRecentChangesLabel => 'Recent changes';
+  String get categorySheetRecentChangesLabel => 'Cambios recientes';
 
   @override
-  String get categorySheetNoAuditEvents => 'No financial changes recorded yet.';
+  String get categorySheetNoAuditEvents =>
+      'Aún no se han registrado cambios financieros.';
 
   @override
-  String get categoryDialogNameLabel => 'Category name';
+  String get categoryDialogNameLabel => 'Nombre de categoría';
 
   @override
-  String get categorySheetAddCategoryTitle => 'Add category';
+  String get categorySheetAddCategoryTitle => 'Añadir categoría';
 
   @override
-  String get categorySheetRenameCategoryTitle => 'Rename category';
+  String get categorySheetRenameCategoryTitle => 'Cambiar nombre de categoría';
 
   @override
-  String get categorySheetDeleteCategoryTitle => 'Delete category?';
+  String get categorySheetDeleteCategoryTitle => '¿Eliminar categoría?';
 
   @override
-  String get categorySheetMergeCategoryTitle => 'Merge category?';
+  String get categorySheetMergeCategoryTitle => '¿Fusionar categoría?';
 
   @override
-  String get categorySheetMergeButton => 'Merge';
+  String get categorySheetMergeButton => 'Unir';
 
   @override
-  String get categorySheetCategoryInUseTitle => 'Category is in use';
+  String get categorySheetCategoryInUseTitle => 'La categoría está en uso';
 
   @override
-  String get categorySheetClose => 'Close';
+  String get categorySheetClose => 'Cerca';
 
   @override
-  String get transactionCategoryAutoRole => 'Auto role';
+  String get transactionCategoryAutoRole => 'rol automático';
 
   @override
-  String get transactionCategoryFinancialRoleTooltip => 'Financial role';
+  String get transactionCategoryFinancialRoleTooltip => 'Papel financiero';
 
   @override
-  String get transactionCategoryNoCategories => 'No categories';
+  String get transactionCategoryNoCategories => 'Sin categorías';
 
   @override
-  String get transactionCategoryNewCategoryHint => 'New category';
+  String get transactionCategoryNewCategoryHint => 'Nueva categoría';
 
   @override
-  String get transactionCategoryOnlyThisOne => 'Only this one';
+  String get transactionCategoryOnlyThisOne => 'solo este';
 
   @override
-  String get transactionCategoryUpdatedSnack => 'Category updated.';
+  String get transactionCategoryUpdatedSnack => 'Categoría actualizada.';
 
   @override
   String budgetsScreenSavedSnack(String period) {
-    return 'Budgets saved for $period';
+    return 'Presupuestos guardados para $period';
   }
 
   @override
-  String get categorySheetLoadingLabel => 'Loading categories';
+  String get categorySheetLoadingLabel => 'Cargando categorías';
 
   @override
-  String get categorySheetLoadError => 'Could not load categories.';
+  String get categorySheetLoadError => 'No se pudieron cargar categorías.';
 
   @override
-  String get categorySheetCategoryAddedSnack => 'Category added.';
+  String get categorySheetCategoryAddedSnack => 'Categoría agregada.';
 
   @override
-  String get categorySheetCategoryRenamedSnack => 'Category renamed.';
+  String get categorySheetCategoryRenamedSnack => 'Categoría renombrada.';
 
   @override
   String categorySheetDeleteCategoryContent(String name) {
-    return '\"$name\" is not used by transactions, budgets, or merchant rules. Delete it from saved custom categories?';
+    return '\"$name\" no se utiliza en transacciones, presupuestos ni reglas comerciales. ¿Eliminarlo de las categorías personalizadas guardadas?';
   }
 
   @override
-  String get categorySheetCategoryDeletedSnack => 'Category deleted.';
+  String get categorySheetCategoryDeletedSnack => 'Categoría eliminada.';
 
   @override
-  String get categorySheetCategoryShownSnack => 'Category shown in pickers.';
+  String get categorySheetCategoryShownSnack =>
+      'Categoría mostrada en selectores.';
 
   @override
   String get categorySheetCategoryHiddenSnack =>
-      'Category hidden from pickers.';
+      'Categoría oculta a los recolectores.';
 
   @override
   String categorySheetMergeCategoryContent(
@@ -1557,162 +1585,171 @@ class AppLocalizationsEs extends AppLocalizations {
     String target,
     String usage,
   ) {
-    return 'Merge \"$source\" into \"$target\"? This will move $usage to \"$target\" and delete \"$source\".';
+    return '¿Fusionar \"$source\" en \"$target\"? Esto moverá $usage a \"$target\" y eliminará \"$source\".';
   }
 
   @override
-  String get categorySheetCategoryMergedSnack => 'Category merged.';
+  String get categorySheetCategoryMergedSnack => 'Categoría fusionada.';
 
   @override
   String categorySheetCategoryInUseContent(String name, String usage) {
-    return '\"$name\" is used by $usage. Merge it into another category or hide it from pickers instead of deleting it.';
+    return '\"$name\" es utilizado por $usage. Combínelo en otra categoría u ocultelo de los selectores en lugar de eliminarlo.';
   }
 
   @override
   String get categorySheetNoMergeTarget =>
-      'No visible target category to merge into.';
+      'No hay ninguna categoría de destino visible en la que fusionarse.';
 
   @override
   String categorySheetMergeIntoTitle(String source) {
-    return 'Merge \"$source\" into';
+    return 'Fusionar \"$source\" en';
   }
 
   @override
   String get categorySheetNoRuleCategory =>
-      'No visible category is available for this rule.';
+      'No hay ninguna categoría visible disponible para esta regla.';
 
   @override
   String get categorySheetSetMerchantRuleCategoryTitle =>
-      'Set merchant rule category';
+      'Establecer categoría de regla comercial';
 
   @override
-  String get categorySheetUpdateFutureImportsTitle => 'Update future imports?';
+  String get categorySheetUpdateFutureImportsTitle =>
+      '¿Actualizar futuras importaciones?';
 
   @override
   String categorySheetUpdateFutureImportsContent(
     String merchant,
     String category,
   ) {
-    return 'Future \"$merchant\" imports will use \"$category\". Existing transactions will not be changed.';
+    return 'Las futuras importaciones de \"$merchant\" utilizarán \"$category\". Las transacciones existentes no se modificarán.';
   }
 
   @override
-  String get categorySheetUpdateRuleButton => 'Update rule';
+  String get categorySheetUpdateRuleButton => 'Actualizar regla';
 
   @override
-  String get categorySheetMerchantRuleUpdatedSnack => 'Merchant rule updated.';
+  String get categorySheetMerchantRuleUpdatedSnack =>
+      'Regla comercial actualizada.';
 
   @override
-  String get categorySheetDisableRuleTitle => 'Disable rule?';
+  String get categorySheetDisableRuleTitle => '¿Desactivar regla?';
 
   @override
-  String get categorySheetEnableRuleTitle => 'Enable rule?';
+  String get categorySheetEnableRuleTitle => '¿Habilitar regla?';
 
   @override
   String categorySheetDisableRuleContent(String merchant) {
-    return 'Future \"$merchant\" imports will stop using this learned category rule.';
+    return 'Las futuras importaciones de \"$merchant\" dejarán de utilizar esta regla de categoría aprendida.';
   }
 
   @override
   String categorySheetEnableRuleContent(String merchant) {
-    return 'Future \"$merchant\" imports will use this learned category rule again.';
+    return 'Las futuras importaciones de \"$merchant\" volverán a utilizar esta regla de categoría aprendida.';
   }
 
   @override
   String get categorySheetMerchantRuleDisabledSnack =>
-      'Merchant rule disabled.';
+      'Regla de comerciante deshabilitada.';
 
   @override
-  String get categorySheetMerchantRuleEnabledSnack => 'Merchant rule enabled.';
+  String get categorySheetMerchantRuleEnabledSnack =>
+      'Regla de comerciante habilitada.';
 
   @override
-  String get categorySheetDeleteMerchantRuleTitle => 'Delete merchant rule?';
+  String get categorySheetDeleteMerchantRuleTitle =>
+      '¿Eliminar regla comercial?';
 
   @override
   String categorySheetDeleteMerchantRuleContent(String merchant) {
-    return 'Future \"$merchant\" imports will no longer use this learned category rule.';
+    return 'Las importaciones futuras de \"$merchant\" ya no utilizarán esta regla de categoría aprendida.';
   }
 
   @override
-  String get categorySheetMerchantRuleDeletedSnack => 'Merchant rule deleted.';
+  String get categorySheetMerchantRuleDeletedSnack =>
+      'Se eliminó la regla del comerciante.';
 
   @override
   String categorySheetSaveFailedSnack(String error) {
-    return 'Could not save changes: $error';
+    return 'No se pudieron guardar los cambios: $error';
   }
 
   @override
   String categorySheetBuiltInHint(int count) {
-    return 'Built-in budget categories are always available: $count. Used custom categories must be merged or hidden before deletion.';
+    return 'Las categorías de presupuesto integradas siempre están disponibles: $count. Las categorías personalizadas utilizadas deben fusionarse u ocultarse antes de eliminarlas.';
   }
 
   @override
   String get categorySheetMerchantRulesHint =>
-      'Merchant rules affect future CSV imports. Editing a rule does not rewrite existing transactions.';
+      'Las reglas comerciales afectan las futuras importaciones de CSV. La edición de una regla no reescribe las transacciones existentes.';
 
   @override
-  String get categorySheetCategoryActionsTooltip => 'Category actions';
+  String get categorySheetCategoryActionsTooltip => 'Acciones de categoría';
 
   @override
-  String get categorySheetShowInPickers => 'Show in pickers';
+  String get categorySheetShowInPickers => 'Mostrar en selectores';
 
   @override
-  String get categorySheetHideFromPickers => 'Hide from pickers';
+  String get categorySheetHideFromPickers => 'Esconderse de los recolectores';
 
   @override
-  String get commonRename => 'Rename';
+  String get commonRename => 'Rebautizar';
 
   @override
-  String get categorySheetChangeCategory => 'Change category';
+  String get categorySheetChangeCategory => 'Cambiar categoría';
 
   @override
-  String get categorySheetEnableRule => 'Enable rule';
+  String get categorySheetEnableRule => 'Habilitar regla';
 
   @override
-  String get categorySheetDisableRule => 'Disable rule';
+  String get categorySheetDisableRule => 'Deshabilitar regla';
 
   @override
-  String get categorySheetDeleteRule => 'Delete rule';
+  String get categorySheetDeleteRule => 'Eliminar regla';
 
   @override
-  String get categorySheetMerchantRuleActionsTooltip => 'Merchant rule actions';
+  String get categorySheetMerchantRuleActionsTooltip =>
+      'Acciones de reglas comerciales';
 
   @override
-  String get categorySheetMissingCategory => 'Missing category';
+  String get categorySheetMissingCategory => 'Categoría faltante';
 
   @override
   String get categorySheetAuditTransactionCategoryChanged =>
-      'Transaction category changed';
+      'La categoría de transacción cambió';
 
   @override
-  String get categorySheetAuditBulkCategoryChange => 'Bulk category change';
+  String get categorySheetAuditBulkCategoryChange =>
+      'Cambio de categoría masiva';
 
   @override
   String get categorySheetAuditTransactionRoleChanged =>
-      'Transaction role changed';
+      'El rol de transacción cambió';
 
   @override
-  String get categorySheetAuditCategoryDeleted => 'Category deleted';
+  String get categorySheetAuditCategoryDeleted => 'Categoría eliminada';
 
   @override
-  String get categorySheetAuditCategoryMerged => 'Category merged';
+  String get categorySheetAuditCategoryMerged => 'Categoría fusionada';
 
   @override
   String get categorySheetAuditCategoryVisibilityChanged =>
-      'Category visibility changed';
+      'La visibilidad de la categoría cambió';
 
   @override
-  String get categorySheetAuditMerchantRuleChanged => 'Merchant rule changed';
+  String get categorySheetAuditMerchantRuleChanged =>
+      'La regla del comerciante cambió';
 
   @override
   String get categorySheetAuditMerchantRuleEnabledDisabled =>
-      'Merchant rule enabled/disabled';
+      'Regla de comerciante habilitada/deshabilitada';
 
   @override
-  String get categorySheetAuditMerchantRuleDeleted => 'Merchant rule deleted';
+  String get categorySheetAuditMerchantRuleDeleted =>
+      'Regla de comerciante eliminada';
 
   @override
-  String get categorySheetAuditCategoryRenamed => 'Category renamed';
+  String get categorySheetAuditCategoryRenamed => 'Categoría renombrada';
 
   @override
   String categoryUsageTxCount(int count) {
@@ -1724,8 +1761,8 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count budgets',
-      one: '1 budget',
+      other: '$count presupuestos',
+      one: '1 presupuesto',
     );
     return '$_temp0';
   }
@@ -1735,558 +1772,571 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count rules',
-      one: '1 rule',
+      other: '$count reglas',
+      one: '1 regla',
     );
     return '$_temp0';
   }
 
   @override
   String merchantRuleStatsMatchingTx(int count) {
-    return '$count matching tx';
+    return '$count transmisión coincidente';
   }
 
   @override
   String merchantRuleStatsMatchingTxLastUsed(int count, String date) {
-    return '$count matching tx · last used $date';
+    return '$count transmisión coincidente · último uso $date';
   }
 
   @override
   String get transactionCategoryNotFoundSnack =>
-      'Could not find this transaction.';
+      'No se pudo encontrar esta transacción.';
 
   @override
   String transactionCategoryUpdateRoleFailed(String error) {
-    return 'Could not update role: $error';
+    return 'No se pudo actualizar el rol: $error';
   }
 
   @override
   String transactionCategoryDeleteTitle(String name) {
-    return 'Delete \"$name\"?';
+    return '¿Eliminar \"$name\"?';
   }
 
   @override
   String get transactionCategoryDeleteContent =>
-      'Remove this category and clear it from assigned transactions?';
+      '¿Eliminar esta categoría y borrarla de las transacciones asignadas?';
 
   @override
   String transactionCategoryUpdateFailed(String error) {
-    return 'Could not update category: $error';
+    return 'No se pudo actualizar la categoría: $error';
   }
 
   @override
   String get transactionCategoryApplySimilarTitle =>
-      'Apply to similar transactions?';
+      '¿Aplicar a transacciones similares?';
 
   @override
   String transactionCategoryApplySimilarContent(int count, String merchant) {
-    return 'Clarity found $count transactions that look like \"$merchant\". Apply this category to all of them and remember it for future CSV imports?';
+    return 'Clarity encontró $count transacciones que se parecen a \"$merchant\". ¿Aplicar esta categoría a todos ellos y recordarla para futuras importaciones de CSV?';
   }
 
   @override
   String transactionCategoryUpdateCount(int count) {
-    return 'Update $count';
+    return 'Actualizar $count';
   }
 
   @override
   String transactionCategoryUpdatedSimilarSnack(int count) {
-    return 'Updated $count similar transactions. Choose another category to correct them.';
+    return 'Se actualizaron $count transacciones similares. Elija otra categoría para corregirlos.';
   }
 
   @override
   String get transactionCategoryUpdatedFutureImportsSnack =>
-      'Category updated. Future matching imports will use it.';
+      'Categoría actualizada. Las futuras importaciones coincidentes lo utilizarán.';
 
   @override
-  String get importJobCompleteSnack => 'Import complete.';
+  String get importJobCompleteSnack => 'Importación completa.';
 
   @override
   String importJobCategoryAssignmentFailedSnack(int inserted) {
-    return 'Imported $inserted transactions, but category assignment failed.';
+    return 'Se importaron $inserted transacciones, pero falló la asignación de categoría.';
   }
 
   @override
   String importJobCategoryRetryNeededPersistent(int inserted, int failures) {
-    return 'Imported $inserted transactions, but $failures need category assignment retry.';
+    return 'Se importaron $inserted transacciones, pero $failures necesita un reintento de asignación de categoría.';
   }
 
   @override
-  String get importJobNeedsCategoryRetryTitle => 'Import needs category retry';
+  String get importJobNeedsCategoryRetryTitle =>
+      'La importación necesita un reintento de categoría';
 
   @override
   String importJobNoNewTransactionsDuplicates(int skipped) {
-    return 'No new transactions imported. $skipped duplicates skipped.';
+    return 'No se importaron nuevas transacciones. $skipped duplicados omitidos.';
   }
 
   @override
-  String get importJobNoNewTransactions => 'No new transactions imported.';
+  String get importJobNoNewTransactions =>
+      'No se importaron nuevas transacciones.';
 
   @override
   String importJobSuccessWithLocalAndMisc(int inserted, int local, int misc) {
-    return 'Imported $inserted transactions. Categorized all; $local used local rules; $misc used a best-guess category.';
+    return 'Transacciones $inserted importadas. Categorizado todo; $local usó reglas locales; $misc utilizó una categoría de mejor suposición.';
   }
 
   @override
   String importJobSuccessWithLocal(int inserted, int local) {
-    return 'Imported $inserted transactions. Categorized all; $local used local rules.';
+    return 'Transacciones $inserted importadas. Categorizado todo; $local usó reglas locales.';
   }
 
   @override
   String importJobSuccessWithMisc(int inserted, int misc) {
-    return 'Imported $inserted transactions. Categorized all; $misc used a best-guess category.';
+    return 'Transacciones $inserted importadas. Categorizado todo; $misc utilizó una categoría de mejor suposición.';
   }
 
   @override
   String importJobSuccessCategorizedAll(int inserted) {
-    return 'Imported $inserted transactions. Categorized all transactions.';
+    return 'Transacciones $inserted importadas. Categorizó todas las transacciones.';
   }
 
   @override
-  String get importJobFailedTitle => 'Import failed';
+  String get importJobFailedTitle => 'Importación fallida';
 
   @override
   String get importJobRetryingCategoryAssignment =>
-      'Retrying category assignment...';
+      'Reintentando la asignación de categoría...';
 
   @override
   String get importJobCategoryRetryCompleteProgress =>
-      'Category retry complete.';
+      'Reintento de categoría completo.';
 
   @override
   String get importJobNoRetryableRowsSnack =>
-      'No retryable category rows found.';
+      'No se encontraron filas de categorías reintentables.';
 
   @override
-  String get importJobNoRetryableRowsTitle => 'No retryable rows';
+  String get importJobNoRetryableRowsTitle => 'No hay filas reintentables';
 
   @override
   String importJobRetriedCategoriesSnack(int count) {
-    return 'Retried categories. Updated $count transactions.';
+    return 'Categorías reintentadas. Transacciones $count actualizadas.';
   }
 
   @override
-  String get importJobCategoryRetryCompleteTitle => 'Category retry complete';
+  String get importJobCategoryRetryCompleteTitle =>
+      'Reintento de categoría completo';
 
   @override
-  String get importJobCategoryRetryFailedProgress => 'Category retry failed.';
+  String get importJobCategoryRetryFailedProgress =>
+      'Error al reintentar la categoría.';
 
   @override
   String importJobCategoryRetryFailedSnack(String error) {
-    return 'Could not retry category assignment: $error';
+    return 'No se pudo volver a intentar la asignación de categoría: $error';
   }
 
   @override
-  String get importJobCategoryRetryFailedTitle => 'Category retry failed';
+  String get importJobCategoryRetryFailedTitle =>
+      'Error al reintentar la categoría';
 
   @override
   String importJobRetryFailedLine(String error) {
-    return 'Retry failed: $error';
+    return 'Reintento fallido: $error';
   }
 
   @override
   String importJobSummaryParsedLine(int parsed, int inserted, int skipped) {
-    return 'Parsed $parsed; imported $inserted; skipped $skipped duplicates.';
+    return 'Analizado $parsed; importado $inserted; omitió $skipped duplicados.';
   }
 
   @override
   String importJobSummaryAiLine(String status, int aiRows, int localRows) {
-    return 'AI $status; AI rows $aiRows; local-rule rows $localRows.';
+    return 'IA $status; Filas AI $aiRows; filas de reglas locales $localRows.';
   }
 
   @override
   String importJobSummaryCategoriesLine(int misc, int failures) {
-    return 'Best-guess categories $misc; category update failures $failures.';
+    return 'Categorías de mejores conjeturas $misc; Errores de actualización de categoría $failures.';
   }
 
   @override
   String importJobSummaryScannedLine(int scanned, int retryable) {
-    return 'Scanned $scanned; retryable $retryable.';
+    return 'Escaneado $scanned; reintentable $retryable.';
   }
 
   @override
   String importJobSummaryUpdatedLine(int updated, int remaining) {
-    return 'Updated $updated; still uncategorized $remaining.';
+    return 'Actualizado $updated; todavía sin categoría $remaining.';
   }
 
   @override
-  String get importJobAiStatusCompleted => 'completed';
+  String get importJobAiStatusCompleted => 'terminado';
 
   @override
-  String get importJobAiStatusUnavailable => 'unavailable';
+  String get importJobAiStatusUnavailable => 'indisponible';
 
   @override
-  String get mfaEnrollmentAppBarTitle => 'Multi-factor authentication';
+  String get mfaEnrollmentAppBarTitle => 'Autenticación multifactor';
 
   @override
-  String get mfaEnrollmentTurnOffTitle => 'Turn off MFA?';
+  String get mfaEnrollmentTurnOffTitle => '¿Desactivar MFA?';
 
   @override
-  String get mfaEnrollmentCancel => 'Cancel';
+  String get mfaEnrollmentCancel => 'Cancelar';
 
   @override
-  String get mfaEnrollmentTurnOff => 'Turn off';
+  String get mfaEnrollmentTurnOff => 'Apagar';
 
   @override
-  String get mfaEnrollmentAuthenticatorApps => 'Authenticator apps';
+  String get mfaEnrollmentAuthenticatorApps => 'Aplicaciones de autenticación';
 
   @override
-  String get mfaEnrollmentMfaOn => 'MFA is on';
+  String get mfaEnrollmentMfaOn => 'MFA está en marcha';
 
   @override
-  String get mfaEnrollmentMfaOff => 'MFA is off';
+  String get mfaEnrollmentMfaOff => 'MFA está desactivado';
 
   @override
-  String get mfaEnrollmentTurnOnMfa => 'Turn on MFA';
+  String get mfaEnrollmentTurnOnMfa => 'Activar MFA';
 
   @override
-  String get mfaEnrollmentSetupTitle => 'Set up authenticator app';
+  String get mfaEnrollmentSetupTitle =>
+      'Configurar la aplicación de autenticación';
 
   @override
-  String get mfaEnrollmentCodeLabel => '6-digit code';
+  String get mfaEnrollmentCodeLabel => 'código de 6 dígitos';
 
   @override
-  String get mfaEnrollmentEnableMfa => 'Enable MFA';
+  String get mfaEnrollmentEnableMfa => 'Habilitar MFA';
 
   @override
-  String get mfaVerificationTitle => 'Enter your MFA code';
+  String get mfaVerificationTitle => 'Ingrese su código MFA';
 
   @override
   String get mfaVerificationSubtitle =>
-      'Open your authenticator app and enter the current 6-digit code for Clarity.';
+      'Abra su aplicación de autenticación e ingrese el código actual de 6 dígitos para Clarity.';
 
   @override
-  String get mfaVerificationAuthenticatorAppLabel => 'Authenticator app';
+  String get mfaVerificationAuthenticatorAppLabel =>
+      'Aplicación de autenticación';
 
   @override
-  String get mfaVerificationVerifyAndContinue => 'Verify and continue';
+  String get mfaVerificationVerifyAndContinue => 'Verificar y continuar';
 
   @override
-  String get mfaEnterSixDigitCode => 'Enter the 6-digit code.';
+  String get mfaEnterSixDigitCode => 'Ingrese el código de 6 dígitos.';
 
   @override
   String get mfaEnrollmentTurnOffBodySingle =>
-      'Your account will no longer ask for an authenticator code after password sign-in.';
+      'Su cuenta ya no le solicitará un código de autenticación después de iniciar sesión con contraseña.';
 
   @override
   String mfaEnrollmentTurnOffBodyMultiple(int factorCount) {
-    return 'This removes all $factorCount authenticator apps. Your account will no longer ask for an authenticator code after password sign-in.';
+    return 'Esto elimina todas las aplicaciones de autenticación $factorCount. Su cuenta ya no le solicitará un código de autenticación después de iniciar sesión con contraseña.';
   }
 
   @override
-  String get mfaEnrollmentRemoveTitle => 'Remove MFA?';
+  String get mfaEnrollmentRemoveTitle => '¿Eliminar MFA?';
 
   @override
   String mfaEnrollmentRemoveBody(String factorName) {
-    return 'Remove $factorName? You can enroll another authenticator app later.';
+    return '¿Quitar $factorName? Puede registrar otra aplicación de autenticación más adelante.';
   }
 
   @override
-  String get mfaEnrollmentAddAnotherApp => 'Add another app';
+  String get mfaEnrollmentAddAnotherApp => 'Agregar otra aplicación';
 
   @override
   String get mfaEnrollmentMfaOnDescription =>
-      'Your account requires an authenticator code after password sign-in.';
+      'Su cuenta requiere un código de autenticación después de iniciar sesión con contraseña.';
 
   @override
   String get mfaEnrollmentMfaOffDescription =>
-      'Add an authenticator app to protect your financial workspace.';
+      'Agregue una aplicación de autenticación para proteger su espacio de trabajo financiero.';
 
   @override
   String get mfaEnrollmentSetupInstructions =>
-      'Scan this QR code in 1Password, Google Authenticator, Authy, or another TOTP app.';
+      'Escanee este código QR en 1Password, Google Authenticator, Authy u otra aplicación TOTP.';
 
   @override
-  String get mfaEnrollmentCopyAuthenticatorUri => 'Copy authenticator URI';
+  String get mfaEnrollmentCopyAuthenticatorUri => 'Copiar URI del autenticador';
 
   @override
-  String get mfaEnrollmentManualSetupKey => 'Manual setup key';
+  String get mfaEnrollmentManualSetupKey => 'Tecla de configuración manual';
 
   @override
-  String get mfaEnrollmentCopyManualSetupKeyTooltip => 'Copy manual setup key';
+  String get mfaEnrollmentCopyManualSetupKeyTooltip =>
+      'Copiar clave de configuración manual';
 
   @override
   String get mfaEnrollmentRemoveAuthenticatorTooltip =>
-      'Remove authenticator app';
+      'Eliminar la aplicación de autenticación';
 
   @override
   String get mfaEnrollmentRecoveryNotice =>
-      'Supabase Auth does not provide recovery codes for TOTP. Add a second authenticator app as a backup before removing your only factor.';
+      'Supabase Auth no proporciona códigos de recuperación para TOTP. Agregue una segunda aplicación de autenticación como respaldo antes de eliminar su único factor.';
 
   @override
-  String get mfaEnrollmentManualSetupKeyCopyLabel => 'Manual setup key';
+  String get mfaEnrollmentManualSetupKeyCopyLabel =>
+      'Tecla de configuración manual';
 
   @override
-  String get mfaEnrollmentAuthenticatorUriCopyLabel => 'Authenticator URI';
+  String get mfaEnrollmentAuthenticatorUriCopyLabel => 'URI del autenticador';
 
   @override
   String get authErrorInvalidCredentials =>
-      'Email or password is incorrect. Try again or create a new account.';
+      'El correo electrónico o la contraseña son incorrectos. Inténtalo de nuevo o crea una cuenta nueva.';
 
   @override
   String get authErrorAccountExists =>
-      'An account with this email already exists. Sign in instead.';
+      'Ya existe una cuenta con este correo electrónico. Inicia sesión en su lugar.';
 
   @override
   String get authErrorEmailNotConfirmed =>
-      'Confirm your email first, then sign in.';
+      'Primero confirme su correo electrónico y luego inicie sesión.';
 
   @override
   String get authErrorEmailSendFailed =>
-      'We could not send a confirmation email right now. Try again in a few minutes or contact support if this continues.';
+      'No pudimos enviar un correo electrónico de confirmación en este momento. Vuelva a intentarlo en unos minutos o comuníquese con el soporte técnico si esto continúa.';
 
   @override
   String get authErrorSignupsDisabled =>
-      'New account sign-up is disabled for this app right now.';
+      'El registro de nueva cuenta está deshabilitado para esta aplicación en este momento.';
 
   @override
   String get authErrorWeakPassword =>
-      'Choose a stronger password and try again.';
+      'Elija una contraseña más segura e inténtelo de nuevo.';
 
   @override
   String get authErrorMfaCodeRejected =>
-      'That code was not accepted. Check your authenticator app and try again.';
+      'Ese código no fue aceptado. Verifique su aplicación de autenticación e inténtelo nuevamente.';
 
   @override
   String get authErrorMfaNotEnabled =>
-      'MFA is not enabled for this Supabase project.';
+      'MFA no está habilitado para este proyecto de Supabase.';
 
   @override
   String get authErrorTooManyAttempts =>
-      'Too many attempts. Wait a moment, then try again.';
+      'Demasiados intentos. Espere un momento y vuelva a intentarlo.';
 
   @override
   String get authErrorNoAuthenticatorAvailable =>
-      'No verified authenticator app is available for this account.';
+      'No hay ninguna aplicación de autenticación verificada disponible para esta cuenta.';
 
   @override
   String get authErrorStartEnrollmentFirst =>
-      'Start MFA enrollment before verifying a code.';
+      'Inicie la inscripción en MFA antes de verificar un código.';
 
   @override
   String get authInfoAccountCreatedSignedIn =>
-      'Account created. You are signed in.';
+      'Cuenta creada. Has iniciado sesión.';
 
   @override
   String authInfoConfirmationLinkSent(String email) {
-    return 'We sent a confirmation link to $email. Open it, then return here and sign in.';
+    return 'Enviamos un enlace de confirmación a $email. Ábralo, luego regrese aquí e inicie sesión.';
   }
 
   @override
   String get authInfoEnterAuthenticatorCode =>
-      'Enter your authenticator code to finish signing in.';
+      'Ingrese su código de autenticación para terminar de iniciar sesión.';
 
   @override
   String authInfoPasswordResetSent(String email) {
-    return 'If an account exists for $email, we sent a password reset link.';
+    return 'Si existe una cuenta para $email, le enviamos un enlace para restablecer la contraseña.';
   }
 
   @override
   String get authInfoMfaEnrollmentStart =>
-      'Scan the QR code, then enter the 6-digit code from your app.';
+      'Escanee el código QR y luego ingrese el código de 6 dígitos desde su aplicación.';
 
   @override
   String get authInfoMfaEnabledEmailSent =>
-      'MFA is enabled. We sent you a confirmation email.';
+      'MFA está habilitado. Le enviamos un correo electrónico de confirmación.';
 
   @override
   String get authInfoMfaEnabledEmailFailed =>
-      'MFA is enabled. Confirmation email could not be sent right now.';
+      'MFA está habilitado. El correo electrónico de confirmación no se pudo enviar en este momento.';
 
   @override
   String get authInfoMfaDisabledEmailSent =>
-      'MFA is off. We sent you a confirmation email.';
+      'El MFA está desactivado. Le enviamos un correo electrónico de confirmación.';
 
   @override
   String get authInfoMfaDisabledEmailFailed =>
-      'MFA is off. Confirmation email could not be sent right now.';
+      'El MFA está desactivado. El correo electrónico de confirmación no se pudo enviar en este momento.';
 
   @override
-  String get authInfoSignInVerified => 'Sign-in verified.';
+  String get authInfoSignInVerified => 'Inicio de sesión verificado.';
 
   @override
-  String get authInfoAuthenticatorRemoved => 'Authenticator app removed.';
+  String get authInfoAuthenticatorRemoved =>
+      'Se eliminó la aplicación de autenticación.';
 
   @override
-  String get authInfoMfaAlreadyOff => 'MFA is already off.';
+  String get authInfoMfaAlreadyOff => 'El MFA ya está en marcha.';
 
   @override
-  String get importProgressImporting => 'Importing...';
+  String get importProgressImporting => 'Importador...';
 
   @override
-  String get importProgressCategorizing => 'Categorizing...';
+  String get importProgressCategorizing => 'Categorizando...';
 
   @override
-  String get importProgressSavingCategories => 'Saving categories...';
+  String get importProgressSavingCategories => 'Guardando categorías...';
 
   @override
   String get importProgressApplyingFallbackCategories =>
-      'Applying fallback categories...';
+      'Aplicando categorías alternativas...';
 
   @override
-  String get importProgressRefreshing => 'Refreshing...';
+  String get importProgressRefreshing => 'Refrescante...';
 
   @override
-  String get usageChartNoDailyVoiceUsage => 'No daily voice usage yet.';
+  String get usageChartNoDailyVoiceUsage => 'Aún no hay uso diario de voz.';
 
   @override
   String get usageChartNotEnoughRadarData =>
-      'Not enough usage data for radar chart.';
+      'No hay suficientes datos de uso para el gráfico de radar.';
 
   @override
-  String get usageChartNoDailyCallData => 'No daily call data yet.';
+  String get usageChartNoDailyCallData =>
+      'Aún no hay datos de llamadas diarias.';
 
   @override
-  String get usageChartDayMon => 'Mon';
+  String get usageChartDayMon => 'Lun';
 
   @override
-  String get usageChartDayTue => 'Tue';
+  String get usageChartDayTue => 'Mar';
 
   @override
-  String get usageChartDayWed => 'Wed';
+  String get usageChartDayWed => 'Casarse';
 
   @override
-  String get usageChartDayThu => 'Thu';
+  String get usageChartDayThu => 'Jue';
 
   @override
-  String get usageChartDayFri => 'Fri';
+  String get usageChartDayFri => 'Vie';
 
   @override
-  String get usageChartDaySat => 'Sat';
+  String get usageChartDaySat => 'Se sentó';
 
   @override
-  String get usageChartDaySun => 'Sun';
+  String get usageChartDaySun => 'Sol';
 
   @override
-  String get commonNone => 'None';
+  String get commonNone => 'Ninguno';
 
   @override
   String dashboardBudgetNoBudgetsForPeriod(String periodLabel) {
-    return 'No budgets set for $periodLabel yet.';
+    return 'Aún no se han establecido presupuestos para $periodLabel.';
   }
 
   @override
   String dashboardBudgetCategoriesOnTrack(int onTrack, int budgeted) {
-    return '$onTrack/$budgeted categories on track';
+    return '$onTrack/$budgeted categorías en camino';
   }
 
   @override
   String dashboardBudgetTotalOverspent(String amount) {
-    return 'Total overspent $amount';
+    return 'Gasto excesivo total $amount';
   }
 
   @override
   String dashboardBudgetBudgetedSpentLine(String budgeted, String spent) {
-    return 'Budgeted $budgeted / Spent $spent';
+    return 'Presupuestado $budgeted / Gastado $spent';
   }
 
   @override
   String get dashboardBudgetNoOverspendingCategories =>
-      'No overspending categories in this period.';
+      'No hay categorías de gasto excesivo en este período.';
 
   @override
   String dashboardBudgetCategoryOverspent(String label, String amount) {
-    return '$label: overspent $amount';
+    return '$label: gastado de más $amount';
   }
 
   @override
   String dashboardHealthSpendingAheadOfIncome(String amount) {
-    return 'Spending is ahead of income by $amount this month.';
+    return 'El gasto está por delante de los ingresos en $amount este mes.';
   }
 
   @override
   String dashboardHealthIncomeAheadOfSpending(String amount) {
-    return 'Income is ahead of spending by $amount this month.';
+    return 'Los ingresos están por delante de los gastos en $amount este mes.';
   }
 
   @override
   String get dashboardHealthSpendingActiveNoIncome =>
-      'Spending is active this month; no income is recorded in this scope.';
+      'El gasto está activo este mes; No se registran ingresos en este ámbito.';
 
   @override
   String get dashboardHealthIncomeNoSpending =>
-      'Income is recorded and no spending has posted for this month yet.';
+      'Se registran ingresos y aún no se han registrado gastos para este mes.';
 
   @override
   String get dashboardHealthNoCurrentMonthActivity =>
-      'No current-month activity in this scope yet.';
+      'Aún no hay actividad en este ámbito en el mes en curso.';
 
   @override
   String get dashboardHealthConnectTransactions =>
-      'Connect transactions to build account health.';
+      'Conecte transacciones para mejorar la salud de la cuenta.';
 
   @override
-  String get dashboardHealthNoBudgets => 'No budgets';
+  String get dashboardHealthNoBudgets => 'Sin presupuestos';
 
   @override
   String get dashboardHealthSetBudgets =>
-      'Set budgets to compare this month against a target.';
+      'Establezca presupuestos para comparar este mes con un objetivo.';
 
   @override
   String dashboardHealthCategoryOverBy(String label, String amount) {
-    return '$label is over by $amount.';
+    return '$label terminó por $amount.';
   }
 
   @override
   String dashboardHealthBudgetControlled(String periodLabel) {
-    return 'Budget coverage looks controlled for $periodLabel.';
+    return 'La cobertura presupuestaria parece controlada para $periodLabel.';
   }
 
   @override
   String get dashboardHealthNoSpendingPressure =>
-      'No spending pressure recorded this month.';
+      'No se registró presión de gasto este mes.';
 
   @override
   String dashboardHealthTopSpendPressure(String name) {
-    return '$name is the largest spend pressure this month.';
+    return '$name es la mayor presión de gasto este mes.';
   }
 
   @override
-  String get dashboardHealthThisMonthNet => 'This month net';
+  String get dashboardHealthThisMonthNet => 'Este mes neto';
 
   @override
-  String get dashboardHealthSpendPressureLabel => 'Spend pressure';
+  String get dashboardHealthSpendPressureLabel => 'Gastar presión';
 
   @override
-  String get dashboardHealthBudgetCoverageLabel => 'Budget coverage';
+  String get dashboardHealthBudgetCoverageLabel => 'Cobertura presupuestaria';
 
   @override
   String dashboardHealthIncomeSpendingLine(String income, String spending) {
-    return 'Income $income / Spending $spending';
+    return 'Ingresos $income / Gastos $spending';
   }
 
   @override
   String get dashboardChartConnectAccountsCashFlow =>
-      'Connect accounts to see monthly cash flow.';
+      'Conecte cuentas para ver el flujo de caja mensual.';
 
   @override
-  String get dashboardChartNoCategorySpending => 'No category spending yet.';
+  String get dashboardChartNoCategorySpending =>
+      'Aún no hay gasto de categoría.';
 
   @override
   String get dashboardChartNoSpendingPressure =>
-      'No spending pressure this month.';
+      'No hay presión de gasto este mes.';
 
   @override
   String get dashboardChartNoBudgetCategories =>
-      'No budget categories to chart.';
+      'No hay categorías de presupuesto para trazar.';
 
   @override
-  String get dashboardChartNoSpendingHistory => 'No spending history yet.';
+  String get dashboardChartNoSpendingHistory =>
+      'Aún no hay historial de gastos.';
 
   @override
   String get dashboardChartNoIncomeOrSpending =>
-      'No income or spending this month.';
+      'No hay ingresos ni gastos este mes.';
 
   @override
   String dashboardChartIncomeSpendingSummary(String income, String spent) {
-    return 'Income $income · Spending $spent';
+    return 'Ingresos $income · Gastos $spent';
   }
 
   @override
-  String get monthDetailDeleteMonthTooltip => 'Delete this month';
+  String get monthDetailDeleteMonthTooltip => 'Eliminar este mes';
 
   @override
   String monthDetailDeleteMonthTitle(String monthLabel) {
-    return 'Delete $monthLabel transactions?';
+    return '¿Eliminar $monthLabel transacciones?';
   }
 
   @override
@@ -2295,11 +2345,11 @@ class AppLocalizationsEs extends AppLocalizations {
     String transactionSuffix,
     String monthLabel,
   ) {
-    return 'This will permanently delete the $count visible transaction$transactionSuffix for this account in $monthLabel. Other months will stay untouched.';
+    return 'Esto eliminará permanentemente la $count transacción visible $transactionSuffix para esta cuenta en $monthLabel. Otros meses permanecerán intactos.';
   }
 
   @override
-  String get monthDetailDeleteMonthButton => 'Delete month';
+  String get monthDetailDeleteMonthButton => 'Eliminar mes';
 
   @override
   String monthDetailDeletedTransactions(
@@ -2307,444 +2357,445 @@ class AppLocalizationsEs extends AppLocalizations {
     String monthLabel,
     String transactionSuffix,
   ) {
-    return 'Deleted $count $monthLabel transaction$transactionSuffix.';
+    return 'Se eliminó $count $monthLabel transacción$transactionSuffix.';
   }
 
   @override
-  String get monthDetailNothingDeleted => 'No transactions were deleted.';
+  String get monthDetailNothingDeleted => 'No se eliminaron transacciones.';
 
   @override
-  String get monthDetailLoadingMonth => 'Loading month';
+  String get monthDetailLoadingMonth => 'Mes de carga';
 
   @override
-  String get monthDetailNetThisMonth => 'NET THIS MONTH';
+  String get monthDetailNetThisMonth => 'NETO ESTE MES';
 
   @override
   String get monthDetailNoTransactionsLeft =>
-      'No transactions left for this month.';
+      'No quedan transacciones para este mes.';
 
   @override
-  String get monthDetailDeleteTransactionTooltip => 'Delete transaction';
+  String get monthDetailDeleteTransactionTooltip => 'Eliminar transacción';
 
   @override
-  String get monthDetailDeleteTransactionTitle => 'Delete this transaction?';
+  String get monthDetailDeleteTransactionTitle => '¿Eliminar esta transacción?';
 
   @override
   String get monthDetailDeleteTransactionBody =>
-      'This transaction will be permanently deleted.';
+      'Esta transacción se eliminará permanentemente.';
 
   @override
-  String get monthDetailTransactionDeleted => 'Transaction deleted.';
+  String get monthDetailTransactionDeleted => 'Transacción eliminada.';
 
   @override
   String get monthDetailDeleteTransactionFailed =>
-      'Could not delete transaction.';
+      'No se pudo eliminar la transacción.';
 
   @override
   String get monthDetailPlaidDeleteProtection =>
-      'Plaid transactions sync from your bank. Use resync or disconnect instead of local deletion.';
+      'Las transacciones a cuadros se sincronizan desde su banco. Utilice resincronización o desconexión en lugar de eliminación local.';
 
   @override
   String get accountsScreenNoActiveConnectionRefresh =>
-      'No active bank connection to refresh.';
+      'No hay conexión bancaria activa para actualizar.';
 
   @override
   String get accountsScreenCouldNotRefreshAccounts =>
-      'Could not refresh connected accounts.';
+      'No se pudieron actualizar las cuentas conectadas.';
 
   @override
   String get accountsScreenDisconnectedConnection =>
-      'This bank connection is disconnected.';
+      'Esta conexión bancaria está desconectada.';
 
   @override
   String get accountsScreenCouldNotRefreshAccount =>
-      'Could not refresh this account.';
+      'No se pudo actualizar esta cuenta.';
 
   @override
   String get accountsScreenCouldNotDisconnect =>
-      'Could not disconnect this bank.';
+      'No se pudo desconectar este banco.';
 
   @override
   String accountsScreenDisconnectedNotice(String institutionName) {
-    return '$institutionName disconnected. Future Plaid sync is stopped.';
+    return '$institutionName desconectado. La sincronización futura de Plaid se detiene.';
   }
 
   @override
-  String get plaidAccountStatusConnected => 'Connected';
+  String get plaidAccountStatusConnected => 'Conectado';
 
   @override
-  String get plaidAccountStatusDegradedLabel => 'Degraded';
+  String get plaidAccountStatusDegradedLabel => 'Degradado';
 
   @override
-  String get plaidAccountStatusNeedsLogin => 'Needs login';
+  String get plaidAccountStatusNeedsLogin => 'Necesita iniciar sesión';
 
   @override
   String get plaidAccountStatusRefreshing =>
-      'Refreshing this bank connection now.';
+      'Actualizando esta conexión bancaria ahora.';
 
   @override
   String get plaidAccountStatusDegradedMessage =>
-      'Sync needs attention. Try refresh; if it still fails, reconnect this bank in Plaid.';
+      'La sincronización necesita atención. Intente actualizar; Si aún falla, vuelva a conectar este banco en Plaid.';
 
   @override
   String get plaidAccountStatusLoginRequiredMessage =>
-      'Plaid needs you to sign in again. Connect this bank again to resume sync.';
+      'Plaid necesita que inicies sesión nuevamente. Conecte este banco nuevamente para reanudar la sincronización.';
 
   @override
   String get plaidAccountStatusExpiringSoonMessage =>
-      'This Plaid connection may expire soon. Refresh now or reconnect if sync stops.';
+      'Esta conexión a cuadros puede caducar pronto. Actualice ahora o vuelva a conectarse si la sincronización se detiene.';
 
   @override
   String get plaidAccountStatusDisconnectedMessage =>
-      'Future Plaid sync is stopped. Existing account history stays in Clarity.';
+      'La sincronización futura de Plaid se detiene. El historial de la cuenta existente permanece en Clarity.';
 
   @override
   String get plaidAccountNoWebhookYet =>
-      'No Plaid webhook has arrived yet. Use refresh if transactions look stale.';
+      'Aún no ha llegado ningún webhook de Plaid. Utilice la actualización si las transacciones parecen obsoletas.';
 
   @override
   String plaidAccountNoRecentWebhook(String relativeTime) {
-    return 'No recent Plaid webhook. Last bank update signal was $relativeTime.';
+    return 'No hay ningún webhook reciente de Plaid. La última señal de actualización del banco fue $relativeTime.';
   }
 
   @override
   String plaidAccountWebhookDaysAgo(int days) {
-    return '${days}d ago';
+    return 'Hace ${days}d';
   }
 
   @override
   String plaidAccountWebhookHoursAgo(int hours) {
-    return '${hours}h ago';
+    return '__TOKHace 0__h';
   }
 
   @override
   String plaidAccountWebhookMinutesAgo(int minutes) {
-    return '${minutes}m ago';
+    return '__TOKHace 0__m';
   }
 
   @override
-  String get plaidAccountWebhookJustNow => 'just now';
+  String get plaidAccountWebhookJustNow => 'En este momento';
 
   @override
   String get accountDetailNoCsvUploads =>
-      'No CSV uploads found for this account.';
+      'No se encontraron cargas CSV para esta cuenta.';
 
   @override
   String accountDetailDeleteCsvBody(int count, String transactionSuffix) {
-    return 'Delete $count transaction$transactionSuffix from this upload? This cannot be undone.';
+    return '¿Eliminar $count transacción $transactionSuffix de esta carga? Esto no se puede deshacer.';
   }
 
   @override
   String accountDetailDeletedFromCsv(int deleted, String transactionSuffix) {
-    return 'Deleted $deleted transaction$transactionSuffix from CSV upload.';
+    return 'Se eliminó $deleted transacción$transactionSuffix de la carga de CSV.';
   }
 
   @override
-  String get accountDetailCsvAlreadyDeleted =>
-      'CSV upload was already deleted.';
+  String get accountDetailCsvAlreadyDeleted => 'La carga CSV ya se eliminó.';
 
   @override
-  String get accountDetailCouldNotDeleteCsv => 'Could not delete CSV upload.';
+  String get accountDetailCouldNotDeleteCsv =>
+      'No se pudo eliminar la carga CSV.';
 
   @override
-  String get accountDetailCouldNotDeleteAccount => 'Could not delete account.';
+  String get accountDetailCouldNotDeleteAccount =>
+      'No se pudo eliminar la cuenta.';
 
   @override
   String accountDetailAccountDeleted(String accountName, String cleanupNote) {
-    return '$accountName deleted.$cleanupNote';
+    return '$accountName eliminado.$cleanupNote';
   }
 
   @override
   String accountDetailRemovedBudgets(int count, String budgetSuffix) {
-    return ' Removed $count unused budget$budgetSuffix.';
+    return 'Se eliminó $count presupuesto no utilizado $budgetSuffix.';
   }
 
   @override
   String accountDetailDeleteUnusedCategoryTitle(String plural) {
-    return 'Delete unused custom $plural?';
+    return '¿Eliminar el $plural personalizado no utilizado?';
   }
 
   @override
   String accountDetailDeleteUnusedCategorySingle(String name) {
-    return '\"$name\" no longer has active transactions after deleting this account. Delete this custom category too?';
+    return '\"$name\" ya no tiene transacciones activas después de eliminar esta cuenta. ¿Eliminar también esta categoría personalizada?';
   }
 
   @override
   String accountDetailDeleteUnusedCategoryMultiple(String names) {
-    return 'These custom categories no longer have active transactions after deleting this account: $names. Delete them too?';
+    return 'Estas categorías personalizadas ya no tienen transacciones activas después de eliminar esta cuenta: $names. ¿Eliminarlos también?';
   }
 
   @override
   String accountDetailUploadBatchLabel(String importId) {
-    return 'Upload $importId';
+    return 'Subir $importId';
   }
 
   @override
-  String get accountDetailCategorySingular => 'category';
+  String get accountDetailCategorySingular => 'categoría';
 
   @override
-  String get accountDetailCategoriesPlural => 'categories';
+  String get accountDetailCategoriesPlural => 'categorias';
 
   @override
   String get csvPreviewPlaidOverlapHint =>
-      'This connected account already syncs through Plaid. Import only if this CSV covers rows Clarity does not have yet.';
+      'Esta cuenta conectada ya se sincroniza a través de Plaid. Importe solo si este CSV cubre filas que Clarity aún no tiene.';
 
   @override
   String get csvPreviewManualFallbackHint =>
-      'This is a manual fallback import. You may need to upload newer CSV files later to keep this account current.';
+      'Esta es una importación alternativa manual. Es posible que tengas que cargar archivos CSV más nuevos más adelante para mantener esta cuenta actualizada.';
 
   @override
   String get csvPreviewLayoutInferred =>
-      'Column layout was inferred. Review the date range before importing.';
+      'Se infirió el diseño de las columnas. Revise el rango de fechas antes de importar.';
 
   @override
   String get csvPreviewDuplicateImport =>
-      'This looks like a duplicate import for this account. Choose another account, or delete the previous CSV upload from the account page before retrying.';
+      'Parece una importación duplicada para esta cuenta. Elija otra cuenta o elimine la carga CSV anterior de la página de la cuenta antes de volver a intentarlo.';
 
   @override
   String get accountSelectionManualAccountForCsv =>
-      'Add a manual account for this CSV';
+      'Agregar una cuenta manual para este CSV';
 
   @override
   String get assistantTabChat => 'Chat';
 
   @override
-  String get assistantTabKnows => 'Knows';
+  String get assistantTabKnows => 'sabe';
 
   @override
-  String get assistantTabGoals => 'Goals';
+  String get assistantTabGoals => 'Objetivos';
 
   @override
   String get assistantTabChats => 'Chats';
 
   @override
   String assistantTabSemanticLabel(String tab) {
-    return 'Assistant $tab tab';
+    return 'Pestaña Asistente $tab';
   }
 
   @override
-  String get voicePanelVoiceMuted => 'Voice muted';
+  String get voicePanelVoiceMuted => 'Voz silenciada';
 
   @override
-  String get voicePanelVoiceReady => 'Voice ready';
+  String get voicePanelVoiceReady => 'Voz lista';
 
   @override
-  String get voicePanelListening => 'Listening';
+  String get voicePanelListening => 'Escuchando';
 
   @override
-  String get voicePanelThinking => 'Thinking';
+  String get voicePanelThinking => 'Pensamiento';
 
   @override
-  String get voicePanelSpeaking => 'Speaking';
+  String get voicePanelSpeaking => 'Discurso';
 
   @override
-  String get voicePanelVoicePaused => 'Voice paused';
+  String get voicePanelVoicePaused => 'Voz en pausa';
 
   @override
   String get voiceFailureSessionReconnect =>
-      'Your Clarity session needs to reconnect before voice can continue. Sign in again if this keeps happening.';
+      'Su sesión de Clarity debe volver a conectarse antes de que la voz pueda continuar. Inicie sesión nuevamente si esto continúa sucediendo.';
 
   @override
   String get voiceFailureMicrophoneAccess =>
-      'Microphone access is needed for voice. Check Settings, then try again.';
+      'Se necesita acceso al micrófono para la voz. Verifique la configuración y vuelva a intentarlo.';
 
   @override
   String get voiceFailureDidNotCatch =>
-      'I didn\'t catch that. Tap Try again when you are ready.';
+      'No entendí eso. Toca Intentar de nuevo cuando estés listo.';
 
   @override
   String get voiceFailureConnectionDropped =>
-      'Voice connection dropped. Tap Try again to reconnect.';
+      'Se cayó la conexión de voz. Toque Intentar nuevamente para volver a conectarse.';
 
   @override
   String get voiceFailureTranscriptUnreadable =>
-      'I couldn\'t read that transcript. Tap Try again and say it once more.';
+      'No pude leer esa transcripción. Toca Intentar de nuevo y dilo una vez más.';
 
   @override
   String get voiceFailurePlaybackFailed =>
-      'Rex answered, but I couldn\'t play the audio. Tap Try again to hear the reply.';
+      'Rex respondió, pero no pude reproducir el audio. Toque Intentar nuevamente para escuchar la respuesta.';
 
   @override
   String get voiceFailurePausedDefault =>
-      'Voice paused. Tap Try again when you are ready to continue.';
+      'La voz se detuvo. Toque Intentar nuevamente cuando esté listo para continuar.';
 
   @override
   String get memoryHeaderEmptyActiveBody =>
-      'Ask Rex in chat or voice to save something, and it will show up here.';
+      'Pídele a Rex en el chat o por voz que guarde algo y aparecerá aquí.';
 
   @override
   String get memoryHeaderEmptyBody =>
-      'Saved facts, people, and preferences from chat or voice will appear here.';
+      'Aquí aparecerán los datos, las personas y las preferencias guardadas desde el chat o la voz.';
 
   @override
-  String get memoryHeaderNoMatchingTitle => 'No matching information';
+  String get memoryHeaderNoMatchingTitle => 'No hay información coincidente';
 
   @override
-  String get memoryHeaderNoMatchingBody => 'Try another search or filter.';
+  String get memoryHeaderNoMatchingBody => 'Pruebe con otra búsqueda o filtro.';
 
   @override
-  String get memoryPagePersonUpdated => 'Person updated';
+  String get memoryPagePersonUpdated => 'Persona actualizada';
 
   @override
-  String get memoryPageRuleUpdated => 'Rule updated';
+  String get memoryPageRuleUpdated => 'Regla actualizada';
 
   @override
-  String get memoryPagePlanUpdated => 'Plan updated';
+  String get memoryPagePlanUpdated => 'Plan actualizado';
 
   @override
-  String get memoryPageCommitmentUpdated => 'Commitment updated';
+  String get memoryPageCommitmentUpdated => 'Compromiso actualizado';
 
   @override
-  String get memoryEditEditPersonTitle => 'Edit person';
+  String get memoryEditEditPersonTitle => 'Editar persona';
 
   @override
-  String get memoryEditEditRuleTitle => 'Edit rule';
+  String get memoryEditEditRuleTitle => 'Editar regla';
 
   @override
-  String get memoryEditEditPlanTitle => 'Edit plan';
+  String get memoryEditEditPlanTitle => 'Editar plan';
 
   @override
-  String get memoryEditEditCommitmentTitle => 'Edit commitment';
+  String get memoryEditEditCommitmentTitle => 'Editar compromiso';
 
   @override
-  String get memoryEditRuleTextLabel => 'Rule text';
+  String get memoryEditRuleTextLabel => 'Texto de regla';
 
   @override
-  String get memoryEditTriggerKeywordsLabel => 'Trigger keywords';
+  String get memoryEditTriggerKeywordsLabel => 'Palabras clave desencadenantes';
 
   @override
-  String get memoryEditDesiredOutcomeLabel => 'Desired outcome';
+  String get memoryEditDesiredOutcomeLabel => 'Resultado deseado';
 
   @override
-  String get memoryEditAliasesLabel => 'Aliases';
+  String get memoryEditAliasesLabel => 'Alias';
 
   @override
   String memoryArchiveNamedTitle(String label) {
-    return 'Archive $label?';
+    return '¿Archivo $label?';
   }
 
   @override
   String memoryArchiveStructuredBody(String label) {
-    return 'This $label will stop being used as active context. It will remain in information history.';
+    return 'Este $label dejará de usarse como contexto activo. Permanecerá en la historia de la información.';
   }
 
   @override
-  String get memoryDisplayLocation => 'Location';
+  String get memoryDisplayLocation => 'Ubicación';
 
   @override
-  String get memoryDisplayBirthday => 'Birthday';
+  String get memoryDisplayBirthday => 'Cumpleaños';
 
   @override
-  String get memoryDisplayJob => 'Job';
+  String get memoryDisplayJob => 'Trabajo';
 
   @override
-  String get memoryDisplayWorkplace => 'Workplace';
+  String get memoryDisplayWorkplace => 'Lugar de trabajo';
 
   @override
-  String get memoryDisplayImportantDate => 'Important date';
+  String get memoryDisplayImportantDate => 'fecha importante';
 
   @override
-  String get accountabilityAddGoalTitle => 'Add goal';
+  String get accountabilityAddGoalTitle => 'Añadir objetivo';
 
   @override
-  String get accountabilityAddCommitmentTitle => 'Add commitment';
+  String get accountabilityAddCommitmentTitle => 'Agregar compromiso';
 
   @override
-  String get accountabilityAddGoalPrimaryLabel => 'Goal title';
+  String get accountabilityAddGoalPrimaryLabel => 'Título del objetivo';
 
   @override
-  String get accountabilityAddCommitmentPrimaryLabel => 'Commitment title';
+  String get accountabilityAddCommitmentPrimaryLabel => 'Título del compromiso';
 
   @override
   String get accountabilityAddGoalPrimaryHint =>
-      'Build a reliable morning routine';
+      'Construya una rutina matutina confiable';
 
   @override
   String get accountabilityAddGoalDetailHint =>
-      'Wake up at 5 AM and start the day cleanly';
+      'Despierta a las 5 a.m. y comienza el día limpiamente';
 
   @override
-  String get accountabilityAddCommitmentPrimaryHint => 'Wake up at 5 AM';
+  String get accountabilityAddCommitmentPrimaryHint => 'Despierta a las 5 a.m.';
 
   @override
   String get accountabilityAddCommitmentDetailHint =>
-      'Wake up at 5 AM and start my morning routine';
+      'Despierto a las 5 a. m. y comienzo mi rutina matutina.';
 
   @override
-  String get accountabilityGoalSaved => 'Goal saved.';
+  String get accountabilityGoalSaved => 'Gol salvado.';
 
   @override
-  String get accountabilityCommitmentSaved => 'Commitment saved.';
+  String get accountabilityCommitmentSaved => 'Compromiso guardado.';
 
   @override
-  String get accountabilityCommitmentCompleted => 'Commitment completed.';
+  String get accountabilityCommitmentCompleted => 'Compromiso cumplido.';
 
   @override
-  String get accountabilityMarkMissedTitle => 'Mark missed?';
+  String get accountabilityMarkMissedTitle => '¿Mark falló?';
 
   @override
   String accountabilityMarkMissedBody(String title) {
-    return 'Mark \"$title\" as missed? It will leave your active Goals list.';
+    return '¿Marcar \"$title\" como perdido? Saldrá de su lista de objetivos activos.';
   }
 
   @override
-  String get accountabilityArchiveCommitmentTitle => 'Archive commitment?';
+  String get accountabilityArchiveCommitmentTitle => '¿Compromiso de archivo?';
 
   @override
   String accountabilityArchiveCommitmentBody(String title) {
-    return 'Archive \"$title\"? It will leave your active Goals list.';
+    return '¿Archivo \"$title\"? Saldrá de su lista de objetivos activos.';
   }
 
   @override
-  String get accountabilityArchiveGoalTitle => 'Archive goal?';
+  String get accountabilityArchiveGoalTitle => '¿Objetivo del archivo?';
 
   @override
   String accountabilityArchiveGoalBody(String title) {
-    return 'Archive \"$title\"? It will leave your active Goals list.';
+    return '¿Archivo \"$title\"? Saldrá de su lista de objetivos activos.';
   }
 
   @override
   String get accountabilityCommitmentMarkedMissed =>
-      'Commitment marked missed.';
+      'Compromiso marcado incumplido.';
 
   @override
-  String get accountabilityCommitmentArchived => 'Commitment archived.';
+  String get accountabilityCommitmentArchived => 'Compromiso archivado.';
 
   @override
-  String get accountabilityGoalArchived => 'Goal archived.';
+  String get accountabilityGoalArchived => 'Objetivo archivado.';
 
   @override
-  String get accountabilityGoalUpdated => 'Goal updated.';
+  String get accountabilityGoalUpdated => 'Objetivo actualizado.';
 
   @override
-  String get accountabilityCommitmentUpdated => 'Commitment updated.';
+  String get accountabilityCommitmentUpdated => 'Compromiso actualizado.';
 
   @override
-  String get accountabilityUpdateFailed => 'Goals update failed.';
+  String get accountabilityUpdateFailed => 'Error al actualizar los objetivos.';
 
   @override
-  String get accountabilityStatusOpen => 'Open';
+  String get accountabilityStatusOpen => 'Abierto';
 
   @override
-  String get accountabilityStatusInProgress => 'In progress';
+  String get accountabilityStatusInProgress => 'En curso';
 
   @override
   String conversationListEmptyFilteredTitle(String filter) {
-    return 'No chats in $filter';
+    return 'No hay chats en $filter';
   }
 
   @override
   String get conversationListEmptyFilteredMessage =>
-      'Clear the date filter or choose a wider range.';
+      'Borre el filtro de fechas o elija un rango más amplio.';
 
   @override
   String conversationListNoMatchesBody(String query, String suffix) {
-    return 'No chats matched \"$query\"$suffix';
+    return 'No hay chats coincidentes \"$query\"$suffix';
   }
 
   @override
   String conversationListNoMatchesSuffixInFilter(String filter) {
-    return ' in $filter';
+    return 'en $filter';
   }
 
   @override
@@ -2759,25 +2810,26 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String usageSummaryAiCallsCount(int count) {
-    return '$count AI calls';
+    return '$count llamadas de IA';
   }
 
   @override
   String usageSummaryAiCallsThisMonth(int count) {
-    return '$count AI calls this month';
+    return '$count Llamadas de IA este mes';
   }
 
   @override
-  String get usageAdminTitle => 'Usage administration';
+  String get usageAdminTitle => 'Administración de uso';
 
   @override
-  String get usageAdminSubtitle => 'All users · voice, chat, estimated cost';
+  String get usageAdminSubtitle =>
+      'Todos los usuarios · voz, chat, costo estimado';
 
   @override
-  String get usageAdminOwnerSection => 'Owner';
+  String get usageAdminOwnerSection => 'Dueño';
 
   @override
-  String get usageAdminPlatformThisMonth => 'Platform this month';
+  String get usageAdminPlatformThisMonth => 'Plataforma este mes';
 
   @override
   String usageAdminActiveUsersSummary(
@@ -2785,14 +2837,15 @@ class AppLocalizationsEs extends AppLocalizations {
     String voiceMinutes,
     int aiCalls,
   ) {
-    return '$activeUserCount active users · $voiceMinutes voice · $aiCalls AI calls';
+    return '$activeUserCount usuarios activos · $voiceMinutes voz · $aiCalls llamadas AI';
   }
 
   @override
-  String get usageAdminUsersSection => 'Users';
+  String get usageAdminUsersSection => 'Usuarios';
 
   @override
-  String get usageAdminNoUsageThisMonth => 'No usage recorded this month yet.';
+  String get usageAdminNoUsageThisMonth =>
+      'Aún no se ha registrado ningún uso este mes.';
 
   @override
   String usageAdminUserTileSummary(
@@ -2800,26 +2853,26 @@ class AppLocalizationsEs extends AppLocalizations {
     int chatCalls,
     int voiceCalls,
   ) {
-    return '$voiceMinutes voice · $chatCalls chat · $voiceCalls voice calls';
+    return '$voiceMinutes voz · $chatCalls chat · $voiceCalls llamadas de voz';
   }
 
   @override
-  String get usageAdminLoadingUserUsage => 'Loading user usage';
+  String get usageAdminLoadingUserUsage => 'Cargando uso del usuario';
 
   @override
-  String get usageAdminEstimatedCostThisMonth => 'Estimated cost this month';
+  String get usageAdminEstimatedCostThisMonth => 'Costo estimado este mes';
 
   @override
-  String get usageAdminUsageShape => 'Usage shape';
+  String get usageAdminUsageShape => 'Forma de uso';
 
   @override
-  String get usageAdminRadarVoiceMin => 'Voice min';
+  String get usageAdminRadarVoiceMin => 'Voz mínima';
 
   @override
   String get usageAdminRadarChatLlm => 'Chat LLM';
 
   @override
-  String get usageAdminRadarVoiceLlm => 'Voice LLM';
+  String get usageAdminRadarVoiceLlm => 'Voz LLM';
 
   @override
   String get usageAdminRadarSttMin => 'STT min';
@@ -2828,10 +2881,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get usageAdminRadarTtsMin => 'TTS min';
 
   @override
-  String get usageCostNotTracked => 'Not tracked';
+  String get usageCostNotTracked => 'No rastreado';
 
   @override
-  String get usageMinutesLessThanOne => '<1 min';
+  String get usageMinutesLessThanOne => '<1 minuto';
 
   @override
   String usageMinutesFormat(int minutes) {
@@ -2839,45 +2892,48 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get usageAdminLoadFailed => 'Could not load owner usage right now.';
+  String get usageAdminLoadFailed =>
+      'No se pudo cargar el uso del propietario en este momento.';
 
   @override
-  String get usageAdminUserLoadFailed => 'Could not load user usage history.';
+  String get usageAdminUserLoadFailed =>
+      'No se pudo cargar el historial de uso del usuario.';
 
   @override
-  String get usageSummaryLoadFailed => 'Could not load usage right now.';
+  String get usageSummaryLoadFailed =>
+      'No se pudo cargar el uso en este momento.';
 
   @override
   String get memoryErrorSignInAgain =>
-      'Please sign in again to manage saved information.';
+      'Inicie sesión nuevamente para administrar la información guardada.';
 
   @override
   String get memoryErrorNoLongerAvailable =>
-      'That memory is no longer available.';
+      'Esa memoria ya no está disponible.';
 
   @override
   String get memoryErrorEditValidation =>
-      'That memory change could not be saved. Check the fields and try again.';
+      'Ese cambio de memoria no se pudo guardar. Verifique los campos e inténtelo nuevamente.';
 
   @override
   String get memoryErrorArchiveRefresh =>
-      'That memory could not be archived. Refresh Memory and try again.';
+      'Ese recuerdo no se pudo archivar. Actualiza la memoria y vuelve a intentarlo.';
 
   @override
   String get memoryErrorLoadRefresh =>
-      'Could not load saved information. Refresh and try again.';
+      'No se pudo cargar la información guardada. Actualiza e inténtalo de nuevo.';
 
   @override
   String get memoryErrorLoadConnection =>
-      'Could not load saved information. Check your connection and try again.';
+      'No se pudo cargar la información guardada. Comprueba tu conexión y vuelve a intentarlo.';
 
   @override
   String get memoryErrorUpdateFailed =>
-      'Could not update this memory. Please try again.';
+      'No se pudo actualizar esta memoria. Por favor inténtalo de nuevo.';
 
   @override
   String get memoryErrorArchiveFailed =>
-      'Could not archive this memory. Please try again.';
+      'No se pudo archivar esta memoria. Por favor inténtalo de nuevo.';
 
   @override
   String get serviceErrorGeneric => 'Algo salió mal. Inténtalo de nuevo.';

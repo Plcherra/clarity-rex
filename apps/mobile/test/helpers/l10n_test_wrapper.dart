@@ -27,3 +27,8 @@ Widget wrapWithL10n(
     home: child,
   );
 }
+
+/// Spanish smoke-test wrapper (Phase L1).
+Widget wrapWithSpanishL10n(Widget child) {
+  return wrapWithL10n(child, locale: const Locale('es'));
+}

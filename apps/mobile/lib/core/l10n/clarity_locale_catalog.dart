@@ -29,6 +29,7 @@ abstract final class ClarityLocaleCatalog {
     ClarityLocaleSpec(
       locale: Locale('es'),
       nativeLabel: 'Español',
+      enabled: true,
       arbFile: 'app_es.arb',
     ),
     ClarityLocaleSpec(

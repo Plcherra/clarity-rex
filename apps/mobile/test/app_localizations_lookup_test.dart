@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('lookupForLocale falls back disabled es to en', () {
+  test('lookupForLocale returns Spanish for es locale', () {
     final l10n = lookupForLocale(const Locale('es'));
-    expect(l10n.profileLanguage, 'Language');
+    expect(l10n.profileLanguage, 'Idioma');
   });
 
-  test('lookupForLocaleTag resolves pt-BR catalog entry', () {
+  test('lookupForLocaleTag falls back pt-BR to English gen-l10n', () {
     final l10n = lookupForLocaleTag('pt-BR');
     expect(l10n.profileLanguage, 'Language');
   });

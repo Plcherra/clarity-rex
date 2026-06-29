@@ -34,14 +34,25 @@ void main() {
       );
     });
 
-    test('resolveLocale falls back to en for disabled es when enabledOnly is true',
-        () {
+    test('resolveLocale maps Spanish device locales to es when enabled', () {
       expect(
         ClarityLocaleCatalog.resolveLocale(const Locale('es')),
-        const Locale('en'),
+        const Locale('es'),
       );
       expect(
         ClarityLocaleCatalog.resolveLocale(const Locale('es', 'MX')),
+        const Locale('es'),
+      );
+    });
+
+    test('resolveLocale falls back to en for disabled locales when enabledOnly',
+        () {
+      expect(
+        ClarityLocaleCatalog.resolveLocale(const Locale('fr')),
+        const Locale('en'),
+      );
+      expect(
+        ClarityLocaleCatalog.resolveLocale(const Locale('pt', 'BR')),
         const Locale('en'),
       );
     });
@@ -52,21 +63,25 @@ void main() {
         'pt-BR',
       );
       expect(ClarityLocaleCatalog.localeTagFor(const Locale('en')), 'en');
+      expect(ClarityLocaleCatalog.localeTagFor(const Locale('es')), 'es');
     });
 
-    test('enabledLocales contains English only', () {
-      expect(ClarityLocaleCatalog.enabledLocales, [const Locale('en')]);
+    test('enabledLocales contains English and Spanish', () {
+      expect(
+        ClarityLocaleCatalog.enabledLocales,
+        [const Locale('en'), const Locale('es')],
+      );
     });
   });
 
   group('LocaleController', () {
-    test('load uses English when device locale is disabled', () async {
+    test('load uses Spanish when device locale is Spanish', () async {
       final controller = LocaleController(preferences: _preferences());
 
       await controller.load(deviceLocale: const Locale('es', 'MX'));
 
-      expect(controller.languageCode, 'en');
-      expect(controller.localeTag, 'en');
+      expect(controller.languageCode, 'es');
+      expect(controller.localeTag, 'es');
       expect(controller.usedDeviceDefaultOnLoad, isTrue);
     });
 
@@ -81,14 +96,14 @@ void main() {
       expect(controller.usedDeviceDefaultOnLoad, isFalse);
     });
 
-    test('load applies saved enabled locale tag', () async {
+    test('load applies saved Spanish locale tag', () async {
       final controller = LocaleController(
-        preferences: _preferences(initial: {'clarity.locale': 'en'}),
+        preferences: _preferences(initial: {'clarity.locale': 'es'}),
       );
 
-      await controller.load(deviceLocale: const Locale('es'));
+      await controller.load(deviceLocale: const Locale('en'));
 
-      expect(controller.localeTag, 'en');
+      expect(controller.localeTag, 'es');
     });
 
     test(
@@ -99,10 +114,10 @@ void main() {
         await controller.load(deviceLocale: const Locale('en'));
 
         await controller.resolveAfterProfileHydrate(
-          profilePreferredLocale: 'en',
+          profilePreferredLocale: 'es',
         );
 
-        expect(controller.localeTag, 'en');
+        expect(controller.localeTag, 'es');
       },
     );
 
@@ -111,7 +126,7 @@ void main() {
       final controller = LocaleController(preferences: prefs);
       await controller.load(deviceLocale: const Locale('en'));
 
-      await controller.resolveAfterProfileHydrate(profilePreferredLocale: 'es');
+      await controller.resolveAfterProfileHydrate(profilePreferredLocale: 'fr');
 
       expect(controller.localeTag, 'en');
       expect(await prefs.getString('clarity.locale'), 'en');
@@ -128,7 +143,7 @@ void main() {
         },
       );
 
-      expect(seededTag, 'en');
+      expect(seededTag, 'es');
     });
 
     test('setLocale persists tag and notifies profile persistence', () async {
@@ -140,11 +155,11 @@ void main() {
         persistedTag = tag;
       });
 
-      await controller.setLocale(const Locale('en'));
+      await controller.setLocale(const Locale('es'));
 
-      expect(controller.localeTag, 'en');
-      expect(await prefs.getString('clarity.locale'), 'en');
-      expect(persistedTag, isEmpty);
+      expect(controller.localeTag, 'es');
+      expect(await prefs.getString('clarity.locale'), 'es');
+      expect(persistedTag, 'es');
     });
 
     test('setLocale ignores disabled locales', () async {
@@ -152,7 +167,7 @@ void main() {
       final controller = LocaleController(preferences: prefs);
       await controller.load(deviceLocale: const Locale('en'));
 
-      await controller.setLocale(const Locale('es'));
+      await controller.setLocale(const Locale('fr'));
 
       expect(controller.localeTag, 'en');
       expect(await prefs.getString('clarity.locale'), 'en');
