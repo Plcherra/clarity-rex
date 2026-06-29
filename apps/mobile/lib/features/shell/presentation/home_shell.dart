@@ -51,6 +51,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    widget.authController.bindLocalizations(context.l10n);
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -78,16 +84,20 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     try {
       final result = await widget.ui.accounts.connectBank();
       if (!mounted) return;
+      final l10n = context.l10n;
       final message = switch (result) {
         PlaidConnectionSuccess(:final institutionName, :final accountsSynced) =>
-          'Bank connected successfully: ${institutionName ?? 'your bank'}'
-              '${accountsSynced > 0 ? ' and synced $accountsSynced account${accountsSynced == 1 ? '' : 's'}' : ''}.',
+          l10n.homeShellBankConnectedSuccess(
+            institutionName ?? l10n.homeShellBankConnectedYourBank,
+            accountsSynced > 0
+                ? l10n.homeShellBankConnectedAccountsSynced(accountsSynced)
+                : '',
+          ),
         PlaidConnectionExit(:final errorCode) when errorCode != null =>
-          'Bank connection stopped before it finished. You can try again. ($errorCode)',
+          l10n.homeShellBankConnectionStoppedWithCode(errorCode),
         PlaidConnectionExit(:final status) when status != null =>
-          'Bank connection stopped before it finished. Plaid status: $status.',
-        PlaidConnectionExit() =>
-          'Bank connection cancelled. No account was added.',
+          l10n.homeShellBankConnectionStoppedWithStatus(status),
+        PlaidConnectionExit() => l10n.homeShellBankConnectionCancelled,
       };
       if (result is PlaidConnectionSuccess) {
         widget.ui.notifyDataChanged();
@@ -103,7 +113,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     } on Object {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open bank connection.')),
+        SnackBar(content: Text(context.l10n.homeShellBankConnectionOpenFailed)),
       );
     }
   }
@@ -152,6 +162,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         profileController: widget.profileController,
         authController: widget.authController,
         themeModeController: widget.themeModeController,
+        localeController: widget.localeController,
         signOut: widget.signOut,
       ),
     ];

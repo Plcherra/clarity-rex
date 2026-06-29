@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
+import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_message_bubble.dart';
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
@@ -27,11 +29,12 @@ class ChatTranscript extends StatelessWidget {
   final ValueChanged<ClarityActionCard> onDismissClarityAction;
   final VoiceCallState? voiceState;
 
-  static const _welcomeMessage =
-      "I'm Rex. Tell me what's happening, what changed, or what you want me to remember.";
+  static String welcomeMessage(AppLocalizations l10n) =>
+      l10n.chatTranscriptWelcomeMessage;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final hasMessages = messages.isNotEmpty;
     final showVoiceTranscript =
         voiceState != null && !voiceState!.isIdle;
@@ -59,7 +62,7 @@ class ChatTranscript extends StatelessWidget {
               delegate: SliverChildListDelegate([
                 if (!hasMessages)
                   _EmptyChatState(
-                    welcomeMessage: _welcomeMessage,
+                    welcomeMessage: welcomeMessage(l10n),
                     onPromptSelected: onPromptSelected,
                   )
                 else
@@ -108,16 +111,17 @@ class _EmptyChatState extends StatelessWidget {
   final String welcomeMessage;
   final ValueChanged<String> onPromptSelected;
 
-  static const _prompts = [
-    'What should I remember?',
-    'Help me think through tonight.',
-    'Check what Clarity knows.',
+  static List<String> prompts(AppLocalizations l10n) => [
+    l10n.chatTranscriptPromptRemember,
+    l10n.chatTranscriptPromptThinkTonight,
+    l10n.chatTranscriptPromptCheckKnows,
   ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     final compact = MediaQuery.sizeOf(context).height < 650;
 
     return Padding(
@@ -128,7 +132,7 @@ class _EmptyChatState extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Rex is ready',
+              l10n.chatTranscriptReadyTitle,
               style: theme.textTheme.headlineSmall?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w900,
@@ -149,7 +153,7 @@ class _EmptyChatState extends StatelessWidget {
             Wrap(
               spacing: RexUiTokens.space8,
               runSpacing: RexUiTokens.space8,
-              children: _prompts
+              children: prompts(l10n)
                   .map(
                     (prompt) => ActionChip(
                       label: Text(prompt),

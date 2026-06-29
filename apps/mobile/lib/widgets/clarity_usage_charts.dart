@@ -1,7 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/theme/clarity_colors.dart';
+
+import '../core/l10n/app_l10n.dart';
 
 class VoiceUsageDailyLineChart extends StatelessWidget {
   const VoiceUsageDailyLineChart({
@@ -16,7 +19,7 @@ class VoiceUsageDailyLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (values.isEmpty) {
-      return const _ChartEmpty(message: 'No daily voice usage yet.');
+      return _ChartEmpty(message: context.l10n.usageChartNoDailyVoiceUsage);
     }
 
     final colors = context.clarityColors;
@@ -115,7 +118,9 @@ class UsageRadarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (values.isEmpty || titles.length != values.length) {
-      return const _ChartEmpty(message: 'Not enough usage data for radar chart.');
+      return _ChartEmpty(
+        message: context.l10n.usageChartNotEnoughRadarData,
+      );
     }
 
     final colors = context.clarityColors;
@@ -181,7 +186,7 @@ class UsageDailyBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (values.isEmpty) {
-      return const _ChartEmpty(message: 'No daily call data yet.');
+      return _ChartEmpty(message: context.l10n.usageChartNoDailyCallData);
     }
 
     final colors = context.clarityColors;
@@ -283,7 +288,15 @@ double _labelInterval(int count) {
   return (count / 6).ceilToDouble();
 }
 
-String shortDayLabel(DateTime date) {
-  const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  return names[date.weekday - 1];
+String shortDayLabel(AppLocalizations l10n, DateTime date) {
+  return switch (date.weekday) {
+    DateTime.monday => l10n.usageChartDayMon,
+    DateTime.tuesday => l10n.usageChartDayTue,
+    DateTime.wednesday => l10n.usageChartDayWed,
+    DateTime.thursday => l10n.usageChartDayThu,
+    DateTime.friday => l10n.usageChartDayFri,
+    DateTime.saturday => l10n.usageChartDaySat,
+    DateTime.sunday => l10n.usageChartDaySun,
+    _ => l10n.usageChartDayMon,
+  };
 }

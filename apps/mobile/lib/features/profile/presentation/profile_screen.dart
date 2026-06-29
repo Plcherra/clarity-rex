@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/l10n/app_l10n.dart';
+import '../../../core/l10n/clarity_locale_catalog.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/presentation/mfa_enrollment_screen.dart';
+import '../application/locale_controller.dart';
 import '../application/profile_controller.dart';
 import '../application/theme_mode_controller.dart';
 import 'usage_summary_screen.dart';
@@ -16,12 +18,14 @@ final class ProfileScreen extends StatelessWidget {
     required this.profileController,
     required this.authController,
     required this.themeModeController,
+    required this.localeController,
     this.signOut,
   });
 
   final ProfileController profileController;
   final AuthController authController;
   final ThemeModeController themeModeController;
+  final LocaleController localeController;
   final Future<void> Function()? signOut;
 
   Future<void> _openMfaSettings(BuildContext context) async {
@@ -84,21 +88,81 @@ final class ProfileScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _openLanguage(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ListenableBuilder(
+            listenable: localeController,
+            builder: (context, _) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.l10n.profileLanguage,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    for (final supported in localeController.enabledLocales)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(localeController.labelFor(supported)),
+                        trailing:
+                            localeController.localeTag ==
+                                ClarityLocaleCatalog.localeTagFor(supported)
+                            ? const Icon(Icons.check_rounded)
+                            : null,
+                        onTap: () async {
+                          await localeController.setLocale(supported);
+                          if (sheetContext.mounted) {
+                            Navigator.of(sheetContext).pop();
+                          }
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  context.l10n.profileLanguageUpdated(
+                                    localeController.labelFor(supported),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _editName(BuildContext context) async {
+    final l10n = context.l10n;
     final currentName = profileController.profile?.fullName?.trim() ?? '';
     final controller = TextEditingController(text: currentName);
     try {
       final nextName = await showDialog<String>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Edit profile name'),
+          title: Text(l10n.profileEditNameTitle),
           content: TextField(
             controller: controller,
             autofocus: true,
             textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              labelText: 'Full name',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.authFullNameLabel,
+              border: const OutlineInputBorder(),
             ),
             onSubmitted: (value) {
               Navigator.of(dialogContext).pop(value.trim());
@@ -107,13 +171,13 @@ final class ProfileScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
+              child: Text(l10n.commonCancel),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop(controller.text.trim());
               },
-              child: const Text('Save'),
+              child: Text(l10n.commonSave),
             ),
           ],
         ),
@@ -123,15 +187,15 @@ final class ProfileScreen extends StatelessWidget {
       }
       await profileController.updateCurrentProfile(fullName: nextName);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Profile updated.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.profileUpdatedSnackBar)),
+      );
     } on Object {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            profileController.errorMessage ?? 'Could not update profile.',
+            profileController.errorMessage ?? l10n.profileUpdateFailed,
           ),
         ),
       );
@@ -143,19 +207,20 @@ final class ProfileScreen extends StatelessWidget {
   Future<void> _confirmSignOut(BuildContext context) async {
     final handler = signOut;
     if (handler == null) return;
+    final l10n = context.l10n;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Sign out?'),
-        content: const Text('You can sign back in when you are ready.'),
+        title: Text(l10n.profileSignOutTitle),
+        content: Text(l10n.profileSignOutBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Sign out'),
+            child: Text(l10n.commonSignOut),
           ),
         ],
       ),
@@ -167,6 +232,7 @@ final class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ListenableBuilder(
       listenable: profileController,
       builder: (context, _) {
@@ -178,7 +244,7 @@ final class ProfileScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: Theme.of(context).colorScheme.surface,
           appBar: AppBar(
-            title: const Text('Profile'),
+            title: Text(l10n.profileScreenTitle),
             backgroundColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,
             elevation: 0,
@@ -187,46 +253,48 @@ final class ProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
             children: [
               _ProfileHeader(
-                name: name == null || name.isEmpty ? 'Clarity user' : name,
+                name: name == null || name.isEmpty
+                    ? l10n.profileDefaultUserName
+                    : name,
                 email: email,
               ),
               const SizedBox(height: 18),
-              const _ProfileSectionLabel('Account'),
+              _ProfileSectionLabel(l10n.profileAccountSection),
               const SizedBox(height: 8),
               _ProfileActionGroup(
                 children: [
                   _ProfileActionTile(
                     icon: Icons.badge_outlined,
-                    title: 'Profile name',
+                    title: l10n.profileNameTitle,
                     subtitle: name == null || name.isEmpty
-                        ? 'Add your name'
+                        ? l10n.profileAddYourName
                         : name,
                     onTap: () => _editName(context),
                   ),
                   _ProfileActionTile(
                     icon: Icons.verified_user_outlined,
-                    title: 'Multi-factor authentication',
-                    subtitle: 'Authenticator app setup and security options',
+                    title: l10n.profileMfaTitle,
+                    subtitle: l10n.profileMfaSubtitle,
                     onTap: () => _openMfaSettings(context),
                   ),
                 ],
               ),
               const SizedBox(height: 18),
-              const _ProfileSectionLabel('Rex and voice'),
+              _ProfileSectionLabel(l10n.profileRexVoiceSection),
               const SizedBox(height: 8),
               _ProfileActionGroup(
                 children: [
                   _ProfileActionTile(
                     icon: Icons.graphic_eq_rounded,
-                    title: 'Voice usage',
-                    subtitle: 'Minutes today, this week, and this month',
+                    title: l10n.profileVoiceUsageTitle,
+                    subtitle: l10n.profileVoiceUsageSubtitle,
                     onTap: () => _openUsage(context),
                   ),
                 ],
               ),
               const OwnerUsageProfileEntry(),
               const SizedBox(height: 18),
-              _ProfileSectionLabel(context.l10n.profileAppearance),
+              _ProfileSectionLabel(l10n.profileAppearance),
               const SizedBox(height: 8),
               ListenableBuilder(
                 listenable: themeModeController,
@@ -235,8 +303,11 @@ final class ProfileScreen extends StatelessWidget {
                     children: [
                       _ProfileActionTile(
                         icon: Icons.contrast_rounded,
-                        title: context.l10n.profileAppearance,
-                        subtitle: themeModeController.label,
+                        title: l10n.profileAppearance,
+                        subtitle: _themeModeLabel(
+                          context,
+                          themeModeController.themeMode,
+                        ),
                         onTap: () => _openAppearance(context),
                       ),
                     ],
@@ -244,28 +315,33 @@ final class ProfileScreen extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 18),
-              _ProfileSectionLabel(context.l10n.profileLanguage),
+              _ProfileSectionLabel(l10n.profileLanguage),
               const SizedBox(height: 8),
-              _ProfileActionGroup(
-                children: [
-                  _ProfileActionTile(
-                    icon: Icons.translate_rounded,
-                    title: context.l10n.profileLanguage,
-                    subtitle: context.l10n.profileLanguageComingSoon,
-                    onTap: () {},
-                  ),
-                ],
+              ListenableBuilder(
+                listenable: localeController,
+                builder: (context, _) {
+                  return _ProfileActionGroup(
+                    children: [
+                      _ProfileActionTile(
+                        icon: Icons.translate_rounded,
+                        title: l10n.profileLanguage,
+                        subtitle: localeController.label,
+                        onTap: () => _openLanguage(context),
+                      ),
+                    ],
+                  );
+                },
               ),
               if (signOut != null) ...[
                 const SizedBox(height: 18),
-                const _ProfileSectionLabel('Session'),
+                _ProfileSectionLabel(l10n.profileSessionSection),
                 const SizedBox(height: 8),
                 _ProfileActionGroup(
                   children: [
                     _ProfileActionTile(
                       icon: Icons.logout_rounded,
-                      title: 'Sign out',
-                      subtitle: 'Leave this device signed out of Clarity',
+                      title: l10n.commonSignOut,
+                      subtitle: l10n.profileSignOutSubtitle,
                       destructive: true,
                       onTap: () => _confirmSignOut(context),
                     ),
@@ -324,7 +400,7 @@ final class _ProfileHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Clarity profile',
+                  context.l10n.profileHeaderLabel,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.48),
                     fontWeight: FontWeight.w800,

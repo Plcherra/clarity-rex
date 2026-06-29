@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/l10n/app_locale.dart';
 import '../core/l10n/app_l10n.dart';
 import '../core/l10n/clarity_material_app.dart';
 import '../features/auth/application/auth_controller.dart';
@@ -17,12 +18,12 @@ import '../rex/chat/application/chat_controller.dart';
 import '../rex/chat/data/chat_api.dart';
 import '../rex/data/financial_context_service.dart';
 import '../rex/voice/application/voice_call_controller_providers.dart';
+import '../rex/voice/data/cloud_voice_api.dart';
 import '../rex/voice/data/streaming_voice_api.dart';
 import '../widgets/clarity_diamond_loader.dart';
 import 'ui_dependencies.dart';
 
-export 'package:clarity/features/profile/application/locale_controller.dart'
-    show localeControllerProvider;
+export '../core/l10n/app_locale.dart' show AppLocale, localeControllerProvider;
 
 final class ClarityApp extends StatelessWidget {
   const ClarityApp({
@@ -54,18 +55,26 @@ final class ClarityApp extends StatelessWidget {
         localeControllerProvider.overrideWithValue(localeController),
         chatApiProvider.overrideWith(
           (ref) => ChatApi(
-            resolveLocale: () => ref.read(localeControllerProvider).languageCode,
+            resolveLocale: () =>
+                AppLocale.rexLocaleTag(ref.read(localeControllerProvider)),
           ),
         ),
         streamingVoiceApiProvider.overrideWith(
           (ref) => StreamingVoiceApi(
-            resolveLocale: () => ref.read(localeControllerProvider).languageCode,
+            resolveLocale: () =>
+                AppLocale.rexLocaleTag(ref.read(localeControllerProvider)),
+          ),
+        ),
+        cloudVoiceApiProvider.overrideWith(
+          (ref) => CloudVoiceApi(
+            resolveLocale: () =>
+                AppLocale.rexLocaleTag(ref.read(localeControllerProvider)),
           ),
         ),
         actionResultMessageFormatterProvider.overrideWith(
           (ref) {
-            final languageCode = ref.watch(localeControllerProvider).languageCode;
-            final l10n = lookupAppLocalizations(Locale(languageCode));
+            final locale = ref.watch(localeControllerProvider).locale;
+            final l10n = lookupAppLocalizations(locale);
             return (action, result) =>
                 actionResultMessage(l10n, action, result);
           },

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart'
     show ChatState;
@@ -103,7 +104,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
 
     if (voiceWasActive) {
       final voiceLabel = message.trim().isEmpty && attachment != null
-          ? 'Sending image…'
+          ? context.l10n.chatPageSendingImage
           : message;
       voiceController.beginTypedTextTurn(voiceLabel);
     }
@@ -136,7 +137,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
     );
 
     final errorMessage =
-        ref.read(chatProvider).errorMessage ?? 'Could not send message.';
+        ref.read(chatProvider).errorMessage ?? context.l10n.chatPageSendFailed;
     if (attachment != null) {
       setState(() => _attachmentError = errorMessage);
     }
@@ -201,9 +202,9 @@ class _ChatPageState extends ConsumerState<ChatPage>
         _attachmentPreviewBytes = null;
         _attachmentName = file.name;
         _attachmentSize = file.size;
-        _attachmentError = 'Could not read selected file.';
+        _attachmentError = context.l10n.chatPageReadFileFailed;
       });
-      _showSnackBar('Could not read selected file.');
+      _showSnackBar(context.l10n.chatPageReadFileFailed);
       return;
     }
 
@@ -303,7 +304,8 @@ class _ChatPageState extends ConsumerState<ChatPage>
     }
     if (!started) {
       final error =
-          ref.read(voiceCallProvider).errorMessage ?? 'Could not start Rex.';
+          ref.read(voiceCallProvider).errorMessage ??
+          context.l10n.chatPageStartVoiceFailed;
       _showSnackBar(error);
       return;
     }
@@ -352,11 +354,12 @@ class _ChatPageState extends ConsumerState<ChatPage>
     final voiceCall = ref.watch(voiceCallProvider);
     final voiceController = ref.read(voiceCallProvider.notifier);
     final currentConversation = ref.watch(currentConversationProvider);
+    final l10n = context.l10n;
 
     return RexScaffold(
       appBar: widget.showAppBar
           ? AppBar(
-              title: Text(currentConversation?.title ?? 'Rex'),
+              title: Text(currentConversation?.title ?? l10n.chatPageDefaultTitle),
               actions: [
                 IconButton(
                   onPressed: _startVoiceCall,
@@ -366,8 +369,8 @@ class _ChatPageState extends ConsumerState<ChatPage>
                         : Icons.call_rounded,
                   ),
                   tooltip: voiceCall.isCallActive
-                      ? 'Show voice call'
-                      : 'Call Rex',
+                      ? l10n.chatPageShowVoiceCallTooltip
+                      : l10n.chatPageCallRexTooltip,
                 ),
               ],
             )

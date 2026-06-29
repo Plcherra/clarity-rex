@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../../core/l10n/app_l10n.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_button.dart';
 import '../../../widgets/clarity_card.dart';
@@ -30,6 +31,12 @@ final class _MfaEnrollmentScreenState extends State<MfaEnrollmentScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    widget.controller.bindLocalizations(context.l10n);
+  }
+
+  @override
   void dispose() {
     _codeController.dispose();
     super.dispose();
@@ -47,24 +54,25 @@ final class _MfaEnrollmentScreenState extends State<MfaEnrollmentScreen> {
       return;
     }
 
+    final l10n = context.l10n;
     final factorCount = widget.controller.mfaFactors.length;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Turn off MFA?'),
+        title: Text(l10n.mfaEnrollmentTurnOffTitle),
         content: Text(
           factorCount <= 1
-              ? 'Your account will no longer ask for an authenticator code after password sign-in.'
-              : 'This removes all $factorCount authenticator apps. Your account will no longer ask for an authenticator code after password sign-in.',
+              ? l10n.mfaEnrollmentTurnOffBodySingle
+              : l10n.mfaEnrollmentTurnOffBodyMultiple(factorCount),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Turn off'),
+            child: Text(l10n.mfaEnrollmentTurnOff),
           ),
         ],
       ),
@@ -78,7 +86,7 @@ final class _MfaEnrollmentScreenState extends State<MfaEnrollmentScreen> {
     final code = _codeController.text.replaceAll(RegExp(r'\D'), '');
     setState(() => _localError = null);
     if (code.length != 6) {
-      setState(() => _localError = 'Enter the 6-digit code.');
+      setState(() => _localError = context.l10n.mfaEnterSixDigitCode);
       return;
     }
     await widget.controller.verifyMfaEnrollment(code: code);
@@ -87,27 +95,26 @@ final class _MfaEnrollmentScreenState extends State<MfaEnrollmentScreen> {
   Future<void> _copy(String text, String label) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$label copied.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.commonCopiedLabel(label))),
+    );
   }
 
   Future<void> _confirmUnenroll(MfaFactorSummary factor) async {
+    final l10n = context.l10n;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Remove MFA?'),
-        content: Text(
-          'Remove ${factor.name}? You can enroll another authenticator app later.',
-        ),
+        title: Text(l10n.mfaEnrollmentRemoveTitle),
+        content: Text(l10n.mfaEnrollmentRemoveBody(factor.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Remove'),
+            child: Text(l10n.commonRemove),
           ),
         ],
       ),
@@ -126,10 +133,11 @@ final class _MfaEnrollmentScreenState extends State<MfaEnrollmentScreen> {
         final enrollment = controller.pendingMfaEnrollment;
         final theme = Theme.of(context);
         final cs = theme.colorScheme;
+        final l10n = context.l10n;
         final error = _localError ?? controller.mfaErrorMessage;
 
         return Scaffold(
-          appBar: AppBar(title: const Text('Multi-factor authentication')),
+          appBar: AppBar(title: Text(l10n.mfaEnrollmentAppBarTitle)),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
             children: [
@@ -142,7 +150,7 @@ final class _MfaEnrollmentScreenState extends State<MfaEnrollmentScreen> {
               const SizedBox(height: 14),
               if (controller.mfaFactors.isNotEmpty) ...[
                 Text(
-                  'Authenticator apps',
+                  l10n.mfaEnrollmentAuthenticatorApps,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -164,9 +172,14 @@ final class _MfaEnrollmentScreenState extends State<MfaEnrollmentScreen> {
                   codeController: _codeController,
                   isLoading: controller.isMfaLoading,
                   onVerify: _verifyEnrollment,
-                  onCopySecret: () =>
-                      _copy(enrollment.secret, 'Manual setup key'),
-                  onCopyUri: () => _copy(enrollment.uri, 'Authenticator URI'),
+                  onCopySecret: () => _copy(
+                    enrollment.secret,
+                    l10n.mfaEnrollmentManualSetupKeyCopyLabel,
+                  ),
+                  onCopyUri: () => _copy(
+                    enrollment.uri,
+                    l10n.mfaEnrollmentAuthenticatorUriCopyLabel,
+                  ),
                 ),
               if (error != null && error.isNotEmpty) ...[
                 const SizedBox(height: 14),
@@ -215,6 +228,7 @@ final class _SecurityStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     return ClarityCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -229,7 +243,7 @@ final class _SecurityStatusCard extends StatelessWidget {
               color: enabled ? ClarityColors.financePositive : cs.primary,
             ),
             title: Text(
-              enabled ? 'MFA is on' : 'MFA is off',
+              enabled ? l10n.mfaEnrollmentMfaOn : l10n.mfaEnrollmentMfaOff,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
@@ -238,8 +252,8 @@ final class _SecurityStatusCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             enabled
-                ? 'Your account requires an authenticator code after password sign-in.'
-                : 'Add an authenticator app to protect your financial workspace.',
+                ? l10n.mfaEnrollmentMfaOnDescription
+                : l10n.mfaEnrollmentMfaOffDescription,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: cs.onSurfaceVariant,
             ),
@@ -247,13 +261,13 @@ final class _SecurityStatusCard extends StatelessWidget {
           const SizedBox(height: 14),
           if (enabled)
             ClarityButton.outlined(
-              label: 'Add another app',
+              label: l10n.mfaEnrollmentAddAnotherApp,
               onPressed: isLoading ? null : onEnroll,
               icon: const Icon(Icons.add_moderator_outlined),
             )
           else
             ClarityButton.filled(
-              label: 'Turn on MFA',
+              label: l10n.mfaEnrollmentTurnOnMfa,
               onPressed: isLoading ? null : () => onChanged(true),
               icon: const Icon(Icons.add_moderator_outlined),
             ),
@@ -284,20 +298,21 @@ final class _EnrollmentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     return ClarityCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Set up authenticator app',
+            l10n.mfaEnrollmentSetupTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Scan this QR code in 1Password, Google Authenticator, Authy, or another TOTP app.',
+            l10n.mfaEnrollmentSetupInstructions,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: cs.onSurfaceVariant,
             ),
@@ -330,7 +345,7 @@ final class _EnrollmentCard extends StatelessWidget {
           TextButton.icon(
             onPressed: onCopyUri,
             icon: const Icon(Icons.copy_rounded),
-            label: const Text('Copy authenticator URI'),
+            label: Text(l10n.mfaEnrollmentCopyAuthenticatorUri),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -342,11 +357,11 @@ final class _EnrollmentCard extends StatelessWidget {
               LengthLimitingTextInputFormatter(6),
             ],
             onSubmitted: (_) => onVerify(),
-            decoration: const InputDecoration(labelText: '6-digit code'),
+            decoration: InputDecoration(labelText: l10n.mfaEnrollmentCodeLabel),
           ),
           const SizedBox(height: 14),
           ClarityButton.filled(
-            label: 'Enable MFA',
+            label: l10n.mfaEnrollmentEnableMfa,
             onPressed: isLoading ? null : onVerify,
             icon: const Icon(Icons.verified_rounded),
             isLoading: isLoading,
@@ -368,6 +383,7 @@ final class _SecretRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     return ClarityCard(
       padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
       backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.45),
@@ -379,7 +395,7 @@ final class _SecretRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Manual setup key',
+                  l10n.mfaEnrollmentManualSetupKey,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: cs.onSurfaceVariant,
                     fontWeight: FontWeight.w700,
@@ -397,7 +413,7 @@ final class _SecretRow extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Copy manual setup key',
+            tooltip: l10n.mfaEnrollmentCopyManualSetupKeyTooltip,
             onPressed: onCopy,
             icon: const Icon(Icons.copy_rounded),
           ),
@@ -422,14 +438,15 @@ final class _FactorTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     return ClarityCard(
       padding: EdgeInsets.zero,
       child: ListTile(
         leading: const Icon(Icons.phonelink_lock_rounded),
         title: Text(factor.name),
-        subtitle: Text('Added ${_shortDate(factor.createdAt)}'),
+        subtitle: Text(l10n.commonAddedDate(_shortDate(factor.createdAt))),
         trailing: IconButton(
-          tooltip: 'Remove authenticator app',
+          tooltip: l10n.mfaEnrollmentRemoveAuthenticatorTooltip,
           onPressed: isBusy ? null : onRemove,
           icon: const Icon(Icons.delete_outline_rounded),
         ),
@@ -460,7 +477,7 @@ final class _RecoveryNotice extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Supabase Auth does not provide recovery codes for TOTP. Add a second authenticator app as a backup before removing your only factor.',
+              context.l10n.mfaEnrollmentRecoveryNotice,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: cs.onSurfaceVariant,
               ),

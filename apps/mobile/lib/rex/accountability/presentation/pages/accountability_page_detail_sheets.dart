@@ -13,6 +13,7 @@ Future<void> _showPlanDetailSheet(
   onSave,
   required Future<void> Function() onArchive,
 }) async {
+  final l10n = context.l10n;
   final titleController = TextEditingController(text: plan.title);
   final notesController = TextEditingController(text: planSubtitle(plan) ?? '');
   var priority = plan.priority;
@@ -35,7 +36,7 @@ Future<void> _showPlanDetailSheet(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Goal details',
+                  l10n.accountabilityDetailGoalDetails,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: colors.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -44,16 +45,16 @@ Future<void> _showPlanDetailSheet(
                 const SizedBox(height: 16),
                 TextField(
                   controller: titleController,
-                  decoration: const InputDecoration(labelText: 'Title'),
+                  decoration: InputDecoration(labelText: l10n.commonTitle),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: notesController,
                   minLines: 2,
                   maxLines: 4,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes',
-                    hintText: 'Why this matters',
+                  decoration: InputDecoration(
+                    labelText: l10n.commonNotes,
+                    hintText: l10n.accountabilityDetailNotesHint,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -70,10 +71,10 @@ Future<void> _showPlanDetailSheet(
                 const SizedBox(height: 12),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Due date'),
+                  title: Text(l10n.commonDueDate),
                   subtitle: Text(
                     targetDate == null
-                        ? 'Not set'
+                        ? l10n.commonNotSet
                         : _shortDate(targetDate!),
                   ),
                   trailing: IconButton(
@@ -100,7 +101,7 @@ Future<void> _showPlanDetailSheet(
                         await onArchive();
                       },
                       child: Text(
-                        'Archive',
+                        l10n.commonArchive,
                         style: TextStyle(color: colors.danger),
                       ),
                     ),
@@ -122,7 +123,7 @@ Future<void> _showPlanDetailSheet(
                           Navigator.of(sheetContext).pop();
                         }
                       },
-                      child: const Text('Save'),
+                      child: Text(l10n.commonSave),
                     ),
                   ],
                 ),
@@ -148,6 +149,7 @@ Future<void> _showCommitmentEditSheet(
   })
   onSave,
 }) async {
+  final l10n = context.l10n;
   final titleController = TextEditingController(text: commitment.title);
   final detailController = TextEditingController(
     text: commitmentSubtitle(commitment) ?? commitment.commitmentText,
@@ -169,7 +171,7 @@ Future<void> _showCommitmentEditSheet(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Edit commitment',
+                  l10n.accountabilityDetailEditCommitment,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -177,14 +179,14 @@ Future<void> _showCommitmentEditSheet(
                 const SizedBox(height: 16),
                 TextField(
                   controller: titleController,
-                  decoration: const InputDecoration(labelText: 'Title'),
+                  decoration: InputDecoration(labelText: l10n.commonTitle),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: detailController,
                   minLines: 2,
                   maxLines: 4,
-                  decoration: const InputDecoration(labelText: 'Commitment'),
+                  decoration: InputDecoration(labelText: l10n.commonCommitment),
                 ),
                 const SizedBox(height: 12),
                 _PriorityPicker(
@@ -211,7 +213,7 @@ Future<void> _showCommitmentEditSheet(
                         Navigator.of(sheetContext).pop();
                       }
                     },
-                    child: const Text('Save'),
+                    child: Text(l10n.commonSave),
                   ),
                 ),
               ],
@@ -234,14 +236,15 @@ class _PriorityPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return DropdownButtonFormField<int>(
       value: value.clamp(1, 5),
-      decoration: const InputDecoration(labelText: 'Priority'),
-      items: const [
-        DropdownMenuItem(value: 2, child: Text('Low')),
-        DropdownMenuItem(value: 3, child: Text('Normal')),
-        DropdownMenuItem(value: 4, child: Text('Medium')),
-        DropdownMenuItem(value: 5, child: Text('High')),
+      decoration: InputDecoration(labelText: l10n.commonPriority),
+      items: [
+        DropdownMenuItem(value: 2, child: Text(l10n.commonLow)),
+        DropdownMenuItem(value: 3, child: Text(l10n.commonNormal)),
+        DropdownMenuItem(value: 4, child: Text(l10n.commonMedium)),
+        DropdownMenuItem(value: 5, child: Text(l10n.commonHigh)),
       ],
       onChanged: (next) {
         if (next != null) {
@@ -265,16 +268,17 @@ class _StatusPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final normalized = value.trim().toLowerCase();
     final selected = options.contains(normalized) ? normalized : options.first;
     return DropdownButtonFormField<String>(
       value: selected,
-      decoration: const InputDecoration(labelText: 'Status'),
+      decoration: InputDecoration(labelText: l10n.commonStatus),
       items: [
         for (final option in options)
           DropdownMenuItem(
             value: option,
-            child: Text(statusShortLabel(option)),
+            child: Text(statusShortLabel(l10n, option)),
           ),
       ],
       onChanged: (next) {

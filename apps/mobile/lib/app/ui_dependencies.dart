@@ -19,6 +19,7 @@ import '../features/plaid/application/plaid_link_service.dart';
 import '../features/transactions/application/category_workflow_service.dart';
 import '../features/transactions/application/import_job_status_service.dart';
 import '../features/transactions/application/transaction_record_mapper.dart';
+import '../l10n/app_localizations.dart';
 import '../features/transactions/application/transaction_workflow_service.dart';
 import '../features/transactions/data/csv_import_service.dart';
 import '../features/transactions/data/merchant_category_rule_service.dart';
@@ -760,6 +761,10 @@ final class ImportJobStatusController extends _UiController {
 
   void configureIdleProgressMessage(String message) {
     bindings.importJobStatusService.configureIdleProgressMessage(message);
+  }
+
+  void bindLocalizations(AppLocalizations localizations) {
+    bindings.importJobStatusService.bindLocalizations(localizations);
   }
 
   String? get persistentImportMessage =>

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_l10n.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
 import 'budget_category_row.dart';
@@ -27,6 +28,7 @@ class BudgetCategoryList extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     return ClarityCard(
       padding: EdgeInsets.zero,
@@ -39,7 +41,7 @@ class BudgetCategoryList extends StatelessWidget {
             child: Row(
               children: [
                 Text(
-                  'Categories',
+                  l10n.budgetCategoryListTitle,
                   style: theme.textTheme.labelMedium?.copyWith(
                     letterSpacing: 0.2,
                     fontWeight: FontWeight.w700,
@@ -47,7 +49,7 @@ class BudgetCategoryList extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  '$onTrackCategoryCount/$budgetedCategoryCount on track',
+                  l10n.commonOnTrack(onTrackCategoryCount, budgetedCategoryCount),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.56),
                   ),
@@ -60,7 +62,7 @@ class BudgetCategoryList extends StatelessWidget {
             child: items.isEmpty
                 ? Center(
                     child: Text(
-                      'No active budget categories yet.',
+                      l10n.budgetCategoryListEmpty,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: cs.onSurface.withValues(alpha: 0.56),
                       ),

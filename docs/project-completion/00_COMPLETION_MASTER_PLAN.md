@@ -27,6 +27,8 @@ Clarity should feel like one coherent app:
 
 **Cross-cutting (brain trust):** [`docs/brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md`](../brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md) — P0/P1/P2/P3 brain trust, file splits, multi-user reliability. Execute alongside plans 03, 04, and 07. **Run P0 trust blockers before adding more goal/memory parser patches.**
 
+**Localization:** [`docs/i18n/00_LOCALIZATION_MASTER_PLAN.md`](../i18n/00_LOCALIZATION_MASTER_PLAN.md) — structure-first i18n (S1–S4), then Spanish (L1). Execute one phase plan at a time; do not start L1 until S1–S4 pass.
+
 ## Priority Order
 
 1. Product wiring and orphan cleanup.

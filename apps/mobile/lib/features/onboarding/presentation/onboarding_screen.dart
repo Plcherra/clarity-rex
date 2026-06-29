@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/l10n/app_l10n.dart';
 import '../../../theme/clarity_gradients.dart';
 import '../../../widgets/clarity_button.dart';
 import '../../../widgets/clarity_card.dart';
@@ -68,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       const SizedBox(height: 22),
                       Text(
-                        'Welcome to Clarity',
+                        context.l10n.onboardingWelcomeTitle,
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.3,
@@ -77,7 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Name your Clarity space. Next, you can connect your bank or use CSV as a manual fallback.',
+                        context.l10n.onboardingSubtitle,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: cs.onSurfaceVariant,
                           height: 1.35,
@@ -89,15 +90,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         controller: _controller,
                         enabled: !_saving,
                         textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(
-                          labelText: 'Your name',
-                          hintText: 'Pedro',
+                        decoration: InputDecoration(
+                          labelText: context.l10n.onboardingNameLabel,
+                          hintText: context.l10n.onboardingNameHint,
                         ),
                         onSubmitted: (_) => _submit(),
                       ),
                       const SizedBox(height: 16),
                       ClarityButton.filled(
-                        label: 'Continue',
+                        label: context.l10n.commonContinue,
                         onPressed: _saving ? null : _submit,
                         icon: const Icon(Icons.arrow_forward_rounded, size: 20),
                         isLoading: _saving,

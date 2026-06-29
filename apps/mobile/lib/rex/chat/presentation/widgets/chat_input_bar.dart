@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
@@ -44,6 +45,7 @@ class ChatInputBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     final hasBlockingAttachmentError = attachmentError != null;
     final hasAttachment = attachment != null || attachmentName != null;
 
@@ -73,7 +75,7 @@ class ChatInputBar extends StatelessWidget {
                 children: [
                   _ComposerIconButton(
                     icon: Icons.attach_file_rounded,
-                    tooltip: 'Attach file or image',
+                    tooltip: l10n.chatInputAttachTooltip,
                     onPressed: isLoading ? null : onPickAttachment,
                   ),
                   _ComposerIconButton(
@@ -81,8 +83,8 @@ class ChatInputBar extends StatelessWidget {
                         ? Icons.graphic_eq_rounded
                         : Icons.mic_rounded,
                     tooltip: isVoiceCallActive
-                        ? 'Show voice call'
-                        : 'Start voice mode',
+                        ? l10n.chatPageShowVoiceCallTooltip
+                        : l10n.chatInputStartVoiceModeTooltip,
                     onPressed: isLoading ? null : onStartVoice,
                     isActive: isVoiceCallActive,
                   ),
@@ -96,7 +98,7 @@ class ChatInputBar extends StatelessWidget {
                       textCapitalization: TextCapitalization.sentences,
                       cursorColor: colors.accent,
                       decoration: InputDecoration(
-                        hintText: 'Message Assistant…',
+                        hintText: l10n.chatInputMessageHint,
                         border: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         enabledBorder: InputBorder.none,
@@ -128,7 +130,7 @@ class ChatInputBar extends StatelessWidget {
                       );
                       return _ComposerIconButton(
                         icon: Icons.arrow_upward_rounded,
-                        tooltip: 'Send',
+                        tooltip: l10n.chatInputSendTooltip,
                         onPressed: canSend ? onSend : null,
                         isActive: canSend,
                         isLoading: isLoading,
@@ -227,8 +229,9 @@ class _AttachmentPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     final hasError = errorMessage != null;
-    final title = fileName ?? 'Attachment';
+    final title = fileName ?? l10n.commonAttachment;
     final isImage = !hasError && _isImageAttachment(title, attachment, previewBytes);
     final subtitle = hasError
         ? errorMessage!
@@ -339,7 +342,7 @@ class _AttachmentPreview extends StatelessWidget {
               IconButton(
                 onPressed: onRemove,
                 icon: const Icon(Icons.close_rounded),
-                tooltip: 'Remove attachment',
+                tooltip: l10n.chatInputRemoveAttachmentTooltip,
                 style: IconButton.styleFrom(
                   foregroundColor: colors.textSecondary,
                   disabledForegroundColor: colors.textMuted.withValues(

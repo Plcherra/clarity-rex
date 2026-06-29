@@ -5,6 +5,7 @@ import '../core/l10n/app_l10n.dart';
 import '../core/l10n/clarity_material_app.dart';
 import '../core/rex/rex_config.dart';
 import '../core/supabase/supabase_service.dart';
+import '../core/l10n/app_locale.dart';
 import '../features/profile/application/locale_controller.dart';
 import '../features/profile/application/theme_mode_controller.dart';
 import '../screens/splash/clarity_splash_screen.dart';
@@ -47,9 +48,7 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
 
   Future<AppComposition> _boot() async {
     await _themeModeController.load();
-    await _localeController.load(
-      deviceLocale: WidgetsBinding.instance.platformDispatcher.locale,
-    );
+    await _localeController.load(deviceLocale: AppLocale.readDeviceLocale());
     await dotenv.load(fileName: '.env', isOptional: true);
     _logReleaseConfig();
     await SupabaseService.initializeFromEnv();
@@ -191,14 +190,14 @@ final class _BootErrorApp extends StatelessWidget {
                     const Icon(Icons.error_outline, size: 48),
                     const SizedBox(height: 18),
                     Text(
-                      'Clarity could not start',
+                      context.l10n.bootErrorTitle,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      _bootErrorMessage(error),
+                      _bootErrorMessage(context, error),
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
@@ -206,7 +205,7 @@ final class _BootErrorApp extends StatelessWidget {
                     FilledButton.icon(
                       onPressed: retry,
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Try again'),
+                      label: Text(context.l10n.bootErrorTryAgain),
                     ),
                   ],
                 ),
@@ -219,10 +218,10 @@ final class _BootErrorApp extends StatelessWidget {
   }
 }
 
-String _bootErrorMessage(Object? error) {
+String _bootErrorMessage(BuildContext context, Object? error) {
   final message = error?.toString().trim();
   if (message == null || message.isEmpty) {
-    return 'Check your connection and try again.';
+    return context.l10n.bootErrorFallbackMessage;
   }
   return message;
 }

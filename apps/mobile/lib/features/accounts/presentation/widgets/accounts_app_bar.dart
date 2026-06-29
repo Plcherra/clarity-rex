@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
 import '../../../../widgets/clarity_path_loader.dart';
 
 class AccountsAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -20,20 +21,21 @@ class AccountsAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
     return AppBar(
-      title: const Text('Accounts'),
+      title: Text(l10n.navAccounts),
       backgroundColor: cs.surface,
       surfaceTintColor: Colors.transparent,
       actions: [
         IconButton(
-          tooltip: 'Refresh accounts',
+          tooltip: l10n.accountsScreenRefreshTooltip,
           onPressed: refreshingAccounts ? null : onRefreshAccounts,
           icon: refreshingAccounts
               ? const ClarityInlineLoader(size: 20, strokeWidth: 2)
               : const Icon(Icons.sync_rounded),
         ),
         IconButton(
-          tooltip: 'Add account',
+          tooltip: l10n.accountsScreenAddAccountTooltip,
           onPressed: onAddAccount,
           icon: const Icon(Icons.add_rounded),
         ),

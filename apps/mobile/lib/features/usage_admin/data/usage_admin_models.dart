@@ -1,3 +1,5 @@
+import 'package:clarity/l10n/app_localizations.dart';
+
 class OwnerUserUsage {
   const OwnerUserUsage({
     required this.userId,
@@ -153,10 +155,14 @@ int _int(Object? value) {
   return 0;
 }
 
-String formatUsageCost(double cents, {bool hasUsageWithoutCost = false}) {
+String formatUsageCost(
+  AppLocalizations l10n,
+  double cents, {
+  bool hasUsageWithoutCost = false,
+}) {
   if (cents <= 0) {
     if (hasUsageWithoutCost) {
-      return 'Not tracked';
+      return l10n.usageCostNotTracked;
     }
     return r'$0.00';
   }
@@ -173,10 +179,10 @@ DateTime _parseUsageDate(Object? value) {
   return DateTime.utc(1970, 1, 1);
 }
 
-String formatUsageMinutes(double seconds) {
+String formatUsageMinutes(AppLocalizations l10n, double seconds) {
   final minutes = seconds / 60;
   if (minutes < 1 && minutes > 0) {
-    return '<1 min';
+    return l10n.usageMinutesLessThanOne;
   }
-  return '${minutes.round()} min';
+  return l10n.usageMinutesFormat(minutes.round());
 }

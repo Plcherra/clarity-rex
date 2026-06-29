@@ -64,6 +64,7 @@ class _CategoryManagementContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -84,30 +85,30 @@ class _CategoryManagementContent extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             if (loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
                 child: Center(
                   child: ClarityDiamondLoader(
                     size: 52,
-                    label: 'Loading categories',
+                    label: l10n.categorySheetLoadingLabel,
                   ),
                 ),
               )
             else if (hasError)
               _CategoryEmptyState(
-                message: 'Could not load categories.',
-                actionLabel: 'Retry',
+                message: l10n.categorySheetLoadError,
+                actionLabel: l10n.commonRetry,
                 onAction: onRetry,
               )
             else
-              Expanded(child: _buildSection(theme)),
+              Expanded(child: _buildSection(theme, l10n)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSection(ThemeData theme) {
+  Widget _buildSection(ThemeData theme, AppLocalizations l10n) {
     return switch (section) {
       _CategoryManagementSection.categories => _CategoryListSection(
         saving: saving,
@@ -119,6 +120,7 @@ class _CategoryManagementContent extends StatelessWidget {
         onDeleteCategory: onDeleteCategory,
         onMergeCategory: onMergeCategory,
         onToggleCategoryHidden: onToggleCategoryHidden,
+        l10n: l10n,
       ),
       _CategoryManagementSection.merchantRules => _MerchantRulesSection(
         saving: saving,
@@ -129,9 +131,11 @@ class _CategoryManagementContent extends StatelessWidget {
         onEditMerchantRuleCategory: onEditMerchantRuleCategory,
         onToggleMerchantRuleDisabled: onToggleMerchantRuleDisabled,
         onDeleteMerchantRule: onDeleteMerchantRule,
+        l10n: l10n,
       ),
       _CategoryManagementSection.auditTrail => _AuditTrailSection(
         auditEvents: auditEvents,
+        l10n: l10n,
       ),
     };
   }
@@ -145,18 +149,19 @@ class _CategoryManagementHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return Row(
       children: [
         Expanded(
           child: Text(
-            'Manage categories',
+            l10n.categorySheetHeaderTitle,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
         ),
         IconButton(
-          tooltip: 'Close',
+          tooltip: l10n.categorySheetClose,
           onPressed: onClose,
           icon: const Icon(Icons.close_rounded),
         ),
@@ -178,22 +183,23 @@ class _CategoryManagementTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return SegmentedButton<_CategoryManagementSection>(
-      segments: const [
+      segments: [
         ButtonSegment(
           value: _CategoryManagementSection.categories,
-          icon: Icon(Icons.category_outlined),
-          label: Text('Categories'),
+          icon: const Icon(Icons.category_outlined),
+          label: Text(l10n.commonCategories),
         ),
         ButtonSegment(
           value: _CategoryManagementSection.merchantRules,
-          icon: Icon(Icons.storefront_outlined),
-          label: Text('Rules'),
+          icon: const Icon(Icons.storefront_outlined),
+          label: Text(l10n.commonRules),
         ),
         ButtonSegment(
           value: _CategoryManagementSection.auditTrail,
-          icon: Icon(Icons.history_rounded),
-          label: Text('History'),
+          icon: const Icon(Icons.history_rounded),
+          label: Text(l10n.commonHistory),
         ),
       ],
       selected: {section},
@@ -215,6 +221,7 @@ class _CategoryListSection extends StatelessWidget {
     required this.onDeleteCategory,
     required this.onMergeCategory,
     required this.onToggleCategoryHidden,
+    required this.l10n,
   });
 
   final bool saving;
@@ -227,6 +234,7 @@ class _CategoryListSection extends StatelessWidget {
   final Future<void> Function(CategoryRecord source, List<CategoryRecord> all)
   onMergeCategory;
   final Future<void> Function(CategoryRecord category) onToggleCategoryHidden;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +267,7 @@ class _CategoryListSection extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: saving ? null : onAddCategory,
             icon: const Icon(Icons.add_rounded),
-            label: const Text('Add custom category'),
+            label: Text(l10n.categorySheetAddCustomCategory),
             style: OutlinedButton.styleFrom(
               foregroundColor: cs.onSurface.withValues(alpha: 0.82),
               backgroundColor: cs.surfaceContainerLow.withValues(alpha: 0.36),
@@ -275,10 +283,10 @@ class _CategoryListSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        _SectionLabel(text: 'Saved categories'),
+        _SectionLabel(text: l10n.categorySheetSavedCategoriesLabel),
         const SizedBox(height: 8),
         if (savedCategories.isEmpty)
-          const _CategoryEmptyState(message: 'No saved categories yet.')
+          _CategoryEmptyState(message: l10n.categorySheetNoSavedCategories)
         else
           for (var index = 0; index < rows.length; index++) ...[
             if (index > 0) const SizedBox(height: 8),
@@ -286,7 +294,7 @@ class _CategoryListSection extends StatelessWidget {
           ],
         const SizedBox(height: 14),
         Text(
-          'Built-in budget categories are always available: ${kSelectableSpendCategories.length}. Used custom categories must be merged or hidden before deletion.',
+          l10n.categorySheetBuiltInHint(kSelectableSpendCategories.length),
           style: theme.textTheme.bodySmall?.copyWith(
             color: cs.onSurface.withValues(alpha: 0.48),
           ),
@@ -307,6 +315,7 @@ class _MerchantRulesSection extends StatelessWidget {
     required this.onEditMerchantRuleCategory,
     required this.onToggleMerchantRuleDisabled,
     required this.onDeleteMerchantRule,
+    required this.l10n,
   });
 
   final bool saving;
@@ -322,6 +331,7 @@ class _MerchantRulesSection extends StatelessWidget {
   final Future<void> Function(MerchantCategoryRule rule)
   onToggleMerchantRuleDisabled;
   final Future<void> Function(MerchantCategoryRule rule) onDeleteMerchantRule;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -344,10 +354,10 @@ class _MerchantRulesSection extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        _SectionLabel(text: 'Merchant rules'),
+        _SectionLabel(text: l10n.categorySheetMerchantRulesLabel),
         const SizedBox(height: 8),
         if (merchantRules.isEmpty)
-          const _CategoryEmptyState(message: 'No learned merchant rules yet.')
+          _CategoryEmptyState(message: l10n.categorySheetNoMerchantRules)
         else
           for (var index = 0; index < rows.length; index++) ...[
             if (index > 0) const SizedBox(height: 8),
@@ -355,7 +365,7 @@ class _MerchantRulesSection extends StatelessWidget {
           ],
         const SizedBox(height: 14),
         Text(
-          'Merchant rules affect future CSV imports. Editing a rule does not rewrite existing transactions.',
+          l10n.categorySheetMerchantRulesHint,
           style: theme.textTheme.bodySmall?.copyWith(
             color: cs.onSurface.withValues(alpha: 0.48),
           ),
@@ -367,21 +377,20 @@ class _MerchantRulesSection extends StatelessWidget {
 }
 
 class _AuditTrailSection extends StatelessWidget {
-  const _AuditTrailSection({required this.auditEvents});
+  const _AuditTrailSection({required this.auditEvents, required this.l10n});
 
   final List<FinancialAuditEvent> auditEvents;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        _SectionLabel(text: 'Recent changes'),
+        _SectionLabel(text: l10n.categorySheetRecentChangesLabel),
         const SizedBox(height: 8),
         if (auditEvents.isEmpty)
-          const _CategoryEmptyState(
-            message: 'No financial changes recorded yet.',
-          )
+          _CategoryEmptyState(message: l10n.categorySheetNoAuditEvents)
         else
           for (var index = 0; index < auditEvents.length; index++) ...[
             if (index > 0) const SizedBox(height: 8),

@@ -48,17 +48,18 @@ class _BudgetsScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
     final rows = dataNotifier.data?.rows ?? const <BudgetCategoryRow>[];
     return Scaffold(
       backgroundColor: cs.surface,
       appBar: AppBar(
         toolbarHeight: 52,
         titleSpacing: 6,
-        title: const Text('Budgets'),
+        title: Text(l10n.navBudgets),
         leading: const SizedBox(width: 48),
         actions: [
           IconButton(
-            tooltip: 'Manage categories',
+            tooltip: l10n.budgetsScreenManageCategoriesTooltip,
             visualDensity: VisualDensity.compact,
             onPressed: onManageCategories,
             icon: const Icon(Icons.category_outlined, size: 22),
@@ -68,7 +69,7 @@ class _BudgetsScaffold extends StatelessWidget {
             builder: (context, hasChanges, _) {
               final canSave = canAttemptSave && hasChanges;
               return IconButton(
-                tooltip: 'Save changes',
+                tooltip: l10n.budgetsScreenSaveChangesTooltip,
                 visualDensity: VisualDensity.compact,
                 onPressed: canSave ? () async => onSave(rows) : null,
                 icon: Icon(
@@ -92,12 +93,12 @@ class _BudgetsScaffold extends StatelessWidget {
               final data = dataNotifier.data;
               if (data == null) {
                 if (dataNotifier.error != null) {
-                  return const Center(child: Text('Could not load budgets.'));
+                  return Center(child: Text(l10n.budgetsScreenLoadError));
                 }
-                return const Center(
+                return Center(
                   child: ClarityDiamondLoader(
                     size: 56,
-                    label: 'Loading budgets',
+                    label: l10n.budgetsScreenLoadingLabel,
                   ),
                 );
               }
@@ -170,6 +171,7 @@ class _BudgetsLoadedContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final metrics = data.metrics;
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -178,17 +180,17 @@ class _BudgetsLoadedContent extends StatelessWidget {
           selectedPeriodKey: selectedPeriodKey,
           keys: keys,
           monthlyLabel: selectedPeriodKey.trim().isEmpty
-              ? 'Select month'
+              ? l10n.budgetsHeaderSelectMonth
               : formatYearMonthLabel(selectedPeriodKey),
           weeklyLabel: weeklyDate == null
-              ? 'Pick week start'
+              ? l10n.budgetsHeaderPickWeekStart
               : viewModel.formatLongDate(weeklyDate!),
           weeklyRangeLabel: viewModel.weeklyRangeLabel(selectedPeriodKey),
           customStartLabel: customStart == null
-              ? 'Start'
+              ? l10n.commonStart
               : formatShortDate(customStart!),
           customEndLabel: customEnd == null
-              ? 'End'
+              ? l10n.commonEnd
               : formatShortDate(customEnd!),
           onPeriodTypeChanged: onPeriodTypeChanged,
           onPickMonthly: onPickMonthly,
@@ -206,7 +208,7 @@ class _BudgetsLoadedContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Budget vs spent',
+                l10n.budgetsScreenBudgetVsSpentTitle,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -240,6 +242,7 @@ class _BudgetSummaryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
     return ClarityCard(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.24),
@@ -248,7 +251,7 @@ class _BudgetSummaryStrip extends StatelessWidget {
         children: [
           Expanded(
             child: _SummaryMetric(
-              label: 'Budgeted',
+              label: l10n.commonBudgeted,
               value: formatMoney(metrics.performance.totalBudgeted),
               valueColor: cs.onSurface,
               alignment: CrossAxisAlignment.start,
@@ -257,7 +260,7 @@ class _BudgetSummaryStrip extends StatelessWidget {
           _SummaryDivider(color: cs.outline.withValues(alpha: 0.10)),
           Expanded(
             child: _SummaryMetric(
-              label: 'Spent',
+              label: l10n.commonSpent,
               value: formatMoney(metrics.performance.totalSpent),
               valueColor: cs.onSurface,
               alignment: CrossAxisAlignment.center,
@@ -266,7 +269,7 @@ class _BudgetSummaryStrip extends StatelessWidget {
           _SummaryDivider(color: cs.outline.withValues(alpha: 0.10)),
           Expanded(
             child: _SummaryMetric(
-              label: metrics.totalOver > 0 ? 'Over' : 'Left',
+              label: metrics.totalOver > 0 ? l10n.commonOver : l10n.commonLeft,
               value: metrics.totalOver > 0
                   ? formatMoney(metrics.totalOver)
                   : formatMoney(metrics.totalRemaining),

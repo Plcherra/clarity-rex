@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/ui_dependencies.dart';
 import '../../../../core/formatting/formatting.dart';
+import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/clarity_colors.dart';
 import '../../../../widgets/clarity_path_loader.dart';
 import '../../data/plaid_account_service.dart';
@@ -133,6 +135,7 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -147,7 +150,7 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
         ),
         const SizedBox(height: 5),
         Text(
-          _lastSyncedLabel(lastSyncedAt),
+          _lastSyncedLabel(l10n, lastSyncedAt),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(
@@ -155,7 +158,7 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        if (_statusRecoveryMessage(status) case final message?) ...[
+        if (_statusRecoveryMessage(l10n, status) case final message?) ...[
           const SizedBox(height: 5),
           Text(
             message,
@@ -166,7 +169,7 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
             ),
           ),
         ],
-        if (_webhookFreshnessMessage(status, webhookLastReceivedAt)
+        if (_webhookFreshnessMessage(l10n, status, webhookLastReceivedAt)
             case final message?) ...[
           const SizedBox(height: 5),
           Text(
@@ -192,29 +195,37 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
     );
   }
 
-  String _lastSyncedLabel(DateTime? value) {
-    if (value == null) return 'Last synced unavailable';
+  String _lastSyncedLabel(AppLocalizations l10n, DateTime? value) {
+    if (value == null) return l10n.plaidAccountLastSyncedUnavailable;
     final now = DateTime.now();
     final diff = now.difference(value);
-    if (diff.inMinutes < 1) return 'Last synced just now';
-    if (diff.inMinutes < 60) return 'Last synced ${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return 'Last synced ${diff.inHours}h ago';
-    return 'Last synced ${value.month}/${value.day}/${value.year}';
+    if (diff.inMinutes < 1) return l10n.plaidAccountLastSyncedJustNow;
+    if (diff.inMinutes < 60) {
+      return l10n.plaidAccountLastSyncedMinutesAgo(diff.inMinutes);
+    }
+    if (diff.inHours < 24) {
+      return l10n.plaidAccountLastSyncedHoursAgo(diff.inHours);
+    }
+    return l10n.plaidAccountLastSyncedDate(
+      '${value.month}/${value.day}/${value.year}',
+    );
   }
 
-  String? _statusRecoveryMessage(PlaidAccountConnectionStatus status) {
+  String? _statusRecoveryMessage(
+    AppLocalizations l10n,
+    PlaidAccountConnectionStatus status,
+  ) {
     return switch (status) {
       PlaidAccountConnectionStatus.connected => null,
-      PlaidAccountConnectionStatus.syncing =>
-        'Refreshing this bank connection now.',
+      PlaidAccountConnectionStatus.syncing => l10n.plaidAccountStatusRefreshing,
       PlaidAccountConnectionStatus.degraded =>
-        'Sync needs attention. Try refresh; if it still fails, reconnect this bank in Plaid.',
+        l10n.plaidAccountStatusDegradedMessage,
       PlaidAccountConnectionStatus.loginRequired =>
-        'Plaid needs you to sign in again. Connect this bank again to resume sync.',
+        l10n.plaidAccountStatusLoginRequiredMessage,
       PlaidAccountConnectionStatus.pendingExpiration =>
-        'This Plaid connection may expire soon. Refresh now or reconnect if sync stops.',
+        l10n.plaidAccountStatusExpiringSoonMessage,
       PlaidAccountConnectionStatus.disconnected =>
-        'Future Plaid sync is stopped. Existing account history stays in Clarity.',
+        l10n.plaidAccountStatusDisconnectedMessage,
     };
   }
 
@@ -235,6 +246,7 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
   }
 
   String? _webhookFreshnessMessage(
+    AppLocalizations l10n,
     PlaidAccountConnectionStatus status,
     DateTime? webhookLastReceivedAt,
   ) {
@@ -245,27 +257,29 @@ class _PlaidAccountMetaAndActions extends StatelessWidget {
     if (webhookLastReceivedAt == null) {
       return status == PlaidAccountConnectionStatus.connected
           ? null
-          : 'No Plaid webhook has arrived yet. Use refresh if transactions look stale.';
+          : l10n.plaidAccountNoWebhookYet;
     }
     final diff = DateTime.now().difference(webhookLastReceivedAt);
     if (diff.inHours < 24) {
       return null;
     }
-    return 'No recent Plaid webhook. Last bank update signal was ${_relativeWebhookLabel(webhookLastReceivedAt)}.';
+    return l10n.plaidAccountNoRecentWebhook(
+      _relativeWebhookLabel(l10n, webhookLastReceivedAt),
+    );
   }
 
-  String _relativeWebhookLabel(DateTime value) {
+  String _relativeWebhookLabel(AppLocalizations l10n, DateTime value) {
     final diff = DateTime.now().difference(value);
     if (diff.inDays >= 1) {
-      return '${diff.inDays}d ago';
+      return l10n.plaidAccountWebhookDaysAgo(diff.inDays);
     }
     if (diff.inHours >= 1) {
-      return '${diff.inHours}h ago';
+      return l10n.plaidAccountWebhookHoursAgo(diff.inHours);
     }
     if (diff.inMinutes >= 1) {
-      return '${diff.inMinutes}m ago';
+      return l10n.plaidAccountWebhookMinutesAgo(diff.inMinutes);
     }
-    return 'just now';
+    return l10n.plaidAccountWebhookJustNow;
   }
 }
 
@@ -286,6 +300,7 @@ class _PlaidAccountBalanceAndSync extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     final balance = item.displayBalanceAmount;
     final hasMonthlyActivity =
         item.incomeThisMonth != 0 ||
@@ -307,7 +322,7 @@ class _PlaidAccountBalanceAndSync extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              balance == null ? 'Unavailable' : formatMoney(balance),
+              balance == null ? l10n.commonUnavailable : formatMoney(balance),
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
                 color: balance == null
@@ -318,12 +333,15 @@ class _PlaidAccountBalanceAndSync extends StatelessWidget {
             const SizedBox(width: 2),
             IconButton(
               tooltip: switch (status) {
-                PlaidAccountConnectionStatus.syncing => 'Syncing',
-                PlaidAccountConnectionStatus.loginRequired => 'Login required',
+                PlaidAccountConnectionStatus.syncing =>
+                  l10n.plaidAccountResyncTooltipSyncing,
+                PlaidAccountConnectionStatus.loginRequired =>
+                  l10n.plaidAccountResyncTooltipLoginRequired,
                 PlaidAccountConnectionStatus.pendingExpiration =>
-                  'Expiring soon',
-                PlaidAccountConnectionStatus.disconnected => 'Disconnected',
-                _ => 'Resync',
+                  l10n.plaidAccountResyncTooltipExpiringSoon,
+                PlaidAccountConnectionStatus.disconnected =>
+                  l10n.plaidAccountResyncTooltipDisconnected,
+                _ => l10n.plaidAccountResyncTooltipDefault,
               },
               onPressed:
                   status == PlaidAccountConnectionStatus.syncing ||
@@ -336,7 +354,7 @@ class _PlaidAccountBalanceAndSync extends StatelessWidget {
             ),
             if (status != PlaidAccountConnectionStatus.disconnected)
               IconButton(
-                tooltip: 'Disconnect bank',
+                tooltip: l10n.plaidAccountDisconnectTooltip,
                 onPressed: status == PlaidAccountConnectionStatus.syncing
                     ? null
                     : onDisconnect,
@@ -346,7 +364,7 @@ class _PlaidAccountBalanceAndSync extends StatelessWidget {
         ),
         if (hasMonthlyActivity) ...[
           Text(
-            'This month ${formatMoney(item.netCashFlow)} net',
+            l10n.accountTileThisMonthNet(formatMoney(item.netCashFlow)),
             style: theme.textTheme.labelSmall?.copyWith(
               color: item.netCashFlow > 0
                   ? ClarityColors.financePositive
@@ -362,7 +380,7 @@ class _PlaidAccountBalanceAndSync extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'View account',
+              l10n.accountTileViewAccount,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: cs.onSurface.withValues(alpha: 0.46),
                 fontWeight: FontWeight.w700,

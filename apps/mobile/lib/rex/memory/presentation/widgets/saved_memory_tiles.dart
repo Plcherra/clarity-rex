@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
 import 'package:clarity/rex/memory/presentation/widgets/saved_memory_tile_shell.dart';
@@ -67,16 +68,17 @@ class PersonMemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return StructuredMemoryTile(
       icon: Icons.person_outline_rounded,
       active: person.active,
       title: person.displayName,
       subtitle: personMemorySubtitle(person),
-      typeLabel: 'Person',
+      typeLabel: l10n.commonPerson,
       importance: person.importance,
       updatedAt: person.updatedAt,
       createdAt: person.createdAt,
-      supplementalLabels: personSupplementalLabels(person),
+      supplementalLabels: personSupplementalLabels(l10n, person),
       onEdit: onEdit,
       onDeactivate: onDeactivate,
     );
@@ -132,9 +134,10 @@ class PlanMemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final supplementalLabels = <String>[
       if (plan.targetDate != null)
-        'Target ${shortMemoryDate(plan.targetDate!)}',
+        l10n.commonTargetDateValue(shortMemoryDate(plan.targetDate!)),
     ];
 
     return StructuredMemoryTile(
@@ -167,9 +170,10 @@ class CommitmentMemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final supplementalLabels = <String>[
       if (commitment.dueAt != null)
-        'Due ${shortMemoryDate(commitment.dueAt!)}',
+        l10n.commonDueDateValue(shortMemoryDate(commitment.dueAt!)),
     ];
 
     return StructuredMemoryTile(

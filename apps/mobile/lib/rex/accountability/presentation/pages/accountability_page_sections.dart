@@ -15,10 +15,11 @@ class _GoalsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _Section(
-      title: 'Active Goals',
-      emptyText: 'No active goals yet.',
-      emptyActionLabel: 'Add your first goal',
+      title: l10n.accountabilitySectionsActiveGoals,
+      emptyText: l10n.accountabilitySectionsNoActiveGoals,
+      emptyActionLabel: l10n.accountabilitySharedAddFirstGoal,
       onEmptyAction: onAddGoal,
       children: plans
           .map(
@@ -50,9 +51,10 @@ class _CommitmentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _Section(
-      title: 'Open Commitments',
-      emptyText: 'No open commitments.',
+      title: l10n.accountabilitySectionsOpenCommitments,
+      emptyText: l10n.accountabilitySectionsNoOpenCommitments,
       children: commitments
           .map(
             (commitment) => _CommitmentTile(

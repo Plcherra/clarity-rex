@@ -1,3 +1,4 @@
+import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/app/app.dart';
 import 'package:clarity/app/app_composition.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
@@ -16,21 +17,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/l10n_test_wrapper.dart';
+
 void main() {
   test('assistant tab contract is stable and ordered', () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
     expect(AssistantTab.values.map((tab) => tab.id), [
       'chat',
       'memory',
       'goals',
       'chats',
     ]);
-    expect(AssistantTab.values.map((tab) => tab.label), [
+    expect(AssistantTab.values.map((tab) => tab.label(l10n)), [
       'Chat',
       'Knows',
       'Goals',
       'Chats',
     ]);
-    expect(AssistantTab.values.map((tab) => tab.semanticLabel), [
+    expect(AssistantTab.values.map((tab) => tab.semanticLabel(l10n)), [
       'Assistant Chat tab',
       'Assistant Knows tab',
       'Assistant Goals tab',
@@ -155,6 +159,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Language'), findsNWidgets(2));
+    expect(find.text('English'), findsOneWidget);
     expect(find.text('Sign out'), findsOneWidget);
   });
 
@@ -191,7 +196,10 @@ void main() {
     expect(find.byTooltip('Accountability'), findsNothing);
     for (final tab in AssistantTab.values) {
       expect(find.byKey(tab.key), findsOneWidget);
-      expect(find.text(tab.label), findsOneWidget);
+      expect(
+        find.text(tab.label(lookupAppLocalizations(const Locale('en')))),
+        findsOneWidget,
+      );
     }
     expect(find.text('Voice'), findsNothing);
   });
@@ -275,7 +283,7 @@ void main() {
           ),
           voiceCallProvider.overrideWith(() => voiceController),
         ],
-        child: const MaterialApp(home: AssistantScreen()),
+        child: wrapWithL10n(const AssistantScreen()),
       ),
     );
     await tester.pump();
@@ -301,7 +309,7 @@ Future<void> _pumpAssistantScreen(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [conversationApiProvider.overrideWithValue(conversationApi)],
-      child: const MaterialApp(home: AssistantScreen()),
+      child: wrapWithL10n(const AssistantScreen()),
     ),
   );
   await tester.pump();

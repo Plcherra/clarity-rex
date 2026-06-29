@@ -8,7 +8,9 @@ class _CategoryGroupsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (groups.isEmpty) {
-      return const _InlineEmptyState(message: 'No categories match.');
+      return _InlineEmptyState(
+        message: context.l10n.dashboardTransactionsNoCategoriesMatch,
+      );
     }
     return Column(
       children: [
@@ -30,6 +32,7 @@ class _CategoryGroupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: _dashboardPanel(context),
@@ -61,7 +64,9 @@ class _CategoryGroupCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${group.transactionCount} transactions',
+                    group.transactions.length == 1
+                        ? l10n.commonTransactionCountOne
+                        : l10n.commonTransactionCount(group.transactionCount),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.45),
                     ),
@@ -73,7 +78,7 @@ class _CategoryGroupCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  group.amountLabel,
+                  l10n.commonSpent,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.45),
                     fontWeight: FontWeight.w700,

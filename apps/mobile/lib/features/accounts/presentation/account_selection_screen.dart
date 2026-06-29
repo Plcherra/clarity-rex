@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/formatting/formatting.dart';
+import '../../../core/l10n/app_l10n.dart';
 import '../../../core/models/models.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
 import '../../../widgets/clarity_path_loader.dart';
 import '../../transactions/data/csv_import_service.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import 'csv_plaid_duplicate_warning.dart';
+import 'accounts_plaid_status_helpers.dart';
 import 'widgets/source_label_chip.dart';
 
 /// Shown after the user picks a CSV; they must pick or create a manual account
@@ -91,7 +93,11 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
           if (!dialogContext.mounted) return;
           if (created == null) {
             ScaffoldMessenger.of(dialogContext).showSnackBar(
-              const SnackBar(content: Text('Could not save account.')),
+              SnackBar(
+                content: Text(
+                  dialogContext.l10n.accountsNavigationCouldNotSaveAccount,
+                ),
+              ),
             );
             return;
           }
@@ -110,7 +116,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
     }
     setState(() => _importingAccountId = account.id);
     try {
-      widget.controller.showImportPreparationProgress('Previewing CSV...');
+      widget.controller.showImportPreparationProgress(
+        context.l10n.accountSelectionPreviewingCsv,
+      );
       final preview = await widget.controller.previewCsvImport(
         widget.pendingCsvText,
         accountId: account.id,
@@ -141,7 +149,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not import this file.')),
+        SnackBar(content: Text(context.l10n.accountSelectionCouldNotImport)),
       );
     } finally {
       if (mounted) {
@@ -155,7 +163,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Import CSV instead'),
+        title: Text(context.l10n.accountSelectionAppBarTitle),
         backgroundColor: theme.colorScheme.surface,
         surfaceTintColor: Colors.transparent,
       ),
@@ -180,12 +188,14 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
               final accounts = _dataNotifier.data;
               if (accounts == null) {
                 if (_dataNotifier.error != null) {
-                  return const Center(child: Text('Could not load accounts.'));
+                  return Center(
+                    child: Text(context.l10n.accountsScreenLoadError),
+                  );
                 }
-                return const Center(
+                return Center(
                   child: ClarityDiamondLoader(
                     size: 56,
-                    label: 'Loading accounts',
+                    label: context.l10n.accountsScreenLoadingLabel,
                   ),
                 );
               }
@@ -197,7 +207,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Add a manual account for this CSV',
+                          context.l10n.accountSelectionManualAccountForCsv,
                           textAlign: TextAlign.center,
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
@@ -209,7 +219,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                         FilledButton.icon(
                           onPressed: () => _showAddAccountDialog(context),
                           icon: const Icon(Icons.add_rounded, size: 22),
-                          label: const Text('Add manual account'),
+                          label: Text(context.l10n.accountSelectionAddManualButton),
                         ),
                       ],
                     ),
@@ -222,7 +232,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
                     child: Text(
-                      'CSV import is manual. Choose the account this file belongs to; connected bank accounts update automatically.',
+                      context.l10n.accountSelectionInstructions,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.6,
@@ -290,7 +300,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                                 Text(a.type.displayLabel),
                                 if (a.isPlaidConnected)
                                   Text(
-                                    'CSV may duplicate synced rows',
+                                    context.l10n.accountSelectionCsvMayDuplicate,
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.52),
@@ -324,7 +334,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => _showAddAccountDialog(context),
                       icon: const Icon(Icons.add_rounded),
-                      label: const Text('Add manual account'),
+                      label: Text(context.l10n.accountSelectionAddManualButton),
                     ),
                   ),
                 ],
@@ -346,9 +356,10 @@ class _CsvImportPreviewDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final dateRange = _dateRangeLabel(preview.startDate, preview.endDate);
     return AlertDialog(
-      title: const Text('CSV import preview'),
+      title: Text(l10n.csvPreviewDialogTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -362,34 +373,43 @@ class _CsvImportPreviewDialog extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             account.isPlaidConnected
-                ? 'This connected account already syncs through Plaid. Import only if this CSV covers rows Clarity does not have yet.'
-                : 'This is a manual fallback import. You may need to upload newer CSV files later to keep this account current.',
+                ? l10n.csvPreviewPlaidOverlapHint
+                : l10n.csvPreviewManualFallbackHint,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.58),
             ),
           ),
           const SizedBox(height: 12),
-          _PreviewLine(label: 'Date range', value: dateRange),
-          _PreviewLine(label: 'Rows found', value: '${preview.parsedCount}'),
+          _PreviewLine(label: l10n.csvPreviewDialogDateRange, value: dateRange),
           _PreviewLine(
-            label: 'New rows',
+            label: l10n.csvPreviewDialogRowsFound,
+            value: '${preview.parsedCount}',
+          ),
+          _PreviewLine(
+            label: l10n.csvPreviewDialogNewRows,
             value: '${preview.newTransactionCount}',
           ),
-          _PreviewLine(label: 'Duplicates', value: '${preview.duplicateCount}'),
           _PreviewLine(
-            label: 'Spending rows',
+            label: l10n.csvPreviewDialogDuplicates,
+            value: '${preview.duplicateCount}',
+          ),
+          _PreviewLine(
+            label: l10n.csvPreviewDialogSpendingRows,
             value: '${preview.spendingCount}',
           ),
-          _PreviewLine(label: 'Income rows', value: '${preview.incomeCount}'),
+          _PreviewLine(
+            label: l10n.csvPreviewDialogIncomeRows,
+            value: '${preview.incomeCount}',
+          ),
           if (preview.endingBalance != null)
             _PreviewLine(
-              label: 'Ending balance',
+              label: l10n.csvPreviewDialogEndingBalance,
               value: formatMoney(preview.endingBalance),
             ),
           if (preview.diagnostics?.layoutInferred == true) ...[
             const SizedBox(height: 10),
             Text(
-              'Column layout was inferred. Review the date range before importing.',
+              l10n.csvPreviewLayoutInferred,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.58),
               ),
@@ -398,7 +418,7 @@ class _CsvImportPreviewDialog extends StatelessWidget {
           if (!preview.hasNewTransactions) ...[
             const SizedBox(height: 10),
             Text(
-              'This looks like a duplicate import for this account. Choose another account, or delete the previous CSV upload from the account page before retrying.',
+              l10n.csvPreviewDuplicateImport,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.58),
               ),
@@ -409,13 +429,17 @@ class _CsvImportPreviewDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           onPressed: preview.hasNewTransactions
               ? () => Navigator.of(context).pop(true)
               : null,
-          child: Text(preview.hasNewTransactions ? 'Import' : 'No new rows'),
+          child: Text(
+            preview.hasNewTransactions
+                ? l10n.commonImport
+                : l10n.csvPreviewDialogNoNewRows,
+          ),
         ),
       ],
     );
@@ -533,9 +557,7 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
       if (b == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Enter a valid balance or leave it blank.'),
-            ),
+            SnackBar(content: Text(context.l10n.addAccountDialogInvalidBalance)),
           );
         }
         return;
@@ -550,8 +572,9 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return AlertDialog(
-      title: const Text('New account'),
+      title: Text(l10n.addAccountDialogTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -562,21 +585,17 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
               textCapitalization: TextCapitalization.words,
               enableSuggestions: false,
               autocorrect: false,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: l10n.commonName),
             ),
             const SizedBox(height: 8),
-            Text('Type', style: theme.textTheme.labelLarge),
+            Text(l10n.addAccountDialogTypeLabel, style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
             SegmentedButton<AccountType>(
               segments: [
                 for (final t in AccountType.values)
                   ButtonSegment<AccountType>(
                     value: t,
-                    label: Text(switch (t) {
-                      AccountType.checking => 'Checking',
-                      AccountType.savings => 'Savings',
-                      AccountType.creditCard => 'Card',
-                    }),
+                    label: Text(accountTypeLabel(l10n, t)),
                   ),
               ],
               selected: {_type},
@@ -596,8 +615,8 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[-0-9.,]')),
               ],
-              decoration: const InputDecoration(
-                labelText: 'Current balance (optional)',
+              decoration: InputDecoration(
+                labelText: l10n.addAccountDialogBalanceLabel,
               ),
             ),
           ],
@@ -606,13 +625,13 @@ class _AddAccountDialogState extends State<_AddAccountDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _submit,
           child: _saving
               ? const ClarityInlineLoader(size: 20, strokeWidth: 2)
-              : const Text('Save'),
+              : Text(l10n.commonSave),
         ),
       ],
     );

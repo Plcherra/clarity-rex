@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/l10n/app_l10n.dart';
 import '../../../theme/clarity_gradients.dart';
 import '../../../widgets/clarity_button.dart';
 import '../../../widgets/clarity_card.dart';
@@ -29,6 +30,12 @@ final class _MfaVerificationScreenState extends State<MfaVerificationScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    widget.controller.bindLocalizations(context.l10n);
+  }
+
+  @override
   void dispose() {
     _codeController.dispose();
     super.dispose();
@@ -38,7 +45,7 @@ final class _MfaVerificationScreenState extends State<MfaVerificationScreen> {
     final code = _codeController.text.replaceAll(RegExp(r'\D'), '');
     setState(() => _localError = null);
     if (code.length != 6) {
-      setState(() => _localError = 'Enter the 6-digit code.');
+      setState(() => _localError = context.l10n.mfaEnterSixDigitCode);
       return;
     }
     await widget.controller.verifyMfaSignIn(
@@ -56,6 +63,7 @@ final class _MfaVerificationScreenState extends State<MfaVerificationScreen> {
         final factors = controller.mfaFactors;
         final theme = Theme.of(context);
         final cs = theme.colorScheme;
+        final l10n = context.l10n;
         final error = _localError ?? controller.mfaErrorMessage;
 
         if (_selectedFactorId == null && factors.isNotEmpty) {
@@ -86,7 +94,7 @@ final class _MfaVerificationScreenState extends State<MfaVerificationScreen> {
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            'Enter your MFA code',
+                            l10n.mfaVerificationTitle,
                             textAlign: TextAlign.center,
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w800,
@@ -94,7 +102,7 @@ final class _MfaVerificationScreenState extends State<MfaVerificationScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Open your authenticator app and enter the current 6-digit code for Clarity.',
+                            l10n.mfaVerificationSubtitle,
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: cs.onSurfaceVariant,
@@ -104,8 +112,8 @@ final class _MfaVerificationScreenState extends State<MfaVerificationScreen> {
                           if (factors.length > 1) ...[
                             DropdownButtonFormField<String>(
                               initialValue: _selectedFactorId,
-                              decoration: const InputDecoration(
-                                labelText: 'Authenticator app',
+                              decoration: InputDecoration(
+                                labelText: l10n.mfaVerificationAuthenticatorAppLabel,
                               ),
                               items: [
                                 for (final factor in factors)
@@ -132,8 +140,8 @@ final class _MfaVerificationScreenState extends State<MfaVerificationScreen> {
                               LengthLimitingTextInputFormatter(6),
                             ],
                             onSubmitted: (_) => _submit(),
-                            decoration: const InputDecoration(
-                              labelText: '6-digit code',
+                            decoration: InputDecoration(
+                              labelText: l10n.mfaEnrollmentCodeLabel,
                             ),
                           ),
                           if (error != null && error.isNotEmpty) ...[
@@ -148,7 +156,7 @@ final class _MfaVerificationScreenState extends State<MfaVerificationScreen> {
                           ],
                           const SizedBox(height: 22),
                           ClarityButton.filled(
-                            label: 'Verify and continue',
+                            label: l10n.mfaVerificationVerifyAndContinue,
                             onPressed: _submit,
                             icon: const Icon(Icons.lock_open_rounded),
                             isLoading: controller.isMfaLoading,
@@ -156,7 +164,7 @@ final class _MfaVerificationScreenState extends State<MfaVerificationScreen> {
                           ),
                           const SizedBox(height: 12),
                           ClarityButton.text(
-                            label: 'Sign out',
+                            label: l10n.commonSignOut,
                             onPressed: controller.isMfaLoading
                                 ? null
                                 : controller.cancelMfaSignIn,

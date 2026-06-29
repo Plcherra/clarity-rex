@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/features/usage_admin/application/owner_usage_controller.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_models.dart';
 import 'package:clarity/theme/clarity_colors.dart';
@@ -42,6 +43,7 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final colors = context.clarityColors;
 
@@ -57,18 +59,23 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
         listenable: _controller,
         builder: (context, _) {
           if (_controller.isLoading) {
-            return const Center(
-              child: ClarityDiamondLoader(size: 56, label: 'Loading user usage'),
+            return Center(
+              child: ClarityDiamondLoader(
+                size: 56,
+                label: l10n.usageAdminLoadingUserUsage,
+              ),
             );
           }
           if (_controller.errorMessage != null) {
-            return Center(child: Text(_controller.errorMessage!));
+            return Center(child: Text(l10n.usageAdminUserLoadFailed));
           }
 
           final daily = _controller.dailyUsage?.daily ?? const [];
           final voiceValues = daily.map((row) => row.voiceSeconds).toList();
           final callValues = daily.map((row) => row.llmCalls.toDouble()).toList();
-          final labels = daily.map((row) => shortDayLabel(row.usageDate)).toList();
+          final labels = daily
+              .map((row) => shortDayLabel(l10n, row.usageDate))
+              .toList();
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -80,7 +87,7 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Estimated cost this month',
+                      l10n.usageAdminEstimatedCostThisMonth,
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: colors.textSecondary,
                       ),
@@ -88,6 +95,7 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
                     const SizedBox(height: 6),
                     Text(
                       formatUsageCost(
+                        l10n,
                         widget.user.monthEstimatedCostCents,
                         hasUsageWithoutCost: widget.user.monthLlmCalls > 0 ||
                             widget.user.monthVoiceSeconds > 0,
@@ -101,7 +109,7 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Daily voice minutes',
+                l10n.usageSummaryDailyVoiceMinutes,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -110,7 +118,7 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
               VoiceUsageDailyLineChart(values: voiceValues, labels: labels),
               const SizedBox(height: 16),
               Text(
-                'Daily AI calls',
+                l10n.usageSummaryDailyAiCalls,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -119,19 +127,19 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
               UsageDailyBarChart(values: callValues, labels: labels),
               const SizedBox(height: 16),
               Text(
-                'Usage shape',
+                l10n.usageAdminUsageShape,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
               UsageRadarChart(
-                titles: const [
-                  'Voice min',
-                  'Chat LLM',
-                  'Voice LLM',
-                  'STT min',
-                  'TTS min',
+                titles: [
+                  l10n.usageAdminRadarVoiceMin,
+                  l10n.usageAdminRadarChatLlm,
+                  l10n.usageAdminRadarVoiceLlm,
+                  l10n.usageAdminRadarSttMin,
+                  l10n.usageAdminRadarTtsMin,
                 ],
                 values: [
                   widget.user.monthVoiceSeconds / 60,

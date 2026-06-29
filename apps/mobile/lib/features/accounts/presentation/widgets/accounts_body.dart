@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
 import '../../../../widgets/clarity_diamond_loader.dart';
 import '../../data/plaid_account_service.dart';
@@ -49,21 +50,25 @@ class AccountsBody extends StatelessWidget {
       listenable: dataNotifier,
       builder: (context, _) {
         final accounts = dataNotifier.data;
+        final l10n = context.l10n;
         if (accounts == null) {
           if (dataNotifier.error != null) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  'Could not load accounts.',
+                  l10n.accountsScreenLoadError,
                   style: theme.textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
               ),
             );
           }
-          return const Center(
-            child: ClarityDiamondLoader(size: 56, label: 'Loading accounts'),
+          return Center(
+            child: ClarityDiamondLoader(
+              size: 56,
+              label: l10n.accountsScreenLoadingLabel,
+            ),
           );
         }
 

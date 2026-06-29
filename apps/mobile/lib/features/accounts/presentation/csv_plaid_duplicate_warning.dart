@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_l10n.dart';
 import '../../../core/models/models.dart';
 
 Future<bool?> confirmCsvImportForPlaidAccount(
   BuildContext context,
   Account account,
 ) {
+  final l10n = context.l10n;
   return showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Import CSV into connected account?'),
-      content: Text(
-        '${account.displayName} already syncs through Plaid. Importing a CSV here can add duplicate rows if the file overlaps with synced transactions.',
-      ),
+      title: Text(l10n.csvPlaidWarningTitle),
+      content: Text(l10n.csvPlaidWarningContent(account.displayName)),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Continue import'),
+          child: Text(l10n.csvPlaidWarningContinue),
         ),
       ],
     ),

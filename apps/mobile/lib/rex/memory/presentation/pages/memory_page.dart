@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/application/memory_controller.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_archive_dialogs.dart';
-import 'package:clarity/rex/memory/presentation/widgets/memory_edit_dialogs.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_sheets.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_filters.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_header_widgets.dart';
@@ -83,7 +83,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       return;
     }
 
-    _showSnackBar(saved ? 'Memory updated' : _currentError());
+    _showSnackBar(saved ? context.l10n.memoryPageMemoryUpdated : _currentError());
   }
 
   Future<void> _archiveMemory(MemoryItem memory) async {
@@ -99,19 +99,20 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       return;
     }
 
-    _showSnackBar(archived ? 'Memory archived' : _currentError());
+    _showSnackBar(archived ? context.l10n.memoryPageMemoryArchived : _currentError());
   }
 
   Future<void> _editPerson(PersonMemoryItem person) async {
+    final l10n = context.l10n;
     final result = await showStructuredEditSheet(
       context,
-      title: 'Edit person',
-      typeLabel: 'Person',
-      primaryLabel: 'Name',
+      title: l10n.memoryEditEditPersonTitle,
+      typeLabel: l10n.commonPerson,
+      primaryLabel: l10n.commonName,
       primaryValue: person.displayName,
-      detailLabel: 'Summary',
+      detailLabel: l10n.commonSummary,
       detailValue: person.summary,
-      importanceLabel: 'Importance',
+      importanceLabel: l10n.commonImportance,
       importance: person.importance,
       status: person.status,
       active: person.active,
@@ -133,22 +134,23 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           active: result.active,
         );
     if (mounted) {
-      _showSnackBar(saved ? 'Person updated' : _currentError());
+      _showSnackBar(saved ? l10n.memoryPagePersonUpdated : _currentError());
     }
   }
 
   Future<void> _editRule(RuleMemoryItem rule) async {
+    final l10n = context.l10n;
     final result = await showStructuredEditSheet(
       context,
-      title: 'Edit rule',
+      title: l10n.memoryEditEditRuleTitle,
       typeLabel: rule.ruleType.memoryRecordLabel,
-      primaryLabel: 'Title',
+      primaryLabel: l10n.commonTitle,
       primaryValue: rule.title,
-      detailLabel: 'Rule text',
+      detailLabel: l10n.memoryEditRuleTextLabel,
       detailValue: rule.ruleText,
-      extraLabel: 'Trigger keywords',
+      extraLabel: l10n.memoryEditTriggerKeywordsLabel,
       extraValue: rule.triggerKeywords.join(', '),
-      importanceLabel: 'Priority',
+      importanceLabel: l10n.commonPriority,
       importance: rule.priority,
       status: rule.status,
       active: rule.active,
@@ -171,22 +173,23 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           active: result.active,
         );
     if (mounted) {
-      _showSnackBar(saved ? 'Rule updated' : _currentError());
+      _showSnackBar(saved ? l10n.memoryPageRuleUpdated : _currentError());
     }
   }
 
   Future<void> _editPlan(PlanMemoryItem plan) async {
+    final l10n = context.l10n;
     final result = await showStructuredEditSheet(
       context,
-      title: 'Edit plan',
+      title: l10n.memoryEditEditPlanTitle,
       typeLabel: plan.planType.memoryRecordLabel,
-      primaryLabel: 'Title',
+      primaryLabel: l10n.commonTitle,
       primaryValue: plan.title,
-      detailLabel: 'Description',
+      detailLabel: l10n.commonDescription,
       detailValue: plan.description,
-      extraLabel: 'Desired outcome',
+      extraLabel: l10n.memoryEditDesiredOutcomeLabel,
       extraValue: plan.desiredOutcome,
-      importanceLabel: 'Priority',
+      importanceLabel: l10n.commonPriority,
       importance: plan.priority,
       status: plan.status,
       active: plan.active,
@@ -209,20 +212,21 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           active: result.active,
         );
     if (mounted) {
-      _showSnackBar(saved ? 'Plan updated' : _currentError());
+      _showSnackBar(saved ? l10n.memoryPagePlanUpdated : _currentError());
     }
   }
 
   Future<void> _editCommitment(CommitmentMemoryItem commitment) async {
+    final l10n = context.l10n;
     final result = await showStructuredEditSheet(
       context,
-      title: 'Edit commitment',
+      title: l10n.memoryEditEditCommitmentTitle,
       typeLabel: commitment.commitmentType.memoryRecordLabel,
-      primaryLabel: 'Title',
+      primaryLabel: l10n.commonTitle,
       primaryValue: commitment.title,
-      detailLabel: 'Commitment',
+      detailLabel: l10n.commonCommitment,
       detailValue: commitment.commitmentText,
-      importanceLabel: 'Priority',
+      importanceLabel: l10n.commonPriority,
       importance: commitment.priority,
       status: commitment.status,
       active: commitment.active,
@@ -244,7 +248,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           active: result.active,
         );
     if (mounted) {
-      _showSnackBar(saved ? 'Commitment updated' : _currentError());
+      _showSnackBar(saved ? l10n.memoryPageCommitmentUpdated : _currentError());
     }
   }
 
@@ -265,7 +269,9 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
         .read(memoryProvider.notifier)
         .archiveStructuredMemory(layer, id);
     if (mounted) {
-      _showSnackBar(archived ? '$label archived' : _currentError());
+      _showSnackBar(
+        archived ? context.l10n.commonArchivedNamed(label) : _currentError(),
+      );
     }
   }
 
@@ -276,7 +282,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
   }
 
   String _currentError() {
-    return ref.read(memoryProvider).errorMessage ?? 'Memory action failed.';
+    return ref.read(memoryProvider).errorMessage ?? context.l10n.memoryPageActionFailed;
   }
 
   @override
@@ -290,12 +296,12 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     return RexScaffold(
       appBar: widget.showAppBar
           ? AppBar(
-              title: const Text('What Clarity Knows'),
+              title: Text(context.l10n.memoryPageTitle),
               actions: [
                 IconButton(
                   onPressed: state.isLoading ? null : _refresh,
                   icon: const Icon(Icons.refresh_rounded),
-                  tooltip: 'Refresh information',
+                  tooltip: context.l10n.memoryPageRefreshTooltip,
                 ),
               ],
             )

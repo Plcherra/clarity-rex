@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../app/ui_dependencies.dart';
 import '../../../core/formatting/formatting.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../app/ui_dependencies.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../categories/domain/category_normalization.dart';
 import '../../dashboard/domain/dashboard_snapshot.dart';
@@ -195,6 +196,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
   }
 
   Future<List<BudgetCategoryListItemData>> buildCategoryListItems({
+    required AppLocalizations l10n,
     required List<BudgetCategoryRow> rows,
     required bool hasSelectedPeriod,
     required BudgetPeriodType periodType,
@@ -203,6 +205,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
   }) async {
     final budgets = await _fetchBudgetsForPeriod(periodType, periodKey);
     return buildBudgetCategoryListItemsForRows(
+      l10n: l10n,
       rows: rows,
       hasSelectedPeriod: hasSelectedPeriod,
       budgets: budgets,
@@ -349,6 +352,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
 }
 
 List<BudgetCategoryListItemData> buildBudgetCategoryListItemsForRows({
+  required AppLocalizations l10n,
   required List<BudgetCategoryRow> rows,
   required bool hasSelectedPeriod,
   required List<BudgetRecord> budgets,
@@ -363,11 +367,18 @@ List<BudgetCategoryListItemData> buildBudgetCategoryListItemsForRows({
     }
     final overspent = budget != null && spent > budget;
     final remaining = budget == null ? null : budget - spent;
+    final spentLabel = formatMoney(spent);
     final statusText = budget == null
-        ? 'Spent ${formatMoney(spent)} · No budget'
+        ? l10n.budgetCategoryRowStatusNoBudget(spentLabel)
         : overspent
-        ? 'Spent ${formatMoney(spent)} · Over ${formatMoney(-remaining!)}'
-        : 'Spent ${formatMoney(spent)} · Left ${formatMoney(remaining!)}';
+        ? l10n.budgetCategoryRowStatusOver(
+            spentLabel,
+            formatMoney(-remaining!),
+          )
+        : l10n.budgetCategoryRowStatusLeft(
+            spentLabel,
+            formatMoney(remaining!),
+          );
     items.add(
       BudgetCategoryListItemData(
         canonical: row.canonical,

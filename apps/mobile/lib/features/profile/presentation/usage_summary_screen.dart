@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
+import '../../../core/l10n/app_l10n.dart';
 import '../../../core/supabase/supabase_service.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
@@ -42,12 +44,12 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final l10n = context.l10n;
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: cs.surface,
       appBar: AppBar(
-        title: const Text('Voice usage'),
+        title: Text(l10n.usageSummaryTitle),
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -56,13 +58,18 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
         listenable: _controller,
         builder: (context, _) {
           if (_controller.isLoading) {
-            return const Center(
-              child: ClarityDiamondLoader(size: 56, label: 'Loading usage'),
+            return Center(
+              child: ClarityDiamondLoader(
+                size: 56,
+                label: l10n.usageSummaryLoading,
+              ),
             );
           }
-          final error = _controller.errorMessage;
-          if (error != null) {
-            return _UsageError(message: error, onRetry: _controller.load);
+          if (_controller.errorMessage != null) {
+            return _UsageError(
+              message: l10n.usageSummaryLoadFailed,
+              onRetry: _controller.load,
+            );
           }
           final totals = _controller.totals;
           final voiceValues = totals.dailyRows
@@ -72,7 +79,7 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
               .map((row) => row.llmCalls.toDouble())
               .toList(growable: false);
           final labels = totals.dailyRows
-              .map((row) => shortDayLabel(row.usageDate))
+              .map((row) => shortDayLabel(l10n, row.usageDate))
               .toList(growable: false);
           return RefreshIndicator(
             onRefresh: _controller.load,
@@ -85,7 +92,7 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Daily voice minutes',
+                  l10n.usageSummaryDailyVoiceMinutes,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -97,7 +104,7 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Daily AI calls',
+                  l10n.usageSummaryDailyAiCalls,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -106,19 +113,19 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
                 UsageDailyBarChart(values: callValues, labels: labels),
                 const SizedBox(height: 16),
                 _UsageStatTile(
-                  title: 'Today',
+                  title: l10n.commonToday,
                   minutes: _minutes(totals.todayVoiceSeconds),
                   calls: totals.todayLlmCalls,
                 ),
                 const SizedBox(height: 10),
                 _UsageStatTile(
-                  title: 'This week',
+                  title: l10n.commonThisWeek,
                   minutes: _minutes(totals.weekVoiceSeconds),
                   calls: totals.weekLlmCalls,
                 ),
                 const SizedBox(height: 10),
                 _UsageStatTile(
-                  title: 'This month',
+                  title: l10n.commonThisMonth,
                   minutes: _minutes(totals.monthVoiceSeconds),
                   calls: totals.monthLlmCalls,
                 ),
@@ -144,6 +151,7 @@ final class _UsageStatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final colors = context.clarityColors;
@@ -180,7 +188,7 @@ final class _UsageStatTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$calls AI calls',
+                  l10n.usageSummaryAiCallsCount(calls),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.58),
                     fontWeight: FontWeight.w600,
@@ -190,7 +198,7 @@ final class _UsageStatTile extends StatelessWidget {
             ),
           ),
           Text(
-            _formatMinutes(minutes),
+            _formatMinutes(l10n, minutes),
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w900,
               color: cs.onSurface,
@@ -210,6 +218,7 @@ final class _UsageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final colors = context.clarityColors;
@@ -220,7 +229,7 @@ final class _UsageHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Rex voice activity',
+            l10n.usageSummaryHeaderLabel,
             style: theme.textTheme.labelLarge?.copyWith(
               color: cs.onSurface.withValues(alpha: 0.52),
               fontWeight: FontWeight.w900,
@@ -229,7 +238,7 @@ final class _UsageHeader extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            _formatMinutes(totalMinutes),
+            _formatMinutes(l10n, totalMinutes),
             style: theme.textTheme.displaySmall?.copyWith(
               color: cs.onSurface,
               fontWeight: FontWeight.w900,
@@ -238,7 +247,7 @@ final class _UsageHeader extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '$totalCalls AI calls this month',
+            l10n.usageSummaryAiCallsThisMonth(totalCalls),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: cs.onSurfaceVariant,
               height: 1.35,
@@ -266,7 +275,10 @@ final class _UsageError extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            FilledButton(onPressed: onRetry, child: const Text('Retry')),
+            FilledButton(
+              onPressed: onRetry,
+              child: Text(context.l10n.commonRetry),
+            ),
           ],
         ),
       ),
@@ -276,7 +288,9 @@ final class _UsageError extends StatelessWidget {
 
 double _minutes(double seconds) => seconds / 60;
 
-String _formatMinutes(double minutes) {
-  if (minutes < 1 && minutes > 0) return '<1 min';
-  return '${minutes.round()} min';
+String _formatMinutes(AppLocalizations l10n, double minutes) {
+  if (minutes < 1 && minutes > 0) {
+    return l10n.usageMinutesLessThanOne;
+  }
+  return l10n.usageMinutesFormat(minutes.round());
 }

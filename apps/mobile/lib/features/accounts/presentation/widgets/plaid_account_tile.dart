@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/ui_dependencies.dart';
 import '../../../../core/formatting/formatting.dart';
+import '../../../../core/l10n/app_l10n.dart';
 import '../../data/plaid_account_service.dart';
 import 'plaid_account_detail_chip.dart';
 import 'plaid_account_header.dart';
@@ -28,6 +29,7 @@ class PlaidAccountTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final cs = Theme.of(context).colorScheme;
     final account = item.account;
     final balance = item.displayBalanceAmount;
@@ -65,14 +67,16 @@ class PlaidAccountTile extends StatelessWidget {
                     children: [
                       if (showAvailable)
                         PlaidAccountDetailChip(
-                          label: 'Available',
+                          label: l10n.plaidAccountAvailableLabel,
                           value: formatMoney(availableBalance),
                         ),
                       if (hasMonthlyActivity)
                         PlaidAccountDetailChip(
-                          label: 'This month',
-                          value:
-                              '${formatMoney(item.incomeThisMonth)} in / ${formatMoney(item.spentThisMonth)} out',
+                          label: l10n.plaidAccountThisMonthLabel,
+                          value: l10n.plaidAccountInOutSummary(
+                            formatMoney(item.incomeThisMonth),
+                            formatMoney(item.spentThisMonth),
+                          ),
                         ),
                     ],
                   ),

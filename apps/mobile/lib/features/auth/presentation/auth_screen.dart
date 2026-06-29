@@ -31,6 +31,12 @@ final class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    widget.controller.bindLocalizations(context.l10n);
+  }
+
   Future<void> _submit() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;

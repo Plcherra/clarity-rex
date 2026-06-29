@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_l10n.dart';
 import '../../../theme/clarity_shadows.dart';
 import '../domain/budget_models.dart';
 
@@ -41,6 +42,7 @@ class BudgetsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
@@ -58,18 +60,18 @@ class BudgetsHeader extends StatelessWidget {
               visualDensity: VisualDensity.compact,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            segments: const [
+            segments: [
               ButtonSegment<BudgetPeriodType>(
                 value: BudgetPeriodType.monthly,
-                label: Text('Monthly'),
+                label: Text(l10n.commonMonthly),
               ),
               ButtonSegment<BudgetPeriodType>(
                 value: BudgetPeriodType.weekly,
-                label: Text('Weekly'),
+                label: Text(l10n.commonWeekly),
               ),
               ButtonSegment<BudgetPeriodType>(
                 value: BudgetPeriodType.custom,
-                label: Text('Custom'),
+                label: Text(l10n.commonCustom),
               ),
             ],
             selected: {selectedType},
@@ -83,7 +85,7 @@ class BudgetsHeader extends StatelessWidget {
           if (selectedType == BudgetPeriodType.monthly)
             keys.isEmpty
                 ? Text(
-                    'No months available.',
+                    l10n.budgetsHeaderNoMonthsAvailable,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.56),
                     ),

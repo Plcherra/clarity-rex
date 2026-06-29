@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
 import 'connect_bank_setup_card.dart';
 
 class EmptyAccountsState extends StatelessWidget {
@@ -20,9 +21,8 @@ class EmptyAccountsState extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28),
         child: ConnectBankSetupCard(
-          title: 'Connect your accounts',
-          body:
-              'Start with connected bank accounts so Clarity can keep balances and transactions current.',
+          title: context.l10n.accountsEmptyTitle,
+          body: context.l10n.accountsEmptyBody,
           compact: true,
           onConnectBank: onConnectBank,
           onImportCsvInstead: onImportCsvInstead,

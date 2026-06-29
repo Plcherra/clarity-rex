@@ -9,6 +9,7 @@ class _BudgetPerformanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     if (performance.budgetedCategoryCount == 0) {
       return Container(
         width: double.infinity,
@@ -19,7 +20,7 @@ class _BudgetPerformanceCard extends StatelessWidget {
           border: Border.all(color: _dashboardOutline(context)),
         ),
         child: Text(
-          'No budgets set for ${performance.periodLabel} yet.',
+          l10n.dashboardBudgetNoBudgetsForPeriod(performance.periodLabel),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: cs.onSurface.withValues(alpha: 0.58),
           ),
@@ -47,14 +48,19 @@ class _BudgetPerformanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '${performance.onTrackCategoryCount}/${performance.budgetedCategoryCount} categories on track',
+            l10n.dashboardBudgetCategoriesOnTrack(
+              performance.onTrackCategoryCount,
+              performance.budgetedCategoryCount,
+            ),
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Total overspent ${formatMoney(performance.totalOverspent)}',
+            l10n.dashboardBudgetTotalOverspent(
+              formatMoney(performance.totalOverspent),
+            ),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: performance.totalOverspent > 0
                   ? ClarityColors.financeNegative
@@ -64,7 +70,10 @@ class _BudgetPerformanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Budgeted ${formatMoney(performance.totalBudgeted)} / Spent ${formatMoney(performance.totalSpent)}',
+            l10n.dashboardBudgetBudgetedSpentLine(
+              formatMoney(performance.totalBudgeted),
+              formatMoney(performance.totalSpent),
+            ),
             style: theme.textTheme.bodySmall?.copyWith(
               color: cs.onSurface.withValues(alpha: 0.58),
             ),
@@ -72,7 +81,7 @@ class _BudgetPerformanceCard extends StatelessWidget {
           const SizedBox(height: 14),
           if (performance.topOverspendingCategories.isEmpty)
             Text(
-              'No overspending categories in this period.',
+              l10n.dashboardBudgetNoOverspendingCategories,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: cs.onSurface.withValues(alpha: 0.58),
               ),
@@ -80,7 +89,10 @@ class _BudgetPerformanceCard extends StatelessWidget {
           else
             for (final row in performance.topOverspendingCategories) ...[
               Text(
-                '${row.displayLabel}: overspent ${formatMoney(row.overspent)}',
+                l10n.dashboardBudgetCategoryOverspent(
+                  row.displayLabel,
+                  formatMoney(row.overspent),
+                ),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: ClarityColors.financeNegative,
                   fontWeight: FontWeight.w600,
@@ -105,56 +117,69 @@ class _AccountHealthCard extends StatelessWidget {
   final BudgetPerformanceSnapshot budgetPerformance;
   final int transactionCount;
 
-  String get _headline {
+  String _headline(AppLocalizations l10n) {
     if (snapshot.availableThisMonth < 0) {
-      return 'Spending is ahead of income by ${formatMoney(-snapshot.availableThisMonth)} this month.';
+      return l10n.dashboardHealthSpendingAheadOfIncome(
+        formatMoney(-snapshot.availableThisMonth),
+      );
     }
     if (snapshot.incomeThisMonth > 0 && snapshot.spentThisMonth > 0) {
-      return 'Income is ahead of spending by ${formatMoney(snapshot.availableThisMonth)} this month.';
+      return l10n.dashboardHealthIncomeAheadOfSpending(
+        formatMoney(snapshot.availableThisMonth),
+      );
     }
     if (snapshot.spentThisMonth > 0) {
-      return 'Spending is active this month; no income is recorded in this scope.';
+      return l10n.dashboardHealthSpendingActiveNoIncome;
     }
     if (snapshot.incomeThisMonth > 0) {
-      return 'Income is recorded and no spending has posted for this month yet.';
+      return l10n.dashboardHealthIncomeNoSpending;
     }
     if (transactionCount > 0) {
-      return 'No current-month activity in this scope yet.';
+      return l10n.dashboardHealthNoCurrentMonthActivity;
     }
-    return 'Connect transactions to build account health.';
+    return l10n.dashboardHealthConnectTransactions;
   }
 
-  String get _budgetValue {
-    if (budgetPerformance.budgetedCategoryCount == 0) return 'No budgets';
+  String _budgetValue(AppLocalizations l10n) {
+    if (budgetPerformance.budgetedCategoryCount == 0) {
+      return l10n.dashboardHealthNoBudgets;
+    }
     if (budgetPerformance.totalOverspent > 0) {
       return formatMoney(budgetPerformance.totalOverspent);
     }
-    return '${budgetPerformance.onTrackCategoryCount}/${budgetPerformance.budgetedCategoryCount} on track';
+    return l10n.commonOnTrack(
+      budgetPerformance.onTrackCategoryCount,
+      budgetPerformance.budgetedCategoryCount,
+    );
   }
 
-  String get _budgetDetail {
+  String _budgetDetail(AppLocalizations l10n) {
     if (budgetPerformance.budgetedCategoryCount == 0) {
-      return 'Set budgets to compare this month against a target.';
+      return l10n.dashboardHealthSetBudgets;
     }
     final topOverspend =
         budgetPerformance.topOverspendingCategories.firstOrNull;
     if (topOverspend != null) {
-      return '${topOverspend.displayLabel} is over by ${formatMoney(topOverspend.overspent)}.';
+      return l10n.dashboardHealthCategoryOverBy(
+        topOverspend.displayLabel,
+        formatMoney(topOverspend.overspent),
+      );
     }
-    return 'Budget coverage looks controlled for ${budgetPerformance.periodLabel}.';
+    return l10n.dashboardHealthBudgetControlled(budgetPerformance.periodLabel);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     final topPressure = snapshot.topCategories.firstOrNull;
     final pressureValue = topPressure == null
-        ? 'None'
+        ? l10n.commonNone
         : formatMoney(topPressure.amount);
     final pressureDetail = topPressure == null
-        ? 'No spending pressure recorded this month.'
-        : '${topPressure.name} is the largest spend pressure this month.';
+        ? l10n.dashboardHealthNoSpendingPressure
+        : l10n.dashboardHealthTopSpendPressure(topPressure.name);
 
     return Container(
       width: double.infinity,
@@ -181,7 +206,7 @@ class _AccountHealthCard extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
-                  _headline,
+                  _headline(l10n),
                   style: theme.textTheme.bodyLarge?.copyWith(
                     height: 1.35,
                     fontWeight: FontWeight.w600,
@@ -194,16 +219,18 @@ class _AccountHealthCard extends StatelessWidget {
           const SizedBox(height: 18),
           _HealthMetricRow(
             icon: Icons.sync_alt_rounded,
-            label: 'This month net',
+            label: l10n.dashboardHealthThisMonthNet,
             value: formatMoney(snapshot.availableThisMonth),
-            detail:
-                'Income ${formatMoney(snapshot.incomeThisMonth)} / Spending ${formatMoney(snapshot.spentThisMonth)}',
+            detail: l10n.dashboardHealthIncomeSpendingLine(
+              formatMoney(snapshot.incomeThisMonth),
+              formatMoney(snapshot.spentThisMonth),
+            ),
             valueColor: _balanceColor(context, snapshot.availableThisMonth),
           ),
           const SizedBox(height: 14),
           _HealthMetricRow(
             icon: Icons.trending_up_rounded,
-            label: 'Spend pressure',
+            label: l10n.dashboardHealthSpendPressureLabel,
             value: pressureValue,
             detail: pressureDetail,
             valueColor: topPressure == null
@@ -213,9 +240,9 @@ class _AccountHealthCard extends StatelessWidget {
           const SizedBox(height: 14),
           _HealthMetricRow(
             icon: Icons.savings_outlined,
-            label: 'Budget coverage',
-            value: _budgetValue,
-            detail: _budgetDetail,
+            label: l10n.dashboardHealthBudgetCoverageLabel,
+            value: _budgetValue(l10n),
+            detail: _budgetDetail(l10n),
             valueColor: budgetPerformance.totalOverspent > 0
                 ? ClarityColors.financeNegative
                 : cs.onSurface.withValues(alpha: 0.82),

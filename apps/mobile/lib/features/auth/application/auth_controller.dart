@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../l10n/app_localizations.dart';
+import '../../../l10n/app_localizations_en.dart';
 import 'auth_error_messages.dart';
 import 'auth_service.dart';
 import 'auth_signup.dart';
@@ -11,8 +13,10 @@ class AuthController extends ChangeNotifier {
   AuthController({
     required AuthService authService,
     bool initialAuthenticated = false,
+    AppLocalizations Function()? l10n,
   }) : _authService = authService,
-       _authenticatedOverride = initialAuthenticated {
+       _authenticatedOverride = initialAuthenticated,
+       _l10n = l10n ?? (() => AppLocalizationsEn()) {
     _session = _authService.currentSession;
     _syncMfaRequirement();
     _subscription = _authService.authStateChanges.listen((state) {
@@ -24,6 +28,7 @@ class AuthController extends ChangeNotifier {
   }
 
   final AuthService _authService;
+  AppLocalizations Function() _l10n;
   StreamSubscription<AuthState>? _subscription;
   Session? _session;
   bool _authenticatedOverride;
@@ -42,6 +47,12 @@ class AuthController extends ChangeNotifier {
   User? get currentUser => _session?.user ?? _authService.currentUser;
   bool get isAuthenticated => _authenticatedOverride || currentSession != null;
   bool get hasVerifiedTotpFactor => mfaFactors.isNotEmpty;
+
+  AppLocalizations get l10n => _l10n();
+
+  void bindLocalizations(AppLocalizations localizations) {
+    _l10n = () => localizations;
+  }
 
   void clearAuthMessages() {
     errorMessage = null;
@@ -62,18 +73,15 @@ class AuthController extends ChangeNotifier {
       );
       switch (signUpStatus(response)) {
         case SignUpStatus.emailAlreadyRegistered:
-          throw const AuthException(
-            'An account with this email already exists. Sign in instead.',
-          );
+          throw AuthException(l10n.authErrorAccountExists);
         case SignUpStatus.signedIn:
           _session = response.session;
           _syncMfaRequirement();
-          infoMessage = 'Account created. You are signed in.';
+          infoMessage = l10n.authInfoAccountCreatedSignedIn;
         case SignUpStatus.needsEmailConfirmation:
           _session = response.session;
           _syncMfaRequirement();
-          infoMessage =
-              'We sent a confirmation link to $email. Open it, then return here and sign in.';
+          infoMessage = l10n.authInfoConfirmationLinkSent(email);
       }
     });
   }
@@ -90,7 +98,7 @@ class AuthController extends ChangeNotifier {
       _session = response.session;
       _syncMfaRequirement();
       if (isMfaRequired) {
-        infoMessage = 'Enter your authenticator code to finish signing in.';
+        infoMessage = l10n.authInfoEnterAuthenticatorCode;
       }
     });
   }
@@ -98,8 +106,7 @@ class AuthController extends ChangeNotifier {
   Future<void> requestPasswordReset({required String email}) async {
     await _runAuthAction(() async {
       await _authService.requestPasswordReset(email: email);
-      infoMessage =
-          'If an account exists for $email, we sent a password reset link.';
+      infoMessage = l10n.authInfoPasswordResetSent(email);
     });
   }
 
@@ -120,8 +127,7 @@ class AuthController extends ChangeNotifier {
     await _runMfaAction(() async {
       mfaFactors = await _authService.verifiedTotpFactors();
       if (mfaFactors.isEmpty && isMfaRequired) {
-        mfaErrorMessage =
-            'No verified authenticator app is available for this account.';
+        mfaErrorMessage = l10n.authErrorNoAuthenticatorAvailable;
       }
     });
   }
@@ -129,15 +135,14 @@ class AuthController extends ChangeNotifier {
   Future<void> beginMfaEnrollment() async {
     await _runMfaAction(() async {
       pendingMfaEnrollment = await _authService.enrollTotp();
-      mfaInfoMessage =
-          'Scan the QR code, then enter the 6-digit code from your app.';
+      mfaInfoMessage = l10n.authInfoMfaEnrollmentStart;
     });
   }
 
   Future<void> verifyMfaEnrollment({required String code}) async {
     final enrollment = pendingMfaEnrollment;
     if (enrollment == null) {
-      mfaErrorMessage = 'Start MFA enrollment before verifying a code.';
+      mfaErrorMessage = l10n.authErrorStartEnrollmentFirst;
       notifyListeners();
       return;
     }
@@ -153,8 +158,8 @@ class AuthController extends ChangeNotifier {
         MfaSecurityEmailEvent.enabled,
       );
       mfaInfoMessage = emailSent
-          ? 'MFA is enabled. We sent you a confirmation email.'
-          : 'MFA is enabled. Confirmation email could not be sent right now.';
+          ? l10n.authInfoMfaEnabledEmailSent
+          : l10n.authInfoMfaEnabledEmailFailed;
     });
   }
 
@@ -166,16 +171,14 @@ class AuthController extends ChangeNotifier {
           mfaFactors = await _authService.verifiedTotpFactors();
         }
         if (mfaFactors.isEmpty) {
-          throw const AuthException(
-            'No verified authenticator app is available for this account.',
-          );
+          throw AuthException(l10n.authErrorNoAuthenticatorAvailable);
         }
         resolvedFactorId = mfaFactors.first.id;
       }
       await _authService.verifyMfaCode(factorId: resolvedFactorId, code: code);
       _session = _authService.currentSession;
       await _refreshMfaStateAfterVerification();
-      mfaInfoMessage = 'Sign-in verified.';
+      mfaInfoMessage = l10n.authInfoSignInVerified;
     });
   }
 
@@ -194,10 +197,10 @@ class AuthController extends ChangeNotifier {
           MfaSecurityEmailEvent.disabled,
         );
         mfaInfoMessage = emailSent
-            ? 'MFA is off. We sent you a confirmation email.'
-            : 'MFA is off. Confirmation email could not be sent right now.';
+            ? l10n.authInfoMfaDisabledEmailSent
+            : l10n.authInfoMfaDisabledEmailFailed;
       } else {
-        mfaInfoMessage = 'Authenticator app removed.';
+        mfaInfoMessage = l10n.authInfoAuthenticatorRemoved;
       }
     });
   }
@@ -211,7 +214,7 @@ class AuthController extends ChangeNotifier {
       if (factorsToRemove.isEmpty) {
         pendingMfaEnrollment = null;
         _syncMfaRequirement();
-        mfaInfoMessage = 'MFA is already off.';
+        mfaInfoMessage = l10n.authInfoMfaAlreadyOff;
         return;
       }
       for (final factor in factorsToRemove) {
@@ -224,8 +227,8 @@ class AuthController extends ChangeNotifier {
         MfaSecurityEmailEvent.disabled,
       );
       mfaInfoMessage = emailSent
-          ? 'MFA is off. We sent you a confirmation email.'
-          : 'MFA is off. Confirmation email could not be sent right now.';
+          ? l10n.authInfoMfaDisabledEmailSent
+          : l10n.authInfoMfaDisabledEmailFailed;
     });
   }
 
@@ -238,7 +241,7 @@ class AuthController extends ChangeNotifier {
       await action();
     } catch (e) {
       debugPrint('[Clarity][Auth] $e');
-      errorMessage = friendlyAuthError(e);
+      errorMessage = friendlyAuthError(e, l10n);
     } finally {
       isLoading = false;
       notifyListeners();
@@ -253,7 +256,7 @@ class AuthController extends ChangeNotifier {
     try {
       await action();
     } catch (e) {
-      mfaErrorMessage = friendlyAuthError(e);
+      mfaErrorMessage = friendlyAuthError(e, l10n);
     } finally {
       isMfaLoading = false;
       notifyListeners();

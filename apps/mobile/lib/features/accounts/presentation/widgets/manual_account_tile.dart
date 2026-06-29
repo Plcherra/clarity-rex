@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/ui_dependencies.dart';
 import '../../../../core/formatting/formatting.dart';
+import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
 import '../../../../theme/clarity_colors.dart';
 import 'source_label_chip.dart';
@@ -27,6 +28,7 @@ class ManualAccountTile extends StatelessWidget {
         item.incomeThisMonth != 0 ||
         item.spentThisMonth != 0 ||
         item.netCashFlow != 0;
+    final l10n = context.l10n;
     return Material(
       color: cs.surfaceContainerLow,
       borderRadius: BorderRadius.circular(14),
@@ -89,7 +91,7 @@ class ManualAccountTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    balance == null ? 'Unavailable' : formatMoney(balance),
+                    balance == null ? l10n.commonUnavailable : formatMoney(balance),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                       color: balance == null
@@ -100,7 +102,7 @@ class ManualAccountTile extends StatelessWidget {
                   if (hasMonthlyActivity) ...[
                     const SizedBox(height: 3),
                     Text(
-                      'This month ${formatMoney(item.netCashFlow)} net',
+                      l10n.accountTileThisMonthNet(formatMoney(item.netCashFlow)),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: item.netCashFlow > 0
                             ? ClarityColors.financePositive
@@ -116,7 +118,7 @@ class ManualAccountTile extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'View account',
+                        l10n.accountTileViewAccount,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: cs.onSurface.withValues(alpha: 0.46),
                           fontWeight: FontWeight.w700,

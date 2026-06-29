@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
 import '../../../../widgets/clarity_path_loader.dart';
+import '../accounts_plaid_status_helpers.dart';
 
 class AddAccountDialog extends StatefulWidget {
   const AddAccountDialog({super.key, required this.onCreate});
@@ -54,8 +56,9 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return AlertDialog(
-      title: const Text('New account'),
+      title: Text(l10n.addAccountDialogTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -66,7 +69,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
               textCapitalization: TextCapitalization.words,
               enableSuggestions: false,
               autocorrect: false,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: l10n.commonName),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -74,23 +77,19 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
               textCapitalization: TextCapitalization.words,
               enableSuggestions: false,
               autocorrect: false,
-              decoration: const InputDecoration(
-                labelText: 'Institution (optional)',
+              decoration: InputDecoration(
+                labelText: l10n.addAccountDialogInstitutionLabel,
               ),
             ),
             const SizedBox(height: 12),
-            Text('Type', style: theme.textTheme.labelLarge),
+            Text(l10n.addAccountDialogTypeLabel, style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
             SegmentedButton<AccountType>(
               segments: [
                 for (final t in AccountType.values)
                   ButtonSegment<AccountType>(
                     value: t,
-                    label: Text(switch (t) {
-                      AccountType.checking => 'Checking',
-                      AccountType.savings => 'Savings',
-                      AccountType.creditCard => 'Card',
-                    }),
+                    label: Text(accountTypeLabel(l10n, t)),
                   ),
               ],
               selected: {_type},
@@ -107,8 +106,8 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                 decimal: true,
                 signed: true,
               ),
-              decoration: const InputDecoration(
-                labelText: 'Current balance (optional)',
+              decoration: InputDecoration(
+                labelText: l10n.addAccountDialogBalanceLabel,
               ),
             ),
           ],
@@ -117,13 +116,13 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
         FilledButton(
           onPressed: _saving ? null : _submit,
           child: _saving
               ? const ClarityInlineLoader(size: 20, strokeWidth: 2)
-              : const Text('Save'),
+              : Text(l10n.commonSave),
         ),
       ],
     );

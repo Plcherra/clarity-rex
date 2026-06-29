@@ -22,6 +22,7 @@ class DeepgramService:
         audio_bytes: bytes,
         content_type: str,
         filename: Optional[str] = None,
+        language: Optional[str] = None,
     ) -> dict[str, Any]:
         if not self.settings.deepgram_api_key:
             raise DeepgramServiceError(
@@ -41,7 +42,7 @@ class DeepgramService:
                 },
                 params={
                     "model": self.settings.deepgram_model,
-                    "language": self.settings.deepgram_language,
+                    "language": language or self.settings.deepgram_language,
                     "smart_format": "true",
                 },
                 content=audio_bytes,

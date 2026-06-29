@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
@@ -47,7 +48,10 @@ String? personMemorySubtitle(PersonMemoryItem person) {
   return null;
 }
 
-List<String> personSupplementalLabels(PersonMemoryItem person) {
+List<String> personSupplementalLabels(
+  AppLocalizations l10n,
+  PersonMemoryItem person,
+) {
   final context = personMemorySubtitle(person);
   final labels = <String>[];
 
@@ -59,25 +63,25 @@ List<String> personSupplementalLabels(PersonMemoryItem person) {
 
   if (person.fullName != null &&
       !memoryTextsMatch(person.fullName, person.displayName)) {
-    addIfMissing(person.fullName!, label: 'Name');
+    addIfMissing(person.fullName!, label: l10n.commonName);
   }
   if (person.location != null) {
-    addIfMissing(person.location!, label: 'Location');
+    addIfMissing(person.location!, label: l10n.memoryDisplayLocation);
   }
   if (person.birthday != null) {
-    addIfMissing(person.birthday!, label: 'Birthday');
+    addIfMissing(person.birthday!, label: l10n.memoryDisplayBirthday);
   }
   if (person.job != null) {
-    addIfMissing(person.job!, label: 'Job');
+    addIfMissing(person.job!, label: l10n.memoryDisplayJob);
   }
   if (person.workplace != null) {
-    addIfMissing(person.workplace!, label: 'Workplace');
+    addIfMissing(person.workplace!, label: l10n.memoryDisplayWorkplace);
   }
   if (person.notes != null) {
-    addIfMissing(person.notes!, label: 'Notes');
+    addIfMissing(person.notes!, label: l10n.commonNotes);
   }
   for (final date in person.importantDates) {
-    addIfMissing(date, label: 'Important date');
+    addIfMissing(date, label: l10n.memoryDisplayImportantDate);
   }
   return labels;
 }
@@ -116,17 +120,17 @@ String? commitmentMemorySubtitle(CommitmentMemoryItem commitment) {
   return text;
 }
 
-String memoryImportanceShortLabel(int importance) {
+String memoryImportanceShortLabel(AppLocalizations l10n, int importance) {
   if (importance >= 5) {
-    return 'High';
+    return l10n.commonHigh;
   }
   if (importance >= 4) {
-    return 'Medium';
+    return l10n.commonMedium;
   }
   if (importance >= 3) {
-    return 'Normal';
+    return l10n.commonNormal;
   }
-  return 'Low';
+  return l10n.commonLow;
 }
 
 Color memoryImportanceColor(ClarityColorTokens colors, int importance) {
@@ -139,7 +143,11 @@ Color memoryImportanceColor(ClarityColorTokens colors, int importance) {
   return colors.textMuted;
 }
 
-String memoryUpdatedLabel(DateTime? updatedAt, DateTime? createdAt) {
+String memoryUpdatedLabel(
+  AppLocalizations l10n,
+  DateTime? updatedAt,
+  DateTime? createdAt,
+) {
   final savedAt = updatedAt ?? createdAt;
   if (savedAt == null) {
     return '';
@@ -147,5 +155,5 @@ String memoryUpdatedLabel(DateTime? updatedAt, DateTime? createdAt) {
   final local = savedAt.toLocal();
   final month = local.month.toString().padLeft(2, '0');
   final day = local.day.toString().padLeft(2, '0');
-  return 'Updated $month/$day/${local.year}';
+  return l10n.commonUpdatedDate('$month/$day/${local.year}');
 }

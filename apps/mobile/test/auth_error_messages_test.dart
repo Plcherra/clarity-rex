@@ -1,26 +1,29 @@
 import 'package:clarity/features/auth/application/auth_error_messages.dart';
+import 'package:clarity/l10n/app_localizations_en.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  final l10n = AppLocalizationsEn();
+
   test('invalid login credentials are not shown as MFA errors', () {
     expect(
-      friendlyAuthError(const AuthException('Invalid login credentials')),
-      'Email or password is incorrect. Try again or create a new account.',
+      friendlyAuthError(const AuthException('Invalid login credentials'), l10n),
+      l10n.authErrorInvalidCredentials,
     );
   });
 
   test('duplicate signup shows account exists message', () {
     expect(
-      friendlyAuthError(const AuthException('User already registered')),
-      'An account with this email already exists. Sign in instead.',
+      friendlyAuthError(const AuthException('User already registered'), l10n),
+      l10n.authErrorAccountExists,
     );
   });
 
   test('invalid TOTP codes keep authenticator guidance', () {
     expect(
-      friendlyAuthError(const AuthException('Invalid TOTP code entered')),
-      'That code was not accepted. Check your authenticator app and try again.',
+      friendlyAuthError(const AuthException('Invalid TOTP code entered'), l10n),
+      l10n.authErrorMfaCodeRejected,
     );
   });
 
@@ -28,8 +31,9 @@ void main() {
     expect(
       friendlyAuthError(
         const AuthException('Error sending confirmation email'),
+        l10n,
       ),
-      'We could not send a confirmation email right now. Try again in a few minutes or contact support if this continues.',
+      l10n.authErrorEmailSendFailed,
     );
   });
 }

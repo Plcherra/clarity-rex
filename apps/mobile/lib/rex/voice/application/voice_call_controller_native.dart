@@ -29,6 +29,7 @@ extension VoiceCallControllerNativeSession on VoiceCallController {
         NativeVoiceSessionConfig(
           conversationId: conversationId,
           accessToken: const RexAuthHeaders().accessToken(),
+          locale: AppLocale.rexLocaleTag(ref.read(localeControllerProvider)),
         ),
       );
     } on Object {

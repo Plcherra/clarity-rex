@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-String friendlyAuthError(Object error) {
+import '../../../l10n/app_localizations.dart';
+
+String friendlyAuthError(Object error, AppLocalizations l10n) {
   final message = _authErrorMessage(error);
   if (message == null) {
     return error.toString();
@@ -10,37 +12,37 @@ String friendlyAuthError(Object error) {
 
   if (normalized.contains('invalid login credentials') ||
       normalized.contains('invalid credentials')) {
-    return 'Email or password is incorrect. Try again or create a new account.';
+    return l10n.authErrorInvalidCredentials;
   }
   if (normalized.contains('user already registered') ||
       normalized.contains('already been registered') ||
       normalized.contains('already exists')) {
-    return 'An account with this email already exists. Sign in instead.';
+    return l10n.authErrorAccountExists;
   }
   if (normalized.contains('email not confirmed') ||
       normalized.contains('confirm your email')) {
-    return 'Confirm your email first, then sign in.';
+    return l10n.authErrorEmailNotConfirmed;
   }
   if (normalized.contains('error sending') &&
       normalized.contains('email')) {
-    return 'We could not send a confirmation email right now. Try again in a few minutes or contact support if this continues.';
+    return l10n.authErrorEmailSendFailed;
   }
   if (normalized.contains('signups not allowed') ||
       normalized.contains('signup is disabled')) {
-    return 'New account sign-up is disabled for this app right now.';
+    return l10n.authErrorSignupsDisabled;
   }
   if (normalized.contains('password') &&
       (normalized.contains('at least') || normalized.contains('weak'))) {
-    return 'Choose a stronger password and try again.';
+    return l10n.authErrorWeakPassword;
   }
   if (isMfaCodeError(normalized)) {
-    return 'That code was not accepted. Check your authenticator app and try again.';
+    return l10n.authErrorMfaCodeRejected;
   }
   if (normalized.contains('mfa') && normalized.contains('not enabled')) {
-    return 'MFA is not enabled for this Supabase project.';
+    return l10n.authErrorMfaNotEnabled;
   }
   if (normalized.contains('too many')) {
-    return 'Too many attempts. Wait a moment, then try again.';
+    return l10n.authErrorTooManyAttempts;
   }
   return message;
 }

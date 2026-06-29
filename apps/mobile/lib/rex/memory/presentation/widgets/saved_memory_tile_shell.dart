@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_meta_chip.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
@@ -83,12 +85,13 @@ class SavedMemoryTileShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
-    final updatedLabel = memoryUpdatedLabel(updatedAt, createdAt);
+    final l10n = context.l10n;
+    final updatedLabel = memoryUpdatedLabel(l10n, updatedAt, createdAt);
     final metaParts = <String>[
       typeLabel,
-      memoryImportanceShortLabel(importance),
+      memoryImportanceShortLabel(l10n, importance),
       if (updatedLabel.isNotEmpty) updatedLabel,
-      if (!active) 'Inactive',
+      if (!active) l10n.commonInactive,
     ];
 
     return Padding(
@@ -187,6 +190,7 @@ class SavedMemoryTileShell extends StatelessWidget {
 }
 
 List<Widget> baseMemoryChips({
+  required AppLocalizations l10n,
   required String typeLabel,
   required bool active,
   required DateTime? savedAt,
@@ -194,8 +198,8 @@ List<Widget> baseMemoryChips({
   return [
     MemoryMetaChip(label: typeLabel),
     if (savedAt != null)
-      MemoryMetaChip(label: memoryUpdatedLabel(savedAt, null)),
-    if (!active) const MemoryMetaChip(label: 'Inactive'),
+      MemoryMetaChip(label: memoryUpdatedLabel(l10n, savedAt, null)),
+    if (!active) MemoryMetaChip(label: l10n.commonInactive),
   ];
 }
 
@@ -242,8 +246,9 @@ class _MemoryActionsMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     return PopupMenuButton<_MemoryAction>(
-      tooltip: 'Memory actions',
+      tooltip: l10n.memoryTileActionsTooltip,
       color: colors.surfaceElevated,
       icon: Icon(Icons.more_horiz_rounded, color: colors.textMuted, size: 18),
       shape: RoundedRectangleBorder(
@@ -258,19 +263,19 @@ class _MemoryActionsMenu extends StatelessWidget {
         }
       },
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: _MemoryAction.edit,
           child: _MemoryMenuItem(
             icon: Icons.edit_outlined,
-            label: 'Quick edit',
+            label: l10n.memoryTileQuickEdit,
           ),
         ),
         if (onDeactivate != null)
-          const PopupMenuItem(
+          PopupMenuItem(
             value: _MemoryAction.archive,
             child: _MemoryMenuItem(
               icon: Icons.visibility_off_outlined,
-              label: 'Archive',
+              label: l10n.commonArchive,
             ),
           ),
       ],

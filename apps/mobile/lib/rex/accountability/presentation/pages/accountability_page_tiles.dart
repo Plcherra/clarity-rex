@@ -166,9 +166,10 @@ class _TileMetaRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     final parts = <String>[
-      priorityShortLabel(priority),
-      if (deadline != null) 'Due ${_shortDate(deadline!)}',
+      priorityShortLabel(l10n, priority),
+      if (deadline != null) _dueDateLabel(l10n, deadline!),
     ];
     return Text(
       parts.join(' · '),
@@ -216,7 +217,7 @@ class _StatusChip extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 2, right: 2),
       child: Text(
-        statusShortLabel(status),
+        statusShortLabel(context.l10n, status),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: colors.textSecondary,
           fontWeight: FontWeight.w600,
@@ -234,12 +235,13 @@ class _GoalActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     return PopupMenuButton<String>(
-      tooltip: 'Goal actions',
+      tooltip: l10n.accountabilityTilesGoalActionsTooltip,
       color: colors.surfaceSoft,
       icon: Icon(Icons.more_horiz_rounded, color: colors.textMuted, size: 18),
-      itemBuilder: (context) => const [
-        PopupMenuItem(value: 'archive', child: Text('Archive')),
+      itemBuilder: (context) => [
+        PopupMenuItem(value: 'archive', child: Text(l10n.commonArchive)),
       ],
       onSelected: (value) {
         if (value == 'archive') {
@@ -264,14 +266,18 @@ class _CommitmentActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     return PopupMenuButton<String>(
-      tooltip: 'Commitment actions',
+      tooltip: l10n.accountabilityTilesCommitmentActionsTooltip,
       color: colors.surfaceSoft,
       icon: Icon(Icons.more_horiz_rounded, color: colors.textMuted, size: 18),
-      itemBuilder: (context) => const [
-        PopupMenuItem(value: 'edit', child: Text('Edit')),
-        PopupMenuItem(value: 'missed', child: Text('Mark missed')),
-        PopupMenuItem(value: 'archive', child: Text('Archive')),
+      itemBuilder: (context) => [
+        PopupMenuItem(value: 'edit', child: Text(l10n.commonEdit)),
+        PopupMenuItem(
+          value: 'missed',
+          child: Text(l10n.accountabilityTilesMarkMissed),
+        ),
+        PopupMenuItem(value: 'archive', child: Text(l10n.commonArchive)),
       ],
       onSelected: (value) {
         switch (value) {

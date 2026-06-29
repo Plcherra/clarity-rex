@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../core/formatting/formatting.dart';
+import '../../../core/l10n/clarity_locale_catalog.dart';
+
+export '../../../core/l10n/clarity_locale_catalog.dart' show claritySupportedLocales;
 
 final localeControllerProvider = Provider<LocaleController>(
   (ref) => throw UnimplementedError('LocaleController not bound'),
 );
-
-/// Supported app locales. Add new languages here and in ARB files.
-const claritySupportedLocales = <Locale>[
-  Locale('en'),
-  Locale('es'),
-];
 
 final class LocaleController extends ChangeNotifier {
   LocaleController({SharedPreferencesAsync? preferences})
@@ -20,7 +18,8 @@ final class LocaleController extends ChangeNotifier {
   static const _preferenceKey = 'clarity.locale';
 
   final SharedPreferencesAsync? _preferencesOverride;
-  Locale _locale = const Locale('en');
+  Locale _locale = ClarityLocaleCatalog.fallbackLocale;
+  bool _usedDeviceDefaultOnLoad = false;
 
   SharedPreferencesAsync get _preferences =>
       _preferencesOverride ?? SharedPreferencesAsync();
@@ -29,51 +28,84 @@ final class LocaleController extends ChangeNotifier {
 
   String get languageCode => _locale.languageCode;
 
-  List<Locale> get supportedLocales => claritySupportedLocales;
+  /// BCP-47-ish tag persisted to profile and sent to Rex APIs.
+  String get localeTag => ClarityLocaleCatalog.localeTagFor(_locale);
 
-  String labelFor(Locale value) {
-    return switch (value.languageCode) {
-      'es' => 'Español',
-      'en' => 'English',
-      _ => value.languageCode,
-    };
-  }
+  /// Locales shown in Profile → Language (enabled catalog entries only).
+  List<Locale> get enabledLocales => ClarityLocaleCatalog.enabledLocales;
+
+  /// Locales registered with MaterialApp / gen-l10n delegates.
+  List<Locale> get supportedLocales =>
+      ClarityLocaleCatalog.materialAppSupportedLocales;
+
+  bool get usedDeviceDefaultOnLoad => _usedDeviceDefaultOnLoad;
+
+  String labelFor(Locale value) => ClarityLocaleCatalog.labelFor(value);
 
   String get label => labelFor(_locale);
 
+  /// Device locale from the platform (equivalent to `Platform.localeName`).
+  static Locale readDeviceLocale() {
+    return WidgetsBinding.instance.platformDispatcher.locale;
+  }
+
+  /// Boot-time load: SharedPreferences → device locale → English.
   Future<void> load({Locale? deviceLocale}) async {
     final saved = await _preferences.getString(_preferenceKey);
     if (saved != null && saved.isNotEmpty) {
-      _applyLocale(_localeFromTag(saved), notify: false);
-    } else if (deviceLocale != null) {
-      _applyLocale(_resolveSupported(deviceLocale), notify: false);
+      _applyLocale(
+        ClarityLocaleCatalog.resolveLocaleTag(saved),
+        notify: false,
+      );
+      _usedDeviceDefaultOnLoad = false;
     } else {
-      _applyLocale(const Locale('en'), notify: false);
+      final resolvedDevice = ClarityLocaleCatalog.resolveLocale(
+        deviceLocale ?? readDeviceLocale(),
+      );
+      _applyLocale(resolvedDevice, notify: false);
+      _usedDeviceDefaultOnLoad = true;
     }
     notifyListeners();
   }
 
+  /// After profile hydrate: profile DB wins; seed profile when unset.
+  Future<void> resolveAfterProfileHydrate({
+    String? profilePreferredLocale,
+    Future<void> Function(String localeTag)? seedProfileIfMissing,
+  }) async {
+    final profileLocale = profilePreferredLocale?.trim();
+    if (profileLocale != null && profileLocale.isNotEmpty) {
+      final resolved = ClarityLocaleCatalog.resolveLocaleTag(profileLocale);
+      if (ClarityLocaleCatalog.localeTagFor(resolved) != localeTag) {
+        _applyLocale(resolved);
+        await _preferences.setString(_preferenceKey, localeTag);
+      }
+      _usedDeviceDefaultOnLoad = false;
+      return;
+    }
+
+    if (seedProfileIfMissing != null) {
+      await seedProfileIfMissing(localeTag);
+    }
+  }
+
   Future<void> applyFromProfile(String? preferredLocale) async {
-    if (preferredLocale == null || preferredLocale.trim().isEmpty) {
-      return;
-    }
-    final resolved = _localeFromTag(preferredLocale.trim());
-    if (resolved.languageCode == _locale.languageCode) {
-      return;
-    }
-    _applyLocale(resolved);
-    await _preferences.setString(_preferenceKey, _localeTag(_locale));
+    await resolveAfterProfileHydrate(profilePreferredLocale: preferredLocale);
   }
 
   Future<void> setLocale(Locale locale, {bool persistProfile = true}) async {
-    final resolved = _resolveSupported(locale);
-    if (resolved.languageCode == _locale.languageCode) {
+    if (!ClarityLocaleCatalog.isEnabled(locale)) {
+      return;
+    }
+    final resolved = ClarityLocaleCatalog.resolveLocale(locale);
+    if (ClarityLocaleCatalog.localeTagFor(resolved) == localeTag) {
       return;
     }
     _applyLocale(resolved);
-    await _preferences.setString(_preferenceKey, _localeTag(_locale));
+    _usedDeviceDefaultOnLoad = false;
+    await _preferences.setString(_preferenceKey, localeTag);
     if (persistProfile) {
-      await _onLocalePersisted?.call(_localeTag(_locale));
+      await _onLocalePersisted?.call(localeTag);
     }
   }
 
@@ -86,34 +118,10 @@ final class LocaleController extends ChangeNotifier {
   }
 
   void _applyLocale(Locale locale, {bool notify = true}) {
-    _locale = _resolveSupported(locale);
+    _locale = ClarityLocaleCatalog.resolveLocale(locale);
     setDefaultFormattingLocale(_locale);
     if (notify) {
       notifyListeners();
     }
-  }
-
-  Locale _resolveSupported(Locale locale) {
-    for (final supported in claritySupportedLocales) {
-      if (supported.languageCode == locale.languageCode) {
-        return supported;
-      }
-    }
-    return const Locale('en');
-  }
-
-  Locale _localeFromTag(String tag) {
-    final parts = tag.split('-');
-    if (parts.length >= 2) {
-      return Locale(parts[0], parts[1]);
-    }
-    return Locale(parts[0]);
-  }
-
-  String _localeTag(Locale locale) {
-    if (locale.countryCode != null && locale.countryCode!.isNotEmpty) {
-      return '${locale.languageCode}-${locale.countryCode}';
-    }
-    return locale.languageCode;
   }
 }

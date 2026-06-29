@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/l10n/app_l10n.dart';
 import '../../../core/models/models.dart';
 import '../data/connect_bank_entry_point_tracker.dart';
 import 'account_detail_screen.dart';
@@ -37,7 +38,7 @@ class AccountsNavigationActions {
           if (!dialogContext.mounted) return null;
           if (created == null) {
             ScaffoldMessenger.of(dialogContext).showSnackBar(
-              const SnackBar(content: Text('Could not save account.')),
+              SnackBar(content: Text(dialogContext.l10n.accountsNavigationCouldNotSaveAccount)),
             );
             return null;
           }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_quick_filter.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
@@ -22,6 +24,7 @@ class MemorySearchAndFilters extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     final selectedTextColor = theme.brightness == Brightness.dark
         ? Colors.black
         : Colors.white;
@@ -35,7 +38,7 @@ class MemorySearchAndFilters extends StatelessWidget {
           textInputAction: TextInputAction.search,
           cursorColor: colors.accent,
           decoration: InputDecoration(
-            hintText: 'Search what Clarity knows',
+            hintText: l10n.memoryHeaderSearchHint,
             hintStyle: theme.textTheme.bodyLarge?.copyWith(
               color: colors.textMuted,
             ),
@@ -48,7 +51,7 @@ class MemorySearchAndFilters extends StatelessWidget {
                       Icons.close_rounded,
                       color: colors.textSecondary,
                     ),
-                    tooltip: 'Clear search',
+                    tooltip: l10n.memoryHeaderClearSearchTooltip,
                   ),
             filled: true,
             fillColor: colors.surface,
@@ -77,7 +80,7 @@ class MemorySearchAndFilters extends StatelessWidget {
           children: [
             for (final filter in MemoryQuickFilter.values)
               ChoiceChip(
-                label: Text(filter.label),
+                label: Text(filter.label(l10n)),
                 selected: selectedFilter == filter,
                 onSelected: onFilterSelected == null
                     ? null
@@ -115,7 +118,7 @@ class SavedMemoryHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: RexUiTokens.space4),
       child: Text(
-        'What Clarity knows',
+        context.l10n.memoryHeaderSectionTitle,
         style: theme.textTheme.titleLarge?.copyWith(
           color: colors.textPrimary,
           fontWeight: FontWeight.w900,
@@ -146,7 +149,7 @@ class ActiveMemoryToggle extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              'Active information only',
+              context.l10n.memoryHeaderActiveOnly,
               style: theme.textTheme.titleSmall?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w800,
@@ -205,8 +208,8 @@ class MemoryLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: ClarityPathLoader(size: 52, label: 'Loading memory'),
+    return Center(
+      child: ClarityPathLoader(size: 52, label: context.l10n.memoryHeaderLoading),
     );
   }
 }
@@ -277,24 +280,25 @@ class MemoryEmptyState extends StatelessWidget {
 
   final bool activeOnly;
 
-  String get _emptyTitle {
+  String _emptyTitle(AppLocalizations l10n) {
     return activeOnly
-        ? 'Clarity is still learning'
-        : 'No saved information yet';
+        ? l10n.memoryHeaderEmptyActiveTitle
+        : l10n.memoryHeaderEmptyTitle;
   }
 
-  String get _emptyBody {
+  String _emptyBody(AppLocalizations l10n) {
     return activeOnly
-        ? 'Ask Rex in chat or voice to save something, and it will show up here.'
-        : 'Saved facts, people, and preferences from chat or voice will appear here.';
+        ? l10n.memoryHeaderEmptyActiveBody
+        : l10n.memoryHeaderEmptyBody;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _EmptyMemoryShell(
       icon: Icons.psychology_alt_outlined,
-      title: _emptyTitle,
-      body: _emptyBody,
+      title: _emptyTitle(l10n),
+      body: _emptyBody(l10n),
     );
   }
 }
@@ -304,10 +308,11 @@ class MemoryFilteredEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _EmptyMemoryShell(
+    final l10n = context.l10n;
+    return _EmptyMemoryShell(
       icon: Icons.search_off_rounded,
-      title: 'No matching information',
-      body: 'Try another search or filter.',
+      title: l10n.memoryHeaderNoMatchingTitle,
+      body: l10n.memoryHeaderNoMatchingBody,
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/features/usage_admin/application/owner_usage_controller.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_models.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_user_detail_screen.dart';
@@ -38,13 +39,14 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final colors = context.clarityColors;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Usage administration'),
+        title: Text(l10n.usageAdminTitle),
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -53,8 +55,11 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
         listenable: _controller,
         builder: (context, _) {
           if (_controller.isLoading) {
-            return const Center(
-              child: ClarityDiamondLoader(size: 56, label: 'Loading usage'),
+            return Center(
+              child: ClarityDiamondLoader(
+                size: 56,
+                label: l10n.usageSummaryLoading,
+              ),
             );
           }
           if (_controller.errorMessage != null) {
@@ -64,11 +69,14 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(_controller.errorMessage!, textAlign: TextAlign.center),
+                    Text(
+                      l10n.usageAdminLoadFailed,
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 12),
                     FilledButton(
                       onPressed: _controller.load,
-                      child: const Text('Retry'),
+                      child: Text(l10n.commonRetry),
                     ),
                   ],
                 ),
@@ -90,7 +98,7 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Platform this month',
+                          l10n.usageAdminPlatformThisMonth,
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: colors.textSecondary,
                             fontWeight: FontWeight.w700,
@@ -99,6 +107,7 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                         const SizedBox(height: 8),
                         Text(
                           formatUsageCost(
+                            l10n,
                             summary.monthEstimatedCostCents,
                             hasUsageWithoutCost: summary.monthLlmCalls > 0 ||
                                 summary.monthVoiceSeconds > 0,
@@ -109,9 +118,11 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '${summary.activeUserCount} active users · '
-                          '${formatUsageMinutes(summary.monthVoiceSeconds)} voice · '
-                          '${summary.monthLlmCalls} AI calls',
+                          l10n.usageAdminActiveUsersSummary(
+                            summary.activeUserCount,
+                            formatUsageMinutes(l10n, summary.monthVoiceSeconds),
+                            summary.monthLlmCalls,
+                          ),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colors.textMuted,
                           ),
@@ -122,7 +133,7 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                   const SizedBox(height: 16),
                 ],
                 Text(
-                  'Users',
+                  l10n.usageAdminUsersSection,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: colors.textSecondary,
                     fontWeight: FontWeight.w600,
@@ -132,7 +143,7 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                 const SizedBox(height: 8),
                 if (_controller.users.isEmpty)
                   Text(
-                    'No usage recorded this month yet.',
+                    l10n.usageAdminNoUsageThisMonth,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.textMuted,
                     ),
@@ -166,6 +177,7 @@ class _OwnerUserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final colors = context.clarityColors;
 
@@ -191,9 +203,11 @@ class _OwnerUserTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${formatUsageMinutes(user.monthVoiceSeconds)} voice · '
-                      '${user.monthChatLlmCalls} chat · '
-                      '${user.monthVoiceLlmCalls} voice calls',
+                      l10n.usageAdminUserTileSummary(
+                        formatUsageMinutes(l10n, user.monthVoiceSeconds),
+                        user.monthChatLlmCalls,
+                        user.monthVoiceLlmCalls,
+                      ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.textMuted,
                       ),
@@ -203,6 +217,7 @@ class _OwnerUserTile extends StatelessWidget {
               ),
               Text(
                 formatUsageCost(
+                  l10n,
                   user.monthEstimatedCostCents,
                   hasUsageWithoutCost: user.monthLlmCalls > 0 ||
                       user.monthVoiceSeconds > 0,

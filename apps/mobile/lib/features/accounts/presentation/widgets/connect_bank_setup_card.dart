@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
 import '../../../../widgets/clarity_button.dart';
 import '../../../../widgets/clarity_card.dart';
 
@@ -25,6 +26,7 @@ class ConnectBankSetupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     return ClarityCard(
       padding: EdgeInsets.all(compact ? 16 : 20),
       child: Column(
@@ -57,14 +59,14 @@ class ConnectBankSetupCard extends StatelessWidget {
           ),
           SizedBox(height: compact ? 14 : 16),
           ClarityButton.filled(
-            label: 'Connect Bank',
+            label: l10n.connectBankCardConnectButton,
             onPressed: onConnectBank,
             icon: const Icon(Icons.add_link_rounded, size: 18),
             expanded: true,
           ),
           const SizedBox(height: 8),
           ClarityButton.text(
-            label: 'Import CSV instead',
+            label: l10n.connectBankCardImportCsvButton,
             onPressed: onImportCsvInstead,
             icon: const Icon(Icons.upload_file_rounded, size: 18),
             expanded: true,
@@ -72,7 +74,7 @@ class ConnectBankSetupCard extends StatelessWidget {
           if (onAddManualAccount != null) ...[
             const SizedBox(height: 4),
             ClarityButton.text(
-              label: 'Add manual account',
+              label: l10n.connectBankCardAddManualButton,
               onPressed: onAddManualAccount,
               icon: const Icon(Icons.add_rounded, size: 17),
               expanded: true,

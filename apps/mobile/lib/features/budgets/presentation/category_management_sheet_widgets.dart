@@ -11,6 +11,7 @@ class _AuditEventRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -28,14 +29,14 @@ class _AuditEventRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _auditEventTitle(event),
+                  _auditEventTitle(event, l10n),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  _auditEventSubtitle(event),
+                  _auditEventSubtitle(event, l10n),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.52),
                     fontWeight: FontWeight.w600,
@@ -75,6 +76,8 @@ class _CategoryManagementRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
+    final usageLabel = usage.label(l10n);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -93,10 +96,10 @@ class _CategoryManagementRow extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (usage.label.isNotEmpty) ...[
+                if (usageLabel.isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Text(
-                    usage.label,
+                    usageLabel,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.48),
                       fontWeight: FontWeight.w600,
@@ -110,7 +113,7 @@ class _CategoryManagementRow extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 4),
               child: Text(
-                'Built-in',
+                l10n.commonBuiltIn,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: cs.onSurface.withValues(alpha: 0.45),
                   fontWeight: FontWeight.w700,
@@ -121,7 +124,7 @@ class _CategoryManagementRow extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 4),
               child: Text(
-                'Hidden',
+                l10n.commonHidden,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: cs.primary,
                   fontWeight: FontWeight.w800,
@@ -129,7 +132,7 @@ class _CategoryManagementRow extends StatelessWidget {
               ),
             ),
           PopupMenuButton<_CategoryRowAction>(
-            tooltip: 'Category actions',
+            tooltip: l10n.categorySheetCategoryActionsTooltip,
             enabled: !saving && custom,
             icon: const Icon(Icons.more_horiz_rounded),
             onSelected: (action) {
@@ -158,29 +161,31 @@ class _CategoryManagementRow extends StatelessWidget {
                         : Icons.visibility_off_outlined,
                   ),
                   title: Text(
-                    category.hidden ? 'Show in pickers' : 'Hide from pickers',
+                    category.hidden
+                        ? l10n.categorySheetShowInPickers
+                        : l10n.categorySheetHideFromPickers,
                   ),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: _CategoryRowAction.merge,
                 child: ListTile(
-                  leading: Icon(Icons.merge_type_rounded),
-                  title: Text('Merge'),
+                  leading: const Icon(Icons.merge_type_rounded),
+                  title: Text(l10n.commonMerge),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: _CategoryRowAction.rename,
                 child: ListTile(
-                  leading: Icon(Icons.edit_outlined),
-                  title: Text('Rename'),
+                  leading: const Icon(Icons.edit_outlined),
+                  title: Text(l10n.commonRename),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: _CategoryRowAction.delete,
                 child: ListTile(
-                  leading: Icon(Icons.delete_outline_rounded),
-                  title: Text('Delete'),
+                  leading: const Icon(Icons.delete_outline_rounded),
+                  title: Text(l10n.commonDelete),
                 ),
               ),
             ],
@@ -216,11 +221,12 @@ class _MerchantRuleManagementRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     final merchantDisplay = rule.merchantDisplay?.trim();
     final title = merchantDisplay != null && merchantDisplay.isNotEmpty
         ? merchantDisplay
         : rule.merchantKey;
-    final categoryName = category?.name ?? 'Missing category';
+    final categoryName = category?.name ?? l10n.categorySheetMissingCategory;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -258,7 +264,7 @@ class _MerchantRuleManagementRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  stats.label,
+                  stats.label(l10n),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -273,7 +279,7 @@ class _MerchantRuleManagementRow extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 4),
               child: Text(
-                'Disabled',
+                l10n.commonDisabled,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: cs.error,
                   fontWeight: FontWeight.w800,
@@ -281,7 +287,7 @@ class _MerchantRuleManagementRow extends StatelessWidget {
               ),
             ),
           PopupMenuButton<_MerchantRuleAction>(
-            tooltip: 'Merchant rule actions',
+            tooltip: l10n.categorySheetMerchantRuleActionsTooltip,
             enabled: !saving,
             icon: const Icon(Icons.more_horiz_rounded),
             onSelected: (action) {
@@ -298,11 +304,11 @@ class _MerchantRuleManagementRow extends StatelessWidget {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: _MerchantRuleAction.editCategory,
                 child: ListTile(
-                  leading: Icon(Icons.category_outlined),
-                  title: Text('Change category'),
+                  leading: const Icon(Icons.category_outlined),
+                  title: Text(l10n.categorySheetChangeCategory),
                 ),
               ),
               PopupMenuItem(
@@ -313,14 +319,18 @@ class _MerchantRuleManagementRow extends StatelessWidget {
                         ? Icons.play_circle_outline_rounded
                         : Icons.pause_circle_outline_rounded,
                   ),
-                  title: Text(rule.disabled ? 'Enable rule' : 'Disable rule'),
+                  title: Text(
+                    rule.disabled
+                        ? l10n.categorySheetEnableRule
+                        : l10n.categorySheetDisableRule,
+                  ),
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: _MerchantRuleAction.delete,
                 child: ListTile(
-                  leading: Icon(Icons.delete_outline_rounded),
-                  title: Text('Delete rule'),
+                  leading: const Icon(Icons.delete_outline_rounded),
+                  title: Text(l10n.categorySheetDeleteRule),
                 ),
               ),
             ],
@@ -333,25 +343,31 @@ class _MerchantRuleManagementRow extends StatelessWidget {
 
 enum _MerchantRuleAction { editCategory, toggleDisabled, delete }
 
-String _auditEventTitle(FinancialAuditEvent event) {
+String _auditEventTitle(FinancialAuditEvent event, AppLocalizations l10n) {
   return switch (event.eventType) {
-    'transaction_category_updated' => 'Transaction category changed',
-    'transaction_category_bulk_updated' => 'Bulk category change',
-    'transaction_role_override_updated' => 'Transaction role changed',
-    'category_deleted' => 'Category deleted',
-    'category_merged' => 'Category merged',
-    'category_visibility_updated' => 'Category visibility changed',
-    'merchant_rule_category_updated' => 'Merchant rule changed',
-    'merchant_rule_disabled_updated' => 'Merchant rule enabled/disabled',
-    'merchant_rule_deleted' => 'Merchant rule deleted',
-    'category_renamed' => 'Category renamed',
+    'transaction_category_updated' =>
+      l10n.categorySheetAuditTransactionCategoryChanged,
+    'transaction_category_bulk_updated' =>
+      l10n.categorySheetAuditBulkCategoryChange,
+    'transaction_role_override_updated' =>
+      l10n.categorySheetAuditTransactionRoleChanged,
+    'category_deleted' => l10n.categorySheetAuditCategoryDeleted,
+    'category_merged' => l10n.categorySheetAuditCategoryMerged,
+    'category_visibility_updated' =>
+      l10n.categorySheetAuditCategoryVisibilityChanged,
+    'merchant_rule_category_updated' =>
+      l10n.categorySheetAuditMerchantRuleChanged,
+    'merchant_rule_disabled_updated' =>
+      l10n.categorySheetAuditMerchantRuleEnabledDisabled,
+    'merchant_rule_deleted' => l10n.categorySheetAuditMerchantRuleDeleted,
+    'category_renamed' => l10n.categorySheetAuditCategoryRenamed,
     _ => event.eventType.replaceAll('_', ' '),
   };
 }
 
-String _auditEventSubtitle(FinancialAuditEvent event) {
-  final oldLabel = _auditLabel(event.previousValue);
-  final newLabel = _auditLabel(event.newValue);
+String _auditEventSubtitle(FinancialAuditEvent event, AppLocalizations l10n) {
+  final oldLabel = _auditLabel(event.previousValue, l10n);
+  final newLabel = _auditLabel(event.newValue, l10n);
   final parts = <String>[];
   if (oldLabel != null && newLabel != null && oldLabel != newLabel) {
     parts.add('$oldLabel -> $newLabel');
@@ -362,14 +378,14 @@ String _auditEventSubtitle(FinancialAuditEvent event) {
   }
   final count = event.metadata['transaction_count'];
   if (count is num && count > 1) {
-    parts.add('${count.toInt()} transactions');
+    parts.add(l10n.commonTransactionCount(count.toInt()));
   }
   parts.add(event.source);
   parts.add(_dateTimeLabel(event.createdAt.toLocal()));
   return parts.join(' · ');
 }
 
-String? _auditLabel(Map<String, dynamic> value) {
+String? _auditLabel(Map<String, dynamic> value, AppLocalizations l10n) {
   for (final key in [
     'category_name',
     'name',
@@ -382,7 +398,7 @@ String? _auditLabel(Map<String, dynamic> value) {
     if (raw is String && raw.trim().isNotEmpty) return raw.trim();
   }
   final hidden = value['hidden'];
-  if (hidden is bool) return hidden ? 'Hidden' : 'Visible';
+  if (hidden is bool) return hidden ? l10n.commonHidden : l10n.commonVisible;
   return null;
 }
 
@@ -403,10 +419,15 @@ class _MerchantRuleStats {
   final int transactionCount;
   final DateTime? latestTransactionDate;
 
-  String get label {
+  String label(AppLocalizations l10n) {
     final latest = latestTransactionDate;
-    if (latest == null) return '$transactionCount matching tx';
-    return '$transactionCount matching tx · last used ${_dateLabel(latest)}';
+    if (latest == null) {
+      return l10n.merchantRuleStatsMatchingTx(transactionCount);
+    }
+    return l10n.merchantRuleStatsMatchingTxLastUsed(
+      transactionCount,
+      _dateLabel(latest),
+    );
   }
 
   static String _dateLabel(DateTime date) {
@@ -427,12 +448,11 @@ class _CategoryUsageStats {
   final int budgetCount;
   final int merchantRuleCount;
 
-  String get label {
+  String label(AppLocalizations l10n) {
     final parts = <String>[
-      if (transactionCount > 0) '$transactionCount tx',
-      if (budgetCount > 0) '$budgetCount budget${budgetCount == 1 ? '' : 's'}',
-      if (merchantRuleCount > 0)
-        '$merchantRuleCount rule${merchantRuleCount == 1 ? '' : 's'}',
+      if (transactionCount > 0) l10n.categoryUsageTxCount(transactionCount),
+      if (budgetCount > 0) l10n.categoryUsageBudgetCount(budgetCount),
+      if (merchantRuleCount > 0) l10n.categoryUsageRuleCount(merchantRuleCount),
     ];
     return parts.join(' · ');
   }

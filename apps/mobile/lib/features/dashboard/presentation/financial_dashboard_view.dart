@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../budgets/domain/budget_models.dart';
 import '../../finance/application/financial_read_model_service.dart';
 import '../domain/dashboard_snapshot.dart';
@@ -30,20 +32,23 @@ part 'financial_dashboard_charts.dart';
 
 const double _sectionGap = 20.0;
 const double _cardRadius = ClarityRadius.card;
-const List<String> _monthAbbreviations = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
+String _monthShort(AppLocalizations l10n, int month) {
+  return switch (month) {
+    1 => l10n.commonMonthShortJan,
+    2 => l10n.commonMonthShortFeb,
+    3 => l10n.commonMonthShortMar,
+    4 => l10n.commonMonthShortApr,
+    5 => l10n.commonMonthShortMay,
+    6 => l10n.commonMonthShortJun,
+    7 => l10n.commonMonthShortJul,
+    8 => l10n.commonMonthShortAug,
+    9 => l10n.commonMonthShortSep,
+    10 => l10n.commonMonthShortOct,
+    11 => l10n.commonMonthShortNov,
+    12 => l10n.commonMonthShortDec,
+    _ => l10n.commonMonthShortOld,
+  };
+}
 
 Color _dashboardPanel(BuildContext context) {
   return context.clarityColors.cardFill;
@@ -70,15 +75,15 @@ Color _balanceColor(BuildContext context, double v) {
   return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72);
 }
 
-String _displayCategory(ResolvedTransaction transaction) {
+String _displayCategory(AppLocalizations l10n, ResolvedTransaction transaction) {
   final category = transaction.displayCategory.trim();
-  if (category.isEmpty) return 'Unknown';
+  if (category.isEmpty) return l10n.commonUnknown;
   return category;
 }
 
 bool _isSpendCategoryTransaction(ResolvedTransaction transaction) {
   if (transaction.transaction.pending) return false;
-  final category = _displayCategory(transaction);
+  final category = transaction.displayCategory.trim();
   if (isUnresolvedCategoryLabel(category) ||
       isIncomeCategoryLabel(category) ||
       isIgnoredCategoryLabel(category)) {
@@ -121,54 +126,57 @@ String _yearMonthLabel(DateTime date) {
   return formatYearMonthLabel('${date.year}-$month');
 }
 
-String _dateLabel(DateTime date) {
-  return '${_monthAbbreviations[date.month - 1]} ${date.day}, ${date.year}';
+String _dateLabel(AppLocalizations l10n, DateTime date) {
+  return '${_monthShort(l10n, date.month)} ${date.day}, ${date.year}';
 }
 
-String _dateRangeLabel(DateTimeRange range) {
+String _dateRangeLabel(AppLocalizations l10n, DateTimeRange range) {
   if (range.start.year == range.end.year &&
       range.start.month == range.end.month &&
       range.start.day == 1 &&
       range.end.day == DateTime(range.end.year, range.end.month + 1, 0).day) {
     return _yearMonthLabel(range.start);
   }
-  return '${_dateLabel(range.start)} - ${_dateLabel(range.end)}';
+  return '${_dateLabel(l10n, range.start)} - ${_dateLabel(l10n, range.end)}';
 }
 
-String _shortDate(DateTime date) {
-  return '${_monthAbbreviations[date.month - 1]} ${date.day}';
+String _shortDate(AppLocalizations l10n, DateTime date) {
+  return '${_monthShort(l10n, date.month)} ${date.day}';
 }
 
 String _normalizeSearchText(String text) {
   return text.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
 }
 
-String _timeLabel(_TransactionsTimeFilter filter) {
+String _timeLabel(AppLocalizations l10n, _TransactionsTimeFilter filter) {
   return switch (filter) {
-    _TransactionsTimeFilter.all => 'All history',
-    _TransactionsTimeFilter.dashboardMonth => 'Dashboard month',
-    _TransactionsTimeFilter.latestTransactionMonth => 'Latest tx month',
-    _TransactionsTimeFilter.latestTransactionYear => 'Latest tx year',
+    _TransactionsTimeFilter.all => l10n.dashboardTransactionsTimeFilterAllHistory,
+    _TransactionsTimeFilter.dashboardMonth =>
+      l10n.dashboardTransactionsTimeFilterDashboardMonth,
+    _TransactionsTimeFilter.latestTransactionMonth =>
+      l10n.dashboardTransactionsTimeFilterLatestTxMonth,
+    _TransactionsTimeFilter.latestTransactionYear =>
+      l10n.dashboardTransactionsTimeFilterLatestTxYear,
   };
 }
 
-String _sortLabel(_TransactionsSortMode mode) {
+String _sortLabel(AppLocalizations l10n, _TransactionsSortMode mode) {
   return switch (mode) {
-    _TransactionsSortMode.newest => 'Newest',
-    _TransactionsSortMode.oldest => 'Oldest',
-    _TransactionsSortMode.largest => 'Largest',
-    _TransactionsSortMode.merchant => 'Merchant A-Z',
+    _TransactionsSortMode.newest => l10n.dashboardTransactionsSortNewest,
+    _TransactionsSortMode.oldest => l10n.dashboardTransactionsSortOldest,
+    _TransactionsSortMode.largest => l10n.dashboardTransactionsSortLargest,
+    _TransactionsSortMode.merchant => l10n.dashboardTransactionsSortMerchant,
   };
 }
 
-String _financialRoleLabel(FinancialRole role) {
+String _financialRoleLabel(AppLocalizations l10n, FinancialRole role) {
   return switch (role) {
-    FinancialRole.expense => 'Expense',
-    FinancialRole.income => 'Income',
-    FinancialRole.transfer => 'Transfer',
-    FinancialRole.creditCardPayment => 'Credit card payment',
-    FinancialRole.refund => 'Refund',
-    FinancialRole.adjustment => 'Adjustment',
+    FinancialRole.expense => l10n.commonExpense,
+    FinancialRole.income => l10n.commonIncome,
+    FinancialRole.transfer => l10n.commonTransfer,
+    FinancialRole.creditCardPayment => l10n.commonCreditCardPayment,
+    FinancialRole.refund => l10n.commonRefund,
+    FinancialRole.adjustment => l10n.commonAdjustment,
   };
 }
 
@@ -181,7 +189,7 @@ class FinancialDashboardView extends StatefulWidget {
     required this.importJobStatusController,
     required this.scope,
     this.showBackButton = false,
-    this.title = 'Overview',
+    this.title = '',
     this.onUploadTransactions,
     this.onDeleteCsvImportBatch,
     this.onDeleteAccount,
@@ -280,6 +288,7 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -299,7 +308,7 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
         actions: [
           if (widget.onUploadTransactions != null)
             IconButton(
-              tooltip: 'Import CSV instead',
+              tooltip: l10n.dashboardOverviewImportCsvTooltip,
               icon: _uploadingTransactions
                   ? const ClarityInlineLoader(size: 19, strokeWidth: 2)
                   : const Icon(Icons.upload_file_rounded),
@@ -310,14 +319,14 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             ),
           if (widget.onDeleteCsvImportBatch != null)
             IconButton(
-              tooltip: 'Delete CSV upload',
+              tooltip: l10n.dashboardOverviewDeleteCsvUploadTooltip,
               icon: const Icon(Icons.playlist_remove_rounded),
               color: cs.error,
               onPressed: widget.onDeleteCsvImportBatch,
             ),
           if (widget.onDeleteAccount != null)
             IconButton(
-              tooltip: 'Delete account',
+              tooltip: l10n.dashboardOverviewDeleteAccountTooltip,
               icon: const Icon(Icons.delete_forever_rounded),
               color: cs.error,
               onPressed: widget.onDeleteAccount,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/chat/application/conversation_controller.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
@@ -87,12 +88,12 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
       builder: (context) {
         final colors = context.clarityColors;
         return AlertDialog(
-        title: const Text('Delete conversation?'),
-        content: const Text('This removes the conversation and its messages.'),
+        title: Text(context.l10n.conversationListDeleteTitle),
+        content: Text(context.l10n.conversationListDeleteBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -100,7 +101,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
               foregroundColor: colors.background,
             ),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       );
@@ -126,13 +127,13 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
     if (!deleted) {
       final errorMessage =
           ref.read(conversationListProvider).errorMessage ??
-          'Could not delete conversation.';
+          context.l10n.conversationListDeleteFailed;
       messenger.showSnackBar(SnackBar(content: Text(errorMessage)));
       return;
     }
 
     messenger.showSnackBar(
-      const SnackBar(content: Text('Conversation deleted')),
+      SnackBar(content: Text(context.l10n.conversationListDeletedSnackBar)),
     );
 
     if (wasCurrent) {
@@ -199,6 +200,8 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
 
     final state = ref.watch(conversationListProvider);
     final colors = context.clarityColors;
+    final l10n = context.l10n;
+    final now = DateTime.now();
     final currentConversation = ref.watch(currentConversationProvider);
     final filteredConversations = filterConversationsByDate(
       state.conversations,
@@ -224,7 +227,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                 child: Row(
                   children: [
                     Text(
-                      'Chats',
+                      l10n.conversationListTitle,
                       style: Theme.of(context).textTheme.titleMedium
                           ?.copyWith(
                             fontWeight: FontWeight.w700,
@@ -235,7 +238,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                     IconButton(
                       onPressed: state.isLoading ? null : _newConversation,
                       icon: const Icon(Icons.add_rounded),
-                      tooltip: 'New conversation',
+                      tooltip: l10n.conversationListNewConversationTooltip,
                       color: colors.accent,
                       style: IconButton.styleFrom(
                         visualDensity: VisualDensity.compact,
@@ -281,9 +284,12 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
               onResultTap: _openSearchResult,
             )
           else if (state.isLoading && state.conversations.isEmpty)
-            const SliverFillRemaining(
+            SliverFillRemaining(
               child: Center(
-                child: ClarityPathLoader(size: 52, label: 'Loading chats'),
+                child: ClarityPathLoader(
+                  size: 52,
+                  label: l10n.conversationListLoading,
+                ),
               ),
             )
           else if (filteredConversations.isEmpty)
@@ -294,11 +300,17 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                   padding: const EdgeInsets.all(24),
                   child: _EmptyConversationState(
                     title: state.dateFilter.isActive
-                        ? 'No chats in ${state.dateFilter.label(DateTime.now()).toLowerCase()}'
-                        : 'No chats yet',
+                        ? l10n.conversationListEmptyFilteredTitle(
+                            conversationDateFilterLabel(
+                              l10n,
+                              state.dateFilter,
+                              now,
+                            ).toLowerCase(),
+                          )
+                        : l10n.conversationListEmptyTitle,
                     message: state.dateFilter.isActive
-                        ? 'Clear the date filter or choose a wider range.'
-                        : 'Start a fresh conversation when you are ready.',
+                        ? l10n.conversationListEmptyFilteredMessage
+                        : l10n.conversationListEmptyMessage,
                     isLoading: state.isLoading,
                     onNewConversation: _newConversation,
                   ),
@@ -308,7 +320,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
           else
             SliverList(
               delegate: SliverChildListDelegate(
-                conversationGroups(filteredConversations)
+                conversationGroups(l10n, filteredConversations)
                     .expand<Widget>(
                       (group) => [
                         ConversationDateHeader(
@@ -335,12 +347,12 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
     return RexScaffold(
       appBar: widget.showAppBar
           ? AppBar(
-              title: const Text('Chats'),
+              title: Text(l10n.conversationListTitle),
               actions: [
                 IconButton(
                   onPressed: state.isLoading ? null : _newConversation,
                   icon: const Icon(Icons.add_rounded),
-                  tooltip: 'New conversation',
+                  tooltip: l10n.conversationListNewConversationTooltip,
                   color: context.clarityColors.accent,
                 ),
               ],
@@ -368,13 +380,14 @@ class _ConversationSearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     return TextField(
       controller: controller,
       onSubmitted: onSubmitted,
       textInputAction: TextInputAction.search,
       style: theme.textTheme.bodyLarge?.copyWith(color: colors.textPrimary),
       decoration: InputDecoration(
-        hintText: 'Search chats',
+        hintText: l10n.conversationListSearchHint,
         hintStyle: theme.textTheme.bodyLarge?.copyWith(color: colors.textMuted),
         prefixIcon: Icon(Icons.search_rounded, color: colors.textSecondary),
         suffixIcon: isSearching
@@ -383,7 +396,7 @@ class _ConversationSearchField extends StatelessWidget {
                 child: ClarityInlineLoader(size: 18, strokeWidth: 2),
               )
             : IconButton(
-                tooltip: 'Clear search',
+                tooltip: l10n.conversationListClearSearchTooltip,
                 onPressed: onClear,
                 icon: const Icon(Icons.close_rounded),
                 color: colors.textSecondary,
@@ -417,17 +430,27 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     if (state.isSearching && state.searchResults.isEmpty) {
-      return const SliverFillRemaining(
+      return SliverFillRemaining(
         child: Center(
-          child: ClarityPathLoader(size: 48, label: 'Searching chats'),
+          child: ClarityPathLoader(
+            size: 48,
+            label: l10n.conversationListSearching,
+          ),
         ),
       );
     }
 
     if (results.isEmpty) {
       final suffix = state.dateFilter.isActive
-          ? ' in ${state.dateFilter.label(DateTime.now()).toLowerCase()}'
+          ? l10n.conversationListNoMatchesSuffixInFilter(
+              conversationDateFilterLabel(
+                l10n,
+                state.dateFilter,
+                DateTime.now(),
+              ).toLowerCase(),
+            )
           : '';
       return SliverFillRemaining(
         hasScrollBody: false,
@@ -448,7 +471,7 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
                   ),
                   const SizedBox(height: RexUiTokens.space12),
                   Text(
-                    'No matching chats',
+                    l10n.conversationListNoMatchesTitle,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: colors.textPrimary,
                       fontWeight: FontWeight.w900,
@@ -456,7 +479,7 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
                   ),
                   const SizedBox(height: RexUiTokens.space4),
                   Text(
-                    'No chats matched "${state.searchQuery}"$suffix',
+                    l10n.conversationListNoMatchesBody(state.searchQuery, suffix),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: colors.textSecondary,
@@ -496,32 +519,33 @@ class _ConversationDateFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final now = DateTime.now();
     final chips = <Widget>[
       _ConversationFilterChip(
-        label: 'All',
+        label: l10n.commonAll,
         selected: filter.type == ConversationDateFilterType.all,
         onTap: () => onFilterChanged(const ConversationDateFilter.all()),
       ),
       _ConversationFilterChip(
-        label: 'Today',
+        label: l10n.commonToday,
         selected: filter.type == ConversationDateFilterType.today,
         onTap: () => onFilterChanged(const ConversationDateFilter.today()),
       ),
       _ConversationFilterChip(
-        label: 'This week',
+        label: l10n.commonThisWeek,
         selected: filter.type == ConversationDateFilterType.thisWeek,
         onTap: () => onFilterChanged(const ConversationDateFilter.thisWeek()),
       ),
       _ConversationFilterChip(
-        label: 'This month',
+        label: l10n.commonThisMonth,
         selected: filter.type == ConversationDateFilterType.thisMonth,
         onTap: () => onFilterChanged(const ConversationDateFilter.thisMonth()),
       ),
       _ConversationFilterChip(
         label: filter.type == ConversationDateFilterType.custom
-            ? filter.label(now)
-            : 'Custom',
+            ? conversationDateFilterLabel(l10n, filter, now)
+            : l10n.commonCustom,
         icon: Icons.calendar_month_rounded,
         selected: filter.type == ConversationDateFilterType.custom,
         onTap: onCustomTap,
@@ -635,7 +659,7 @@ class _EmptyConversationState extends StatelessWidget {
               ),
               onPressed: isLoading ? null : onNewConversation,
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('New chat'),
+              label: Text(context.l10n.conversationListNewChat),
             ),
           ],
         ),

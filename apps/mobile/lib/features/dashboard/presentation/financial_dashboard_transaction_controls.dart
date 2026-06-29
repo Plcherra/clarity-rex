@@ -11,18 +11,19 @@ class _TransactionsModePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
         _ModeChip(
-          label: 'Months',
+          label: l10n.dashboardTransactionsModeMonths,
           icon: Icons.calendar_month_outlined,
           selected: selected == _TransactionsViewMode.months,
           onTap: () => onSelected(_TransactionsViewMode.months),
         ),
         _ModeChip(
-          label: 'Categories',
+          label: l10n.dashboardTransactionsModeCategories,
           icon: Icons.category_outlined,
           selected: selected == _TransactionsViewMode.categories,
           onTap: () => onSelected(_TransactionsViewMode.categories),
@@ -82,7 +83,7 @@ class _TransactionSearchField extends StatelessWidget {
           Icons.search_rounded,
           color: cs.onSurface.withValues(alpha: 0.45),
         ),
-        hintText: 'Search merchant, category, month, or amount',
+        hintText: context.l10n.dashboardTransactionsSearchHint,
         filled: true,
         fillColor: cs.surface,
         border: OutlineInputBorder(
@@ -136,50 +137,56 @@ class _InlineFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
         _PopupFilterChip<String?>(
-          label: category ?? 'Category',
+          label: category ?? l10n.dashboardTransactionsFilterCategory,
           active: category != null,
           icon: Icons.category_outlined,
           values: [null, ...categories],
-          labelFor: (value) => value ?? 'All categories',
+          labelFor: (value) =>
+              value ?? l10n.dashboardTransactionsFilterAllCategories,
           onSelected: onCategoryChanged,
         ),
         if (!isAccountScope)
           _PopupFilterChip<String?>(
-            label: _accountLabel(accountId) ?? 'Account',
+            label: _accountLabel(accountId) ?? l10n.dashboardTransactionsFilterAccount,
             active: accountId != null,
             icon: Icons.account_balance_outlined,
             values: [null, ...accounts.map((a) => a.id)],
-            labelFor: (value) => _accountLabel(value) ?? 'All accounts',
+            labelFor: (value) =>
+                _accountLabel(value) ?? l10n.dashboardTransactionsFilterAllAccounts,
             onSelected: onAccountChanged,
           ),
         _PopupFilterChip<_TransactionsTimeFilter>(
-          label: _timeLabel(timeFilter),
+          label: _timeLabel(l10n, timeFilter),
           active: timeFilter != _TransactionsTimeFilter.all,
           icon: Icons.date_range_outlined,
           values: _TransactionsTimeFilter.values,
-          labelFor: _timeLabel,
+          labelFor: (value) => _timeLabel(l10n, value),
           onSelected: onTimeChanged,
         ),
         _PopupFilterChip<_TransactionsSortMode>(
-          label: _sortLabel(sortMode),
+          label: _sortLabel(l10n, sortMode),
           active: sortMode != _TransactionsSortMode.newest,
           icon: Icons.sort_rounded,
           values: _TransactionsSortMode.values,
-          labelFor: _sortLabel,
+          labelFor: (value) => _sortLabel(l10n, value),
           onSelected: onSortChanged,
         ),
         _PopupFilterChip<FinancialRole?>(
-          label: roleFilter == null ? 'Role' : _financialRoleLabel(roleFilter!),
+          label: roleFilter == null
+              ? l10n.dashboardTransactionsFilterRole
+              : _financialRoleLabel(l10n, roleFilter!),
           active: roleFilter != null,
           icon: Icons.account_tree_outlined,
           values: <FinancialRole?>[null, ...FinancialRole.values],
-          labelFor: (value) =>
-              value == null ? 'All roles' : _financialRoleLabel(value),
+          labelFor: (value) => value == null
+              ? l10n.dashboardTransactionsFilterAllRoles
+              : _financialRoleLabel(l10n, value),
           onSelected: onRoleChanged,
         ),
       ],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/application/conversation_controller.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
@@ -70,7 +72,8 @@ class ConversationHistoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
-    final preview = _conversationPreview(conversation);
+    final l10n = context.l10n;
+    final preview = conversationPreview(l10n, conversation);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -102,7 +105,7 @@ class ConversationHistoryTile extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            conversationTitle(conversation),
+                            conversationTitle(l10n, conversation),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.titleSmall?.copyWith(
@@ -115,7 +118,7 @@ class ConversationHistoryTile extends StatelessWidget {
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 96),
                           child: Text(
-                            timestampLabel(conversation.timestamp),
+                            timestampLabel(l10n, conversation.timestamp),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.right,
@@ -164,8 +167,10 @@ class ConversationSearchResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
-    final title = _searchResultTitle(result);
+    final l10n = context.l10n;
+    final title = conversationSearchResultTitle(l10n, result);
     final timestamp = timestampLabel(
+      l10n,
       result.message?.timestamp ?? result.conversationTimestamp,
     );
 
@@ -224,7 +229,7 @@ class ConversationSearchResultTile extends StatelessWidget {
                     const SizedBox(height: RexUiTokens.space8),
                     Text(
                       result.preview.trim().isEmpty
-                          ? 'Matched conversation'
+                          ? l10n.conversationHistoryMatchedConversation
                           : result.preview,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -251,7 +256,10 @@ class ConversationGroup {
   final List<Conversation> conversations;
 }
 
-List<ConversationGroup> conversationGroups(List<Conversation> conversations) {
+List<ConversationGroup> conversationGroups(
+  AppLocalizations l10n,
+  List<Conversation> conversations,
+) {
   final now = DateTime.now();
   final groups = <ConversationGroup>[];
   final sorted = [...conversations]
@@ -262,7 +270,7 @@ List<ConversationGroup> conversationGroups(List<Conversation> conversations) {
     });
 
   for (final conversation in sorted) {
-    final label = conversationGroupLabel(conversation.timestamp, now);
+    final label = conversationGroupLabel(l10n, conversation.timestamp, now);
     if (groups.isEmpty || groups.last.label != label) {
       groups.add(ConversationGroup(label: label));
     }
@@ -361,7 +369,48 @@ extension on DateTimeRange {
   }
 }
 
-String conversationTitle(Conversation conversation) {
+String conversationDateFilterLabel(
+  AppLocalizations l10n,
+  ConversationDateFilter filter,
+  DateTime now,
+) {
+  return switch (filter.type) {
+    ConversationDateFilterType.all => l10n.commonAll,
+    ConversationDateFilterType.today => l10n.commonToday,
+    ConversationDateFilterType.thisWeek => l10n.commonThisWeek,
+    ConversationDateFilterType.thisMonth => l10n.commonThisMonth,
+    ConversationDateFilterType.custom => _customDateFilterChipLabel(l10n, filter),
+  };
+}
+
+String _customDateFilterChipLabel(
+  AppLocalizations l10n,
+  ConversationDateFilter filter,
+) {
+  final startDate = filter.start;
+  final endDate = filter.end;
+  if (startDate == null || endDate == null) {
+    return l10n.commonCustom;
+  }
+
+  final normalizedStart = DateTime(
+    startDate.year,
+    startDate.month,
+    startDate.day,
+  );
+  final normalizedEnd = DateTime(endDate.year, endDate.month, endDate.day);
+  if (normalizedStart == normalizedEnd) {
+    return l10n.conversationDateFilterCustomSingle(
+      '${normalizedStart.month}/${normalizedStart.day}/${normalizedStart.year}',
+    );
+  }
+  return l10n.conversationDateFilterCustomRange(
+    '${normalizedStart.month}/${normalizedStart.day}',
+    '${normalizedEnd.month}/${normalizedEnd.day}',
+  );
+}
+
+String conversationTitle(AppLocalizations l10n, Conversation conversation) {
   final title = conversation.title?.trim();
   if (title != null && title.isNotEmpty) {
     return title;
@@ -372,10 +421,13 @@ String conversationTitle(Conversation conversation) {
     return preview;
   }
 
-  return 'New conversation';
+  return l10n.conversationHistoryNewConversation;
 }
 
-String _searchResultTitle(ConversationSearchResult result) {
+String conversationSearchResultTitle(
+  AppLocalizations l10n,
+  ConversationSearchResult result,
+) {
   final title = result.conversationTitle?.trim();
   if (title != null && title.isNotEmpty) {
     return title;
@@ -386,10 +438,10 @@ String _searchResultTitle(ConversationSearchResult result) {
     return message;
   }
 
-  return 'Conversation';
+  return l10n.commonConversation;
 }
 
-String timestampLabel(DateTime? timestamp) {
+String timestampLabel(AppLocalizations l10n, DateTime? timestamp) {
   if (timestamp == null) {
     return '';
   }
@@ -404,14 +456,18 @@ String timestampLabel(DateTime? timestamp) {
     return '$hour:$minute';
   }
   if (date.year == today.year) {
-    return '${_shortMonthName(local.month)} ${local.day}';
+    return '${localizedShortMonthName(l10n, local.month)} ${local.day}';
   }
-  return '${_shortMonthName(local.month)} ${local.day}, ${local.year}';
+  return '${localizedShortMonthName(l10n, local.month)} ${local.day}, ${local.year}';
 }
 
-String conversationGroupLabel(DateTime? timestamp, DateTime now) {
+String conversationGroupLabel(
+  AppLocalizations l10n,
+  DateTime? timestamp,
+  DateTime now,
+) {
   if (timestamp == null) {
-    return 'Undated';
+    return l10n.commonUndated;
   }
 
   final local = timestamp.toLocal();
@@ -420,61 +476,64 @@ String conversationGroupLabel(DateTime? timestamp, DateTime now) {
   final dayDifference = today.difference(date).inDays;
 
   if (dayDifference < 0) {
-    return 'Upcoming';
+    return l10n.commonUpcoming;
   }
   if (dayDifference == 0) {
-    return 'Today';
+    return l10n.commonToday;
   }
   if (dayDifference == 1) {
-    return 'Yesterday';
+    return l10n.commonYesterday;
   }
   if (dayDifference < 7) {
-    return 'This week';
+    return l10n.commonThisWeek;
   }
-  return '${_monthName(local.month)} ${local.year}';
+  return l10n.commonMonthYear(
+    localizedMonthName(l10n, local.month),
+    local.year.toString(),
+  );
 }
 
-String _conversationPreview(Conversation conversation) {
+String conversationPreview(AppLocalizations l10n, Conversation conversation) {
   final preview = conversation.lastMessage?.content.trim();
   if (preview != null && preview.isNotEmpty) {
     return preview;
   }
-  return 'No messages yet';
+  return l10n.conversationHistoryNoMessagesYet;
 }
 
-String _monthName(int month) {
+String localizedMonthName(AppLocalizations l10n, int month) {
   return switch (month) {
-    DateTime.january => 'January',
-    DateTime.february => 'February',
-    DateTime.march => 'March',
-    DateTime.april => 'April',
-    DateTime.may => 'May',
-    DateTime.june => 'June',
-    DateTime.july => 'July',
-    DateTime.august => 'August',
-    DateTime.september => 'September',
-    DateTime.october => 'October',
-    DateTime.november => 'November',
-    DateTime.december => 'December',
-    _ => 'Older',
+    DateTime.january => l10n.commonMonthJanuary,
+    DateTime.february => l10n.commonMonthFebruary,
+    DateTime.march => l10n.commonMonthMarch,
+    DateTime.april => l10n.commonMonthApril,
+    DateTime.may => l10n.commonMonthMay,
+    DateTime.june => l10n.commonMonthJune,
+    DateTime.july => l10n.commonMonthJuly,
+    DateTime.august => l10n.commonMonthAugust,
+    DateTime.september => l10n.commonMonthSeptember,
+    DateTime.october => l10n.commonMonthOctober,
+    DateTime.november => l10n.commonMonthNovember,
+    DateTime.december => l10n.commonMonthDecember,
+    _ => l10n.commonOlder,
   };
 }
 
-String _shortMonthName(int month) {
+String localizedShortMonthName(AppLocalizations l10n, int month) {
   return switch (month) {
-    DateTime.january => 'Jan',
-    DateTime.february => 'Feb',
-    DateTime.march => 'Mar',
-    DateTime.april => 'Apr',
-    DateTime.may => 'May',
-    DateTime.june => 'Jun',
-    DateTime.july => 'Jul',
-    DateTime.august => 'Aug',
-    DateTime.september => 'Sep',
-    DateTime.october => 'Oct',
-    DateTime.november => 'Nov',
-    DateTime.december => 'Dec',
-    _ => 'Old',
+    DateTime.january => l10n.commonMonthShortJan,
+    DateTime.february => l10n.commonMonthShortFeb,
+    DateTime.march => l10n.commonMonthShortMar,
+    DateTime.april => l10n.commonMonthShortApr,
+    DateTime.may => l10n.commonMonthShortMay,
+    DateTime.june => l10n.commonMonthShortJun,
+    DateTime.july => l10n.commonMonthShortJul,
+    DateTime.august => l10n.commonMonthShortAug,
+    DateTime.september => l10n.commonMonthShortSep,
+    DateTime.october => l10n.commonMonthShortOct,
+    DateTime.november => l10n.commonMonthShortNov,
+    DateTime.december => l10n.commonMonthShortDec,
+    _ => l10n.commonMonthShortOld,
   };
 }
 
@@ -502,8 +561,9 @@ class _ConversationMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     return PopupMenuButton<_ConversationAction>(
-      tooltip: 'Conversation actions',
+      tooltip: l10n.conversationHistoryActionsTooltip,
       color: colors.surfaceElevated,
       iconColor: colors.textMuted,
       onSelected: (action) {
@@ -520,7 +580,7 @@ class _ConversationMenu extends StatelessWidget {
               Icon(Icons.delete_outline_rounded, color: colors.danger),
               const SizedBox(width: RexUiTokens.space12),
               Text(
-                'Delete',
+                l10n.commonDelete,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: colors.textPrimary,
                   fontWeight: FontWeight.w700,

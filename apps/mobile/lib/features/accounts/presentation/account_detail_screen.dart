@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/io/file_reader.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../core/models/models.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
 import '../../../widgets/clarity_path_loader.dart';
@@ -82,9 +84,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     }
   }
 
-  String _batchLabel(CsvImportBatchSummary batch) {
+  String _batchLabel(AppLocalizations l10n, CsvImportBatchSummary batch) {
     final utc = batch.importedAtUtc;
-    if (utc == null) return 'Upload ${batch.importId}';
+    if (utc == null) return l10n.accountDetailUploadBatchLabel(batch.importId);
     final local = utc.toLocal();
     final yy = local.year.toString().padLeft(4, '0');
     final mm = local.month.toString().padLeft(2, '0');
@@ -96,6 +98,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
 
   Future<void> _deleteCsvUploadBatch(BuildContext context) async {
     if (_deletingCsvUpload) return;
+    final l10n = context.l10n;
 
     final batches = await widget.controller.csvImportBatchesForAccount(
       widget.accountId,
@@ -103,7 +106,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     if (!context.mounted) return;
     if (batches.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No CSV uploads found for this account.')),
+        SnackBar(content: Text(l10n.accountDetailNoCsvUploads)),
       );
       return;
     }
@@ -111,7 +114,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     final selected = await showDialog<CsvImportBatchSummary>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Delete CSV upload'),
+        title: Text(l10n.accountDetailDeleteCsvUploadTitle),
         children: [
           for (final batch in batches)
             SimpleDialogOption(
@@ -120,12 +123,14 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _batchLabel(batch),
+                    _batchLabel(l10n, batch),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${batch.transactionCount} transaction${batch.transactionCount == 1 ? '' : 's'}',
+                    batch.transactionCount == 1
+                        ? l10n.commonTransactionCountOne
+                        : l10n.commonTransactionCount(batch.transactionCount),
                   ),
                 ],
               ),
@@ -138,27 +143,32 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
 
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete this CSV upload?'),
-        content: Text(
-          'Delete ${selected.transactionCount} transaction'
-          '${selected.transactionCount == 1 ? '' : 's'} from this upload? '
-          'This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
+      builder: (ctx) {
+        final dialogL10n = ctx.l10n;
+        final transactionSuffix = selected.transactionCount == 1 ? '' : 's';
+        return AlertDialog(
+          title: Text(dialogL10n.accountDetailConfirmDeleteCsvTitle),
+          content: Text(
+            dialogL10n.accountDetailDeleteCsvBody(
+              selected.transactionCount,
+              transactionSuffix,
             ),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete upload'),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(dialogL10n.commonCancel),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error,
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(dialogL10n.accountDetailDeleteUploadButton),
+            ),
+          ],
+        );
+      },
     );
     if (confirm != true) return;
 
@@ -193,7 +203,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     if (!context.mounted) return;
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not delete CSV upload.')),
+        SnackBar(content: Text(l10n.accountDetailCouldNotDeleteCsv)),
       );
       return;
     }
@@ -201,32 +211,34 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
       SnackBar(
         content: Text(
           deleted > 0
-              ? 'Deleted $deleted transaction${deleted == 1 ? '' : 's'} from CSV upload.'
-              : 'CSV upload was already deleted.',
+              ? l10n.accountDetailDeletedFromCsv(
+                  deleted,
+                  deleted == 1 ? '' : 's',
+                )
+              : l10n.accountDetailCsvAlreadyDeleted,
         ),
       ),
     );
   }
 
   Future<void> _deleteAccount(BuildContext context, String accountName) async {
+    final l10n = context.l10n;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete account?'),
-        content: const Text(
-          'Delete this account and all its transactions? This cannot be undone.',
-        ),
+        title: Text(l10n.accountDetailDeleteAccountTitle),
+        content: Text(l10n.accountDetailDeleteAccountContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(ctx).colorScheme.error,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete account'),
+            child: Text(l10n.accountDetailDeleteAccountButton),
           ),
         ],
       ),
@@ -237,7 +249,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     if (!context.mounted) return;
     if (!result.deleted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not delete account.')),
+        SnackBar(content: Text(l10n.accountDetailCouldNotDeleteAccount)),
       );
       return;
     }
@@ -249,10 +261,17 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     if (!context.mounted) return;
 
     final cleanupNote = result.deletedBudgetCount > 0
-        ? ' Removed ${result.deletedBudgetCount} unused budget${result.deletedBudgetCount == 1 ? '' : 's'}.'
+        ? l10n.accountDetailRemovedBudgets(
+            result.deletedBudgetCount,
+            result.deletedBudgetCount == 1 ? '' : 's',
+          )
         : '';
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$accountName deleted.$cleanupNote')),
+      SnackBar(
+        content: Text(
+          l10n.accountDetailAccountDeleted(accountName, cleanupNote),
+        ),
+      ),
     );
     Navigator.of(context).pop();
   }
@@ -265,26 +284,29 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) {
+        final dialogL10n = ctx.l10n;
         final names = candidates.map((candidate) => candidate.name).join(', ');
-        final plural = candidates.length == 1 ? 'category' : 'categories';
+        final plural = candidates.length == 1
+            ? dialogL10n.accountDetailCategorySingular
+            : dialogL10n.accountDetailCategoriesPlural;
         return AlertDialog(
-          title: Text('Delete unused custom $plural?'),
+          title: Text(dialogL10n.accountDetailDeleteUnusedCategoryTitle(plural)),
           content: Text(
             candidates.length == 1
-                ? '"$names" no longer has active transactions after deleting this account. Delete this custom category too?'
-                : 'These custom categories no longer have active transactions after deleting this account: $names. Delete them too?',
+                ? dialogL10n.accountDetailDeleteUnusedCategorySingle(names)
+                : dialogL10n.accountDetailDeleteUnusedCategoryMultiple(names),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Keep'),
+              child: Text(dialogL10n.accountDetailKeepCategories),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: Theme.of(ctx).colorScheme.error,
               ),
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Delete'),
+              child: Text(dialogL10n.accountDetailDeleteCategories),
             ),
           ],
         );
@@ -323,7 +345,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not import this file.')),
+        SnackBar(content: Text(context.l10n.accountSelectionCouldNotImport)),
       );
     }
   }
@@ -360,13 +382,16 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
         final accounts = _dataNotifier.data;
         if (accounts == null) {
           if (_dataNotifier.error != null) {
-            return const Scaffold(
-              body: Center(child: Text('Could not load account.')),
+            return Scaffold(
+              body: Center(child: Text(context.l10n.accountDetailLoadError)),
             );
           }
-          return const Scaffold(
+          return Scaffold(
             body: Center(
-              child: ClarityDiamondLoader(size: 56, label: 'Loading account'),
+              child: ClarityDiamondLoader(
+                size: 56,
+                label: context.l10n.accountDetailLoadingLabel,
+              ),
             ),
           );
         }
@@ -374,7 +399,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
         if (account != null) {
           _maybePromptCsvImport(account);
         }
-        final title = account?.displayName ?? 'Account';
+        final title = account?.displayName ?? context.l10n.accountDetailFallbackTitle;
         return FinancialDashboardView(
           controller: widget.dashboardController,
           transactionController: widget.transactionController,
@@ -401,13 +426,13 @@ class _CsvUploadDeletingDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AlertDialog(
+    return AlertDialog(
       content: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ClarityInlineLoader(size: 24, strokeWidth: 2.5),
-          SizedBox(width: 20),
-          Expanded(child: Text('Deleting CSV upload...')),
+          const ClarityInlineLoader(size: 24, strokeWidth: 2.5),
+          const SizedBox(width: 20),
+          Expanded(child: Text(context.l10n.accountDetailDeletingCsvProgress)),
         ],
       ),
     );

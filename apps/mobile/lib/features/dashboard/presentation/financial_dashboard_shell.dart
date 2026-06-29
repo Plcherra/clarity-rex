@@ -27,6 +27,7 @@ class _DashboardScrollBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     return DecoratedBox(
       decoration: BoxDecoration(color: cs.surface),
       child: SafeArea(
@@ -61,7 +62,10 @@ class _DashboardScrollBody extends StatelessWidget {
                         : null,
                   ),
                   const SizedBox(height: _sectionGap),
-                  _SectionTitle(theme: theme, title: 'Monthly cash flow'),
+                  _SectionTitle(
+                    theme: theme,
+                    title: l10n.dashboardOverviewMonthlyCashFlow,
+                  ),
                   const SizedBox(height: 16),
                   _DashboardChartPanel(
                     child: MonthlyCashFlowChart(
@@ -71,7 +75,10 @@ class _DashboardScrollBody extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: _sectionGap),
-                  _SectionTitle(theme: theme, title: 'Spending by category'),
+                  _SectionTitle(
+                    theme: theme,
+                    title: l10n.dashboardOverviewSpendingByCategory,
+                  ),
                   const SizedBox(height: 16),
                   _DashboardChartPanel(
                     child: CategorySpendChart(
@@ -79,7 +86,10 @@ class _DashboardScrollBody extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: _sectionGap),
-                  _SectionTitle(theme: theme, title: 'Income vs spending'),
+                  _SectionTitle(
+                    theme: theme,
+                    title: l10n.dashboardOverviewIncomeVsSpending,
+                  ),
                   const SizedBox(height: 16),
                   _DashboardChartPanel(
                     child: IncomeSpendRatioChart(
@@ -88,7 +98,10 @@ class _DashboardScrollBody extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: _sectionGap),
-                  _SectionTitle(theme: theme, title: 'Six-month spend trend'),
+                  _SectionTitle(
+                    theme: theme,
+                    title: l10n.dashboardOverviewSixMonthTrend,
+                  ),
                   const SizedBox(height: 16),
                   _DashboardChartPanel(
                     child: SixMonthSpendTrendChart(
@@ -105,7 +118,10 @@ class _DashboardScrollBody extends StatelessWidget {
                     scope: scope,
                   ),
                   const SizedBox(height: _sectionGap),
-                  _SectionTitle(theme: theme, title: 'Spending pressure'),
+                  _SectionTitle(
+                    theme: theme,
+                    title: l10n.dashboardOverviewSpendingPressure,
+                  ),
                   const SizedBox(height: 16),
                   _DashboardChartPanel(
                     child: BiggestLeaksChart(
@@ -113,11 +129,17 @@ class _DashboardScrollBody extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: _sectionGap),
-                  _SectionTitle(theme: theme, title: 'Budget performance'),
+                  _SectionTitle(
+                    theme: theme,
+                    title: l10n.dashboardOverviewBudgetPerformance,
+                  ),
                   const SizedBox(height: 16),
                   _BudgetPerformanceCard(performance: budgetPerformance),
                   const SizedBox(height: _sectionGap),
-                  _SectionTitle(theme: theme, title: 'Account health'),
+                  _SectionTitle(
+                    theme: theme,
+                    title: l10n.dashboardOverviewAccountHealth,
+                  ),
                   const SizedBox(height: 16),
                   _AccountHealthCard(
                     snapshot: snapshot,
@@ -143,6 +165,7 @@ class _FinancialDataStatusBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     final sources =
         loadIssues
             .map((issue) => issue.source.trim())
@@ -150,7 +173,9 @@ class _FinancialDataStatusBanner extends StatelessWidget {
             .toSet()
             .toList()
           ..sort();
-    final sourceLabel = sources.isEmpty ? 'financial data' : sources.join(', ');
+    final sourceLabel = sources.isEmpty
+        ? l10n.dashboardOverviewDataLoadBannerFallbackSource
+        : sources.join(', ');
     return DecoratedBox(
       decoration: BoxDecoration(
         color: ClarityColors.warning.withValues(alpha: 0.12),
@@ -172,7 +197,7 @@ class _FinancialDataStatusBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Some financial data could not load',
+                    l10n.dashboardOverviewDataLoadBannerTitle,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: cs.onSurface,
                       fontWeight: FontWeight.w900,
@@ -180,7 +205,7 @@ class _FinancialDataStatusBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Clarity is showing the available records, but $sourceLabel may be incomplete. Rex will treat finance answers as degraded until this refreshes.',
+                    l10n.dashboardOverviewDataLoadBannerBody(sourceLabel),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.68),
                       height: 1.3,
@@ -226,11 +251,11 @@ class _DashboardLoadingBody extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 28),
-              const Expanded(
+              Expanded(
                 child: Center(
                   child: ClarityDiamondLoader(
                     size: 64,
-                    label: 'Loading your financial data...',
+                    label: context.l10n.dashboardOverviewLoadingLabel,
                   ),
                 ),
               ),
@@ -276,9 +301,8 @@ class _DashboardEmptySetupBody extends StatelessWidget {
                 ),
               const Spacer(),
               ConnectBankSetupCard(
-                title: 'Connect your first bank',
-                body:
-                    'Clarity works best with connected accounts, so balances and transactions stay current automatically.',
+                title: context.l10n.dashboardEmptyConnectFirstBankTitle,
+                body: context.l10n.dashboardEmptyConnectFirstBankBody,
                 onConnectBank: onConnectBank,
                 onImportCsvInstead: onImportCsvInstead,
               ),
@@ -320,7 +344,7 @@ class _DashboardResolvingDataBody extends StatelessWidget {
                   const ClarityDiamondLoader(size: 52),
                   const SizedBox(height: 18),
                   Text(
-                    'Resolving imported transactions',
+                    context.l10n.dashboardResolvingTitle,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
@@ -328,7 +352,7 @@ class _DashboardResolvingDataBody extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Your statement is connected, but the transaction rows are still loading. Values will appear when the read model is complete.',
+                    context.l10n.dashboardResolvingBody,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: cs.onSurfaceVariant,

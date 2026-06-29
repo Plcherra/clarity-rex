@@ -3,6 +3,7 @@ import 'package:flutter/scheduler.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/l10n/app_l10n.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../widgets/clarity_card.dart';
 
 /// Floating panel for the unified CSV upload + AI categorization job.
@@ -15,12 +16,14 @@ class ImportJobProgressBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     final total = controller.importProgressTotal;
     final done = controller.importProgressCompleted;
     final pct = total > 0 ? ((done / total) * 100).round() : 0;
     final message = _importProgressDisplayMessage(
       controller.importProgressMessage,
       MediaQuery.sizeOf(context).width,
+      l10n,
     );
     return ClarityCard(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -50,7 +53,11 @@ class ImportJobProgressBanner extends StatelessWidget {
   }
 }
 
-String _importProgressDisplayMessage(String rawMessage, double screenWidth) {
+String _importProgressDisplayMessage(
+  String rawMessage,
+  double screenWidth,
+  AppLocalizations l10n,
+) {
   final normalized = rawMessage
       .replaceFirst(RegExp(r'\s+\d+/\d+\s+batches\b'), '')
       .trim();
@@ -61,19 +68,19 @@ String _importProgressDisplayMessage(String rawMessage, double screenWidth) {
   if (lower.startsWith('uploading') ||
       lower.startsWith('parsing') ||
       lower.startsWith('saving transactions')) {
-    return 'Importing...';
+    return l10n.importProgressImporting;
   }
   if (lower.startsWith('categorizing')) {
-    return 'Categorizing...';
+    return l10n.importProgressCategorizing;
   }
   if (lower.startsWith('applying categories')) {
-    return 'Saving categories...';
+    return l10n.importProgressSavingCategories;
   }
   if (lower.startsWith('ai failed')) {
-    return 'Applying fallback categories...';
+    return l10n.importProgressApplyingFallbackCategories;
   }
   if (lower.startsWith('refreshing')) {
-    return 'Refreshing...';
+    return l10n.importProgressRefreshing;
   }
   return normalized;
 }
@@ -99,8 +106,10 @@ class _ImportJobStatusHostState extends State<ImportJobStatusHost> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final l10n = context.l10n;
+    widget.controller.bindLocalizations(l10n);
     widget.controller.configureIdleProgressMessage(
-      context.l10n.importUploadingTransactions,
+      l10n.importUploadingTransactions,
     );
   }
 
@@ -181,6 +190,7 @@ class _PersistentImportMessageBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     final isError = controller.persistentImportMessageIsError;
     final background = isError
         ? cs.errorContainer
@@ -216,7 +226,7 @@ class _PersistentImportMessageBanner extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Dismiss',
+                tooltip: l10n.commonDismiss,
                 onPressed: controller.dismissPersistentImportMessage,
                 icon: Icon(Icons.close_rounded, color: foreground),
                 visualDensity: VisualDensity.compact,
@@ -260,7 +270,7 @@ class _PersistentImportMessageBanner extends StatelessWidget {
                     color: foreground,
                     size: 18,
                   ),
-                  label: Text('Retry', style: TextStyle(color: foreground)),
+                  label: Text(l10n.commonRetry, style: TextStyle(color: foreground)),
                 ),
               if (summary?.canOpenCategoryManagement == true &&
                   onManageCategories != null)
@@ -272,7 +282,7 @@ class _PersistentImportMessageBanner extends StatelessWidget {
                     size: 18,
                   ),
                   label: Text(
-                    'Categories',
+                    l10n.commonCategories,
                     style: TextStyle(color: foreground),
                   ),
                 ),

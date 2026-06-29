@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/accountability/data/accountability_models.dart';
 import 'package:clarity/rex/accountability/presentation/accountability_display_helpers.dart';
@@ -37,14 +39,15 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
   }
 
   Future<void> _createPlan() async {
+    final l10n = context.l10n;
     final result = await showDialog<_GoalFormResult>(
       context: context,
-      builder: (context) => const _GoalFormDialog(
-        title: 'Add goal',
-        primaryLabel: 'Goal title',
-        detailLabel: 'Why this matters',
-        primaryHint: 'Build a reliable morning routine',
-        detailHint: 'Wake up at 5 AM and start the day cleanly',
+      builder: (context) => _GoalFormDialog(
+        title: l10n.accountabilityAddGoalTitle,
+        primaryLabel: l10n.accountabilityAddGoalPrimaryLabel,
+        detailLabel: l10n.accountabilityDetailNotesHint,
+        primaryHint: l10n.accountabilityAddGoalPrimaryHint,
+        detailHint: l10n.accountabilityAddGoalDetailHint,
       ),
     );
     if (result == null || !mounted) return;
@@ -52,18 +55,19 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
         .read(accountabilityProvider.notifier)
         .createPlan(title: result.primary, description: result.detail);
     if (!mounted) return;
-    _showMutationResult(saved ? 'Goal saved.' : null);
+    _showMutationResult(saved ? l10n.accountabilityGoalSaved : null);
   }
 
   Future<void> _createCommitment() async {
+    final l10n = context.l10n;
     final result = await showDialog<_GoalFormResult>(
       context: context,
-      builder: (context) => const _GoalFormDialog(
-        title: 'Add commitment',
-        primaryLabel: 'Commitment title',
-        detailLabel: 'Commitment',
-        primaryHint: 'Wake up at 5 AM',
-        detailHint: 'Wake up at 5 AM and start my morning routine',
+      builder: (context) => _GoalFormDialog(
+        title: l10n.accountabilityAddCommitmentTitle,
+        primaryLabel: l10n.accountabilityAddCommitmentPrimaryLabel,
+        detailLabel: l10n.commonCommitment,
+        primaryHint: l10n.accountabilityAddCommitmentPrimaryHint,
+        detailHint: l10n.accountabilityAddCommitmentDetailHint,
       ),
     );
     if (result == null || !mounted) return;
@@ -78,7 +82,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
           commitmentType: commitmentType,
         );
     if (!mounted) return;
-    _showMutationResult(saved ? 'Commitment saved.' : null);
+    _showMutationResult(saved ? l10n.accountabilityCommitmentSaved : null);
   }
 
   Future<void> _completeCommitment(Commitment commitment) async {
@@ -86,51 +90,52 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
         .read(accountabilityProvider.notifier)
         .completeCommitment(commitment.id);
     if (!mounted) return;
-    _showMutationResult(saved ? 'Commitment completed.' : null);
+    _showMutationResult(saved ? context.l10n.accountabilityCommitmentCompleted : null);
   }
 
   Future<void> _missCommitment(Commitment commitment) async {
+    final l10n = context.l10n;
     final confirmed = await _confirmArchive(
-      title: 'Mark missed?',
-      body:
-          'Mark "${commitment.title}" as missed? It will leave your active Goals list.',
-      confirmLabel: 'Mark missed',
+      title: l10n.accountabilityMarkMissedTitle,
+      body: l10n.accountabilityMarkMissedBody(commitment.title),
+      confirmLabel: l10n.accountabilityTilesMarkMissed,
     );
     if (confirmed != true || !mounted) return;
     final saved = await ref
         .read(accountabilityProvider.notifier)
         .missCommitment(commitment.id);
     if (!mounted) return;
-    _showMutationResult(saved ? 'Commitment marked missed.' : null);
+    _showMutationResult(saved ? l10n.accountabilityCommitmentMarkedMissed : null);
   }
 
   Future<void> _archiveCommitment(Commitment commitment) async {
+    final l10n = context.l10n;
     final confirmed = await _confirmArchive(
-      title: 'Archive commitment?',
-      body:
-          'Archive "${commitment.title}"? It will leave your active Goals list.',
-      confirmLabel: 'Archive',
+      title: l10n.accountabilityArchiveCommitmentTitle,
+      body: l10n.accountabilityArchiveCommitmentBody(commitment.title),
+      confirmLabel: l10n.commonArchive,
     );
     if (confirmed != true || !mounted) return;
     final saved = await ref
         .read(accountabilityProvider.notifier)
         .archiveCommitment(commitment.id);
     if (!mounted) return;
-    _showMutationResult(saved ? 'Commitment archived.' : null);
+    _showMutationResult(saved ? l10n.accountabilityCommitmentArchived : null);
   }
 
   Future<void> _archivePlan(PlanRecord plan) async {
+    final l10n = context.l10n;
     final confirmed = await _confirmArchive(
-      title: 'Archive goal?',
-      body: 'Archive "${plan.title}"? It will leave your active Goals list.',
-      confirmLabel: 'Archive',
+      title: l10n.accountabilityArchiveGoalTitle,
+      body: l10n.accountabilityArchiveGoalBody(plan.title),
+      confirmLabel: l10n.commonArchive,
     );
     if (confirmed != true || !mounted) return;
     final saved = await ref
         .read(accountabilityProvider.notifier)
         .archivePlan(plan.id);
     if (!mounted) return;
-    _showMutationResult(saved ? 'Goal archived.' : null);
+    _showMutationResult(saved ? l10n.accountabilityGoalArchived : null);
   }
 
   Future<void> _openPlanDetail(PlanRecord plan) async {
@@ -153,7 +158,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
           targetDateIso: targetDate?.toUtc().toIso8601String(),
         );
         if (mounted) {
-          _showMutationResult(saved ? 'Goal updated.' : null);
+          _showMutationResult(saved ? context.l10n.accountabilityGoalUpdated : null);
         }
         return saved;
       },
@@ -174,7 +179,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
           priority: priority,
         );
         if (mounted) {
-          _showMutationResult(saved ? 'Commitment updated.' : null);
+          _showMutationResult(saved ? context.l10n.accountabilityCommitmentUpdated : null);
         }
         return saved;
       },
@@ -194,7 +199,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -209,7 +214,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     final message =
         successMessage ??
         ref.read(accountabilityProvider).errorMessage ??
-        'Goals update failed.';
+        context.l10n.accountabilityUpdateFailed;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
@@ -224,12 +229,12 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     return RexScaffold(
       appBar: widget.showAppBar
           ? AppBar(
-              title: const Text('Goals'),
+              title: Text(context.l10n.accountabilityPageTitle),
               actions: [
                 IconButton(
                   onPressed: state.isLoading ? null : _refresh,
                   icon: const Icon(Icons.refresh_rounded),
-                  tooltip: 'Refresh goals',
+                  tooltip: context.l10n.accountabilityPageRefreshTooltip,
                 ),
               ],
             )
@@ -383,9 +388,9 @@ class _GoalFormDialogState extends State<_GoalFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.commonCancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Save')),
+        FilledButton(onPressed: _submit, child: Text(context.l10n.commonSave)),
       ],
     );
   }

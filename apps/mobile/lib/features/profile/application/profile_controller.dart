@@ -51,12 +51,21 @@ final class ProfileController extends ChangeNotifier {
       }
 
       profile = await profileService.fetchCurrentProfile();
-      await _localeController?.applyFromProfile(profile?.preferredLocale);
+      await _localeController?.resolveAfterProfileHydrate(
+        profilePreferredLocale: profile?.preferredLocale,
+        seedProfileIfMissing:
+            profile?.preferredLocale == null &&
+                authService.currentUser != null
+            ? (localeTag) => updatePreferredLocale(localeTag)
+            : null,
+      );
       _profileSubscription = profileService.watchCurrentProfile().listen((
         next,
       ) async {
         profile = next;
-        await _localeController?.applyFromProfile(next?.preferredLocale);
+        await _localeController?.resolveAfterProfileHydrate(
+          profilePreferredLocale: next?.preferredLocale,
+        );
         notifyListeners();
       });
     } on SupabaseAuthRequiredException {
@@ -127,6 +136,9 @@ final class ProfileController extends ChangeNotifier {
   }
 
   Future<void> updatePreferredLocale(String localeTag) async {
+    if (profile?.preferredLocale?.trim() == localeTag.trim()) {
+      return;
+    }
     await updateCurrentProfile(preferredLocale: localeTag);
   }
 

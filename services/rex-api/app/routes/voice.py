@@ -29,9 +29,10 @@ from app.services.memory_service import MemoryServiceError
 from app.services.rex_channel import RexBrainChannel
 from app.services.usage_tracking_service import UsageTrackingService
 from app.services.voice_stream_config import (
-    VOICE_RESPONSE_INSTRUCTIONS,
+    voice_response_instructions,
     voice_response_max_tokens,
 )
+from app.services.locale_utils import locale_to_stt_code, locale_to_tts_code
 
 
 router = APIRouter(prefix="/voice", tags=["voice"])
@@ -49,13 +50,14 @@ SUPPORTED_AUDIO_TYPES = {
     "audio/webm",
     "application/octet-stream",
 }
-VOICE_TURN_RESPONSE_INSTRUCTIONS = VOICE_RESPONSE_INSTRUCTIONS
+VOICE_TURN_RESPONSE_INSTRUCTIONS = voice_response_instructions()
 
 
 @router.post("/transcribe", response_model=VoiceTranscriptionResponse)
 async def transcribe_voice(
     audio: UploadFile = File(...),
     input_mime_type: Optional[str] = Form(None),
+    locale: Optional[str] = Form(None),
     current_user: AuthenticatedUser = Depends(get_current_user),
     deepgram_service: DeepgramService = Depends(get_deepgram_service),
     usage_tracking_service: UsageTrackingService = Depends(get_usage_tracking_service),
@@ -68,6 +70,7 @@ async def transcribe_voice(
             audio_bytes=audio_bytes,
             content_type=content_type,
             filename=audio.filename,
+            language=locale_to_stt_code(locale),
         )
     except DeepgramServiceError as error:
         await usage_tracking_service.record_stt_turn(
@@ -94,6 +97,7 @@ async def voice_turn(
     conversation_id: Optional[str] = Form(None),
     input_mime_type: Optional[str] = Form(None),
     financial_context: Optional[str] = Form(None),
+    locale: Optional[str] = Form(None),
     current_user: AuthenticatedUser = Depends(get_current_user),
     deepgram_service: DeepgramService = Depends(get_deepgram_service),
     chat_service: ChatService = Depends(get_chat_service),
@@ -110,6 +114,7 @@ async def voice_turn(
             audio_bytes=audio_bytes,
             content_type=content_type,
             filename=audio.filename,
+            language=locale_to_stt_code(locale),
         )
         await usage_tracking_service.record_stt_turn(
             user_id=current_user.id,
@@ -121,12 +126,16 @@ async def voice_turn(
             message=transcription["transcript"],
             conversation_id=conversation_id,
             financial_context=_json_dict(financial_context),
-            response_instructions=VOICE_TURN_RESPONSE_INSTRUCTIONS,
+            response_instructions=voice_response_instructions(locale),
             max_response_tokens=voice_response_max_tokens(transcription["transcript"]),
             channel=RexBrainChannel.VOICE,
+            locale=locale,
         )
         tts_started_at = time.perf_counter()
-        synthesis = await google_tts_service.synthesize_speech(chat_result["response"])
+        synthesis = await google_tts_service.synthesize_speech(
+            chat_result["response"],
+            language_code=locale_to_tts_code(locale),
+        )
         await usage_tracking_service.record_tts_turn(
             user_id=current_user.id,
             duration_ms=estimate_tts_duration_ms(chat_result["response"]),
@@ -242,7 +251,10 @@ async def synthesize_voice(
 ) -> VoiceSynthesisResponse:
     started_at = time.perf_counter()
     try:
-        synthesis = await google_tts_service.synthesize_speech(request.text)
+        synthesis = await google_tts_service.synthesize_speech(
+            request.text,
+            language_code=locale_to_tts_code(request.locale),
+        )
     except GoogleTTSServiceError as error:
         await usage_tracking_service.record_tts_turn(
             user_id=current_user.id,

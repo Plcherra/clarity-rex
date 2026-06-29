@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/app_l10n.dart';
 import '../accountability/presentation/pages/accountability_page.dart';
 import '../chat/presentation/pages/chat_page.dart';
 import '../chat/presentation/pages/conversation_list_page.dart';
@@ -112,7 +113,7 @@ class _AssistantTopSurface extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Assistant',
+            context.l10n.navAssistant,
             style:
                 (isCompactWidth
                         ? theme.textTheme.titleMedium
@@ -190,7 +191,7 @@ class _AssistantTabItem extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Semantics(
-      label: tab.semanticLabel,
+      label: tab.semanticLabelFor(context),
       button: true,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3),
@@ -203,7 +204,7 @@ class _AssistantTabItem extends StatelessWidget {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  tab.label,
+                  tab.labelFor(context),
                   maxLines: 1,
                   overflow: TextOverflow.visible,
                   style: theme.textTheme.labelMedium?.copyWith(

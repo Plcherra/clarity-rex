@@ -14,17 +14,19 @@ Future<String?> _showCategoryNameDialog(
         controller: controller,
         autofocus: true,
         textInputAction: TextInputAction.done,
-        decoration: const InputDecoration(labelText: 'Category name'),
+        decoration: InputDecoration(
+          labelText: context.l10n.categoryDialogNameLabel,
+        ),
         onSubmitted: (_) => Navigator.of(context).pop(controller.text.trim()),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.commonCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-          child: const Text('Save'),
+          child: Text(context.l10n.commonSave),
         ),
       ],
     ),

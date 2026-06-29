@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
+import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/theme/clarity_colors.dart';
@@ -15,10 +17,11 @@ class VoiceLiveTranscript extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     final isFailed = state.phase == VoiceCallPhase.failed;
     final transcript = state.currentTranscript.trim();
     final visibleText = isFailed
-        ? voiceFailureMessage(state.errorMessage)
+        ? voiceFailureMessage(l10n, state.errorMessage)
         : transcript;
 
     if (isFailed) {
@@ -59,7 +62,7 @@ class VoiceLiveTranscript extends StatelessWidget {
             ),
             const SizedBox(width: RexUiTokens.space8),
             Text(
-              'Start talking',
+              l10n.voicePanelStartTalking,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colors.textMuted,
               ),
@@ -73,7 +76,7 @@ class VoiceLiveTranscript extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.only(top: 4, bottom: 12),
         child: Text(
-          'Processing…',
+          l10n.voicePanelProcessing,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: colors.textMuted,
           ),
@@ -105,6 +108,7 @@ class InlineVoiceCallPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     final isFailed = state.phase == VoiceCallPhase.failed;
 
     return Padding(
@@ -112,7 +116,7 @@ class InlineVoiceCallPanel extends StatelessWidget {
       child: Row(
         children: [
           Semantics(
-            label: _voiceSemanticLabel(state),
+            label: _voiceSemanticLabel(l10n, state),
             liveRegion: true,
             child: _VoiceWaveIndicator(
               phase: state.phase,
@@ -124,7 +128,7 @@ class InlineVoiceCallPanel extends StatelessWidget {
           const SizedBox(width: RexUiTokens.space8),
           if (state.isMuted && !isFailed)
             Text(
-              'Muted',
+              l10n.voicePanelMuted,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: colors.textMuted,
                 fontWeight: FontWeight.w600,
@@ -134,27 +138,29 @@ class InlineVoiceCallPanel extends StatelessWidget {
           if (isFailed) ...[
             _VoiceFlatIconButton(
               icon: Icons.settings_outlined,
-              tooltip: 'Settings',
+              tooltip: l10n.voicePanelSettingsTooltip,
               onPressed: onOpenSettings,
             ),
             const SizedBox(width: RexUiTokens.space4),
             _VoiceFlatIconButton(
               icon: Icons.refresh_rounded,
-              tooltip: 'Try again',
+              tooltip: l10n.voicePanelTryAgainTooltip,
               onPressed: onRetry,
             ),
             const SizedBox(width: RexUiTokens.space4),
           ] else ...[
             _VoiceFlatIconButton(
               icon: state.isMuted ? Icons.mic_off_outlined : Icons.mic_none_outlined,
-              tooltip: state.isMuted ? 'Unmute mic' : 'Mute mic',
+              tooltip: state.isMuted
+                  ? l10n.voicePanelUnmuteMicTooltip
+                  : l10n.voicePanelMuteMicTooltip,
               onPressed: onToggleMute,
             ),
             const SizedBox(width: RexUiTokens.space4),
           ],
           _VoiceFlatIconButton(
             icon: Icons.stop_rounded,
-            tooltip: 'End voice',
+            tooltip: l10n.voicePanelEndVoiceTooltip,
             onPressed: onEnd,
             foregroundColor: colors.danger,
           ),
@@ -163,16 +169,16 @@ class InlineVoiceCallPanel extends StatelessWidget {
     );
   }
 
-  String _voiceSemanticLabel(VoiceCallState state) {
+  String _voiceSemanticLabel(AppLocalizations l10n, VoiceCallState state) {
     if (state.isMuted && state.phase == VoiceCallPhase.listening) {
-      return 'Voice muted';
+      return l10n.voicePanelVoiceMuted;
     }
     return switch (state.phase) {
-      VoiceCallPhase.idle => 'Voice ready',
-      VoiceCallPhase.listening => 'Listening',
-      VoiceCallPhase.thinking => 'Thinking',
-      VoiceCallPhase.speaking => 'Speaking',
-      VoiceCallPhase.failed => 'Voice paused',
+      VoiceCallPhase.idle => l10n.voicePanelVoiceReady,
+      VoiceCallPhase.listening => l10n.voicePanelListening,
+      VoiceCallPhase.thinking => l10n.voicePanelThinking,
+      VoiceCallPhase.speaking => l10n.voicePanelSpeaking,
+      VoiceCallPhase.failed => l10n.voicePanelVoicePaused,
     };
   }
 }
@@ -299,7 +305,7 @@ class _VoiceWaveIndicatorState extends State<_VoiceWaveIndicator>
   }
 }
 
-String voiceFailureMessage(String? error) {
+String voiceFailureMessage(AppLocalizations l10n, String? error) {
   final message = error?.toLowerCase() ?? '';
   if (message.contains('auth') ||
       message.contains('token') ||
@@ -307,37 +313,37 @@ String voiceFailureMessage(String? error) {
       message.contains('expired') ||
       message.contains('unauthorized') ||
       message.contains('401')) {
-    return 'Your Clarity session needs to reconnect before voice can continue. Sign in again if this keeps happening.';
+    return l10n.voiceFailureSessionReconnect;
   }
   if (message.contains('permission') ||
       message.contains('capture') ||
       message.contains('microphone') ||
       message.contains('microphone access') ||
       message.contains('settings')) {
-    return 'Microphone access is needed for voice. Check Settings, then try again.';
+    return l10n.voiceFailureMicrophoneAccess;
   }
   if (message.contains('empty_audio') ||
       message.contains('no audio') ||
       message.contains('did not catch') ||
       message.contains('did not hear') ||
       message.contains('blank transcript')) {
-    return "I didn't catch that. Tap Try again when you are ready.";
+    return l10n.voiceFailureDidNotCatch;
   }
   if (message.contains('disconnect') ||
       message.contains('connection') ||
       message.contains('socket') ||
       message.contains('stream')) {
-    return 'Voice connection dropped. Tap Try again to reconnect.';
+    return l10n.voiceFailureConnectionDropped;
   }
   if (message.contains('transcript')) {
-    return "I couldn't read that transcript. Tap Try again and say it once more.";
+    return l10n.voiceFailureTranscriptUnreadable;
   }
   if (message.contains('tts') ||
       message.contains('synthesize') ||
       message.contains('playback') ||
       message.contains('play rex voice') ||
       message.contains('play audio')) {
-    return "Rex answered, but I couldn't play the audio. Tap Try again to hear the reply.";
+    return l10n.voiceFailurePlaybackFailed;
   }
-  return 'Voice paused. Tap Try again when you are ready to continue.';
+  return l10n.voiceFailurePausedDefault;
 }

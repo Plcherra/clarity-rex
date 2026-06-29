@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/ui_dependencies.dart';
 import '../../../../core/formatting/formatting.dart';
+import '../../../../core/l10n/app_l10n.dart';
 import '../../../../theme/clarity_colors.dart';
 import '../../../../widgets/clarity_card.dart';
 
@@ -33,6 +34,7 @@ class AccountsSummaryCard extends StatelessWidget {
       (sum, item) => sum + item.spentThisMonth,
     );
     final netCashFlowTotal = incomeTotal - spendingTotal;
+    final l10n = context.l10n;
     return ClarityCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       backgroundColor: colors.surface.withValues(alpha: 0.72),
@@ -47,7 +49,7 @@ class AccountsSummaryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Total balance',
+                      l10n.accountsSummaryTotalBalance,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: cs.onSurface.withValues(alpha: 0.5),
                         fontWeight: FontWeight.w700,
@@ -56,7 +58,7 @@ class AccountsSummaryCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       totalBalance == null
-                          ? 'Unavailable'
+                          ? l10n.commonUnavailable
                           : formatMoney(totalBalance),
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w800,
@@ -69,7 +71,10 @@ class AccountsSummaryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${accounts.length} connected account${accounts.length == 1 ? '' : 's'}',
+                      l10n.commonConnectedAccountCount(
+                        accounts.length,
+                        accounts.length == 1 ? '' : 's',
+                      ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: cs.onSurface.withValues(alpha: 0.56),
                         fontWeight: FontWeight.w600,
@@ -92,7 +97,7 @@ class AccountsSummaryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'This month',
+                    l10n.commonThisMonth,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.48),
                       fontWeight: FontWeight.w700,
@@ -104,17 +109,17 @@ class AccountsSummaryCard extends StatelessWidget {
                     runSpacing: 4,
                     children: [
                       _InlineMoneyLabel(
-                        label: 'Income',
+                        label: l10n.commonIncome,
                         value: incomeTotal,
                         color: colors.financePositive,
                       ),
                       _InlineMoneyLabel(
-                        label: 'Spending',
+                        label: l10n.commonSpending,
                         value: spendingTotal,
                         color: colors.financeSpending,
                       ),
                       _InlineMoneyLabel(
-                        label: 'Net',
+                        label: l10n.commonNet,
                         value: netCashFlowTotal,
                         color: netCashFlowTotal >= 0
                             ? colors.financePositive
@@ -124,7 +129,7 @@ class AccountsSummaryCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Activity this month — not the same as balance',
+                    l10n.dashboardOverviewActivityNotBalanceNote,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.42),
                       fontWeight: FontWeight.w600,

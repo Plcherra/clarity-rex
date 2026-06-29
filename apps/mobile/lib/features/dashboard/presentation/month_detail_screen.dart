@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/l10n/app_l10n.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../theme/clarity_colors.dart';
@@ -111,7 +112,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                   lines != null &&
                   lines.isNotEmpty)
                 IconButton(
-                  tooltip: 'Delete this month',
+                  tooltip: context.l10n.monthDetailDeleteMonthTooltip,
                   icon: const Icon(Icons.delete_sweep_rounded),
                   color: cs.error,
                   onPressed: () async {
@@ -120,25 +121,35 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                     );
                     final confirm = await showDialog<bool>(
                       context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: Text('Delete $monthLabel transactions?'),
-                        content: Text(
-                          'This will permanently delete the ${lines.length} visible transaction${lines.length == 1 ? '' : 's'} for this account in $monthLabel. Other months will stay untouched.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(false),
-                            child: const Text('Cancel'),
+                      builder: (ctx) {
+                        final dialogL10n = ctx.l10n;
+                        final transactionSuffix = lines.length == 1 ? '' : 's';
+                        return AlertDialog(
+                          title: Text(
+                            dialogL10n.monthDetailDeleteMonthTitle(monthLabel),
                           ),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Theme.of(ctx).colorScheme.error,
+                          content: Text(
+                            dialogL10n.monthDetailDeleteMonthBody(
+                              lines.length,
+                              transactionSuffix,
+                              monthLabel,
                             ),
-                            onPressed: () => Navigator.of(ctx).pop(true),
-                            child: const Text('Delete month'),
                           ),
-                        ],
-                      ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: Text(dialogL10n.commonCancel),
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Theme.of(ctx).colorScheme.error,
+                              ),
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: Text(dialogL10n.monthDetailDeleteMonthButton),
+                            ),
+                          ],
+                        );
+                      },
                     );
                     if (confirm != true) return;
                     final deleted = await widget.controller
@@ -151,8 +162,12 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                       SnackBar(
                         content: Text(
                           deleted > 0
-                              ? 'Deleted $deleted $monthLabel transaction${deleted == 1 ? '' : 's'}.'
-                              : 'No transactions were deleted.',
+                              ? context.l10n.monthDetailDeletedTransactions(
+                                  deleted,
+                                  monthLabel,
+                                  deleted == 1 ? '' : 's',
+                                )
+                              : context.l10n.monthDetailNothingDeleted,
                         ),
                       ),
                     );
@@ -162,17 +177,22 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
           ),
           body: lines == null
               ? _dataNotifier.error != null
-                    ? const Center(child: Text('Could not load transactions.'))
-                    : const Center(
+                    ? Center(
+                        child: Text(context.l10n.dashboardTransactionsLoadError),
+                      )
+                    : Center(
                         child: ClarityDiamondLoader(
                           size: 56,
-                          label: 'Loading month',
+                          label: context.l10n.monthDetailLoadingMonth,
                         ),
                       )
               : _MonthDetailBody(
                   lines: lines,
                   monthDeleteProtectionMessage:
-                      monthDeletePolicy?.protectionMessage,
+                      monthDeletePolicy?.blockReason ==
+                          MonthDeletionBlockReason.plaidSynced
+                      ? context.l10n.monthDetailPlaidDeleteProtection
+                      : null,
                   controller: widget.controller,
                   transactionController: widget.transactionController,
                   theme: theme,
@@ -232,6 +252,7 @@ class _MonthDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final monthTotal = lines.fold<double>(
       0,
       (sum, e) => sum + e.transaction.amount,
@@ -259,7 +280,7 @@ class _MonthDetailBody extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'NET THIS MONTH',
+                l10n.monthDetailNetThisMonth,
                 style: theme.textTheme.labelMedium?.copyWith(
                   letterSpacing: 2,
                   fontWeight: FontWeight.w600,
@@ -278,7 +299,9 @@ class _MonthDetailBody extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${lines.length} transactions',
+                lines.length == 1
+                    ? l10n.commonTransactionCountOne
+                    : l10n.commonTransactionCount(lines.length),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurface.withValues(alpha: 0.45),
                 ),
@@ -292,7 +315,7 @@ class _MonthDetailBody extends StatelessWidget {
           const SizedBox(height: 18),
         ],
         Text(
-          'Transactions',
+          l10n.dashboardTransactionsSectionTitle,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
             letterSpacing: -0.2,
@@ -314,7 +337,7 @@ class _MonthDetailBody extends StatelessWidget {
                     vertical: 26,
                   ),
                   child: Text(
-                    'No transactions left for this month.',
+                    l10n.monthDetailNoTransactionsLeft,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurface.withValues(alpha: 0.5),
@@ -417,33 +440,38 @@ class _LineTile extends StatelessWidget {
                   ),
                   if (!tx.isPlaid)
                     IconButton(
-                      tooltip: 'Delete transaction',
+                      tooltip: context.l10n.monthDetailDeleteTransactionTooltip,
                       icon: const Icon(Icons.delete_outline_rounded),
                       color: cs.error,
                       onPressed: () async {
                         final confirm = await showDialog<bool>(
                           context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Delete this transaction?'),
-                            content: const Text(
-                              'This transaction will be permanently deleted.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(false),
-                                child: const Text('Cancel'),
+                          builder: (ctx) {
+                            final dialogL10n = ctx.l10n;
+                            return AlertDialog(
+                              title: Text(
+                                dialogL10n.monthDetailDeleteTransactionTitle,
                               ),
-                              FilledButton(
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: Theme.of(
-                                    ctx,
-                                  ).colorScheme.error,
+                              content: Text(
+                                dialogL10n.monthDetailDeleteTransactionBody,
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                  child: Text(dialogL10n.commonCancel),
                                 ),
-                                onPressed: () => Navigator.of(ctx).pop(true),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
+                                FilledButton(
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: Theme.of(
+                                      ctx,
+                                    ).colorScheme.error,
+                                  ),
+                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                  child: Text(dialogL10n.commonDelete),
+                                ),
+                              ],
+                            );
+                          },
                         );
                         if (confirm != true) return;
                         final deleted = await transactionController
@@ -453,8 +481,10 @@ class _LineTile extends StatelessWidget {
                           SnackBar(
                             content: Text(
                               deleted
-                                  ? 'Transaction deleted.'
-                                  : 'Could not delete transaction.',
+                                  ? context.l10n.monthDetailTransactionDeleted
+                                  : context
+                                        .l10n
+                                        .monthDetailDeleteTransactionFailed,
                             ),
                           ),
                         );

@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../app/ui_dependencies.dart';
+import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/clarity_colors.dart';
 import '../../../../widgets/clarity_path_loader.dart';
 import '../../application/category_workflow_service.dart';
@@ -124,6 +126,7 @@ class _TransactionRoleFieldState extends State<TransactionRoleField> {
     if (_saving) return;
     setState(() => _saving = true);
     final messenger = ScaffoldMessenger.maybeOf(context);
+    final l10n = context.l10n;
     try {
       final ok = await widget.controller.setFinancialRoleOverride(
         widget.transaction,
@@ -132,13 +135,15 @@ class _TransactionRoleFieldState extends State<TransactionRoleField> {
       if (!mounted) return;
       if (!ok) {
         messenger?.showSnackBar(
-          const SnackBar(content: Text('Could not find this transaction.')),
+          SnackBar(content: Text(l10n.transactionCategoryNotFoundSnack)),
         );
       }
     } catch (error) {
       if (!mounted) return;
       messenger?.showSnackBar(
-        SnackBar(content: Text('Could not update role: $error')),
+        SnackBar(
+          content: Text(l10n.transactionCategoryUpdateRoleFailed('$error')),
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -149,22 +154,23 @@ class _TransactionRoleFieldState extends State<TransactionRoleField> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     final role = widget.transaction.financialRole;
-    final label = role == null ? 'Auto role' : _roleLabel(role);
+    final label = role == null ? l10n.transactionCategoryAutoRole : _roleLabel(role, l10n);
 
     return PopupMenuButton<FinancialRole?>(
-      tooltip: 'Financial role',
+      tooltip: l10n.transactionCategoryFinancialRoleTooltip,
       enabled: !_saving,
       onSelected: _setRole,
       itemBuilder: (context) => [
-        const PopupMenuItem<FinancialRole?>(
+        PopupMenuItem<FinancialRole?>(
           value: null,
-          child: Text('Auto role'),
+          child: Text(l10n.transactionCategoryAutoRole),
         ),
         for (final option in FinancialRole.values)
           PopupMenuItem<FinancialRole?>(
             value: option,
-            child: Text(_roleLabel(option)),
+            child: Text(_roleLabel(option, l10n)),
           ),
       ],
       child: Container(
@@ -204,14 +210,14 @@ class _TransactionRoleFieldState extends State<TransactionRoleField> {
   }
 }
 
-String _roleLabel(FinancialRole role) {
+String _roleLabel(FinancialRole role, AppLocalizations l10n) {
   return switch (role) {
-    FinancialRole.expense => 'Expense',
-    FinancialRole.income => 'Income',
-    FinancialRole.transfer => 'Transfer',
-    FinancialRole.creditCardPayment => 'Credit card payment',
-    FinancialRole.refund => 'Refund',
-    FinancialRole.adjustment => 'Adjustment',
+    FinancialRole.expense => l10n.commonExpense,
+    FinancialRole.income => l10n.commonIncome,
+    FinancialRole.transfer => l10n.commonTransfer,
+    FinancialRole.creditCardPayment => l10n.commonCreditCardPayment,
+    FinancialRole.refund => l10n.commonRefund,
+    FinancialRole.adjustment => l10n.commonAdjustment,
   };
 }
 
@@ -388,17 +394,16 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
   }
 
   void _confirmDelete(BuildContext context, String canonical) {
+    final l10n = context.l10n;
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Delete "$canonical"?'),
-        content: const Text(
-          'Remove this category and clear it from assigned transactions?',
-        ),
+        title: Text(l10n.transactionCategoryDeleteTitle(canonical)),
+        content: Text(l10n.transactionCategoryDeleteContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             onPressed: () {
@@ -411,7 +416,7 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
               _runCategoryMutation(widget.controller.deleteCategory(canonical));
               widget.onClose();
             },
-            child: const Text('Delete'),
+            child: Text(l10n.commonDelete),
           ),
         ],
       ),
@@ -559,6 +564,7 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
   }
 
   Widget _buildMenuBody(ThemeData theme, ColorScheme cs) {
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -573,7 +579,7 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
               if (names.isEmpty) {
                 return Center(
                   child: Text(
-                    'No categories',
+                    l10n.transactionCategoryNoCategories,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.45),
                     ),
@@ -616,7 +622,7 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _submitNew(),
                   decoration: InputDecoration(
-                    hintText: 'New category',
+                    hintText: l10n.transactionCategoryNewCategoryHint,
                     isDense: true,
                     filled: true,
                     fillColor: cs.surfaceContainerHighest,
@@ -651,12 +657,15 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
 
   Future<void> _handleCategoryMutation(Future<void> mutation) async {
     final messenger = ScaffoldMessenger.maybeOf(widget.dialogContext);
+    final l10n = widget.dialogContext.l10n;
     try {
       await mutation;
     } catch (error) {
       if (!mounted) return;
       messenger?.showSnackBar(
-        SnackBar(content: Text('Could not update category: $error')),
+        SnackBar(
+          content: Text(l10n.transactionCategoryUpdateFailed('$error')),
+        ),
       );
     }
   }
@@ -687,6 +696,7 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
     required BuildContext dialogContext,
   }) async {
     final messenger = ScaffoldMessenger.maybeOf(dialogContext);
+    final l10n = dialogContext.l10n;
     try {
       final preview = await controller.previewMerchantLearningImpact(
         transaction,
@@ -714,14 +724,16 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
               applyToSimilarMerchants: applyToSimilarMerchants,
             );
       if (!dialogContext.mounted) return;
-      final message = _categoryAssignmentMessage(result);
+      final message = _categoryAssignmentMessage(result, l10n);
       if (message.isNotEmpty) {
         messenger?.showSnackBar(SnackBar(content: Text(message)));
       }
     } catch (error) {
       if (!dialogContext.mounted) return;
       messenger?.showSnackBar(
-        SnackBar(content: Text('Could not update category: $error')),
+        SnackBar(
+          content: Text(l10n.transactionCategoryUpdateFailed('$error')),
+        ),
       );
     }
   }
@@ -730,44 +742,50 @@ class _CategoryMenuOverlayState extends State<_CategoryMenuOverlay> {
     BuildContext context,
     MerchantLearningPreview preview,
   ) {
+    final l10n = context.l10n;
     final count = preview.matchingTransactionCount;
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         scrollable: true,
-        title: const Text('Apply to similar transactions?'),
+        title: Text(l10n.transactionCategoryApplySimilarTitle),
         content: Text(
-          'Clarity found $count transactions that look like '
-          '"${preview.merchantDisplay}". Apply this category to all of them '
-          'and remember it for future CSV imports?',
+          l10n.transactionCategoryApplySimilarContent(
+            count,
+            preview.merchantDisplay,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Only this one'),
+            child: Text(l10n.transactionCategoryOnlyThisOne),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Update $count'),
+            child: Text(l10n.transactionCategoryUpdateCount(count)),
           ),
         ],
       ),
     );
   }
 
-  String _categoryAssignmentMessage(CategoryAssignmentResult result) {
+  String _categoryAssignmentMessage(
+    CategoryAssignmentResult result,
+    AppLocalizations l10n,
+  ) {
     if (result.updatedTransactionCount <= 0) return '';
     if (result.appliedToSimilarMerchants) {
-      return 'Updated ${result.updatedTransactionCount} similar transactions. '
-          'Choose another category to correct them.';
+      return l10n.transactionCategoryUpdatedSimilarSnack(
+        result.updatedTransactionCount,
+      );
     }
     if (result.learnedMerchantRule) {
-      return 'Category updated. Future matching imports will use it.';
+      return l10n.transactionCategoryUpdatedFutureImportsSnack;
     }
-    return 'Category updated.';
+    return l10n.transactionCategoryUpdatedSnack;
   }
 }

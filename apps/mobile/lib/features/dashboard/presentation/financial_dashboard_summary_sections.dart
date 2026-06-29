@@ -15,6 +15,7 @@ class _FinancialOverviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
@@ -28,7 +29,9 @@ class _FinancialOverviewCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            isGlobalScope ? 'Total balance' : 'Account balance',
+            isGlobalScope
+                ? l10n.dashboardOverviewTotalBalance
+                : l10n.dashboardOverviewAccountBalance,
             style: theme.textTheme.labelLarge?.copyWith(
               color: cs.onSurface.withValues(alpha: 0.58),
               fontWeight: FontWeight.w700,
@@ -50,8 +53,11 @@ class _FinancialOverviewCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             isGlobalScope && accountCount != null && accountCount! > 0
-                ? 'Across $accountCount connected account${accountCount == 1 ? '' : 's'}'
-                : 'From your connected accounts',
+                ? l10n.commonAcrossAccounts(
+                    accountCount!,
+                    accountCount == 1 ? '' : 's',
+                  )
+                : l10n.dashboardOverviewFromConnectedAccounts,
             style: theme.textTheme.bodySmall?.copyWith(
               color: cs.onSurface.withValues(alpha: 0.46),
               fontWeight: FontWeight.w600,
@@ -69,7 +75,7 @@ class _FinancialOverviewCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'This month',
+                    l10n.dashboardOverviewThisMonthLabel,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.5),
                       fontWeight: FontWeight.w700,
@@ -80,7 +86,7 @@ class _FinancialOverviewCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _CashFlowSummaryMetric(
-                          label: 'Income',
+                          label: l10n.commonIncome,
                           value: formatMoney(snapshot.incomeThisMonth),
                           color: ClarityColors.financePositive,
                         ),
@@ -88,7 +94,7 @@ class _FinancialOverviewCard extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: _CashFlowSummaryMetric(
-                          label: 'Spending',
+                          label: l10n.commonSpending,
                           value: formatMoney(snapshot.spentThisMonth),
                           color: ClarityColors.financeSpending,
                         ),
@@ -96,7 +102,7 @@ class _FinancialOverviewCard extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: _CashFlowSummaryMetric(
-                          label: 'Net',
+                          label: l10n.commonNet,
                           value: formatMoney(snapshot.availableThisMonth),
                           color: _balanceColor(
                             context,
@@ -108,7 +114,7 @@ class _FinancialOverviewCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Activity this month — not the same as balance',
+                    l10n.dashboardOverviewActivityNotBalanceNote,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.42),
                       fontWeight: FontWeight.w600,
@@ -191,6 +197,7 @@ class _MonthlyGroupsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     if (groups.isEmpty) {
       return Container(
         width: double.infinity,
@@ -201,7 +208,7 @@ class _MonthlyGroupsList extends StatelessWidget {
           border: Border.all(color: _dashboardOutline(context)),
         ),
         child: Text(
-          'No months to show after filtering this file.',
+          l10n.dashboardTransactionsNoMonthsAfterFilter,
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
@@ -240,6 +247,7 @@ class _MonthCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
     final label = formatYearMonthLabel(group.yearMonth);
     final totalColor = group.totalAmount < 0
         ? ClarityColors.financeNegative
@@ -285,7 +293,11 @@ class _MonthCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${group.transactions.length} transactions',
+                        group.transactions.length == 1
+                            ? l10n.commonTransactionCountOne
+                            : l10n.commonTransactionCount(
+                                group.transactions.length,
+                              ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: cs.onSurface.withValues(alpha: 0.45),
                         ),
@@ -306,7 +318,7 @@ class _MonthCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'net',
+                      l10n.dashboardTransactionsNetLabel,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: cs.onSurface.withValues(alpha: 0.38),
                         letterSpacing: 0.6,

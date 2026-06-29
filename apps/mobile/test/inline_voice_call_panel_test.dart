@@ -1,9 +1,14 @@
+import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/l10n_test_wrapper.dart';
+
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   testWidgets('shows session recovery message for auth voice failures', (
     tester,
   ) async {
@@ -16,8 +21,8 @@ void main() {
       find.textContaining('Your Clarity session needs to reconnect'),
       findsOneWidget,
     );
-    expect(find.byTooltip('Try again'), findsOneWidget);
-    expect(find.byTooltip('Settings'), findsOneWidget);
+    expect(find.byTooltip(l10n.voicePanelTryAgainTooltip), findsOneWidget);
+    expect(find.byTooltip(l10n.voicePanelSettingsTooltip), findsOneWidget);
   });
 
   testWidgets('shows microphone recovery message for capture failures', (
@@ -28,12 +33,7 @@ void main() {
       errorMessage: 'Could not capture voice audio.',
     );
 
-    expect(
-      find.text(
-        'Microphone access is needed for voice. Check Settings, then try again.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text(l10n.voiceFailureMicrophoneAccess), findsOneWidget);
   });
 
   testWidgets('shows audio playback recovery message for TTS failures', (
@@ -59,10 +59,7 @@ void main() {
           'I still did not hear anything. Tap Try again when you are ready to use voice.',
     );
 
-    expect(
-      find.text("I didn't catch that. Tap Try again when you are ready."),
-      findsOneWidget,
-    );
+    expect(find.text(l10n.voiceFailureDidNotCatch), findsOneWidget);
   });
 }
 
@@ -71,8 +68,8 @@ Future<void> _pumpFailedVoicePanel(
   required String errorMessage,
 }) {
   return tester.pumpWidget(
-    MaterialApp(
-      home: Scaffold(
+    wrapWithL10n(
+      Scaffold(
         body: Column(
           children: [
             VoiceLiveTranscript(

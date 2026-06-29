@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
 enum ChatAttachmentSource { gallery, camera, files }
@@ -10,6 +11,7 @@ class AttachmentSourceSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
@@ -29,7 +31,7 @@ class AttachmentSourceSheet extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Attach',
+              l10n.attachmentSheetTitle,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w800,
@@ -38,20 +40,20 @@ class AttachmentSourceSheet extends StatelessWidget {
             const SizedBox(height: 10),
             _AttachmentSourceTile(
               icon: Icons.photo_library_rounded,
-              title: 'Gallery',
-              subtitle: 'Choose an image from photos.',
+              title: l10n.attachmentSheetGalleryTitle,
+              subtitle: l10n.attachmentSheetGallerySubtitle,
               source: ChatAttachmentSource.gallery,
             ),
             _AttachmentSourceTile(
               icon: Icons.photo_camera_rounded,
-              title: 'Camera',
-              subtitle: 'Take a new photo.',
+              title: l10n.attachmentSheetCameraTitle,
+              subtitle: l10n.attachmentSheetCameraSubtitle,
               source: ChatAttachmentSource.camera,
             ),
             _AttachmentSourceTile(
               icon: Icons.folder_rounded,
-              title: 'Files',
-              subtitle: 'Choose PDF, text, CSV, markdown, or image files.',
+              title: l10n.attachmentSheetFilesTitle,
+              subtitle: l10n.attachmentSheetFilesSubtitle,
               source: ChatAttachmentSource.files,
             ),
           ],

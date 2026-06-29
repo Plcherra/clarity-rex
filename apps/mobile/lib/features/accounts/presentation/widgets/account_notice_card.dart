@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
+
 import '../../../../theme/clarity_colors.dart';
 import '../../../../widgets/clarity_card.dart';
 
@@ -36,7 +38,7 @@ class AccountNoticeCard extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Dismiss',
+            tooltip: context.l10n.accountsNoticeDismissTooltip,
             onPressed: onDismiss,
             icon: const Icon(Icons.close_rounded),
           ),

@@ -1,8 +1,12 @@
+import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   test('personSupplementalLabels skips details already in summary', () {
     const person = PersonMemoryItem(
       id: 'person-1',
@@ -27,8 +31,8 @@ void main() {
     );
 
     expect(
-      personSupplementalLabels(person),
-      ['Important date: Launch review: 2026-06-20'],
+      personSupplementalLabels(l10n, person),
+      ['${l10n.memoryDisplayImportantDate}: Launch review: 2026-06-20'],
     );
   });
 

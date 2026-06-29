@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/features/usage_admin/application/owner_usage_controller.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_usage_hub_screen.dart';
 import 'package:clarity/theme/clarity_colors.dart';
@@ -29,6 +30,7 @@ class _OwnerUsageProfileEntryState extends State<OwnerUsageProfileEntry> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
@@ -43,7 +45,7 @@ class _OwnerUsageProfileEntryState extends State<OwnerUsageProfileEntry> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Owner',
+                l10n.usageAdminOwnerSection,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.52),
                   fontWeight: FontWeight.w900,
@@ -81,14 +83,14 @@ class _OwnerUsageProfileEntryState extends State<OwnerUsageProfileEntry> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Usage administration',
+                                  l10n.usageAdminTitle,
                                   style: theme.textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'All users · voice, chat, estimated cost',
+                                  l10n.usageAdminSubtitle,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: colors.textMuted,
                                   ),

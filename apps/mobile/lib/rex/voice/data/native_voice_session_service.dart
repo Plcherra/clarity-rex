@@ -7,6 +7,7 @@ class NativeVoiceSessionConfig {
     String? backendBaseUrl,
     this.conversationId,
     this.accessToken,
+    this.locale,
     this.sampleRate = 16000,
     this.inputMimeType = 'audio/linear16',
   }) : backendBaseUrl = backendBaseUrl ?? RexConfig.backendBaseUrl;
@@ -14,6 +15,7 @@ class NativeVoiceSessionConfig {
   final String backendBaseUrl;
   final String? conversationId;
   final String? accessToken;
+  final String? locale;
   final int sampleRate;
   final String inputMimeType;
 
@@ -30,6 +32,10 @@ class NativeVoiceSessionConfig {
     final accessToken = this.accessToken;
     if (accessToken != null && accessToken.isNotEmpty) {
       payload['accessToken'] = accessToken;
+    }
+    final locale = this.locale;
+    if (locale != null && locale.isNotEmpty) {
+      payload['locale'] = locale;
     }
     return payload;
   }

@@ -1,3 +1,4 @@
+import '../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/accountability/data/accountability_models.dart';
 
 bool accountabilityTextsMatch(String? a, String? b) {
@@ -33,26 +34,26 @@ String? commitmentSubtitle(Commitment commitment) {
   return text;
 }
 
-String priorityShortLabel(int priority) {
+String priorityShortLabel(AppLocalizations l10n, int priority) {
   if (priority >= 5) {
-    return 'High';
+    return l10n.commonHigh;
   }
   if (priority >= 4) {
-    return 'Medium';
+    return l10n.commonMedium;
   }
   if (priority >= 3) {
-    return 'Normal';
+    return l10n.commonNormal;
   }
-  return 'Low';
+  return l10n.commonLow;
 }
 
-String statusShortLabel(String status) {
+String statusShortLabel(AppLocalizations l10n, String status) {
   final normalized = status.trim().toLowerCase().replaceAll('_', ' ');
   if (normalized.isEmpty) {
-    return 'Open';
+    return l10n.accountabilityStatusOpen;
   }
   if (normalized == 'in progress') {
-    return 'In progress';
+    return l10n.accountabilityStatusInProgress;
   }
   return normalized[0].toUpperCase() + normalized.substring(1);
 }

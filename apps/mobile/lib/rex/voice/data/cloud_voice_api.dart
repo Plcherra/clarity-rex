@@ -22,15 +22,25 @@ class CloudVoiceApi {
     String? baseUrl,
     RexAuthHeaders? authHeaders,
     RexApiClient? apiClient,
+    String? Function()? resolveLocale,
   }) : _apiClient =
            apiClient ??
            RexApiClient(
              httpClient: client,
              baseUrl: baseUrl,
              authHeaders: authHeaders,
-           );
+           ),
+       _resolveLocale = resolveLocale;
 
   final RexApiClient _apiClient;
+  final String? Function()? _resolveLocale;
+
+  void _attachLocale(Map<String, String> fields) {
+    final locale = _resolveLocale?.call()?.trim();
+    if (locale != null && locale.isNotEmpty) {
+      fields['locale'] = locale;
+    }
+  }
 
   Future<CloudVoiceTranscriptionResponse> transcribe({
     required XFile audio,
@@ -40,6 +50,7 @@ class CloudVoiceApi {
       'POST',
       _apiClient.uri('/voice/transcribe'),
     )..fields['input_mime_type'] = inputMimeType;
+    _attachLocale(request.fields);
     request.files.add(
       http.MultipartFile.fromBytes(
         'audio',
@@ -53,9 +64,9 @@ class CloudVoiceApi {
   }
 
   Future<CloudVoiceSynthesisResponse> synthesize(String text) async {
-    final response = await _apiClient.postJson('/voice/synthesize', {
-      'text': text,
-    });
+    final payload = <String, String>{'text': text};
+    _attachLocale(payload);
+    final response = await _apiClient.postJson('/voice/synthesize', payload);
     return CloudVoiceSynthesisResponse.fromJson(_jsonMap(response));
   }
 
@@ -73,6 +84,7 @@ class CloudVoiceApi {
     if (financialContext != null) {
       request.fields['financial_context'] = jsonEncode(financialContext);
     }
+    _attachLocale(request.fields);
     request.files.add(
       http.MultipartFile.fromBytes(
         'audio',

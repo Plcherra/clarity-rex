@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
-import '../domain/budget_models.dart';
 import '../../../core/formatting/formatting.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../l10n/app_localizations.dart';
+import '../domain/budget_models.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
@@ -126,6 +128,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   Future<_BudgetScreenData> _loadScreenData({
+    required AppLocalizations l10n,
     required bool hasSelectedPeriod,
     required BudgetPeriodType periodType,
     required String periodKey,
@@ -160,6 +163,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     }
 
     final categoryItems = await _viewModel.buildCategoryListItems(
+      l10n: l10n,
       rows: rows,
       hasSelectedPeriod: hasSelectedPeriod,
       periodType: periodType,
@@ -187,6 +191,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     _dataNotifier.setLoading();
     try {
       final data = await _loadScreenData(
+        l10n: context.l10n,
         hasSelectedPeriod: hasSelectedPeriod,
         periodType: _selectedType,
         periodKey: _selectedPeriodKey,
@@ -207,29 +212,28 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   Future<bool> _confirmPeriodSwitchIfNeeded() async {
     if (!_viewModel.hasUnsavedChanges.value) return true;
 
+    final l10n = context.l10n;
     final choice = await showDialog<_PeriodSwitchChoice>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Save changes before switching period?'),
-          content: const Text(
-            'You have unsaved budget changes for this period.',
-          ),
+          title: Text(l10n.budgetsScreenUnsavedChangesTitle),
+          content: Text(l10n.budgetsScreenUnsavedChangesContent),
           actions: [
             TextButton(
               onPressed: () =>
-                  Navigator.of(context).pop(_PeriodSwitchChoice.cancel),
-              child: const Text('Cancel'),
+                  Navigator.of(dialogContext).pop(_PeriodSwitchChoice.cancel),
+              child: Text(l10n.commonCancel),
             ),
             TextButton(
               onPressed: () =>
-                  Navigator.of(context).pop(_PeriodSwitchChoice.discard),
-              child: const Text('Discard'),
+                  Navigator.of(dialogContext).pop(_PeriodSwitchChoice.discard),
+              child: Text(l10n.commonDiscard),
             ),
             FilledButton(
               onPressed: () =>
-                  Navigator.of(context).pop(_PeriodSwitchChoice.save),
-              child: const Text('Save'),
+                  Navigator.of(dialogContext).pop(_PeriodSwitchChoice.save),
+              child: Text(l10n.commonSave),
             ),
           ],
         );
@@ -340,18 +344,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     if (!mounted) return false;
     if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save budgets. Try again.')),
+        SnackBar(content: Text(context.l10n.budgetsScreenSaveFailedSnack)),
       );
       return false;
     }
     _viewModel.clearUnsavedChanges();
     await _loadData();
     if (!mounted) return false;
+    final periodLabel = _viewModel.periodDisplayLabel(
+      periodType: _selectedType,
+      periodKey: _selectedPeriodKey,
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Budgets saved for ${_viewModel.periodDisplayLabel(periodType: _selectedType, periodKey: _selectedPeriodKey)}',
-        ),
+        content: Text(context.l10n.budgetsScreenSavedSnack(periodLabel)),
       ),
     );
     return true;

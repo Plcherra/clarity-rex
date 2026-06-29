@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
+
 import '../../../../theme/clarity_colors.dart';
 import '../../data/plaid_account_service.dart';
+import '../accounts_plaid_status_helpers.dart';
 
 class PlaidAccountStatusPill extends StatelessWidget {
   const PlaidAccountStatusPill({super.key, required this.status});
@@ -53,7 +56,7 @@ class PlaidAccountStatusPill extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         child: Text(
-          status.label,
+          plaidConnectionStatusLabel(context.l10n, status),
           style: theme.textTheme.labelSmall?.copyWith(
             color: colors.fg,
             fontWeight: FontWeight.w800,

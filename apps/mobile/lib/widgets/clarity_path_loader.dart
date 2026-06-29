@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../core/l10n/app_l10n.dart';
 import '../theme/clarity_colors.dart';
 
 class ClarityPathLoader extends StatefulWidget {
@@ -64,7 +65,7 @@ class _ClarityPathLoaderState extends State<ClarityPathLoader>
     final colors = context.clarityColors;
 
     return Semantics(
-      label: label ?? 'Loading',
+      label: label ?? context.l10n.commonLoading,
       liveRegion: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,

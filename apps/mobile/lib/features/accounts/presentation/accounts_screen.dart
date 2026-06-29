@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/l10n/app_l10n.dart';
 import '../../../core/models/models.dart';
 import '../../plaid/application/plaid_connection_models.dart';
 import '../../plaid/application/plaid_link_service.dart';
@@ -114,16 +115,20 @@ class _AccountsScreenState extends State<AccountsScreen> {
     try {
       final result = await widget.controller.connectBank();
       if (!context.mounted) return;
+      final l10n = context.l10n;
       final message = switch (result) {
         PlaidConnectionSuccess(:final institutionName, :final accountsSynced) =>
-          'Bank connected successfully: ${institutionName ?? 'your bank'}'
-              '${accountsSynced > 0 ? ' and synced $accountsSynced account${accountsSynced == 1 ? '' : 's'}' : ''}.',
+          l10n.homeShellBankConnectedSuccess(
+            institutionName ?? l10n.homeShellBankConnectedYourBank,
+            accountsSynced > 0
+                ? l10n.homeShellBankConnectedAccountsSynced(accountsSynced)
+                : '',
+          ),
         PlaidConnectionExit(:final errorCode) when errorCode != null =>
-          'Bank connection stopped before it finished. You can try again. ($errorCode)',
+          l10n.homeShellBankConnectionStoppedWithCode(errorCode),
         PlaidConnectionExit(:final status) when status != null =>
-          'Bank connection stopped before it finished. Plaid status: $status.',
-        PlaidConnectionExit() =>
-          'Bank connection cancelled. No account was added.',
+          l10n.homeShellBankConnectionStoppedWithStatus(status),
+        PlaidConnectionExit() => l10n.homeShellBankConnectionCancelled,
       };
       if (result is PlaidConnectionSuccess) {
         setState(() => _accountNotice = message);
@@ -140,7 +145,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     } on Object {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open bank connection.')),
+        SnackBar(content: Text(context.l10n.homeShellBankConnectionOpenFailed)),
       );
     }
   }
@@ -152,6 +157,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         final colorScheme = theme.colorScheme;
+        final l10n = sheetContext.l10n;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -160,14 +166,14 @@ class _AccountsScreenState extends State<AccountsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Add account',
+                  l10n.accountsSheetAddAccountTitle,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Connect another bank with Plaid, or use manual tools when you need a fallback.',
+                  l10n.accountsSheetAddAccountSubtitle,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -175,26 +181,24 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 const SizedBox(height: 12),
                 ListTile(
                   leading: const Icon(Icons.account_balance_rounded),
-                  title: const Text('Connect bank'),
-                  subtitle: const Text('Use Plaid to add another bank.'),
+                  title: Text(l10n.accountsSheetConnectBankTitle),
+                  subtitle: Text(l10n.accountsSheetConnectBankSubtitle),
                   onTap: () => Navigator.of(
                     sheetContext,
                   ).pop(_AddAccountAction.connectBank),
                 ),
                 ListTile(
                   leading: const Icon(Icons.upload_file_rounded),
-                  title: const Text('Import CSV instead'),
-                  subtitle: const Text(
-                    'Create a manual account for bank files.',
-                  ),
+                  title: Text(l10n.accountsSheetImportCsvTitle),
+                  subtitle: Text(l10n.accountsSheetImportCsvSubtitle),
                   onTap: () => Navigator.of(
                     sheetContext,
                   ).pop(_AddAccountAction.importCsv),
                 ),
                 ListTile(
                   leading: const Icon(Icons.add_rounded),
-                  title: const Text('Add manual account'),
-                  subtitle: const Text('Track an account without Plaid.'),
+                  title: Text(l10n.accountsSheetAddManualTitle),
+                  subtitle: Text(l10n.accountsSheetAddManualSubtitle),
                   onTap: () =>
                       Navigator.of(sheetContext).pop(_AddAccountAction.manual),
                 ),
@@ -225,7 +229,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
     final itemIds = _refreshablePlaidItemIds();
     if (itemIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No active bank connection to refresh.')),
+        SnackBar(
+          content: Text(context.l10n.accountsScreenNoActiveConnectionRefresh),
+        ),
       );
       return;
     }
@@ -269,7 +275,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     } on Object {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not refresh connected accounts.')),
+        SnackBar(content: Text(context.l10n.accountsScreenCouldNotRefreshAccounts)),
       );
     } finally {
       if (mounted) {
@@ -285,7 +291,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     final current = _plaidStatuses[itemId]?.status;
     if (current == PlaidAccountConnectionStatus.disconnected) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This bank connection is disconnected.')),
+        SnackBar(content: Text(context.l10n.accountsScreenDisconnectedConnection)),
       );
       return;
     }
@@ -311,7 +317,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     } on Object {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not refresh this account.')),
+        SnackBar(content: Text(context.l10n.accountsScreenCouldNotRefreshAccount)),
       );
     } finally {
       if (mounted) {
@@ -350,29 +356,31 @@ class _AccountsScreenState extends State<AccountsScreen> {
     BuildContext context,
     Account account,
   ) async {
+    final l10n = context.l10n;
     final itemId = account.plaidItemId;
     if (itemId == null || itemId.trim().isEmpty) return;
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Disconnect bank?'),
-        content: Text(
-          'Disconnect ${account.displayName}? This stops future Plaid sync for this bank. Existing history stays in Clarity.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
+      builder: (ctx) {
+        final l10n = ctx.l10n;
+        return AlertDialog(
+          title: Text(l10n.accountsScreenDisconnectTitle),
+          content: Text(l10n.accountsScreenDisconnectContent(account.displayName)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(l10n.commonCancel),
             ),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Disconnect bank'),
-          ),
-        ],
-      ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error,
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(l10n.accountsScreenDisconnectButton),
+            ),
+          ],
+        );
+      },
     );
     if (confirm != true) return;
 
@@ -388,13 +396,16 @@ class _AccountsScreenState extends State<AccountsScreen> {
             institutionName: result.institutionName,
           ),
         };
-        _accountNotice =
-            '${result.institutionName ?? account.displayName} disconnected. Future Plaid sync is stopped.';
+        _accountNotice = l10n.accountsScreenDisconnectedNotice(
+          result.institutionName ?? account.displayName,
+        );
       });
       _refreshAfterPlaidConnection();
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Bank disconnected.')));
+      ).showSnackBar(
+        SnackBar(content: Text(context.l10n.accountsScreenBankDisconnectedSnack)),
+      );
     } on PlaidAccountServiceException catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
@@ -403,7 +414,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     } on Object {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not disconnect this bank.')),
+        SnackBar(content: Text(context.l10n.accountsScreenCouldNotDisconnect)),
       );
     }
   }

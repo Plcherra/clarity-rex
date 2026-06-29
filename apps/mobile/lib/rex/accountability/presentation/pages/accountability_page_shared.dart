@@ -14,12 +14,13 @@ class _GoalActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     return Row(
       children: [
         TextButton.icon(
           onPressed: isBusy ? null : onAddGoal,
           icon: Icon(Icons.add_rounded, size: 16, color: colors.accent),
-          label: Text('Add goal', style: TextStyle(color: colors.accent)),
+          label: Text(l10n.accountabilitySharedAddGoal, style: TextStyle(color: colors.accent)),
           style: TextButton.styleFrom(
             visualDensity: VisualDensity.compact,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -30,7 +31,7 @@ class _GoalActionBar extends StatelessWidget {
           onPressed: isBusy ? null : onAddCommitment,
           icon: Icon(Icons.add_rounded, size: 16, color: colors.textSecondary),
           label: Text(
-            'Add commitment',
+            l10n.accountabilitySharedAddCommitment,
             style: TextStyle(color: colors.textSecondary),
           ),
           style: TextButton.styleFrom(
@@ -122,9 +123,14 @@ class _InitialLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: RexUiTokens.space24),
-      child: Center(child: ClarityPathLoader(size: 52, label: 'Loading goals')),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: RexUiTokens.space24),
+      child: Center(
+        child: ClarityPathLoader(
+          size: 52,
+          label: context.l10n.accountabilitySharedLoading,
+        ),
+      ),
     );
   }
 }
@@ -139,6 +145,7 @@ class _EmptyAccountabilityState extends StatelessWidget {
     final theme = Theme.of(context);
     final compact = MediaQuery.sizeOf(context).height < 650;
     final colors = context.clarityColors;
+    final l10n = context.l10n;
 
     return Center(
       child: Padding(
@@ -151,7 +158,7 @@ class _EmptyAccountabilityState extends StatelessWidget {
               const SizedBox(height: RexUiTokens.space8),
             ],
             Text(
-              'No goals yet',
+              l10n.accountabilitySharedEmptyTitle,
               style: theme.textTheme.titleSmall?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -159,7 +166,7 @@ class _EmptyAccountabilityState extends StatelessWidget {
             ),
             const SizedBox(height: RexUiTokens.space4),
             Text(
-              'Start with one simple goal or tell Rex in chat.',
+              l10n.accountabilitySharedEmptyBody,
               textAlign: TextAlign.center,
               maxLines: compact ? 2 : 3,
               overflow: TextOverflow.ellipsis,
@@ -171,7 +178,7 @@ class _EmptyAccountabilityState extends StatelessWidget {
             const SizedBox(height: RexUiTokens.space8),
             TextButton(
               onPressed: onAddGoal,
-              child: const Text('Add your first goal'),
+              child: Text(l10n.accountabilitySharedAddFirstGoal),
             ),
           ],
         ),
@@ -222,4 +229,8 @@ class _ErrorBanner extends StatelessWidget {
 String _shortDate(DateTime dateTime) {
   final local = dateTime.toLocal();
   return '${local.month}/${local.day}/${local.year}';
+}
+
+String _dueDateLabel(AppLocalizations l10n, DateTime dateTime) {
+  return l10n.commonDueDateValue(_shortDate(dateTime));
 }

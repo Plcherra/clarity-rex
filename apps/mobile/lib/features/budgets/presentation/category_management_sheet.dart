@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../categories/domain/category_normalization.dart';
 import '../../finance/application/financial_read_model_service.dart';
@@ -68,28 +70,34 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
   }
 
   Future<void> _addCategory() async {
-    final name = await _showCategoryNameDialog(context, title: 'Add category');
+    final l10n = context.l10n;
+    final name = await _showCategoryNameDialog(
+      context,
+      title: l10n.categorySheetAddCategoryTitle,
+    );
     if (name == null) return;
     await _runSave(
       action: () => widget.controller.createBudgetCategory(name),
-      successMessage: 'Category added.',
+      successMessage: l10n.categorySheetCategoryAddedSnack,
     );
   }
 
   Future<void> _renameCategory(CategoryRecord category) async {
+    final l10n = context.l10n;
     final name = await _showCategoryNameDialog(
       context,
-      title: 'Rename category',
+      title: l10n.categorySheetRenameCategoryTitle,
       initialValue: category.name,
     );
     if (name == null || name == category.name) return;
     await _runSave(
       action: () => widget.controller.renameBudgetCategory(category.name, name),
-      successMessage: 'Category renamed.',
+      successMessage: l10n.categorySheetCategoryRenamedSnack,
     );
   }
 
   Future<void> _deleteCategory(CategoryRecord category) async {
+    final l10n = context.l10n;
     final usage = _usageFor(category);
     if (usage.hasAny) {
       await _showUsedCategoryBlockedDialog(category, usage);
@@ -97,19 +105,17 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
     }
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete category?'),
-        content: Text(
-          '"${category.name}" is not used by transactions, budgets, or merchant rules. Delete it from saved custom categories?',
-        ),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.categorySheetDeleteCategoryTitle),
+        content: Text(l10n.categorySheetDeleteCategoryContent(category.name)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.commonDelete),
           ),
         ],
       ),
@@ -117,17 +123,18 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
     if (confirmed != true) return;
     await _runSave(
       action: () => widget.controller.deleteBudgetCategory(category.name),
-      successMessage: 'Category deleted.',
+      successMessage: l10n.categorySheetCategoryDeletedSnack,
     );
   }
 
   Future<void> _toggleHidden(CategoryRecord category) async {
+    final l10n = context.l10n;
     await _runSave(
       action: () =>
           widget.controller.setBudgetCategoryHidden(category, !category.hidden),
       successMessage: category.hidden
-          ? 'Category shown in pickers.'
-          : 'Category hidden from pickers.',
+          ? l10n.categorySheetCategoryShownSnack
+          : l10n.categorySheetCategoryHiddenSnack,
     );
   }
 
@@ -143,22 +150,27 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
     final target = await _showMergeTargetDialog(source, targets);
     if (target == null) return;
     if (!mounted) return;
+    final l10n = context.l10n;
     final usage = _usageFor(source);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Merge category?'),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.categorySheetMergeCategoryTitle),
         content: Text(
-          'Merge "${source.name}" into "${target.name}"? This will move ${usage.label} to "${target.name}" and delete "${source.name}".',
+          l10n.categorySheetMergeCategoryContent(
+            source.name,
+            target.name,
+            usage.label(l10n),
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Merge'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.categorySheetMergeButton),
           ),
         ],
       ),
@@ -170,7 +182,7 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
         target: target,
         model: model,
       ),
-      successMessage: 'Category merged.',
+      successMessage: l10n.categorySheetCategoryMergedSnack,
     );
   }
 
@@ -178,21 +190,25 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
     CategoryRecord category,
     _CategoryUsageStats usage,
   ) async {
+    final l10n = context.l10n;
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Category is in use'),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.categorySheetCategoryInUseTitle),
         content: Text(
-          '"${category.name}" is used by ${usage.label}. Merge it into another category or hide it from pickers instead of deleting it.',
+          l10n.categorySheetCategoryInUseContent(
+            category.name,
+            usage.label(l10n),
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.commonClose),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.commonOk),
           ),
         ],
       ),
@@ -204,8 +220,8 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
     List<CategoryRecord> targets,
   ) {
     return _showCategoryPickerDialog(
-      emptyMessage: 'No visible target category to merge into.',
-      title: 'Merge "${source.name}" into',
+      emptyMessage: context.l10n.categorySheetNoMergeTarget,
+      title: context.l10n.categorySheetMergeIntoTitle(source.name),
       categories: targets,
     );
   }
@@ -241,7 +257,7 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
               final usage = _usageFor(target);
               return ListTile(
                 title: Text(target.name),
-                subtitle: Text(usage.label),
+                subtitle: Text(usage.label(context.l10n)),
                 onTap: () => Navigator.of(context).pop(target),
               );
             },
@@ -250,7 +266,7 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
         ],
       ),
@@ -261,28 +277,32 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
     MerchantCategoryRule rule,
     List<CategoryRecord> categories,
   ) async {
+    final l10n = context.l10n;
     final category = await _showCategoryPickerDialog(
-      emptyMessage: 'No visible category is available for this rule.',
-      title: 'Set merchant rule category',
+      emptyMessage: l10n.categorySheetNoRuleCategory,
+      title: l10n.categorySheetSetMerchantRuleCategoryTitle,
       categories: categories,
     );
     if (category == null || category.id == rule.categoryId) return;
     if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Update future imports?'),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.categorySheetUpdateFutureImportsTitle),
         content: Text(
-          'Future "${_merchantRuleTitle(rule)}" imports will use "${category.name}". Existing transactions will not be changed.',
+          l10n.categorySheetUpdateFutureImportsContent(
+            _merchantRuleTitle(rule),
+            category.name,
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Update rule'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.categorySheetUpdateRuleButton),
           ),
         ],
       ),
@@ -293,29 +313,34 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
         rule: rule,
         category: category,
       ),
-      successMessage: 'Merchant rule updated.',
+      successMessage: l10n.categorySheetMerchantRuleUpdatedSnack,
     );
   }
 
   Future<void> _toggleMerchantRuleDisabled(MerchantCategoryRule rule) async {
+    final l10n = context.l10n;
     final nextDisabled = !rule.disabled;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(nextDisabled ? 'Disable rule?' : 'Enable rule?'),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          nextDisabled
+              ? l10n.categorySheetDisableRuleTitle
+              : l10n.categorySheetEnableRuleTitle,
+        ),
         content: Text(
           nextDisabled
-              ? 'Future "${_merchantRuleTitle(rule)}" imports will stop using this learned category rule.'
-              : 'Future "${_merchantRuleTitle(rule)}" imports will use this learned category rule again.',
+              ? l10n.categorySheetDisableRuleContent(_merchantRuleTitle(rule))
+              : l10n.categorySheetEnableRuleContent(_merchantRuleTitle(rule)),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(nextDisabled ? 'Disable' : 'Enable'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(nextDisabled ? l10n.commonDisable : l10n.commonEnable),
           ),
         ],
       ),
@@ -327,27 +352,28 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
         disabled: nextDisabled,
       ),
       successMessage: nextDisabled
-          ? 'Merchant rule disabled.'
-          : 'Merchant rule enabled.',
+          ? l10n.categorySheetMerchantRuleDisabledSnack
+          : l10n.categorySheetMerchantRuleEnabledSnack,
     );
   }
 
   Future<void> _deleteMerchantRule(MerchantCategoryRule rule) async {
+    final l10n = context.l10n;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete merchant rule?'),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.categorySheetDeleteMerchantRuleTitle),
         content: Text(
-          'Future "${_merchantRuleTitle(rule)}" imports will no longer use this learned category rule.',
+          l10n.categorySheetDeleteMerchantRuleContent(_merchantRuleTitle(rule)),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.commonDelete),
           ),
         ],
       ),
@@ -355,7 +381,7 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
     if (confirmed != true) return;
     await _runSave(
       action: () => widget.controller.deleteMerchantRule(rule),
-      successMessage: 'Merchant rule deleted.',
+      successMessage: l10n.categorySheetMerchantRuleDeletedSnack,
     );
   }
 
@@ -374,7 +400,9 @@ class _CategoryManagementSheetState extends State<CategoryManagementSheet> {
     } catch (error) {
       if (!mounted) return;
       messenger?.showSnackBar(
-        SnackBar(content: Text('Could not save changes: $error')),
+        SnackBar(
+          content: Text(context.l10n.categorySheetSaveFailedSnack('$error')),
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);

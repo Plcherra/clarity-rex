@@ -139,14 +139,14 @@ class _DashboardTransactionsSectionState
     );
   }
 
-  List<ResolvedTransaction> get _filteredTransactions {
+  List<ResolvedTransaction> _filteredTransactions(AppLocalizations l10n) {
     final query = _normalizeSearchText(_searchController.text);
     final range = _activeDateRange;
     final accountsById = {for (final account in _accounts) account.id: account};
     final filtered = _resolvedTransactions.where((resolved) {
       final t = resolved.transaction;
       if (_categoryFilter != null &&
-          _displayCategory(resolved) != _categoryFilter) {
+          _displayCategory(l10n, resolved) != _categoryFilter) {
         return false;
       }
       if (!_isAccountScope &&
@@ -158,7 +158,8 @@ class _DashboardTransactionsSectionState
       if (_roleFilter != null && resolved.financialRole != _roleFilter) {
         return false;
       }
-      if (query.isNotEmpty && !_matchesSearch(resolved, query, accountsById)) {
+      if (query.isNotEmpty &&
+          !_matchesSearch(l10n, resolved, query, accountsById)) {
         return false;
       }
       return true;
@@ -215,26 +216,36 @@ class _DashboardTransactionsSectionState
     return !date.isBefore(start) && !date.isAfter(end);
   }
 
-  String get _activeDateRangeDescription {
+  String _activeDateRangeDescription(AppLocalizations l10n) {
     if (_timeFilter == _TransactionsTimeFilter.all) {
       final bounds = _transactionDateBounds(_transactions);
-      if (bounds == null) return 'No imported history';
-      return 'History: ${_dateRangeLabel(bounds)}';
+      if (bounds == null) return l10n.dashboardTransactionsNoImportedHistory;
+      return l10n.dashboardTransactionsHistoryRange(
+        _dateRangeLabel(l10n, bounds),
+      );
     }
     final range = _activeDateRange;
-    if (range == null) return _timeLabel(_timeFilter);
+    if (range == null) return _timeLabel(l10n, _timeFilter);
     return switch (_timeFilter) {
-      _TransactionsTimeFilter.all => 'All history',
+      _TransactionsTimeFilter.all =>
+        l10n.dashboardTransactionsTimeFilterAllHistory,
       _TransactionsTimeFilter.dashboardMonth =>
-        'Dashboard month: ${_dateRangeLabel(range)}',
+        l10n.dashboardTransactionsDashboardMonthRange(
+          _dateRangeLabel(l10n, range),
+        ),
       _TransactionsTimeFilter.latestTransactionMonth =>
-        'Latest transaction month: ${_dateRangeLabel(range)}',
+        l10n.dashboardTransactionsLatestTxMonthRange(
+          _dateRangeLabel(l10n, range),
+        ),
       _TransactionsTimeFilter.latestTransactionYear =>
-        'Latest transaction year: ${_dateRangeLabel(range)}',
+        l10n.dashboardTransactionsLatestTxYearRange(
+          _dateRangeLabel(l10n, range),
+        ),
     };
   }
 
   bool _matchesSearch(
+    AppLocalizations l10n,
     ResolvedTransaction resolved,
     String query,
     Map<String, Account> accountsById,
@@ -243,10 +254,10 @@ class _DashboardTransactionsSectionState
     final account = accountsById[transaction.accountId];
     final haystack = [
       transaction.description,
-      _displayCategory(resolved),
-      _financialRoleLabel(resolved.financialRole),
+      _displayCategory(l10n, resolved),
+      _financialRoleLabel(l10n, resolved.financialRole),
       _yearMonthLabel(transaction.date),
-      _shortDate(transaction.date),
+      _shortDate(l10n, transaction.date),
       formatMoney(transaction.amount),
       if (account != null) account.displayName,
       if (account?.institution?.trim().isNotEmpty == true)
@@ -255,36 +266,42 @@ class _DashboardTransactionsSectionState
     return haystack.contains(query);
   }
 
-  List<String> get _categoryOptions {
+  List<String> _categoryOptions(AppLocalizations l10n) {
     final names = <String>{};
     for (final transaction in _resolvedTransactions) {
       if (!_isSpendCategoryTransaction(transaction)) continue;
-      names.add(_displayCategory(transaction));
+      names.add(_displayCategory(l10n, transaction));
     }
+    final unknown = l10n.commonUnknown;
     final sorted = names.toList()
       ..sort((a, b) {
-        if (a == 'Unknown') return -1;
-        if (b == 'Unknown') return 1;
+        if (a == unknown) return -1;
+        if (b == unknown) return 1;
         return a.toLowerCase().compareTo(b.toLowerCase());
       });
     return sorted;
   }
 
-  List<MonthlyBankGroup> get _monthGroups {
+  List<MonthlyBankGroup> _monthGroups(AppLocalizations l10n) {
     return monthlyBankGroupsNewestFirstForResolvedTransactions(
-      _filteredTransactions,
+      _filteredTransactions(l10n),
     );
   }
 
-  List<DashboardCategoryTransactionGroup> get _categoryGroups {
-    return spendingCategoryGroupsForResolvedTransactions(_filteredTransactions);
+  List<DashboardCategoryTransactionGroup> _categoryGroups(
+    AppLocalizations l10n,
+  ) {
+    return spendingCategoryGroupsForResolvedTransactions(
+      _filteredTransactions(l10n),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final filtered = _filteredTransactions;
+    final l10n = context.l10n;
+    final filtered = _filteredTransactions(l10n);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,10 +312,13 @@ class _DashboardTransactionsSectionState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionTitle(theme: theme, title: 'Transactions'),
+                  _SectionTitle(
+                    theme: theme,
+                    title: l10n.dashboardTransactionsSectionTitle,
+                  ),
                   const SizedBox(height: 6),
                   Text(
-                    _sectionSubtitle(filtered.length),
+                    _sectionSubtitle(filtered.length, l10n),
                     style: theme.textTheme.labelMedium?.copyWith(
                       letterSpacing: 0.6,
                       color: cs.onSurface.withValues(alpha: 0.42),
@@ -312,7 +332,7 @@ class _DashboardTransactionsSectionState
               TextButton.icon(
                 onPressed: _clearFilters,
                 icon: const Icon(Icons.close_rounded, size: 18),
-                label: const Text('Clear'),
+                label: Text(l10n.dashboardTransactionsClearFilters),
               ),
           ],
         ),
@@ -325,7 +345,7 @@ class _DashboardTransactionsSectionState
         _TransactionSearchField(controller: _searchController),
         const SizedBox(height: 12),
         _InlineFilterBar(
-          categories: _categoryOptions,
+          categories: _categoryOptions(l10n),
           accounts: _accounts,
           isAccountScope: _isAccountScope,
           category: _categoryFilter,
@@ -341,41 +361,46 @@ class _DashboardTransactionsSectionState
         ),
         const SizedBox(height: 16),
         if (_loading)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 28),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 28),
             child: Center(
               child: ClarityDiamondLoader(
                 size: 52,
-                label: 'Loading transactions',
+                label: l10n.dashboardTransactionsLoadingLabel,
               ),
             ),
           )
         else if (_error != null)
           _InlineEmptyState(
-            message: 'Could not load transactions.',
-            actionLabel: 'Retry',
+            message: l10n.dashboardTransactionsLoadError,
+            actionLabel: l10n.commonRetry,
             onAction: _load,
           )
         else
           switch (_mode) {
             _TransactionsViewMode.months => _MonthlyGroupsList(
-              groups: _monthGroups,
+              groups: _monthGroups(l10n),
               controller: widget.controller,
               transactionController: widget.transactionController,
             ),
             _TransactionsViewMode.categories => _CategoryGroupsList(
-              groups: _categoryGroups,
+              groups: _categoryGroups(l10n),
             ),
           },
       ],
     );
   }
 
-  String _sectionSubtitle(int filteredCount) {
+  String _sectionSubtitle(int filteredCount, AppLocalizations l10n) {
+    final dateRangeDescription = _activeDateRangeDescription(l10n);
     if (_activeFilterCount == 0 && _mode == _TransactionsViewMode.months) {
-      return 'Tap a month to inspect transactions | $_activeDateRangeDescription';
+      return l10n.dashboardTransactionsTapMonthHint(dateRangeDescription);
     }
     final count = _transactions.length;
-    return '$filteredCount of $count transactions | $_activeDateRangeDescription';
+    return l10n.dashboardTransactionsFilteredCount(
+      filteredCount,
+      count,
+      dateRangeDescription,
+    );
   }
 }

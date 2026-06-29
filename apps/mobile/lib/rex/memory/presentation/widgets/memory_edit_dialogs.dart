@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 
 class StructuredEditDialog extends StatefulWidget {
@@ -69,6 +70,7 @@ class _StructuredEditDialogState extends State<StructuredEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
       title: Text(widget.title),
       content: SingleChildScrollView(
@@ -102,16 +104,16 @@ class _StructuredEditDialogState extends State<StructuredEditDialog> {
               const SizedBox(height: 12),
               TextField(
                 controller: _aliasesController,
-                decoration: const InputDecoration(
-                  labelText: 'Aliases',
-                  helperText: 'Comma-separated',
+                decoration: InputDecoration(
+                  labelText: l10n.memoryEditAliasesLabel,
+                  helperText: l10n.commonCommaSeparated,
                 ),
               ),
             ],
             const SizedBox(height: 12),
             TextField(
               controller: _statusController,
-              decoration: const InputDecoration(labelText: 'Status'),
+              decoration: InputDecoration(labelText: l10n.commonStatus),
             ),
             const SizedBox(height: 16),
             Row(
@@ -132,7 +134,7 @@ class _StructuredEditDialogState extends State<StructuredEditDialog> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Active'),
+              title: Text(l10n.commonActive),
               value: _active,
               onChanged: (value) => setState(() => _active = value),
             ),
@@ -142,9 +144,9 @@ class _StructuredEditDialogState extends State<StructuredEditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Save')),
+        FilledButton(onPressed: _submit, child: Text(l10n.commonSave)),
       ],
     );
   }
@@ -201,15 +203,16 @@ class _MemoryEditDialogState extends State<MemoryEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
-      title: const Text('Edit memory'),
+      title: Text(l10n.memoryEditEditMemoryTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<MemoryType>(
               initialValue: _memoryType,
-              decoration: const InputDecoration(labelText: 'Type'),
+              decoration: InputDecoration(labelText: l10n.commonType),
               items: MemoryType.values
                   .map(
                     (type) => DropdownMenuItem(
@@ -230,15 +233,15 @@ class _MemoryEditDialogState extends State<MemoryEditDialog> {
               controller: _contentController,
               minLines: 3,
               maxLines: 6,
-              decoration: const InputDecoration(
-                labelText: 'Memory',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.commonMemory,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
             Row(
               children: [
-                const Text('Importance'),
+                Text(l10n.commonImportance),
                 Expanded(
                   child: Slider(
                     value: _importance,
@@ -254,7 +257,7 @@ class _MemoryEditDialogState extends State<MemoryEditDialog> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Active'),
+              title: Text(l10n.commonActive),
               value: _active,
               onChanged: (value) => setState(() => _active = value),
             ),
@@ -264,9 +267,9 @@ class _MemoryEditDialogState extends State<MemoryEditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.commonCancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Save')),
+        FilledButton(onPressed: _submit, child: Text(l10n.commonSave)),
       ],
     );
   }

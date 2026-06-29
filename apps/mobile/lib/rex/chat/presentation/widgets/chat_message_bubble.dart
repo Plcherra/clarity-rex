@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_bubble_effects.dart'
     show ChatStreamingCursor, ChatTypingDots;
@@ -242,6 +243,7 @@ class _ClarityActionCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -254,7 +256,7 @@ class _ClarityActionCards extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              'Clarity action',
+              l10n.chatBubbleClarityAction,
               style: Theme.of(
                 context,
               ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -292,6 +294,7 @@ class _ClarityActionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     final isHighRisk = action.riskLevel == 'high';
     final borderColor = action.isFailed || isHighRisk
         ? scheme.error.withValues(alpha: 0.46)
@@ -344,7 +347,7 @@ class _ClarityActionCard extends StatelessWidget {
             if (action.isApplied) ...[
               const SizedBox(height: 6),
               Text(
-                'Applied to ${action.result.length} record${action.result.length == 1 ? '' : 's'}.',
+                l10n.commonRecordsApplied(action.result.length),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                   height: 1.3,
@@ -368,7 +371,7 @@ class _ClarityActionCard extends StatelessWidget {
                       icon: action.isApplying
                           ? const ClarityInlineLoader(size: 16, strokeWidth: 2)
                           : const Icon(Icons.check_rounded, size: 16),
-                      label: const Text('Confirm'),
+                      label: Text(l10n.commonConfirm),
                     ),
                   if (action.canDismiss && onDismiss != null)
                     OutlinedButton.icon(
@@ -376,7 +379,7 @@ class _ClarityActionCard extends StatelessWidget {
                           ? null
                           : () => onDismiss!(action),
                       icon: const Icon(Icons.close_rounded, size: 16),
-                      label: const Text('Dismiss'),
+                      label: Text(l10n.commonDismiss),
                     ),
                 ],
               ),

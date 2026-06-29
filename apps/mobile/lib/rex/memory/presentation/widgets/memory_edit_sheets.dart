@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_dialogs.dart';
@@ -51,7 +52,8 @@ Future<StructuredEditResult?> showStructuredEditSheet(
       importance: importance,
       status: status,
       active: active,
-      updatedLabel: memoryUpdatedLabel(updatedAt, createdAt),
+      updatedAt: updatedAt,
+      createdAt: createdAt,
     ),
   );
 }
@@ -89,8 +91,10 @@ class _MemoryEditSheetState extends State<_MemoryEditSheet> {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final updatedLabel = memoryUpdatedLabel(
+      l10n,
       widget.memory.updatedAt,
       widget.memory.createdAt,
     );
@@ -103,7 +107,7 @@ class _MemoryEditSheetState extends State<_MemoryEditSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Edit memory',
+              l10n.memoryEditEditMemoryTitle,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -112,7 +116,7 @@ class _MemoryEditSheetState extends State<_MemoryEditSheet> {
             const SizedBox(height: 16),
             DropdownButtonFormField<MemoryType>(
               initialValue: _memoryType,
-              decoration: const InputDecoration(labelText: 'Type'),
+              decoration: InputDecoration(labelText: l10n.commonType),
               items: MemoryType.values
                   .map(
                     (type) => DropdownMenuItem(
@@ -133,20 +137,20 @@ class _MemoryEditSheetState extends State<_MemoryEditSheet> {
               controller: _contentController,
               minLines: 3,
               maxLines: 6,
-              decoration: const InputDecoration(
-                labelText: 'Summary',
-                hintText: 'What Clarity should remember',
+              decoration: InputDecoration(
+                labelText: l10n.commonSummary,
+                hintText: l10n.memoryEditSummaryHint,
               ),
             ),
             const SizedBox(height: 12),
             _ImportanceSlider(
-              label: 'Importance',
+              label: l10n.commonImportance,
               value: _importance,
               onChanged: (value) => setState(() => _importance = value),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Active'),
+              title: Text(l10n.commonActive),
               value: _active,
               onChanged: (value) => setState(() => _active = value),
             ),
@@ -166,10 +170,10 @@ class _MemoryEditSheetState extends State<_MemoryEditSheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
                 const SizedBox(width: 8),
-                FilledButton(onPressed: _submit, child: const Text('Save')),
+                FilledButton(onPressed: _submit, child: Text(l10n.commonSave)),
               ],
             ),
           ],
@@ -207,7 +211,8 @@ class _StructuredEditSheet extends StatefulWidget {
     required this.importance,
     required this.status,
     required this.active,
-    required this.updatedLabel,
+    required this.updatedAt,
+    required this.createdAt,
     this.extraLabel,
     this.extraValue,
   });
@@ -224,7 +229,8 @@ class _StructuredEditSheet extends StatefulWidget {
   final int importance;
   final String status;
   final bool active;
-  final String updatedLabel;
+  final DateTime? updatedAt;
+  final DateTime? createdAt;
 
   @override
   State<_StructuredEditSheet> createState() => _StructuredEditSheetState();
@@ -258,7 +264,13 @@ class _StructuredEditSheetState extends State<_StructuredEditSheet> {
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final updatedLabel = memoryUpdatedLabel(
+      l10n,
+      widget.updatedAt,
+      widget.createdAt,
+    );
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottomInset),
@@ -276,7 +288,7 @@ class _StructuredEditSheetState extends State<_StructuredEditSheet> {
             ),
             const SizedBox(height: 16),
             InputDecorator(
-              decoration: const InputDecoration(labelText: 'Type'),
+              decoration: InputDecoration(labelText: l10n.commonType),
               child: Text(
                 widget.typeLabel,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -313,15 +325,15 @@ class _StructuredEditSheetState extends State<_StructuredEditSheet> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Active'),
+              title: Text(l10n.commonActive),
               value: _active,
               onChanged: (value) => setState(() => _active = value),
             ),
-            if (widget.updatedLabel.isNotEmpty)
+            if (updatedLabel.isNotEmpty)
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  widget.updatedLabel,
+                  updatedLabel,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: colors.textMuted,
                   ),
@@ -333,10 +345,10 @@ class _StructuredEditSheetState extends State<_StructuredEditSheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.commonCancel),
                 ),
                 const SizedBox(width: 8),
-                FilledButton(onPressed: _submit, child: const Text('Save')),
+                FilledButton(onPressed: _submit, child: Text(l10n.commonSave)),
               ],
             ),
           ],

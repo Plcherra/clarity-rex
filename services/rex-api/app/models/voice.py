@@ -12,6 +12,7 @@ class VoiceTranscriptionResponse(BaseModel):
 
 class VoiceSynthesisRequest(BaseModel):
     text: str
+    locale: Optional[str] = None
 
 
 class VoiceSynthesisResponse(BaseModel):

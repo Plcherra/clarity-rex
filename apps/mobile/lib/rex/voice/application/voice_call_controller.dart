@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clarity/core/l10n/app_locale.dart';
+import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';

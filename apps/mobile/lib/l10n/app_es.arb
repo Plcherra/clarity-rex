@@ -1,39 +1,1847 @@
 {
   "@@locale": "es",
+  "accountDetailConfirmDeleteCsvTitle": "Delete this CSV upload?",
+  "accountDetailDeleteAccountButton": "Delete account",
+  "accountDetailDeleteAccountContent": "Delete this account and all its transactions? This cannot be undone.",
+  "accountDetailDeleteAccountTitle": "Delete account?",
+  "accountDetailDeleteCategories": "Delete",
+  "accountDetailDeleteCsvUploadTitle": "Delete CSV upload",
+  "accountDetailDeleteUploadButton": "Delete upload",
+  "accountDetailDeletingCsvProgress": "Deleting CSV upload...",
+  "accountDetailFallbackTitle": "Account",
+  "accountDetailKeepCategories": "Keep",
+  "accountDetailLoadError": "Could not load account.",
+  "accountDetailLoadingLabel": "Loading account",
+  "accountSelectionAddManualButton": "Add manual account",
+  "accountSelectionAppBarTitle": "Import CSV instead",
+  "accountSelectionCouldNotImport": "Could not import this file.",
+  "accountSelectionCsvMayDuplicate": "CSV may duplicate synced rows",
+  "accountSelectionEmptyTitle": "Add a manual account for this CSV",
+  "accountSelectionInstructions": "CSV import is manual. Choose the account this file belongs to; connected bank accounts update automatically.",
+  "accountSelectionPreviewingCsv": "Previewing CSV...",
+  "accountTileThisMonthNet": "This month {amount} net",
+  "@accountTileThisMonthNet": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "accountTileViewAccount": "View account",
+  "accountabilityDetailEditCommitment": "Edit commitment",
+  "accountabilityDetailGoalDetails": "Goal details",
+  "accountabilityDetailNotesHint": "Why this matters",
+  "accountabilityPageRefreshTooltip": "Refresh goals",
+  "accountabilityPageTitle": "Goals",
+  "accountabilitySectionsActiveGoals": "Active Goals",
+  "accountabilitySectionsNoActiveGoals": "No active goals yet.",
+  "accountabilitySectionsNoOpenCommitments": "No open commitments.",
+  "accountabilitySectionsOpenCommitments": "Open Commitments",
+  "accountabilitySharedAddCommitment": "Add commitment",
+  "accountabilitySharedAddFirstGoal": "Add your first goal",
+  "accountabilitySharedAddGoal": "Add goal",
+  "accountabilitySharedEmptyBody": "Start with one simple goal or tell Rex in chat.",
+  "accountabilitySharedEmptyTitle": "No goals yet",
+  "accountabilitySharedLoading": "Loading goals",
+  "accountabilityTilesCommitmentActionsTooltip": "Commitment actions",
+  "accountabilityTilesGoalActionsTooltip": "Goal actions",
+  "accountabilityTilesMarkMissed": "Mark missed",
+  "accountsEmptyBody": "Start with connected bank accounts so Clarity can keep balances and transactions current.",
+  "accountsEmptyTitle": "Connect your accounts",
+  "accountsNavigationCouldNotSaveAccount": "Could not save account.",
+  "accountsNoticeDismissTooltip": "Dismiss",
+  "accountsScreenAddAccountTooltip": "Add account",
+  "accountsScreenBankDisconnectedSnack": "Bank disconnected.",
+  "accountsScreenDisconnectButton": "Disconnect bank",
+  "accountsScreenDisconnectContent": "Disconnect {accountName}? This stops future Plaid sync for this bank. Existing history stays in Clarity.",
+  "@accountsScreenDisconnectContent": {
+    "placeholders": {
+      "accountName": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsScreenDisconnectTitle": "Disconnect bank?",
+  "accountsScreenLoadError": "Could not load accounts.",
+  "accountsScreenLoadingLabel": "Loading accounts",
+  "accountsScreenRefreshTooltip": "Refresh accounts",
+  "accountsSheetAddAccountSubtitle": "Connect another bank with Plaid, or use manual tools when you need a fallback.",
+  "accountsSheetAddAccountTitle": "Add account",
+  "accountsSheetAddManualSubtitle": "Track an account without Plaid.",
+  "accountsSheetAddManualTitle": "Add manual account",
+  "accountsSheetConnectBankSubtitle": "Use Plaid to add another bank.",
+  "accountsSheetConnectBankTitle": "Connect bank",
+  "accountsSheetImportCsvSubtitle": "Create a manual account for bank files.",
+  "accountsSheetImportCsvTitle": "Import CSV instead",
+  "accountsSummaryTotalBalance": "Total balance",
+  "addAccountDialogBalanceLabel": "Current balance (optional)",
+  "addAccountDialogInstitutionLabel": "Institution (optional)",
+  "addAccountDialogInvalidBalance": "Enter a valid balance or leave it blank.",
+  "addAccountDialogTitle": "New account",
+  "addAccountDialogTypeLabel": "Type",
   "appTitle": "Clarity",
-  "navDashboard": "Panel",
-  "navAccounts": "Cuentas",
-  "navBudgets": "Presupuestos",
-  "navAssistant": "Asistente",
-  "navProfile": "Perfil",
-  "loadingClarity": "Cargando Clarity",
-  "startingClarity": "Iniciando Clarity",
-  "authSignInTitle": "Inicia sesión en Clarity",
-  "authSignUpTitle": "Crea tu cuenta",
-  "authSignInSubtitle": "Usa tu correo y contraseña para continuar.",
-  "authSignUpSubtitle": "Usa correo y contraseña para empezar tu espacio financiero.",
-  "authFullNameLabel": "Nombre completo",
-  "authEmailLabel": "Correo",
-  "authPasswordLabel": "Contraseña",
-  "authShowPassword": "Mostrar contraseña",
-  "authHidePassword": "Ocultar contraseña",
-  "authForgotPassword": "¿Olvidaste tu contraseña?",
-  "authSignInButton": "Iniciar sesión",
-  "authCreateAccountButton": "Crear cuenta",
-  "authSwitchToSignIn": "¿Ya tienes cuenta? Inicia sesión",
-  "authSwitchToSignUp": "¿Necesitas cuenta? Crear una",
-  "authEnterEmailPassword": "Ingresa tu correo y contraseña.",
-  "authEnterName": "Ingresa tu nombre para crear un perfil.",
-  "authEnterEmailForReset": "Ingresa tu correo para restablecer la contraseña.",
-  "profileAppearance": "Apariencia",
-  "profileLanguage": "Idioma",
-  "profileLanguageComingSoon": "Las preferencias de idioma aparecerán aquí.",
-  "themeSystem": "Sistema",
-  "themeDark": "Oscuro",
-  "themeLight": "Claro",
-  "importUploadingTransactions": "Subiendo transacciones...",
-  "chatActionDoneSingle": "Listo. Apliqué el cambio de {action}.",
-  "chatActionDoneForSubject": "Listo. Apliqué el cambio de {action} para {subject}.",
-  "chatActionDoneMultiple": "Listo. Apliqué el cambio de {action} a {count} registros.",
-  "chatActionDoneMultipleOne": "Listo. Apliqué el cambio de {action} a 1 registro."
+  "attachmentSheetCameraSubtitle": "Take a new photo.",
+  "attachmentSheetCameraTitle": "Camera",
+  "attachmentSheetFilesSubtitle": "Choose PDF, text, CSV, markdown, or image files.",
+  "attachmentSheetFilesTitle": "Files",
+  "attachmentSheetGallerySubtitle": "Choose an image from photos.",
+  "attachmentSheetGalleryTitle": "Gallery",
+  "attachmentSheetTitle": "Attach",
+  "authCreateAccountButton": "Create account",
+  "authEmailLabel": "Email",
+  "authEnterEmailForReset": "Enter your email to reset your password.",
+  "authEnterEmailPassword": "Enter your email and password.",
+  "authEnterName": "Enter your name to create a profile.",
+  "authErrorAccountExists": "An account with this email already exists. Sign in instead.",
+  "authErrorEmailNotConfirmed": "Confirm your email first, then sign in.",
+  "authErrorEmailSendFailed": "We could not send a confirmation email right now. Try again in a few minutes or contact support if this continues.",
+  "authErrorInvalidCredentials": "Email or password is incorrect. Try again or create a new account.",
+  "authErrorMfaCodeRejected": "That code was not accepted. Check your authenticator app and try again.",
+  "authErrorMfaNotEnabled": "MFA is not enabled for this Supabase project.",
+  "authErrorNoAuthenticatorAvailable": "No verified authenticator app is available for this account.",
+  "authErrorSignupsDisabled": "New account sign-up is disabled for this app right now.",
+  "authErrorStartEnrollmentFirst": "Start MFA enrollment before verifying a code.",
+  "authErrorTooManyAttempts": "Too many attempts. Wait a moment, then try again.",
+  "authErrorWeakPassword": "Choose a stronger password and try again.",
+  "authInfoAccountCreatedSignedIn": "Account created. You are signed in.",
+  "authInfoAuthenticatorRemoved": "Authenticator app removed.",
+  "authInfoConfirmationLinkSent": "We sent a confirmation link to {email}. Open it, then return here and sign in.",
+  "@authInfoConfirmationLinkSent": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authInfoEnterAuthenticatorCode": "Enter your authenticator code to finish signing in.",
+  "authInfoMfaAlreadyOff": "MFA is already off.",
+  "authInfoMfaDisabledEmailFailed": "MFA is off. Confirmation email could not be sent right now.",
+  "authInfoMfaDisabledEmailSent": "MFA is off. We sent you a confirmation email.",
+  "authInfoMfaEnabledEmailFailed": "MFA is enabled. Confirmation email could not be sent right now.",
+  "authInfoMfaEnabledEmailSent": "MFA is enabled. We sent you a confirmation email.",
+  "authInfoMfaEnrollmentStart": "Scan the QR code, then enter the 6-digit code from your app.",
+  "authInfoPasswordResetSent": "If an account exists for {email}, we sent a password reset link.",
+  "@authInfoPasswordResetSent": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authInfoSignInVerified": "Sign-in verified.",
+  "authForgotPassword": "Forgot password?",
+  "authFullNameLabel": "Full name",
+  "authHidePassword": "Hide password",
+  "authPasswordLabel": "Password",
+  "authShowPassword": "Show password",
+  "authSignInButton": "Sign in",
+  "authSignInSubtitle": "Use your email and password to continue.",
+  "authSignInTitle": "Sign in to Clarity",
+  "authSignUpSubtitle": "Use email and password to start your local finance workspace.",
+  "authSignUpTitle": "Create your account",
+  "authSwitchToSignIn": "Already have an account? Sign in",
+  "authSwitchToSignUp": "Need an account? Create one",
+  "bootErrorFallbackMessage": "Check your connection and try again.",
+  "bootErrorTitle": "Clarity could not start",
+  "bootErrorTryAgain": "Try again",
+  "budgetCategoryListEmpty": "No active budget categories yet.",
+  "budgetCategoryListTitle": "Categories",
+  "budgetCategoryRowStatusLeft": "Spent {spent} · Left {amount}",
+  "@budgetCategoryRowStatusLeft": {
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetCategoryRowStatusNoBudget": "Spent {spent} · No budget",
+  "@budgetCategoryRowStatusNoBudget": {
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetCategoryRowStatusOver": "Spent {spent} · Over {amount}",
+  "@budgetCategoryRowStatusOver": {
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetsHeaderNoMonthsAvailable": "No months available.",
+  "budgetsHeaderPickWeekStart": "Pick week start",
+  "budgetsHeaderSelectMonth": "Select month",
+  "budgetsScreenBudgetVsSpentTitle": "Budget vs spent",
+  "budgetsScreenLoadError": "Could not load budgets.",
+  "budgetsScreenLoadingLabel": "Loading budgets",
+  "budgetsScreenManageCategoriesTooltip": "Manage categories",
+  "budgetsScreenSaveChangesTooltip": "Save changes",
+  "budgetsScreenSaveFailedSnack": "Could not save budgets. Try again.",
+  "budgetsScreenUnsavedChangesContent": "You have unsaved budget changes for this period.",
+  "budgetsScreenUnsavedChangesTitle": "Save changes before switching period?",
+  "categoryDialogNameLabel": "Category name",
+  "categorySheetAddCategoryTitle": "Add category",
+  "categorySheetAddCustomCategory": "Add custom category",
+  "categorySheetCategoryInUseTitle": "Category is in use",
+  "categorySheetClose": "Close",
+  "categorySheetDeleteCategoryTitle": "Delete category?",
+  "categorySheetHeaderTitle": "Manage categories",
+  "categorySheetMerchantRulesLabel": "Merchant rules",
+  "categorySheetMergeButton": "Merge",
+  "categorySheetMergeCategoryTitle": "Merge category?",
+  "categorySheetNoAuditEvents": "No financial changes recorded yet.",
+  "categorySheetNoMerchantRules": "No learned merchant rules yet.",
+  "categorySheetNoSavedCategories": "No saved categories yet.",
+  "categorySheetRecentChangesLabel": "Recent changes",
+  "categorySheetRenameCategoryTitle": "Rename category",
+  "categorySheetSavedCategoriesLabel": "Saved categories",
+  "chatActionDoneForSubject": "Done. I applied the {action} change for {subject}.",
+  "@chatActionDoneForSubject": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "subject": {
+        "type": "String"
+      }
+    }
+  },
+  "chatActionDoneMultiple": "Done. I applied the {action} change to {count} records.",
+  "@chatActionDoneMultiple": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatActionDoneMultipleOne": "Done. I applied the {action} change to 1 record.",
+  "@chatActionDoneMultipleOne": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "chatActionDoneSingle": "Done. I applied the {action} change.",
+  "@chatActionDoneSingle": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "chatBubbleClarityAction": "Clarity action",
+  "chatInputAttachTooltip": "Attach file or image",
+  "chatInputMessageHint": "Message Assistant…",
+  "chatInputRemoveAttachmentTooltip": "Remove attachment",
+  "chatInputSendTooltip": "Send",
+  "chatInputStartVoiceModeTooltip": "Start voice mode",
+  "chatPageCallRexTooltip": "Call Rex",
+  "chatPageDefaultTitle": "Rex",
+  "chatPageReadFileFailed": "Could not read selected file.",
+  "chatPageSendFailed": "Could not send message.",
+  "chatPageSendingImage": "Sending image…",
+  "chatPageShowVoiceCallTooltip": "Show voice call",
+  "chatPageStartVoiceFailed": "Could not start Rex.",
+  "chatTranscriptPromptCheckKnows": "Check what Clarity knows.",
+  "chatTranscriptPromptRemember": "What should I remember?",
+  "chatTranscriptPromptThinkTonight": "Help me think through tonight.",
+  "chatTranscriptReadyTitle": "Rex is ready",
+  "chatTranscriptWelcomeMessage": "I'm Rex. Tell me what's happening, what changed, or what you want me to remember.",
+  "commonAccount": "Account",
+  "commonAcrossAccounts": "Across {accountCount} connected account{accountCountSuffix}",
+  "@commonAcrossAccounts": {
+    "placeholders": {
+      "accountCount": {
+        "type": "int"
+      },
+      "accountCountSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "commonActive": "Active",
+  "commonAddedDate": "Added {date}",
+  "@commonAddedDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "commonAdjustment": "Adjustment",
+  "commonAiCalls": "{count} AI calls",
+  "@commonAiCalls": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commonAiCallsThisMonth": "{count} AI calls this month",
+  "@commonAiCallsThisMonth": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commonAll": "All",
+  "commonAmountHintDash": "—",
+  "commonArchive": "Archive",
+  "commonArchivedNamed": "{label} archived",
+  "@commonArchivedNamed": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "commonAttachment": "Attachment",
+  "commonBudgeted": "Budgeted",
+  "commonBuiltIn": "Built-in",
+  "commonCancel": "Cancel",
+  "commonCard": "Card",
+  "commonCategories": "Categories",
+  "commonChecking": "Checking",
+  "commonClose": "Close",
+  "commonCommaSeparated": "Comma-separated",
+  "commonCommitment": "Commitment",
+  "commonConfirm": "Confirm",
+  "commonConnectedAccountCount": "{count} connected account{countSuffix}",
+  "@commonConnectedAccountCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "countSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "commonContinue": "Continue",
+  "commonConversation": "Conversation",
+  "commonCopiedLabel": "{label} copied.",
+  "@commonCopiedLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "commonCreditCardPayment": "Credit card payment",
+  "commonCustom": "Custom",
+  "commonDelete": "Delete",
+  "commonDescription": "Description",
+  "commonDisable": "Disable",
+  "commonDisabled": "Disabled",
+  "commonDiscard": "Discard",
+  "commonDismiss": "Dismiss",
+  "commonDueDate": "Due date",
+  "commonDueDateValue": "Due {date}",
+  "@commonDueDateValue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "commonEdit": "Edit",
+  "commonEnable": "Enable",
+  "commonEnd": "End",
+  "commonExpense": "Expense",
+  "commonHidden": "Hidden",
+  "commonHigh": "High",
+  "commonHistory": "History",
+  "commonImport": "Import",
+  "commonImportance": "Importance",
+  "commonInactive": "Inactive",
+  "commonIncome": "Income",
+  "commonKeep": "Keep",
+  "commonLabeledValue": "{label}: {value}",
+  "@commonLabeledValue": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "commonLeft": "Left",
+  "commonLoading": "Loading",
+  "commonLow": "Low",
+  "commonMedium": "Medium",
+  "commonMemory": "Memory",
+  "commonMerge": "Merge",
+  "commonMinutesFormat": "{minutes} min",
+  "@commonMinutesFormat": {
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "commonMinutesUnderOne": "<1 min",
+  "commonMonthApril": "April",
+  "commonMonthAugust": "August",
+  "commonMonthDecember": "December",
+  "commonMonthFebruary": "February",
+  "commonMonthJanuary": "January",
+  "commonMonthJuly": "July",
+  "commonMonthJune": "June",
+  "commonMonthMarch": "March",
+  "commonMonthMay": "May",
+  "commonMonthNovember": "November",
+  "commonMonthOctober": "October",
+  "commonMonthSeptember": "September",
+  "commonMonthShortApr": "Apr",
+  "commonMonthShortAug": "Aug",
+  "commonMonthShortDec": "Dec",
+  "commonMonthShortFeb": "Feb",
+  "commonMonthShortJan": "Jan",
+  "commonMonthShortJul": "Jul",
+  "commonMonthShortJun": "Jun",
+  "commonMonthShortMar": "Mar",
+  "commonMonthShortMay": "May",
+  "commonMonthShortNov": "Nov",
+  "commonMonthShortOct": "Oct",
+  "commonMonthShortOld": "Old",
+  "commonMonthShortSep": "Sep",
+  "commonMonthYear": "{month} {year}",
+  "@commonMonthYear": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "commonMonthly": "Monthly",
+  "commonName": "Name",
+  "commonNet": "Net",
+  "commonNormal": "Normal",
+  "commonNotSet": "Not set",
+  "commonNotes": "Notes",
+  "commonOk": "OK",
+  "commonOlder": "Older",
+  "commonOnTrack": "{onTrack}/{budgeted} on track",
+  "@commonOnTrack": {
+    "placeholders": {
+      "onTrack": {
+        "type": "int"
+      },
+      "budgeted": {
+        "type": "int"
+      }
+    }
+  },
+  "commonOver": "Over",
+  "commonPeople": "People",
+  "commonPerson": "Person",
+  "commonPlan": "Plan",
+  "commonPreferences": "Preferences",
+  "commonPriority": "Priority",
+  "commonRecordsApplied": "Applied to {count, plural, one{1 record} other{{count} records}}.",
+  "@commonRecordsApplied": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commonRefund": "Refund",
+  "commonRemove": "Remove",
+  "commonRetry": "Retry",
+  "commonRule": "Rule",
+  "commonRules": "Rules",
+  "commonSave": "Save",
+  "commonSavings": "Savings",
+  "commonSignOut": "Sign out",
+  "commonSpending": "Spending",
+  "commonSpent": "Spent",
+  "commonStart": "Start",
+  "commonStatus": "Status",
+  "commonSummary": "Summary",
+  "commonTargetDateValue": "Target {date}",
+  "@commonTargetDateValue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "commonThisMonth": "This month",
+  "commonThisWeek": "This week",
+  "commonTitle": "Title",
+  "commonToday": "Today",
+  "commonTransactionCount": "{count} transactions",
+  "@commonTransactionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commonTransactionCountOne": "1 transaction",
+  "commonTransfer": "Transfer",
+  "commonType": "Type",
+  "commonUnavailable": "Unavailable",
+  "commonUndated": "Undated",
+  "commonUnknown": "Unknown",
+  "commonUpcoming": "Upcoming",
+  "commonUpdatedDate": "Updated {date}",
+  "@commonUpdatedDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "commonVisible": "Visible",
+  "commonWeekly": "Weekly",
+  "commonYesterday": "Yesterday",
+  "connectBankCardAddManualButton": "Add manual account",
+  "connectBankCardConnectButton": "Connect Bank",
+  "connectBankCardImportCsvButton": "Import CSV instead",
+  "conversationHistoryActionsTooltip": "Conversation actions",
+  "conversationHistoryMatchedConversation": "Matched conversation",
+  "conversationHistoryNewConversation": "New conversation",
+  "conversationHistoryNoMessagesYet": "No messages yet",
+  "conversationListClearSearchTooltip": "Clear search",
+  "conversationListDeleteBody": "This removes the conversation and its messages.",
+  "conversationListDeleteFailed": "Could not delete conversation.",
+  "conversationListDeleteTitle": "Delete conversation?",
+  "conversationListDeletedSnackBar": "Conversation deleted",
+  "conversationListEmptyMessage": "Start a fresh conversation when you are ready.",
+  "conversationListEmptyTitle": "No chats yet",
+  "conversationListLoading": "Loading chats",
+  "conversationListNewChat": "New chat",
+  "conversationListNewConversationTooltip": "New conversation",
+  "conversationListNoMatchesTitle": "No matching chats",
+  "conversationListSearchHint": "Search chats",
+  "conversationListSearching": "Searching chats",
+  "conversationListTitle": "Chats",
+  "csvPlaidWarningContent": "{accountName} already syncs through Plaid. Importing a CSV here can add duplicate rows if the file overlaps with synced transactions.",
+  "@csvPlaidWarningContent": {
+    "placeholders": {
+      "accountName": {
+        "type": "String"
+      }
+    }
+  },
+  "csvPlaidWarningContinue": "Continue import",
+  "csvPlaidWarningTitle": "Import CSV into connected account?",
+  "csvPreviewDialogDateRange": "Date range",
+  "csvPreviewDialogDuplicates": "Duplicates",
+  "csvPreviewDialogEndingBalance": "Ending balance",
+  "csvPreviewDialogIncomeRows": "Income rows",
+  "csvPreviewDialogNewRows": "New rows",
+  "csvPreviewDialogNoNewRows": "No new rows",
+  "csvPreviewDialogRowsFound": "Rows found",
+  "csvPreviewDialogSpendingRows": "Spending rows",
+  "csvPreviewDialogTitle": "CSV import preview",
+  "dashboardEmptyConnectFirstBankBody": "Clarity works best with connected accounts, so balances and transactions stay current automatically.",
+  "dashboardEmptyConnectFirstBankTitle": "Connect your first bank",
+  "dashboardOverviewAccountBalance": "Account balance",
+  "dashboardOverviewAccountHealth": "Account health",
+  "dashboardOverviewActivityNotBalanceNote": "Activity this month — not the same as balance",
+  "dashboardOverviewBudgetPerformance": "Budget performance",
+  "dashboardOverviewDataLoadBannerBody": "Clarity is showing the available records, but {sourceLabel} may be incomplete. Rex will treat finance answers as degraded until this refreshes.",
+  "@dashboardOverviewDataLoadBannerBody": {
+    "placeholders": {
+      "sourceLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardOverviewDataLoadBannerFallbackSource": "financial data",
+  "dashboardOverviewDataLoadBannerTitle": "Some financial data could not load",
+  "dashboardOverviewDeleteAccountTooltip": "Delete account",
+  "dashboardOverviewDeleteCsvUploadTooltip": "Delete CSV upload",
+  "dashboardOverviewFromConnectedAccounts": "From your connected accounts",
+  "dashboardOverviewImportCsvTooltip": "Import CSV instead",
+  "dashboardOverviewIncomeVsSpending": "Income vs spending",
+  "dashboardOverviewLoadingLabel": "Loading your financial data...",
+  "dashboardOverviewMonthlyCashFlow": "Monthly cash flow",
+  "dashboardOverviewSixMonthTrend": "Six-month spend trend",
+  "dashboardOverviewSpendingByCategory": "Spending by category",
+  "dashboardOverviewSpendingPressure": "Spending pressure",
+  "dashboardOverviewThisMonthLabel": "This month",
+  "dashboardOverviewTitle": "Overview",
+  "dashboardOverviewTotalBalance": "Total balance",
+  "dashboardResolvingBody": "Your statement is connected, but the transaction rows are still loading. Values will appear when the read model is complete.",
+  "dashboardResolvingTitle": "Resolving imported transactions",
+  "dashboardTransactionsClearFilters": "Clear",
+  "dashboardTransactionsDashboardMonthRange": "Dashboard month: {dateRange}",
+  "@dashboardTransactionsDashboardMonthRange": {
+    "placeholders": {
+      "dateRange": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardTransactionsFilterAccount": "Account",
+  "dashboardTransactionsFilterAllAccounts": "All accounts",
+  "dashboardTransactionsFilterAllCategories": "All categories",
+  "dashboardTransactionsFilterAllRoles": "All roles",
+  "dashboardTransactionsFilterCategory": "Category",
+  "dashboardTransactionsFilterRole": "Role",
+  "dashboardTransactionsFilteredCount": "{filtered} of {total} transactions | {dateRangeDescription}",
+  "@dashboardTransactionsFilteredCount": {
+    "placeholders": {
+      "filtered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "dateRangeDescription": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardTransactionsHistoryRange": "History: {dateRange}",
+  "@dashboardTransactionsHistoryRange": {
+    "placeholders": {
+      "dateRange": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardTransactionsLatestTxMonthRange": "Latest transaction month: {dateRange}",
+  "@dashboardTransactionsLatestTxMonthRange": {
+    "placeholders": {
+      "dateRange": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardTransactionsLatestTxYearRange": "Latest transaction year: {dateRange}",
+  "@dashboardTransactionsLatestTxYearRange": {
+    "placeholders": {
+      "dateRange": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardTransactionsLoadError": "Could not load transactions.",
+  "dashboardTransactionsLoadingLabel": "Loading transactions",
+  "dashboardTransactionsModeCategories": "Categories",
+  "dashboardTransactionsModeMonths": "Months",
+  "dashboardTransactionsNetLabel": "net",
+  "dashboardTransactionsNoCategoriesMatch": "No categories match.",
+  "dashboardTransactionsNoImportedHistory": "No imported history",
+  "dashboardTransactionsNoMonthsAfterFilter": "No months to show after filtering this file.",
+  "dashboardTransactionsSearchHint": "Search merchant, category, month, or amount",
+  "dashboardTransactionsSectionTitle": "Transactions",
+  "dashboardTransactionsSortLargest": "Largest",
+  "dashboardTransactionsSortMerchant": "Merchant A-Z",
+  "dashboardTransactionsSortNewest": "Newest",
+  "dashboardTransactionsSortOldest": "Oldest",
+  "dashboardTransactionsTapMonthHint": "Tap a month to inspect transactions | {dateRangeDescription}",
+  "@dashboardTransactionsTapMonthHint": {
+    "placeholders": {
+      "dateRangeDescription": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardTransactionsTimeFilterAllHistory": "All history",
+  "dashboardTransactionsTimeFilterDashboardMonth": "Dashboard month",
+  "dashboardTransactionsTimeFilterLatestTxMonth": "Latest tx month",
+  "dashboardTransactionsTimeFilterLatestTxYear": "Latest tx year",
+  "homeShellBankConnectedAccountsSynced": " and synced {count, plural, one{1 account} other{{count} accounts}}",
+  "@homeShellBankConnectedAccountsSynced": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeShellBankConnectedSuccess": "Bank connected successfully: {institutionName}{accountsSyncedSuffix}.",
+  "@homeShellBankConnectedSuccess": {
+    "placeholders": {
+      "institutionName": {
+        "type": "String"
+      },
+      "accountsSyncedSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "homeShellBankConnectedYourBank": "your bank",
+  "homeShellBankConnectionCancelled": "Bank connection cancelled. No account was added.",
+  "homeShellBankConnectionOpenFailed": "Could not open bank connection.",
+  "homeShellBankConnectionStoppedWithCode": "Bank connection stopped before it finished. You can try again. ({errorCode})",
+  "@homeShellBankConnectionStoppedWithCode": {
+    "placeholders": {
+      "errorCode": {
+        "type": "String"
+      }
+    }
+  },
+  "homeShellBankConnectionStoppedWithStatus": "Bank connection stopped before it finished. Plaid status: {status}.",
+  "@homeShellBankConnectionStoppedWithStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "importUploadingTransactions": "Uploading transactions...",
+  "loadingClarity": "Loading Clarity",
+  "memoryArchiveBody": "This saved information will stop being used in future conversations. It will remain in information history.",
+  "memoryArchiveTitle": "Archive saved information?",
+  "memoryEditEditMemoryTitle": "Edit memory",
+  "memoryEditSummaryHint": "What Clarity should remember",
+  "memoryHeaderActiveOnly": "Active information only",
+  "memoryHeaderClearSearchTooltip": "Clear search",
+  "memoryHeaderEmptyActiveTitle": "Clarity is still learning",
+  "memoryHeaderEmptyTitle": "No saved information yet",
+  "memoryHeaderLoading": "Loading memory",
+  "memoryHeaderSearchHint": "Search what Clarity knows",
+  "memoryHeaderSectionTitle": "What Clarity knows",
+  "memoryPageActionFailed": "Memory action failed.",
+  "memoryPageMemoryArchived": "Memory archived",
+  "memoryPageMemoryUpdated": "Memory updated",
+  "memoryPageRefreshTooltip": "Refresh information",
+  "memoryPageTitle": "What Clarity Knows",
+  "memoryTileActionsTooltip": "Memory actions",
+  "memoryTileQuickEdit": "Quick edit",
+  "mfaEnrollmentAppBarTitle": "Multi-factor authentication",
+  "mfaEnrollmentAuthenticatorApps": "Authenticator apps",
+  "mfaEnrollmentCancel": "Cancel",
+  "mfaEnrollmentCodeLabel": "6-digit code",
+  "mfaEnrollmentEnableMfa": "Enable MFA",
+  "mfaEnrollmentMfaOff": "MFA is off",
+  "mfaEnrollmentMfaOn": "MFA is on",
+  "mfaEnrollmentSetupTitle": "Set up authenticator app",
+  "mfaEnrollmentTurnOff": "Turn off",
+  "mfaEnrollmentTurnOffTitle": "Turn off MFA?",
+  "mfaEnrollmentTurnOnMfa": "Turn on MFA",
+  "mfaVerificationTitle": "Enter your MFA code",
+  "mfaVerificationVerifyAndContinue": "Verify and continue",
+  "navAccounts": "Accounts",
+  "navAssistant": "Assistant",
+  "navBudgets": "Budgets",
+  "navDashboard": "Dashboard",
+  "navProfile": "Profile",
+  "onboardingNameHint": "Pedro",
+  "onboardingNameLabel": "Your name",
+  "onboardingSubtitle": "Name your Clarity space. Next, you can connect your bank or use CSV as a manual fallback.",
+  "onboardingWelcomeTitle": "Welcome to Clarity",
+  "plaidAccountAvailableLabel": "Available",
+  "plaidAccountDisconnectTooltip": "Disconnect bank",
+  "plaidAccountInOutSummary": "{income} in / {spending} out",
+  "@plaidAccountInOutSummary": {
+    "placeholders": {
+      "income": {
+        "type": "String"
+      },
+      "spending": {
+        "type": "String"
+      }
+    }
+  },
+  "plaidAccountLastSyncedDate": "Last synced {date}",
+  "@plaidAccountLastSyncedDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "plaidAccountLastSyncedHoursAgo": "Last synced {hours}h ago",
+  "@plaidAccountLastSyncedHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "plaidAccountLastSyncedJustNow": "Last synced just now",
+  "plaidAccountLastSyncedMinutesAgo": "Last synced {minutes}m ago",
+  "@plaidAccountLastSyncedMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "plaidAccountLastSyncedUnavailable": "Last synced unavailable",
+  "plaidAccountResyncTooltipDefault": "Resync",
+  "plaidAccountResyncTooltipDisconnected": "Disconnected",
+  "plaidAccountResyncTooltipExpiringSoon": "Expiring soon",
+  "plaidAccountResyncTooltipLoginRequired": "Login required",
+  "plaidAccountResyncTooltipSyncing": "Syncing",
+  "plaidAccountThisMonthLabel": "This month",
+  "profileAccountSection": "Account",
+  "profileAddYourName": "Add your name",
+  "profileAppearance": "Appearance",
+  "profileDefaultUserName": "Clarity user",
+  "profileEditNameTitle": "Edit profile name",
+  "profileHeaderLabel": "Clarity profile",
+  "profileLanguage": "Language",
+  "profileLanguageUpdated": "Language set to {language}.",
+  "@profileLanguageUpdated": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "profileMfaSubtitle": "Authenticator app setup and security options",
+  "profileMfaTitle": "Multi-factor authentication",
+  "profileNameTitle": "Profile name",
+  "profileRexVoiceSection": "Rex and voice",
+  "profileScreenTitle": "Profile",
+  "profileSessionSection": "Session",
+  "profileSignOutBody": "You can sign back in when you are ready.",
+  "profileSignOutSubtitle": "Leave this device signed out of Clarity",
+  "profileSignOutTitle": "Sign out?",
+  "profileUpdateFailed": "Could not update profile.",
+  "profileUpdatedSnackBar": "Profile updated.",
+  "profileVoiceUsageSubtitle": "Minutes today, this week, and this month",
+  "profileVoiceUsageTitle": "Voice usage",
+  "startingClarity": "Starting Clarity",
+  "themeDark": "Dark",
+  "themeLight": "Light",
+  "themeSystem": "System",
+  "transactionCategoryAutoRole": "Auto role",
+  "transactionCategoryFinancialRoleTooltip": "Financial role",
+  "transactionCategoryNewCategoryHint": "New category",
+  "transactionCategoryNoCategories": "No categories",
+  "transactionCategoryOnlyThisOne": "Only this one",
+  "transactionCategoryUpdatedSnack": "Category updated.",
+  "budgetsScreenSavedSnack": "Budgets saved for {period}",
+  "categorySheetLoadingLabel": "Loading categories",
+  "categorySheetLoadError": "Could not load categories.",
+  "categorySheetCategoryAddedSnack": "Category added.",
+  "categorySheetCategoryRenamedSnack": "Category renamed.",
+  "categorySheetDeleteCategoryContent": "\"{name}\" is not used by transactions, budgets, or merchant rules. Delete it from saved custom categories?",
+  "categorySheetCategoryDeletedSnack": "Category deleted.",
+  "categorySheetCategoryShownSnack": "Category shown in pickers.",
+  "categorySheetCategoryHiddenSnack": "Category hidden from pickers.",
+  "categorySheetMergeCategoryContent": "Merge \"{source}\" into \"{target}\"? This will move {usage} to \"{target}\" and delete \"{source}\".",
+  "categorySheetCategoryMergedSnack": "Category merged.",
+  "categorySheetCategoryInUseContent": "\"{name}\" is used by {usage}. Merge it into another category or hide it from pickers instead of deleting it.",
+  "categorySheetNoMergeTarget": "No visible target category to merge into.",
+  "categorySheetMergeIntoTitle": "Merge \"{source}\" into",
+  "categorySheetNoRuleCategory": "No visible category is available for this rule.",
+  "categorySheetSetMerchantRuleCategoryTitle": "Set merchant rule category",
+  "categorySheetUpdateFutureImportsTitle": "Update future imports?",
+  "categorySheetUpdateFutureImportsContent": "Future \"{merchant}\" imports will use \"{category}\". Existing transactions will not be changed.",
+  "categorySheetUpdateRuleButton": "Update rule",
+  "categorySheetMerchantRuleUpdatedSnack": "Merchant rule updated.",
+  "categorySheetDisableRuleTitle": "Disable rule?",
+  "categorySheetEnableRuleTitle": "Enable rule?",
+  "categorySheetDisableRuleContent": "Future \"{merchant}\" imports will stop using this learned category rule.",
+  "categorySheetEnableRuleContent": "Future \"{merchant}\" imports will use this learned category rule again.",
+  "categorySheetMerchantRuleDisabledSnack": "Merchant rule disabled.",
+  "categorySheetMerchantRuleEnabledSnack": "Merchant rule enabled.",
+  "categorySheetDeleteMerchantRuleTitle": "Delete merchant rule?",
+  "categorySheetDeleteMerchantRuleContent": "Future \"{merchant}\" imports will no longer use this learned category rule.",
+  "categorySheetMerchantRuleDeletedSnack": "Merchant rule deleted.",
+  "categorySheetSaveFailedSnack": "Could not save changes: {error}",
+  "categorySheetBuiltInHint": "Built-in budget categories are always available: {count}. Used custom categories must be merged or hidden before deletion.",
+  "categorySheetMerchantRulesHint": "Merchant rules affect future CSV imports. Editing a rule does not rewrite existing transactions.",
+  "categorySheetCategoryActionsTooltip": "Category actions",
+  "categorySheetShowInPickers": "Show in pickers",
+  "categorySheetHideFromPickers": "Hide from pickers",
+  "commonRename": "Rename",
+  "categorySheetChangeCategory": "Change category",
+  "categorySheetEnableRule": "Enable rule",
+  "categorySheetDisableRule": "Disable rule",
+  "categorySheetDeleteRule": "Delete rule",
+  "categorySheetMerchantRuleActionsTooltip": "Merchant rule actions",
+  "categorySheetMissingCategory": "Missing category",
+  "categorySheetAuditTransactionCategoryChanged": "Transaction category changed",
+  "categorySheetAuditBulkCategoryChange": "Bulk category change",
+  "categorySheetAuditTransactionRoleChanged": "Transaction role changed",
+  "categorySheetAuditCategoryDeleted": "Category deleted",
+  "categorySheetAuditCategoryMerged": "Category merged",
+  "categorySheetAuditCategoryVisibilityChanged": "Category visibility changed",
+  "categorySheetAuditMerchantRuleChanged": "Merchant rule changed",
+  "categorySheetAuditMerchantRuleEnabledDisabled": "Merchant rule enabled/disabled",
+  "categorySheetAuditMerchantRuleDeleted": "Merchant rule deleted",
+  "categorySheetAuditCategoryRenamed": "Category renamed",
+  "categoryUsageTxCount": "{count} tx",
+  "categoryUsageBudgetCount": "{count, plural, one{1 budget} other{{count} budgets}}",
+  "categoryUsageRuleCount": "{count, plural, one{1 rule} other{{count} rules}}",
+  "merchantRuleStatsMatchingTx": "{count} matching tx",
+  "merchantRuleStatsMatchingTxLastUsed": "{count} matching tx · last used {date}",
+  "transactionCategoryNotFoundSnack": "Could not find this transaction.",
+  "transactionCategoryUpdateRoleFailed": "Could not update role: {error}",
+  "transactionCategoryDeleteTitle": "Delete \"{name}\"?",
+  "transactionCategoryDeleteContent": "Remove this category and clear it from assigned transactions?",
+  "transactionCategoryUpdateFailed": "Could not update category: {error}",
+  "transactionCategoryApplySimilarTitle": "Apply to similar transactions?",
+  "transactionCategoryApplySimilarContent": "Clarity found {count} transactions that look like \"{merchant}\". Apply this category to all of them and remember it for future CSV imports?",
+  "transactionCategoryUpdateCount": "Update {count}",
+  "transactionCategoryUpdatedSimilarSnack": "Updated {count} similar transactions. Choose another category to correct them.",
+  "transactionCategoryUpdatedFutureImportsSnack": "Category updated. Future matching imports will use it.",
+  "importJobCompleteSnack": "Import complete.",
+  "importJobCategoryAssignmentFailedSnack": "Imported {inserted} transactions, but category assignment failed.",
+  "importJobCategoryRetryNeededPersistent": "Imported {inserted} transactions, but {failures} need category assignment retry.",
+  "importJobNeedsCategoryRetryTitle": "Import needs category retry",
+  "importJobNoNewTransactionsDuplicates": "No new transactions imported. {skipped} duplicates skipped.",
+  "importJobNoNewTransactions": "No new transactions imported.",
+  "importJobSuccessWithLocalAndMisc": "Imported {inserted} transactions. Categorized all; {local} used local rules; {misc} used a best-guess category.",
+  "importJobSuccessWithLocal": "Imported {inserted} transactions. Categorized all; {local} used local rules.",
+  "importJobSuccessWithMisc": "Imported {inserted} transactions. Categorized all; {misc} used a best-guess category.",
+  "importJobSuccessCategorizedAll": "Imported {inserted} transactions. Categorized all transactions.",
+  "importJobFailedTitle": "Import failed",
+  "importJobRetryingCategoryAssignment": "Retrying category assignment...",
+  "importJobCategoryRetryCompleteProgress": "Category retry complete.",
+  "importJobNoRetryableRowsSnack": "No retryable category rows found.",
+  "importJobNoRetryableRowsTitle": "No retryable rows",
+  "importJobRetriedCategoriesSnack": "Retried categories. Updated {count} transactions.",
+  "importJobCategoryRetryCompleteTitle": "Category retry complete",
+  "importJobCategoryRetryFailedProgress": "Category retry failed.",
+  "importJobCategoryRetryFailedSnack": "Could not retry category assignment: {error}",
+  "importJobCategoryRetryFailedTitle": "Category retry failed",
+  "importJobRetryFailedLine": "Retry failed: {error}",
+  "importJobSummaryParsedLine": "Parsed {parsed}; imported {inserted}; skipped {skipped} duplicates.",
+  "importJobSummaryAiLine": "AI {status}; AI rows {aiRows}; local-rule rows {localRows}.",
+  "importJobSummaryCategoriesLine": "Best-guess categories {misc}; category update failures {failures}.",
+  "importJobSummaryScannedLine": "Scanned {scanned}; retryable {retryable}.",
+  "importJobSummaryUpdatedLine": "Updated {updated}; still uncategorized {remaining}.",
+  "importJobAiStatusCompleted": "completed",
+  "importJobAiStatusUnavailable": "unavailable",
+  "importProgressApplyingFallbackCategories": "Applying fallback categories...",
+  "importProgressCategorizing": "Categorizing...",
+  "importProgressImporting": "Importing...",
+  "importProgressRefreshing": "Refreshing...",
+  "importProgressSavingCategories": "Saving categories...",
+  "mfaEnterSixDigitCode": "Enter the 6-digit code.",
+  "mfaEnrollmentAddAnotherApp": "Add another app",
+  "mfaEnrollmentAuthenticatorUriCopyLabel": "Authenticator URI",
+  "mfaEnrollmentCopyAuthenticatorUri": "Copy authenticator URI",
+  "mfaEnrollmentCopyManualSetupKeyTooltip": "Copy manual setup key",
+  "mfaEnrollmentManualSetupKey": "Manual setup key",
+  "mfaEnrollmentManualSetupKeyCopyLabel": "Manual setup key",
+  "mfaEnrollmentMfaOffDescription": "Add an authenticator app to protect your financial workspace.",
+  "mfaEnrollmentMfaOnDescription": "Your account requires an authenticator code after password sign-in.",
+  "mfaEnrollmentRecoveryNotice": "Supabase Auth does not provide recovery codes for TOTP. Add a second authenticator app as a backup before removing your only factor.",
+  "mfaEnrollmentRemoveAuthenticatorTooltip": "Remove authenticator app",
+  "mfaEnrollmentRemoveBody": "Remove {factorName}? You can enroll another authenticator app later.",
+  "@mfaEnrollmentRemoveBody": {
+    "placeholders": {
+      "factorName": {
+        "type": "String"
+      }
+    }
+  },
+  "mfaEnrollmentRemoveTitle": "Remove MFA?",
+  "mfaEnrollmentSetupInstructions": "Scan this QR code in 1Password, Google Authenticator, Authy, or another TOTP app.",
+  "mfaEnrollmentTurnOffBodyMultiple": "This removes all {factorCount} authenticator apps. Your account will no longer ask for an authenticator code after password sign-in.",
+  "@mfaEnrollmentTurnOffBodyMultiple": {
+    "placeholders": {
+      "factorCount": {
+        "type": "int"
+      }
+    }
+  },
+  "mfaEnrollmentTurnOffBodySingle": "Your account will no longer ask for an authenticator code after password sign-in.",
+  "mfaVerificationAuthenticatorAppLabel": "Authenticator app",
+  "mfaVerificationSubtitle": "Open your authenticator app and enter the current 6-digit code for Clarity.",
+  "usageChartDayFri": "Fri",
+  "usageChartDayMon": "Mon",
+  "usageChartDaySat": "Sat",
+  "usageChartDaySun": "Sun",
+  "usageChartDayThu": "Thu",
+  "usageChartDayTue": "Tue",
+  "usageChartDayWed": "Wed",
+  "usageChartNoDailyCallData": "No daily call data yet.",
+  "usageChartNoDailyVoiceUsage": "No daily voice usage yet.",
+  "usageChartNotEnoughRadarData": "Not enough usage data for radar chart.",
+  "usageSummaryDailyAiCalls": "Daily AI calls",
+  "usageSummaryDailyVoiceMinutes": "Daily voice minutes",
+  "usageSummaryHeaderLabel": "Rex voice activity",
+  "usageSummaryLoading": "Loading usage",
+  "usageSummaryTitle": "Voice usage",
+  "voicePanelEndVoiceTooltip": "End voice",
+  "voicePanelMuteMicTooltip": "Mute mic",
+  "voicePanelMuted": "Muted",
+  "voicePanelProcessing": "Processing…",
+  "voicePanelSettingsTooltip": "Settings",
+  "voicePanelStartTalking": "Start talking",
+  "voicePanelTryAgainTooltip": "Try again",
+  "voicePanelUnmuteMicTooltip": "Unmute mic",
+  "commonNone": "None",
+  "dashboardBudgetNoBudgetsForPeriod": "No budgets set for {periodLabel} yet.",
+  "dashboardBudgetCategoriesOnTrack": "{onTrack}/{budgeted} categories on track",
+  "dashboardBudgetTotalOverspent": "Total overspent {amount}",
+  "dashboardBudgetBudgetedSpentLine": "Budgeted {budgeted} / Spent {spent}",
+  "dashboardBudgetNoOverspendingCategories": "No overspending categories in this period.",
+  "dashboardBudgetCategoryOverspent": "{label}: overspent {amount}",
+  "dashboardHealthSpendingAheadOfIncome": "Spending is ahead of income by {amount} this month.",
+  "dashboardHealthIncomeAheadOfSpending": "Income is ahead of spending by {amount} this month.",
+  "dashboardHealthSpendingActiveNoIncome": "Spending is active this month; no income is recorded in this scope.",
+  "dashboardHealthIncomeNoSpending": "Income is recorded and no spending has posted for this month yet.",
+  "dashboardHealthNoCurrentMonthActivity": "No current-month activity in this scope yet.",
+  "dashboardHealthConnectTransactions": "Connect transactions to build account health.",
+  "dashboardHealthNoBudgets": "No budgets",
+  "dashboardHealthSetBudgets": "Set budgets to compare this month against a target.",
+  "dashboardHealthCategoryOverBy": "{label} is over by {amount}.",
+  "dashboardHealthBudgetControlled": "Budget coverage looks controlled for {periodLabel}.",
+  "dashboardHealthNoSpendingPressure": "No spending pressure recorded this month.",
+  "dashboardHealthTopSpendPressure": "{name} is the largest spend pressure this month.",
+  "dashboardHealthThisMonthNet": "This month net",
+  "dashboardHealthSpendPressureLabel": "Spend pressure",
+  "dashboardHealthBudgetCoverageLabel": "Budget coverage",
+  "dashboardHealthIncomeSpendingLine": "Income {income} / Spending {spending}",
+  "dashboardChartConnectAccountsCashFlow": "Connect accounts to see monthly cash flow.",
+  "dashboardChartNoCategorySpending": "No category spending yet.",
+  "dashboardChartNoSpendingPressure": "No spending pressure this month.",
+  "dashboardChartNoBudgetCategories": "No budget categories to chart.",
+  "dashboardChartNoSpendingHistory": "No spending history yet.",
+  "dashboardChartNoIncomeOrSpending": "No income or spending this month.",
+  "dashboardChartIncomeSpendingSummary": "Income {income} · Spending {spent}",
+  "monthDetailDeleteMonthTooltip": "Delete this month",
+  "monthDetailDeleteMonthTitle": "Delete {monthLabel} transactions?",
+  "monthDetailDeleteMonthBody": "This will permanently delete the {count} visible transaction{transactionSuffix} for this account in {monthLabel}. Other months will stay untouched.",
+  "monthDetailDeleteMonthButton": "Delete month",
+  "monthDetailDeletedTransactions": "Deleted {count} {monthLabel} transaction{transactionSuffix}.",
+  "monthDetailNothingDeleted": "No transactions were deleted.",
+  "monthDetailLoadingMonth": "Loading month",
+  "monthDetailNetThisMonth": "NET THIS MONTH",
+  "monthDetailNoTransactionsLeft": "No transactions left for this month.",
+  "monthDetailDeleteTransactionTooltip": "Delete transaction",
+  "monthDetailDeleteTransactionTitle": "Delete this transaction?",
+  "monthDetailDeleteTransactionBody": "This transaction will be permanently deleted.",
+  "monthDetailTransactionDeleted": "Transaction deleted.",
+  "monthDetailDeleteTransactionFailed": "Could not delete transaction.",
+  "monthDetailPlaidDeleteProtection": "Plaid transactions sync from your bank. Use resync or disconnect instead of local deletion.",
+  "accountsScreenNoActiveConnectionRefresh": "No active bank connection to refresh.",
+  "accountsScreenCouldNotRefreshAccounts": "Could not refresh connected accounts.",
+  "accountsScreenDisconnectedConnection": "This bank connection is disconnected.",
+  "accountsScreenCouldNotRefreshAccount": "Could not refresh this account.",
+  "accountsScreenCouldNotDisconnect": "Could not disconnect this bank.",
+  "accountsScreenDisconnectedNotice": "{institutionName} disconnected. Future Plaid sync is stopped.",
+  "plaidAccountStatusConnected": "Connected",
+  "plaidAccountStatusDegradedLabel": "Degraded",
+  "plaidAccountStatusNeedsLogin": "Needs login",
+  "plaidAccountStatusRefreshing": "Refreshing this bank connection now.",
+  "plaidAccountStatusDegradedMessage": "Sync needs attention. Try refresh; if it still fails, reconnect this bank in Plaid.",
+  "plaidAccountStatusLoginRequiredMessage": "Plaid needs you to sign in again. Connect this bank again to resume sync.",
+  "plaidAccountStatusExpiringSoonMessage": "This Plaid connection may expire soon. Refresh now or reconnect if sync stops.",
+  "plaidAccountStatusDisconnectedMessage": "Future Plaid sync is stopped. Existing account history stays in Clarity.",
+  "plaidAccountNoWebhookYet": "No Plaid webhook has arrived yet. Use refresh if transactions look stale.",
+  "plaidAccountNoRecentWebhook": "No recent Plaid webhook. Last bank update signal was {relativeTime}.",
+  "plaidAccountWebhookDaysAgo": "{days}d ago",
+  "plaidAccountWebhookHoursAgo": "{hours}h ago",
+  "plaidAccountWebhookMinutesAgo": "{minutes}m ago",
+  "plaidAccountWebhookJustNow": "just now",
+  "accountDetailNoCsvUploads": "No CSV uploads found for this account.",
+  "accountDetailDeleteCsvBody": "Delete {count} transaction{transactionSuffix} from this upload? This cannot be undone.",
+  "accountDetailDeletedFromCsv": "Deleted {deleted} transaction{transactionSuffix} from CSV upload.",
+  "accountDetailCsvAlreadyDeleted": "CSV upload was already deleted.",
+  "accountDetailCouldNotDeleteCsv": "Could not delete CSV upload.",
+  "accountDetailCouldNotDeleteAccount": "Could not delete account.",
+  "accountDetailAccountDeleted": "{accountName} deleted.{cleanupNote}",
+  "accountDetailRemovedBudgets": " Removed {count} unused budget{budgetSuffix}.",
+  "accountDetailDeleteUnusedCategoryTitle": "Delete unused custom {plural}?",
+  "accountDetailDeleteUnusedCategorySingle": "\"{name}\" no longer has active transactions after deleting this account. Delete this custom category too?",
+  "accountDetailDeleteUnusedCategoryMultiple": "These custom categories no longer have active transactions after deleting this account: {names}. Delete them too?",
+  "accountDetailUploadBatchLabel": "Upload {importId}",
+  "accountDetailCategorySingular": "category",
+  "accountDetailCategoriesPlural": "categories",
+  "csvPreviewPlaidOverlapHint": "This connected account already syncs through Plaid. Import only if this CSV covers rows Clarity does not have yet.",
+  "csvPreviewManualFallbackHint": "This is a manual fallback import. You may need to upload newer CSV files later to keep this account current.",
+  "csvPreviewLayoutInferred": "Column layout was inferred. Review the date range before importing.",
+  "csvPreviewDuplicateImport": "This looks like a duplicate import for this account. Choose another account, or delete the previous CSV upload from the account page before retrying.",
+  "accountSelectionManualAccountForCsv": "Add a manual account for this CSV",
+  "assistantTabChat": "Chat",
+  "assistantTabKnows": "Knows",
+  "assistantTabGoals": "Goals",
+  "assistantTabChats": "Chats",
+  "assistantTabSemanticLabel": "Assistant {tab} tab",
+  "@assistantTabSemanticLabel": {
+    "placeholders": {
+      "tab": {
+        "type": "String"
+      }
+    }
+  },
+  "voicePanelVoiceMuted": "Voice muted",
+  "voicePanelVoiceReady": "Voice ready",
+  "voicePanelListening": "Listening",
+  "voicePanelThinking": "Thinking",
+  "voicePanelSpeaking": "Speaking",
+  "voicePanelVoicePaused": "Voice paused",
+  "voiceFailureSessionReconnect": "Your Clarity session needs to reconnect before voice can continue. Sign in again if this keeps happening.",
+  "voiceFailureMicrophoneAccess": "Microphone access is needed for voice. Check Settings, then try again.",
+  "voiceFailureDidNotCatch": "I didn't catch that. Tap Try again when you are ready.",
+  "voiceFailureConnectionDropped": "Voice connection dropped. Tap Try again to reconnect.",
+  "voiceFailureTranscriptUnreadable": "I couldn't read that transcript. Tap Try again and say it once more.",
+  "voiceFailurePlaybackFailed": "Rex answered, but I couldn't play the audio. Tap Try again to hear the reply.",
+  "voiceFailurePausedDefault": "Voice paused. Tap Try again when you are ready to continue.",
+  "memoryHeaderEmptyActiveBody": "Ask Rex in chat or voice to save something, and it will show up here.",
+  "memoryHeaderEmptyBody": "Saved facts, people, and preferences from chat or voice will appear here.",
+  "memoryHeaderNoMatchingTitle": "No matching information",
+  "memoryHeaderNoMatchingBody": "Try another search or filter.",
+  "memoryPagePersonUpdated": "Person updated",
+  "memoryPageRuleUpdated": "Rule updated",
+  "memoryPagePlanUpdated": "Plan updated",
+  "memoryPageCommitmentUpdated": "Commitment updated",
+  "memoryEditEditPersonTitle": "Edit person",
+  "memoryEditEditRuleTitle": "Edit rule",
+  "memoryEditEditPlanTitle": "Edit plan",
+  "memoryEditEditCommitmentTitle": "Edit commitment",
+  "memoryEditRuleTextLabel": "Rule text",
+  "memoryEditTriggerKeywordsLabel": "Trigger keywords",
+  "memoryEditDesiredOutcomeLabel": "Desired outcome",
+  "memoryEditAliasesLabel": "Aliases",
+  "memoryArchiveNamedTitle": "Archive {label}?",
+  "@memoryArchiveNamedTitle": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "memoryArchiveStructuredBody": "This {label} will stop being used as active context. It will remain in information history.",
+  "@memoryArchiveStructuredBody": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "memoryDisplayLocation": "Location",
+  "memoryDisplayBirthday": "Birthday",
+  "memoryDisplayJob": "Job",
+  "memoryDisplayWorkplace": "Workplace",
+  "memoryDisplayImportantDate": "Important date",
+  "accountabilityAddGoalTitle": "Add goal",
+  "accountabilityAddCommitmentTitle": "Add commitment",
+  "accountabilityAddGoalPrimaryLabel": "Goal title",
+  "accountabilityAddCommitmentPrimaryLabel": "Commitment title",
+  "accountabilityAddGoalPrimaryHint": "Build a reliable morning routine",
+  "accountabilityAddGoalDetailHint": "Wake up at 5 AM and start the day cleanly",
+  "accountabilityAddCommitmentPrimaryHint": "Wake up at 5 AM",
+  "accountabilityAddCommitmentDetailHint": "Wake up at 5 AM and start my morning routine",
+  "accountabilityGoalSaved": "Goal saved.",
+  "accountabilityCommitmentSaved": "Commitment saved.",
+  "accountabilityCommitmentCompleted": "Commitment completed.",
+  "accountabilityMarkMissedTitle": "Mark missed?",
+  "accountabilityMarkMissedBody": "Mark \"{title}\" as missed? It will leave your active Goals list.",
+  "@accountabilityMarkMissedBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "accountabilityArchiveCommitmentTitle": "Archive commitment?",
+  "accountabilityArchiveCommitmentBody": "Archive \"{title}\"? It will leave your active Goals list.",
+  "@accountabilityArchiveCommitmentBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "accountabilityArchiveGoalTitle": "Archive goal?",
+  "accountabilityArchiveGoalBody": "Archive \"{title}\"? It will leave your active Goals list.",
+  "@accountabilityArchiveGoalBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "accountabilityCommitmentMarkedMissed": "Commitment marked missed.",
+  "accountabilityCommitmentArchived": "Commitment archived.",
+  "accountabilityGoalArchived": "Goal archived.",
+  "accountabilityGoalUpdated": "Goal updated.",
+  "accountabilityCommitmentUpdated": "Commitment updated.",
+  "accountabilityUpdateFailed": "Goals update failed.",
+  "accountabilityStatusOpen": "Open",
+  "accountabilityStatusInProgress": "In progress",
+  "conversationListEmptyFilteredTitle": "No chats in {filter}",
+  "@conversationListEmptyFilteredTitle": {
+    "placeholders": {
+      "filter": {
+        "type": "String"
+      }
+    }
+  },
+  "conversationListEmptyFilteredMessage": "Clear the date filter or choose a wider range.",
+  "conversationListNoMatchesBody": "No chats matched \"{query}\"{suffix}",
+  "@conversationListNoMatchesBody": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      },
+      "suffix": {
+        "type": "String"
+      }
+    }
+  },
+  "conversationListNoMatchesSuffixInFilter": " in {filter}",
+  "@conversationListNoMatchesSuffixInFilter": {
+    "placeholders": {
+      "filter": {
+        "type": "String"
+      }
+    }
+  },
+  "conversationDateFilterCustomSingle": "{date}",
+  "@conversationDateFilterCustomSingle": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "conversationDateFilterCustomRange": "{start} - {end}",
+  "@conversationDateFilterCustomRange": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "@budgetsScreenSavedSnack": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "@categorySheetDeleteCategoryContent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@categorySheetMergeCategoryContent": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      },
+      "usage": {
+        "type": "String"
+      }
+    }
+  },
+  "@categorySheetCategoryInUseContent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "usage": {
+        "type": "String"
+      }
+    }
+  },
+  "@categorySheetMergeIntoTitle": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "@categorySheetUpdateFutureImportsContent": {
+    "placeholders": {
+      "merchant": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "@categorySheetDisableRuleContent": {
+    "placeholders": {
+      "merchant": {
+        "type": "String"
+      }
+    }
+  },
+  "@categorySheetEnableRuleContent": {
+    "placeholders": {
+      "merchant": {
+        "type": "String"
+      }
+    }
+  },
+  "@categorySheetDeleteMerchantRuleContent": {
+    "placeholders": {
+      "merchant": {
+        "type": "String"
+      }
+    }
+  },
+  "@categorySheetSaveFailedSnack": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@categorySheetBuiltInHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@categoryUsageTxCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@categoryUsageBudgetCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@categoryUsageRuleCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@merchantRuleStatsMatchingTx": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@merchantRuleStatsMatchingTxLastUsed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "@transactionCategoryUpdateRoleFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@transactionCategoryDeleteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@transactionCategoryUpdateFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@transactionCategoryApplySimilarContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "merchant": {
+        "type": "String"
+      }
+    }
+  },
+  "@transactionCategoryUpdateCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@transactionCategoryUpdatedSimilarSnack": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobCategoryAssignmentFailedSnack": {
+    "placeholders": {
+      "inserted": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobCategoryRetryNeededPersistent": {
+    "placeholders": {
+      "inserted": {
+        "type": "int"
+      },
+      "failures": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobNoNewTransactionsDuplicates": {
+    "placeholders": {
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobSuccessWithLocalAndMisc": {
+    "placeholders": {
+      "inserted": {
+        "type": "int"
+      },
+      "local": {
+        "type": "int"
+      },
+      "misc": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobSuccessWithLocal": {
+    "placeholders": {
+      "inserted": {
+        "type": "int"
+      },
+      "local": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobSuccessWithMisc": {
+    "placeholders": {
+      "inserted": {
+        "type": "int"
+      },
+      "misc": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobSuccessCategorizedAll": {
+    "placeholders": {
+      "inserted": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobRetriedCategoriesSnack": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobCategoryRetryFailedSnack": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@importJobRetryFailedLine": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@importJobSummaryParsedLine": {
+    "placeholders": {
+      "parsed": {
+        "type": "int"
+      },
+      "inserted": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobSummaryAiLine": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "aiRows": {
+        "type": "int"
+      },
+      "localRows": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobSummaryCategoriesLine": {
+    "placeholders": {
+      "misc": {
+        "type": "int"
+      },
+      "failures": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobSummaryScannedLine": {
+    "placeholders": {
+      "scanned": {
+        "type": "int"
+      },
+      "retryable": {
+        "type": "int"
+      }
+    }
+  },
+  "@importJobSummaryUpdatedLine": {
+    "placeholders": {
+      "updated": {
+        "type": "int"
+      },
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "@dashboardBudgetNoBudgetsForPeriod": {
+    "placeholders": {
+      "periodLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardBudgetCategoriesOnTrack": {
+    "placeholders": {
+      "onTrack": {
+        "type": "int"
+      },
+      "budgeted": {
+        "type": "int"
+      }
+    }
+  },
+  "@dashboardBudgetTotalOverspent": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardBudgetBudgetedSpentLine": {
+    "placeholders": {
+      "budgeted": {
+        "type": "String"
+      },
+      "spent": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardBudgetCategoryOverspent": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardHealthSpendingAheadOfIncome": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardHealthIncomeAheadOfSpending": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardHealthCategoryOverBy": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardHealthBudgetControlled": {
+    "placeholders": {
+      "periodLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardHealthTopSpendPressure": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardHealthIncomeSpendingLine": {
+    "placeholders": {
+      "income": {
+        "type": "String"
+      },
+      "spending": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardChartIncomeSpendingSummary": {
+    "placeholders": {
+      "income": {
+        "type": "String"
+      },
+      "spent": {
+        "type": "String"
+      }
+    }
+  },
+  "@monthDetailDeleteMonthTitle": {
+    "placeholders": {
+      "monthLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "@monthDetailDeleteMonthBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "transactionSuffix": {
+        "type": "String"
+      },
+      "monthLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "@monthDetailDeletedTransactions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "monthLabel": {
+        "type": "String"
+      },
+      "transactionSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountsScreenDisconnectedNotice": {
+    "placeholders": {
+      "institutionName": {
+        "type": "String"
+      }
+    }
+  },
+  "@plaidAccountNoRecentWebhook": {
+    "placeholders": {
+      "relativeTime": {
+        "type": "String"
+      }
+    }
+  },
+  "@plaidAccountWebhookDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@plaidAccountWebhookHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "@plaidAccountWebhookMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@accountDetailDeleteCsvBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "transactionSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountDetailDeletedFromCsv": {
+    "placeholders": {
+      "deleted": {
+        "type": "int"
+      },
+      "transactionSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountDetailAccountDeleted": {
+    "placeholders": {
+      "accountName": {
+        "type": "String"
+      },
+      "cleanupNote": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountDetailRemovedBudgets": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "budgetSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountDetailDeleteUnusedCategoryTitle": {
+    "placeholders": {
+      "plural": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountDetailDeleteUnusedCategorySingle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountDetailDeleteUnusedCategoryMultiple": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "@accountDetailUploadBatchLabel": {
+    "placeholders": {
+      "importId": {
+        "type": "String"
+      }
+    }
+  },
+  "usageSummaryAiCallsCount": "{count} AI calls",
+  "@usageSummaryAiCallsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageSummaryAiCallsThisMonth": "{count} AI calls this month",
+  "@usageSummaryAiCallsThisMonth": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageAdminTitle": "Usage administration",
+  "usageAdminSubtitle": "All users · voice, chat, estimated cost",
+  "usageAdminOwnerSection": "Owner",
+  "usageAdminPlatformThisMonth": "Platform this month",
+  "usageAdminActiveUsersSummary": "{activeUserCount} active users · {voiceMinutes} voice · {aiCalls} AI calls",
+  "@usageAdminActiveUsersSummary": {
+    "placeholders": {
+      "activeUserCount": {
+        "type": "int"
+      },
+      "voiceMinutes": {
+        "type": "String"
+      },
+      "aiCalls": {
+        "type": "int"
+      }
+    }
+  },
+  "usageAdminUsersSection": "Users",
+  "usageAdminNoUsageThisMonth": "No usage recorded this month yet.",
+  "usageAdminUserTileSummary": "{voiceMinutes} voice · {chatCalls} chat · {voiceCalls} voice calls",
+  "@usageAdminUserTileSummary": {
+    "placeholders": {
+      "voiceMinutes": {
+        "type": "String"
+      },
+      "chatCalls": {
+        "type": "int"
+      },
+      "voiceCalls": {
+        "type": "int"
+      }
+    }
+  },
+  "usageAdminLoadingUserUsage": "Loading user usage",
+  "usageAdminEstimatedCostThisMonth": "Estimated cost this month",
+  "usageAdminUsageShape": "Usage shape",
+  "usageAdminRadarVoiceMin": "Voice min",
+  "usageAdminRadarChatLlm": "Chat LLM",
+  "usageAdminRadarVoiceLlm": "Voice LLM",
+  "usageAdminRadarSttMin": "STT min",
+  "usageAdminRadarTtsMin": "TTS min",
+  "usageCostNotTracked": "Not tracked",
+  "usageMinutesLessThanOne": "<1 min",
+  "usageMinutesFormat": "{minutes} min",
+  "@usageMinutesFormat": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "usageAdminLoadFailed": "Could not load owner usage right now.",
+  "usageAdminUserLoadFailed": "Could not load user usage history.",
+  "usageSummaryLoadFailed": "Could not load usage right now."
 }

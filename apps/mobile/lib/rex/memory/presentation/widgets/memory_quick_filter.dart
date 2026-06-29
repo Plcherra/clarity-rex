@@ -1,16 +1,18 @@
+import '../../../../l10n/app_localizations.dart';
+
 enum MemoryQuickFilter {
   saved,
   people,
   preferences;
 
-  String get label {
+  String label(AppLocalizations l10n) {
     switch (this) {
       case MemoryQuickFilter.saved:
-        return 'All';
+        return l10n.commonAll;
       case MemoryQuickFilter.people:
-        return 'People';
+        return l10n.commonPeople;
       case MemoryQuickFilter.preferences:
-        return 'Preferences';
+        return l10n.commonPreferences;
     }
   }
 }
