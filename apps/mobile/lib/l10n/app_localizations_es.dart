@@ -2846,4 +2846,362 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get usageSummaryLoadFailed => 'Could not load usage right now.';
+
+  @override
+  String get memoryErrorSignInAgain =>
+      'Please sign in again to manage saved information.';
+
+  @override
+  String get memoryErrorNoLongerAvailable =>
+      'That memory is no longer available.';
+
+  @override
+  String get memoryErrorEditValidation =>
+      'That memory change could not be saved. Check the fields and try again.';
+
+  @override
+  String get memoryErrorArchiveRefresh =>
+      'That memory could not be archived. Refresh Memory and try again.';
+
+  @override
+  String get memoryErrorLoadRefresh =>
+      'Could not load saved information. Refresh and try again.';
+
+  @override
+  String get memoryErrorLoadConnection =>
+      'Could not load saved information. Check your connection and try again.';
+
+  @override
+  String get memoryErrorUpdateFailed =>
+      'Could not update this memory. Please try again.';
+
+  @override
+  String get memoryErrorArchiveFailed =>
+      'Could not archive this memory. Please try again.';
+
+  @override
+  String get serviceErrorGeneric => 'Algo salió mal. Inténtalo de nuevo.';
+
+  @override
+  String get serviceErrorSignInRequired =>
+      'Inicia sesión de nuevo para continuar.';
+
+  @override
+  String get serviceErrorFetchGeneric =>
+      'No se pudieron cargar los datos ahora.';
+
+  @override
+  String get serviceErrorCreateGeneric =>
+      'No se pudieron guardar los cambios ahora.';
+
+  @override
+  String get serviceErrorUpdateGeneric => 'No se pudo actualizar ahora.';
+
+  @override
+  String get serviceErrorDeleteGeneric => 'No se pudo eliminar ahora.';
+
+  @override
+  String get serviceErrorFetchAccounts => 'No se pudieron cargar las cuentas.';
+
+  @override
+  String get serviceErrorCreateAccount => 'No se pudo crear la cuenta.';
+
+  @override
+  String get serviceErrorUpdateAccount => 'No se pudo actualizar la cuenta.';
+
+  @override
+  String get serviceErrorDeleteAccount => 'No se pudo eliminar la cuenta.';
+
+  @override
+  String get serviceErrorFetchStatementImports =>
+      'No se pudieron cargar las importaciones de extractos.';
+
+  @override
+  String get serviceErrorSaveStatementImport =>
+      'No se pudo guardar la importación del extracto.';
+
+  @override
+  String get serviceErrorDeleteStatementImport =>
+      'No se pudo eliminar la importación del extracto.';
+
+  @override
+  String get serviceErrorFetchTransactions =>
+      'No se pudieron cargar las transacciones.';
+
+  @override
+  String get serviceErrorCreateTransaction =>
+      'No se pudo crear la transacción.';
+
+  @override
+  String get serviceErrorCreateTransactions =>
+      'No se pudieron crear las transacciones.';
+
+  @override
+  String get serviceErrorUpdateTransaction =>
+      'No se pudo actualizar la transacción.';
+
+  @override
+  String get serviceErrorUpdateTransactionCategories =>
+      'No se pudieron actualizar las categorías de transacciones.';
+
+  @override
+  String get serviceErrorDeleteTransaction =>
+      'No se pudo eliminar la transacción.';
+
+  @override
+  String get serviceErrorDeleteCsvImportTransactions =>
+      'No se pudieron eliminar las transacciones importadas del CSV.';
+
+  @override
+  String get serviceErrorDeleteAccountTransactions =>
+      'No se pudieron eliminar las transacciones de la cuenta en ese rango de fechas.';
+
+  @override
+  String get serviceErrorFetchBudgets =>
+      'No se pudieron cargar los presupuestos.';
+
+  @override
+  String get serviceErrorCreateBudget => 'No se pudo crear el presupuesto.';
+
+  @override
+  String get serviceErrorUpdateBudget =>
+      'No se pudo actualizar el presupuesto.';
+
+  @override
+  String get serviceErrorUpdateBudgetCategories =>
+      'No se pudieron actualizar las categorías del presupuesto.';
+
+  @override
+  String get serviceErrorDeleteBudget => 'No se pudo eliminar el presupuesto.';
+
+  @override
+  String get serviceErrorFetchCategories =>
+      'No se pudieron cargar las categorías.';
+
+  @override
+  String get serviceErrorCreateCategory => 'No se pudo crear la categoría.';
+
+  @override
+  String get serviceErrorUpdateCategory =>
+      'No se pudo actualizar la categoría.';
+
+  @override
+  String get serviceErrorDeleteCategory => 'No se pudo eliminar la categoría.';
+
+  @override
+  String get serviceErrorFetchMerchantCategoryRules =>
+      'No se pudieron cargar las reglas de categoría por comercio.';
+
+  @override
+  String get serviceErrorSaveMerchantCategoryRule =>
+      'No se pudo guardar la regla de categoría por comercio.';
+
+  @override
+  String get serviceErrorUpdateMerchantCategoryRules =>
+      'No se pudieron actualizar las reglas de categoría por comercio.';
+
+  @override
+  String get serviceErrorUpdateMerchantCategoryRule =>
+      'No se pudo actualizar la regla de categoría por comercio.';
+
+  @override
+  String get serviceErrorDeleteMerchantCategoryRule =>
+      'No se pudo eliminar la regla de categoría por comercio.';
+
+  @override
+  String get serviceErrorRecordAuditEvent =>
+      'No se pudo registrar el evento de auditoría.';
+
+  @override
+  String get serviceErrorFetchAuditEvents =>
+      'No se pudieron cargar los eventos de auditoría.';
+
+  @override
+  String get plaidLinkStartFailed => 'No se pudo iniciar la conexión bancaria.';
+
+  @override
+  String get plaidLinkSaveFailed => 'No se pudo guardar la conexión bancaria.';
+
+  @override
+  String get plaidLinkParseFailed =>
+      'No se pudo interpretar la conexión bancaria.';
+
+  @override
+  String get plaidLinkConfigMissing =>
+      'La conexión bancaria aún no está configurada.';
+
+  @override
+  String get plaidLinkCancelled => 'Se canceló la conexión bancaria.';
+
+  @override
+  String get plaidLinkGenericFailed => 'No se pudo conectar este banco ahora.';
+
+  @override
+  String get plaidAccountNoConnectedBank =>
+      'No hay banco conectado para actualizar.';
+
+  @override
+  String get plaidAccountParseStatusFailed =>
+      'No se pudo leer el estado de la conexión bancaria.';
+
+  @override
+  String get plaidAccountGenericFailed =>
+      'No se pudo actualizar esta conexión bancaria ahora.';
+
+  @override
+  String plaidRefreshAccountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cuentas',
+      one: '1 cuenta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String plaidRefreshWithTransactionUpdates(
+    String accountLabel,
+    int updateCount,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      updateCount,
+      locale: localeName,
+      other: '$updateCount actualizaciones de transacciones',
+      one: '1 actualización de transacción',
+    );
+    return 'Cuentas actualizadas: $accountLabel, $_temp0.';
+  }
+
+  @override
+  String plaidRefreshBalancesOnlyUnavailable(String accountLabel) {
+    return 'Cuentas actualizadas: $accountLabel. Saldos actualizados. Aún no hay transacciones nuevas — Plaid sincronizará según su programación (la extracción de transacciones bajo demanda no está habilitada en este plan de Plaid).';
+  }
+
+  @override
+  String plaidRefreshBalancesOnly(String accountLabel) {
+    return 'Cuentas actualizadas: $accountLabel. Saldos actualizados; no hay transacciones nuevas desde la última sincronización.';
+  }
+
+  @override
+  String get chatErrorNetwork =>
+      'No se pudo contactar con Clarity. Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get chatErrorTimeout => 'Tardó demasiado. Inténtalo de nuevo.';
+
+  @override
+  String get chatErrorUpload =>
+      'No se pudo subir el adjunto. Inténtalo de nuevo.';
+
+  @override
+  String get chatErrorValidation =>
+      'No se pudo enviar ese mensaje. Comprueba el adjunto e inténtalo de nuevo.';
+
+  @override
+  String get chatErrorInvalidResponse =>
+      'Clarity devolvió una respuesta inesperada. Inténtalo de nuevo.';
+
+  @override
+  String get chatAttachmentTooLarge =>
+      'El adjunto es demasiado grande. El tamaño máximo es 2 MB.';
+
+  @override
+  String get chatAttachmentImageTooLarge =>
+      'La imagen es demasiado grande. El tamaño máximo es 5 MB.';
+
+  @override
+  String get chatAttachmentPdfTooLarge =>
+      'El PDF es demasiado grande. El tamaño máximo es 10 MB.';
+
+  @override
+  String get chatAttachmentInvalidType =>
+      'Adjunta un archivo .txt, .md, .csv, .pdf, .jpg, .png o .webp.';
+
+  @override
+  String get chatAttachmentUtf8Required =>
+      'El adjunto debe ser texto UTF-8 válido.';
+
+  @override
+  String get chatAttachmentReadFailed =>
+      'No se pudo leer el archivo seleccionado.';
+
+  @override
+  String get conversationListLoadFailed =>
+      'No se pudieron cargar los chats ahora.';
+
+  @override
+  String get conversationListCreateFailed =>
+      'No se pudo iniciar un chat nuevo ahora.';
+
+  @override
+  String get conversationListSearchFailed =>
+      'No se pudieron buscar chats ahora.';
+
+  @override
+  String get voiceErrorAudioSessionStartFailed =>
+      'No se pudo iniciar la sesión de audio de la llamada de voz.';
+
+  @override
+  String get voiceErrorPlayRexVoiceFailed =>
+      'No se pudo reproducir la voz de Rex para esta respuesta.';
+
+  @override
+  String get voiceErrorStreamVoiceAudioFailed =>
+      'No se pudo transmitir el audio de voz.';
+
+  @override
+  String get voiceErrorCaptureVoiceAudioFailed =>
+      'No se pudo capturar el audio de voz.';
+
+  @override
+  String get voiceErrorActiveCallFailed => 'La llamada de voz activa falló.';
+
+  @override
+  String get voiceErrorNativeSessionFailed =>
+      'La sesión de voz nativa de iOS falló.';
+
+  @override
+  String get voiceErrorAssistantStreamFailed =>
+      'El flujo de voz del asistente falló.';
+
+  @override
+  String get voiceErrorAssistantStreamDisconnected =>
+      'Se desconectó el flujo de voz del asistente. Prueba la voz de nuevo.';
+
+  @override
+  String get voiceErrorOpenAssistantStreamFailed =>
+      'No se pudo abrir el flujo de voz del asistente.';
+
+  @override
+  String get voiceErrorStillDidNotHear =>
+      'Todavía no escuché nada. Toca Probar de nuevo cuando estés listo para usar la voz.';
+
+  @override
+  String get voiceErrorStuckThinkingNative =>
+      'Rex se quedó pensando, así que reinicié el flujo de voz nativo. Inténtalo de nuevo.';
+
+  @override
+  String get voiceErrorStuckThinking =>
+      'Rex se quedó pensando, así que reinicié el flujo de voz. Inténtalo de nuevo.';
+
+  @override
+  String get voiceErrorPreviousResponseInProgress =>
+      'Rex está terminando la respuesta anterior. Inténtalo de nuevo cuando termine.';
+
+  @override
+  String get voiceErrorMicPermanentlyDenied =>
+      'El permiso del micrófono está bloqueado. Actívalo en Ajustes de iOS > Privacidad y seguridad > Micrófono para llamar a Rex.';
+
+  @override
+  String get voiceErrorMicRestricted =>
+      'El acceso al micrófono está restringido en este dispositivo.';
+
+  @override
+  String get voiceErrorMicDenied =>
+      'Se requiere permiso del micrófono para llamar a Rex. Toca Probar de nuevo para solicitar acceso, o actívalo en Ajustes de iOS > Privacidad y seguridad > Micrófono.';
+
+  @override
+  String get voiceErrorBackgroundMicRestart =>
+      'El asistente no pudo reiniciar el micrófono en segundo plano. Abre el asistente para continuar.';
 }

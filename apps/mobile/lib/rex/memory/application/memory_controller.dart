@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clarity/core/l10n/app_locale.dart';
 import 'package:clarity/rex/memory/data/memory_api.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 

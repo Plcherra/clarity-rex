@@ -33,7 +33,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     } on Object catch (error) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: _memoryErrorMessage(error, _MemoryOperation.edit),
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.edit),
       );
       return false;
     }
@@ -69,7 +69,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
       state = state.copyWith(
         memories: previousMemories,
         isSaving: false,
-        errorMessage: _memoryErrorMessage(error, _MemoryOperation.archive),
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.archive),
       );
       return false;
     }
@@ -105,7 +105,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     } on Object catch (error) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: _memoryErrorMessage(error, _MemoryOperation.edit),
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.edit),
       );
       return false;
     }
@@ -139,7 +139,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     } on Object catch (error) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: _memoryErrorMessage(error, _MemoryOperation.edit),
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.edit),
       );
       return false;
     }
@@ -175,7 +175,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     } on Object catch (error) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: _memoryErrorMessage(error, _MemoryOperation.edit),
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.edit),
       );
       return false;
     }
@@ -209,7 +209,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     } on Object catch (error) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: _memoryErrorMessage(error, _MemoryOperation.edit),
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.edit),
       );
       return false;
     }
@@ -241,7 +241,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     } on Object catch (error) {
       state = state.copyWith(
         isSaving: false,
-        errorMessage: _memoryErrorMessage(error, _MemoryOperation.archive),
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.archive),
       );
       return false;
     }

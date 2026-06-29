@@ -66,7 +66,7 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
               ),
             );
           }
-          if (_controller.errorMessage != null) {
+          if (_controller.loadFailed) {
             return Center(child: Text(l10n.usageAdminUserLoadFailed));
           }
 

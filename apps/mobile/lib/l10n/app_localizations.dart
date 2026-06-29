@@ -4939,6 +4939,543 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load usage right now.'**
   String get usageSummaryLoadFailed;
+
+  /// No description provided for @memoryErrorSignInAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again to manage saved information.'**
+  String get memoryErrorSignInAgain;
+
+  /// No description provided for @memoryErrorNoLongerAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'That memory is no longer available.'**
+  String get memoryErrorNoLongerAvailable;
+
+  /// No description provided for @memoryErrorEditValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'That memory change could not be saved. Check the fields and try again.'**
+  String get memoryErrorEditValidation;
+
+  /// No description provided for @memoryErrorArchiveRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'That memory could not be archived. Refresh Memory and try again.'**
+  String get memoryErrorArchiveRefresh;
+
+  /// No description provided for @memoryErrorLoadRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load saved information. Refresh and try again.'**
+  String get memoryErrorLoadRefresh;
+
+  /// No description provided for @memoryErrorLoadConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load saved information. Check your connection and try again.'**
+  String get memoryErrorLoadConnection;
+
+  /// No description provided for @memoryErrorUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update this memory. Please try again.'**
+  String get memoryErrorUpdateFailed;
+
+  /// No description provided for @memoryErrorArchiveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not archive this memory. Please try again.'**
+  String get memoryErrorArchiveFailed;
+
+  /// No description provided for @serviceErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get serviceErrorGeneric;
+
+  /// No description provided for @serviceErrorSignInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in again to continue.'**
+  String get serviceErrorSignInRequired;
+
+  /// No description provided for @serviceErrorFetchGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load data right now.'**
+  String get serviceErrorFetchGeneric;
+
+  /// No description provided for @serviceErrorCreateGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save changes right now.'**
+  String get serviceErrorCreateGeneric;
+
+  /// No description provided for @serviceErrorUpdateGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update right now.'**
+  String get serviceErrorUpdateGeneric;
+
+  /// No description provided for @serviceErrorDeleteGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete right now.'**
+  String get serviceErrorDeleteGeneric;
+
+  /// No description provided for @serviceErrorFetchAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load accounts.'**
+  String get serviceErrorFetchAccounts;
+
+  /// No description provided for @serviceErrorCreateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create account.'**
+  String get serviceErrorCreateAccount;
+
+  /// No description provided for @serviceErrorUpdateAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update account.'**
+  String get serviceErrorUpdateAccount;
+
+  /// No description provided for @serviceErrorDeleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete account.'**
+  String get serviceErrorDeleteAccount;
+
+  /// No description provided for @serviceErrorFetchStatementImports.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load statement imports.'**
+  String get serviceErrorFetchStatementImports;
+
+  /// No description provided for @serviceErrorSaveStatementImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save statement import.'**
+  String get serviceErrorSaveStatementImport;
+
+  /// No description provided for @serviceErrorDeleteStatementImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete statement import.'**
+  String get serviceErrorDeleteStatementImport;
+
+  /// No description provided for @serviceErrorFetchTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load transactions.'**
+  String get serviceErrorFetchTransactions;
+
+  /// No description provided for @serviceErrorCreateTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create transaction.'**
+  String get serviceErrorCreateTransaction;
+
+  /// No description provided for @serviceErrorCreateTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create transactions.'**
+  String get serviceErrorCreateTransactions;
+
+  /// No description provided for @serviceErrorUpdateTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update transaction.'**
+  String get serviceErrorUpdateTransaction;
+
+  /// No description provided for @serviceErrorUpdateTransactionCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update transaction categories.'**
+  String get serviceErrorUpdateTransactionCategories;
+
+  /// No description provided for @serviceErrorDeleteTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete transaction.'**
+  String get serviceErrorDeleteTransaction;
+
+  /// No description provided for @serviceErrorDeleteCsvImportTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete CSV import transactions.'**
+  String get serviceErrorDeleteCsvImportTransactions;
+
+  /// No description provided for @serviceErrorDeleteAccountTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete account transactions for that date range.'**
+  String get serviceErrorDeleteAccountTransactions;
+
+  /// No description provided for @serviceErrorFetchBudgets.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load budgets.'**
+  String get serviceErrorFetchBudgets;
+
+  /// No description provided for @serviceErrorCreateBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create budget.'**
+  String get serviceErrorCreateBudget;
+
+  /// No description provided for @serviceErrorUpdateBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update budget.'**
+  String get serviceErrorUpdateBudget;
+
+  /// No description provided for @serviceErrorUpdateBudgetCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update budget categories.'**
+  String get serviceErrorUpdateBudgetCategories;
+
+  /// No description provided for @serviceErrorDeleteBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete budget.'**
+  String get serviceErrorDeleteBudget;
+
+  /// No description provided for @serviceErrorFetchCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load categories.'**
+  String get serviceErrorFetchCategories;
+
+  /// No description provided for @serviceErrorCreateCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create category.'**
+  String get serviceErrorCreateCategory;
+
+  /// No description provided for @serviceErrorUpdateCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update category.'**
+  String get serviceErrorUpdateCategory;
+
+  /// No description provided for @serviceErrorDeleteCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete category.'**
+  String get serviceErrorDeleteCategory;
+
+  /// No description provided for @serviceErrorFetchMerchantCategoryRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load merchant category rules.'**
+  String get serviceErrorFetchMerchantCategoryRules;
+
+  /// No description provided for @serviceErrorSaveMerchantCategoryRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save merchant category rule.'**
+  String get serviceErrorSaveMerchantCategoryRule;
+
+  /// No description provided for @serviceErrorUpdateMerchantCategoryRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update merchant category rules.'**
+  String get serviceErrorUpdateMerchantCategoryRules;
+
+  /// No description provided for @serviceErrorUpdateMerchantCategoryRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update merchant category rule.'**
+  String get serviceErrorUpdateMerchantCategoryRule;
+
+  /// No description provided for @serviceErrorDeleteMerchantCategoryRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete merchant category rule.'**
+  String get serviceErrorDeleteMerchantCategoryRule;
+
+  /// No description provided for @serviceErrorRecordAuditEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not record audit event.'**
+  String get serviceErrorRecordAuditEvent;
+
+  /// No description provided for @serviceErrorFetchAuditEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load audit events.'**
+  String get serviceErrorFetchAuditEvents;
+
+  /// No description provided for @plaidLinkStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start bank connection.'**
+  String get plaidLinkStartFailed;
+
+  /// No description provided for @plaidLinkSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save bank connection.'**
+  String get plaidLinkSaveFailed;
+
+  /// No description provided for @plaidLinkParseFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not parse bank connection.'**
+  String get plaidLinkParseFailed;
+
+  /// No description provided for @plaidLinkConfigMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank connection is not configured yet.'**
+  String get plaidLinkConfigMissing;
+
+  /// No description provided for @plaidLinkCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank connection was cancelled.'**
+  String get plaidLinkCancelled;
+
+  /// No description provided for @plaidLinkGenericFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect this bank right now.'**
+  String get plaidLinkGenericFailed;
+
+  /// No description provided for @plaidAccountNoConnectedBank.
+  ///
+  /// In en, this message translates to:
+  /// **'No connected bank to refresh.'**
+  String get plaidAccountNoConnectedBank;
+
+  /// No description provided for @plaidAccountParseStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read bank connection status.'**
+  String get plaidAccountParseStatusFailed;
+
+  /// No description provided for @plaidAccountGenericFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update this bank connection right now.'**
+  String get plaidAccountGenericFailed;
+
+  /// No description provided for @plaidRefreshAccountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 account} other{{count} accounts}}'**
+  String plaidRefreshAccountLabel(int count);
+
+  /// No description provided for @plaidRefreshWithTransactionUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts refreshed: {accountLabel}, {updateCount, plural, =1{1 transaction update} other{{updateCount} transaction updates}}.'**
+  String plaidRefreshWithTransactionUpdates(
+    String accountLabel,
+    int updateCount,
+  );
+
+  /// No description provided for @plaidRefreshBalancesOnlyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts refreshed: {accountLabel}. Balances updated. No new transactions yet — Plaid will sync on its schedule (on-demand transaction pull is not enabled on this Plaid plan).'**
+  String plaidRefreshBalancesOnlyUnavailable(String accountLabel);
+
+  /// No description provided for @plaidRefreshBalancesOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts refreshed: {accountLabel}. Balances updated; no new transactions since last sync.'**
+  String plaidRefreshBalancesOnly(String accountLabel);
+
+  /// No description provided for @chatErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach Clarity. Check your connection and try again.'**
+  String get chatErrorNetwork;
+
+  /// No description provided for @chatErrorTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'That took too long. Try again.'**
+  String get chatErrorTimeout;
+
+  /// No description provided for @chatErrorUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not upload that attachment. Try again.'**
+  String get chatErrorUpload;
+
+  /// No description provided for @chatErrorValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'That message could not be sent. Check the attachment and try again.'**
+  String get chatErrorValidation;
+
+  /// No description provided for @chatErrorInvalidResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Clarity returned an unexpected response. Try again.'**
+  String get chatErrorInvalidResponse;
+
+  /// No description provided for @chatAttachmentTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment is too large. Maximum size is 2MB.'**
+  String get chatAttachmentTooLarge;
+
+  /// No description provided for @chatAttachmentImageTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Image is too large. Maximum size is 5MB.'**
+  String get chatAttachmentImageTooLarge;
+
+  /// No description provided for @chatAttachmentPdfTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF is too large. Maximum size is 10MB.'**
+  String get chatAttachmentPdfTooLarge;
+
+  /// No description provided for @chatAttachmentInvalidType.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a .txt, .md, .csv, .pdf, .jpg, .png, or .webp file.'**
+  String get chatAttachmentInvalidType;
+
+  /// No description provided for @chatAttachmentUtf8Required.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment must be valid UTF-8 text.'**
+  String get chatAttachmentUtf8Required;
+
+  /// No description provided for @chatAttachmentReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read selected file.'**
+  String get chatAttachmentReadFailed;
+
+  /// No description provided for @conversationListLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load chats right now.'**
+  String get conversationListLoadFailed;
+
+  /// No description provided for @conversationListCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start a new chat right now.'**
+  String get conversationListCreateFailed;
+
+  /// No description provided for @conversationListSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not search chats right now.'**
+  String get conversationListSearchFailed;
+
+  /// No description provided for @voiceErrorAudioSessionStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the voice call audio session.'**
+  String get voiceErrorAudioSessionStartFailed;
+
+  /// No description provided for @voiceErrorPlayRexVoiceFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not play Rex voice for this reply.'**
+  String get voiceErrorPlayRexVoiceFailed;
+
+  /// No description provided for @voiceErrorStreamVoiceAudioFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not stream voice audio.'**
+  String get voiceErrorStreamVoiceAudioFailed;
+
+  /// No description provided for @voiceErrorCaptureVoiceAudioFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not capture voice audio.'**
+  String get voiceErrorCaptureVoiceAudioFailed;
+
+  /// No description provided for @voiceErrorActiveCallFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Active voice call failed.'**
+  String get voiceErrorActiveCallFailed;
+
+  /// No description provided for @voiceErrorNativeSessionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Native iOS voice session failed.'**
+  String get voiceErrorNativeSessionFailed;
+
+  /// No description provided for @voiceErrorAssistantStreamFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant voice stream failed.'**
+  String get voiceErrorAssistantStreamFailed;
+
+  /// No description provided for @voiceErrorAssistantStreamDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant voice stream disconnected. Try voice again.'**
+  String get voiceErrorAssistantStreamDisconnected;
+
+  /// No description provided for @voiceErrorOpenAssistantStreamFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open Assistant voice stream.'**
+  String get voiceErrorOpenAssistantStreamFailed;
+
+  /// No description provided for @voiceErrorStillDidNotHear.
+  ///
+  /// In en, this message translates to:
+  /// **'I still did not hear anything. Tap Try again when you are ready to use voice.'**
+  String get voiceErrorStillDidNotHear;
+
+  /// No description provided for @voiceErrorStuckThinkingNative.
+  ///
+  /// In en, this message translates to:
+  /// **'Rex got stuck thinking, so I reset the native voice stream. Try again.'**
+  String get voiceErrorStuckThinkingNative;
+
+  /// No description provided for @voiceErrorStuckThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Rex got stuck thinking, so I reset the voice stream. Try again.'**
+  String get voiceErrorStuckThinking;
+
+  /// No description provided for @voiceErrorPreviousResponseInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Rex is finishing the previous response. Try again after it finishes.'**
+  String get voiceErrorPreviousResponseInProgress;
+
+  /// No description provided for @voiceErrorMicPermanentlyDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission is blocked. Enable it in iOS Settings > Privacy & Security > Microphone to call Rex.'**
+  String get voiceErrorMicPermanentlyDenied;
+
+  /// No description provided for @voiceErrorMicRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access is restricted on this device.'**
+  String get voiceErrorMicRestricted;
+
+  /// No description provided for @voiceErrorMicDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission is required to call Rex. Tap Try again to prompt access, or enable it in iOS Settings > Privacy & Security > Microphone.'**
+  String get voiceErrorMicDenied;
+
+  /// No description provided for @voiceErrorBackgroundMicRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant could not restart the microphone in the background. Open Assistant to continue.'**
+  String get voiceErrorBackgroundMicRestart;
 }
 
 class _AppLocalizationsDelegate

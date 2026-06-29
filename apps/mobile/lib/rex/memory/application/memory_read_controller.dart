@@ -71,7 +71,7 @@ mixin MemoryReadController on Notifier<MemoryState> {
     } on Object catch (error) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: _memoryErrorMessage(error, _MemoryOperation.load),
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.load),
       );
     }
   }
@@ -109,7 +109,7 @@ mixin MemoryReadController on Notifier<MemoryState> {
     } on Object catch (error) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: _memoryErrorMessage(error, _MemoryOperation.load),
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.load),
       );
     }
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/l10n/app_l10n.dart';
+import '../../../core/l10n/friendly_service_error.dart';
 import '../../../core/models/models.dart';
 import '../../plaid/application/plaid_connection_models.dart';
 import '../../plaid/application/plaid_link_service.dart';
@@ -141,7 +142,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      ).showSnackBar(SnackBar(content: Text(friendlyPlaidLinkError(context.l10n, error))));
     } on Object {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -258,6 +259,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
         (item) => item.transactionsRefreshUnavailable,
       );
       final message = buildPlaidRefreshMessage(
+        context.l10n,
         accountCount: accountCount,
         transactionUpdates: transactionCount,
         anyRefreshUnavailable: anyRefreshUnavailable,
@@ -271,7 +273,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      ).showSnackBar(SnackBar(content: Text(friendlyPlaidLinkError(context.l10n, error))));
     } on Object {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -300,6 +302,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       final summary = await _resyncItem(itemId);
       if (!context.mounted) return;
       final message = buildPlaidRefreshMessage(
+        context.l10n,
         accountCount: summary.accountsSynced,
         transactionUpdates: summary.transactionUpdates,
         anyRefreshUnavailable: summary.transactionsRefreshUnavailable,
@@ -313,7 +316,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      ).showSnackBar(SnackBar(content: Text(friendlyServiceError(context.l10n, error))));
     } on Object {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -410,7 +413,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      ).showSnackBar(SnackBar(content: Text(friendlyServiceError(context.l10n, error))));
     } on Object {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

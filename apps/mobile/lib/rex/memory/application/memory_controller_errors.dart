@@ -2,31 +2,36 @@ part of 'memory_controller.dart';
 
 enum _MemoryOperation { load, edit, archive }
 
-String _memoryErrorMessage(Object error, _MemoryOperation operation) {
+String _memoryErrorMessage(
+  Ref ref,
+  Object error,
+  _MemoryOperation operation,
+) {
+  final l10n = lookupForLocale(ref.read(localeControllerProvider).locale);
   final statusCode = error is MemoryApiException ? error.statusCode : null;
   if (statusCode == 401 || statusCode == 403) {
-    return 'Please sign in again to manage saved information.';
+    return l10n.memoryErrorSignInAgain;
   }
   if (statusCode == 404) {
-    return 'That memory is no longer available.';
+    return l10n.memoryErrorNoLongerAvailable;
   }
   if (statusCode != null && statusCode >= 400 && statusCode < 500) {
     switch (operation) {
       case _MemoryOperation.edit:
-        return 'That memory change could not be saved. Check the fields and try again.';
+        return l10n.memoryErrorEditValidation;
       case _MemoryOperation.archive:
-        return 'That memory could not be archived. Refresh Memory and try again.';
+        return l10n.memoryErrorArchiveRefresh;
       case _MemoryOperation.load:
-        return 'Could not load saved information. Refresh and try again.';
+        return l10n.memoryErrorLoadRefresh;
     }
   }
 
   switch (operation) {
     case _MemoryOperation.load:
-      return 'Could not load saved information. Check your connection and try again.';
+      return l10n.memoryErrorLoadConnection;
     case _MemoryOperation.edit:
-      return 'Could not update this memory. Please try again.';
+      return l10n.memoryErrorUpdateFailed;
     case _MemoryOperation.archive:
-      return 'Could not archive this memory. Please try again.';
+      return l10n.memoryErrorArchiveFailed;
   }
 }

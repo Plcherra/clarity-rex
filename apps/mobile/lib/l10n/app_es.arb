@@ -1843,5 +1843,125 @@
   },
   "usageAdminLoadFailed": "Could not load owner usage right now.",
   "usageAdminUserLoadFailed": "Could not load user usage history.",
-  "usageSummaryLoadFailed": "Could not load usage right now."
+  "usageSummaryLoadFailed": "Could not load usage right now.",
+  "memoryErrorSignInAgain": "Please sign in again to manage saved information.",
+  "memoryErrorNoLongerAvailable": "That memory is no longer available.",
+  "memoryErrorEditValidation": "That memory change could not be saved. Check the fields and try again.",
+  "memoryErrorArchiveRefresh": "That memory could not be archived. Refresh Memory and try again.",
+  "memoryErrorLoadRefresh": "Could not load saved information. Refresh and try again.",
+  "memoryErrorLoadConnection": "Could not load saved information. Check your connection and try again.",
+  "memoryErrorUpdateFailed": "Could not update this memory. Please try again.",
+  "memoryErrorArchiveFailed": "Could not archive this memory. Please try again.",
+  "serviceErrorGeneric": "Algo salió mal. Inténtalo de nuevo.",
+  "serviceErrorSignInRequired": "Inicia sesión de nuevo para continuar.",
+  "serviceErrorFetchGeneric": "No se pudieron cargar los datos ahora.",
+  "serviceErrorCreateGeneric": "No se pudieron guardar los cambios ahora.",
+  "serviceErrorUpdateGeneric": "No se pudo actualizar ahora.",
+  "serviceErrorDeleteGeneric": "No se pudo eliminar ahora.",
+  "serviceErrorFetchAccounts": "No se pudieron cargar las cuentas.",
+  "serviceErrorCreateAccount": "No se pudo crear la cuenta.",
+  "serviceErrorUpdateAccount": "No se pudo actualizar la cuenta.",
+  "serviceErrorDeleteAccount": "No se pudo eliminar la cuenta.",
+  "serviceErrorFetchStatementImports": "No se pudieron cargar las importaciones de extractos.",
+  "serviceErrorSaveStatementImport": "No se pudo guardar la importación del extracto.",
+  "serviceErrorDeleteStatementImport": "No se pudo eliminar la importación del extracto.",
+  "serviceErrorFetchTransactions": "No se pudieron cargar las transacciones.",
+  "serviceErrorCreateTransaction": "No se pudo crear la transacción.",
+  "serviceErrorCreateTransactions": "No se pudieron crear las transacciones.",
+  "serviceErrorUpdateTransaction": "No se pudo actualizar la transacción.",
+  "serviceErrorUpdateTransactionCategories": "No se pudieron actualizar las categorías de transacciones.",
+  "serviceErrorDeleteTransaction": "No se pudo eliminar la transacción.",
+  "serviceErrorDeleteCsvImportTransactions": "No se pudieron eliminar las transacciones importadas del CSV.",
+  "serviceErrorDeleteAccountTransactions": "No se pudieron eliminar las transacciones de la cuenta en ese rango de fechas.",
+  "serviceErrorFetchBudgets": "No se pudieron cargar los presupuestos.",
+  "serviceErrorCreateBudget": "No se pudo crear el presupuesto.",
+  "serviceErrorUpdateBudget": "No se pudo actualizar el presupuesto.",
+  "serviceErrorUpdateBudgetCategories": "No se pudieron actualizar las categorías del presupuesto.",
+  "serviceErrorDeleteBudget": "No se pudo eliminar el presupuesto.",
+  "serviceErrorFetchCategories": "No se pudieron cargar las categorías.",
+  "serviceErrorCreateCategory": "No se pudo crear la categoría.",
+  "serviceErrorUpdateCategory": "No se pudo actualizar la categoría.",
+  "serviceErrorDeleteCategory": "No se pudo eliminar la categoría.",
+  "serviceErrorFetchMerchantCategoryRules": "No se pudieron cargar las reglas de categoría por comercio.",
+  "serviceErrorSaveMerchantCategoryRule": "No se pudo guardar la regla de categoría por comercio.",
+  "serviceErrorUpdateMerchantCategoryRules": "No se pudieron actualizar las reglas de categoría por comercio.",
+  "serviceErrorUpdateMerchantCategoryRule": "No se pudo actualizar la regla de categoría por comercio.",
+  "serviceErrorDeleteMerchantCategoryRule": "No se pudo eliminar la regla de categoría por comercio.",
+  "serviceErrorRecordAuditEvent": "No se pudo registrar el evento de auditoría.",
+  "serviceErrorFetchAuditEvents": "No se pudieron cargar los eventos de auditoría.",
+  "plaidLinkStartFailed": "No se pudo iniciar la conexión bancaria.",
+  "plaidLinkSaveFailed": "No se pudo guardar la conexión bancaria.",
+  "plaidLinkParseFailed": "No se pudo interpretar la conexión bancaria.",
+  "plaidLinkConfigMissing": "La conexión bancaria aún no está configurada.",
+  "plaidLinkCancelled": "Se canceló la conexión bancaria.",
+  "plaidLinkGenericFailed": "No se pudo conectar este banco ahora.",
+  "plaidAccountNoConnectedBank": "No hay banco conectado para actualizar.",
+  "plaidAccountParseStatusFailed": "No se pudo leer el estado de la conexión bancaria.",
+  "plaidAccountGenericFailed": "No se pudo actualizar esta conexión bancaria ahora.",
+  "plaidRefreshAccountLabel": "{count, plural, =1{1 cuenta} other{{count} cuentas}}",
+  "@plaidRefreshAccountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plaidRefreshWithTransactionUpdates": "Cuentas actualizadas: {accountLabel}, {updateCount, plural, =1{1 actualización de transacción} other{{updateCount} actualizaciones de transacciones}}.",
+  "@plaidRefreshWithTransactionUpdates": {
+    "placeholders": {
+      "accountLabel": {
+        "type": "String"
+      },
+      "updateCount": {
+        "type": "int"
+      }
+    }
+  },
+  "plaidRefreshBalancesOnlyUnavailable": "Cuentas actualizadas: {accountLabel}. Saldos actualizados. Aún no hay transacciones nuevas — Plaid sincronizará según su programación (la extracción de transacciones bajo demanda no está habilitada en este plan de Plaid).",
+  "@plaidRefreshBalancesOnlyUnavailable": {
+    "placeholders": {
+      "accountLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "plaidRefreshBalancesOnly": "Cuentas actualizadas: {accountLabel}. Saldos actualizados; no hay transacciones nuevas desde la última sincronización.",
+  "@plaidRefreshBalancesOnly": {
+    "placeholders": {
+      "accountLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "chatErrorNetwork": "No se pudo contactar con Clarity. Comprueba tu conexión e inténtalo de nuevo.",
+  "chatErrorTimeout": "Tardó demasiado. Inténtalo de nuevo.",
+  "chatErrorUpload": "No se pudo subir el adjunto. Inténtalo de nuevo.",
+  "chatErrorValidation": "No se pudo enviar ese mensaje. Comprueba el adjunto e inténtalo de nuevo.",
+  "chatErrorInvalidResponse": "Clarity devolvió una respuesta inesperada. Inténtalo de nuevo.",
+  "chatAttachmentTooLarge": "El adjunto es demasiado grande. El tamaño máximo es 2 MB.",
+  "chatAttachmentImageTooLarge": "La imagen es demasiado grande. El tamaño máximo es 5 MB.",
+  "chatAttachmentPdfTooLarge": "El PDF es demasiado grande. El tamaño máximo es 10 MB.",
+  "chatAttachmentInvalidType": "Adjunta un archivo .txt, .md, .csv, .pdf, .jpg, .png o .webp.",
+  "chatAttachmentUtf8Required": "El adjunto debe ser texto UTF-8 válido.",
+  "chatAttachmentReadFailed": "No se pudo leer el archivo seleccionado.",
+  "conversationListLoadFailed": "No se pudieron cargar los chats ahora.",
+  "conversationListCreateFailed": "No se pudo iniciar un chat nuevo ahora.",
+  "conversationListSearchFailed": "No se pudieron buscar chats ahora.",
+  "voiceErrorAudioSessionStartFailed": "No se pudo iniciar la sesión de audio de la llamada de voz.",
+  "voiceErrorPlayRexVoiceFailed": "No se pudo reproducir la voz de Rex para esta respuesta.",
+  "voiceErrorStreamVoiceAudioFailed": "No se pudo transmitir el audio de voz.",
+  "voiceErrorCaptureVoiceAudioFailed": "No se pudo capturar el audio de voz.",
+  "voiceErrorActiveCallFailed": "La llamada de voz activa falló.",
+  "voiceErrorNativeSessionFailed": "La sesión de voz nativa de iOS falló.",
+  "voiceErrorAssistantStreamFailed": "El flujo de voz del asistente falló.",
+  "voiceErrorAssistantStreamDisconnected": "Se desconectó el flujo de voz del asistente. Prueba la voz de nuevo.",
+  "voiceErrorOpenAssistantStreamFailed": "No se pudo abrir el flujo de voz del asistente.",
+  "voiceErrorStillDidNotHear": "Todavía no escuché nada. Toca Probar de nuevo cuando estés listo para usar la voz.",
+  "voiceErrorStuckThinkingNative": "Rex se quedó pensando, así que reinicié el flujo de voz nativo. Inténtalo de nuevo.",
+  "voiceErrorStuckThinking": "Rex se quedó pensando, así que reinicié el flujo de voz. Inténtalo de nuevo.",
+  "voiceErrorPreviousResponseInProgress": "Rex está terminando la respuesta anterior. Inténtalo de nuevo cuando termine.",
+  "voiceErrorMicPermanentlyDenied": "El permiso del micrófono está bloqueado. Actívalo en Ajustes de iOS > Privacidad y seguridad > Micrófono para llamar a Rex.",
+  "voiceErrorMicRestricted": "El acceso al micrófono está restringido en este dispositivo.",
+  "voiceErrorMicDenied": "Se requiere permiso del micrófono para llamar a Rex. Toca Probar de nuevo para solicitar acceso, o actívalo en Ajustes de iOS > Privacidad y seguridad > Micrófono.",
+  "voiceErrorBackgroundMicRestart": "El asistente no pudo reiniciar el micrófono en segundo plano. Abre el asistente para continuar."
 }

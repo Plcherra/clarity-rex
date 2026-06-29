@@ -5,7 +5,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/core/l10n/app_locale.dart';
+import 'package:clarity/core/l10n/app_localizations_lookup.dart';
+import 'package:clarity/core/l10n/friendly_service_error.dart';
 import 'package:clarity/features/profile/application/locale_controller.dart';
+import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
@@ -34,6 +37,7 @@ part 'voice_call_controller_native.dart';
 part 'voice_call_controller_lifecycle.dart';
 part 'voice_call_controller_streaming.dart';
 part 'voice_call_controller_timers.dart';
+part 'voice_call_controller_l10n.dart';
 part 'voice_call_controller_dependencies.dart';
 
 final voiceCallProvider = NotifierProvider<VoiceCallController, VoiceCallState>(
@@ -198,7 +202,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return false;
     }
     if (permissionDecision != MicrophonePermissionDecision.granted) {
-      fail(_permissionMessage(permissionDecision));
+      fail(permissionMessage(permissionDecision));
       _isStartingCall = false;
       return false;
     }
@@ -218,7 +222,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       await _audioSessionService.configureForVoiceTurn();
       await _backgroundVoiceService.start();
     } on Object {
-      fail('Could not start the voice call audio session.');
+      failL10n((l10n) => l10n.voiceErrorAudioSessionStartFailed);
       _isStartingCall = false;
       return false;
     }

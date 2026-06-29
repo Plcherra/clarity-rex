@@ -6,6 +6,7 @@ import '../features/accounts/data/account_service.dart';
 import '../features/accounts/data/account_statement_import_service.dart';
 import '../features/accounts/data/plaid_account_service.dart';
 import '../features/budgets/application/budget_cleanup_service.dart';
+import '../core/l10n/app_localizations_lookup.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/application/auth_service.dart';
 import '../features/budgets/application/budget_workflow_service.dart';
@@ -94,8 +95,10 @@ final class AppComposition {
         accountStatementImportService: accountStatementImportService,
         categoryReadModel: categoryReadModel,
       );
-  final ImportJobStatusService importJobStatusService =
-      ImportJobStatusService();
+  late final ImportJobStatusService importJobStatusService =
+      ImportJobStatusService(
+        l10n: () => lookupForLocale(localeController.locale),
+      );
   final ThemeModeController themeModeController;
   final LocaleController localeController;
 
@@ -106,6 +109,7 @@ final class AppComposition {
   late final AuthController authController = AuthController(
     authService: authService,
     initialAuthenticated: _initialAuthenticated,
+    l10n: () => lookupForLocale(localeController.locale),
   );
 
   late final ProfileController profileController = ProfileController(

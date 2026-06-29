@@ -62,7 +62,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         if (_isCurrentCall(generation)) {
           await _fallbackToCloudVoiceCapture(
             generation,
-            'Could not open Assistant voice stream.',
+            voiceL10n.voiceErrorOpenAssistantStreamFailed,
           );
         }
         return;
@@ -113,7 +113,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     } on Object {
       if (_isCurrentCall(generation)) {
         if (_isAppInForeground) {
-          fail('Could not stream voice audio.');
+          failL10n((l10n) => l10n.voiceErrorStreamVoiceAudioFailed);
         } else {
           _deferBackgroundStreamingRestart(session);
         }
@@ -154,7 +154,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
       return;
     }
     if (!ref.read(cloudVoiceEnabledProvider)) {
-      fail(streamError);
+      failVoiceApi(StreamingVoiceApiException(streamError));
       return;
     }
     await _captureNextUtterance(generation);
@@ -168,8 +168,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     _cancelThinkingTimeout();
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
-      errorMessage:
-          'Assistant could not restart the microphone in the background. Open Assistant to continue.',
+      errorMessage: voiceL10n.voiceErrorBackgroundMicRestart,
     );
   }
 
@@ -202,7 +201,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     } on Object {
       unawaited(_stopInterimTranscription());
       if (_isCurrentCall(generation)) {
-        fail('Could not capture voice audio.');
+        failL10n((l10n) => l10n.voiceErrorCaptureVoiceAudioFailed);
       }
       return;
     }
@@ -275,7 +274,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         onError: (message) {
           if (_isCurrentCall(generation)) {
             _stopBargeInMonitoring();
-            fail(message);
+            failVoiceApi(CloudVoiceApiException(message));
           }
         },
       );
@@ -287,11 +286,11 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
           );
           return;
         }
-        fail(error.message);
+        failVoiceApi(error);
       }
     } on Object {
       if (_isCurrentCall(generation)) {
-        fail('Active voice call failed.');
+        failL10n((l10n) => l10n.voiceErrorActiveCallFailed);
       }
     }
   }
@@ -343,7 +342,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         onError: (message) {
           _stopBargeInMonitoring();
           if (isActiveSession()) {
-            fail(message);
+            failVoiceApi(CloudVoiceApiException(message));
           }
         },
       );
@@ -485,17 +484,22 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
               );
               break;
             }
-            fail(event.detail ?? 'Assistant voice stream failed.');
+            final detail = event.detail?.trim();
+            if (detail == null || detail.isEmpty) {
+              failL10n((l10n) => l10n.voiceErrorAssistantStreamFailed);
+            } else {
+              failVoiceApi(StreamingVoiceApiException(detail));
+            }
             return;
         }
       }
     } on StreamingVoiceApiException catch (error) {
       if (isActiveSession()) {
-        fail(error.message);
+        failVoiceApi(error);
       }
     } on Object {
       if (isActiveSession()) {
-        fail('Assistant voice stream failed.');
+        failL10n((l10n) => l10n.voiceErrorAssistantStreamFailed);
       }
     } finally {
       if (identical(_activeStreamingSession, session)) {
@@ -503,7 +507,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         _activeStreamingSession = null;
         _activeStreamingEventsTask = null;
         if (!streamEndedCleanly && state.isCallActive) {
-          fail('Assistant voice stream disconnected. Try voice again.');
+          failL10n((l10n) => l10n.voiceErrorAssistantStreamDisconnected);
         }
       }
     }
@@ -528,7 +532,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         return true;
       }
       if (response.audioBase64.isEmpty) {
-        fail('Could not play Rex voice for this reply.');
+        failL10n((l10n) => l10n.voiceErrorPlayRexVoiceFailed);
         return true;
       }
 
@@ -547,19 +551,19 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         onError: (message) {
           if (_isCurrentCall(generation)) {
             _stopBargeInMonitoring();
-            fail(message);
+            failVoiceApi(CloudVoiceApiException(message));
           }
         },
       );
       return true;
     } on CloudVoiceApiException catch (error) {
       if (_isCurrentCall(generation)) {
-        fail(error.message);
+        failVoiceApi(error);
       }
       return true;
     } on Object {
       if (_isCurrentCall(generation)) {
-        fail('Could not play Rex voice for this reply.');
+        failL10n((l10n) => l10n.voiceErrorPlayRexVoiceFailed);
       }
       return true;
     }

@@ -1,10 +1,10 @@
 import 'package:clarity/features/auth/application/auth_error_messages.dart';
-import 'package:clarity/l10n/app_localizations_en.dart';
+import 'package:clarity/core/l10n/app_localizations_lookup.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
-  final l10n = AppLocalizationsEn();
+  final l10n = lookupEnglishLocalizationsForTests();
 
   test('invalid login credentials are not shown as MFA errors', () {
     expect(

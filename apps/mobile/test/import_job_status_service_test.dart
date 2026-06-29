@@ -30,7 +30,7 @@ CsvImportResult _importResult({
 
 void main() {
   test('failed import progress remains visible until dismissed', () {
-    final service = ImportJobStatusService();
+    final service = importJobStatusServiceForTests();
     var notifications = 0;
 
     service.applyCsvImportProgress(
@@ -56,7 +56,7 @@ void main() {
   });
 
   test('AI outage with fully categorized fallback is reported as success', () {
-    final service = ImportJobStatusService();
+    final service = importJobStatusServiceForTests();
 
     service.applyCsvImportProgress(
       CsvImportProgress.complete(
@@ -75,7 +75,7 @@ void main() {
   });
 
   test('miscellaneous categories are reported as successful import', () {
-    final service = ImportJobStatusService();
+    final service = importJobStatusServiceForTests();
 
     service.applyCsvImportProgress(
       CsvImportProgress.complete(
@@ -99,7 +99,7 @@ void main() {
   });
 
   test('duplicate-only import does not report a failed categorization', () {
-    final service = ImportJobStatusService();
+    final service = importJobStatusServiceForTests();
 
     service.applyCsvImportProgress(
       CsvImportProgress.complete(
@@ -118,7 +118,7 @@ void main() {
   });
 
   test('local category rules are reported separately from unresolved rows', () {
-    final service = ImportJobStatusService();
+    final service = importJobStatusServiceForTests();
 
     service.applyCsvImportProgress(
       CsvImportProgress.complete(
@@ -140,7 +140,7 @@ void main() {
   });
 
   test('category update failures stay visible as errors', () {
-    final service = ImportJobStatusService();
+    final service = importJobStatusServiceForTests();
 
     service.applyCsvImportProgress(
       CsvImportProgress.complete(
@@ -172,7 +172,7 @@ void main() {
   });
 
   test('category repair result reports updated rows', () {
-    final service = ImportJobStatusService();
+    final service = importJobStatusServiceForTests();
 
     service.startImportRepair(notifyStatusChanged: () {});
     service.applyImportRepairResult(
@@ -198,7 +198,7 @@ void main() {
   });
 
   test('category repair success remains visible as a repair summary', () {
-    final service = ImportJobStatusService();
+    final service = importJobStatusServiceForTests();
 
     service.startImportRepair(notifyStatusChanged: () {});
     service.applyImportRepairResult(

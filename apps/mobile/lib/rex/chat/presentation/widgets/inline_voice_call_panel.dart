@@ -306,7 +306,16 @@ class _VoiceWaveIndicatorState extends State<_VoiceWaveIndicator>
 }
 
 String voiceFailureMessage(AppLocalizations l10n, String? error) {
-  final message = error?.toLowerCase() ?? '';
+  final message = error?.trim();
+  if (message == null || message.isEmpty) {
+    return l10n.voiceFailurePausedDefault;
+  }
+  final remapped = _remapLegacyEnglishVoiceFailure(l10n, message);
+  return remapped ?? message;
+}
+
+String? _remapLegacyEnglishVoiceFailure(AppLocalizations l10n, String error) {
+  final message = error.toLowerCase();
   if (message.contains('auth') ||
       message.contains('token') ||
       message.contains('session') ||
@@ -345,5 +354,5 @@ String voiceFailureMessage(AppLocalizations l10n, String? error) {
       message.contains('play audio')) {
     return l10n.voiceFailurePlaybackFailed;
   }
-  return l10n.voiceFailurePausedDefault;
+  return null;
 }

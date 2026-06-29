@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clarity/core/l10n/app_localizations_lookup.dart';
+import 'package:clarity/core/l10n/friendly_service_error.dart';
+import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/actions/data/clarity_actions_api.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
@@ -26,6 +29,13 @@ final chatProvider = NotifierProvider<ChatController, ChatState>(
 
 class ChatController extends Notifier<ChatState> {
   int _streamGeneration = 0;
+
+  String _localizedError(Object error) {
+    return friendlyServiceError(
+      lookupForLocale(ref.read(localeControllerProvider).locale),
+      error,
+    );
+  }
 
   @override
   ChatState build() => const ChatState();
@@ -94,13 +104,13 @@ class ChatController extends Notifier<ChatState> {
       _updateClarityAction(
         action.id,
         (current) =>
-            current.copyWith(status: 'failed', errorMessage: error.message),
+            current.copyWith(status: 'failed', errorMessage: _localizedError(error)),
       );
     } on Object catch (error) {
       _updateClarityAction(
         action.id,
         (current) =>
-            current.copyWith(status: 'failed', errorMessage: error.toString()),
+            current.copyWith(status: 'failed', errorMessage: _localizedError(error)),
       );
     }
   }
@@ -172,7 +182,7 @@ class ChatController extends Notifier<ChatState> {
         clearError: true,
       );
     } on Object catch (error) {
-      state = state.copyWith(isLoading: false, errorMessage: error.toString());
+      state = state.copyWith(isLoading: false, errorMessage: _localizedError(error));
     }
   }
 
@@ -208,7 +218,10 @@ class ChatController extends Notifier<ChatState> {
     }
 
     if (attachment != null) {
-      final attachmentError = await validateChatAttachmentFile(attachment);
+      final attachmentError = await validateChatAttachmentFile(
+        attachment,
+        l10n: lookupForLocale(ref.read(localeControllerProvider).locale),
+      );
       if (attachmentError != null) {
         state = state.copyWith(errorMessage: attachmentError, isLoading: false);
         return null;
@@ -275,10 +288,10 @@ class ChatController extends Notifier<ChatState> {
       return assistantTextFromApiResponse(result) ??
           latestAssistantContent(state.messages);
     } on ChatApiException catch (error) {
-      state = state.copyWith(isLoading: false, errorMessage: error.message);
+      state = state.copyWith(isLoading: false, errorMessage: _localizedError(error));
       return null;
     } on Object catch (error) {
-      state = state.copyWith(isLoading: false, errorMessage: error.toString());
+      state = state.copyWith(isLoading: false, errorMessage: _localizedError(error));
       return null;
     }
   }
@@ -346,7 +359,7 @@ class ChatController extends Notifier<ChatState> {
       if (generation == _streamGeneration) {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: error.message,
+          errorMessage: _localizedError(error),
           messages: _messagesWithStreamingStopped(state.messages),
         );
       }
@@ -355,7 +368,7 @@ class ChatController extends Notifier<ChatState> {
       if (generation == _streamGeneration) {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: error.toString(),
+          errorMessage: _localizedError(error),
           messages: _messagesWithStreamingStopped(state.messages),
         );
       }

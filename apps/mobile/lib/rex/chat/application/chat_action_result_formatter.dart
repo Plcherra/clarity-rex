@@ -7,10 +7,9 @@ typedef ActionResultMessageFormatter =
 
 final actionResultMessageFormatterProvider =
     Provider<ActionResultMessageFormatter>(
-  (ref) {
-    final l10n = lookupAppLocalizations(const Locale('en'));
-    return (action, result) => actionResultMessage(l10n, action, result);
-  },
+  (ref) => throw UnimplementedError(
+    'actionResultMessageFormatterProvider must be overridden in ClarityApp.',
+  ),
 );
 
 String actionResultMessage(

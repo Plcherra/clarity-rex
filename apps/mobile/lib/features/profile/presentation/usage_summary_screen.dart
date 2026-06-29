@@ -65,7 +65,7 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
               ),
             );
           }
-          if (_controller.errorMessage != null) {
+          if (_controller.loadFailed) {
             return _UsageError(
               message: l10n.usageSummaryLoadFailed,
               onRetry: _controller.load,

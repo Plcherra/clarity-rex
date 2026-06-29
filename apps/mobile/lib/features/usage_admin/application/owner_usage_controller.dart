@@ -9,13 +9,13 @@ final class OwnerUsageController extends ChangeNotifier {
   final UsageAdminApi _api;
 
   var isLoading = false;
-  String? errorMessage;
+  var loadFailed = false;
   OwnerPlatformSummary? summary;
   List<OwnerUserUsage> users = const [];
 
   Future<void> load() async {
     isLoading = true;
-    errorMessage = null;
+    loadFailed = false;
     notifyListeners();
     try {
       final results = await Future.wait([
@@ -31,7 +31,7 @@ final class OwnerUsageController extends ChangeNotifier {
       notifyListeners();
     } on Object catch (_) {
       isLoading = false;
-      errorMessage = 'Could not load owner usage right now.';
+      loadFailed = true;
       notifyListeners();
     }
   }
@@ -47,12 +47,12 @@ final class OwnerUserDetailController extends ChangeNotifier {
   final UsageAdminApi _api;
 
   var isLoading = false;
-  String? errorMessage;
+  var loadFailed = false;
   OwnerUserDailyUsage? dailyUsage;
 
   Future<void> load() async {
     isLoading = true;
-    errorMessage = null;
+    loadFailed = false;
     notifyListeners();
     try {
       dailyUsage = await _api.fetchUserDaily(user.userId);
@@ -60,7 +60,7 @@ final class OwnerUserDetailController extends ChangeNotifier {
       notifyListeners();
     } on Object catch (_) {
       isLoading = false;
-      errorMessage = 'Could not load user usage history.';
+      loadFailed = true;
       notifyListeners();
     }
   }

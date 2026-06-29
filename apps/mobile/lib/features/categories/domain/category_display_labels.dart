@@ -85,20 +85,22 @@ final class CategoryLabelResolver {
 
   static String resolve({
     required String normalizedName,
-    required String languageCode,
+    required String localeTag,
     String? fallbackName,
   }) {
     final key = normalizedName.trim().toLowerCase();
     final labels = kBuiltInCategoryDisplayLabels[key];
     if (labels != null) {
-      return labels[languageCode] ?? labels['en'] ?? fallbackName ?? normalizedName;
+      return _labelForTag(labels, localeTag) ??
+          fallbackName ??
+          normalizedName;
     }
     return fallbackName ?? normalizedName;
   }
 
   static String resolveFromCanonicalName({
     required String canonicalName,
-    required String languageCode,
+    required String localeTag,
   }) {
     final normalized = canonicalName.trim().toLowerCase().replaceAll(
       RegExp(r'[^a-z0-9]+'),
@@ -106,21 +108,35 @@ final class CategoryLabelResolver {
     ).replaceAll(RegExp(r'\s+'), ' ').trim();
     return resolve(
       normalizedName: normalized,
-      languageCode: languageCode,
+      localeTag: localeTag,
       fallbackName: canonicalName,
     );
   }
 
-  static Map<String, String> displayRenamesForLanguage(String languageCode) {
+  static Map<String, String> displayRenamesForLocaleTag(String localeTag) {
     final renames = <String, String>{};
     for (final entry in kBuiltInCategoryDisplayLabels.entries) {
       final english = entry.value['en'];
-      final localized = entry.value[languageCode] ?? english;
+      final localized = _labelForTag(entry.value, localeTag) ?? english;
       if (english == null || localized == null || english == localized) {
         continue;
       }
       renames[english.toLowerCase()] = localized;
     }
     return renames;
+  }
+
+  static String? _labelForTag(Map<String, String> labels, String localeTag) {
+    final normalizedTag = localeTag.trim();
+    if (normalizedTag.isEmpty) return null;
+    final direct = labels[normalizedTag];
+    if (direct != null) return direct;
+    final languageCode = normalizedTag.split('-').first.toLowerCase();
+    return labels[languageCode] ?? labels['en'];
+  }
+
+  @Deprecated('Use displayRenamesForLocaleTag')
+  static Map<String, String> displayRenamesForLanguage(String languageCode) {
+    return displayRenamesForLocaleTag(languageCode);
   }
 }

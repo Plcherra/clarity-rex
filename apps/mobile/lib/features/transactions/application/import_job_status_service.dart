@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/l10n/app_localizations_lookup.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../l10n/app_localizations_en.dart';
 import '../data/csv_import_service.dart';
 
 class ImportRepairSummary {
@@ -22,14 +22,21 @@ class ImportRepairSummary {
 
 class ImportJobStatusService {
   ImportJobStatusService({AppLocalizations Function()? l10n})
-    : _l10n = l10n ?? (() => AppLocalizationsEn()),
-      idleProgressMessage = (l10n ?? (() => AppLocalizationsEn()))().importUploadingTransactions,
-      importProgressMessage =
-          (l10n ?? (() => AppLocalizationsEn()))().importUploadingTransactions;
+    : _l10n = l10n ?? _throwUnboundL10n {
+    final strings = _l10n();
+    idleProgressMessage = strings.importUploadingTransactions;
+    importProgressMessage = strings.importUploadingTransactions;
+  }
+
+  static AppLocalizations Function() get _throwUnboundL10n =>
+      () => throw StateError(
+        'ImportJobStatusService requires l10n. '
+        'Pass l10n to the constructor or call bindLocalizations() first.',
+      );
 
   AppLocalizations Function() _l10n;
 
-  String idleProgressMessage;
+  late String idleProgressMessage;
 
   bool importRunning = false;
   int importProgressCompleted = 0;
@@ -351,4 +358,11 @@ class ImportJobStatusService {
       canOpenCategoryManagement: result.remainingUncategorizedCount > 0,
     );
   }
+}
+
+/// Test helper — production code should bind from [ImportJobStatusHost].
+ImportJobStatusService importJobStatusServiceForTests() {
+  return ImportJobStatusService(
+    l10n: lookupEnglishLocalizationsForTests,
+  );
 }

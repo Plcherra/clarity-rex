@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/l10n/app_l10n.dart';
+import '../../../core/l10n/friendly_service_error.dart';
 import '../../auth/application/auth_controller.dart';
 import 'import_job_progress_banner.dart';
 import '../../accounts/data/connect_bank_entry_point_tracker.dart';
@@ -109,7 +110,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      ).showSnackBar(SnackBar(content: Text(friendlyPlaidLinkError(context.l10n, error))));
     } on Object {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

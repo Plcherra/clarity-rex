@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../l10n/app_localizations.dart';
-import '../../../l10n/app_localizations_en.dart';
 import 'auth_error_messages.dart';
 import 'auth_service.dart';
 import 'auth_signup.dart';
@@ -16,7 +15,7 @@ class AuthController extends ChangeNotifier {
     AppLocalizations Function()? l10n,
   }) : _authService = authService,
        _authenticatedOverride = initialAuthenticated,
-       _l10n = l10n ?? (() => AppLocalizationsEn()) {
+       _l10n = l10n ?? _throwUnboundL10n {
     _session = _authService.currentSession;
     _syncMfaRequirement();
     _subscription = _authService.authStateChanges.listen((state) {
@@ -28,6 +27,11 @@ class AuthController extends ChangeNotifier {
   }
 
   final AuthService _authService;
+  static AppLocalizations Function() get _throwUnboundL10n =>
+      () => throw StateError(
+        'AuthController requires l10n. '
+        'Pass l10n to the constructor or call bindLocalizations() first.',
+      );
   AppLocalizations Function() _l10n;
   StreamSubscription<AuthState>? _subscription;
   Session? _session;

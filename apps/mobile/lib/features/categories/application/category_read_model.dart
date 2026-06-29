@@ -25,7 +25,7 @@ final class CategoryReadModel extends ChangeNotifier {
 
   List<CategoryRecord> get categories => List.unmodifiable(_categories);
 
-  String get _languageCode => _localeController?.languageCode ?? 'en';
+  String get _localeTag => _localeController?.localeTag ?? 'en';
 
   List<String> get customCategories {
     final builtIns = {
@@ -55,7 +55,7 @@ final class CategoryReadModel extends ChangeNotifier {
   }
 
   Map<String, String> get categoryDisplayRenames =>
-      CategoryLabelResolver.displayRenamesForLanguage(_languageCode);
+      CategoryLabelResolver.displayRenamesForLocaleTag(_localeTag);
 
   Set<String> get categoriesHiddenFromPicker {
     final hidden = <String>{};
@@ -80,13 +80,13 @@ final class CategoryReadModel extends ChangeNotifier {
     if (normalized != null && normalized.isNotEmpty) {
       return CategoryLabelResolver.resolve(
         normalizedName: normalized,
-        languageCode: _languageCode,
+        localeTag: _localeTag,
         fallbackName: category.name,
       );
     }
     return CategoryLabelResolver.resolveFromCanonicalName(
       canonicalName: category.name,
-      languageCode: _languageCode,
+      localeTag: _localeTag,
     );
   }
 

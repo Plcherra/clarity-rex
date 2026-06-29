@@ -1,10 +1,11 @@
 import 'package:flutter/widgets.dart';
 
-import 'clarity_locale_catalog.dart';
 import '../../features/profile/application/locale_controller.dart';
 
 export 'clarity_locale_catalog.dart'
     show ClarityLocaleCatalog, ClarityLocaleSpec, claritySupportedLocales;
+export 'app_localizations_lookup.dart'
+    show lookupForLocale, lookupForLocaleTag, lookupEnglishLocalizationsForTests;
 export '../../features/profile/application/locale_controller.dart'
     show LocaleController, localeControllerProvider;
 /// Single source of truth for Clarity UI and Rex locale.

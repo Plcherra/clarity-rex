@@ -231,9 +231,15 @@ class _ChatPageState extends ConsumerState<ChatPage>
       fileSize = bytes?.length ?? 0;
     }
 
+    final l10n = context.l10n;
     final validationError = bytes == null
-        ? validateChatAttachment(fileName: fileName, fileSize: fileSize)
+        ? validateChatAttachment(
+            l10n: l10n,
+            fileName: fileName,
+            fileSize: fileSize,
+          )
         : validateChatAttachmentBytes(
+            l10n: l10n,
             fileName: fileName,
             fileSize: fileSize,
             bytes: bytes,

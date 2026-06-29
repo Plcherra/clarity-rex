@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:audio_session/audio_session.dart';
+import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/memory/data/memory_api.dart';
@@ -22,6 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'memory_page_test_helpers.dart';
+import 'helpers/l10n_test_wrapper.dart';
 
 part 'voice_call_controller_test_fakes.dart';
 
@@ -429,8 +431,8 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
+      wrapWithL10n(
+        Scaffold(
           body: InlineVoiceCallPanel(
             state: VoiceCallState(
               phase: VoiceCallPhase.speaking,
@@ -446,7 +448,7 @@ void main() {
     );
 
     expect(find.byIcon(Icons.front_hand_rounded), findsNothing);
-    expect(find.byIcon(Icons.call_end_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
   });
 
   testWidgets('inline voice panel shows recoverable retry action on failure', (
@@ -454,33 +456,45 @@ void main() {
   ) async {
     var retryCount = 0;
     var settingsCount = 0;
+    final l10n = lookupAppLocalizations(const Locale('en'));
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: InlineVoiceCallPanel(
-            state: VoiceCallState(
-              phase: VoiceCallPhase.failed,
-              errorMessage: 'Assistant voice stream disconnected.',
-              callStartedAt: DateTime(2026),
-            ),
-            onRetry: () => retryCount++,
-            onEnd: () {},
-            onToggleMute: () {},
-            onOpenSettings: () => settingsCount++,
+      wrapWithL10n(
+        Scaffold(
+          body: Column(
+            children: [
+              VoiceLiveTranscript(
+                state: VoiceCallState(
+                  phase: VoiceCallPhase.failed,
+                  errorMessage: 'Assistant voice stream disconnected.',
+                  callStartedAt: DateTime(2026),
+                ),
+              ),
+              InlineVoiceCallPanel(
+                state: VoiceCallState(
+                  phase: VoiceCallPhase.failed,
+                  errorMessage: 'Assistant voice stream disconnected.',
+                  callStartedAt: DateTime(2026),
+                ),
+                onRetry: () => retryCount++,
+                onEnd: () {},
+                onToggleMute: () {},
+                onOpenSettings: () => settingsCount++,
+              ),
+            ],
           ),
         ),
       ),
     );
 
     expect(
-      find.text('Voice connection dropped. Tap Try again to reconnect.'),
+      find.text(l10n.voiceFailureConnectionDropped),
       findsOneWidget,
     );
-    expect(find.text('Try again'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
+    expect(find.byTooltip(l10n.voicePanelTryAgainTooltip), findsOneWidget);
+    expect(find.byTooltip(l10n.voicePanelSettingsTooltip), findsOneWidget);
 
-    await tester.tap(find.text('Try again'));
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.byTooltip(l10n.voicePanelTryAgainTooltip));
+    await tester.tap(find.byTooltip(l10n.voicePanelSettingsTooltip));
 
     expect(retryCount, 1);
     expect(settingsCount, 1);

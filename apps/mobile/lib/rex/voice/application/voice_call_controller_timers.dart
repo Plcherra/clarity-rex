@@ -84,9 +84,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
     }
     _emptyVoiceTurnRecoveryCount++;
     if (_emptyVoiceTurnRecoveryCount > _maxEmptyVoiceTurnRecoveries) {
-      fail(
-        'I still did not hear anything. Tap Try again when you are ready to use voice.',
-      );
+      failL10n((l10n) => l10n.voiceErrorStillDidNotHear);
       return;
     }
     if (_isAwaitingFollowUpSpeech) {
@@ -238,8 +236,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
       state = state.copyWith(
         phase: VoiceCallPhase.listening,
         isCapturingSpeech: false,
-        errorMessage:
-            'Rex got stuck thinking, so I reset the native voice stream. Try again.',
+        errorMessage: voiceL10n.voiceErrorStuckThinkingNative,
       );
       return;
     }
@@ -259,8 +256,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       isCapturingSpeech: false,
-      errorMessage:
-          'Rex got stuck thinking, so I reset the voice stream. Try again.',
+      errorMessage: voiceL10n.voiceErrorStuckThinking,
     );
     _startListeningCycle(nextGeneration);
   }
@@ -319,24 +315,11 @@ extension VoiceCallControllerTimers on VoiceCallController {
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       isCapturingSpeech: false,
-      errorMessage:
-          'Rex is finishing the previous response. Try again after it finishes.',
+      errorMessage: voiceL10n.voiceErrorPreviousResponseInProgress,
     );
   }
 
   void _clearVisibleTranscript() {
     _transcriptBuffer.clear();
-  }
-
-  String _permissionMessage(MicrophonePermissionDecision decision) {
-    return switch (decision) {
-      MicrophonePermissionDecision.permanentlyDenied =>
-        'Microphone permission is blocked. Enable it in iOS Settings > Privacy & Security > Microphone to call Rex.',
-      MicrophonePermissionDecision.restricted =>
-        'Microphone access is restricted on this device.',
-      MicrophonePermissionDecision.denied =>
-        'Microphone permission is required to call Rex. Tap Try again to prompt access, or enable it in iOS Settings > Privacy & Security > Microphone.',
-      MicrophonePermissionDecision.granted => '',
-    };
   }
 }

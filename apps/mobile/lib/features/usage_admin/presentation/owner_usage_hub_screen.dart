@@ -62,7 +62,7 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
               ),
             );
           }
-          if (_controller.errorMessage != null) {
+          if (_controller.loadFailed) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),

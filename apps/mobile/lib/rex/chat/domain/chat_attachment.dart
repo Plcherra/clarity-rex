@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:cross_file/cross_file.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:clarity/l10n/app_localizations.dart';
+
 const int maxChatAttachmentBytes = 2 * 1024 * 1024;
 const int maxChatImageAttachmentBytes = 5 * 1024 * 1024;
 const int maxChatPdfAttachmentBytes = 10 * 1024 * 1024;
@@ -60,40 +62,43 @@ bool isChatImageAttachmentName(String fileName) {
 }
 
 String? validateChatAttachment({
+  required AppLocalizations l10n,
   required String fileName,
   required int fileSize,
 }) {
   final extension = p.extension(fileName).replaceFirst('.', '').toLowerCase();
   if (allowedTextChatAttachmentExtensions.contains(extension)) {
     if (fileSize > maxChatAttachmentBytes) {
-      return 'Attachment is too large. Maximum size is 2MB.';
+      return l10n.chatAttachmentTooLarge;
     }
     return null;
   }
 
   if (allowedImageChatAttachmentExtensions.contains(extension)) {
     if (fileSize > maxChatImageAttachmentBytes) {
-      return 'Image is too large. Maximum size is 5MB.';
+      return l10n.chatAttachmentImageTooLarge;
     }
     return null;
   }
 
   if (allowedPdfChatAttachmentExtensions.contains(extension)) {
     if (fileSize > maxChatPdfAttachmentBytes) {
-      return 'PDF is too large. Maximum size is 10MB.';
+      return l10n.chatAttachmentPdfTooLarge;
     }
     return null;
   }
 
-  return 'Attach a .txt, .md, .csv, .pdf, .jpg, .png, or .webp file.';
+  return l10n.chatAttachmentInvalidType;
 }
 
 String? validateChatAttachmentBytes({
+  required AppLocalizations l10n,
   required String fileName,
   required int fileSize,
   required Uint8List bytes,
 }) {
   final metadataError = validateChatAttachment(
+    l10n: l10n,
     fileName: fileName,
     fileSize: fileSize,
   );
@@ -110,23 +115,27 @@ String? validateChatAttachmentBytes({
   try {
     utf8.decode(bytes, allowMalformed: false);
   } on FormatException {
-    return 'Attachment must be valid UTF-8 text.';
+    return l10n.chatAttachmentUtf8Required;
   }
 
   return null;
 }
 
-Future<String?> validateChatAttachmentFile(XFile attachment) async {
+Future<String?> validateChatAttachmentFile(
+  XFile attachment, {
+  required AppLocalizations l10n,
+}) async {
   final fileName = chatAttachmentName(attachment);
   late final int fileSize;
 
   try {
     fileSize = await attachment.length();
   } on Object {
-    return 'Could not read selected file.';
+    return l10n.chatAttachmentReadFailed;
   }
 
   final metadataError = validateChatAttachment(
+    l10n: l10n,
     fileName: fileName,
     fileSize: fileSize,
   );
@@ -144,9 +153,9 @@ Future<String?> validateChatAttachmentFile(XFile attachment) async {
     final bytes = await attachment.readAsBytes();
     utf8.decode(bytes, allowMalformed: false);
   } on FormatException {
-    return 'Attachment must be valid UTF-8 text.';
+    return l10n.chatAttachmentUtf8Required;
   } on Object {
-    return 'Could not read selected file.';
+    return l10n.chatAttachmentReadFailed;
   }
 
   return null;

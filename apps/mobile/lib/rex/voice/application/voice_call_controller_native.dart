@@ -19,7 +19,7 @@ extension VoiceCallControllerNativeSession on VoiceCallController {
       (event) => _handleNativeVoiceEvent(event, generation),
       onError: (Object _) {
         if (_isCurrentCall(generation)) {
-          fail('Native iOS voice session failed.');
+          failL10n((l10n) => l10n.voiceErrorNativeSessionFailed);
         }
       },
     );
@@ -160,7 +160,12 @@ extension VoiceCallControllerNativeSession on VoiceCallController {
       case 'error':
       case 'playback.error':
       case 'capture.error':
-        fail(event.detail ?? 'Native iOS voice session failed.');
+        final detail = event.detail?.trim();
+        if (detail == null || detail.isEmpty) {
+          failL10n((l10n) => l10n.voiceErrorNativeSessionFailed);
+        } else {
+          failVoiceApi(CloudVoiceApiException(detail));
+        }
       default:
         break;
     }

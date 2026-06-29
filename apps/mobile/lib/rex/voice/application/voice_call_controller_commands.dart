@@ -171,17 +171,17 @@ extension VoiceCallControllerCommands on VoiceCallController {
         onError: (message) {
           if (_isCurrentCall(generation)) {
             _stopBargeInMonitoring();
-            fail(message);
+            failVoiceApi(CloudVoiceApiException(message));
           }
         },
       );
     } on CloudVoiceApiException catch (error) {
       if (_isCurrentCall(generation)) {
-        fail(error.message);
+        failVoiceApi(error);
       }
     } on Object {
       if (_isCurrentCall(generation)) {
-        fail('Could not play Rex voice for this reply.');
+        failL10n((l10n) => l10n.voiceErrorPlayRexVoiceFailed);
       }
     }
   }

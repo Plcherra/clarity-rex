@@ -7,12 +7,10 @@ import '../core/l10n/clarity_material_app.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/presentation/auth_screen.dart';
 import '../features/auth/presentation/mfa_verification_screen.dart';
-import '../features/profile/application/locale_controller.dart';
+import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/profile/application/theme_mode_controller.dart';
 import '../features/shell/presentation/home_shell.dart';
-import '../features/onboarding/presentation/onboarding_screen.dart';
-import '../l10n/app_localizations.dart';
 import '../rex/chat/application/chat_action_result_formatter.dart';
 import '../rex/chat/application/chat_controller.dart';
 import '../rex/chat/data/chat_api.dart';
@@ -74,7 +72,7 @@ final class ClarityApp extends StatelessWidget {
         actionResultMessageFormatterProvider.overrideWith(
           (ref) {
             final locale = ref.watch(localeControllerProvider).locale;
-            final l10n = lookupAppLocalizations(locale);
+            final l10n = lookupForLocale(locale);
             return (action, result) =>
                 actionResultMessage(l10n, action, result);
           },

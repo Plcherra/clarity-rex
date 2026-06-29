@@ -10,16 +10,16 @@ final class UsageSummaryController extends ChangeNotifier {
 
   VoiceUsageTotals totals = VoiceUsageTotals.empty();
   bool isLoading = false;
-  String? errorMessage;
+  bool loadFailed = false;
 
   Future<void> load() async {
     isLoading = true;
-    errorMessage = null;
+    loadFailed = false;
     notifyListeners();
     try {
       totals = await _usageSummaryService.fetchVoiceUsageTotals();
     } on Object {
-      errorMessage = 'Could not load usage right now.';
+      loadFailed = true;
     } finally {
       isLoading = false;
       notifyListeners();

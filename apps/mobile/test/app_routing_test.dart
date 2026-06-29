@@ -1,3 +1,4 @@
+import 'package:clarity/rex/chat/application/chat_action_result_formatter.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/app/app.dart';
 import 'package:clarity/app/app_composition.dart';
@@ -282,6 +283,13 @@ void main() {
             _FakeConversationApi.withConversation(),
           ),
           voiceCallProvider.overrideWith(() => voiceController),
+          actionResultMessageFormatterProvider.overrideWith(
+            (ref) {
+              final l10n = lookupAppLocalizations(const Locale('en'));
+              return (action, result) =>
+                  actionResultMessage(l10n, action, result);
+            },
+          ),
         ],
         child: wrapWithL10n(const AssistantScreen()),
       ),
@@ -308,7 +316,16 @@ Future<void> _pumpAssistantScreen(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [conversationApiProvider.overrideWithValue(conversationApi)],
+      overrides: [
+        conversationApiProvider.overrideWithValue(conversationApi),
+        actionResultMessageFormatterProvider.overrideWith(
+          (ref) {
+            final l10n = lookupAppLocalizations(const Locale('en'));
+            return (action, result) =>
+                actionResultMessage(l10n, action, result);
+          },
+        ),
+      ],
       child: wrapWithL10n(const AssistantScreen()),
     ),
   );

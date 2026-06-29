@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clarity/core/l10n/app_localizations_lookup.dart';
+import 'package:clarity/core/l10n/friendly_service_error.dart';
+import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
@@ -142,6 +145,13 @@ class ConversationListController extends Notifier<ConversationListState> {
   @override
   ConversationListState build() => const ConversationListState();
 
+  String _localizedError(Object error) {
+    return friendlyServiceError(
+      lookupForLocale(ref.read(localeControllerProvider).locale),
+      error,
+    );
+  }
+
   Future<void> loadConversations() async {
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -155,7 +165,7 @@ class ConversationListController extends Notifier<ConversationListState> {
         clearError: true,
       );
     } on Object catch (error) {
-      state = state.copyWith(isLoading: false, errorMessage: error.toString());
+      state = state.copyWith(isLoading: false, errorMessage: _localizedError(error));
     }
   }
 
@@ -176,7 +186,7 @@ class ConversationListController extends Notifier<ConversationListState> {
       );
       return conversation;
     } on Object catch (error) {
-      state = state.copyWith(isLoading: false, errorMessage: error.toString());
+      state = state.copyWith(isLoading: false, errorMessage: _localizedError(error));
       return null;
     }
   }
@@ -205,7 +215,7 @@ class ConversationListController extends Notifier<ConversationListState> {
     } on Object catch (error) {
       state = state.copyWith(
         conversations: previousConversations,
-        errorMessage: error.toString(),
+        errorMessage: _localizedError(error),
       );
       return false;
     }
@@ -244,7 +254,7 @@ class ConversationListController extends Notifier<ConversationListState> {
     } on Object catch (error) {
       state = state.copyWith(
         isSearching: false,
-        errorMessage: error.toString(),
+        errorMessage: _localizedError(error),
       );
     }
   }

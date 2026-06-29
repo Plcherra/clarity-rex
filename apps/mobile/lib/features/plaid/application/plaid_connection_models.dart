@@ -1,3 +1,5 @@
+import 'package:clarity/l10n/app_localizations.dart';
+
 final class PlaidLinkServiceException implements Exception {
   const PlaidLinkServiceException(this.message, {this.cause});
 
@@ -142,24 +144,23 @@ final class PlaidSyncSummary {
       transactionsRefreshStatus == 'unavailable';
 }
 
-String buildPlaidRefreshMessage({
+String buildPlaidRefreshMessage(
+  AppLocalizations l10n, {
   required int accountCount,
   required int transactionUpdates,
   required bool anyRefreshUnavailable,
 }) {
-  final accountLabel =
-      '$accountCount account${accountCount == 1 ? '' : 's'}';
+  final accountLabel = l10n.plaidRefreshAccountLabel(accountCount);
   if (transactionUpdates > 0) {
-    return 'Accounts refreshed: $accountLabel, '
-        '$transactionUpdates transaction update${transactionUpdates == 1 ? '' : 's'}.';
+    return l10n.plaidRefreshWithTransactionUpdates(
+      accountLabel,
+      transactionUpdates,
+    );
   }
   if (anyRefreshUnavailable) {
-    return 'Accounts refreshed: $accountLabel. Balances updated. '
-        'No new transactions yet — Plaid will sync on its schedule '
-        '(on-demand transaction pull is not enabled on this Plaid plan).';
+    return l10n.plaidRefreshBalancesOnlyUnavailable(accountLabel);
   }
-  return 'Accounts refreshed: $accountLabel. '
-      'Balances updated; no new transactions since last sync.';
+  return l10n.plaidRefreshBalancesOnly(accountLabel);
 }
 
 abstract interface class PlaidLinkTokenApi {
