@@ -69,17 +69,33 @@ Live authenticated curl smoke against a running API: **NOT RUN**
 | Voice infinite no-speech loop | PASS — capped at 3 recoveries (controller tests) |
 | Memory birthday direct-save regression | PASS — memory turn + chat flow tests |
 
-## 5. Manual Smoke — NOT RUN
+## 5. Manual Smoke — 2026-06-27 (device)
 
-Deferred to real device per Plan 8 §3:
+Tester: Adam. Auth/MFA/sign-out **PASS**. CSV import **partial PASS** with UX bugs. Password reset **FAIL** (ops + redirect).
 
-- Auth / MFA / sign out
-- Finance: Plaid sandbox, CSV import, budgets
-- Rex: chat, recall, Knows, Goals sync
-- Voice: full turn, interrupt, usage totals
-- Themes: light / dark / system on device
+| Area | Result | Notes |
+| --- | --- | --- |
+| Auth sign-in / MFA / sign-out | PASS | Working as expected |
+| Password reset | FAIL | Email arrives; link opens **localhost** on phone (Supabase Site URL). Gmail flags spam/phishing (default template + no custom domain auth) |
+| CSV import (data) | PASS | 66 tx imported; categorization OK; no unknown transactions spotted |
+| CSV import (UX) | PARTIAL | Must create manual account first (by design); upload icon missing until navigate away/back; multiple error toasts during import though import succeeds |
+| Account balance after CSV | EXPECTED GAP | Manual account shows **$0.00** balance — CSV sets activity, not ending balance unless user enters balance on create |
 
-Use `docs/CLARITY_BETA_SMOKE_RUNBOOK.md` and log results here when complete.
+### Fixes in progress (code)
+
+- Password reset redirect → `https://goclarity.app/auth/reset-password` (mobile + new web page)
+- CSV flow: use server account id after create; auto-open file picker; dashboard “Import CSV” starts flow directly
+- Docs: `SUPABASE_AUTH_EMAIL_SETUP.md` — Site URL must not be localhost
+
+### Ops required before reset retest
+
+1. Supabase **Site URL** → `https://goclarity.app`
+2. Redirect URLs → `/auth/confirmed`, `/auth/reset-password`
+3. Deploy web reset page with `PUBLIC_SUPABASE_URL` + `PUBLIC_SUPABASE_ANON_KEY`
+4. Resend SMTP + branded template from `supabase/templates/reset-password.html`
+5. Request a **new** reset email after URL fix (old links still point at localhost)
+
+Remaining manual smoke (not run): Plaid sandbox, Rex chat/recall/voice, themes on device.
 
 ## Known Release Limitations (MVP)
 

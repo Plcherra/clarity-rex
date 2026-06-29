@@ -26,29 +26,33 @@ class AccountsNavigationActions {
       context: context,
       builder: (dialogContext) => AddAccountDialog(
         onCreate: (name, type, institution, balance) async {
-          final account = Account(
+          final draft = Account(
             id: DateTime.now().microsecondsSinceEpoch.toString(),
             name: name,
             type: type,
             institution: institution,
             currentBalance: balance,
           );
-          final ok = await controller.addAccount(account);
+          final created = await controller.addAccount(draft);
           if (!dialogContext.mounted) return null;
-          if (!ok) {
+          if (created == null) {
             ScaffoldMessenger.of(dialogContext).showSnackBar(
               const SnackBar(content: Text('Could not save account.')),
             );
             return null;
           }
-          Navigator.of(dialogContext).pop(account);
-          return account;
+          Navigator.of(dialogContext).pop(created);
+          return created;
         },
       ),
     );
   }
 
-  Future<void> openAccountDetail(BuildContext context, Account account) {
+  Future<void> openAccountDetail(
+    BuildContext context,
+    Account account, {
+    bool promptCsvImport = false,
+  }) {
     return Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (context) => AccountDetailScreen(
@@ -58,6 +62,8 @@ class AccountsNavigationActions {
           budgetController: budgetController,
           importJobStatusController: importJobStatusController,
           accountId: account.id,
+          seedAccount: account,
+          promptCsvImport: promptCsvImport,
         ),
       ),
     );
@@ -73,14 +79,7 @@ class AccountsNavigationActions {
     );
     final account = await showAddAccountDialog(context);
     if (!context.mounted || account == null) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Manual account added. Open it to use Import CSV instead.',
-        ),
-      ),
-    );
-    await openAccountDetail(context, account);
+    await openAccountDetail(context, account, promptCsvImport: true);
   }
 
   Future<void> addManualAccount(

@@ -30,11 +30,15 @@ class AccountWorkflowService {
   final Future<void> Function() refreshAllState;
   final void Function() notifyAccountsChanged;
 
-  Future<bool> addAccount(Account account) async {
-    await accountService.createAccount(account);
-    notifyAccountsChanged();
-    await refreshAllState();
-    return true;
+  Future<Account?> addAccount(Account account) async {
+    try {
+      final created = await accountService.createAccount(account);
+      notifyAccountsChanged();
+      await refreshAllState();
+      return created;
+    } on Object {
+      return null;
+    }
   }
 
   Future<AccountDeletionResult> deleteAccount(String accountId) async {

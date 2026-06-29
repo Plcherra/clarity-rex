@@ -108,7 +108,7 @@ class AuthService {
   Future<void> requestPasswordReset({required String email}) {
     return _supabaseService.auth.resetPasswordForEmail(
       email.trim(),
-      redirectTo: AuthConfig.emailRedirectUrl,
+      redirectTo: AuthConfig.passwordResetRedirectUrl,
     );
   }
 

@@ -460,7 +460,7 @@ final class AccountUiController extends _UiController {
     ];
   }
 
-  Future<bool> addAccount(Account account) async {
+  Future<Account?> addAccount(Account account) async {
     return bindings.accountWorkflowService.addAccount(account);
   }
 

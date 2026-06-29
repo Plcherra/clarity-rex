@@ -4,6 +4,7 @@ import '../../../app/ui_dependencies.dart';
 import '../../auth/application/auth_controller.dart';
 import 'import_job_progress_banner.dart';
 import '../../accounts/data/connect_bank_entry_point_tracker.dart';
+import '../../accounts/presentation/accounts_navigation_actions.dart';
 import '../../accounts/presentation/accounts_screen.dart';
 import '../../budgets/presentation/budgets_screen.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
@@ -104,18 +105,17 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   }
 
   void _openAccountsForCsvFallback() {
-    trackConnectBankEntryPoint(
-      surface: 'dashboard_empty',
-      action: ConnectBankEntryAction.importCsvInstead,
-    );
     setState(() => _selectIndex(1));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'CSV is a manual fallback. Create a manual account, then import CSV instead.',
-        ),
-      ),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      AccountsNavigationActions(
+        controller: widget.ui.accounts,
+        dashboardController: widget.ui.dashboard,
+        transactionController: widget.ui.transactions,
+        budgetController: widget.ui.budgets,
+        importJobStatusController: widget.ui.importJobStatus,
+      ).importCsvInstead(context, surface: 'dashboard_empty');
+    });
   }
 
   @override

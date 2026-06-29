@@ -63,11 +63,23 @@ Project: **REX** (`oanwrprjpkfsyzxjlwer`)
 ### 3. Supabase Auth URL configuration
 
 1. **Authentication → URL Configuration**
-2. **Site URL:** `https://goclarity.app`
+2. **Site URL:** `https://goclarity.app` (must **not** be `http://localhost:3000` or links in email will open localhost on phone)
 3. **Redirect URLs:** add
    - `https://goclarity.app/auth/confirmed`
+   - `https://goclarity.app/auth/reset-password`
 
-The mobile app sends this redirect on sign-up through `AuthConfig.emailRedirectUrl`.
+Sign-up confirmation uses `AuthConfig.emailRedirectUrl`. Password reset uses
+`AuthConfig.passwordResetRedirectUrl` (`/auth/reset-password`).
+
+Deploy the web page at `apps/web/src/pages/auth/reset-password.astro` with:
+
+```sh
+PUBLIC_SUPABASE_URL=https://oanwrprjpkfsyzxjlwer.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+```
+
+Paste branded HTML from `supabase/templates/reset-password.html` into
+**Authentication → Email Templates → Reset password**.
 
 ### 4. Supabase Auth providers
 
@@ -154,7 +166,8 @@ Do **not** launch until all are true:
 | `535 BadCredentials` in auth logs | Replace Gmail SMTP with Resend SMTP; username must be `resend` |
 | SMTP saved but still failing | Username is not `resend`, or password is not the API key |
 | Sign-up succeeds but no email | Check Resend domain verification and sender address |
-| Link opens but auth fails | Add redirect URL in Supabase URL configuration |
+| Link opens localhost on phone | Set **Site URL** to `https://goclarity.app`, not localhost; add `/auth/reset-password` to redirect URLs |
+| Password reset link does nothing | Deploy reset page; use Resend SMTP; request reset again after URL fix |
 | App shows email send error | Re-run verify script; check auth logs |
 | Duplicate email, no mail | Delete unconfirmed user in dashboard or sign in instead |
 

@@ -87,9 +87,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> {
             type: type,
             currentBalance: balance,
           );
-          final ok = await widget.controller.addAccount(account);
+          final created = await widget.controller.addAccount(account);
           if (!dialogContext.mounted) return;
-          if (!ok) {
+          if (created == null) {
             ScaffoldMessenger.of(dialogContext).showSnackBar(
               const SnackBar(content: Text('Could not save account.')),
             );

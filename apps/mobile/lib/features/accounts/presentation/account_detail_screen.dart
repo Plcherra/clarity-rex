@@ -23,6 +23,8 @@ class AccountDetailScreen extends StatefulWidget {
     required this.budgetController,
     required this.importJobStatusController,
     required this.accountId,
+    this.seedAccount,
+    this.promptCsvImport = false,
   });
 
   final AccountUiController controller;
@@ -31,6 +33,8 @@ class AccountDetailScreen extends StatefulWidget {
   final BudgetUiController budgetController;
   final ImportJobStatusController importJobStatusController;
   final String accountId;
+  final Account? seedAccount;
+  final bool promptCsvImport;
 
   @override
   State<AccountDetailScreen> createState() => _AccountDetailScreenState();
@@ -39,6 +43,7 @@ class AccountDetailScreen extends StatefulWidget {
 class _AccountDetailScreenState extends State<AccountDetailScreen> {
   late final _AccountDetailDataNotifier _dataNotifier;
   var _deletingCsvUpload = false;
+  var _csvImportPromptHandled = false;
 
   @override
   void initState() {
@@ -309,11 +314,6 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
       if (file == null) return;
       final text = await readPickedFileContents(file);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Importing CSV as a manual fallback for this account.'),
-        ),
-      );
       await widget.controller.loadFromCsv(text, accountId: widget.accountId);
     } on FormatException catch (e) {
       if (!context.mounted) return;
@@ -335,6 +335,23 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     super.dispose();
   }
 
+  Account? _resolveAccount(List<Account>? accounts) {
+    final fromFetch = accounts
+        ?.where((item) => item.id == widget.accountId)
+        .cast<Account?>()
+        .firstWhere((item) => item != null, orElse: () => null);
+    return fromFetch ?? widget.seedAccount;
+  }
+
+  void _maybePromptCsvImport(Account account) {
+    if (!widget.promptCsvImport || _csvImportPromptHandled) return;
+    _csvImportPromptHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_importCsvForThisAccount(context, account));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -353,10 +370,10 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
             ),
           );
         }
-        final account = accounts
-            .where((a) => a.id == widget.accountId)
-            .cast<Account?>()
-            .firstWhere((a) => a != null, orElse: () => null);
+        final account = _resolveAccount(accounts);
+        if (account != null) {
+          _maybePromptCsvImport(account);
+        }
         final title = account?.displayName ?? 'Account';
         return FinancialDashboardView(
           controller: widget.dashboardController,
