@@ -156,6 +156,12 @@ class ConversationPendingActionService:
             conflicting = _CONFLICTING_PENDING_TYPES.get(action.action_type)
             if conflicting is not None and existing.action_type == conflicting:
                 note = SUPERSEDE_MESSAGES.get((existing.action_type, action.action_type))
+        elif (
+            existing is not None
+            and existing.action_type == "durable_write"
+            and action.action_type == "durable_write"
+        ):
+            note = "I replaced your earlier pending save with this new one."
         await self.set(conversation_id, action)
         return note
 

@@ -716,8 +716,21 @@ class ChatController extends Notifier<ChatState> {
       );
       return;
     }
+    _syncClarityActionFromMessages(action.id);
+  }
+
+  void _syncClarityActionFromMessages(String actionId) {
+    for (final message in state.messages) {
+      for (final action in message.clarityActions) {
+        if (action.id != actionId) {
+          continue;
+        }
+        _updateClarityAction(actionId, (_) => action);
+        return;
+      }
+    }
     _updateClarityAction(
-      action.id,
+      actionId,
       (current) => current.copyWith(status: 'applied', clearError: true),
     );
   }

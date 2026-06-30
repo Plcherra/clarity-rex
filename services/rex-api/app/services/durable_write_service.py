@@ -171,18 +171,16 @@ class DurableWriteService:
         )
         rejected = is_delete_rejection_message(message)
         if not confirmed and not rejected:
-            return await clarification_turn_result(
-                self.memory_service,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                response=(
-                    f"You still have a pending save for {proposal.title}. "
-                    "Confirm or dismiss it before we continue."
-                ),
-                memory_changes=pending_memory_changes(proposal=proposal),
-            )
+            return None
 
         if confirmed:
+            if write_confirmation is not None:
+                confirmed_id = str(
+                    (write_confirmation or {}).get("proposal_id") or ""
+                ).strip()
+                if confirmed_id and confirmed_id != proposal.proposal_id:
+                    await self._pending().clear(conversation_id)
+                    return None
             edits = write_confirmation_edits(write_confirmation)
             return await self._apply(
                 proposal.with_edits(edits),

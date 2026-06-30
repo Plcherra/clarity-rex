@@ -27,6 +27,7 @@ def applied_memory_changes(
     created = 0 if is_update or merged else 1
     updated = 1 if is_update else 0
     card = proposal.to_client_dict(status="applied")
+    card["result"] = [_applied_record_result(proposal, record=record, merged=merged)]
     return _envelope(
         created=created,
         updated=updated,
@@ -82,3 +83,20 @@ def _envelope(
             "write_kind": proposals[0].get("write_kind") if proposals else None,
         }
     return payload
+
+
+def _applied_record_result(
+    proposal: DurableWriteProposal,
+    *,
+    record: dict[str, Any],
+    merged: bool,
+) -> dict[str, Any]:
+    action = "direct_updated" if proposal.write_kind.startswith("update_") else "direct_saved"
+    if merged:
+        action = "merged"
+    return {
+        "id": record.get("id"),
+        "title": record.get("title") or record.get("content") or proposal.title,
+        "action": action,
+        "write_kind": proposal.write_kind,
+    }

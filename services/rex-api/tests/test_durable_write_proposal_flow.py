@@ -120,3 +120,68 @@ async def test_durable_write_reject_does_not_save():
 
     assert rejected["memory_changes"]["skipped"] == 1
     assert memory_service.long_term_memory == []
+
+
+@pytest.mark.asyncio
+async def test_birthday_with_it_is_requires_confirmation():
+    memory_service = FakeMemoryService()
+    chat_service = _chat_service(memory_service)
+
+    proposed = await chat_service.send_message(
+        "Can you remember my mom's birthday it's June 18?"
+    )
+
+    assert proposed["memory_changes"]["confirmation_required"] == 1
+    assert proposed["memory_changes"]["created"] == 0
+    assert memory_service.long_term_memory == []
+
+
+@pytest.mark.asyncio
+async def test_new_save_supersedes_stale_pending_proposal():
+    memory_service = FakeMemoryService()
+    chat_service = _chat_service(memory_service)
+
+    first = await chat_service.send_message("My mom's birthday is June 18")
+    conversation_id = first["conversation_id"]
+
+    second = await chat_service.send_message(
+        "Save that I have an Omen 45L PC",
+        conversation_id=conversation_id,
+    )
+
+    assert second["memory_changes"]["confirmation_required"] == 1
+    proposal = second["memory_changes"]["write_proposals"][0]
+    assert "Omen" in proposal["body"] or "PC" in proposal["body"]
+    assert "mom" not in proposal["body"].lower()
+
+
+@pytest.mark.asyncio
+async def test_confirm_with_edits_applies_edited_body():
+    memory_service = FakeMemoryService()
+    chat_service = _chat_service(memory_service)
+
+    proposed = await chat_service.send_message("My mom's birthday is June 18")
+    conversation_id = proposed["conversation_id"]
+    proposal = proposed["memory_changes"]["write_proposals"][0]
+
+    confirmed = await chat_service.send_message(
+        "Yes",
+        conversation_id=conversation_id,
+        write_confirmation={
+            "proposal_id": proposal["id"],
+            "edits": {
+                "title": "Mom's birthday",
+                "body": "User's mom's birthday is June 18.",
+            },
+        },
+    )
+
+    assert confirmed["memory_changes"]["created"] == 1
+    assert len(memory_service.long_term_memory) == 1
+    assert memory_service.long_term_memory[0]["content"] == (
+        "User's mom's birthday is June 18."
+    )
+    applied = confirmed["memory_changes"]["write_proposals"][0]
+    assert applied["status"] == "applied"
+    assert applied["result"]
+    assert applied["result"][0]["action"] == "direct_saved"

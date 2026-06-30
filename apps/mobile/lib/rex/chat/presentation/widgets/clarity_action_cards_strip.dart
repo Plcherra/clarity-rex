@@ -275,15 +275,22 @@ class _MemoryChip extends StatelessWidget {
 }
 
 List<ClarityActionCard> pendingClarityActions(Iterable<ChatMessage> messages) {
+  final seenIds = <String>{};
   for (final message in messages.toList().reversed) {
     if (message.role != ChatMessageRole.assistant) {
       continue;
     }
-    final pending = message.clarityActions
-        .where((action) => action.status == 'pending')
-        .toList(growable: false);
+    final pending = <ClarityActionCard>[];
+    for (final action in message.clarityActions) {
+      if (action.status != 'pending') {
+        continue;
+      }
+      if (action.id.isEmpty || seenIds.add(action.id)) {
+        pending.add(action);
+      }
+    }
     if (pending.isNotEmpty) {
-      return pending;
+      return List.unmodifiable(pending);
     }
   }
   return const [];

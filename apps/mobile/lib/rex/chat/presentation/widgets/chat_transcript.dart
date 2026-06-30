@@ -42,9 +42,9 @@ class ChatTranscript extends StatelessWidget {
     final pendingVoiceActions = showVoiceTranscript
         ? pendingClarityActions(messages)
         : const <ClarityActionCard>[];
-    final suppressBubbleActionsId = pendingVoiceActions.isNotEmpty
-        ? _assistantMessageIdWithPendingActions(messages)
-        : null;
+    final suppressBubbleActionIds = showVoiceTranscript && pendingVoiceActions.isNotEmpty
+        ? _assistantMessageIdsWithPendingActions(messages)
+        : const <String>{};
     final baseBottomPadding = MediaQuery.viewInsetsOf(context).bottom > 0
         ? RexUiTokens.space12
         : RexUiTokens.space24;
@@ -87,7 +87,7 @@ class ChatTranscript extends StatelessWidget {
                         onConfirmClarityAction: onConfirmClarityAction,
                         onDismissClarityAction: onDismissClarityAction,
                         suppressClarityActions:
-                            message.id == suppressBubbleActionsId,
+                            suppressBubbleActionIds.contains(message.id),
                       ),
                     ),
                   ),
@@ -119,16 +119,17 @@ class ChatTranscript extends StatelessWidget {
   }
 }
 
-String? _assistantMessageIdWithPendingActions(List<ChatMessage> messages) {
+Set<String> _assistantMessageIdsWithPendingActions(List<ChatMessage> messages) {
+  final ids = <String>{};
   for (final message in messages.reversed) {
     if (message.role != ChatMessageRole.assistant) {
       continue;
     }
     if (message.clarityActions.any((action) => action.status == 'pending')) {
-      return message.id;
+      ids.add(message.id);
     }
   }
-  return null;
+  return ids;
 }
 
 class _EmptyChatState extends StatelessWidget {

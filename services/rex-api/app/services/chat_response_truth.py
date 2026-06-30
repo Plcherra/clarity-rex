@@ -135,7 +135,22 @@ class ChatResponseTruthService:
                 updated,
                 turn_trace,
             )
+        if intent_decision.intent in {RexIntent.CASUAL, RexIntent.UNKNOWN} and (
+            self._message_confirms_save(user_message)
+        ):
+            updated = safe_unexecuted_memory_response(response)
+            return _apply_truth_guard(
+                "unexecuted_memory_confirmation",
+                response,
+                updated,
+                turn_trace,
+            )
         return response
+
+    def _message_confirms_save(self, user_message: str) -> bool:
+        from app.services.conversation_pending_action import is_delete_confirmation_message
+
+        return is_delete_confirmation_message(user_message)
 
     def has_chat_search_results(self, messages: list[dict]) -> bool:
         for message in messages:

@@ -62,9 +62,13 @@ final class ProfileController extends ChangeNotifier {
       _profileSubscription = profileService.watchCurrentProfile().listen((
         next,
       ) async {
-        profile = next;
+        if (next != null) {
+          profile = next;
+        } else if (authService.currentUser == null) {
+          profile = null;
+        }
         await _localeController?.resolveAfterProfileHydrate(
-          profilePreferredLocale: next?.preferredLocale,
+          profilePreferredLocale: profile?.preferredLocale,
         );
         notifyListeners();
       });

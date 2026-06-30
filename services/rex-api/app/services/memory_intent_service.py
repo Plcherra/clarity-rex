@@ -18,13 +18,13 @@ class MemoryIntentService(
 
     _birthday_pattern = re.compile(
         r"\bmy\s+(?P<person>[A-Za-z][A-Za-z\s_-]{1,40}?)\s*(?:'s)?\s+"
-        r"birthday\s+(?:is|falls on|will be|on)\s+"
+        r"birthday\s+(?:is|it's|it is|falls on|will be|on)\s+"
         r"(?P<date>[^,.!?]{2,60})",
         re.IGNORECASE,
     )
     _birthday_correction_pattern = re.compile(
         r"\b(?:no[,\s]+)?(?:my\s+)?(?P<person>[A-Za-z][A-Za-z\s_-]{1,40}?)"
-        r"\s*(?:'s)?\s+birthday\s+(?:is|was|will be)\s+"
+        r"\s*(?:'s)?\s+birthday\s+(?:is|it's|it is|was|will be)\s+"
         r"(?P<date>[^,.!?]{2,60})",
         re.IGNORECASE,
     )
@@ -42,14 +42,14 @@ class MemoryIntentService(
         re.IGNORECASE,
     )
     _self_birthday_pattern = re.compile(
-        r"\bmy\s+birthday\s+(?:is|falls on|will be|on)\s+"
+        r"\bmy\s+birthday\s+(?:is|it's|it is|falls on|will be|on)\s+"
         r"(?P<date>[^,.!?]{2,60})",
         re.IGNORECASE,
     )
     _possessive_birthday_pattern = re.compile(
         r"\b(?P<owner>[A-Za-z][A-Za-z\s.'-]{0,40}?)'s\s+"
         r"(?:(?P<person>[A-Za-z][A-Za-z\s_-]{0,40}?)\s*(?:'s)?\s+)?"
-        r"birthday\s+(?:is|was|will be|on)\s+"
+        r"birthday\s+(?:is|it's|it is|was|will be|on)\s+"
         r"(?P<date>[^,.!?]{2,60})",
         re.IGNORECASE,
     )
@@ -163,6 +163,7 @@ class MemoryIntentService(
         contextual_save_proposal = self._detect_contextual_save_proposal_memory(
             message,
             conversation_history=conversation_history,
+            time_context=time_context,
         )
         if contextual_save_proposal is not None:
             return contextual_save_proposal
