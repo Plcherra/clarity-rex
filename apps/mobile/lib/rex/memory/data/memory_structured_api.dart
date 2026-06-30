@@ -236,6 +236,48 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
     return data.map(PlanMilestoneMemoryItem.fromJson).toList(growable: false);
   }
 
+  Future<PlanMilestoneMemoryItem> createPlanMilestone(
+    String planId, {
+    required String title,
+    String? description,
+    String milestoneType = 'checkpoint',
+    int priority = 3,
+  }) async {
+    final data = await _postJson('/plans/$planId/milestones', _withoutNulls({
+      'plan_id': planId,
+      'title': title.trim(),
+      'description': description?.trim(),
+      'milestone_type': milestoneType,
+      'priority': priority,
+    }));
+    return PlanMilestoneMemoryItem.fromJson(data);
+  }
+
+  Future<PlanMilestoneMemoryItem> updatePlanMilestone(
+    String milestoneId, {
+    String? title,
+    String? description,
+    int? priority,
+    String? status,
+    bool? active,
+  }) async {
+    final data = await _patchJson(
+      '/plans/milestones/$milestoneId',
+      _withoutNulls({
+        'title': title,
+        'description': description,
+        'priority': priority,
+        'status': status,
+        'active': active,
+      }),
+    );
+    return PlanMilestoneMemoryItem.fromJson(data);
+  }
+
+  Future<void> archivePlanMilestone(String milestoneId) async {
+    await _delete('/plans/milestones/$milestoneId');
+  }
+
   Future<PlanMemoryItem> createPlan({
     required String title,
     String? description,

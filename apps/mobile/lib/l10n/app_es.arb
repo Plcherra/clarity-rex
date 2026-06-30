@@ -1527,6 +1527,10 @@
   "memoryPagePersonCreated": "Persona guardada",
   "memoryPageRuleCreated": "Regla guardada",
   "memoryPagePlanCreated": "Plan guardado",
+  "memoryPageMilestoneCreated": "Hito guardado",
+  "memoryPageMilestoneUpdated": "Hito actualizado",
+  "memoryCreateMilestoneTitle": "Agregar un hito",
+  "memoryEditEditMilestoneTitle": "Editar hito",
   "memoryPageCommitmentCreated": "Compromiso guardado",
   "memoryPageMemoryArchived": "Memoria archivada",
   "memoryPageMemoryUpdated": "Memoria actualizada",
@@ -1537,6 +1541,7 @@
   "memoryPageTitle": "Lo que la claridad sabe",
   "memoryTileActionsTooltip": "Acciones de memoria",
   "memoryTileQuickEdit": "Edición rápida",
+  "memoryTileAddMilestone": "Agregar hito",
   "merchantRuleStatsMatchingTx": "{count} transmisión coincidente",
   "@merchantRuleStatsMatchingTx": {
     "placeholders": {

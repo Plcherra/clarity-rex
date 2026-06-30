@@ -20,6 +20,8 @@ class SavedMemoryGroupList extends StatelessWidget {
     required this.onEditEntity,
     required this.onEditRule,
     required this.onEditPlan,
+    required this.onAddPlanMilestone,
+    required this.onEditPlanMilestone,
     required this.onEditCommitment,
     required this.onArchiveStructuredMemory,
     super.key,
@@ -35,6 +37,9 @@ class SavedMemoryGroupList extends StatelessWidget {
   final ValueChanged<EntityMemoryItem> onEditEntity;
   final ValueChanged<RuleMemoryItem> onEditRule;
   final ValueChanged<PlanMemoryItem> onEditPlan;
+  final ValueChanged<PlanMemoryItem> onAddPlanMilestone;
+  final void Function(PlanMemoryItem plan, PlanMilestoneMemoryItem milestone)
+      onEditPlanMilestone;
   final ValueChanged<CommitmentMemoryItem> onEditCommitment;
   final void Function(StructuredMemoryKind kind, String id, String label)
   onArchiveStructuredMemory;
@@ -104,6 +109,8 @@ class SavedMemoryGroupList extends StatelessWidget {
           plan: plan,
           milestonePreviews: milestonePreviewsFor(plan.id),
           onEdit: () => onEditPlan(plan),
+          onAddMilestone: () => onAddPlanMilestone(plan),
+          onEditMilestone: (milestone) => onEditPlanMilestone(plan, milestone),
           onDeactivate: plan.active
               ? () => onArchiveStructuredMemory(
                   StructuredMemoryKind.plan,

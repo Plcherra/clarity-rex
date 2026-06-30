@@ -348,6 +348,66 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     }
   }
 
+  Future<void> _addPlanMilestone(PlanMemoryItem plan) async {
+    final l10n = context.l10n;
+    final result = await showStructuredCreateSheet(
+      context,
+      title: l10n.memoryCreateMilestoneTitle,
+      primaryLabel: l10n.commonTitle,
+      detailLabel: l10n.commonDescription,
+    );
+    if (result == null) {
+      return;
+    }
+
+    final saved = await ref.read(memoryProvider.notifier).createPlanMilestone(
+          plan.id,
+          title: result.title,
+          description: result.detail,
+          priority: result.importance,
+        );
+    if (mounted) {
+      _showSnackBar(saved ? l10n.memoryPageMilestoneCreated : _currentError());
+    }
+  }
+
+  Future<void> _editPlanMilestone(
+    PlanMemoryItem plan,
+    PlanMilestoneMemoryItem milestone,
+  ) async {
+    final l10n = context.l10n;
+    final result = await showStructuredEditSheet(
+      context,
+      title: l10n.memoryEditEditMilestoneTitle,
+      typeLabel: localizedMemoryRecordLabel(l10n, milestone.milestoneType),
+      primaryLabel: l10n.commonTitle,
+      primaryValue: milestone.title,
+      detailLabel: l10n.commonDescription,
+      detailValue: milestone.description,
+      importanceLabel: l10n.commonPriority,
+      importance: milestone.priority,
+      status: milestone.status,
+      active: milestone.active,
+      updatedAt: milestone.updatedAt,
+      createdAt: milestone.createdAt,
+    );
+    if (result == null) {
+      return;
+    }
+
+    final saved = await ref.read(memoryProvider.notifier).updatePlanMilestone(
+          milestone.id,
+          title: result.primary,
+          description: result.detail,
+          priority: result.importance,
+          status: result.status,
+          active: result.active,
+        );
+    if (mounted) {
+      _showSnackBar(saved ? l10n.memoryPageMilestoneUpdated : _currentError());
+    }
+  }
+
   Future<void> _editCommitment(CommitmentMemoryItem commitment) async {
     final l10n = context.l10n;
     final result = await showStructuredEditSheet(
@@ -511,6 +571,8 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                 onEditEntity: _editEntity,
                 onEditRule: _editRule,
                 onEditPlan: _editPlan,
+                onAddPlanMilestone: _addPlanMilestone,
+                onEditPlanMilestone: _editPlanMilestone,
                 onEditCommitment: _editCommitment,
                 onArchiveStructuredMemory: _archiveStructuredMemory,
               ),

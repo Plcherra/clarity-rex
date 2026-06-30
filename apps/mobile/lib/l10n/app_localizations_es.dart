@@ -1524,6 +1524,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memoryTileQuickEdit => 'Edición rápida';
 
   @override
+  String get memoryTileAddMilestone => 'Agregar hito';
+
+  @override
   String get memoryEditEditMemoryTitle => 'Editar memoria';
 
   @override
@@ -2874,6 +2877,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get memoryPagePlanCreated => 'Plan guardado';
+
+  @override
+  String get memoryPageMilestoneCreated => 'Hito guardado';
+
+  @override
+  String get memoryPageMilestoneUpdated => 'Hito actualizado';
+
+  @override
+  String get memoryCreateMilestoneTitle => 'Agregar un hito';
+
+  @override
+  String get memoryEditEditMilestoneTitle => 'Editar hito';
 
   @override
   String get memoryPageCommitmentCreated => 'Compromiso guardado';

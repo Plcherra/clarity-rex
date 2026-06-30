@@ -1505,6 +1505,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryTileQuickEdit => 'Quick edit';
 
   @override
+  String get memoryTileAddMilestone => 'Add milestone';
+
+  @override
   String get memoryEditEditMemoryTitle => 'Edit memory';
 
   @override
@@ -2823,6 +2826,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memoryPagePlanCreated => 'Plan saved';
+
+  @override
+  String get memoryPageMilestoneCreated => 'Milestone saved';
+
+  @override
+  String get memoryPageMilestoneUpdated => 'Milestone updated';
+
+  @override
+  String get memoryCreateMilestoneTitle => 'Add a milestone';
+
+  @override
+  String get memoryEditEditMilestoneTitle => 'Edit milestone';
 
   @override
   String get memoryPageCommitmentCreated => 'Commitment saved';

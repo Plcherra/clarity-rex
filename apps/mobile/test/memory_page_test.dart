@@ -189,4 +189,31 @@ void main() {
 
     expect(find.textContaining('Moved to Somerville'), findsOneWidget);
   });
+
+  testWidgets('MemoryPage can add a plan milestone from the plan card menu', (
+    tester,
+  ) async {
+    final api = MemoryPageFakeMemoryApi();
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    await pumpMemoryPage(tester, api);
+
+    await openMemoryActionsForText(tester, 'Ship Plaid review');
+    await tester.tap(find.text(l10n.memoryTileAddMilestone));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'Collect audit logs');
+    await tester.enterText(find.byType(TextField).at(1), 'Gather evidence pack');
+    await tester.tap(find.text(l10n.memoryCreateSave));
+    await tester.pumpAndSettle();
+
+    expect(api.milestoneCreates, [
+      {
+        'planId': 'plan-1',
+        'title': 'Collect audit logs',
+        'description': 'Gather evidence pack',
+      },
+    ]);
+    expect(find.text(l10n.memoryPageMilestoneCreated), findsOneWidget);
+  });
 }

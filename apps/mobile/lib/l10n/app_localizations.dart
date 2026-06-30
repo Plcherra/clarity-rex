@@ -2841,6 +2841,12 @@ abstract class AppLocalizations {
   /// **'Quick edit'**
   String get memoryTileQuickEdit;
 
+  /// No description provided for @memoryTileAddMilestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Add milestone'**
+  String get memoryTileAddMilestone;
+
   /// No description provided for @memoryEditEditMemoryTitle.
   ///
   /// In en, this message translates to:
@@ -4967,6 +4973,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Plan saved'**
   String get memoryPagePlanCreated;
+
+  /// No description provided for @memoryPageMilestoneCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone saved'**
+  String get memoryPageMilestoneCreated;
+
+  /// No description provided for @memoryPageMilestoneUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone updated'**
+  String get memoryPageMilestoneUpdated;
+
+  /// No description provided for @memoryCreateMilestoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a milestone'**
+  String get memoryCreateMilestoneTitle;
+
+  /// No description provided for @memoryEditEditMilestoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit milestone'**
+  String get memoryEditEditMilestoneTitle;
 
   /// No description provided for @memoryPageCommitmentCreated.
   ///

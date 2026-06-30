@@ -147,21 +147,40 @@ async def test_structured_memory_list_methods_apply_filters_and_ordering():
     assert entity_request["query"]["status"] == "eq.active"
     assert entity_request["query"]["active"] == "eq.true"
     assert entity_request["query"]["normalized_name"] == "eq.clara"
-    assert entity_request["query"]["limit"] == "10"
+    # Paged list methods over-fetch by one row to detect has_more.
+    assert entity_request["query"]["limit"] == "11"
+    assert entity_request["query"]["offset"] == "0"
 
-    assert service.requests[1]["table"] == "personal_rules"
-    assert service.requests[1]["query"]["rule_type"] == "eq.finance"
-    assert service.requests[2]["table"] == "plans"
-    assert service.requests[2]["query"]["plan_type"] == "eq.immigration"
-    assert service.requests[3]["table"] == "plan_milestones"
-    assert service.requests[3]["query"]["plan_id"] == "eq.plan-1"
-    assert service.requests[4]["table"] == "commitments"
-    assert service.requests[4]["query"]["entity_id"] == "eq.entity-1"
-    assert service.requests[5]["table"] == "memory_corrections"
-    assert service.requests[5]["query"]["correction_type"] == "eq.entity_name"
-    assert service.requests[5]["query"]["applied"] == "eq.true"
-    assert service.requests[5]["query"]["target_table"] == "eq.long_term_memory"
-    assert service.requests[5]["query"]["target_id"] == "eq.memory-1"
+    rules_request = service.requests[1]
+    assert rules_request["table"] == "personal_rules"
+    assert rules_request["query"]["rule_type"] == "eq.finance"
+    assert rules_request["query"]["limit"] == "51"
+    assert rules_request["query"]["offset"] == "0"
+
+    plans_request = service.requests[2]
+    assert plans_request["table"] == "plans"
+    assert plans_request["query"]["plan_type"] == "eq.immigration"
+    assert plans_request["query"]["limit"] == "51"
+    assert plans_request["query"]["offset"] == "0"
+
+    milestones_request = service.requests[3]
+    assert milestones_request["table"] == "plan_milestones"
+    assert milestones_request["query"]["plan_id"] == "eq.plan-1"
+    assert milestones_request["query"]["limit"] == "50"
+
+    commitments_request = service.requests[4]
+    assert commitments_request["table"] == "commitments"
+    assert commitments_request["query"]["entity_id"] == "eq.entity-1"
+    assert commitments_request["query"]["limit"] == "51"
+    assert commitments_request["query"]["offset"] == "0"
+
+    corrections_request = service.requests[5]
+    assert corrections_request["table"] == "memory_corrections"
+    assert corrections_request["query"]["correction_type"] == "eq.entity_name"
+    assert corrections_request["query"]["applied"] == "eq.true"
+    assert corrections_request["query"]["target_table"] == "eq.long_term_memory"
+    assert corrections_request["query"]["target_id"] == "eq.memory-1"
+    assert corrections_request["query"]["limit"] == "50"
     assert all(request["query"]["order"] for request in service.requests)
 
 

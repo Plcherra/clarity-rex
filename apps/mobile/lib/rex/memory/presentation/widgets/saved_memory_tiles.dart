@@ -4,6 +4,7 @@ import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
 import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
+import 'package:clarity/rex/memory/presentation/widgets/memory_meta_chip.dart';
 import 'package:clarity/rex/memory/presentation/widgets/saved_memory_tile_shell.dart';
 
 class MemoryTile extends StatelessWidget {
@@ -133,6 +134,8 @@ class PlanMemoryTile extends StatelessWidget {
     required this.plan,
     required this.onEdit,
     required this.onDeactivate,
+    required this.onAddMilestone,
+    required this.onEditMilestone,
     this.milestonePreviews = const [],
     super.key,
   });
@@ -141,6 +144,8 @@ class PlanMemoryTile extends StatelessWidget {
   final List<PlanMilestoneMemoryItem> milestonePreviews;
   final VoidCallback onEdit;
   final VoidCallback? onDeactivate;
+  final VoidCallback onAddMilestone;
+  final ValueChanged<PlanMilestoneMemoryItem> onEditMilestone;
 
   @override
   Widget build(BuildContext context) {
@@ -148,8 +153,19 @@ class PlanMemoryTile extends StatelessWidget {
     final supplementalLabels = <String>[
       if (plan.targetDate != null)
         l10n.commonTargetDateValue(shortMemoryDate(plan.targetDate!)),
-      ...planMilestonePreviewLabels(l10n, milestonePreviews),
     ];
+    final milestoneWidgets = milestonePreviews
+        .map(
+          (milestone) => GestureDetector(
+            onTap: () => onEditMilestone(milestone),
+            behavior: HitTestBehavior.opaque,
+            child: MemoryMetaChip(
+              label:
+                  '${localizedMemoryRecordLabel(l10n, 'plan_milestone')}: ${milestone.previewLabel}',
+            ),
+          ),
+        )
+        .toList(growable: false);
 
     return StructuredMemoryTile(
       icon: Icons.flag_outlined,
@@ -161,6 +177,8 @@ class PlanMemoryTile extends StatelessWidget {
       updatedAt: plan.updatedAt,
       createdAt: plan.createdAt,
       supplementalLabels: supplementalLabels,
+      supplementalWidgets: milestoneWidgets,
+      onAddMilestone: onAddMilestone,
       onEdit: onEdit,
       onDeactivate: onDeactivate,
     );

@@ -99,7 +99,9 @@ class FakeChatService:
         max_response_tokens=None,
         financial_context=None,
         channel=None,
+        user_requested_deep_thinking=False,
         include_turn_trace=False,
+        locale=None,
     ):
         self.stream_calls.append(
             {
@@ -110,7 +112,9 @@ class FakeChatService:
                 "max_response_tokens": max_response_tokens,
                 "financial_context": financial_context,
                 "channel": channel,
+                "user_requested_deep_thinking": user_requested_deep_thinking,
                 "include_turn_trace": include_turn_trace,
+                "locale": locale,
             }
         )
         if self.error is not None:
@@ -166,7 +170,7 @@ class FakeGoogleTTSService:
         self.error = error
         self.calls = []
 
-    async def synthesize_speech(self, text):
+    async def synthesize_speech(self, text, *, language_code=None):
         self.calls.append(text)
         if self.error is not None:
             raise self.error

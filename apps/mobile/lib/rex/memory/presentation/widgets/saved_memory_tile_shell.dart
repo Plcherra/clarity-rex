@@ -21,6 +21,8 @@ class StructuredMemoryTile extends StatelessWidget {
     this.updatedAt,
     this.createdAt,
     this.supplementalLabels = const [],
+    this.supplementalWidgets = const [],
+    this.onAddMilestone,
   });
 
   final IconData icon;
@@ -32,6 +34,8 @@ class StructuredMemoryTile extends StatelessWidget {
   final DateTime? updatedAt;
   final DateTime? createdAt;
   final List<String> supplementalLabels;
+  final List<Widget> supplementalWidgets;
+  final VoidCallback? onAddMilestone;
   final VoidCallback onEdit;
   final VoidCallback? onDeactivate;
 
@@ -47,6 +51,8 @@ class StructuredMemoryTile extends StatelessWidget {
       updatedAt: updatedAt,
       createdAt: createdAt,
       supplementalLabels: supplementalLabels,
+      supplementalWidgets: supplementalWidgets,
+      onAddMilestone: onAddMilestone,
       onEdit: onEdit,
       onDeactivate: onDeactivate,
     );
@@ -67,6 +73,8 @@ class SavedMemoryTileShell extends StatelessWidget {
     this.updatedAt,
     this.createdAt,
     this.supplementalLabels = const [],
+    this.supplementalWidgets = const [],
+    this.onAddMilestone,
   });
 
   final IconData icon;
@@ -78,6 +86,8 @@ class SavedMemoryTileShell extends StatelessWidget {
   final DateTime? updatedAt;
   final DateTime? createdAt;
   final List<String> supplementalLabels;
+  final List<Widget> supplementalWidgets;
+  final VoidCallback? onAddMilestone;
   final VoidCallback onEdit;
   final VoidCallback? onDeactivate;
 
@@ -164,7 +174,8 @@ class SavedMemoryTileShell extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (supplementalLabels.isNotEmpty) ...[
+                      if (supplementalLabels.isNotEmpty ||
+                          supplementalWidgets.isNotEmpty) ...[
                         const SizedBox(height: RexUiTokens.space8),
                         Wrap(
                           spacing: RexUiTokens.space8,
@@ -172,6 +183,7 @@ class SavedMemoryTileShell extends StatelessWidget {
                           children: [
                             for (final label in supplementalLabels)
                               MemoryMetaChip(label: label),
+                            ...supplementalWidgets,
                           ],
                         ),
                       ],
@@ -179,7 +191,11 @@ class SavedMemoryTileShell extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: RexUiTokens.space4),
-                _MemoryActionsMenu(onEdit: onEdit, onDeactivate: onDeactivate),
+                _MemoryActionsMenu(
+                  onEdit: onEdit,
+                  onDeactivate: onDeactivate,
+                  onAddMilestone: onAddMilestone,
+                ),
               ],
             ),
           ),
@@ -238,10 +254,15 @@ class _ImportanceDot extends StatelessWidget {
 }
 
 class _MemoryActionsMenu extends StatelessWidget {
-  const _MemoryActionsMenu({required this.onEdit, required this.onDeactivate});
+  const _MemoryActionsMenu({
+    required this.onEdit,
+    required this.onDeactivate,
+    this.onAddMilestone,
+  });
 
   final VoidCallback onEdit;
   final VoidCallback? onDeactivate;
+  final VoidCallback? onAddMilestone;
 
   @override
   Widget build(BuildContext context) {
@@ -258,6 +279,8 @@ class _MemoryActionsMenu extends StatelessWidget {
         switch (action) {
           case _MemoryAction.edit:
             onEdit();
+          case _MemoryAction.addMilestone:
+            onAddMilestone?.call();
           case _MemoryAction.archive:
             onDeactivate?.call();
         }
@@ -270,6 +293,14 @@ class _MemoryActionsMenu extends StatelessWidget {
             label: l10n.memoryTileQuickEdit,
           ),
         ),
+        if (onAddMilestone != null)
+          PopupMenuItem(
+            value: _MemoryAction.addMilestone,
+            child: _MemoryMenuItem(
+              icon: Icons.add_task_outlined,
+              label: l10n.memoryTileAddMilestone,
+            ),
+          ),
         if (onDeactivate != null)
           PopupMenuItem(
             value: _MemoryAction.archive,
@@ -311,4 +342,4 @@ class _MemoryMenuItem extends StatelessWidget {
   }
 }
 
-enum _MemoryAction { edit, archive }
+enum _MemoryAction { edit, addMilestone, archive }

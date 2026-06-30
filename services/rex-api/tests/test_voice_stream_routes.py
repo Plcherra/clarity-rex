@@ -780,7 +780,7 @@ class SlowGoogleTTSService:
         self.calls = []
         self.started = asyncio.Event()
 
-    async def synthesize_speech(self, text):
+    async def synthesize_speech(self, text, *, language_code=None):
         self.calls.append(text)
         self.started.set()
         await asyncio.sleep(30)

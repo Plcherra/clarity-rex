@@ -4,5 +4,6 @@ enum StructuredMemoryKind {
   entity,
   rule,
   plan,
+  planMilestone,
   commitment,
 }

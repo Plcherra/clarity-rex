@@ -103,6 +103,32 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     }
   }
 
+  Future<bool> createPlanMilestone(
+    String planId, {
+    required String title,
+    String? description,
+    int priority = 3,
+  }) async {
+    state = state.copyWith(isSaving: true, clearError: true);
+    try {
+      await ref.read(memoryApiProvider).createPlanMilestone(
+            planId,
+            title: title,
+            description: description,
+            priority: priority,
+          );
+      await loadSavedOverview(activeOnly: state.activeOnly);
+      state = state.copyWith(isSaving: false, clearError: true);
+      return true;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.create),
+      );
+      return false;
+    }
+  }
+
   Future<bool> createCommitment({
     required String title,
     required String commitmentText,
@@ -337,6 +363,36 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     }
   }
 
+  Future<bool> updatePlanMilestone(
+    String milestoneId, {
+    String? title,
+    String? description,
+    int? priority,
+    String? status,
+    bool? active,
+  }) async {
+    state = state.copyWith(isSaving: true, clearError: true);
+    try {
+      await ref.read(memoryApiProvider).updatePlanMilestone(
+            milestoneId,
+            title: title,
+            description: description,
+            priority: priority,
+            status: status,
+            active: active,
+          );
+      await loadSavedOverview(activeOnly: state.activeOnly);
+      state = state.copyWith(isSaving: false, clearError: true);
+      return true;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.edit),
+      );
+      return false;
+    }
+  }
+
   Future<bool> updateCommitment(
     String commitmentId, {
     String? title,
@@ -394,6 +450,8 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
           await api.archiveRule(id);
         case StructuredMemoryKind.plan:
           await api.archivePlan(id);
+        case StructuredMemoryKind.planMilestone:
+          await api.archivePlanMilestone(id);
         case StructuredMemoryKind.commitment:
           await api.archiveCommitment(id);
         case StructuredMemoryKind.flatMemory:

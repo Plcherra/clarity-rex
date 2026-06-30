@@ -82,8 +82,8 @@ class FakeGoogleTTSService:
         self.error = error
         self.calls = []
 
-    async def synthesize_speech(self, text):
-        self.calls.append({"text": text})
+    async def synthesize_speech(self, text, *, language_code=None):
+        self.calls.append({"text": text, "language_code": language_code})
         if self.error is not None:
             raise self.error
 
@@ -116,6 +116,8 @@ class FakeChatService:
         response_instructions=None,
         max_response_tokens=None,
         channel=None,
+        user_requested_deep_thinking=False,
+        locale=None,
     ):
         self.calls.append(
             {
@@ -126,6 +128,8 @@ class FakeChatService:
                 "response_instructions": response_instructions,
                 "max_response_tokens": max_response_tokens,
                 "channel": channel,
+                "user_requested_deep_thinking": user_requested_deep_thinking,
+                "locale": locale,
             }
         )
         if self.error is not None:

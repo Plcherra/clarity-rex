@@ -94,4 +94,4 @@ flutter gen-l10n
 
 ## Deferred
 
-- Plan milestone create/edit UI in Knows
+- ~~Plan milestone create/edit UI in Knows~~ — preview chips plus plan-card add/edit milestone flows (M3 follow-up)

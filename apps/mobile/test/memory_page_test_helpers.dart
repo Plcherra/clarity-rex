@@ -513,6 +513,59 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
   Future<void> deactivateMemory(String memoryId) async {
     await archiveMemory(memoryId);
   }
+
+  final milestoneCreates = <Map<String, String>>[];
+  final milestoneUpdates = <String>[];
+
+  @override
+  Future<PlanMilestoneMemoryItem> createPlanMilestone(
+    String planId, {
+    required String title,
+    String? description,
+    String milestoneType = 'checkpoint',
+    int priority = 3,
+  }) async {
+    milestoneCreates.add({
+      'planId': planId,
+      'title': title,
+      if (description != null) 'description': description,
+    });
+    return PlanMilestoneMemoryItem(
+      id: 'milestone-new',
+      planId: planId,
+      title: title,
+      description: description,
+      milestoneType: milestoneType,
+      priority: priority,
+      status: 'open',
+      active: true,
+    );
+  }
+
+  @override
+  Future<PlanMilestoneMemoryItem> updatePlanMilestone(
+    String milestoneId, {
+    String? title,
+    String? description,
+    int? priority,
+    String? status,
+    bool? active,
+  }) async {
+    milestoneUpdates.add(milestoneId);
+    return PlanMilestoneMemoryItem(
+      id: milestoneId,
+      planId: 'plan-1',
+      title: title ?? 'Updated milestone',
+      description: description,
+      milestoneType: 'checkpoint',
+      priority: priority ?? 3,
+      status: status ?? 'open',
+      active: active ?? true,
+    );
+  }
+
+  @override
+  Future<void> archivePlanMilestone(String milestoneId) async {}
 }
 
 List<MemoryItem> _filterMemories(

@@ -28,7 +28,11 @@ class FakeChatService:
         conversation_id=None,
         file=None,
         financial_context=None,
+        response_instructions=None,
+        max_response_tokens=None,
+        channel=None,
         user_requested_deep_thinking=False,
+        locale=None,
     ):
         self.calls.append(
             {
@@ -36,7 +40,11 @@ class FakeChatService:
                 "conversation_id": conversation_id,
                 "file": file,
                 "financial_context": financial_context,
+                "response_instructions": response_instructions,
+                "max_response_tokens": max_response_tokens,
+                "channel": channel,
                 "user_requested_deep_thinking": user_requested_deep_thinking,
+                "locale": locale,
                 "stream": False,
             }
         )
@@ -62,16 +70,26 @@ class FakeChatService:
         message,
         conversation_id=None,
         file=None,
+        response_instructions=None,
+        max_response_tokens=None,
         financial_context=None,
+        channel=None,
         user_requested_deep_thinking=False,
+        include_turn_trace=False,
+        locale=None,
     ):
         self.calls.append(
             {
                 "message": message,
                 "conversation_id": conversation_id,
                 "file": file,
+                "response_instructions": response_instructions,
+                "max_response_tokens": max_response_tokens,
                 "financial_context": financial_context,
+                "channel": channel,
                 "user_requested_deep_thinking": user_requested_deep_thinking,
+                "include_turn_trace": include_turn_trace,
+                "locale": locale,
                 "stream": True,
             }
         )
@@ -114,7 +132,11 @@ def test_chat_accepts_json(client):
             "conversation_id": "conversation-existing",
             "file": None,
             "financial_context": None,
+            "response_instructions": None,
+            "max_response_tokens": None,
+            "channel": None,
             "user_requested_deep_thinking": False,
+            "locale": None,
             "stream": False,
         }
     ]
