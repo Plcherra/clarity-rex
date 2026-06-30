@@ -1,11 +1,9 @@
-# Clarity (mobile app)
-
-> Portfolio overview and full screenshot gallery: **[repository README](../../README.md)**
+# Clarity
 
 **See your money clearly. Talk to Rex like he actually knows your life.**
 
 <p align="center">
-  <img src="assets/readme/hero-dashboard.png" alt="Clarity dashboard — balances, cash flow, and spending by category" width="360" />
+  <img src="apps/mobile/assets/readme/hero-dashboard.png" alt="Clarity dashboard — balances, cash flow, and spending by category" width="360" />
 </p>
 
 <p align="center">
@@ -26,28 +24,28 @@ Built as a **production-minded MVP**: dark-first UI, English and Spanish, Plaid 
 ## App gallery
 
 <p align="center">
-  <img src="assets/readme/02-dashboard.png" alt="Dashboard" width="280" />
+  <img src="apps/mobile/assets/readme/02-dashboard.png" alt="Dashboard" width="280" />
   &nbsp;&nbsp;
-  <img src="assets/readme/05-rex-chat.png" alt="Rex chat" width="280" />
+  <img src="apps/mobile/assets/readme/05-rex-chat.png" alt="Rex chat" width="280" />
 </p>
 
 | | |
 |---|---|
 | **Dashboard** — Balances, income vs spending, cash-flow chart, category breakdown | **Accounts** — Plaid-connected accounts with sync status |
-| ![Dashboard](assets/readme/02-dashboard.png) | ![Accounts](assets/readme/03-accounts.png) |
+| ![Dashboard](apps/mobile/assets/readme/02-dashboard.png) | ![Accounts](apps/mobile/assets/readme/03-accounts.png) |
 | **Budgets** — Monthly, weekly, or custom periods; budget vs spent insights | **Transactions** — Searchable history by month and category |
-| ![Budgets](assets/readme/04-budgets.png) | ![Transactions](assets/readme/09-transactions.png) |
+| ![Budgets](apps/mobile/assets/readme/04-budgets.png) | ![Transactions](apps/mobile/assets/readme/09-transactions.png) |
 | **Rex chat** — Ask about money and life context using live app data | **Knows** — Saved memory: People, Events, Places, Goals, Preferences, Facts |
-| ![Rex Chat](assets/readme/05-rex-chat.png) | ![Knows](assets/readme/06-knows.png) |
+| ![Rex Chat](apps/mobile/assets/readme/05-rex-chat.png) | ![Knows](apps/mobile/assets/readme/06-knows.png) |
 | **Goals** — Track goals and commitments alongside Rex | **Voice** — Hands-free Rex with usage tracking in Profile |
-| ![Goals](assets/readme/07-goals.png) | ![Voice](assets/readme/08-voice.png) |
+| ![Goals](apps/mobile/assets/readme/07-goals.png) | ![Voice](apps/mobile/assets/readme/08-voice.png) |
 
 <p align="center">
-  <img src="assets/readme/01-onboarding.png" alt="Onboarding" width="220" />
+  <img src="apps/mobile/assets/readme/01-onboarding.png" alt="Onboarding" width="220" />
   &nbsp;
-  <img src="assets/readme/10-profile-settings.png" alt="Settings" width="220" />
+  <img src="apps/mobile/assets/readme/10-profile-settings.png" alt="Settings" width="220" />
   &nbsp;
-  <img src="assets/readme/11-dashboard-light.png" alt="Light mode" width="220" />
+  <img src="apps/mobile/assets/readme/11-dashboard-light.png" alt="Light mode" width="220" />
 </p>
 <p align="center"><sub>Onboarding · Profile &amp; settings · Light mode</sub></p>
 
@@ -106,6 +104,19 @@ Server secrets stay on the backend — the mobile app only holds public client c
 
 ---
 
+## Repository layout
+
+| Path | What it is |
+|------|------------|
+| [`apps/mobile/`](apps/mobile/) | Flutter app (Dashboard, Budgets, Rex, Knows, Goals, Voice) |
+| [`services/rex-api/`](services/rex-api/) | Python FastAPI — Rex Brain, memory, chat, voice, Plaid |
+| [`supabase/`](supabase/) | Database migrations, Edge Functions, auth templates |
+| [`docs/`](docs/) | Architecture, finance truth, brain plans, runbooks |
+
+Mobile-specific setup: [`apps/mobile/README.md`](apps/mobile/README.md)
+
+---
+
 ## Status
 
 Active MVP / pilot. Core user flows run on device; reliability and localization work continue.
@@ -125,7 +136,7 @@ Active MVP / pilot. Core user flows run on device; reliability and localization 
 
 ### Prerequisites
 
-- Flutter SDK compatible with `sdk: ^3.11.4` (see `pubspec.yaml`)
+- Flutter SDK compatible with `sdk: ^3.11.4` (see `apps/mobile/pubspec.yaml`)
 - Xcode (iOS) and/or Android Studio (Android)
 - [Supabase CLI](https://supabase.com/docs/guides/cli) (optional for app-only work)
 - Running Rex API locally or deployed (`services/rex-api`)
@@ -166,7 +177,7 @@ Never put `OPENAI_API_KEY`, Grok keys, or Plaid secrets in the Flutter app.
 ### Backend & database
 
 ```bash
-# Rex API (from services/rex-api — see services/rex-api README)
+# Rex API (from services/rex-api)
 uvicorn app.main:app --reload --port 8000
 
 # Migrations (from repo root)
@@ -192,55 +203,13 @@ flutter test
 </details>
 
 <details>
-<summary><strong>Project structure (mobile)</strong></summary>
-
-```text
-lib/
-├── app/              # Bootstrap, composition root, UI controllers
-├── core/             # Models, Supabase, formatting, l10n
-├── features/         # Dashboard, accounts, budgets, transactions, …
-├── rex/              # Assistant: chat, voice, memory, goals
-├── services/         # Shared API clients
-└── widgets/          # Reusable UI
-```
-
-Entry: `lib/main.dart` → `lib/app/bootstrap.dart` · Composition: `lib/app/app_composition.dart`
-
-Monorepo map: [`docs/PROJECT_MAP.md`](../../docs/PROJECT_MAP.md)
-
-</details>
-
-<details>
-<summary><strong>Screenshot assets</strong></summary>
-
-Screenshots live in `apps/mobile/assets/readme/` and are wired in the gallery above.
-
-| File | Screen |
-|------|--------|
-| `hero-dashboard.png` | Dashboard — balance, monthly summary, cash-flow chart |
-| `01-onboarding.png` | Sign in |
-| `02-dashboard.png` | Dashboard — categories, income vs spending, trends |
-| `03-accounts.png` | Accounts — Plaid-connected cards |
-| `04-budgets.png` | Budgets — period picker and budget vs spent |
-| `05-rex-chat.png` | Assistant → Chat |
-| `06-knows.png` | Assistant → Knows (saved memory) |
-| `07-goals.png` | Assistant → Goals |
-| `08-voice.png` | Profile → Voice usage |
-| `09-transactions.png` | Transactions by month |
-| `10-profile-settings.png` | Profile → Language |
-| `11-dashboard-light.png` | Dashboard (light mode) |
-
-Original device exports (`IMG_*.PNG`) are kept in the same folder for reference. Loading-state captures were not used in the gallery.
-
-</details>
-
-<details>
 <summary><strong>Internal documentation</strong></summary>
 
-- Architecture: [`docs/brain/REX_BRAIN_ARCHITECTURE.md`](../../docs/brain/REX_BRAIN_ARCHITECTURE.md)
-- Finance source of truth: [`docs/FINANCE_SOURCE_OF_TRUTH.md`](../../docs/FINANCE_SOURCE_OF_TRUTH.md)
-- CSV import contract: [`docs/csv_import_ai_categorization.md`](../../docs/csv_import_ai_categorization.md)
-- Completion plan: [`docs/project-completion/00_COMPLETION_MASTER_PLAN.md`](../../docs/project-completion/00_COMPLETION_MASTER_PLAN.md)
+- Architecture: [`docs/brain/REX_BRAIN_ARCHITECTURE.md`](docs/brain/REX_BRAIN_ARCHITECTURE.md)
+- Finance source of truth: [`docs/FINANCE_SOURCE_OF_TRUTH.md`](docs/FINANCE_SOURCE_OF_TRUTH.md)
+- CSV import contract: [`docs/csv_import_ai_categorization.md`](docs/csv_import_ai_categorization.md)
+- Completion plan: [`docs/project-completion/00_COMPLETION_MASTER_PLAN.md`](docs/project-completion/00_COMPLETION_MASTER_PLAN.md)
+- Monorepo map: [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md)
 
 </details>
 
@@ -248,4 +217,4 @@ Original device exports (`IMG_*.PNG`) are kept in the same folder for reference.
 
 ## License
 
-Private / unpublished (`publish_to: 'none'`). All rights reserved unless otherwise noted in the repository root.
+Private / unpublished. All rights reserved unless otherwise noted in the repository root.
