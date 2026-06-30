@@ -198,7 +198,7 @@ async def test_unresolved_plan_pending_is_not_overwritten_by_new_plan_message():
     assert memory_service.pending_actions
     assert memory_service.pending_actions[
         requested["conversation_id"]
-    ]["action_type"] == "save_plan"
+    ]["action_type"] == "durable_write"
 
 
 @pytest.mark.asyncio
@@ -309,7 +309,7 @@ async def test_plan_save_supersedes_pending_delete_with_message():
 
     assert "cleared the pending delete request" in plan_request["response"].lower()
     assert plan_request["memory_changes"]["confirmation_required"] == 1
-    assert memory_service.pending_actions[delete_request["conversation_id"]]["action_type"] == "save_plan"
+    assert memory_service.pending_actions[delete_request["conversation_id"]]["action_type"] == "durable_write"
 
 
 @pytest.mark.asyncio

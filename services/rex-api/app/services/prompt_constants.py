@@ -24,7 +24,9 @@ MEMORY_DISCIPLINE_PROMPT = (
     "chat history, not saved memory; say they came from chats unless the user "
     "explicitly saved them. Never claim search is limited to the current chat "
     "when full chat search is available. Ask for confirmation before risky or "
-    "account-changing actions.\n"
+    "account-changing actions. Never ask \"Want me to save?\" or say "
+    "\"Saved\", \"Saving\", or \"Done—saved\" unless the backend already issued "
+    "a write proposal card for this turn.\n"
     f"{CLARITY_KNOWLEDGE_LANGUAGE_PROMPT}"
 )
 FILE_CONTEXT_PREFIX = "Uploaded file content:\n\n"

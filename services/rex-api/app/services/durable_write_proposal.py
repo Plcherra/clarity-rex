@@ -42,6 +42,7 @@ class DurableWriteProposal:
     proposal_id: str = "write-1"
     merge_target_title: Optional[str] = None
     risk_level: str = "medium"
+    custom_assistant_prompt: Optional[str] = None
 
     @property
     def legacy_action(self) -> str:
@@ -72,6 +73,8 @@ class DurableWriteProposal:
         return f"Save this {self._kind_label()}?\n{self.title}"
 
     def assistant_prompt(self) -> str:
+        if self.custom_assistant_prompt:
+            return self.custom_assistant_prompt
         text = self.confirmation_text().rstrip("?")
         return f"I can {text[0].lower()}{text[1:]} Should I save that?"
 
@@ -113,6 +116,7 @@ class DurableWriteProposal:
             "proposal_id": self.proposal_id,
             "merge_target_title": self.merge_target_title,
             "risk_level": self.risk_level,
+            "custom_assistant_prompt": self.custom_assistant_prompt,
         }
 
     @classmethod
@@ -139,6 +143,8 @@ class DurableWriteProposal:
             proposal_id=str(raw.get("proposal_id") or "write-1"),
             merge_target_title=str(raw.get("merge_target_title") or "").strip() or None,
             risk_level=str(raw.get("risk_level") or "medium"),
+            custom_assistant_prompt=str(raw.get("custom_assistant_prompt") or "").strip()
+            or None,
         )
 
     def with_edits(self, edits: Optional[dict[str, Any]]) -> DurableWriteProposal:
@@ -167,4 +173,5 @@ class DurableWriteProposal:
             proposal_id=self.proposal_id,
             merge_target_title=self.merge_target_title,
             risk_level=self.risk_level,
+            custom_assistant_prompt=self.custom_assistant_prompt,
         )

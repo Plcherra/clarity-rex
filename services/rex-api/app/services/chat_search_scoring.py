@@ -54,6 +54,7 @@ FACTUAL_STATEMENT_PATTERNS = (
     r"\b(?:it|that|this|the\s+[a-z0-9'\s]{1,30})\s+(?:is|was|are|were)\b",
     r"\b(?:model|birthday|deadline|address|name|preference)\s+(?:is|was|are|were)\b",
     r"\b(?:my|her|his|their)\s+[a-z0-9'\s]{1,40}\s+birthday\b",
+    r"\b(?:worked with|works with|work with|employee|colleague|coworker|new hire|hired)\b",
     r"\b(?:send|sending|sent|transfer|transferring|transferred)\b.{0,60}\b(?:money|cash|\$|\d+)\b",
     r"\b(?:money|cash|\$|\d+)\b.{0,60}\b(?:send|sending|sent|transfer|transferring|transferred)\b",
 )

@@ -10,6 +10,11 @@ from app.services.chat_financial_guard import ChatFinancialGuard
 from app.services.chat_response_truth import ChatResponseTruthService
 from app.services.chat_turn_context import ChatTurnContextService, MemoryService
 from app.services.chat_turn_observability import ChatTurnObserver, ChatTurnTrace
+from app.services.conversation_pending_action import (
+    PendingAction,
+    is_delete_confirmation_message,
+    is_delete_rejection_message,
+)
 from app.services.chat_turn_orchestrator_support import (
     annotate_pending_action,
     brain_messages,
@@ -358,7 +363,11 @@ class ChatTurnOrchestrator:
         write_confirmation: Optional[dict] = None,
     ) -> Optional[dict]:
         conversation_id = turn_context.conversation_id
-        if pending_action is not None:
+        if self._should_handle_durable_pending_first(
+            brain_message,
+            pending_action=pending_action,
+            write_confirmation=write_confirmation,
+        ):
             durable_turn = await self.durable_write_service.try_handle_pending(
                 brain_message,
                 pending_action=pending_action,
@@ -427,6 +436,23 @@ class ChatTurnOrchestrator:
                 "memory_turn",
             )
             return simple_memory_turn
+
+        durable_turn = await self.durable_write_service.try_handle_pending(
+            brain_message,
+            pending_action=pending_action,
+            conversation_id=conversation_id,
+            user_message=turn_context.user_message,
+            write_confirmation=write_confirmation,
+        )
+        if durable_turn is not None:
+            finish_short_circuit(
+                self.turn_observer,
+                self.usage_recorder,
+                turn_trace,
+                turn_started_at,
+                "durable_write",
+            )
+            return durable_turn
         finance_guard_response = self.financial_guard.guard_response(
             intent_decision,
             financial_context,
@@ -447,6 +473,26 @@ class ChatTurnOrchestrator:
                 user_message=turn_context.user_message,
             )
         return None
+
+    def _should_handle_durable_pending_first(
+        self,
+        message: str,
+        *,
+        pending_action,
+        write_confirmation: Optional[dict],
+    ) -> bool:
+        if write_confirmation is not None:
+            return True
+        pending = (
+            pending_action
+            if isinstance(pending_action, PendingAction)
+            else PendingAction.from_dict(pending_action)
+        )
+        if pending is None or pending.action_type != "durable_write":
+            return False
+        return is_delete_confirmation_message(message) or is_delete_rejection_message(
+            message
+        )
 
     def _build_llm_messages(
         self,

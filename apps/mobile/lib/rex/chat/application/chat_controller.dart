@@ -16,6 +16,7 @@ import 'package:clarity/rex/chat/data/chat_api.dart';
 import 'package:clarity/rex/chat/application/chat_memory_change_parser.dart';
 import 'package:clarity/rex/chat/application/chat_response_text.dart';
 import 'package:clarity/rex/chat/application/chat_state.dart';
+import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
 import 'package:clarity/rex/memory/application/memory_controller.dart';
 import 'package:clarity/rex/accountability/application/accountability_controller.dart';
@@ -228,6 +229,8 @@ class ChatController extends Notifier<ChatState> {
     if ((message.isEmpty && attachment == null) || state.isLoading) {
       return null;
     }
+
+    writeConfirmation ??= _writeConfirmationForTypedAffirmation(message);
 
     if (attachment != null) {
       final attachmentError = await validateChatAttachmentFile(
@@ -677,6 +680,35 @@ class ChatController extends Notifier<ChatState> {
         action == 'update_plan_milestone' ||
         action == 'update_commitment' ||
         action == 'save_entity_event';
+  }
+
+  Map<String, dynamic>? writeConfirmationForAffirmation(String message) {
+    return _writeConfirmationForTypedAffirmation(message);
+  }
+
+  Map<String, dynamic>? _writeConfirmationForTypedAffirmation(String message) {
+    final normalized = message.trim().toLowerCase();
+    const affirmations = {
+      'yes',
+      'yes please',
+      'yep',
+      'yeah',
+      'sure',
+      'please',
+      'please do',
+      'do it',
+      'save it',
+      'save that',
+      'save this',
+    };
+    if (!affirmations.contains(normalized)) {
+      return null;
+    }
+    final pending = pendingClarityActions(state.messages);
+    if (pending.length != 1 || !pending.first.canConfirm) {
+      return null;
+    }
+    return _writeConfirmationPayload(pending.first);
   }
 
   Map<String, dynamic> _writeConfirmationPayload(ClarityActionCard action) {

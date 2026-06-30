@@ -16,6 +16,10 @@ class PromptStructuredContextMixin:
         if not structured_context:
             return None
 
+        inventory_context = structured_context.get("inventory_context")
+        if isinstance(inventory_context, str) and inventory_context.strip():
+            return f"{STRUCTURED_MEMORY_PREFIX}{inventory_context.strip()}"
+
         lines: list[str] = []
         used_characters = 0
         entity_names = self._entity_name_map(structured_context.get("entities") or [])
@@ -172,6 +176,13 @@ class PromptStructuredContextMixin:
             f"saved_knowledge={saved_state} count={saved_knowledge_count}; "
             f"chat_search={chat_state} count={chat_count}."
         )
+        if saved_state == "found" and saved_knowledge_count > 0:
+            line = (
+                f"{line} When listing saved knowledge, count each entity card and "
+                "each uncategorized fact separately. A person card may include "
+                "multiple attributes (name, workplace, birthday); describe them "
+                "all instead of calling that a single fact."
+            )
         if chat_state == "found":
             line = (
                 f"{line} Use chat results as chat history, not saved memory. "

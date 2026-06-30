@@ -241,79 +241,9 @@ class GoalCommandReclassifier:
         conversation_history: list[dict],
         time_context: dict,
     ) -> Optional[dict]:
-        if not is_memory_reclassification_request(
-            message,
-            conversation_history=conversation_history,
-        ):
-            return None
-
-        body = extract_reclassified_body(
-            message,
-            conversation_history=conversation_history,
-        )
-        commands = build_reclassified_commands(
-            body,
-            message=message,
-            conversation_history=conversation_history,
-            time_context=time_context,
-        )
-        if not commands:
-            return await clarification_turn_result(
-                self.memory_service,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                response=(
-                    "I can move that out of saved memory once I know the exact goal. "
-                    "Tell me what to track—for example, separate goals for RAM and "
-                    "storage with a deadline like next month."
-                ),
-            )
-
-        memory = await self._find_memory_to_archive(
-            message,
-            conversation_history=conversation_history,
-        )
-        archived_record = None
-        if memory is not None:
-            archived_record = await self._archive_memory(memory)
-
-        extra_records = archived_memory_record(archived_record)
-        if len(commands) == 1:
-            command = commands[0]
-            response = reclassification_response(
-                command,
-                archived_record=archived_record,
-                total_goals=1,
-            )
-            if command.kind == "goal":
-                return await self.writer.save_goal(
-                    command,
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                    response=response,
-                    extra_records=extra_records,
-                )
-            return await self.writer.save_commitment(
-                command,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                response=response,
-                extra_records=extra_records,
-            )
-
-        response = reclassification_response(
-            commands[0],
-            archived_record=archived_record,
-            total_goals=len(commands),
-            titles=[command.title for command in commands],
-        )
-        return await self.writer.save_multiple_goals(
-            commands,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            response=response,
-            extra_records=extra_records,
-        )
+        # Direct memory→goal reclassification writes are disabled.
+        # Reclassification must go through DurableWriteService propose/confirm.
+        return None
 
     async def _find_memory_to_archive(
         self,

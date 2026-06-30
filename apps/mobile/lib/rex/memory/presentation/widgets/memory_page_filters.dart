@@ -16,6 +16,10 @@ SavedMemoryResults filterSavedMemory({
     for (final entity in state.placeEntities) ...entity.sourceMemoryIds,
     for (final entity in state.otherEntities) ...entity.sourceMemoryIds,
   };
+  final coveredWorkplaceLabels = {
+    for (final person in state.people) ..._workplaceLabelsForPerson(person),
+  };
+  final dedupedOtherEntities = _dedupeSimilarOrganizations(state.otherEntities);
 
   List<T> filterList<T>(Iterable<T> items, bool Function(T item) matches) {
     return items.where(matches).toList(growable: false);
@@ -141,13 +145,58 @@ SavedMemoryResults filterSavedMemory({
     otherEntities: showPeopleOnly || showPreferencesOnly
         ? const []
         : filterList(
-            state.otherEntities,
-            (entity) => _matchesQuery(
-              normalizedQuery,
-              entity.searchableFields.map((field) => field.memoryRecordLabel),
-            ),
+            dedupedOtherEntities,
+            (entity) {
+              if (coveredWorkplaceLabels.contains(_normalizeOrgLabel(entity.displayName))) {
+                return false;
+              }
+              return _matchesQuery(
+                normalizedQuery,
+                entity.searchableFields.map((field) => field.memoryRecordLabel),
+              );
+            },
           ),
   );
+}
+
+Iterable<String> _workplaceLabelsForPerson(PersonMemoryItem person) sync* {
+  for (final value in [person.workplace, person.job]) {
+    final normalized = _normalizeOrgLabel(value);
+    if (normalized.isNotEmpty) {
+      yield normalized;
+    }
+  }
+}
+
+String _normalizeOrgLabel(String? value) {
+  final normalized = (value ?? '')
+      .toLowerCase()
+      .replaceAll(RegExp(r'\b(llc|inc|corp|corporation|company|co)\b'), '')
+      .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+      .trim();
+  return normalized;
+}
+
+List<EntityMemoryItem> _dedupeSimilarOrganizations(List<EntityMemoryItem> entities) {
+  final bestByLabel = <String, EntityMemoryItem>{};
+  for (final entity in entities) {
+    final key = _normalizeOrgLabel(entity.displayName);
+    if (key.isEmpty) {
+      continue;
+    }
+    final existing = bestByLabel[key];
+    if (existing == null || entity.importance > existing.importance) {
+      bestByLabel[key] = entity;
+    }
+  }
+  final keptIds = bestByLabel.values.map((entity) => entity.id).toSet();
+  return entities.where((entity) {
+    final key = _normalizeOrgLabel(entity.displayName);
+    if (key.isEmpty) {
+      return true;
+    }
+    return keptIds.contains(entity.id);
+  }).toList(growable: false);
 }
 
 bool _matchesQuery(String query, Iterable<String?> fields) {

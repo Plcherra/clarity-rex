@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from app.models.memory_discipline import MemoryDisciplineAction, MemoryDisciplineDecision
+from app.services.conversational_plan_decision_store import decision_to_dict
+from app.services.conversational_plan_prompts import confirmation_prompt
+from app.services.conversational_plan_results import write_kind_for_action
 from app.services.durable_write_applier import preview_plan_merge_title
 from app.services.durable_write_proposal import DurableWriteProposal
 from app.services.goal_command_formatting import goal_title, plan_type
@@ -131,6 +135,46 @@ async def proposal_from_commitment_command(
             "conversation_id": conversation_id,
             "source_message_id": source_message_id,
         },
+    )
+
+
+def proposal_from_discipline_decision(
+    decision: MemoryDisciplineDecision,
+    *,
+    title: str,
+) -> DurableWriteProposal:
+    payload = decision.payload
+    body = str(
+        payload.get("description")
+        or payload.get("desired_outcome")
+        or payload.get("commitment_text")
+        or title
+    )
+    target_label = None
+    parent_id = decision.metadata.get("parent_plan_id") or payload.get("plan_id")
+    if parent_id:
+        for record in decision.related_records:
+            if record.id == parent_id and record.title:
+                target_label = str(record.title)
+                break
+    merge_target = decision.metadata.get("merge_disclosed_to")
+    if isinstance(merge_target, str):
+        merge_target = merge_target.strip() or None
+    else:
+        merge_target = None
+    write_kind = write_kind_for_action(decision.action)
+    return DurableWriteProposal(
+        write_kind=write_kind,
+        title=title,
+        body=body,
+        target_label=target_label,
+        merge_target_title=merge_target,
+        editable_fields=("title", "body"),
+        apply_snapshot={
+            "type": "discipline_decision",
+            "decision": decision_to_dict(decision),
+        },
+        custom_assistant_prompt=confirmation_prompt(decision),
     )
 
 

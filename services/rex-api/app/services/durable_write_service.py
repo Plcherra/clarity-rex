@@ -4,16 +4,17 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from app.models.memory_discipline import MemoryDisciplineDecision
 from app.services.conversation_pending_action import (
     ConversationPendingActionService,
     PendingAction,
     is_delete_confirmation_message,
     is_delete_rejection_message,
 )
-from app.services.conversational_plan_service import ConversationalPlanService
 from app.services.durable_write_applier import DurableWriteApplier
 from app.services.durable_write_builders import (
     proposal_from_commitment_command,
+    proposal_from_discipline_decision,
     proposal_from_goal_command,
     proposal_from_memory_update,
     proposal_from_simple_memory,
@@ -30,6 +31,7 @@ from app.services.durable_write_results import (
     pending_memory_changes,
     rejected_memory_changes,
 )
+from app.services.goal_command_formatting import goal_title
 from app.services.goal_command_results import clarification_turn_result
 from app.services.goal_command_types import GoalCommand
 from app.services.memory_intent_service import SimpleMemoryIntent
@@ -43,7 +45,6 @@ class DurableWriteService:
         *,
         plan_service: Optional[PlanService] = None,
         applier: Optional[DurableWriteApplier] = None,
-        conversational_plan_service: Optional[ConversationalPlanService] = None,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service or PlanService(memory_service)
@@ -51,7 +52,6 @@ class DurableWriteService:
             memory_service,
             plan_service=self.plan_service,
         )
-        self.conversational_plan_service = conversational_plan_service
 
     async def propose_simple_memory(
         self,
@@ -124,6 +124,28 @@ class DurableWriteService:
             user_message=user_message,
         )
 
+    async def propose_discipline_decision(
+        self,
+        decision: MemoryDisciplineDecision,
+        *,
+        conversation_id: str,
+        user_message: dict,
+    ) -> dict:
+        title = goal_title(
+            str(
+                decision.payload.get("title")
+                or decision.payload.get("description")
+                or decision.payload.get("desired_outcome")
+                or "this plan"
+            )
+        )
+        proposal = proposal_from_discipline_decision(decision, title=title)
+        return await self._propose(
+            proposal,
+            conversation_id=conversation_id,
+            user_message=user_message,
+        )
+
     async def try_handle_pending(
         self,
         message: str,
@@ -141,24 +163,7 @@ class DurableWriteService:
         if pending is None:
             return None
 
-        if pending.action_type == "save_plan" and self.conversational_plan_service:
-            if is_delete_confirmation_message(message) or write_confirmation is not None:
-                return await self.conversational_plan_service._apply_confirmed_save(
-                    pending,
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                )
-            if is_delete_rejection_message(message):
-                return await self.conversational_plan_service._reject_confirmed_save(
-                    pending,
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                )
-            return None
-
         if pending.action_type != "durable_write":
-            if pending.action_type == "save_plan":
-                return None
             return None
 
         proposal = proposal_from_pending_action(pending)
@@ -296,4 +301,7 @@ def _saved_response(
     if proposal.write_kind == "commitment":
         target = proposal.target_label or "your plan"
         return f"Saved commitment under {target}: {proposal.title}"
+    if proposal.write_kind == "milestone":
+        target = proposal.target_label or "your plan"
+        return f"Saved milestone under {target}: {proposal.title}"
     return f"Saved {proposal.title}."

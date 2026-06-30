@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/supabase/supabase_exceptions.dart';
 import '../../../core/supabase/supabase_records.dart';
@@ -8,13 +9,17 @@ import '../../auth/application/auth_service.dart';
 import 'locale_controller.dart';
 import 'profile_service.dart';
 
+const _onboardingNameCacheKey = 'profile_onboarding_completed_name';
+
 final class ProfileController extends ChangeNotifier {
   ProfileController({
     required this.profileService,
     required this.authService,
     required this.syncAfterProfileChanged,
     LocaleController? localeController,
-  }) : _localeController = localeController {
+    SharedPreferencesAsync? preferences,
+  }) : _localeController = localeController,
+       _preferences = preferences ?? SharedPreferencesAsync() {
     _authSubscription = authService.authStateChanges.listen((_) async {
       await hydrateProfileForCurrentUser();
     });
@@ -24,33 +29,47 @@ final class ProfileController extends ChangeNotifier {
   final AuthService authService;
   final Future<void> Function() syncAfterProfileChanged;
   final LocaleController? _localeController;
+  final SharedPreferencesAsync _preferences;
   StreamSubscription<dynamic>? _authSubscription;
   StreamSubscription<ProfileRecord?>? _profileSubscription;
 
   ProfileRecord? profile;
   bool isLoading = false;
   String? errorMessage;
+  String? _cachedOnboardingName;
 
   bool get hasCompleteProfile {
-    return profile?.fullName?.trim().isNotEmpty ?? false;
+    if (profile?.fullName?.trim().isNotEmpty ?? false) {
+      return true;
+    }
+    return _cachedOnboardingName?.trim().isNotEmpty ?? false;
   }
 
   Future<void> hydrateProfileForCurrentUser() async {
-    final shouldBlockUi = profile == null;
-    isLoading = shouldBlockUi;
-    errorMessage = null;
-    notifyListeners();
-
     await _profileSubscription?.cancel();
     _profileSubscription = null;
+    var shouldBlockUi = profile == null && _cachedOnboardingName == null;
 
     try {
       if (authService.currentUser == null) {
         profile = null;
+        _cachedOnboardingName = null;
+        await _preferences.remove(_onboardingNameCacheKey);
+        isLoading = false;
+        notifyListeners();
         return;
       }
 
+      _cachedOnboardingName = await _preferences.getString(
+        _onboardingNameCacheKey,
+      );
+      shouldBlockUi = profile == null && _cachedOnboardingName == null;
+      isLoading = shouldBlockUi;
+      errorMessage = null;
+      notifyListeners();
+
       profile = await profileService.fetchCurrentProfile();
+      await _cacheOnboardingName(profile?.fullName);
       await _localeController?.resolveAfterProfileHydrate(
         profilePreferredLocale: profile?.preferredLocale,
         seedProfileIfMissing:
@@ -64,8 +83,10 @@ final class ProfileController extends ChangeNotifier {
       ) async {
         if (next != null) {
           profile = next;
+          await _cacheOnboardingName(next.fullName);
         } else if (authService.currentUser == null) {
           profile = null;
+          _cachedOnboardingName = null;
         }
         await _localeController?.resolveAfterProfileHydrate(
           profilePreferredLocale: profile?.preferredLocale,
@@ -76,7 +97,7 @@ final class ProfileController extends ChangeNotifier {
       profile = null;
     } catch (e) {
       errorMessage = e.toString();
-      if (shouldBlockUi) {
+      if (shouldBlockUi && _cachedOnboardingName == null) {
         profile = null;
       }
     } finally {
@@ -96,12 +117,14 @@ final class ProfileController extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _cacheOnboardingName(fullName);
       profile = await profileService.upsertCurrentProfile(
         email: email,
         fullName: fullName,
         avatarUrl: avatarUrl,
         preferredLocale: preferredLocale,
       );
+      await _cacheOnboardingName(profile?.fullName);
       await syncAfterProfileChanged();
     } catch (e) {
       errorMessage = e.toString();
@@ -123,12 +146,14 @@ final class ProfileController extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _cacheOnboardingName(fullName);
       profile = await profileService.updateCurrentProfile(
         email: email,
         fullName: fullName,
         avatarUrl: avatarUrl,
         preferredLocale: preferredLocale,
       );
+      await _cacheOnboardingName(profile?.fullName);
       await syncAfterProfileChanged();
     } catch (e) {
       errorMessage = e.toString();
@@ -144,6 +169,15 @@ final class ProfileController extends ChangeNotifier {
       return;
     }
     await updateCurrentProfile(preferredLocale: localeTag);
+  }
+
+  Future<void> _cacheOnboardingName(String? fullName) async {
+    final normalized = fullName?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return;
+    }
+    _cachedOnboardingName = normalized;
+    await _preferences.setString(_onboardingNameCacheKey, normalized);
   }
 
   @override

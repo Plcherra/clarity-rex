@@ -156,6 +156,40 @@ async def test_new_save_supersedes_stale_pending_proposal():
 
 
 @pytest.mark.asyncio
+async def test_yes_after_recall_save_offer_proposes_pc():
+    memory_service = FakeMemoryService()
+    chat_service = _chat_service(memory_service)
+
+    conversation_id = await memory_service.create_conversation()
+    await memory_service.save_message(conversation_id, "user", "Can you save my PC model?")
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        "Sure, what's the model?",
+    )
+    await memory_service.save_message(
+        conversation_id,
+        "user",
+        "Search into our old chats",
+    )
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        (
+            "From our old chats, you mentioned having an Omen 45L PC. "
+            "Want me to save that to Clarity Knows?"
+        ),
+    )
+
+    proposed = await chat_service.send_message("Yes", conversation_id=conversation_id)
+
+    assert proposed["memory_changes"]["confirmation_required"] == 1
+    proposal = proposed["memory_changes"]["write_proposals"][0]
+    assert "Omen" in proposal["body"] or "PC" in proposal["body"]
+    assert memory_service.long_term_memory == []
+
+
+@pytest.mark.asyncio
 async def test_confirm_with_edits_applies_edited_body():
     memory_service = FakeMemoryService()
     chat_service = _chat_service(memory_service)

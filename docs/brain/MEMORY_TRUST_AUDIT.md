@@ -37,7 +37,19 @@
 
 - Knows/Goals REST CRUD — user fills form and taps Save
 
-### Session-only (not Knows)
+### Disabled bypass paths (Simple Brain Reset)
+
+- `GoalCommandReclassifier` direct memory→goal writes
+- Separate `save_plan` pending (folded into `durable_write`)
+- Auto merge on REST/chat create unless `merge_disclosed_to` is set
+- Auto person materializer on generic LTM REST create
+
+### Unified inventory
+
+- `SavedKnowledgeOverviewService` + `GET /saved-knowledge/overview`
+- Knows tab and "what do you know?" prompts use the same deduped snapshot
+
+See `docs/brain/SIMPLE_BRAIN_ARCHITECTURE.md`.
 
 - Chat messages, `conversations.pending_action` staging, LLM `clarity_action` financial proposals
 

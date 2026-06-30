@@ -364,25 +364,11 @@ async def test_chat_context_uses_inventory_query_for_broad_memory_recall():
         intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
     )
 
-    assert "profile_facts" in structured_context
-    assert [memory["id"] for memory in memories] == [
-        "profile-1",
-        "shared-1",
-    ]
+    assert "inventory_overview" in structured_context
+    assert "inventory_context" in structured_context
+    assert memories == []
     assert structured_context.get("chat_search_results", []) == []
-    status = structured_context["memory_status"]["source_statuses"][0]
-    assert status["source"] == "chat_search"
-    assert status["status"] == "empty"
-    assert store.relevant_memory_queries == [
-        {"query": MEMORY_INVENTORY_QUERY, "limit": 8},
-    ]
-    assert store.shared_conversation_search_queries[0] == (
-        {
-            "query": "What do you know?",
-            "limit": 200,
-            "exclude_conversation_id": None,
-        }
-    )
+    assert store.relevant_memory_queries == []
 
 
 @pytest.mark.asyncio
@@ -396,18 +382,11 @@ async def test_chat_context_uses_inventory_query_for_about_me_recall():
         intent_decision=RexIntentDecision(RexIntent.MEMORY_RECALL),
     )
 
-    assert "profile_facts" in structured_context
-    assert [memory["id"] for memory in memories] == [
-        "profile-1",
-        "shared-1",
-    ]
+    assert "inventory_overview" in structured_context
+    assert "inventory_context" in structured_context
+    assert memories == []
     assert structured_context.get("chat_search_results", []) == []
-    status = structured_context["memory_status"]["source_statuses"][0]
-    assert status["source"] == "chat_search"
-    assert status["status"] == "empty"
-    assert store.relevant_memory_queries == [
-        {"query": MEMORY_INVENTORY_QUERY, "limit": 8},
-    ]
+    assert store.relevant_memory_queries == []
 
 
 @pytest.mark.asyncio

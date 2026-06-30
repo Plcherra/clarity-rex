@@ -85,6 +85,14 @@ mixin MemoryReadController on Notifier<MemoryState> {
   }) async {
     final api = ref.read(memoryApiProvider);
     final active = activeOnly ? true : null;
+
+    if (!append) {
+      return _fetchSavedOverviewFromBackend(
+        api: api,
+        active: active,
+      );
+    }
+
     final results = await Future.wait<Object>([
       _fetchMemoriesPage(api, active: active, pages: pages, append: append),
       _fetchEntitiesPage(api, active: active, pages: pages, append: append),
@@ -220,6 +228,79 @@ mixin MemoryReadController on Notifier<MemoryState> {
       planMilestonePreviews: planMilestonePreviews,
       pages: nextPages,
     );
+  }
+
+  Future<_SavedOverviewSnapshot> _fetchSavedOverviewFromBackend({
+    required MemoryApi api,
+    required bool? active,
+  }) async {
+    final overview = await api.getSavedKnowledgeOverview(
+      activeOnly: active ?? true,
+    );
+    final people = _parseJsonList(overview['people'])
+        .map(
+          (json) => PersonMemoryItem.fromEntity(EntityMemoryItem.fromJson(json)),
+        )
+        .toList(growable: false);
+    final placeEntities = _parseJsonList(overview['places'])
+        .map(EntityMemoryItem.fromJson)
+        .toList(growable: false);
+    final otherEntities = _parseJsonList(overview['other_entities'])
+        .map(EntityMemoryItem.fromJson)
+        .toList(growable: false);
+    final memories = _parseJsonList(overview['facts'])
+        .map(MemoryItem.fromJson)
+        .toList(growable: false);
+    final rules = _parseJsonList(overview['rules'])
+        .map(RuleMemoryItem.fromJson)
+        .toList(growable: false);
+    final plans = _parseJsonList(overview['plans'])
+        .map(PlanMemoryItem.fromJson)
+        .toList(growable: false);
+    final commitments = _parseJsonList(overview['commitments'])
+        .map(CommitmentMemoryItem.fromJson)
+        .toList(growable: false);
+
+    final entityEventPreviews = await _loadEntityEventPreviews(
+      api: api,
+      targets: [
+        for (final person in people)
+          _PreviewTarget(id: person.id, importance: person.importance),
+        for (final entity in placeEntities)
+          _PreviewTarget(id: entity.id, importance: entity.importance),
+        for (final entity in otherEntities)
+          _PreviewTarget(id: entity.id, importance: entity.importance),
+      ],
+      active: active,
+    );
+    final planMilestonePreviews = await _loadPlanMilestonePreviews(
+      api: api,
+      targets: [
+        for (final plan in plans)
+          _PreviewTarget(id: plan.id, importance: plan.priority),
+      ],
+      active: active,
+    );
+
+    return _SavedOverviewSnapshot(
+      memories: memories,
+      people: people,
+      placeEntities: placeEntities,
+      otherEntities: otherEntities,
+      rules: rules,
+      plans: plans,
+      commitments: commitments,
+      entityEventPreviews: entityEventPreviews,
+      planMilestonePreviews: planMilestonePreviews,
+      pages: const MemoryOverviewPages(),
+    );
+  }
+
+  List<Map<String, dynamic>> _parseJsonList(Object? raw) {
+    if (raw is! List) {
+      return const [];
+    }
+    return raw.whereType<Map<String, dynamic>>().toList(growable: false);
   }
 
   Future<Map<String, List<EntityEventItem>>> _loadEntityEventPreviews({

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from app.services.action_truth_policy import (
     safe_chat_search_capability_response,
     safe_degraded_memory_search_response,
@@ -145,12 +147,34 @@ class ChatResponseTruthService:
                 updated,
                 turn_trace,
             )
+        if self._user_requested_memory_save(user_message):
+            updated = safe_unexecuted_memory_response(response)
+            response = _apply_truth_guard(
+                "unexecuted_memory_request",
+                response,
+                updated,
+                turn_trace,
+            )
         return response
 
     def _message_confirms_save(self, user_message: str) -> bool:
         from app.services.conversation_pending_action import is_delete_confirmation_message
 
         return is_delete_confirmation_message(user_message)
+
+    def _user_requested_memory_save(self, user_message: str) -> bool:
+        from app.services.memory_intent_service import MemoryIntentService
+
+        service = MemoryIntentService()
+        if service.is_contextual_memory_save_request(user_message):
+            return True
+        normalized = service._normalize_reply(user_message)
+        return bool(
+            re.search(
+                r"\b(?:save|remember|keep)\b.*\b(?:memory|knows|pc|computer|laptop|device|model|birthday)\b",
+                normalized,
+            )
+        )
 
     def has_chat_search_results(self, messages: list[dict]) -> bool:
         for message in messages:

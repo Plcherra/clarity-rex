@@ -584,7 +584,12 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
             !state.isCallActive) {
           return;
         }
-        session.endUtterance(financialContext: financialContext);
+        session.endUtterance(
+          financialContext: financialContext,
+          writeConfirmation: ref
+              .read(chatProvider.notifier)
+              .writeConfirmationForAffirmation(state.currentTranscript),
+        );
       }),
     );
   }

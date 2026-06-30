@@ -19,6 +19,7 @@ class ChatContextLoadPlan:
     load_chat_search: bool
     load_structured_memory: bool
     load_goal_context: bool
+    load_inventory_overview: bool = False
 
     @property
     def loaded(self) -> dict:
@@ -28,6 +29,7 @@ class ChatContextLoadPlan:
             "chat_search": self.load_chat_search,
             "structured_memory": self.load_structured_memory,
             "goal_context": self.load_goal_context,
+            "inventory_overview": self.load_inventory_overview,
         }
 
     @property
@@ -79,6 +81,21 @@ class ChatContextLoadPlanner:
             conversation_history=conversation_history,
             recall_query=recall_query,
         )
+        inventory = self.recall_policy.recall_intent.is_memory_inventory_query(
+            self.recall_policy.recall_intent.normalized_recall_text(message)
+        )
+        if inventory:
+            return ChatContextLoadPlan(
+                recall_query=None,
+                recall_request=False,
+                memory_query=MEMORY_INVENTORY_QUERY,
+                load_long_term_memory=False,
+                load_profile_memory=False,
+                load_chat_search=False,
+                load_structured_memory=False,
+                load_goal_context=False,
+                load_inventory_overview=True,
+            )
         return ChatContextLoadPlan(
             recall_query=recall_query,
             recall_request=recall_request,
@@ -92,6 +109,7 @@ class ChatContextLoadPlanner:
                 initial_plan.load_structured_memory or recall_request
             ),
             load_goal_context=initial_plan.load_goal_context,
+            load_inventory_overview=False,
         )
 
     def _plan(
@@ -114,6 +132,21 @@ class ChatContextLoadPlanner:
             conversation_history=conversation_history,
             recall_query=recall_query,
         )
+        inventory = self.recall_policy.recall_intent.is_memory_inventory_query(
+            self.recall_policy.recall_intent.normalized_recall_text(message)
+        )
+        if inventory:
+            return ChatContextLoadPlan(
+                recall_query=None,
+                recall_request=False,
+                memory_query=MEMORY_INVENTORY_QUERY,
+                load_long_term_memory=False,
+                load_profile_memory=False,
+                load_chat_search=False,
+                load_structured_memory=False,
+                load_goal_context=False,
+                load_inventory_overview=True,
+            )
         load_profile_memory = self._load_profile_memory(intent_decision)
         load_profile_memory = load_profile_memory and memory_query not in {
             PROFILE_MEMORY_QUERY,
@@ -132,6 +165,7 @@ class ChatContextLoadPlanner:
                 self._load_structured_memory(intent_decision) or recall_request
             ),
             load_goal_context=self._load_goal_context(intent_decision),
+            load_inventory_overview=False,
         )
 
     def _load_long_term_memory(

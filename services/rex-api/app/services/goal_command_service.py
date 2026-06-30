@@ -62,16 +62,6 @@ class GoalCommandService:
         time_context: dict,
         pending_action=None,
     ) -> Optional[dict]:
-        reclassified = await self._reclassifier.try_move_memory_to_goal(
-            message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_history=conversation_history,
-            time_context=time_context,
-        )
-        if reclassified is not None:
-            return reclassified
-
         listed = await try_list_goals_and_commitments(
             message,
             conversation_id=conversation_id,
@@ -98,39 +88,24 @@ class GoalCommandService:
         if not commands:
             return None
 
+        if self.durable_write_service is None:
+            return None
+
         if len(commands) == 1:
             command = commands[0]
-            if self.durable_write_service is not None:
-                if command.kind == "goal":
-                    return await self.durable_write_service.propose_goal(
-                        command,
-                        conversation_id=conversation_id,
-                        user_message=user_message,
-                    )
-                return await self.durable_write_service.propose_commitment(
-                    command,
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                )
             if command.kind == "goal":
-                return await self._writer.save_goal(
+                return await self.durable_write_service.propose_goal(
                     command,
                     conversation_id=conversation_id,
                     user_message=user_message,
                 )
-            return await self._writer.save_commitment(
+            return await self.durable_write_service.propose_commitment(
                 command,
                 conversation_id=conversation_id,
                 user_message=user_message,
             )
-        if self.durable_write_service is not None:
-            return await self.durable_write_service.propose_goal(
-                commands[0],
-                conversation_id=conversation_id,
-                user_message=user_message,
-            )
-        return await self._writer.save_multiple_goals(
-            commands,
+        return await self.durable_write_service.propose_goal(
+            commands[0],
             conversation_id=conversation_id,
             user_message=user_message,
         )

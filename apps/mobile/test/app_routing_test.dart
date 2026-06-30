@@ -15,12 +15,20 @@ import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/features/profile/presentation/profile_screen.dart';
 import 'package:clarity/features/shell/presentation/home_shell.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/l10n_test_wrapper.dart';
 
 void main() {
+  setUpAll(() {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.withData({});
+  });
+
   test('assistant tab contract is stable and ordered', () {
     final l10n = lookupAppLocalizations(const Locale('en'));
     expect(AssistantTab.values.map((tab) => tab.id), [

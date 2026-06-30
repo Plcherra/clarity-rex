@@ -51,7 +51,6 @@ class MemoryWriteService:
         except MemoryServiceError as error:
             raise MemoryWriteError(error.detail, error.status_code) from error
 
-        await self._materialize_if_person_fact(record)
         return record
 
     async def _save_long_term_memory(self, payload: dict[str, Any]) -> dict[str, Any]:

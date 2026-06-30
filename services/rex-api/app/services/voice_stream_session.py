@@ -51,6 +51,7 @@ class VoiceStreamSession(
         self.user_id = user_id
         self.conversation_id: Optional[str] = None
         self.financial_context: Optional[dict[str, Any]] = None
+        self.write_confirmation: Optional[dict[str, Any]] = None
         self.input_mime_type = "audio/linear16"
         self.sample_rate = 16000
         self.client = ""
@@ -183,6 +184,11 @@ class VoiceStreamSession(
                 self.financial_context = financial_context
             else:
                 self.financial_context = None
+            write_confirmation = payload.get("write_confirmation")
+            if isinstance(write_confirmation, dict):
+                self.write_confirmation = write_confirmation
+            else:
+                self.write_confirmation = None
             await self._cancel_live_endpoint_check()
             if self._live_transcription is not None:
                 self._active_turn_task = asyncio.create_task(

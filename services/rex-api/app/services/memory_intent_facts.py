@@ -30,11 +30,37 @@ _ASSISTANT_RELATIONSHIP_SAVE_PATTERN = re.compile(
     r"(?P<relationship>[^?.!]+)",
     re.IGNORECASE,
 )
-_MENTIONED_DEVICE_PATTERN = re.compile(
-    r"\bmentioned\s+(?:an?\s+|the\s+)?(?P<device>[^.!?]{2,90}?"
+_DEVICE_TAIL = (
     r"(?:\bpc\b|\bcomputer\b|\blaptop\b|\bdesktop\b|\bphone\b|\btablet\b|"
-    r"\bconsole\b|\b[A-Za-z][A-Za-z0-9 -]*\d{1,4}\s*[A-Za-z]{0,3}\b))",
+    r"\bconsole\b|\b[A-Za-z][A-Za-z0-9 -]*\d{1,4}\s*[A-Za-z]{0,3}\b)"
+)
+_MENTIONED_DEVICE_PATTERN = re.compile(
+    rf"\bmentioned\s+(?:having\s+)?(?:an?\s+|the\s+)?(?P<device>[^.!?]{{2,90}}?"
+    rf"{_DEVICE_TAIL})",
     re.IGNORECASE,
+)
+_HAVING_DEVICE_PATTERN = re.compile(
+    rf"\b(?:having|with|owns?|uses?)\s+(?:an?\s+|the\s+)?(?P<device>[^.!?]{{2,90}}?"
+    rf"{_DEVICE_TAIL})",
+    re.IGNORECASE,
+)
+_DEVICE_IS_PATTERN = re.compile(
+    r"\b(?:your|my)\s+(?:pc|computer|laptop|device|model)\s+is\s+"
+    r"(?:an?\s+)?(?P<device>[^.!?]{2,90})",
+    re.IGNORECASE,
+)
+_SAVE_OFFER_PHRASES = (
+    "want me to save",
+    "would you like me to save",
+    "should i save",
+    "want me to remember",
+    "would you like me to remember",
+    "save to clarity knows",
+    "save that",
+    "save this",
+    "saving that",
+    "keep that in memory",
+    "remember that for",
 )
 
 
@@ -187,26 +213,122 @@ class MemoryIntentFactMixin:
     def _normalize_name(self, value: str) -> str:
         return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
 
-    def _detect_mentioned_device_fact(self, message: str) -> Optional[SimpleMemoryIntent]:
-        if self.is_memory_lookup_or_topic_shift(message):
+    def _device_intent_from_label(self, device: str) -> Optional[SimpleMemoryIntent]:
+        cleaned = self._clean_device_model(device)
+        if len(cleaned) < 4:
             return None
-        match = _MENTIONED_DEVICE_PATTERN.search(message)
-        if match is None:
-            return None
-        device = self._clean_device_model(match.group("device"))
-        if len(device) < 4:
-            return None
-        article = "an" if device[:1].lower() in {"a", "e", "i", "o", "u"} else "a"
+        article = "an" if cleaned[:1].lower() in {"a", "e", "i", "o", "u"} else "a"
         return SimpleMemoryIntent(
             memory_type="fact",
-            content=f"User has {article} {device}.",
+            content=f"User has {article} {cleaned}.",
             importance=4,
             metadata={
                 "fact_kind": "device",
                 "memory_category": "Facts",
-                "device_model": device,
+                "device_model": cleaned,
             },
         )
+
+    def _detect_mentioned_device_fact(
+        self,
+        message: str,
+        *,
+        from_conversation_history: bool = False,
+    ) -> Optional[SimpleMemoryIntent]:
+        if not from_conversation_history and self.is_memory_lookup_or_topic_shift(message):
+            return None
+        match = _MENTIONED_DEVICE_PATTERN.search(message)
+        if match is None:
+            return None
+        return self._device_intent_from_label(match.group("device"))
+
+    def _detect_having_device_fact(
+        self,
+        message: str,
+        *,
+        from_conversation_history: bool = False,
+    ) -> Optional[SimpleMemoryIntent]:
+        if not from_conversation_history and self.is_memory_lookup_or_topic_shift(message):
+            return None
+        match = _HAVING_DEVICE_PATTERN.search(message)
+        if match is None:
+            return None
+        return self._device_intent_from_label(match.group("device"))
+
+    def _detect_device_is_fact(
+        self,
+        message: str,
+        *,
+        from_conversation_history: bool = False,
+    ) -> Optional[SimpleMemoryIntent]:
+        if not from_conversation_history and self.is_memory_lookup_or_topic_shift(message):
+            return None
+        match = _DEVICE_IS_PATTERN.search(message)
+        if match is None:
+            return None
+        return self._device_intent_from_label(match.group("device"))
+
+    def _extract_device_intent_from_text(
+        self,
+        message: str,
+        *,
+        from_conversation_history: bool = False,
+    ) -> Optional[SimpleMemoryIntent]:
+        if not message.strip():
+            return None
+        for detector in (
+            self._detect_mentioned_device_fact,
+            self._detect_having_device_fact,
+            self._detect_device_is_fact,
+        ):
+            intent = detector(
+                message,
+                from_conversation_history=from_conversation_history,
+            )
+            if intent is not None:
+                return intent
+        if from_conversation_history:
+            candidate = re.sub(r"\byou\b", "I", message, flags=re.IGNORECASE)
+            candidate = re.sub(r"\byour\b", "my", candidate, flags=re.IGNORECASE)
+            return self._detect_device_fact(candidate)
+        return None
+
+    def _assistant_offered_save(self, content: str) -> bool:
+        normalized = self._normalize_reply(content)
+        return any(phrase in normalized for phrase in _SAVE_OFFER_PHRASES)
+
+    def _intent_from_conversation_history(
+        self,
+        conversation_history: list[dict],
+        *,
+        time_context: Optional[dict] = None,
+    ) -> Optional[SimpleMemoryIntent]:
+        for item in reversed(conversation_history[-8:]):
+            content = str(item.get("content") or "")
+            if not content.strip():
+                continue
+            intent = self._extract_device_intent_from_text(
+                content,
+                from_conversation_history=True,
+            )
+            if intent is not None:
+                return intent
+            if item.get("role") == "assistant":
+                candidate = re.sub(r"\byou\b", "I", content, flags=re.IGNORECASE)
+                candidate = re.sub(r"\byour\b", "my", candidate, flags=re.IGNORECASE)
+                intent = self._detect_birthday(
+                    candidate,
+                    time_context=time_context,
+                )
+                if intent is not None:
+                    return intent
+            intent = self._detect_relationship_person(content)
+            if intent is not None:
+                return intent
+            intent = self._detect_birthday(content, time_context=time_context)
+            if intent is not None:
+                return intent
+        return None
 
     def _detect_contextual_save_proposal_memory(
         self,
@@ -217,70 +339,36 @@ class MemoryIntentFactMixin:
     ) -> Optional[SimpleMemoryIntent]:
         if not self.is_contextual_memory_save_request(message):
             return None
-        for item in reversed(conversation_history[-8:]):
-            if item.get("role") != "assistant":
-                continue
-            content = str(item.get("content") or "")
-            normalized = self._normalize_reply(content)
-            if any(
-                phrase in normalized
-                for phrase in (
-                    "want me to save",
-                    "would you like me to save",
-                    "should i save",
-                    "save that",
-                    "save this",
-                    "saving that",
-                )
-            ):
-                intent = self._detect_relationship_person(content)
-                if intent is not None:
-                    return intent
-                candidate = re.sub(r"\byou\b", "I", content, flags=re.IGNORECASE)
-                candidate = re.sub(r"\byour\b", "my", candidate, flags=re.IGNORECASE)
-                intent = self._detect_device_fact(candidate)
-                if intent is not None:
-                    return intent
-                intent = self._detect_birthday(
-                    candidate,
-                    time_context=time_context,
-                )
-                if intent is not None:
-                    return intent
 
-        for item in reversed(conversation_history[-6:]):
-            if item.get("role") != "assistant":
-                continue
-            content = str(item.get("content") or "")
-            intent = self._detect_mentioned_device_fact(content)
-            if intent is not None:
-                return intent
-            candidate = re.sub(r"\byou\b", "I", content, flags=re.IGNORECASE)
-            candidate = re.sub(r"\byour\b", "my", candidate, flags=re.IGNORECASE)
-            intent = self._detect_device_fact(candidate)
-            if intent is not None:
-                return intent
-            intent = self._detect_birthday(
-                candidate,
+        normalized = self._normalize_reply(message)
+        if re.search(
+            r"\b(?:save|remember|keep)\b",
+            normalized,
+        ) and re.search(r"\b(?:pc|computer|laptop|device|model)\b", normalized):
+            intent = self._intent_from_conversation_history(
+                conversation_history,
                 time_context=time_context,
             )
             if intent is not None:
                 return intent
 
-        for item in reversed(conversation_history[-6:]):
-            if item.get("role") != "user":
+        for item in reversed(conversation_history[-8:]):
+            if item.get("role") != "assistant":
                 continue
             content = str(item.get("content") or "")
-            intent = self._detect_relationship_person(content)
+            if not self._assistant_offered_save(content):
+                continue
+            intent = self._intent_from_conversation_history(
+                [item],
+                time_context=time_context,
+            )
             if intent is not None:
                 return intent
-            intent = self._detect_birthday(content, time_context=time_context)
-            if intent is not None:
-                return intent
-            intent = self._detect_device_fact(content)
-            if intent is not None:
-                return intent
-        return None
+
+        return self._intent_from_conversation_history(
+            conversation_history,
+            time_context=time_context,
+        )
 
     def _detect_contextual_location_memory(
         self,

@@ -15,7 +15,9 @@ from app.services.chat_prompt_context_builder import ChatPromptContextBuilder
 from app.services.chat_search_ranking import ChatSearchRanking
 from app.services.goal_context_service import GoalContextService
 from app.services.memory_context_status import MemoryContextAssembler
+from app.services.prompt_inventory_context import format_inventory_context
 from app.services.prompt_service import PromptService
+from app.services.saved_knowledge_overview_service import SavedKnowledgeOverviewService
 from app.services.recall_intent_helper import (
     MEMORY_INVENTORY_QUERY,
     PROFILE_MEMORY_LIMIT,
@@ -56,6 +58,7 @@ class ChatContextService:
             memory_service,
             chat_search_ranking=self.chat_search_ranking,
         )
+        self.saved_knowledge_overview = SavedKnowledgeOverviewService(memory_service)
 
     async def fetch_prompt_context(
         self,
@@ -110,12 +113,9 @@ class ChatContextService:
         if conversation_id is None:
             structured_context_task = self.timed_fetch(
                 "structured_context",
-                self.memory_context.fetch_structured_context(
-                    self.memory_service,
-                    self.goal_context_service,
+                self._fetch_structured_context(
                     message,
-                    include_structured_memory=load_plan.load_structured_memory,
-                    include_goal_context=load_plan.load_goal_context,
+                    load_plan=load_plan,
                 ),
                 timings_ms,
             )
@@ -203,12 +203,9 @@ class ChatContextService:
         )
         structured_context_task = self.timed_fetch(
             "structured_context",
-            self.memory_context.fetch_structured_context(
-                self.memory_service,
-                self.goal_context_service,
+            self._fetch_structured_context(
                 message,
-                include_structured_memory=load_plan.load_structured_memory,
-                include_goal_context=load_plan.load_goal_context,
+                load_plan=load_plan,
             ),
             timings_ms,
         )
@@ -243,6 +240,33 @@ class ChatContextService:
             timings_ms=timings_ms,
             fetch_started=fetch_started,
             initial_failures=memory_failures,
+        )
+
+    async def _fetch_structured_context(
+        self,
+        message: str,
+        *,
+        load_plan,
+    ) -> dict:
+        if load_plan.load_inventory_overview:
+            overview = await self.saved_knowledge_overview.get_overview()
+            inventory_text = format_inventory_context(overview)
+            return {
+                "inventory_overview": overview,
+                "inventory_context": inventory_text,
+                "memory_status": {
+                    "saved_knowledge_overview": "loaded",
+                    "saved_knowledge_count": (overview.get("counts") or {}).get(
+                        "total", 0
+                    ),
+                },
+            }
+        return await self.memory_context.fetch_structured_context(
+            self.memory_service,
+            self.goal_context_service,
+            message,
+            include_structured_memory=load_plan.load_structured_memory,
+            include_goal_context=load_plan.load_goal_context,
         )
 
     def _exclude_recall_conversation_id(

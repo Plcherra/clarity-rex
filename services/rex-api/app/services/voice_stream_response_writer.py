@@ -132,6 +132,7 @@ class VoiceStreamResponseWriterMixin:
             channel=RexBrainChannel.VOICE,
             include_turn_trace=True,
             locale=getattr(self, "locale", None),
+            write_confirmation=getattr(self, "write_confirmation", None),
         ):
             event_name = event.get("event")
             if event_name == "conversation":

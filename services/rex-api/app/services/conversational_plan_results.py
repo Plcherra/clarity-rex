@@ -96,6 +96,10 @@ def _proposal_action(action: MemoryDisciplineAction) -> str:
     }.get(action, "save_plan")
 
 
+def write_kind_for_action(action: MemoryDisciplineAction) -> str:
+    return _write_kind(action)
+
+
 def _write_kind(action: MemoryDisciplineAction) -> str:
     return {
         MemoryDisciplineAction.CREATE_PLAN: "plan",

@@ -252,13 +252,12 @@ class MemoryTurnService(
         conversation_id: str,
         user_message: dict,
     ) -> dict:
-        if self.durable_write_service is not None:
-            return await self.durable_write_service.propose_simple_memory(
-                intent,
+        if self.durable_write_service is None:
+            return await self._clarify_unclear_memory(
                 conversation_id=conversation_id,
                 user_message=user_message,
             )
-        return await self._save_confirmed_simple_memory(
+        return await self.durable_write_service.propose_simple_memory(
             intent,
             conversation_id=conversation_id,
             user_message=user_message,
@@ -273,20 +272,18 @@ class MemoryTurnService(
         record: dict,
     ) -> dict:
         record_id = str(record.get("id") or "")
-        if self.durable_write_service is not None and record_id:
-            intent = self._preserve_location_context(intent, record)
-            return await self.durable_write_service.propose_memory_update(
-                intent,
-                record_id=record_id,
-                previous_content=str(record.get("content") or "") or None,
+        if self.durable_write_service is None or not record_id:
+            return await self._clarify_unclear_memory(
                 conversation_id=conversation_id,
                 user_message=user_message,
             )
-        return await self._update_simple_memory(
+        intent = self._preserve_location_context(intent, record)
+        return await self.durable_write_service.propose_memory_update(
             intent,
+            record_id=record_id,
+            previous_content=str(record.get("content") or "") or None,
             conversation_id=conversation_id,
             user_message=user_message,
-            record=record,
         )
 
     async def _save_confirmed_simple_memory(

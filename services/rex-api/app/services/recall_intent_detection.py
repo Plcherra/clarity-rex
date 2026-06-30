@@ -86,7 +86,17 @@ class RecallIntentDetectionMixin:
         }
         normalized = normalized_message.rstrip("?.! ")
         if normalized not in broad_inventory_questions:
-            return False
+            inventory_prefixes = (
+                "check what clarity knows",
+                "check what clarity know",
+                "show me what clarity knows",
+                "show what clarity knows",
+            )
+            if not any(
+                normalized == prefix or normalized.startswith(f"{prefix} ")
+                for prefix in inventory_prefixes
+            ):
+                return False
         return " about " not in f" {normalized} " or normalized.endswith(" about me")
 
     def is_contextual_memory_followup(

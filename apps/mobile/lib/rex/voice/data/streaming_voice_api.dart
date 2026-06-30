@@ -90,10 +90,16 @@ class StreamingVoiceSession {
     _socket.add(chunk);
   }
 
-  void endUtterance({Map<String, dynamic>? financialContext}) {
+  void endUtterance({
+    Map<String, dynamic>? financialContext,
+    Map<String, dynamic>? writeConfirmation,
+  }) {
     final payload = <String, Object>{'event': 'utterance.end'};
     if (financialContext != null) {
       payload['financial_context'] = financialContext;
+    }
+    if (writeConfirmation != null) {
+      payload['write_confirmation'] = writeConfirmation;
     }
     _sendJson(payload);
   }

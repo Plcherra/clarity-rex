@@ -85,6 +85,24 @@ mixin _SavedMemoryApi on _MemoryApiTransport {
     await _delete('/memory/$memoryId');
   }
 
+  Future<Map<String, dynamic>> getSavedKnowledgeOverview({
+    bool activeOnly = true,
+    int limit = 100,
+  }) async {
+    final response = await _apiClient.get(
+      '/saved-knowledge/overview',
+      query: {
+        'active_only': activeOnly.toString(),
+        'limit': limit.toString(),
+      },
+    );
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const MemoryApiException('Backend returned an invalid response.');
+    }
+    return data;
+  }
+
   Future<void> archiveMemory(String memoryId) async {
     await deactivateMemory(memoryId);
   }

@@ -102,14 +102,21 @@ class PendingActionStore(Protocol):
 
 _CONFLICTING_PENDING_TYPES = {
     "save_plan": "delete",
-    "delete": "save_plan",
+    "durable_write": "delete",
+    "delete": "durable_write",
 }
 
 SUPERSEDE_MESSAGES = {
     ("save_plan", "delete"): (
         "I cleared your pending plan save so we can confirm this delete first."
     ),
+    ("durable_write", "delete"): (
+        "I cleared your pending plan save so we can confirm this delete first."
+    ),
     ("delete", "save_plan"): (
+        "I cleared the pending delete request so we can focus on saving this plan."
+    ),
+    ("delete", "durable_write"): (
         "I cleared the pending delete request so we can focus on saving this plan."
     ),
 }
@@ -153,9 +160,16 @@ class ConversationPendingActionService:
         existing = await self.get(conversation_id)
         note = None
         if existing is not None and existing.action_type != action.action_type:
-            conflicting = _CONFLICTING_PENDING_TYPES.get(action.action_type)
-            if conflicting is not None and existing.action_type == conflicting:
-                note = SUPERSEDE_MESSAGES.get((existing.action_type, action.action_type))
+            if action.action_type == "delete" and _is_write_pending(existing.action_type):
+                note = SUPERSEDE_MESSAGES.get(("durable_write", "delete"))
+            elif _is_write_pending(action.action_type) and existing.action_type == "delete":
+                note = SUPERSEDE_MESSAGES.get(("delete", "durable_write"))
+            else:
+                conflicting = _CONFLICTING_PENDING_TYPES.get(action.action_type)
+                if conflicting is not None and existing.action_type == conflicting:
+                    note = SUPERSEDE_MESSAGES.get(
+                        (existing.action_type, action.action_type)
+                    )
         elif (
             existing is not None
             and existing.action_type == "durable_write"
@@ -222,6 +236,10 @@ def should_defer_to_pending_plan(
     *,
     pending_action: Optional[PendingAction],
 ) -> bool:
-    if pending_action is None or pending_action.action_type != "save_plan":
+    if pending_action is None or not _is_write_pending(pending_action.action_type):
         return False
     return is_delete_confirmation_message(message) or is_delete_rejection_message(message)
+
+
+def _is_write_pending(action_type: str) -> bool:
+    return action_type in {"durable_write", "save_plan"}

@@ -44,6 +44,16 @@ class PlanMergeService:
         *,
         wrong_names: set[str],
     ) -> dict[str, Any]:
+        metadata = dict(payload.get("metadata") or {})
+        allow_merge = bool(
+            metadata.get("merge_disclosed_to")
+            or metadata.get("allow_auto_merge")
+        )
+        if not allow_merge:
+            plan = await self.repository.create_plan(payload)
+            wrong_names.update(correction_wrong_names(plan))
+            return plan
+
         existing = await self.repository.list_plans(
             plan_type=payload["plan_type"],
             active=True,

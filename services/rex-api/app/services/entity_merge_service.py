@@ -39,6 +39,16 @@ class EntityMergeService:
         *,
         wrong_names: set[str],
     ) -> dict[str, Any]:
+        metadata = dict(payload.get("metadata") or {})
+        allow_merge = bool(
+            metadata.get("merge_disclosed_to")
+            or metadata.get("allow_auto_merge")
+        )
+        if not allow_merge:
+            entity = await self.repository.create_entity(payload)
+            wrong_names.update(_correction_wrong_names(entity))
+            return entity
+
         existing = await self.repository.list_entities(
             entity_type=payload["entity_type"],
             active=True,
