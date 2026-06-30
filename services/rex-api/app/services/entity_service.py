@@ -77,10 +77,6 @@ class EntityService:
         limit: int = 50,
     ) -> list[dict[str, Any]]:
         try:
-            if active is not False and entity_type in {None, "person"}:
-                await self.person_memory_materializer.materialize_from_active_memories(
-                    self.repository.memory_service,
-                )
             return await self.repository.list_entities(
                 entity_type=entity_type,
                 normalized_name=normalize_key(normalized_name)
@@ -124,6 +120,11 @@ class EntityService:
             raise EntityServiceError(error.detail, error.status_code) from error
         if updated is None:
             raise EntityServiceError("Entity not found.", 404)
+        if updated.get("entity_type") == "person":
+            await self.person_memory_materializer.archive_source_memories_for_entity(
+                self.repository.memory_service,
+                updated,
+            )
         return updated
 
     async def create_entity_event(

@@ -1,18 +1,35 @@
+import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/rex/memory/data/memory_api.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/pages/memory_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+
+import 'helpers/l10n_test_wrapper.dart';
 
 Future<void> pumpMemoryPage(
   WidgetTester tester,
   MemoryPageFakeMemoryApi api,
 ) async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferencesAsyncPlatform.instance =
+      InMemorySharedPreferencesAsync.withData({});
+  final localeController = LocaleController(
+    preferences: SharedPreferencesAsync(),
+  );
+  await localeController.load();
+
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [memoryApiProvider.overrideWithValue(api)],
-      child: const MaterialApp(home: MemoryPage()),
+      overrides: [
+        memoryApiProvider.overrideWithValue(api),
+        localeControllerProvider.overrideWithValue(localeController),
+      ],
+      child: wrapWithL10n(const MemoryPage()),
     ),
   );
   await tester.pumpAndSettle();

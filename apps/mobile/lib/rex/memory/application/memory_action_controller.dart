@@ -99,7 +99,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
             status: status,
             active: active,
           );
-      await loadMemories(layer: MemoryLayer.people);
+      await loadSavedOverview(activeOnly: state.activeOnly);
       state = state.copyWith(isSaving: false, clearError: true);
       return true;
     } on Object catch (error) {
@@ -133,7 +133,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
             status: status,
             active: active,
           );
-      await loadMemories(layer: MemoryLayer.rules);
+      await loadSavedOverview(activeOnly: state.activeOnly);
       state = state.copyWith(isSaving: false, clearError: true);
       return true;
     } on Object catch (error) {
@@ -169,7 +169,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
             active: active,
             targetDate: targetDate,
           );
-      await loadMemories(layer: MemoryLayer.plans);
+      await loadSavedOverview(activeOnly: state.activeOnly);
       state = state.copyWith(isSaving: false, clearError: true);
       return true;
     } on Object catch (error) {
@@ -203,7 +203,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
             active: active,
             dueAt: dueAt,
           );
-      await loadMemories(layer: MemoryLayer.commitments);
+      await loadSavedOverview(activeOnly: state.activeOnly);
       state = state.copyWith(isSaving: false, clearError: true);
       return true;
     } on Object catch (error) {
@@ -235,7 +235,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
         case MemoryLayer.longTerm:
           await api.archiveMemory(id);
       }
-      await loadMemories(layer: layer);
+      await loadSavedOverview(activeOnly: state.activeOnly);
       state = state.copyWith(isSaving: false, clearError: true);
       return true;
     } on Object catch (error) {

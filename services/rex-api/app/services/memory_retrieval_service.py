@@ -8,7 +8,6 @@ from app.services.memory_retrieval_ranker import (
     STRUCTURED_MEMORY_SCAN_LIMIT,
     MemoryRetrievalRanker,
 )
-from app.services.person_memory_materializer import PersonMemoryMaterializer
 
 
 class MemoryRetrievalService:
@@ -19,7 +18,6 @@ class MemoryRetrievalService:
     ) -> None:
         self.memory_store = memory_store
         self.ranker = ranker or MemoryRetrievalRanker()
-        self.person_memory_materializer = PersonMemoryMaterializer()
 
     async def get_long_term_memory(
         self,
@@ -65,9 +63,6 @@ class MemoryRetrievalService:
         return scored_memories[:limit]
 
     async def get_structured_memory_context(self, query: str) -> dict:
-        await self.person_memory_materializer.materialize_from_active_memories(
-            self.memory_store,
-        )
         (
             entities,
             entity_events,

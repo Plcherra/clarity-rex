@@ -16,6 +16,8 @@ class FakeEntityMemoryService:
         self.error = error
         self.entities = []
         self.entity_events = []
+        self.memories = []
+        self.deactivated_memory_ids = []
 
     def _raise_if_configured(self):
         if self.error is not None:
@@ -59,6 +61,23 @@ class FakeEntityMemoryService:
 
     async def deactivate_entity(self, entity_id):
         return await self.update_entity(entity_id, active=False, status="inactive")
+
+    async def deactivate_long_term_memory(self, memory_id):
+        self._raise_if_configured()
+        self.deactivated_memory_ids.append(memory_id)
+        for memory in self.memories:
+            if memory["id"] == memory_id:
+                memory["active"] = False
+                return memory
+        return None
+
+    async def update_long_term_memory(self, memory_id, **updates):
+        self._raise_if_configured()
+        for memory in self.memories:
+            if memory["id"] == memory_id:
+                memory.update(updates)
+                return memory
+        return None
 
     async def create_entity_event(self, payload):
         self._raise_if_configured()
@@ -149,6 +168,40 @@ async def test_entity_create_update_deactivate_and_active_listing_flow():
     assert deactivated["active"] is False
     assert deactivated["status"] == "inactive"
     assert await service.list_entities(active=True) == []
+
+
+@pytest.mark.asyncio
+async def test_entity_service_deactivate_archives_linked_flat_memories():
+    memory = FakeEntityMemoryService()
+    memory.memories.append(
+        {
+            "id": "memory-cousin-birthday",
+            "memory_type": "fact",
+            "content": "Cousin Ana's birthday is July 9.",
+            "active": True,
+            "metadata": {},
+        }
+    )
+    memory.entities.append(
+        {
+            "id": "entity-ana",
+            "entity_type": "person",
+            "display_name": "Cousin Ana",
+            "normalized_name": "cousin ana",
+            "aliases": [],
+            "importance": 4,
+            "active": True,
+            "status": "active",
+            "metadata": {"source_memory_ids": ["memory-cousin-birthday"]},
+        }
+    )
+    service = EntityService(memory)
+
+    deactivated = await service.deactivate_entity("entity-ana")
+
+    assert deactivated["active"] is False
+    assert memory.deactivated_memory_ids == ["memory-cousin-birthday"]
+    assert memory.memories[0]["active"] is False
 
 
 @pytest.mark.asyncio

@@ -380,6 +380,47 @@ class PersonMemoryMaterializer:
             except Exception:
                 continue
 
+    async def archive_source_memories_for_entity(
+        self,
+        memory_service,
+        entity: dict,
+        *,
+        reason: str = "entity_archived",
+    ) -> None:
+        deactivate_memory = getattr(memory_service, "deactivate_long_term_memory", None)
+        update_memory = getattr(memory_service, "update_long_term_memory", None)
+        if deactivate_memory is None and update_memory is None:
+            return
+
+        metadata = entity.get("metadata")
+        if not isinstance(metadata, dict):
+            metadata = {}
+        entity_id = self._clean_text(entity.get("id"))
+        source_ids = self._covered_source_memory_ids(metadata)
+        source_memory_id = self._clean_text(entity.get("source_memory_id"))
+        if source_memory_id:
+            source_ids.add(source_memory_id)
+
+        for memory_id in source_ids:
+            archive_metadata = {
+                "canonical_entity_id": entity_id,
+                "canonical_entity_type": entity.get("entity_type") or "person",
+                "duplicate_archive_reason": reason,
+            }
+            try:
+                if deactivate_memory is not None:
+                    await deactivate_memory(memory_id)
+                    if update_memory is not None:
+                        await update_memory(memory_id, metadata=archive_metadata)
+                elif update_memory is not None:
+                    await update_memory(
+                        memory_id,
+                        active=False,
+                        metadata=archive_metadata,
+                    )
+            except Exception:
+                continue
+
     def _person_entity_covering_memory(
         self,
         entities: list[dict],

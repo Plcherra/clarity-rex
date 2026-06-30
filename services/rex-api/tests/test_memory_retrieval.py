@@ -2,7 +2,9 @@ import pytest
 
 from app.config import Settings
 from app.services.chat_context_service import PROFILE_MEMORY_QUERY
+from app.services.memory_retrieval_service import MemoryRetrievalService
 from app.services.memory_service import SupabaseMemoryService
+from app.services.person_memory_materializer import PersonMemoryMaterializer
 
 
 class InMemoryRetrievalService(SupabaseMemoryService):
@@ -734,7 +736,7 @@ async def test_get_structured_memory_context_ranks_records_and_links_children():
 
 
 @pytest.mark.asyncio
-async def test_structured_context_materializes_self_person_from_safe_flat_facts():
+async def test_save_path_materializes_self_person_from_safe_flat_facts():
     service = InMemoryRetrievalService(
         [
             {
@@ -772,7 +774,10 @@ async def test_structured_context_materializes_self_person_from_safe_flat_facts(
         ]
     )
 
-    context = await service.get_structured_memory_context(
+    materializer = PersonMemoryMaterializer()
+    await materializer.materialize_from_active_memories(service)
+    retrieval = MemoryRetrievalService(service)
+    context = await retrieval.get_structured_memory_context(
         "What does Clarity know about me?"
     )
 
@@ -801,7 +806,7 @@ async def test_structured_context_materializes_self_person_from_safe_flat_facts(
 
 
 @pytest.mark.asyncio
-async def test_structured_context_archives_non_self_person_source_memory():
+async def test_save_path_archives_non_self_person_source_memory():
     service = InMemoryRetrievalService(
         [
             {
@@ -821,7 +826,10 @@ async def test_structured_context_archives_non_self_person_source_memory():
         ]
     )
 
-    context = await service.get_structured_memory_context(
+    materializer = PersonMemoryMaterializer()
+    await materializer.materialize_from_active_memories(service)
+    retrieval = MemoryRetrievalService(service)
+    context = await retrieval.get_structured_memory_context(
         "What does Clarity know about cousin Ana?"
     )
 

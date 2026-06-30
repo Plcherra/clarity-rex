@@ -23,6 +23,10 @@ SavedMemoryResults filterSavedMemory({
     if (coveredSourceMemoryIds.contains(memory.id)) {
       return false;
     }
+    final canonicalEntityId = memory.metadata['canonical_entity_id']?.toString();
+    if (canonicalEntityId != null && canonicalEntityId.isNotEmpty) {
+      return false;
+    }
     if (showPeopleOnly && memory.memoryGroup != MemoryGroup.people) {
       return false;
     }

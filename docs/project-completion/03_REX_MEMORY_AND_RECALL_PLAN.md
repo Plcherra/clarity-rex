@@ -1,5 +1,9 @@
 # Rex Memory And Recall Completion Plan
 
+> **Execution:** Memory structure refactor and fixes follow the phased plan in
+> [`docs/memory/00_MEMORY_REFACTOR_MASTER_PLAN.md`](../memory/00_MEMORY_REFACTOR_MASTER_PLAN.md)
+> (M0–M4). This document remains the recall-quality and product goals reference.
+
 ## Goal
 
 Make Rex reliably remember, search, label, edit, and explain user context without creating a second brain or topic-specific recall hacks.
