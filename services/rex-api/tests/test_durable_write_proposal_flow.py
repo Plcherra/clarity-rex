@@ -47,6 +47,7 @@ async def test_simple_memory_requires_confirmation_before_save():
     assert proposed["memory_changes"]["created"] == 0
     assert len(proposed["memory_changes"]["write_proposals"]) == 1
     assert proposed["memory_changes"]["write_proposals"][0]["write_kind"] == "memory"
+    assert proposed["response"].strip() == ""
     assert memory_service.long_term_memory == []
     assert chat_service.ai_service.messages == []
 

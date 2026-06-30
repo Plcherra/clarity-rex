@@ -24,30 +24,12 @@ class ClarityActionCardsStrip extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final l10n = context.l10n;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Icon(
-              Icons.tune_rounded,
-              size: 16,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              l10n.chatBubbleClarityAction,
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
         for (final action in actions)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 12),
             child: _ClarityActionCard(
               action: action,
               onConfirm: onConfirm,
@@ -126,70 +108,113 @@ class _ClarityActionCardState extends State<_ClarityActionCard> {
     final isHighRisk = action.riskLevel == 'high';
     final borderColor = action.isFailed || isHighRisk
         ? scheme.error.withValues(alpha: 0.46)
-        : scheme.primary.withValues(alpha: 0.38);
+        : scheme.primary.withValues(alpha: 0.42);
     final canEditTitle = action.editableFields.contains('title');
     final canEditBody = action.editableFields.contains('body');
+    final isPendingProposal =
+        action.isPending && action.hasEditableFields && !action.isApplying;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colors.surfaceSoft.withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
+        color: colors.surfaceElevated.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(18),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                _MemoryChip(label: action.actionLabel),
-                _MemoryChip(
-                  label: action.riskLabel,
-                  color: isHighRisk ? scheme.error : scheme.primary,
-                ),
-                _MemoryChip(
-                  label: action.statusLabel,
-                  color: action.isFailed ? scheme.error : scheme.primary,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              action.confirmationText,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                height: 1.3,
+            if (isPendingProposal) ...[
+              Row(
+                children: [
+                  Icon(
+                    Icons.save_outlined,
+                    size: 22,
+                    color: scheme.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _pendingProposalHeadline(action),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 16),
+            ] else ...[
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _MemoryChip(label: action.actionLabel),
+                  _MemoryChip(
+                    label: action.riskLabel,
+                    color: isHighRisk ? scheme.error : scheme.primary,
+                  ),
+                  _MemoryChip(
+                    label: action.statusLabel,
+                    color: action.isFailed ? scheme.error : scheme.primary,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                action.confirmationText,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  height: 1.3,
+                ),
+              ),
+            ],
             if (canEditTitle) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               TextField(
                 controller: _titleController,
                 enabled: !action.isApplying,
-                decoration: const InputDecoration(
+                style: theme.textTheme.titleSmall,
+                decoration: InputDecoration(
                   labelText: 'Title',
-                  isDense: true,
+                  filled: true,
+                  fillColor: colors.surfaceSoft.withValues(alpha: 0.72),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ],
             if (canEditBody) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               TextField(
                 controller: _bodyController,
                 enabled: !action.isApplying,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Details',
-                  isDense: true,
+                minLines: 3,
+                maxLines: 5,
+                style: theme.textTheme.bodyMedium,
+                decoration: InputDecoration(
+                  labelText: 'Details (optional)',
+                  alignLabelWithHint: true,
+                  filled: true,
+                  fillColor: colors.surfaceSoft.withValues(alpha: 0.72),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ],
             if (action.errorMessage != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 action.errorMessage!,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -199,7 +224,7 @@ class _ClarityActionCardState extends State<_ClarityActionCard> {
               ),
             ],
             if (action.isApplied) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 l10n.commonRecordsApplied(action.result.length),
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -211,37 +236,57 @@ class _ClarityActionCardState extends State<_ClarityActionCard> {
             if (action.canConfirm ||
                 action.canDismiss ||
                 action.isApplying) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if ((action.canConfirm || action.isApplying) &&
-                      widget.onConfirm != null)
-                    FilledButton.icon(
-                      onPressed: action.isApplying
-                          ? null
-                          : () => widget.onConfirm!(_confirmedAction()),
-                      icon: action.isApplying
-                          ? const ClarityInlineLoader(size: 16, strokeWidth: 2)
-                          : const Icon(Icons.check_rounded, size: 16),
-                      label: Text(l10n.commonConfirm),
+              const SizedBox(height: 16),
+              if ((action.canConfirm || action.isApplying) &&
+                  widget.onConfirm != null)
+                FilledButton.icon(
+                  onPressed: action.isApplying
+                      ? null
+                      : () => widget.onConfirm!(_confirmedAction()),
+                  icon: action.isApplying
+                      ? const ClarityInlineLoader(size: 18, strokeWidth: 2)
+                      : const Icon(Icons.check_rounded, size: 20),
+                  label: Text(l10n.commonConfirm),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    textStyle: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
-                  if (action.canDismiss && widget.onDismiss != null)
-                    OutlinedButton.icon(
-                      onPressed: action.isApplying
-                          ? null
-                          : () => widget.onDismiss!(action),
-                      icon: const Icon(Icons.close_rounded, size: 16),
-                      label: Text(l10n.commonDismiss),
+                  ),
+                ),
+              if (action.canDismiss && widget.onDismiss != null) ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: action.isApplying
+                      ? null
+                      : () => widget.onDismiss!(action),
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  label: Text(l10n.commonDismiss),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    textStyle: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ],
           ],
         ),
       ),
     );
+  }
+}
+
+String _pendingProposalHeadline(ClarityActionCard action) {
+  switch (action.writeKind) {
+    case 'plan':
+    case 'milestone':
+    case 'commitment':
+      return 'Save to Goals';
+    case 'memory':
+    default:
+      return 'Save to Clarity Knows';
   }
 }
 

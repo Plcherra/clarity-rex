@@ -152,7 +152,7 @@ lib/rex/
 
 | Issue | Priority | Status | Next Action |
 |-------|----------|--------|-------------|
-| Save proposal fails or disappears after recall turn | **P0** | Fixed | Orchestrator reorder (memory save before stale pending yes/no); goal defer; confirm id mismatch failure; regression tests in `test_durable_write_proposal_flow.py`. Device smoke pending. |
+| Save proposal fails or disappears after recall turn | **P0** | Fixed | Device verified 2026-06-30. Card-only propose text (no duplicate offer); improved confirm card UX in `clarity_action_cards_strip.dart`. |
 | Knows shows duplicates (person/org) | **P0** | Open | Run dedupe script per affected user; harden `SavedKnowledgeOverviewService` dedupe; block duplicate create at REST |
 | Delete confirms but item still visible | **P0** | Partial | Trace delete target resolution (LTM vs entity vs event vs plan); require confirmed inactive record before success text |
 | Knows not refreshing after voice confirm | **P0** | Open | Mirror chat `_refreshSavedMemoryOverviewIfNeeded` in voice stream writer on applied `write_proposals` |
@@ -192,7 +192,7 @@ lib/rex/
 
 We are done with the current simplification wave when:
 
-1. Recall → save → confirm → Knows refresh works on device (chat and voice).
+1. Recall → save → confirm → Knows refresh works on device (chat and voice). Confirm card is the only save offer UI (no duplicate chat text).
 2. Knows tab and "What do you know?" return the same item set for the same user.
 3. No duplicate person/org rows for new saves (existing users cleaned).
 4. Rex mobile + brain services net line count decreases or holds flat over 4 weeks.

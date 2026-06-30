@@ -54,14 +54,13 @@ async def test_conversational_plan_routes_to_milestone_and_requires_confirmation
         "work to support relocating to Europe."
     )
 
-    response = requested["response"].lower()
-    assert "should i save that?" in response
-    assert "milestone" in response or "commitment" in response
-    assert requested["memory_changes"]["confirmation_required"] == 1
-    assert requested["memory_changes"]["plan_save_proposals"][0]["action"] in {
+    assert requested["response"].strip() == ""
+    proposal = requested["memory_changes"]["plan_save_proposals"][0]
+    assert proposal["action"] in {
         "save_plan_milestone",
         "save_commitment",
     }
+    assert requested["memory_changes"]["confirmation_required"] == 1
     assert memory_service.created_plan_milestones == []
     assert memory_service.created_commitments == []
     assert memory_service.pending_actions
@@ -155,7 +154,7 @@ async def test_ambiguous_conversational_plan_asks_before_top_level_save():
     assert requested["memory_changes"]["confirmation_required"] == 1
     assert requested["memory_changes"]["plan_save_proposals"][0]["action"] == "save_plan"
     assert memory_service.created_plans == []
-    assert "Should I save" in requested["response"]
+    assert requested["response"].strip() == ""
 
     confirmed = await chat_service.send_message(
         "Yes",

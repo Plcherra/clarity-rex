@@ -93,7 +93,11 @@ class MemoryDeleteConfirmationFlow:
                     and intent.old_value
                 ):
                     return confirmation_target or intent.old_value
-        if resolved and is_delete_rejection_message(message):
+        if (
+            resolved
+            and resolved.action_type == "delete"
+            and is_delete_rejection_message(message)
+        ):
             return resolved.resolver_target
         return None
 
