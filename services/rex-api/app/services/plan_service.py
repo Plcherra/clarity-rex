@@ -16,6 +16,10 @@ from app.services.goal_command_parsing import (
 )
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 from app.services.memory_discipline_service import MemoryDisciplineService
+from app.services.memory_discipline_confirmed_writes import (
+    CONFIRMED_PLAN_SERVICE_CHANNEL,
+    strip_internal_plan_metadata,
+)
 from app.services.memory_discipline_writes import (
     MemoryWriteError,
     execute_disciplined_create,
@@ -99,13 +103,16 @@ class PlanService:
         *,
         wrong_names: set[str],
     ) -> dict[str, Any]:
+        metadata = dict(payload.get("metadata") or {})
+        metadata.setdefault("discipline_write_channel", CONFIRMED_PLAN_SERVICE_CHANNEL)
+        payload = {**payload, "metadata": metadata}
         try:
-            return await execute_disciplined_create(
+            record = await execute_disciplined_create(
                 self.discipline,
                 kind=MemoryRecordKind.PLAN,
                 payload=payload,
                 create_fn=lambda item: self.merge_service.create_or_merge_plan(
-                    item,
+                    strip_internal_plan_metadata(item),
                     wrong_names=wrong_names,
                 ),
             )
@@ -113,6 +120,7 @@ class PlanService:
             raise PlanServiceError(error.detail, error.status_code) from error
         except MemoryServiceError as error:
             raise PlanServiceError(error.detail, error.status_code) from error
+        return strip_internal_plan_metadata(record)
 
     async def list_plans(
         self,

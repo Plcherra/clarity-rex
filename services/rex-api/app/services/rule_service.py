@@ -9,6 +9,10 @@ from app.models.personal_rule import (
 )
 from app.models.memory_discipline import MemoryRecordKind
 from app.services.entity_normalization_service import EntityNormalizationService
+from app.services.memory_discipline_confirmed_writes import (
+    CONFIRMED_RULE_SERVICE_CHANNEL,
+    strip_internal_discipline_metadata,
+)
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_discipline_writes import (
     MemoryWriteError,
@@ -43,18 +47,22 @@ class RuleService:
             payload.get("trigger_keywords", [])
         )
         payload = await self._normalize_entity_references(payload)
+        metadata = dict(payload.get("metadata") or {})
+        metadata.setdefault("discipline_write_channel", CONFIRMED_RULE_SERVICE_CHANNEL)
+        payload = {**payload, "metadata": metadata}
 
         try:
-            return await execute_disciplined_create(
+            record = await execute_disciplined_create(
                 self.discipline,
                 kind=MemoryRecordKind.PERSONAL_RULE,
                 payload=payload,
-                create_fn=self.memory_service.create_personal_rule,
+                create_fn=self._create_or_merge_rule,
             )
         except MemoryWriteError as error:
             raise RuleServiceError(error.detail, error.status_code) from error
         except MemoryServiceError as error:
             raise RuleServiceError(error.detail, error.status_code) from error
+        return strip_internal_discipline_metadata(record)
 
     async def list_rules(
         self,
@@ -103,10 +111,28 @@ class RuleService:
             raise RuleServiceError("Personal rule not found.", 404)
         return updated
 
+    async def _create_or_merge_rule(self, payload: dict[str, Any]) -> dict[str, Any]:
+        payload = strip_internal_discipline_metadata(payload)
+        existing_rules = await self.list_rules(active=True, limit=100)
+        for existing in existing_rules:
+            if _normalize_text(existing.get("rule_text")) == _normalize_text(
+                payload.get("rule_text")
+            ):
+                return await self._merge_existing_rule(existing, payload)
+            if _normalize_text(existing.get("title")) == _normalize_text(
+                payload.get("title")
+            ):
+                return await self._merge_existing_rule(existing, payload)
+        return await self.memory_service.create_personal_rule(payload)
+
     async def _merge_existing_rule(
         self, existing: dict[str, Any], payload: dict[str, Any]
     ) -> dict[str, Any]:
         updates: dict[str, Any] = {}
+        if payload.get("rule_text") and payload.get("rule_text") != existing.get(
+            "rule_text"
+        ):
+            updates["rule_text"] = payload["rule_text"]
         keywords = _dedupe_strings(
             [*existing.get("trigger_keywords", []), *payload.get("trigger_keywords", [])]
         )

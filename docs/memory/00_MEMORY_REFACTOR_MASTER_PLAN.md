@@ -79,3 +79,4 @@ flutter test test/memory_page_test.dart test/memory_page_archive_errors_test.dar
 - User-facing corrections history tab
 - Voice locale smoke testing
 - Renaming `SupabaseMemoryService` facade (document only unless low-risk in M4)
+- **Chat-derived plan discipline + confirmation UX** — do immediately after M4; see [`05_PHASE_M4_DEAD_CODE_CLEANUP.md`](05_PHASE_M4_DEAD_CODE_CLEANUP.md) post-M4 reminder

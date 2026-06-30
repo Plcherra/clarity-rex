@@ -22,6 +22,10 @@ from app.services.entity_merge_service import (
     normalize_key,
 )
 from app.services.entity_repository import EntityRepository
+from app.services.memory_discipline_confirmed_writes import (
+    CONFIRMED_ENTITY_SERVICE_CHANNEL,
+    strip_internal_discipline_metadata,
+)
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_discipline_writes import (
     MemoryWriteError,
@@ -71,19 +75,23 @@ class EntityService:
             display_name=display_name,
         )
         wrong_names = correction_wrong_names(payload)
+        metadata = dict(payload.get("metadata") or {})
+        metadata.setdefault("discipline_write_channel", CONFIRMED_ENTITY_SERVICE_CHANNEL)
+        payload = {**payload, "metadata": metadata}
 
         try:
             if wrong_names:
-                return await self.merge_service.create_or_merge_entity(
-                    payload,
+                record = await self.merge_service.create_or_merge_entity(
+                    strip_internal_discipline_metadata(payload),
                     wrong_names=wrong_names,
                 )
-            return await execute_disciplined_create(
+                return strip_internal_discipline_metadata(record)
+            record = await execute_disciplined_create(
                 self.discipline,
                 kind=MemoryRecordKind.ENTITY,
                 payload=payload,
                 create_fn=lambda item: self.merge_service.create_or_merge_entity(
-                    item,
+                    strip_internal_discipline_metadata(item),
                     wrong_names=wrong_names,
                 ),
             )
@@ -91,6 +99,7 @@ class EntityService:
             raise EntityServiceError(error.detail, error.status_code) from error
         except MemoryServiceError as error:
             raise EntityServiceError(error.detail, error.status_code) from error
+        return strip_internal_discipline_metadata(record)
 
     async def list_entities(
         self,

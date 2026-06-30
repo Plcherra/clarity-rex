@@ -44,6 +44,14 @@ async def execute_disciplined_create(
     if decision.action == MemoryDisciplineAction.IGNORE_NOISY_CANDIDATE:
         raise MemoryWriteError(decision.reason, 422)
 
+    if kind == MemoryRecordKind.LONG_TERM_MEMORY:
+        return await _execute_long_term_memory_write(
+            discipline,
+            candidate,
+            payload,
+            create_fn,
+        )
+
     if decision.requires_confirmation:
         raise MemoryWriteError(
             decision.reason,
@@ -52,14 +60,6 @@ async def execute_disciplined_create(
             related_records=[
                 record.model_dump() for record in decision.related_records
             ],
-        )
-
-    if kind == MemoryRecordKind.LONG_TERM_MEMORY:
-        return await _execute_long_term_memory_write(
-            discipline,
-            candidate,
-            payload,
-            create_fn,
         )
 
     create_action = _create_action_for_kind(kind)

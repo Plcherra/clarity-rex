@@ -75,3 +75,57 @@ flutter test test/memory_page_test.dart test/memory_api_test.dart test/memory_la
 
 - Renaming `SupabaseMemoryService` to `SupabaseAssistantStore` (large blast radius)
 - Hybrid chat search implementation
+
+---
+
+## Post-M4 reminder — wire chat-derived plan discipline
+
+**Do this immediately after M4 acceptance passes.** Do not start during M0–M4; it is new product behavior, not refactor cleanup.
+
+### Context (from M2)
+
+Today every **live** plan write goes through `PlanService` with `discipline_write_channel: confirmed_plan_service`, which skips chat plan-intelligence gating. That fixed explicit goal commands, Knows/API creates, and merge/dedup.
+
+What is **not wired yet**: conversational plan candidates where Rex infers a plan from chat (not an explicit goal phrase) and discipline would return `ASK_CONFIRMATION`, `CREATE_MILESTONE`, or `CREATE_COMMITMENT` via raw `MemoryDisciplineService.decide()` on a PLAN payload **without** the confirmed channel.
+
+That routing code exists and is tested (`test_memory_discipline_service.py`, `test_plan_intelligence_service.py`), but **no chat/voice path calls it today**. See M2 gap table: [`03_PHASE_M2_SPLIT_GOD_FILES.md`](03_PHASE_M2_SPLIT_GOD_FILES.md) — “Chat plan intelligence”.
+
+### Policy until this ships
+
+- **All durable plan writes must go through `PlanService`** (confirmed channel).
+- Do not call `execute_disciplined_create(PLAN, …)` from chat/brain without confirmation UX or the confirmed channel.
+
+### Work to do (post-M4)
+
+1. **Product decision** — When Rex proposes a plan from conversation (not `GoalCommandService`), what does the user see?
+   - Confirm save as top-level plan?
+   - Confirm route under existing plan as milestone/commitment?
+   - Decline / clarify?
+
+2. **Chat confirmation UX** — Map discipline outcomes to pending actions:
+   - `ASK_CONFIRMATION` → “Rex wants to save this as a plan — confirm?”
+   - `CREATE_MILESTONE` / `CREATE_COMMITMENT` → explain parent plan + confirm before write
+   - On confirm → write through `PlanService` or disciplined apply with explicit user consent metadata
+
+3. **Backend wiring** — One entry point from chat orchestrator (after user confirms):
+   - Either always `PlanService.create_plan` with appropriate metadata, **or**
+   - `execute_disciplined_create` with a new channel such as `chat_confirmed_plan` after confirmation (not before)
+
+4. **Voice parity** — Same flow as chat; no separate brain or truth policy.
+
+5. **Tests** — End-to-end: ambiguous plan phrase → confirmation prompt → backend-confirmed write → Knows shows plan (or milestone/commitment as chosen). No fake success.
+
+### Suggested acceptance criteria
+
+- [ ] Ambiguous chat plan phrase does not silently fail or save without confirmation.
+- [ ] Confirmed write appears in Knows with backend-confirmed `memory_changes`.
+- [ ] Plan intelligence milestone/commitment routing is user-visible when it applies.
+- [ ] Explicit goal commands and Knows manual create still use confirmed service channels (regression tests pass).
+- [ ] Voice turn matches chat behavior.
+
+### References
+
+- `app/services/plan_intelligence_service.py` — routing rules
+- `app/services/memory_discipline_confirmed_writes.py` — confirmed write channels
+- `app/services/goal_command_service.py` — explicit goals (already wired; do not break)
+- M2 discipline gap review: [`03_PHASE_M2_SPLIT_GOD_FILES.md`](03_PHASE_M2_SPLIT_GOD_FILES.md)

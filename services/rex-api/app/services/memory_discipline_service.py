@@ -11,6 +11,10 @@ from app.models.memory_discipline import (
     MemoryRelatedRecord,
 )
 from app.services.entity_normalization_service import EntityNormalizationService
+from app.services.memory_discipline_confirmed_writes import (
+    is_confirmed_plan_service_write,
+    is_confirmed_service_write,
+)
 from app.services.memory_discipline_decision_applier import (
     MemoryDisciplineDecisionApplier,
 )
@@ -164,7 +168,7 @@ class MemoryDisciplineService:
         duplicate = same_kind_related[0] if same_kind_related else None
         if duplicate and duplicate.score >= DUPLICATE_SCORE_THRESHOLD:
             action = _update_action_for_kind(candidate.kind)
-            if action:
+            if action and not is_confirmed_service_write(candidate.payload):
                 return MemoryDisciplineDecision(
                     action=action,
                     record_kind=candidate.kind,
@@ -178,16 +182,23 @@ class MemoryDisciplineService:
                 )
 
         if candidate.kind == MemoryRecordKind.PLAN:
-            plan_decision = self.plan_intelligence_service.classify_plan_candidate(
-                candidate.payload,
-                context,
-            )
-            if plan_decision.action != MemoryDisciplineAction.CREATE_PLAN:
-                return self._decision_from_plan_intelligence(
-                    candidate,
-                    plan_decision,
+            if not is_confirmed_plan_service_write(candidate.payload):
+                plan_decision = self.plan_intelligence_service.classify_plan_candidate(
+                    candidate.payload,
                     context,
                 )
+                if plan_decision.action == MemoryDisciplineAction.IGNORE_NOISY_CANDIDATE:
+                    return self._decision_from_plan_intelligence(
+                        candidate,
+                        plan_decision,
+                        context,
+                    )
+                if plan_decision.action != MemoryDisciplineAction.CREATE_PLAN:
+                    return self._decision_from_plan_intelligence(
+                        candidate,
+                        plan_decision,
+                        context,
+                    )
 
         if candidate.kind == MemoryRecordKind.PLAN_MILESTONE:
             milestone_decision = self._decide_milestone_candidate(candidate, context)
