@@ -95,7 +95,7 @@ class _BudgetsScaffold extends StatelessWidget {
           behavior: HitTestBehavior.translucent,
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: ListenableBuilder(
               listenable: dataNotifier,
               builder: (context, _) {
@@ -210,28 +210,43 @@ class _BudgetsLoadedContent extends StatelessWidget {
           onPickCustomEnd: onPickCustomEnd,
           compactButtonStyle: compactButtonStyle,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         _BudgetSummaryStrip(metrics: metrics),
         if (!keyboardOpen) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           ClarityCard(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+            padding: EdgeInsets.zero,
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                dividerColor: Colors.transparent,
+                splashColor: Theme.of(context).colorScheme.primary.withValues(
+                  alpha: 0.08,
+                ),
+              ),
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.fromLTRB(16, 2, 8, 2),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                initiallyExpanded: false,
+                iconColor: Theme.of(context).colorScheme.onSurface.withValues(
+                  alpha: 0.56,
+                ),
+                collapsedIconColor: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.56),
+                title: Text(
                   l10n.budgetsScreenBudgetVsSpentTitle,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 12),
-                BudgetVsSpentChart(performance: metrics.performance),
-              ],
+                children: [
+                  BudgetVsSpentChart(performance: metrics.performance),
+                ],
+              ),
             ),
           ),
         ],
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         Expanded(
           child: BudgetCategoryList(
             items: data.categoryItems,

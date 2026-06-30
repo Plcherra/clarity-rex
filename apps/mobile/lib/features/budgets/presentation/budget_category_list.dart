@@ -38,13 +38,13 @@ class BudgetCategoryList extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
             child: Row(
               children: [
                 Text(
                   l10n.budgetCategoryListTitle,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    letterSpacing: 0.2,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    letterSpacing: 0.1,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

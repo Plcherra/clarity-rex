@@ -53,33 +53,14 @@ class BudgetsHeader extends StatelessWidget {
         boxShadow: ClarityShadows.panel,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SegmentedButton<BudgetPeriodType>(
-            style: const ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            segments: [
-              ButtonSegment<BudgetPeriodType>(
-                value: BudgetPeriodType.monthly,
-                label: Text(l10n.commonMonthly),
-              ),
-              ButtonSegment<BudgetPeriodType>(
-                value: BudgetPeriodType.weekly,
-                label: Text(l10n.commonWeekly),
-              ),
-              ButtonSegment<BudgetPeriodType>(
-                value: BudgetPeriodType.custom,
-                label: Text(l10n.commonCustom),
-              ),
-            ],
-            selected: {selectedType},
-            showSelectedIcon: false,
-            onSelectionChanged: (selection) {
-              if (selection.isEmpty) return;
-              onPeriodTypeChanged(selection.first);
-            },
+          _BudgetPeriodToggle(
+            selectedType: selectedType,
+            monthlyLabel: l10n.commonMonthly,
+            weeklyLabel: l10n.commonWeekly,
+            customLabel: l10n.commonCustom,
+            onChanged: onPeriodTypeChanged,
           ),
           const SizedBox(height: 10),
           if (selectedType == BudgetPeriodType.monthly)
@@ -143,6 +124,106 @@ class BudgetsHeader extends StatelessWidget {
               ],
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _BudgetPeriodToggle extends StatelessWidget {
+  const _BudgetPeriodToggle({
+    required this.selectedType,
+    required this.monthlyLabel,
+    required this.weeklyLabel,
+    required this.customLabel,
+    required this.onChanged,
+  });
+
+  final BudgetPeriodType selectedType;
+  final String monthlyLabel;
+  final String weeklyLabel;
+  final String customLabel;
+  final ValueChanged<BudgetPeriodType> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.38),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: Row(
+          children: [
+            _BudgetPeriodToggleSegment(
+              label: monthlyLabel,
+              selected: selectedType == BudgetPeriodType.monthly,
+              onTap: () => onChanged(BudgetPeriodType.monthly),
+            ),
+            _BudgetPeriodToggleSegment(
+              label: weeklyLabel,
+              selected: selectedType == BudgetPeriodType.weekly,
+              onTap: () => onChanged(BudgetPeriodType.weekly),
+            ),
+            _BudgetPeriodToggleSegment(
+              label: customLabel,
+              selected: selectedType == BudgetPeriodType.custom,
+              onTap: () => onChanged(BudgetPeriodType.custom),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BudgetPeriodToggleSegment extends StatelessWidget {
+  const _BudgetPeriodToggleSegment({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Expanded(
+      child: Material(
+        color: selected
+            ? cs.surface
+            : Colors.transparent,
+        elevation: selected ? 0.5 : 0,
+        shadowColor: cs.shadow.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    color: selected
+                        ? cs.onSurface
+                        : cs.onSurface.withValues(alpha: 0.62),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

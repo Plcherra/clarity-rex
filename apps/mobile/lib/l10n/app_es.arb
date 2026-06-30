@@ -670,7 +670,7 @@
     }
   },
   "commonCreditCardPayment": "pago con tarjeta de crédito",
-  "commonCustom": "Personalizado",
+  "commonCustom": "A medida",
   "commonDelete": "Borrar",
   "commonDescription": "Descripción",
   "commonDisable": "Desactivar",
@@ -844,7 +844,7 @@
     }
   },
   "commonVisible": "Visible",
-  "commonWeekly": "Semanalmente",
+  "commonWeekly": "Semanal",
   "commonYesterday": "Ayer",
   "connectBankCardAddManualButton": "Agregar cuenta manual",
   "connectBankCardConnectButton": "Conectar banco",

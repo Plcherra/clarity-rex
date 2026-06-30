@@ -215,7 +215,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonAll => 'Todo';
 
   @override
-  String get commonCustom => 'Personalizado';
+  String get commonCustom => 'A medida';
 
   @override
   String get commonActive => 'Activo';
@@ -380,7 +380,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonMonthly => 'Mensual';
 
   @override
-  String get commonWeekly => 'Semanalmente';
+  String get commonWeekly => 'Semanal';
 
   @override
   String commonOnTrack(int onTrack, int budgeted) {
