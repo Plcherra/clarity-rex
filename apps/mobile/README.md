@@ -1,148 +1,146 @@
 # Clarity
 
-**Personal finance and life guidance in one calm app — powered by Rex, your AI assistant that knows your money and remembers what matters.**
+**See your money clearly. Talk to Rex like he actually knows your life.**
 
 <p align="center">
-  <img src="assets/readme/hero-dashboard.png" alt="Clarity dashboard showing balances, cash flow, and spending by category" width="320" />
+  <img src="assets/readme/hero-dashboard.png" alt="Clarity dashboard — balances, cash flow, and spending by category" width="360" />
 </p>
 
-> **Screenshot tip:** Replace `assets/readme/hero-dashboard.png` with your best dashboard shot (dark or light mode). See [Where to add real screenshots](#where-to-add-real-screenshots) below.
+<p align="center">
+  <strong>Flutter · Supabase · Plaid · Grok</strong><br />
+  <em>Full-stack personal finance app with a built-in AI assistant — chat, voice, memory, and goals in one product.</em>
+</p>
 
 ---
 
-## Features
+## The idea
 
-- **Unified financial dashboard** — Balances, monthly cash flow, spending by category, and account health in one place.
-- **Plaid bank sync** — Connect checking, savings, and credit accounts; sync transactions automatically.
-- **Budgets by category** — Set monthly, weekly, or custom budgets driven by your real transaction history.
-- **Transactions & CSV import** — Browse history by month or category; import statements with AI-assisted categorization.
-- **Rex chat assistant** — Talk to Rex about money, goals, and life context with the same data you see in the app.
-- **Knows (Rex memory)** — Saved, categorized knowledge (People, Events, Places, Goals, Preferences, Facts) you control and edit.
-- **Goals & commitments** — Track goals and accountability items alongside Rex conversations.
-- **Voice mode** — Hands-free Rex via cloud voice sessions, with usage tracking in Profile.
-- **Multilingual UI** — English and Spanish (more locales planned); finance and memory labels stay honest across languages.
-- **Dark-first design** — Polished dark theme with optional light mode and system appearance.
+Most finance apps stop at charts. **Clarity combines real bank data with Rex** — an assistant that reads the same numbers you see on screen, remembers what you choose to save, and helps you stay on budget without feeling like a separate chatbot bolted on.
+
+Built as a **production-minded MVP**: dark-first UI, English and Spanish, Plaid sync, CSV import with AI categorization, and trust rules so Rex never fakes a save or invents balances.
 
 ---
 
-## Screenshots
+## App gallery
+
+<p align="center">
+  <img src="assets/readme/02-dashboard.png" alt="Dashboard" width="280" />
+  &nbsp;&nbsp;
+  <img src="assets/readme/05-rex-chat.png" alt="Rex chat" width="280" />
+</p>
 
 | | |
 |---|---|
-| **Dashboard** — Total balance, income vs spending, cash-flow chart | **Accounts** — Plaid-connected accounts with sync status |
+| **Dashboard** — Balances, income vs spending, cash-flow chart, category breakdown | **Accounts** — Plaid-connected accounts with sync status |
 | ![Dashboard](assets/readme/02-dashboard.png) | ![Accounts](assets/readme/03-accounts.png) |
-| **Budgets** — Period picker, budget vs spent insights, category amounts | **Transactions** — Monthly history with search and filters |
+| **Budgets** — Monthly, weekly, or custom periods; budget vs spent insights | **Transactions** — Searchable history by month and category |
 | ![Budgets](assets/readme/04-budgets.png) | ![Transactions](assets/readme/09-transactions.png) |
-| **Chat with Rex** — Quick prompts and message composer | **Knows tab** — Searchable saved memory by entity type |
+| **Rex chat** — Ask about money and life context using live app data | **Knows** — Saved memory: People, Events, Places, Goals, Preferences, Facts |
 | ![Rex Chat](assets/readme/05-rex-chat.png) | ![Knows](assets/readme/06-knows.png) |
-| **Goals** — Goals and commitments empty state / list | **Voice usage** — Rex voice minutes and call activity |
+| **Goals** — Track goals and commitments alongside Rex | **Voice** — Hands-free Rex with usage tracking in Profile |
 | ![Goals](assets/readme/07-goals.png) | ![Voice](assets/readme/08-voice.png) |
 
-<details>
-<summary>Additional placeholders (onboarding, settings, light mode)</summary>
-
-| Screen | Placeholder |
-|--------|-------------|
-| Login / onboarding | `assets/readme/01-onboarding.png` |
-| Profile & settings (language, appearance, MFA) | `assets/readme/10-profile-settings.png` |
-| Dashboard (light mode) | `assets/readme/11-dashboard-light.png` |
-
-</details>
+<p align="center">
+  <img src="assets/readme/01-onboarding.png" alt="Onboarding" width="220" />
+  &nbsp;
+  <img src="assets/readme/10-profile-settings.png" alt="Settings" width="220" />
+  &nbsp;
+  <img src="assets/readme/11-dashboard-light.png" alt="Light mode" width="220" />
+</p>
+<p align="center"><sub>Onboarding · Profile &amp; settings · Light mode</sub></p>
 
 ---
 
-## Tech Stack
+## What Clarity does
+
+### Money, in one place
+
+- **Live bank sync** via Plaid — checking, savings, credit cards
+- **Unified dashboard** — balances, monthly cash flow, spending by category
+- **Smart budgets** — monthly, weekly, or custom periods seeded from real transaction history
+- **Transactions & CSV import** — browse and filter history; import statements with AI-assisted categorization
+- **Merchant learning** — category corrections can apply to matching past and future transactions
+
+### Rex — assistant inside the app
+
+- **Chat** — Rex uses the same financial data as Dashboard, Budgets, and Transactions
+- **Voice** — cloud voice sessions with usage visible under Profile
+- **Knows (memory)** — entity-based saved knowledge you control: People, Events, Places, Goals, Preferences, Facts
+- **Goals & commitments** — dedicated Goals tab; Rex can discuss progress using the same records
+- **Trust by design** — Rex distinguishes saved memory from chat history; durable actions only after backend confirmation
+
+### Polish clients notice
+
+- **Dark-first design** with optional light mode and system appearance
+- **English + Spanish UI** with localized category labels
+- **Comfortable mobile UX** — collapsible insights, full-page scroll on budgets, keyboard-aware editing
+
+---
+
+## Why this build stands out
+
+| Signal | Detail |
+|--------|--------|
+| **Real integrations** | Plaid bank sync, Supabase auth/data, Grok-powered Rex API — not a mock UI |
+| **One product surface** | Finance and Rex share a single read model; no split-brain data |
+| **AI you can trust** | Memory saves, budget changes, and recalls are backend-confirmed and honestly labeled |
+| **Shipped flows** | Dashboard, accounts, budgets, transactions, chat, memory, goals, and voice on device |
+| **Maintainable codebase** | Feature-first Flutter layout, Python FastAPI backend, clear separation of Rex vs finance |
+
+---
+
+## Tech stack
 
 | Layer | Technology |
 |-------|------------|
-| **Mobile app** | [Flutter](https://flutter.dev) 3.x, Dart 3.11+ |
-| **State management** | [Riverpod](https://riverpod.dev) |
-| **Backend API** | Python [FastAPI](https://fastapi.tiangolo.com) (`services/rex-api` in monorepo) |
-| **Database & auth** | [Supabase](https://supabase.com) (Postgres, Auth, Edge Functions, RLS) |
-| **Bank connections** | [Plaid](https://plaid.com) (via `vendor/plaid_flutter`) |
-| **Rex intelligence** | [Grok](https://x.ai) via Rex API — chat, voice, memory, and recall orchestration |
-| **Charts** | [fl_chart](https://pub.dev/packages/fl_chart) |
-| **Localization** | Flutter gen-l10n (`lib/l10n/`) |
+| Mobile | [Flutter](https://flutter.dev) 3.x · [Riverpod](https://riverpod.dev) |
+| Backend | Python [FastAPI](https://fastapi.tiangolo.com) |
+| Database & auth | [Supabase](https://supabase.com) (Postgres, Auth, Edge Functions, RLS) |
+| Bank data | [Plaid](https://plaid.com) |
+| Rex AI | [Grok](https://x.ai) via Rex API — chat, voice, memory, recall |
+| Charts & i18n | fl_chart · Flutter gen-l10n (EN / ES) |
 
-The mobile app never holds server secrets. OpenAI categorization and email run in Supabase Edge Functions; Grok keys live on the Rex API server.
+Server secrets stay on the backend — the mobile app only holds public client config.
 
 ---
 
-## Key Capabilities
+## Status
 
-### Rex Brain (chat & voice)
+Active MVP / pilot. Core user flows run on device; reliability and localization work continue.
 
-Rex is not a separate app — it lives inside Clarity and reads the same financial read models as Dashboard, Budgets, and Transactions.
-
-- **One brain path** for chat and voice: intent check → minimal context → optional backend action → Grok response → light truth check.
-- **Honest sourcing** — Saved memory vs chat search vs financial data are labeled separately in prompts.
-- **No fake actions** — Rex only claims a save, budget change, or memory write after the backend confirms it.
-- **Voice** — Cloud voice sessions (streaming when enabled); usage visible under Profile → Rex and voice.
-
-Architecture details: [`docs/brain/REX_BRAIN_ARCHITECTURE.md`](../../docs/brain/REX_BRAIN_ARCHITECTURE.md)
-
-### Knows (memory)
-
-- Entity-based memory: People, Events, Places, Goals, Preferences, Facts.
-- **Knows tab** mirrors what Rex can retrieve as *saved* knowledge — not automatic chat logging.
-- Search, filters, and per-item edit/delete; recall from chat can propose saves with explicit confirmation.
-
-### Finance sync
-
-- **Plaid** — Primary source for live accounts and transactions.
-- **CSV import** — Fallback path with AI categorization through Supabase Edge Functions.
-- **Single read model** — `FinancialReadModelService` feeds Dashboard, Budgets, Transactions, and Rex financial context.
-- **Merchant learning** — Category corrections can propagate to matching transactions.
-
-Finance truth rules: [`docs/FINANCE_SOURCE_OF_TRUTH.md`](../../docs/FINANCE_SOURCE_OF_TRUTH.md)
-
-### Budgets
-
-- Monthly, weekly, and custom periods.
-- Categories seeded from transaction history (including future months).
-- Collapsible insights and full-page scroll for comfortable editing on device.
-- Localized category *display* labels; English canonical names stored in the database.
-
-### Goals & accountability
-
-- Goals tab under Assistant with add goal / add commitment flows.
-- Wired to Rex API accountability endpoints; Rex can discuss progress using the same records.
+| Area | Status |
+|------|--------|
+| Dashboard, accounts, transactions | ✅ Plaid + CSV |
+| Budgets | ✅ Functional; i18n UX |
+| Rex chat, Knows, Goals | ✅ Functional |
+| Voice | ✅ Cloud path + usage tracking |
+| Localization | ✅ EN + ES UI |
 
 ---
 
-## Getting Started (Local Development)
+<details>
+<summary><strong>Local development setup</strong></summary>
 
 ### Prerequisites
 
 - Flutter SDK compatible with `sdk: ^3.11.4` (see `pubspec.yaml`)
 - Xcode (iOS) and/or Android Studio (Android)
-- [Supabase CLI](https://supabase.com/docs/guides/cli) for migrations (optional for app-only work)
-- Running **Rex API** locally or a deployed instance (`services/rex-api`)
+- [Supabase CLI](https://supabase.com/docs/guides/cli) (optional for app-only work)
+- Running Rex API locally or deployed (`services/rex-api`)
 
-### 1. Clone and install
-
-From the repository root:
+### Install
 
 ```bash
 cd apps/mobile
 flutter pub get
+flutter gen-l10n   # after editing .arb files
 ```
 
-Generate localizations after editing `.arb` files:
-
-```bash
-flutter gen-l10n
-```
-
-### 2. Configure environment
-
-Copy the example env file:
+### Configure
 
 ```bash
 cp .env.example .env
 ```
-
-Fill in public client values only:
 
 ```dotenv
 SUPABASE_URL=https://your-project-ref.supabase.co
@@ -152,7 +150,7 @@ REX_CLOUD_VOICE_ENABLED=true
 REX_STREAMING_VOICE_ENABLED=true
 ```
 
-Alternatively, pass config at run time (dart-define wins over `.env`):
+Or pass at run time (`--dart-define` overrides `.env`):
 
 ```bash
 flutter run \
@@ -161,134 +159,88 @@ flutter run \
   --dart-define=REX_BACKEND_URL=http://localhost:8000
 ```
 
-**Never** put `OPENAI_API_KEY`, Grok keys, or Plaid secrets in the Flutter app.
+Never put `OPENAI_API_KEY`, Grok keys, or Plaid secrets in the Flutter app.
 
-### 3. Start Rex API (backend)
-
-From the monorepo root, run the Rex API (see [`services/rex-api/README.md`](../../services/rex-api/README.md) if present, or [`docs/BACKEND_DEPLOY_RUNBOOK.md`](../../docs/BACKEND_DEPLOY_RUNBOOK.md)):
+### Backend & database
 
 ```bash
-# Example — adjust to your local Python/uvicorn setup
-cd services/rex-api
-# configure .env with Supabase service role, Grok, Plaid, etc.
+# Rex API (from services/rex-api — see services/rex-api README)
 uvicorn app.main:app --reload --port 8000
-```
 
-### 4. Supabase (first-time / schema)
-
-Apply migrations from the repo root:
-
-```bash
+# Migrations (from repo root)
 supabase db push
 ```
 
-Auth email and Edge Functions: [`docs/SUPABASE_AUTH_EMAIL_SETUP.md`](../../docs/SUPABASE_AUTH_EMAIL_SETUP.md)
-
-### 5. Run the app
+### Run & verify
 
 ```bash
 cd apps/mobile
 flutter run
+
+flutter analyze
+flutter test
 ```
 
-**iPhone release helper** (from repo root, uses production API by default):
+**iPhone release helper** (repo root):
 
 ```bash
 ./scripts/mobile_release_run.sh
 ```
 
-### 6. Verify
+</details>
 
-```bash
-flutter analyze
-flutter test
-```
-
----
-
-## Project Structure (mobile)
+<details>
+<summary><strong>Project structure (mobile)</strong></summary>
 
 ```text
 lib/
 ├── app/              # Bootstrap, composition root, UI controllers
 ├── core/             # Models, Supabase, formatting, l10n
-├── features/         # Finance features (dashboard, accounts, budgets, …)
+├── features/         # Dashboard, accounts, budgets, transactions, …
 ├── rex/              # Assistant: chat, voice, memory, goals
 ├── services/         # Shared API clients
 └── widgets/          # Reusable UI
 ```
 
-- Entry: `lib/main.dart` → `lib/app/bootstrap.dart`
-- Composition: `lib/app/app_composition.dart`
-- Feature-first layout under `lib/features/`; all Rex code under `lib/rex/`.
+Entry: `lib/main.dart` → `lib/app/bootstrap.dart` · Composition: `lib/app/app_composition.dart`
 
 Monorepo map: [`docs/PROJECT_MAP.md`](../../docs/PROJECT_MAP.md)
 
----
+</details>
 
-## Roadmap & Status
+<details>
+<summary><strong>Screenshot assets</strong></summary>
 
-Clarity is in **active MVP / pilot** development. Core flows work on device; polish and reliability work continue.
+Screenshots live in `apps/mobile/assets/readme/` and are wired in the gallery above.
 
-| Area | Status |
+| File | Screen |
 |------|--------|
-| Dashboard, accounts, transactions | Functional with Plaid + CSV |
-| Budgets | Functional; category i18n and UX iterating |
-| Rex chat & memory (Knows) | Functional; recall → save → confirm hardened |
-| Voice | Cloud path production; usage tracking in app |
-| Goals & accountability | UI present; completion tracked in plan docs |
-| Localization | English + Spanish UI; expanding category coverage |
-| Hybrid chat search | Planned ([`docs/brain/REX_BRAIN_HYBRID_CHAT_SEARCH.md`](../../docs/brain/REX_BRAIN_HYBRID_CHAT_SEARCH.md)) |
+| `hero-dashboard.png` | Dashboard — balance, monthly summary, cash-flow chart |
+| `01-onboarding.png` | Sign in |
+| `02-dashboard.png` | Dashboard — categories, income vs spending, trends |
+| `03-accounts.png` | Accounts — Plaid-connected cards |
+| `04-budgets.png` | Budgets — period picker and budget vs spent |
+| `05-rex-chat.png` | Assistant → Chat |
+| `06-knows.png` | Assistant → Knows (saved memory) |
+| `07-goals.png` | Assistant → Goals |
+| `08-voice.png` | Profile → Voice usage |
+| `09-transactions.png` | Transactions by month |
+| `10-profile-settings.png` | Profile → Language |
+| `11-dashboard-light.png` | Dashboard (light mode) |
 
-**Completion tracking:** [`docs/project-completion/00_COMPLETION_MASTER_PLAN.md`](../../docs/project-completion/00_COMPLETION_MASTER_PLAN.md)
+Original device exports (`IMG_*.PNG`) are kept in the same folder for reference. Loading-state captures were not used in the gallery.
 
-**Brain trust & reliability:** [`docs/brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md`](../../docs/brain/REX_BRAIN_TRUST_RELIABILITY_PLAN.md)
+</details>
 
-**Localization:** [`docs/i18n/00_LOCALIZATION_MASTER_PLAN.md`](../../docs/i18n/00_LOCALIZATION_MASTER_PLAN.md)
+<details>
+<summary><strong>Internal documentation</strong></summary>
 
-There is no separate `PILOT-FEATURE-TRACKER` file; use the completion master plan and brain master plan as the source of truth for pilot scope.
+- Architecture: [`docs/brain/REX_BRAIN_ARCHITECTURE.md`](../../docs/brain/REX_BRAIN_ARCHITECTURE.md)
+- Finance source of truth: [`docs/FINANCE_SOURCE_OF_TRUTH.md`](../../docs/FINANCE_SOURCE_OF_TRUTH.md)
+- CSV import contract: [`docs/csv_import_ai_categorization.md`](../../docs/csv_import_ai_categorization.md)
+- Completion plan: [`docs/project-completion/00_COMPLETION_MASTER_PLAN.md`](../../docs/project-completion/00_COMPLETION_MASTER_PLAN.md)
 
----
-
-## Where to add real screenshots
-
-1. Create the folder (if it does not exist):
-
-   ```bash
-   mkdir -p apps/mobile/assets/readme
-   ```
-
-2. Export **6–8 PNGs** from iOS Simulator or a device (2× or 3× scale looks best in GitHub). Suggested mapping from your current builds:
-
-   | File | Suggested capture |
-   |------|-------------------|
-   | `hero-dashboard.png` | Dashboard with balance card + cash-flow chart (dark) |
-   | `01-onboarding.png` | Auth or first-run screen |
-   | `02-dashboard.png` | Full dashboard scroll (spending + trends) |
-   | `03-accounts.png` | Connected Plaid accounts list |
-   | `04-budgets.png` | Budgets with categories expanded |
-   | `05-rex-chat.png` | Assistant → Chat, “Rex is ready” |
-   | `06-knows.png` | Assistant → Knows with People/Facts cards |
-   | `07-goals.png` | Assistant → Goals |
-   | `08-voice.png` | Profile → Voice usage charts |
-   | `09-transactions.png` | Transactions month list |
-   | `10-profile-settings.png` | Profile with language / appearance sheet |
-   | `11-dashboard-light.png` | Optional light-mode dashboard |
-
-3. Drop files into `apps/mobile/assets/readme/` — paths in this README are already wired.
-
-4. Register assets in `pubspec.yaml` if you add a new folder (usually under `flutter: assets:`).
-
-5. Commit images separately from code if the repo prefers smaller diffs; GitHub renders them automatically in the README.
-
----
-
-## Related Documentation
-
-- CSV import & AI categorization contract: [`docs/csv_import_ai_categorization.md`](../../docs/csv_import_ai_categorization.md)
-- Voice production path: [`docs/VOICE_SOURCE_OF_TRUTH.md`](../../docs/VOICE_SOURCE_OF_TRUTH.md)
-- Memory & recall policy: [`docs/MEMORY_RECALL_SOURCE_OF_TRUTH.md`](../../docs/MEMORY_RECALL_SOURCE_OF_TRUTH.md)
-- Beta smoke runbook: [`docs/CLARITY_BETA_SMOKE_RUNBOOK.md`](../../docs/CLARITY_BETA_SMOKE_RUNBOOK.md)
+</details>
 
 ---
 
