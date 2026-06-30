@@ -133,6 +133,7 @@ class ChatApi {
     String? conversationId,
     XFile? attachment,
     Map<String, dynamic>? financialContext,
+    Map<String, dynamic>? writeConfirmation,
   }) async* {
     final uri = _apiClient.uri('/chat');
     try {
@@ -142,6 +143,7 @@ class ChatApi {
               message: message,
               conversationId: conversationId,
               financialContext: financialContext,
+              writeConfirmation: writeConfirmation,
             )
           : await _multipartStreamRequest(
               uri,
@@ -149,6 +151,7 @@ class ChatApi {
               conversationId: conversationId,
               attachment: attachment,
               financialContext: financialContext,
+              writeConfirmation: writeConfirmation,
             );
       final response = await _apiClient.send(request);
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -269,13 +272,17 @@ class ChatApi {
     required String message,
     String? conversationId,
     Map<String, dynamic>? financialContext,
+    Map<String, dynamic>? writeConfirmation,
   }) {
-    final payload = <String, Object>{'message': message, 'stream': true};
+    final payload = <String, dynamic>{'message': message, 'stream': true};
     if (conversationId != null) {
       payload['conversation_id'] = conversationId;
     }
     if (financialContext != null) {
       payload['financial_context'] = financialContext;
+    }
+    if (writeConfirmation != null) {
+      payload['write_confirmation'] = writeConfirmation;
     }
     final locale = _resolveLocale?.call()?.trim();
     if (locale != null && locale.isNotEmpty) {
@@ -293,6 +300,7 @@ class ChatApi {
     String? conversationId,
     required XFile attachment,
     Map<String, dynamic>? financialContext,
+    Map<String, dynamic>? writeConfirmation,
   }) async {
     final request = http.MultipartRequest('POST', uri)
       ..fields['message'] = message
@@ -302,6 +310,9 @@ class ChatApi {
     }
     if (financialContext != null) {
       request.fields['financial_context'] = jsonEncode(financialContext);
+    }
+    if (writeConfirmation != null) {
+      request.fields['write_confirmation'] = jsonEncode(writeConfirmation);
     }
     final locale = _resolveLocale?.call()?.trim();
     if (locale != null && locale.isNotEmpty) {

@@ -322,6 +322,7 @@ class ChatController extends Notifier<ChatState> {
   Future<String?> _sendStreamingMessage(
     String message, {
     XFile? attachment,
+    Map<String, dynamic>? writeConfirmation,
   }) async {
     final generation = ++_streamGeneration;
     final streamedAssistantId =
@@ -335,6 +336,7 @@ class ChatController extends Notifier<ChatState> {
         conversationId: state.conversationId,
         attachment: attachment,
         financialContext: financialContext,
+        writeConfirmation: writeConfirmation,
       )) {
         if (generation != _streamGeneration) {
           return null;
@@ -367,6 +369,7 @@ class ChatController extends Notifier<ChatState> {
             clearError: true,
           );
           await _refreshSavedMemoryOverviewIfNeeded(response.memoryChanges);
+          await _refreshGoalsOverviewIfNeeded(response.memoryChanges);
           return assistantTextFromApiResponse(response) ??
               latestAssistantContent(state.messages);
         }

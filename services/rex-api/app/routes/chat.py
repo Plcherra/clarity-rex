@@ -35,6 +35,7 @@ async def chat(
                 financial_context=chat_request.financial_context,
                 user_requested_deep_thinking=chat_request.deep_think,
                 locale=chat_request.locale,
+                write_confirmation=chat_request.write_confirmation,
             ),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
@@ -80,6 +81,7 @@ async def _stream_chat_events(
     financial_context: Optional[dict],
     user_requested_deep_thinking: bool = False,
     locale: Optional[str] = None,
+    write_confirmation: Optional[dict] = None,
 ):
     try:
         async for event in chat_service.stream_message(
@@ -89,6 +91,7 @@ async def _stream_chat_events(
             financial_context=financial_context,
             user_requested_deep_thinking=user_requested_deep_thinking,
             locale=locale,
+            write_confirmation=write_confirmation,
         ):
             yield _sse_event(event.pop("event"), event)
     except ConversationNotFoundError:
@@ -131,6 +134,7 @@ async def _parse_chat_request(request: Request) -> tuple[ChatRequest, Optional[U
                     financial_context=_json_dict(form.get("financial_context")),
                     deep_think=_as_bool(form.get("deep_think")),
                     locale=locale or None,
+                    write_confirmation=_json_dict(form.get("write_confirmation")),
                 ),
                 file,
             )
