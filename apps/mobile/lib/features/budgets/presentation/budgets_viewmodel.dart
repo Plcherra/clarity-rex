@@ -58,17 +58,22 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
       bool hasSavedBudgetHistory = false,
       bool hasTransactionHistory = false,
     }) {
-      final label = displayLabel.trim();
+      final label = CategoryLabelResolver.englishCanonicalLabelForDisplay(
+        displayLabel: displayLabel,
+        renamesLowerToDisplay: categoryDisplayRenames,
+      ).trim();
       if (label.isEmpty || isUnresolvedCategoryLabel(label)) return;
+      final labelKey = normalizedCategoryKey(label);
       final key = categoryKey?.trim().isNotEmpty == true
           ? categoryKey!.trim()
-          : normalizedCategoryKey(label);
+          : labelKey;
       if (key.isEmpty) return;
       final id = categoryId?.trim();
       final canonical = id != null && id.isNotEmpty ? 'id:$id' : 'key:$key';
       final identityKeys = {
         canonical,
         'key:$key',
+        if (labelKey.isNotEmpty) 'key:$labelKey',
         if (id != null && id.isNotEmpty) 'id:$id',
       };
       String? existingCanonical;
@@ -77,13 +82,29 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
           existingCanonical = entry.key;
           break;
         }
+        if (entry.value.categoryKey == key ||
+            entry.value.categoryKey == labelKey ||
+            normalizedCategoryKey(entry.value.displayLabel) == labelKey) {
+          existingCanonical = entry.key;
+          break;
+        }
       }
       if (existingCanonical != null) {
         final existing = rowsByCanonical[existingCanonical]!;
-        rowsByCanonical[existingCanonical] = existing.withIdentityKeys(
-          identityKeys,
-          hasSavedBudgetHistory: hasSavedBudgetHistory,
-          hasTransactionHistory: hasTransactionHistory,
+        rowsByCanonical[existingCanonical] = BudgetCategoryRow(
+          canonical: existing.canonical,
+          categoryId: id ?? existing.categoryId,
+          categoryKey: key,
+          displayLabel: label,
+          identityKeys: {
+            ...existing.identityKeys,
+            ...identityKeys,
+            existing.canonical,
+          },
+          hasSavedBudgetHistory:
+              existing.hasSavedBudgetHistory || hasSavedBudgetHistory,
+          hasTransactionHistory:
+              existing.hasTransactionHistory || hasTransactionHistory,
         );
         return;
       }
@@ -109,7 +130,8 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
             entry.value.abs() < 1e-9) {
           continue;
         }
-        final canonicalLabel = CategoryLabelResolver.canonicalEnglishLabelFromDisplay(
+        final canonicalLabel =
+            CategoryLabelResolver.englishCanonicalLabelForDisplay(
           displayLabel: spendLabel,
           renamesLowerToDisplay: categoryDisplayRenames,
         );

@@ -67,5 +67,30 @@ void main() {
         'Grocery / Supermarket',
       );
     });
+
+    test('maps Spanish spend labels and English aliases to one canonical name', () {
+      final renames = CategoryLabelResolver.displayRenamesForLocaleTag('es');
+      expect(
+        CategoryLabelResolver.englishCanonicalLabelForDisplay(
+          displayLabel: 'Café / Comida rápida',
+          renamesLowerToDisplay: renames,
+        ),
+        'Coffee / Quick Food',
+      );
+      expect(
+        CategoryLabelResolver.englishCanonicalLabelForDisplay(
+          displayLabel: 'Coffee / Quick Food',
+          renamesLowerToDisplay: renames,
+        ),
+        'Coffee / Quick Food',
+      );
+      expect(
+        CategoryLabelResolver.englishCanonicalLabelForDisplay(
+          displayLabel: 'Food And Drink',
+          renamesLowerToDisplay: renames,
+        ),
+        'Food & Drink',
+      );
+    });
   });
 }

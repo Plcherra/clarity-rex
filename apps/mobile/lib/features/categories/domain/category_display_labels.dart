@@ -1,6 +1,8 @@
-/// Built-in category labels keyed by [normalized_name] from Supabase.
-///
-/// Canonical English names remain the DB identity; this map supplies UI labels.
+// Built-in category labels keyed by [normalized_name] from Supabase.
+//
+// Canonical English names remain the DB identity; this map supplies UI labels.
+import 'category_normalization.dart';
+
 const Map<String, Map<String, String>> kBuiltInCategoryDisplayLabels = {
   'coffee quick food': {
     'en': 'Coffee / Quick Food',
@@ -131,15 +133,65 @@ final class CategoryLabelResolver {
     required String displayLabel,
     required Map<String, String> renamesLowerToDisplay,
   }) {
+    return englishCanonicalLabelForDisplay(
+      displayLabel: displayLabel,
+      renamesLowerToDisplay: renamesLowerToDisplay,
+    );
+  }
+
+  /// Resolves any locale-specific or alias label to the English DB identity.
+  static String englishCanonicalLabelForDisplay({
+    required String displayLabel,
+    required Map<String, String> renamesLowerToDisplay,
+  }) {
     final trimmed = displayLabel.trim();
-    if (trimmed.isEmpty || renamesLowerToDisplay.isEmpty) return trimmed;
-    final lower = trimmed.toLowerCase();
+    if (trimmed.isEmpty) return trimmed;
+
+    final comparable = _comparableLabel(trimmed);
+
     for (final entry in renamesLowerToDisplay.entries) {
-      if (entry.value.toLowerCase() != lower) continue;
+      if (_comparableLabel(entry.value) != comparable) continue;
       final english = kBuiltInCategoryDisplayLabels[entry.key]?['en'];
       if (english != null && english.isNotEmpty) return english;
     }
-    return trimmed;
+
+    for (final entry in kBuiltInCategoryDisplayLabels.entries) {
+      for (final label in entry.value.values) {
+        if (_comparableLabel(label) != comparable) continue;
+        return entry.value['en']!;
+      }
+    }
+
+    final englishFromKey = _builtInEnglishForNormalizedKey(
+      normalizedCategoryKey(trimmed),
+    );
+    if (englishFromKey != null) return englishFromKey;
+
+    return normalizeCategoryDisplayName(trimmed) ?? trimmed;
+  }
+
+  static String? _builtInEnglishForNormalizedKey(String key) {
+    final direct = kBuiltInCategoryDisplayLabels[key]?['en'];
+    if (direct != null && direct.isNotEmpty) return direct;
+
+    final withoutAnd = key
+        .replaceAll(RegExp(r'\band\b'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (withoutAnd == key) return null;
+    return kBuiltInCategoryDisplayLabels[withoutAnd]?['en'];
+  }
+
+  static String _comparableLabel(String value) {
+    return value
+        .trim()
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n');
   }
 
   static String? _labelForTag(Map<String, String> labels, String localeTag) {
