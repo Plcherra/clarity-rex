@@ -70,6 +70,7 @@ class ChatApi {
     String? conversationId,
     XFile? attachment,
     Map<String, dynamic>? financialContext,
+    Map<String, dynamic>? writeConfirmation,
   }) async {
     final uri = _apiClient.uri('/chat');
     try {
@@ -79,6 +80,7 @@ class ChatApi {
               message: message,
               conversationId: conversationId,
               financialContext: financialContext,
+              writeConfirmation: writeConfirmation,
             )
           : await _sendMultipartMessage(
               uri,
@@ -209,6 +211,7 @@ class ChatApi {
     required String message,
     String? conversationId,
     Map<String, dynamic>? financialContext,
+    Map<String, dynamic>? writeConfirmation,
   }) async {
     final payload = <String, dynamic>{'message': message};
     if (conversationId != null) {
@@ -216,6 +219,9 @@ class ChatApi {
     }
     if (financialContext != null) {
       payload['financial_context'] = financialContext;
+    }
+    if (writeConfirmation != null) {
+      payload['write_confirmation'] = writeConfirmation;
     }
     _attachLocale(payload);
 

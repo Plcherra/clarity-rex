@@ -82,6 +82,11 @@ class ClarityActionCard {
     this.status = 'pending',
     this.result = const [],
     this.errorMessage,
+    this.writeKind,
+    this.title,
+    this.body,
+    this.targetLabel,
+    this.editableFields = const [],
   });
 
   final String id;
@@ -92,10 +97,16 @@ class ClarityActionCard {
   final String status;
   final List<Map<String, dynamic>> result;
   final String? errorMessage;
+  final String? writeKind;
+  final String? title;
+  final String? body;
+  final String? targetLabel;
+  final List<String> editableFields;
 
   factory ClarityActionCard.fromJson(Map<String, dynamic> json) {
     final payload = json['payload'];
     final result = json['result'];
+    final editable = json['editable_fields'];
     return ClarityActionCard(
       id: _text(json['id']),
       action: _text(json['action']),
@@ -115,6 +126,18 @@ class ClarityActionCard {
       errorMessage: json['error_message'] is String
           ? json['error_message'] as String
           : null,
+      writeKind: json['write_kind'] is String ? json['write_kind'] as String : null,
+      title: json['title'] is String ? json['title'] as String : null,
+      body: json['body'] is String ? json['body'] as String : null,
+      targetLabel: json['target_label'] is String
+          ? json['target_label'] as String
+          : null,
+      editableFields: editable is List
+          ? [
+              for (final item in editable)
+                if (item != null) item.toString(),
+            ]
+          : const [],
     );
   }
 
@@ -125,7 +148,9 @@ class ClarityActionCard {
   bool get isDismissed => status == 'dismissed';
   bool get canConfirm => isPending || isFailed;
   bool get canDismiss => isPending || isFailed;
-  String get actionLabel => action.memoryRecordLabel;
+  bool get hasEditableFields => editableFields.isNotEmpty;
+  String get actionLabel =>
+      (writeKind ?? action).memoryRecordLabel;
   String get riskLabel => memoryRiskLevelLabel(riskLevel);
   String get statusLabel => memoryActionStatusLabel(status);
 
@@ -138,6 +163,11 @@ class ClarityActionCard {
     String? status,
     List<Map<String, dynamic>>? result,
     String? errorMessage,
+    String? writeKind,
+    String? title,
+    String? body,
+    String? targetLabel,
+    List<String>? editableFields,
     bool clearError = false,
   }) {
     return ClarityActionCard(
@@ -149,6 +179,11 @@ class ClarityActionCard {
       status: status ?? this.status,
       result: result ?? this.result,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+      writeKind: writeKind ?? this.writeKind,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      targetLabel: targetLabel ?? this.targetLabel,
+      editableFields: editableFields ?? this.editableFields,
     );
   }
 }

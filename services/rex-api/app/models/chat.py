@@ -11,6 +11,7 @@ class ChatRequest(BaseModel):
     financial_context: Optional[dict[str, Any]] = None
     deep_think: bool = False
     locale: Optional[str] = None
+    write_confirmation: Optional[dict[str, Any]] = None
 
 
 class ChatResponse(BaseModel):

@@ -9,9 +9,12 @@ from app.services.personal_plan_intent_parser import PersonalPlanIntentParser
 
 _CONVERSATIONAL_PLAN_PATTERN = re.compile(
     r"\b(?:"
-    r"i(?:'m| am)\s+(?:working on|trying to|planning to|looking to|hoping to|focused on)\b|"
+    r"i(?:'m| am)\s+(?:working on|trying to|planning to|looking to|hoping to|focused on|making progress on)\b|"
     r"i\s+want\s+to\s+(?:build|launch|reach|start|save|move|relocate|get|achieve|create)\b|"
-    r"my\s+(?:focus|priority)\s+is\s+to\b"
+    r"my\s+(?:focus|priority)\s+is\s+to\b|"
+    r"my\s+next\s+step\s+is\s+to\b|"
+    r"i\s+need\s+to\s+(?:finish|complete|build|save|reach|start|launch|move|get|achieve|create)\b|"
+    r"this\s+(?:month|quarter|year)\s+i(?:'m| am)\s+(?:trying|working|focused)\b"
     r")\b",
     re.IGNORECASE,
 )

@@ -10,6 +10,7 @@ from app.models.memory_discipline import (
     MemoryRecordKind,
     MemoryDisciplineDecision,
 )
+from app.services.confirmed_plan_write_applier import ConfirmedPlanWriteApplier
 from app.services.conversation_pending_action import (
     ConversationPendingActionService,
     PendingAction,
@@ -18,7 +19,6 @@ from app.services.conversation_pending_action import (
 )
 from app.services.conversational_plan_candidate import build_plan_candidate_payload
 from app.services.conversational_plan_decision_store import (
-    confirmed_decision,
     decision_from_pending_action,
     pending_action_for_plan_save,
 )
@@ -35,7 +35,9 @@ from app.services.conversational_plan_results import (
 )
 from app.services.goal_command_formatting import goal_title
 from app.services.goal_command_results import clarification_turn_result
+from app.services.commitment_service import CommitmentService
 from app.services.memory_discipline_service import MemoryDisciplineService
+from app.services.plan_service import PlanService
 
 
 class ConversationalPlanService:
@@ -45,10 +47,20 @@ class ConversationalPlanService:
         *,
         discipline: Optional[MemoryDisciplineService] = None,
         detector: Optional[ConversationalPlanDetector] = None,
+        plan_service: Optional[PlanService] = None,
+        commitment_service: Optional[CommitmentService] = None,
+        write_applier: Optional[ConfirmedPlanWriteApplier] = None,
     ) -> None:
         self.memory_service = memory_service
         self.discipline = discipline or MemoryDisciplineService(memory_service)
         self.detector = detector or ConversationalPlanDetector()
+        self.plan_service = plan_service or PlanService(memory_service)
+        self.commitment_service = commitment_service or CommitmentService(memory_service)
+        self.write_applier = write_applier or ConfirmedPlanWriteApplier(
+            memory_service,
+            plan_service=self.plan_service,
+            commitment_service=self.commitment_service,
+        )
 
     async def handle_turn(
         self,
@@ -62,21 +74,9 @@ class ConversationalPlanService:
     ) -> Optional[dict]:
         pending = self._pending_action(pending_action)
         if pending is not None and pending.action_type == "save_plan":
-            if is_delete_confirmation_message(message):
-                return await self._apply_confirmed_save(
-                    pending,
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                )
-            if is_delete_rejection_message(message):
-                return await self._reject_confirmed_save(
-                    pending,
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                )
             return None
 
-        if pending is not None:
+        if pending is not None and pending.action_type != "delete":
             return None
 
         if not self.detector.looks_like_conversational_plan(message):
@@ -107,15 +107,18 @@ class ConversationalPlanService:
             return None
 
         title = goal_title(str(payload.get("title") or payload.get("description") or ""))
-        await self._pending_action_service().set(
+        supersede_note = await self._pending_action_service().set_superseding(
             conversation_id,
             pending_action_for_plan_save(title=title, decision=decision),
         )
+        prompt = confirmation_prompt(decision)
+        if supersede_note:
+            prompt = f"{supersede_note}\n\n{prompt}"
         return await clarification_turn_result(
             self.memory_service,
             conversation_id=conversation_id,
             user_message=user_message,
-            response=confirmation_prompt(decision),
+            response=prompt,
             memory_changes=pending_memory_changes(decision=decision, title=title),
         )
 
@@ -143,8 +146,10 @@ class ConversationalPlanService:
             str(decision.payload.get("title") or decision.payload.get("description") or "")
         )
         try:
-            result = await self.discipline.apply_decision(
-                confirmed_decision(decision)
+            result = await self.write_applier.apply_confirmed_decision(
+                decision,
+                conversation_id=conversation_id,
+                source_message_id=str(user_message.get("id") or "") or None,
             )
         except Exception:
             return await clarification_turn_result(
@@ -173,6 +178,7 @@ class ConversationalPlanService:
                 decision=decision,
                 record=record,
                 title=title,
+                merged=bool(result.get("merged")),
             ),
         )
 
@@ -207,4 +213,8 @@ def _requires_user_confirmation(decision: MemoryDisciplineDecision) -> bool:
         MemoryDisciplineAction.CREATE_PLAN,
         MemoryDisciplineAction.CREATE_MILESTONE,
         MemoryDisciplineAction.CREATE_COMMITMENT,
+        MemoryDisciplineAction.UPDATE_PLAN,
+        MemoryDisciplineAction.UPDATE_MILESTONE,
+        MemoryDisciplineAction.UPDATE_COMMITMENT,
+        MemoryDisciplineAction.CREATE_ENTITY_EVENT,
     }

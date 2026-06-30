@@ -52,7 +52,7 @@ A plan is complete only when:
 
 ## Score Target
 
-Current audit score: 76/100.
+Current audit score: 83/100 (was 76 baseline, 80 mid-June re-score).
 
 Completion target:
 

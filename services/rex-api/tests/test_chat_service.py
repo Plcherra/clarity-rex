@@ -7,6 +7,7 @@ from chat_service_fakes import (
     FakeMemoryService,
     FakeUpload,
 )
+from durable_write_test_helpers import confirm_durable_write, save_message_with_confirmation
 from app.config import Settings
 from app.services.action_truth_policy import (
     DEGRADED_RECALL_FALLBACK,
@@ -837,14 +838,15 @@ async def test_chat_service_saves_explicit_goal_without_llm_call():
     memory_service = FakeMemoryService()
     chat_service = ChatService(ai_service, FileService(), memory_service)
 
-    result = await chat_service.send_message("Track save $5000 by August as a goal")
+    proposed = await chat_service.send_message("Track save $5000 by August as a goal")
+    result = await confirm_durable_write(chat_service, proposed)
 
-    assert result["response"] == "Got it, I added this as a goal: Save $5000 by August."
+    assert "Saved plan in Goals" in result["response"]
     assert ai_service.generate_calls == 0
     assert len(memory_service.created_plans) == 1
     assert memory_service.created_plans[0]["plan_type"] == "finance"
     assert memory_service.created_plans[0]["target_date"] == "August"
-    assert result["memory_changes"]["records"][0]["kind"] == "plan"
+    assert result["memory_changes"]["write_proposals"][0]["write_kind"] == "plan"
 
 
 @pytest.mark.asyncio
@@ -853,8 +855,14 @@ async def test_chat_service_reuses_duplicate_explicit_goal():
     memory_service = FakeMemoryService()
     chat_service = ChatService(ai_service, FileService(), memory_service)
 
-    await chat_service.send_message("Track save $5000 by August as a goal")
-    await chat_service.send_message("Track save $5000 by August as a goal")
+    first = await save_message_with_confirmation(
+        chat_service,
+        "Track save $5000 by August as a goal",
+    )
+    duplicate = await chat_service.send_message(
+        "Track save $5000 by August as a goal",
+        first["conversation_id"],
+    )
 
     assert ai_service.generate_calls == 0
     assert len(memory_service.created_plans) == 1
@@ -867,16 +875,15 @@ async def test_chat_service_saves_explicit_commitment_without_llm_call():
     memory_service = FakeMemoryService()
     chat_service = ChatService(ai_service, FileService(), memory_service)
 
-    result = await chat_service.send_message("Remind me to send her $200 on the 10th")
+    proposed = await chat_service.send_message("Remind me to send her $200 on the 10th")
+    result = await confirm_durable_write(chat_service, proposed)
 
-    assert result["response"] == (
-        "Got it, I saved that commitment: Send her $200 on the 10th."
-    )
+    assert "Saved commitment" in result["response"]
     assert ai_service.generate_calls == 0
     assert len(memory_service.created_commitments) == 1
     assert memory_service.created_commitments[0]["commitment_type"] == "money"
     assert memory_service.created_commitments[0]["due_at"] == "June 10"
-    assert result["memory_changes"]["records"][0]["kind"] == "commitment"
+    assert result["memory_changes"]["write_proposals"][0]["write_kind"] == "commitment"
 
 
 @pytest.mark.asyncio
@@ -890,13 +897,14 @@ async def test_chat_service_saves_pc_upgrade_checklist_as_goal_without_llm():
         "I have to upgrade my ram from 16 to at least 32 or 64 + "
         "1 or 2 more terabytes of space"
     )
-    result = await chat_service.send_message(message)
+    proposed = await chat_service.send_message(message)
+    result = await confirm_durable_write(chat_service, proposed)
 
     assert ai_service.generate_calls == 0
-    assert "added this as a goal" in result["response"]
+    assert "Saved plan in Goals" in result["response"]
     assert len(memory_service.created_plans) == 1
     assert memory_service.created_plans[0]["target_date"] == "July 31"
-    assert result["memory_changes"]["records"][0]["kind"] == "plan"
+    assert result["memory_changes"]["write_proposals"][0]["write_kind"] == "plan"
     assert memory_service.long_term_memory == []
 
 
@@ -915,12 +923,11 @@ async def test_chat_service_voice_stream_saves_commitment_without_llm_call():
     ]
 
     assert events[-1]["event"] == "done"
-    assert events[-1]["response"] == (
-        "Got it, I saved that commitment: Send her $200 on the 10th."
-    )
+    assert events[-1]["memory_changes"]["confirmation_required"] == 1
+    assert events[-1]["memory_changes"]["write_proposals"][0]["write_kind"] == "commitment"
     assert ai_service.stream_calls == 0
     assert ai_service.generate_calls == 0
-    assert len(memory_service.created_commitments) == 1
+    assert len(memory_service.created_commitments) == 0
 
 
 @pytest.mark.asyncio

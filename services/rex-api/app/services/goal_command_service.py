@@ -29,6 +29,7 @@ class GoalCommandService:
         detector: Optional[GoalCommandDetector] = None,
         writer: Optional[GoalCommandWriter] = None,
         reclassifier: Optional[GoalCommandReclassifier] = None,
+        durable_write_service=None,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service or PlanService(memory_service)
@@ -49,6 +50,7 @@ class GoalCommandService:
             memory_service,
             self._writer,
         )
+        self.durable_write_service = durable_write_service
 
     async def handle_turn(
         self,
@@ -98,6 +100,18 @@ class GoalCommandService:
 
         if len(commands) == 1:
             command = commands[0]
+            if self.durable_write_service is not None:
+                if command.kind == "goal":
+                    return await self.durable_write_service.propose_goal(
+                        command,
+                        conversation_id=conversation_id,
+                        user_message=user_message,
+                    )
+                return await self.durable_write_service.propose_commitment(
+                    command,
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                )
             if command.kind == "goal":
                 return await self._writer.save_goal(
                     command,
@@ -106,6 +120,12 @@ class GoalCommandService:
                 )
             return await self._writer.save_commitment(
                 command,
+                conversation_id=conversation_id,
+                user_message=user_message,
+            )
+        if self.durable_write_service is not None:
+            return await self.durable_write_service.propose_goal(
+                commands[0],
                 conversation_id=conversation_id,
                 user_message=user_message,
             )

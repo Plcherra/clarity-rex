@@ -18,6 +18,7 @@ import 'package:clarity/rex/chat/application/chat_response_text.dart';
 import 'package:clarity/rex/chat/application/chat_state.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
 import 'package:clarity/rex/memory/application/memory_controller.dart';
+import 'package:clarity/rex/accountability/application/accountability_controller.dart';
 
 export 'package:clarity/rex/chat/application/chat_state.dart';
 
@@ -67,7 +68,7 @@ class ChatController extends Notifier<ChatState> {
   }
 
   Future<void> executeClarityAction(ClarityActionCard action) async {
-    if (_isPlanSaveAction(action.action)) {
+    if (_isChatConfirmedWriteAction(action.action)) {
       await _confirmPlanSave(action);
       return;
     }
@@ -121,7 +122,7 @@ class ChatController extends Notifier<ChatState> {
   }
 
   void dismissClarityAction(ClarityActionCard action) {
-    if (_isPlanSaveAction(action.action)) {
+    if (_isChatConfirmedWriteAction(action.action)) {
       unawaited(_rejectPlanSave(action));
       return;
     }
@@ -221,6 +222,7 @@ class ChatController extends Notifier<ChatState> {
     String content, {
     XFile? attachment,
     bool stream = true,
+    Map<String, dynamic>? writeConfirmation,
   }) async {
     final message = content.trim();
     if ((message.isEmpty && attachment == null) || state.isLoading) {
@@ -255,15 +257,24 @@ class ChatController extends Notifier<ChatState> {
     );
 
     if (stream) {
-      return _sendStreamingMessage(message, attachment: attachment);
+      return _sendStreamingMessage(
+        message,
+        attachment: attachment,
+        writeConfirmation: writeConfirmation,
+      );
     }
 
-    return _sendNonStreamingMessageForResponse(message, attachment: attachment);
+    return _sendNonStreamingMessageForResponse(
+      message,
+      attachment: attachment,
+      writeConfirmation: writeConfirmation,
+    );
   }
 
   Future<String?> _sendNonStreamingMessageForResponse(
     String message, {
     XFile? attachment,
+    Map<String, dynamic>? writeConfirmation,
   }) async {
     try {
       final api = ref.read(chatApiProvider);
@@ -273,6 +284,7 @@ class ChatController extends Notifier<ChatState> {
         conversationId: state.conversationId,
         attachment: attachment,
         financialContext: financialContext,
+        writeConfirmation: writeConfirmation,
       );
 
       state = state.copyWith(
@@ -295,6 +307,7 @@ class ChatController extends Notifier<ChatState> {
         clearError: true,
       );
       await _refreshSavedMemoryOverviewIfNeeded(result.memoryChanges);
+      await _refreshGoalsOverviewIfNeeded(result.memoryChanges);
       return assistantTextFromApiResponse(result) ??
           latestAssistantContent(state.messages);
     } on ChatApiException catch (error) {
@@ -417,6 +430,41 @@ class ChatController extends Notifier<ChatState> {
     await ref.read(memoryProvider.notifier).loadSavedOverview();
   }
 
+  Future<void> _refreshGoalsOverviewIfNeeded(
+    Map<String, dynamic>? memoryChanges,
+  ) async {
+    if (!_memoryChangesRequireGoalsRefresh(memoryChanges)) {
+      return;
+    }
+    await ref.read(accountabilityProvider.notifier).loadOverview();
+  }
+
+  bool _memoryChangesRequireGoalsRefresh(Map<String, dynamic>? memoryChanges) {
+    if (memoryChanges == null) {
+      return false;
+    }
+    for (final key in const ['created', 'updated', 'merged']) {
+      final value = memoryChanges[key];
+      if (value is num && value > 0) {
+        return true;
+      }
+    }
+    final proposals = memoryChanges['write_proposals'] ?? memoryChanges['plan_save_proposals'];
+    if (proposals is List) {
+      for (final proposal in proposals) {
+        if (proposal is! Map) {
+          continue;
+        }
+        final kind = proposal['write_kind']?.toString() ?? '';
+        if ({'plan', 'milestone', 'commitment', 'update_plan', 'update_milestone', 'update_commitment'}
+            .contains(kind)) {
+          return proposal['status'] == 'applied';
+        }
+      }
+    }
+    return false;
+  }
+
   bool _memoryChangesRequireSavedOverviewRefresh(
     Map<String, dynamic>? memoryChanges,
   ) {
@@ -427,6 +475,17 @@ class ChatController extends Notifier<ChatState> {
       final value = memoryChanges[key];
       if (value is num && value > 0) {
         return true;
+      }
+    }
+    final proposals = memoryChanges['write_proposals'];
+    if (proposals is List) {
+      for (final proposal in proposals) {
+        if (proposal is Map && proposal['status'] == 'applied') {
+          final kind = proposal['write_kind']?.toString() ?? '';
+          if (kind == 'memory' || kind.isEmpty) {
+            return true;
+          }
+        }
       }
     }
     final records = memoryChanges['records'];
@@ -606,10 +665,32 @@ class ChatController extends Notifier<ChatState> {
     state = state.copyWith(messages: List.unmodifiable(updatedMessages));
   }
 
-  bool _isPlanSaveAction(String action) {
+  bool _isChatConfirmedWriteAction(String action) {
     return action == 'save_plan' ||
         action == 'save_plan_milestone' ||
-        action == 'save_commitment';
+        action == 'save_commitment' ||
+        action == 'save_memory' ||
+        action == 'update_plan' ||
+        action == 'update_plan_milestone' ||
+        action == 'update_commitment' ||
+        action == 'save_entity_event';
+  }
+
+  Map<String, dynamic> _writeConfirmationPayload(ClarityActionCard action) {
+    final payload = <String, dynamic>{'proposal_id': action.id};
+    if (action.hasEditableFields) {
+      final edits = <String, dynamic>{};
+      if (action.editableFields.contains('title') && action.title != null) {
+        edits['title'] = action.title;
+      }
+      if (action.editableFields.contains('body') && action.body != null) {
+        edits['body'] = action.body;
+      }
+      if (edits.isNotEmpty) {
+        payload['edits'] = edits;
+      }
+    }
+    return payload;
   }
 
   Future<void> _confirmPlanSave(ClarityActionCard action) async {
@@ -617,7 +698,11 @@ class ChatController extends Notifier<ChatState> {
       action.id,
       (current) => current.copyWith(status: 'applying', clearError: true),
     );
-    final response = await sendMessageForAssistantResponse('Yes', stream: false);
+    final response = await sendMessageForAssistantResponse(
+      'Yes',
+      stream: false,
+      writeConfirmation: _writeConfirmationPayload(action),
+    );
     if (response == null) {
       _updateClarityAction(
         action.id,

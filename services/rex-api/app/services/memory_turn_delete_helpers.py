@@ -63,16 +63,18 @@ class MemoryTurnDeleteHelpers(MemoryDeleteConfirmationFlow):
             )
 
         title = matches[0].title or target
-        response = (
-            f"Got it--you want to delete this {self._delete_item_label(matches[0].table)}: "
-            f"{title}\n\nJust to confirm before I do that: yes or no?"
-        )
-        await self._persist_pending_delete(
+        supersede_note = await self._persist_pending_delete(
             conversation_id,
             target=target,
             match=matches[0],
             scope_tables=resolved_scope,
         )
+        response = (
+            f"Got it--you want to delete this {self._delete_item_label(matches[0].table)}: "
+            f"{title}\n\nJust to confirm before I do that: yes or no?"
+        )
+        if supersede_note:
+            response = f"{supersede_note}\n\n{response}"
         return await self._delete_turn_result(
             response,
             conversation_id=conversation_id,

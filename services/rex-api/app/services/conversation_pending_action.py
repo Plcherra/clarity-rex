@@ -100,6 +100,21 @@ class PendingActionStore(Protocol):
         pass
 
 
+_CONFLICTING_PENDING_TYPES = {
+    "save_plan": "delete",
+    "delete": "save_plan",
+}
+
+SUPERSEDE_MESSAGES = {
+    ("save_plan", "delete"): (
+        "I cleared your pending plan save so we can confirm this delete first."
+    ),
+    ("delete", "save_plan"): (
+        "I cleared the pending delete request so we can focus on saving this plan."
+    ),
+}
+
+
 class ConversationPendingActionService:
     def __init__(self, memory_service: PendingActionStore) -> None:
         self.memory_service = memory_service
@@ -128,6 +143,21 @@ class ConversationPendingActionService:
         if setter is None:
             return
         await setter(conversation_id, None)
+
+    async def set_superseding(
+        self,
+        conversation_id: str,
+        action: PendingAction,
+    ) -> Optional[str]:
+        """Replace pending action; return user-visible note when superseding a conflict."""
+        existing = await self.get(conversation_id)
+        note = None
+        if existing is not None and existing.action_type != action.action_type:
+            conflicting = _CONFLICTING_PENDING_TYPES.get(action.action_type)
+            if conflicting is not None and existing.action_type == conflicting:
+                note = SUPERSEDE_MESSAGES.get((existing.action_type, action.action_type))
+        await self.set(conversation_id, action)
+        return note
 
 
 def is_delete_confirmation_message(message: str) -> bool:

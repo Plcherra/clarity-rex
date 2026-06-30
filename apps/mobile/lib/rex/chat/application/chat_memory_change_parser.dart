@@ -7,7 +7,7 @@ List<ClarityActionCard> clarityActionCardsFromMemoryChanges(
     return const [];
   }
   final cards = <ClarityActionCard>[];
-  for (final key in ['clarity_action_proposals', 'plan_save_proposals']) {
+  for (final key in ['write_proposals', 'clarity_action_proposals', 'plan_save_proposals']) {
     final proposals = memoryChanges[key];
     if (proposals is! List) {
       continue;

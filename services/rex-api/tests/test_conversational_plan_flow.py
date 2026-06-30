@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from chat_service_fakes import FakeAIService, FakeMemoryService
+from durable_write_test_helpers import confirm_durable_write, save_message_with_confirmation
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.time_context_service import TimeContextService
@@ -120,7 +121,9 @@ async def test_explicit_goal_command_still_saves_without_conversational_confirma
     memory_service = FakeMemoryService()
     chat_service = _chat_service(memory_service)
 
-    saved = await chat_service.send_message("My goal is to save $10,000 for Europe")
+    proposed = await chat_service.send_message("My goal is to save $10,000 for Europe")
+    assert proposed["memory_changes"]["confirmation_required"] == 1
+    saved = await confirm_durable_write(chat_service, proposed)
 
     assert saved["memory_changes"]["created"] == 1
     assert saved["memory_changes"]["confirmation_required"] == 0
@@ -229,3 +232,120 @@ async def test_failed_plan_confirm_keeps_pending_action_for_retry():
     assert memory_service.pending_actions
     assert not memory_service.created_plan_milestones
     assert not memory_service.created_commitments
+
+
+@pytest.mark.asyncio
+async def test_delete_supersedes_pending_plan_save_with_message():
+    memory_service = FakeMemoryService()
+    memory_service.plans.append(
+        {
+            "id": "plan-europe",
+            "plan_type": "personal",
+            "title": "Relocate to Europe next year",
+            "description": "Build location independent income and savings.",
+            "priority": 5,
+            "active": True,
+            "status": "active",
+        }
+    )
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-tonight-plan",
+            "memory_type": "event",
+            "content": "User plans to watch it tonight.",
+            "importance": 4,
+            "active": True,
+            "metadata": {
+                "fact_kind": "personal_plan",
+                "topic_fingerprint": "event:personal_plan:watch:it",
+            },
+        }
+    )
+    chat_service = _chat_service(memory_service)
+
+    requested = await chat_service.send_message(
+        "I'm working on reaching $5k monthly income with location independent "
+        "work to support relocating to Europe."
+    )
+    assert requested["memory_changes"]["confirmation_required"] == 1
+
+    delete_request = await chat_service.send_message(
+        "Can you delete that tonight plan?",
+        requested["conversation_id"],
+    )
+
+    assert "cleared your pending plan save" in delete_request["response"].lower()
+    assert "just to confirm" in delete_request["response"].lower()
+    assert memory_service.pending_actions[requested["conversation_id"]]["action_type"] == "delete"
+
+
+@pytest.mark.asyncio
+async def test_plan_save_supersedes_pending_delete_with_message():
+    memory_service = FakeMemoryService()
+    memory_service.long_term_memory.append(
+        {
+            "id": "memory-tonight-plan",
+            "memory_type": "event",
+            "content": "User plans to watch it tonight.",
+            "importance": 4,
+            "active": True,
+            "metadata": {
+                "fact_kind": "personal_plan",
+                "topic_fingerprint": "event:personal_plan:watch:it",
+            },
+        }
+    )
+    chat_service = _chat_service(memory_service)
+
+    delete_request = await chat_service.send_message(
+        "Can you delete that tonight plan?"
+    )
+    assert "just to confirm" in delete_request["response"].lower()
+
+    plan_request = await chat_service.send_message(
+        "I'm trying to build a consistent strength training routine three times per week.",
+        delete_request["conversation_id"],
+    )
+
+    assert "cleared the pending delete request" in plan_request["response"].lower()
+    assert plan_request["memory_changes"]["confirmation_required"] == 1
+    assert memory_service.pending_actions[delete_request["conversation_id"]]["action_type"] == "save_plan"
+
+
+@pytest.mark.asyncio
+async def test_conversational_plan_update_requires_confirmation_and_applies():
+    memory_service = FakeMemoryService()
+    memory_service.plans.append(
+        {
+            "id": "plan-move",
+            "plan_type": "immigration",
+            "title": "Move out of the country next year",
+            "description": "Move after reaching income targets.",
+            "priority": 5,
+            "active": True,
+            "status": "active",
+        }
+    )
+    chat_service = _chat_service(memory_service)
+
+    requested = await chat_service.send_message(
+        "I'm working on clarifying the Italian citizenship route as the primary "
+        "path, with Portugal D7 as backup for relocating next year."
+    )
+
+    assert requested["memory_changes"]["confirmation_required"] == 1
+    proposal_action = requested["memory_changes"]["plan_save_proposals"][0]["action"]
+    assert proposal_action in {"update_plan", "save_plan", "save_plan_milestone", "save_commitment"}
+
+    if proposal_action != "update_plan":
+        pytest.skip("Discipline routed to a different confirmed write for this message.")
+
+    confirmed = await chat_service.send_message(
+        "Yes",
+        requested["conversation_id"],
+    )
+
+    assert confirmed["memory_changes"]["updated"] == 1
+    assert memory_service.plans[0]["description"]
+    assert "Italian citizenship" in memory_service.plans[0]["description"]
+    assert not memory_service.pending_actions

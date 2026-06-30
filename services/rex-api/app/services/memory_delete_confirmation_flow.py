@@ -22,8 +22,8 @@ class MemoryDeleteConfirmationFlow:
         target: str,
         match,
         scope_tables: tuple[str, ...] = (),
-    ) -> None:
-        await self._pending_action_service().set(
+    ) -> Optional[str]:
+        return await self._pending_action_service().set_superseding(
             conversation_id,
             pending_action_for_delete(
                 target=target,

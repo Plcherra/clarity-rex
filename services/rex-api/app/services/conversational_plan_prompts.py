@@ -22,6 +22,26 @@ def confirmation_prompt(decision: MemoryDisciplineDecision) -> str:
         return (
             f"I can save {title} as a new plan in Clarity. Should I save that?"
         )
+    if decision.action == MemoryDisciplineAction.UPDATE_PLAN:
+        return (
+            f"I can update your plan {parent_title} with this context: {title}. "
+            "Should I save that?"
+        )
+    if decision.action == MemoryDisciplineAction.UPDATE_MILESTONE:
+        return (
+            f"I can update the milestone {title} under {parent_title}. "
+            "Should I save that?"
+        )
+    if decision.action == MemoryDisciplineAction.UPDATE_COMMITMENT:
+        return (
+            f"I can update the commitment {title} under {parent_title}. "
+            "Should I save that?"
+        )
+    if decision.action == MemoryDisciplineAction.CREATE_ENTITY_EVENT:
+        entity_title = _entity_title(decision)
+        return (
+            f"I can save {title} as a note on {entity_title}. Should I save that?"
+        )
     return (
         f"I can save {title} as a plan in Clarity. Should I save that?"
     )
@@ -33,6 +53,14 @@ def saved_prompt(decision: MemoryDisciplineDecision, *, title: str) -> str:
         return f"Saved {title} as a milestone under {parent_title}."
     if decision.action == MemoryDisciplineAction.CREATE_COMMITMENT:
         return f"Saved {title} as a commitment under {parent_title}."
+    if decision.action == MemoryDisciplineAction.UPDATE_PLAN:
+        return f"Updated {parent_title} with that context."
+    if decision.action == MemoryDisciplineAction.UPDATE_MILESTONE:
+        return f"Updated the milestone {title} under {parent_title}."
+    if decision.action == MemoryDisciplineAction.UPDATE_COMMITMENT:
+        return f"Updated the commitment {title} under {parent_title}."
+    if decision.action == MemoryDisciplineAction.CREATE_ENTITY_EVENT:
+        return f"Saved {title} as a note on {_entity_title(decision)}."
     return f"Saved {title} as a plan in Clarity."
 
 
@@ -66,3 +94,12 @@ def _parent_plan_title(decision: MemoryDisciplineDecision) -> str:
         if record.id == parent_id and record.title:
             return str(record.title)
     return "your existing plan"
+
+
+def _entity_title(decision: MemoryDisciplineDecision) -> str:
+    entity_id = decision.payload.get("entity_id")
+    if entity_id:
+        for record in decision.related_records:
+            if record.id == entity_id and record.title:
+                return str(record.title)
+    return "that person"

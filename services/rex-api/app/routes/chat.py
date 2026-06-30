@@ -48,6 +48,7 @@ async def chat(
             financial_context=chat_request.financial_context,
             user_requested_deep_thinking=chat_request.deep_think,
             locale=chat_request.locale,
+            write_confirmation=chat_request.write_confirmation,
         )
     except ConversationNotFoundError as error:
         raise HTTPException(status_code=404, detail="Conversation not found.") from error

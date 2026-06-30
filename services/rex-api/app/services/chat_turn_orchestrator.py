@@ -27,6 +27,7 @@ from app.services.clarity_action_parser import (
 )
 from app.services.goal_command_service import GoalCommandService
 from app.services.conversational_plan_service import ConversationalPlanService
+from app.services.durable_write_service import DurableWriteService
 from app.services.memory_turn_service import MemoryTurnService
 from app.services.rex_channel import RexBrainChannel
 from app.services.simple_rex_brain import SimpleRexBrain
@@ -47,6 +48,7 @@ class ChatTurnOrchestrator:
         memory_turn_service: MemoryTurnService,
         goal_command_service: GoalCommandService,
         conversational_plan_service: ConversationalPlanService,
+        durable_write_service: DurableWriteService,
         clarity_action_parser: ClarityActionParser,
         financial_guard: ChatFinancialGuard,
         truth_service: ChatResponseTruthService,
@@ -61,6 +63,7 @@ class ChatTurnOrchestrator:
         self.memory_turn_service = memory_turn_service
         self.goal_command_service = goal_command_service
         self.conversational_plan_service = conversational_plan_service
+        self.durable_write_service = durable_write_service
         self.clarity_action_parser = clarity_action_parser
         self.financial_guard = financial_guard
         self.truth_service = truth_service
@@ -81,6 +84,7 @@ class ChatTurnOrchestrator:
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
         locale: Optional[str] = None,
+        write_confirmation: Optional[dict] = None,
     ) -> dict:
         stored_message, brain_message = brain_messages(
             self.transcript_normalizer,
@@ -119,6 +123,7 @@ class ChatTurnOrchestrator:
             financial_context=financial_context,
             turn_trace=turn_trace,
             turn_started_at=turn_started_at,
+            write_confirmation=write_confirmation,
         )
         if short_circuit is not None:
             return short_circuit
@@ -187,6 +192,7 @@ class ChatTurnOrchestrator:
         user_requested_deep_thinking: bool = False,
         include_turn_trace: bool = False,
         locale: Optional[str] = None,
+        write_confirmation: Optional[dict] = None,
     ) -> AsyncIterator[dict]:
         stored_message, brain_message = brain_messages(
             self.transcript_normalizer,
@@ -228,6 +234,7 @@ class ChatTurnOrchestrator:
             financial_context=financial_context,
             turn_trace=turn_trace,
             turn_started_at=turn_started_at,
+            write_confirmation=write_confirmation,
         )
         if short_circuit is not None:
             yield {"event": "token", "token": short_circuit["response"]}
@@ -348,8 +355,27 @@ class ChatTurnOrchestrator:
         financial_context,
         turn_trace: ChatTurnTrace,
         turn_started_at: float,
+        write_confirmation: Optional[dict] = None,
     ) -> Optional[dict]:
         conversation_id = turn_context.conversation_id
+        if pending_action is not None:
+            durable_turn = await self.durable_write_service.try_handle_pending(
+                brain_message,
+                pending_action=pending_action,
+                conversation_id=conversation_id,
+                user_message=turn_context.user_message,
+                write_confirmation=write_confirmation,
+            )
+            if durable_turn is not None:
+                finish_short_circuit(
+                    self.turn_observer,
+                    self.usage_recorder,
+                    turn_trace,
+                    turn_started_at,
+                    "durable_write",
+                )
+                return durable_turn
+
         conversational_plan_turn = await self.conversational_plan_service.handle_turn(
             brain_message,
             conversation_id=conversation_id,

@@ -15,8 +15,11 @@ from app.services.goal_command_formatting import (
 
 _LEADING_INTENT_PATTERN = re.compile(
     r"^\s*(?:"
-    r"i(?:'m| am)\s+(?:working on|trying to|planning to|looking to|hoping to|focused on)|"
-    r"i\s+want\s+to|my\s+(?:focus|priority)\s+is\s+to"
+    r"i(?:'m| am)\s+(?:working on|trying to|planning to|looking to|hoping to|focused on|making progress on)|"
+    r"i\s+want\s+to|my\s+(?:focus|priority)\s+is\s+to|"
+    r"my\s+next\s+step\s+is\s+to|"
+    r"i\s+need\s+to|"
+    r"this\s+(?:month|quarter|year)\s+i(?:'m| am)\s+(?:trying|working|focused)"
     r")\s+",
     re.IGNORECASE,
 )

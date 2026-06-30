@@ -22,7 +22,6 @@ from app.services.memory_turn_correction_helpers import MemoryTurnCorrectionHelp
 from app.services.memory_turn_delete_helpers import MemoryTurnDeleteHelpers
 from app.services.memory_turn_direct_helpers import MemoryTurnDirectHelpers
 from app.services.memory_turn_summaries import MemoryTurnSummaries
-from app.services.person_memory_materializer import PersonMemoryMaterializer
 
 
 class MemoryTurnStore(Protocol):
@@ -83,11 +82,12 @@ class MemoryTurnService(
         memory_service: MemoryTurnStore,
         memory_intent_service: Optional[MemoryIntentService] = None,
         discipline: Optional[MemoryDisciplineService] = None,
+        durable_write_service=None,
     ) -> None:
         self.memory_service = memory_service
         self.memory_intent_service = memory_intent_service or MemoryIntentService()
         self.discipline = discipline
-        self.person_memory_materializer = PersonMemoryMaterializer()
+        self.durable_write_service = durable_write_service
         self.memory_correction_service = MemoryCorrectionService(memory_service)
 
     async def handle_turn(
@@ -187,7 +187,7 @@ class MemoryTurnService(
                 if self.memory_intent_service.is_contextual_memory_save_request(
                     message
                 ):
-                    return await self._save_confirmed_simple_memory(
+                    return await self._propose_simple_memory(
                         intent,
                         conversation_id=conversation_id,
                         user_message=user_message,
@@ -214,14 +214,14 @@ class MemoryTurnService(
 
         existing_topic_memory = await self._find_active_memory_by_topic(intent)
         if existing_topic_memory is not None:
-            return await self._update_simple_memory(
+            return await self._propose_memory_update(
                 intent,
                 conversation_id=conversation_id,
                 user_message=user_message,
                 record=existing_topic_memory,
             )
 
-        return await self._save_confirmed_simple_memory(
+        return await self._propose_simple_memory(
             intent,
             conversation_id=conversation_id,
             user_message=user_message,
@@ -244,6 +244,50 @@ class MemoryTurnService(
 
     def public_message(self, message: dict) -> dict:
         return dict(message)
+
+    async def _propose_simple_memory(
+        self,
+        intent: SimpleMemoryIntent,
+        *,
+        conversation_id: str,
+        user_message: dict,
+    ) -> dict:
+        if self.durable_write_service is not None:
+            return await self.durable_write_service.propose_simple_memory(
+                intent,
+                conversation_id=conversation_id,
+                user_message=user_message,
+            )
+        return await self._save_confirmed_simple_memory(
+            intent,
+            conversation_id=conversation_id,
+            user_message=user_message,
+        )
+
+    async def _propose_memory_update(
+        self,
+        intent: SimpleMemoryIntent,
+        *,
+        conversation_id: str,
+        user_message: dict,
+        record: dict,
+    ) -> dict:
+        record_id = str(record.get("id") or "")
+        if self.durable_write_service is not None and record_id:
+            intent = self._preserve_location_context(intent, record)
+            return await self.durable_write_service.propose_memory_update(
+                intent,
+                record_id=record_id,
+                previous_content=str(record.get("content") or "") or None,
+                conversation_id=conversation_id,
+                user_message=user_message,
+            )
+        return await self._update_simple_memory(
+            intent,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            record=record,
+        )
 
     async def _save_confirmed_simple_memory(
         self,
@@ -395,7 +439,6 @@ class MemoryTurnService(
 
         record = confirmed_record
         response = self.memory_intent_service.saved_response(intent)
-        await self._materialize_person_card(record)
         assistant_message = await self.memory_service.save_message(
             conversation_id,
             "assistant",
@@ -496,15 +539,6 @@ class MemoryTurnService(
             },
             "messages": await self.recent_public_messages(conversation_id),
         }
-
-    async def _materialize_person_card(self, memory: dict) -> None:
-        try:
-            await self.person_memory_materializer.materialize_from_memory(
-                self.memory_service,
-                memory,
-            )
-        except Exception:
-            return
 
     async def _reject_simple_memory(
         self,

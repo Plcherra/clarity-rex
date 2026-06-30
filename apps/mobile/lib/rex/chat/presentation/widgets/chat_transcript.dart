@@ -4,6 +4,7 @@ import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_message_bubble.dart';
+import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
@@ -38,6 +39,12 @@ class ChatTranscript extends StatelessWidget {
     final hasMessages = messages.isNotEmpty;
     final showVoiceTranscript =
         voiceState != null && !voiceState!.isIdle;
+    final pendingVoiceActions = showVoiceTranscript
+        ? pendingClarityActions(messages)
+        : const <ClarityActionCard>[];
+    final suppressBubbleActionsId = pendingVoiceActions.isNotEmpty
+        ? _assistantMessageIdWithPendingActions(messages)
+        : null;
     final baseBottomPadding = MediaQuery.viewInsetsOf(context).bottom > 0
         ? RexUiTokens.space12
         : RexUiTokens.space24;
@@ -79,9 +86,19 @@ class ChatTranscript extends StatelessWidget {
                         clarityActions: message.clarityActions,
                         onConfirmClarityAction: onConfirmClarityAction,
                         onDismissClarityAction: onDismissClarityAction,
+                        suppressClarityActions:
+                            message.id == suppressBubbleActionsId,
                       ),
                     ),
                   ),
+                if (pendingVoiceActions.isNotEmpty) ...[
+                  ClarityActionCardsStrip(
+                    actions: pendingVoiceActions,
+                    onConfirm: onConfirmClarityAction,
+                    onDismiss: onDismissClarityAction,
+                  ),
+                  const SizedBox(height: RexUiTokens.space8),
+                ],
                 if (showVoiceTranscript)
                   VoiceLiveTranscript(state: voiceState!),
                 if (errorMessage != null) ...[
@@ -100,6 +117,18 @@ class ChatTranscript extends StatelessWidget {
       ),
     );
   }
+}
+
+String? _assistantMessageIdWithPendingActions(List<ChatMessage> messages) {
+  for (final message in messages.reversed) {
+    if (message.role != ChatMessageRole.assistant) {
+      continue;
+    }
+    if (message.clarityActions.any((action) => action.status == 'pending')) {
+      return message.id;
+    }
+  }
+  return null;
 }
 
 class _EmptyChatState extends StatelessWidget {

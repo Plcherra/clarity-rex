@@ -25,6 +25,7 @@ from app.services.clarity_action_parser import ClarityActionParser
 from app.services.file_service import FileService
 from app.services.goal_command_service import GoalCommandService
 from app.services.conversational_plan_service import ConversationalPlanService
+from app.services.durable_write_service import DurableWriteService
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_intent_service import MemoryIntentService
 from app.services.memory_turn_service import MemoryTurnService
@@ -60,18 +61,30 @@ class ChatService(ChatVoiceMetadataMixin):
         self.prompt_service = prompt_service or PromptService()
         self.time_context_service = time_context_service or TimeContextService()
         self.accountability_service = accountability_service or AccountabilityService()
-        self.memory_turn_service = memory_turn_service or MemoryTurnService(
-            memory_service,
-            memory_intent_service=memory_intent_service,
-            discipline=MemoryDisciplineService(memory_service),
-        )
+        discipline = MemoryDisciplineService(memory_service)
         self.goal_command_service = goal_command_service or GoalCommandService(
             memory_service
         )
         self.conversational_plan_service = ConversationalPlanService(
             memory_service,
-            discipline=MemoryDisciplineService(memory_service),
+            discipline=discipline,
+            plan_service=self.goal_command_service.plan_service,
+            commitment_service=self.goal_command_service.commitment_service,
         )
+        self.durable_write_service = DurableWriteService(
+            memory_service,
+            plan_service=self.conversational_plan_service.plan_service,
+            conversational_plan_service=self.conversational_plan_service,
+        )
+        self.memory_turn_service = memory_turn_service or MemoryTurnService(
+            memory_service,
+            memory_intent_service=memory_intent_service,
+            discipline=discipline,
+            durable_write_service=self.durable_write_service,
+        )
+        self.goal_command_service.durable_write_service = self.durable_write_service
+        if memory_turn_service is not None:
+            self.memory_turn_service.durable_write_service = self.durable_write_service
         self.clarity_action_parser = clarity_action_parser or ClarityActionParser()
         self.rex_intent_router = rex_intent_router or RexIntentRouter()
         self.usage_tracking_service = usage_tracking_service or UsageTrackingService()
@@ -109,6 +122,7 @@ class ChatService(ChatVoiceMetadataMixin):
             memory_turn_service=self.memory_turn_service,
             goal_command_service=self.goal_command_service,
             conversational_plan_service=self.conversational_plan_service,
+            durable_write_service=self.durable_write_service,
             clarity_action_parser=self.clarity_action_parser,
             financial_guard=self.financial_guard,
             truth_service=self.truth_service,
@@ -126,6 +140,7 @@ class ChatService(ChatVoiceMetadataMixin):
         channel: RexBrainChannel = RexBrainChannel.CHAT,
         user_requested_deep_thinking: bool = False,
         locale: Optional[str] = None,
+        write_confirmation: Optional[dict] = None,
     ) -> dict:
         return await self.turn_orchestrator.send_message(
             message=message,
@@ -137,6 +152,7 @@ class ChatService(ChatVoiceMetadataMixin):
             channel=channel,
             user_requested_deep_thinking=user_requested_deep_thinking,
             locale=locale,
+            write_confirmation=write_confirmation,
         )
 
     async def stream_message(
@@ -151,6 +167,7 @@ class ChatService(ChatVoiceMetadataMixin):
         user_requested_deep_thinking: bool = False,
         include_turn_trace: bool = False,
         locale: Optional[str] = None,
+        write_confirmation: Optional[dict] = None,
     ) -> AsyncIterator[dict]:
         async for event in self.turn_orchestrator.stream_message(
             message=message,
@@ -163,5 +180,6 @@ class ChatService(ChatVoiceMetadataMixin):
             user_requested_deep_thinking=user_requested_deep_thinking,
             include_turn_trace=include_turn_trace,
             locale=locale,
+            write_confirmation=write_confirmation,
         ):
             yield event

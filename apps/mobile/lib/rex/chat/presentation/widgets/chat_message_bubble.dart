@@ -3,13 +3,12 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_bubble_effects.dart'
     show ChatStreamingCursor, ChatTypingDots;
+import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
-import 'package:clarity/widgets/clarity_path_loader.dart';
 
 /// A single chat line: assistant (left) or user (right).
 class ChatMessageBubble extends StatelessWidget {
@@ -25,6 +24,7 @@ class ChatMessageBubble extends StatelessWidget {
     this.attachmentName,
     this.onConfirmClarityAction,
     this.onDismissClarityAction,
+    this.suppressClarityActions = false,
   });
 
   final String text;
@@ -37,6 +37,7 @@ class ChatMessageBubble extends StatelessWidget {
   final String? attachmentName;
   final ValueChanged<ClarityActionCard>? onConfirmClarityAction;
   final ValueChanged<ClarityActionCard>? onDismissClarityAction;
+  final bool suppressClarityActions;
 
   @override
   Widget build(BuildContext context) {
@@ -131,10 +132,12 @@ class ChatMessageBubble extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                            if (!isUser && clarityActions.isNotEmpty) ...[
+                            if (!isUser &&
+                                clarityActions.isNotEmpty &&
+                                !suppressClarityActions) ...[
                               if (text.trim().isNotEmpty || imageAttachment != null)
                                 const SizedBox(height: RexUiTokens.space12),
-                              _ClarityActionCards(
+                              ClarityActionCardsStrip(
                                 actions: clarityActions,
                                 onConfirm: onConfirmClarityAction,
                                 onDismiss: onDismissClarityAction,
@@ -230,192 +233,3 @@ class ChatMessageBubble extends StatelessWidget {
   }
 }
 
-class _ClarityActionCards extends StatelessWidget {
-  const _ClarityActionCards({
-    required this.actions,
-    this.onConfirm,
-    this.onDismiss,
-  });
-
-  final List<ClarityActionCard> actions;
-  final ValueChanged<ClarityActionCard>? onConfirm;
-  final ValueChanged<ClarityActionCard>? onDismiss;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.tune_rounded,
-              size: 16,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              l10n.chatBubbleClarityAction,
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        for (final action in actions)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _ClarityActionCard(
-              action: action,
-              onConfirm: onConfirm,
-              onDismiss: onDismiss,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _ClarityActionCard extends StatelessWidget {
-  const _ClarityActionCard({
-    required this.action,
-    this.onConfirm,
-    this.onDismiss,
-  });
-
-  final ClarityActionCard action;
-  final ValueChanged<ClarityActionCard>? onConfirm;
-  final ValueChanged<ClarityActionCard>? onDismiss;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final colors = context.clarityColors;
-    final l10n = context.l10n;
-    final isHighRisk = action.riskLevel == 'high';
-    final borderColor = action.isFailed || isHighRisk
-        ? scheme.error.withValues(alpha: 0.46)
-        : scheme.primary.withValues(alpha: 0.38);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaceSoft.withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                _MemoryChip(label: action.actionLabel),
-                _MemoryChip(
-                  label: action.riskLabel,
-                  color: isHighRisk ? scheme.error : scheme.primary,
-                ),
-                _MemoryChip(
-                  label: action.statusLabel,
-                  color: action.isFailed ? scheme.error : scheme.primary,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              action.confirmationText,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                height: 1.3,
-              ),
-            ),
-            if (action.errorMessage != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                action.errorMessage!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.error,
-                  height: 1.3,
-                ),
-              ),
-            ],
-            if (action.isApplied) ...[
-              const SizedBox(height: 6),
-              Text(
-                l10n.commonRecordsApplied(action.result.length),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  height: 1.3,
-                ),
-              ),
-            ],
-            if (action.canConfirm ||
-                action.canDismiss ||
-                action.isApplying) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if ((action.canConfirm || action.isApplying) &&
-                      onConfirm != null)
-                    FilledButton.icon(
-                      onPressed: action.isApplying
-                          ? null
-                          : () => onConfirm!(action),
-                      icon: action.isApplying
-                          ? const ClarityInlineLoader(size: 16, strokeWidth: 2)
-                          : const Icon(Icons.check_rounded, size: 16),
-                      label: Text(l10n.commonConfirm),
-                    ),
-                  if (action.canDismiss && onDismiss != null)
-                    OutlinedButton.icon(
-                      onPressed: action.isApplying
-                          ? null
-                          : () => onDismiss!(action),
-                      icon: const Icon(Icons.close_rounded, size: 16),
-                      label: Text(l10n.commonDismiss),
-                    ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MemoryChip extends StatelessWidget {
-  const _MemoryChip({required this.label, this.color});
-
-  final String label;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final chipColor = color ?? scheme.onSurfaceVariant;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: chipColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: chipColor,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
