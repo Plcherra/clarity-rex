@@ -29,6 +29,17 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
     final allBudgets = await controller.fetchBudgets();
     final budgets = _budgetsForPeriod(allBudgets, periodType, periodKey);
     final categories = await controller.fetchBudgetCategories();
+    final selectedRange = _budgetPeriodRangeFor(
+      periodType: periodType,
+      periodKey: periodKey,
+    );
+    final historicalSpend = selectedRange == null
+        ? const <String, double>{}
+        : await controller.spentByDisplayCategoryForScopeInRange(
+            const GlobalDashboardScope(),
+            start: DateTime(2020, 1, 1),
+            end: selectedRange.end,
+          );
     final categoryByKey = {
       for (final category in categories)
         categoryRecordKey(
@@ -43,6 +54,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
       String? categoryId,
       String? categoryKey,
       bool hasSavedBudgetHistory = false,
+      bool hasTransactionHistory = false,
     }) {
       final label = displayLabel.trim();
       if (label.isEmpty || isUnresolvedCategoryLabel(label)) return;
@@ -69,6 +81,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
         rowsByCanonical[existingCanonical] = existing.withIdentityKeys(
           identityKeys,
           hasSavedBudgetHistory: hasSavedBudgetHistory,
+          hasTransactionHistory: hasTransactionHistory,
         );
         return;
       }
@@ -81,29 +94,36 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
           displayLabel: label,
           identityKeys: identityKeys,
           hasSavedBudgetHistory: hasSavedBudgetHistory,
+          hasTransactionHistory: hasTransactionHistory,
         ),
       );
     }
 
-    for (final entry in spentByDisplay.entries) {
-      final label = entry.key.trim();
-      if (label.isEmpty ||
-          isUnresolvedCategoryLabel(label) ||
-          entry.value.abs() < 1e-9) {
-        continue;
+    void seedSpendRows(Map<String, double> spendByLabel) {
+      for (final entry in spendByLabel.entries) {
+        final label = entry.key.trim();
+        if (label.isEmpty ||
+            isUnresolvedCategoryLabel(label) ||
+            entry.value.abs() < 1e-9) {
+          continue;
+        }
+        final key = normalizedCategoryKey(label);
+        if (key.isEmpty) continue;
+        final category = categoryByKey[key];
+        putRow(
+          displayLabel: category?.name ?? label,
+          categoryId: category?.id,
+          categoryKey: categoryRecordKey(
+            name: category?.name ?? label,
+            normalizedName: category?.normalizedName,
+          ),
+          hasTransactionHistory: true,
+        );
       }
-      final key = normalizedCategoryKey(label);
-      if (key.isEmpty) continue;
-      final category = categoryByKey[key];
-      putRow(
-        displayLabel: category?.name ?? label,
-        categoryId: category?.id,
-        categoryKey: categoryRecordKey(
-          name: category?.name ?? label,
-          normalizedName: category?.normalizedName,
-        ),
-      );
     }
+
+    seedSpendRows(spentByDisplay);
+    seedSpendRows(historicalSpend);
 
     for (final budget in budgets) {
       final category = budget.categoryId == null
@@ -362,7 +382,10 @@ List<BudgetCategoryListItemData> buildBudgetCategoryListItemsForRows({
   for (final row in rows) {
     final spent = _spentForBudgetRow(row, spentByIdentity);
     final budget = hasSelectedPeriod ? _budgetForBudgetRow(row, budgets) : null;
-    if (spent.abs() < 1e-9 && budget == null && !row.hasSavedBudgetHistory) {
+    if (spent.abs() < 1e-9 &&
+        budget == null &&
+        !row.hasSavedBudgetHistory &&
+        !row.hasTransactionHistory) {
       continue;
     }
     final overspent = budget != null && spent > budget;

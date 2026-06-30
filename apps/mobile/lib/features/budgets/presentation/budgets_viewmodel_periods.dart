@@ -218,8 +218,8 @@ mixin BudgetsViewModelPeriods {
 
   List<String> _monthlyKeysForPicker() {
     final now = controller.spendReference;
-    return List<String>.generate(18, (index) {
-      final date = DateTime(now.year, now.month - index);
+    return List<String>.generate(24, (index) {
+      final date = DateTime(now.year, now.month - 12 + index);
       return yearMonthKey(date);
     });
   }

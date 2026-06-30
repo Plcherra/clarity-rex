@@ -8,6 +8,7 @@ class BudgetCategoryRow {
     Set<String>? identityKeys,
     this.categoryId,
     this.hasSavedBudgetHistory = false,
+    this.hasTransactionHistory = false,
   }) : identityKeys = identityKeys ?? const {};
 
   final String canonical;
@@ -16,6 +17,7 @@ class BudgetCategoryRow {
   final Set<String> identityKeys;
   final String? categoryId;
   final bool hasSavedBudgetHistory;
+  final bool hasTransactionHistory;
 
   bool matchesIdentity(String identity) {
     if (identity.isEmpty) return false;
@@ -25,6 +27,7 @@ class BudgetCategoryRow {
   BudgetCategoryRow withIdentityKeys(
     Set<String> keys, {
     bool hasSavedBudgetHistory = false,
+    bool hasTransactionHistory = false,
   }) {
     return BudgetCategoryRow(
       canonical: canonical,
@@ -34,6 +37,8 @@ class BudgetCategoryRow {
       identityKeys: {...identityKeys, ...keys, canonical},
       hasSavedBudgetHistory:
           this.hasSavedBudgetHistory || hasSavedBudgetHistory,
+      hasTransactionHistory:
+          this.hasTransactionHistory || hasTransactionHistory,
     );
   }
 }

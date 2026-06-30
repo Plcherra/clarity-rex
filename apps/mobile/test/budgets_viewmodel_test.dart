@@ -1,10 +1,15 @@
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/budgets/presentation/budgets_viewmodel.dart';
+import 'package:clarity/l10n/app_localizations.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   test('hides inactive categories without budget or active spend', () {
     final items = buildBudgetCategoryListItemsForRows(
+      l10n: l10n,
       rows: const [
         BudgetCategoryRow(
           canonical: 'key:grocery supermarket',
@@ -23,6 +28,7 @@ void main() {
 
   test('matches Plaid spend by category key to a saved category-id budget', () {
     final items = buildBudgetCategoryListItemsForRows(
+      l10n: l10n,
       rows: const [
         BudgetCategoryRow(
           canonical: 'id:cat-grocery',
@@ -52,6 +58,7 @@ void main() {
 
   test('keeps active Plaid spend visible even when no budget exists yet', () {
     final items = buildBudgetCategoryListItemsForRows(
+      l10n: l10n,
       rows: const [
         BudgetCategoryRow(
           canonical: 'key:coffee quick food',
@@ -72,6 +79,7 @@ void main() {
 
   test('keeps saved budget categories visible across comparable months', () {
     final items = buildBudgetCategoryListItemsForRows(
+      l10n: l10n,
       rows: const [
         BudgetCategoryRow(
           canonical: 'id:cat-grocery',
@@ -80,6 +88,29 @@ void main() {
           displayLabel: 'Grocery / Supermarket',
           identityKeys: {'id:cat-grocery', 'key:grocery supermarket'},
           hasSavedBudgetHistory: true,
+        ),
+      ],
+      hasSelectedPeriod: true,
+      budgets: const [],
+      spentByIdentity: const {},
+    );
+
+    expect(items, hasLength(1));
+    expect(items.single.displayLabel, 'Grocery / Supermarket');
+    expect(items.single.hasBudget, isFalse);
+    expect(items.single.statusText, 'Spent \$0.00 · No budget');
+  });
+
+  test('keeps transaction-backed categories visible for future budget months', () {
+    final items = buildBudgetCategoryListItemsForRows(
+      l10n: l10n,
+      rows: const [
+        BudgetCategoryRow(
+          canonical: 'key:grocery supermarket',
+          categoryKey: 'grocery supermarket',
+          displayLabel: 'Grocery / Supermarket',
+          identityKeys: {'key:grocery supermarket'},
+          hasTransactionHistory: true,
         ),
       ],
       hasSelectedPeriod: true,
