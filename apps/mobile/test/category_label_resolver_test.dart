@@ -56,5 +56,16 @@ void main() {
         'Comida y bebida',
       );
     });
+
+    test('maps localized display labels back to English canonical names', () {
+      final renames = CategoryLabelResolver.displayRenamesForLocaleTag('es');
+      expect(
+        CategoryLabelResolver.canonicalEnglishLabelFromDisplay(
+          displayLabel: 'Supermercado',
+          renamesLowerToDisplay: renames,
+        ),
+        'Grocery / Supermarket',
+      );
+    });
   });
 }

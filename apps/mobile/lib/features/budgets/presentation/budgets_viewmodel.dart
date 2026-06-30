@@ -4,6 +4,7 @@ import '../../../core/formatting/formatting.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../app/ui_dependencies.dart';
 import '../../../core/supabase/supabase_records.dart';
+import '../../categories/domain/category_display_labels.dart';
 import '../../categories/domain/category_normalization.dart';
 import '../../dashboard/domain/dashboard_snapshot.dart';
 import '../../transactions/domain/spend_categories.dart';
@@ -24,6 +25,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
     required BudgetPeriodType periodType,
     required String periodKey,
     required Map<String, double> spentByDisplay,
+    Map<String, String> categoryDisplayRenames = const {},
   }) async {
     if (!hasSelectedPeriod) return const [];
     final allBudgets = await controller.fetchBudgets();
@@ -101,20 +103,24 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
 
     void seedSpendRows(Map<String, double> spendByLabel) {
       for (final entry in spendByLabel.entries) {
-        final label = entry.key.trim();
-        if (label.isEmpty ||
-            isUnresolvedCategoryLabel(label) ||
+        final spendLabel = entry.key.trim();
+        if (spendLabel.isEmpty ||
+            isUnresolvedCategoryLabel(spendLabel) ||
             entry.value.abs() < 1e-9) {
           continue;
         }
-        final key = normalizedCategoryKey(label);
+        final canonicalLabel = CategoryLabelResolver.canonicalEnglishLabelFromDisplay(
+          displayLabel: spendLabel,
+          renamesLowerToDisplay: categoryDisplayRenames,
+        );
+        final key = normalizedCategoryKey(canonicalLabel);
         if (key.isEmpty) continue;
         final category = categoryByKey[key];
         putRow(
-          displayLabel: category?.name ?? label,
+          displayLabel: category?.name ?? canonicalLabel,
           categoryId: category?.id,
           categoryKey: categoryRecordKey(
-            name: category?.name ?? label,
+            name: category?.name ?? canonicalLabel,
             normalizedName: category?.normalizedName,
           ),
           hasTransactionHistory: true,
@@ -222,6 +228,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
     required BudgetPeriodType periodType,
     required String periodKey,
     required Map<String, double> spentByIdentity,
+    Map<String, String> categoryDisplayRenames = const {},
   }) async {
     final budgets = await _fetchBudgetsForPeriod(periodType, periodKey);
     return buildBudgetCategoryListItemsForRows(
@@ -230,6 +237,7 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
       hasSelectedPeriod: hasSelectedPeriod,
       budgets: budgets,
       spentByIdentity: spentByIdentity,
+      categoryDisplayRenames: categoryDisplayRenames,
     );
   }
 
@@ -377,6 +385,7 @@ List<BudgetCategoryListItemData> buildBudgetCategoryListItemsForRows({
   required bool hasSelectedPeriod,
   required List<BudgetRecord> budgets,
   required Map<String, double> spentByIdentity,
+  Map<String, String> categoryDisplayRenames = const {},
 }) {
   final items = <BudgetCategoryListItemData>[];
   for (final row in rows) {
@@ -405,7 +414,10 @@ List<BudgetCategoryListItemData> buildBudgetCategoryListItemsForRows({
     items.add(
       BudgetCategoryListItemData(
         canonical: row.canonical,
-        displayLabel: row.displayLabel,
+        displayLabel: applyCategoryDisplayRenames(
+          row.displayLabel,
+          categoryDisplayRenames,
+        ),
         statusText: statusText,
         hasBudget: budget != null,
         isOverspent: overspent,

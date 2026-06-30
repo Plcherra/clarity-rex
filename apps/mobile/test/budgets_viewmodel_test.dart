@@ -1,11 +1,13 @@
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/budgets/presentation/budgets_viewmodel.dart';
+import 'package:clarity/features/categories/domain/category_display_labels.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
+  final spanishRenames = CategoryLabelResolver.displayRenamesForLocaleTag('es');
 
   test('hides inactive categories without budget or active spend', () {
     final items = buildBudgetCategoryListItemsForRows(
@@ -75,6 +77,27 @@ void main() {
     expect(items, hasLength(1));
     expect(items.single.hasBudget, isFalse);
     expect(items.single.statusText, 'Spent \$6.25 · No budget');
+  });
+
+  test('localizes built-in category labels for the active locale', () {
+    final items = buildBudgetCategoryListItemsForRows(
+      l10n: l10n,
+      rows: const [
+        BudgetCategoryRow(
+          canonical: 'key:grocery supermarket',
+          categoryKey: 'grocery supermarket',
+          displayLabel: 'Grocery / Supermarket',
+          identityKeys: {'key:grocery supermarket'},
+          hasTransactionHistory: true,
+        ),
+      ],
+      hasSelectedPeriod: true,
+      budgets: const [],
+      spentByIdentity: const {'key:grocery supermarket': 12},
+      categoryDisplayRenames: spanishRenames,
+    );
+
+    expect(items.single.displayLabel, 'Supermercado');
   });
 
   test('keeps saved budget categories visible across comparable months', () {

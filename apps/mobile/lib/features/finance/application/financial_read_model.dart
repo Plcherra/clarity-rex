@@ -418,7 +418,10 @@ final class FinancialReadModel {
       if (identity.isEmpty) continue;
       categoryPerformance.add(
         BudgetCategoryPerformance(
-          displayLabel: label,
+          displayLabel: applyCategoryDisplayRenames(
+            label,
+            categoryDisplayRenamesLower,
+          ),
           budgeted: budget.amount,
           spent: spentByBudgetIdentity[identity] ?? 0,
         ),

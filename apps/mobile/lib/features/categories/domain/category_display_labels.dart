@@ -126,6 +126,22 @@ final class CategoryLabelResolver {
     return renames;
   }
 
+  /// Maps a localized picker/spend label back to the English canonical name.
+  static String canonicalEnglishLabelFromDisplay({
+    required String displayLabel,
+    required Map<String, String> renamesLowerToDisplay,
+  }) {
+    final trimmed = displayLabel.trim();
+    if (trimmed.isEmpty || renamesLowerToDisplay.isEmpty) return trimmed;
+    final lower = trimmed.toLowerCase();
+    for (final entry in renamesLowerToDisplay.entries) {
+      if (entry.value.toLowerCase() != lower) continue;
+      final english = kBuiltInCategoryDisplayLabels[entry.key]?['en'];
+      if (english != null && english.isNotEmpty) return english;
+    }
+    return trimmed;
+  }
+
   static String? _labelForTag(Map<String, String> labels, String localeTag) {
     final normalizedTag = localeTag.trim();
     if (normalizedTag.isEmpty) return null;

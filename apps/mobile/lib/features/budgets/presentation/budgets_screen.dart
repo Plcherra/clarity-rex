@@ -143,6 +143,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       periodType: periodType,
       periodKey: periodKey,
       spentByDisplay: metrics.spentByDisplay,
+      categoryDisplayRenames: widget.controller.categoryDisplayRenames,
     );
     final keep = rows.map((r) => r.canonical).toSet();
     _viewModel.ensureControllers(
@@ -169,6 +170,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       periodType: periodType,
       periodKey: periodKey,
       spentByIdentity: metrics.spentByIdentity,
+      categoryDisplayRenames: widget.controller.categoryDisplayRenames,
     );
 
     return _BudgetScreenData(

@@ -45,7 +45,9 @@ final class AppComposition {
        themeModeController = themeModeController ?? ThemeModeController(),
        localeController = localeController ?? LocaleController(),
        _ownsThemeModeController = themeModeController == null,
-       _ownsLocaleController = localeController == null;
+       _ownsLocaleController = localeController == null {
+    this.localeController.addListener(_onLocaleChangedForCategoryLabels);
+  }
 
   final SupabaseService supabaseService;
   final bool _initialAuthenticated;
@@ -246,7 +248,13 @@ final class AppComposition {
     );
   }
 
+  void _onLocaleChangedForCategoryLabels() {
+    ui.notifyBudgets();
+    ui.notifyDashboard();
+  }
+
   void dispose() {
+    localeController.removeListener(_onLocaleChangedForCategoryLabels);
     _tryDispose(() => startupService.dispose());
     _tryDispose(() => categoryReadModel.dispose());
     _tryDispose(() => ui.dispose());
