@@ -13,6 +13,7 @@ from app.services.goal_command_reclassify import GoalCommandReclassifier
 from app.services.goal_command_types import GoalCommand, GoalCommandStore
 from app.services.goal_command_writer import GoalCommandWriter
 from app.services.memory_delete_reference import should_defer_to_delete_confirmation
+from app.services.memory_intent_service import MemoryIntentService
 from app.services.plan_service import PlanService
 
 
@@ -51,6 +52,7 @@ class GoalCommandService:
             self._writer,
         )
         self.durable_write_service = durable_write_service
+        self._memory_intent_service = MemoryIntentService()
 
     async def handle_turn(
         self,
@@ -76,6 +78,13 @@ class GoalCommandService:
             message,
             conversation_history,
             pending_action_payload(pending_action),
+        ):
+            return None
+
+        if self._should_defer_to_contextual_memory_save(
+            message,
+            conversation_history=conversation_history,
+            time_context=time_context,
         ):
             return None
 
@@ -136,6 +145,24 @@ class GoalCommandService:
             message,
             conversation_history=conversation_history,
             time_context=time_context,
+        )
+
+    def _should_defer_to_contextual_memory_save(
+        self,
+        message: str,
+        *,
+        conversation_history: list[dict],
+        time_context: dict,
+    ) -> bool:
+        if not self._memory_intent_service.is_contextual_memory_save_request(message):
+            return False
+        return (
+            self._memory_intent_service.detect_contextual_memory(
+                message,
+                conversation_history=conversation_history,
+                time_context=time_context,
+            )
+            is not None
         )
 
 

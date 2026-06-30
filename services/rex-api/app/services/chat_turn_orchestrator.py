@@ -363,11 +363,7 @@ class ChatTurnOrchestrator:
         write_confirmation: Optional[dict] = None,
     ) -> Optional[dict]:
         conversation_id = turn_context.conversation_id
-        if self._should_handle_durable_pending_first(
-            brain_message,
-            pending_action=pending_action,
-            write_confirmation=write_confirmation,
-        ):
+        if self._should_apply_write_confirmation(write_confirmation):
             durable_turn = await self.durable_write_service.try_handle_pending(
                 brain_message,
                 pending_action=pending_action,
@@ -437,22 +433,26 @@ class ChatTurnOrchestrator:
             )
             return simple_memory_turn
 
-        durable_turn = await self.durable_write_service.try_handle_pending(
+        if self._should_apply_pending_affirmation(
             brain_message,
             pending_action=pending_action,
-            conversation_id=conversation_id,
-            user_message=turn_context.user_message,
-            write_confirmation=write_confirmation,
-        )
-        if durable_turn is not None:
-            finish_short_circuit(
-                self.turn_observer,
-                self.usage_recorder,
-                turn_trace,
-                turn_started_at,
-                "durable_write",
+        ):
+            durable_turn = await self.durable_write_service.try_handle_pending(
+                brain_message,
+                pending_action=pending_action,
+                conversation_id=conversation_id,
+                user_message=turn_context.user_message,
+                write_confirmation=write_confirmation,
             )
-            return durable_turn
+            if durable_turn is not None:
+                finish_short_circuit(
+                    self.turn_observer,
+                    self.usage_recorder,
+                    turn_trace,
+                    turn_started_at,
+                    "durable_write",
+                )
+                return durable_turn
         finance_guard_response = self.financial_guard.guard_response(
             intent_decision,
             financial_context,
@@ -474,15 +474,18 @@ class ChatTurnOrchestrator:
             )
         return None
 
-    def _should_handle_durable_pending_first(
+    def _should_apply_write_confirmation(
+        self,
+        write_confirmation: Optional[dict],
+    ) -> bool:
+        return write_confirmation is not None
+
+    def _should_apply_pending_affirmation(
         self,
         message: str,
         *,
         pending_action,
-        write_confirmation: Optional[dict],
     ) -> bool:
-        if write_confirmation is not None:
-            return True
         pending = (
             pending_action
             if isinstance(pending_action, PendingAction)

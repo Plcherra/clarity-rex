@@ -185,7 +185,16 @@ class DurableWriteService:
                 ).strip()
                 if confirmed_id and confirmed_id != proposal.proposal_id:
                     await self._pending().clear(conversation_id)
-                    return None
+                    return await clarification_turn_result(
+                        self.memory_service,
+                        conversation_id=conversation_id,
+                        user_message=user_message,
+                        response=(
+                            "That save confirmation is no longer current. "
+                            "Please use the latest save card or ask me to save again."
+                        ),
+                        memory_changes=failed_memory_changes(proposal=proposal),
+                    )
             edits = write_confirmation_edits(write_confirmation)
             return await self._apply(
                 proposal.with_edits(edits),
