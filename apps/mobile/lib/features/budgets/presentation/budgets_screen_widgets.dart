@@ -183,72 +183,75 @@ class _BudgetsLoadedContent extends StatelessWidget {
     final metrics = data.metrics;
     final l10n = context.l10n;
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        BudgetsHeader(
-          selectedType: selectedType,
-          selectedPeriodKey: selectedPeriodKey,
-          keys: keys,
-          monthlyLabel: selectedPeriodKey.trim().isEmpty
-              ? l10n.budgetsHeaderSelectMonth
-              : formatYearMonthLabel(selectedPeriodKey),
-          weeklyLabel: weeklyDate == null
-              ? l10n.budgetsHeaderPickWeekStart
-              : viewModel.formatLongDate(weeklyDate!),
-          weeklyRangeLabel: viewModel.weeklyRangeLabel(selectedPeriodKey),
-          customStartLabel: customStart == null
-              ? l10n.commonStart
-              : formatShortDate(customStart!),
-          customEndLabel: customEnd == null
-              ? l10n.commonEnd
-              : formatShortDate(customEnd!),
-          onPeriodTypeChanged: onPeriodTypeChanged,
-          onPickMonthly: onPickMonthly,
-          onPickWeekly: onPickWeekly,
-          onPickCustomStart: onPickCustomStart,
-          onPickCustomEnd: onPickCustomEnd,
-          compactButtonStyle: compactButtonStyle,
-        ),
-        const SizedBox(height: 10),
-        _BudgetSummaryStrip(metrics: metrics),
-        if (!keyboardOpen) ...[
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: EdgeInsets.only(bottom: keyboardInset + 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          BudgetsHeader(
+            selectedType: selectedType,
+            selectedPeriodKey: selectedPeriodKey,
+            keys: keys,
+            monthlyLabel: selectedPeriodKey.trim().isEmpty
+                ? l10n.budgetsHeaderSelectMonth
+                : formatYearMonthLabel(selectedPeriodKey),
+            weeklyLabel: weeklyDate == null
+                ? l10n.budgetsHeaderPickWeekStart
+                : viewModel.formatLongDate(weeklyDate!),
+            weeklyRangeLabel: viewModel.weeklyRangeLabel(selectedPeriodKey),
+            customStartLabel: customStart == null
+                ? l10n.commonStart
+                : formatShortDate(customStart!),
+            customEndLabel: customEnd == null
+                ? l10n.commonEnd
+                : formatShortDate(customEnd!),
+            onPeriodTypeChanged: onPeriodTypeChanged,
+            onPickMonthly: onPickMonthly,
+            onPickWeekly: onPickWeekly,
+            onPickCustomStart: onPickCustomStart,
+            onPickCustomEnd: onPickCustomEnd,
+            compactButtonStyle: compactButtonStyle,
+          ),
           const SizedBox(height: 10),
-          ClarityCard(
-            padding: EdgeInsets.zero,
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                dividerColor: Colors.transparent,
-                splashColor: Theme.of(context).colorScheme.primary.withValues(
-                  alpha: 0.08,
-                ),
-              ),
-              child: ExpansionTile(
-                tilePadding: const EdgeInsets.fromLTRB(16, 2, 8, 2),
-                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                initiallyExpanded: false,
-                iconColor: Theme.of(context).colorScheme.onSurface.withValues(
-                  alpha: 0.56,
-                ),
-                collapsedIconColor: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.56),
-                title: Text(
-                  l10n.budgetsScreenBudgetVsSpentTitle,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+          _BudgetSummaryStrip(metrics: metrics),
+          if (!keyboardOpen) ...[
+            const SizedBox(height: 10),
+            ClarityCard(
+              padding: EdgeInsets.zero,
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  dividerColor: Colors.transparent,
+                  splashColor: Theme.of(context).colorScheme.primary.withValues(
+                    alpha: 0.08,
                   ),
                 ),
-                children: [
-                  BudgetVsSpentChart(performance: metrics.performance),
-                ],
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.fromLTRB(16, 2, 8, 2),
+                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  initiallyExpanded: false,
+                  iconColor: Theme.of(context).colorScheme.onSurface.withValues(
+                    alpha: 0.56,
+                  ),
+                  collapsedIconColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.56),
+                  title: Text(
+                    l10n.budgetsScreenBudgetVsSpentTitle,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  children: [
+                    BudgetVsSpentChart(performance: metrics.performance),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-        const SizedBox(height: 10),
-        Expanded(
-          child: BudgetCategoryList(
+          ],
+          const SizedBox(height: 10),
+          BudgetCategoryList(
             items: data.categoryItems,
             controllers: controllers,
             focusNodes: focusNodes,
@@ -256,8 +259,8 @@ class _BudgetsLoadedContent extends StatelessWidget {
             onTrackCategoryCount: metrics.performance.onTrackCategoryCount,
             budgetedCategoryCount: metrics.performance.budgetedCategoryCount,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
