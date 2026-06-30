@@ -61,17 +61,22 @@ Align mobile Knows with the full backend entity model, remove legacy layers, loc
 
 ### 6. Pagination
 
-- Detect when any list hits limit 50; show “Load more” or increase limit with cursor if backend supports it.
-- Minimum: user-visible note when truncated.
+- Detect when any list hits limit 50; show “Load more” (increases limit to 100) or user-visible truncation note.
+- Entity cards show up to two recent entity events as preview labels when available.
 
 ## Acceptance Criteria
 
-- [ ] Place (and other) entities appear in Knows when present in backend.
-- [ ] `MemoryLayer` / `loadMemories()` removed from mobile memory module.
-- [ ] Memory group headers use l10n (English + Spanish).
-- [ ] Shared JSON parsing module used by all memory models.
-- [ ] Truncation at 50 items is visible or paginated.
-- [ ] All memory widget tests pass.
+- [x] Place (and other) entities appear in Knows when present in backend.
+- [x] `MemoryLayer` / `loadMemories()` removed from mobile memory module.
+- [x] Memory group headers use l10n (English + Spanish).
+- [x] Shared JSON parsing module used by all memory models.
+- [x] Truncation at 50 items is visible or paginated.
+- [x] Load more increases overview limit to 100 when truncated.
+- [x] Entity cards show up to two recent entity-event preview chips.
+- [x] Rule/plan/commitment type labels use l10n (English + Spanish).
+- [x] Plan cards show up to two milestone preview chips when present.
+- [x] Knows overview uses backend cursor pagination with load-more append.
+- [x] All memory widget tests pass.
 
 ## Verification
 
@@ -85,10 +90,8 @@ flutter gen-l10n
 
 1. Backend has a place entity; confirm it shows in Knows Places group.
 2. Switch app to Spanish; Knows group headers are translated.
-3. Account with 50+ memories shows load-more or truncation message.
+3. Account with 50+ memories shows load-more and can fetch additional pages.
 
 ## Deferred
 
-- Entity event timeline on cards
-- Plan milestone tiles
-- Full backend cursor pagination API (if not exists)
+- Plan milestone create/edit UI in Knows

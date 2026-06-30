@@ -121,6 +121,28 @@ class EntityService:
         except MemoryServiceError as error:
             raise EntityServiceError(error.detail, error.status_code) from error
 
+    async def list_entities_paged(
+        self,
+        *,
+        entity_type: str | None = None,
+        normalized_name: str | None = None,
+        active: bool | None = True,
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None, bool]:
+        try:
+            return await self.repository.list_entities_paged(
+                entity_type=entity_type,
+                normalized_name=normalize_key(normalized_name)
+                if normalized_name
+                else None,
+                active=active,
+                limit=limit,
+                cursor=cursor,
+            )
+        except MemoryServiceError as error:
+            raise EntityServiceError(error.detail, error.status_code) from error
+
     async def update_entity(
         self, entity_id: str, request: EntityUpdateRequest
     ) -> dict[str, Any]:

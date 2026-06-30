@@ -15,18 +15,22 @@ class _GoalActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
     final l10n = context.l10n;
-    return Row(
+    return Wrap(
+      spacing: RexUiTokens.space4,
+      runSpacing: RexUiTokens.space4,
       children: [
         TextButton.icon(
           onPressed: isBusy ? null : onAddGoal,
           icon: Icon(Icons.add_rounded, size: 16, color: colors.accent),
-          label: Text(l10n.accountabilitySharedAddGoal, style: TextStyle(color: colors.accent)),
+          label: Text(
+            l10n.accountabilitySharedAddGoal,
+            style: TextStyle(color: colors.accent),
+          ),
           style: TextButton.styleFrom(
             visualDensity: VisualDensity.compact,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           ),
         ),
-        const SizedBox(width: RexUiTokens.space4),
         TextButton.icon(
           onPressed: isBusy ? null : onAddCommitment,
           icon: Icon(Icons.add_rounded, size: 16, color: colors.textSecondary),

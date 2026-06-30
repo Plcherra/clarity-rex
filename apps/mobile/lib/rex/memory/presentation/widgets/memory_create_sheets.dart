@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
+import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
 enum MemoryCreateKind {
@@ -55,15 +56,7 @@ class StructuredCreateResult {
   final String? extra;
 }
 
-const memoryCreateCategories = [
-  'People',
-  'Events',
-  'Places',
-  'Goals',
-  'Preferences',
-  'Facts',
-  'Other',
-];
+const memoryCreateCategories = memoryCreateCategoryKeys;
 
 Future<MemoryCreateKind?> showMemoryCreateTypePicker(BuildContext context) {
   final l10n = context.l10n;
@@ -199,11 +192,11 @@ class _FlatMemoryCreateSheetState extends State<_FlatMemoryCreateSheet> {
             DropdownButtonFormField<String>(
               initialValue: _category,
               decoration: InputDecoration(labelText: l10n.memoryCreateCategoryLabel),
-              items: memoryCreateCategories
+              items: memoryCreateCategoryKeys
                   .map(
                     (category) => DropdownMenuItem(
                       value: category,
-                      child: Text(category),
+                      child: Text(memoryCreateCategoryLabel(l10n, category)),
                     ),
                   )
                   .toList(growable: false),

@@ -13,6 +13,8 @@ SavedMemoryResults filterSavedMemory({
   final showPreferencesOnly = quickFilter == MemoryQuickFilter.preferences;
   final coveredSourceMemoryIds = {
     for (final person in state.people) ...person.sourceMemoryIds,
+    for (final entity in state.placeEntities) ...entity.sourceMemoryIds,
+    for (final entity in state.otherEntities) ...entity.sourceMemoryIds,
   };
 
   List<T> filterList<T>(Iterable<T> items, bool Function(T item) matches) {
@@ -71,6 +73,15 @@ SavedMemoryResults filterSavedMemory({
         : memories
               .where((memory) => memory.memoryGroup == MemoryGroup.places)
               .toList(growable: false),
+    placeEntities: showPeopleOnly || showPreferencesOnly
+        ? const []
+        : filterList(
+            state.placeEntities,
+            (entity) => _matchesQuery(
+              normalizedQuery,
+              entity.searchableFields.map((field) => field.memoryRecordLabel),
+            ),
+          ),
     goalMemories: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories
@@ -106,24 +117,36 @@ SavedMemoryResults filterSavedMemory({
         ? const []
         : filterList(
             state.commitments,
-            (commitment) => _matchesQuery(normalizedQuery, [
-              commitment.title,
-              commitment.commitmentText,
-              commitment.commitmentType.memoryRecordLabel,
-              'Priority ${commitment.priority}',
-              commitment.status.memoryRecordLabel,
-            ]),
+            (commitment) => _matchesQuery(
+              normalizedQuery,
+              [
+                commitment.title,
+                commitment.commitmentText,
+                commitment.commitmentType.memoryRecordLabel,
+                'Priority ${commitment.priority}',
+                commitment.status.memoryRecordLabel,
+              ],
+            ),
           ),
     events: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories
               .where((memory) => memory.memoryGroup == MemoryGroup.events)
               .toList(growable: false),
-    other: showPeopleOnly || showPreferencesOnly
+    otherMemories: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories
               .where((memory) => memory.memoryGroup == MemoryGroup.other)
               .toList(growable: false),
+    otherEntities: showPeopleOnly || showPreferencesOnly
+        ? const []
+        : filterList(
+            state.otherEntities,
+            (entity) => _matchesQuery(
+              normalizedQuery,
+              entity.searchableFields.map((field) => field.memoryRecordLabel),
+            ),
+          ),
   );
 }
 

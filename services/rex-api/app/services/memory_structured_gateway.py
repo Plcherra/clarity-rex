@@ -32,6 +32,24 @@ class MemoryStructuredGateway:
             normalized_name=normalized_name,
         )
 
+    async def list_entities_paged(
+        self,
+        limit: int = 50,
+        entity_type: Optional[str] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        normalized_name: Optional[str] = None,
+        cursor: Optional[str] = None,
+    ) -> tuple[list[dict], Optional[str], bool]:
+        return await self._get_structured_memory_repository().list_entities_paged(
+            limit=limit,
+            entity_type=entity_type,
+            status=status,
+            active=active,
+            normalized_name=normalized_name,
+            cursor=cursor,
+        )
+
     async def update_entity(self, entity_id: str, **updates: object) -> Optional[dict]:
         return await self._get_structured_memory_repository().update_entity(
             entity_id,
@@ -96,6 +114,22 @@ class MemoryStructuredGateway:
             active=active,
         )
 
+    async def list_personal_rules_paged(
+        self,
+        limit: int = 50,
+        rule_type: Optional[str] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        cursor: Optional[str] = None,
+    ) -> tuple[list[dict], Optional[str], bool]:
+        return await self._get_structured_memory_repository().list_personal_rules_paged(
+            limit=limit,
+            rule_type=rule_type,
+            status=status,
+            active=active,
+            cursor=cursor,
+        )
+
     async def update_personal_rule(
         self,
         rule_id: str,
@@ -126,6 +160,22 @@ class MemoryStructuredGateway:
             plan_type=plan_type,
             status=status,
             active=active,
+        )
+
+    async def list_plans_paged(
+        self,
+        limit: int = 50,
+        plan_type: Optional[str] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        cursor: Optional[str] = None,
+    ) -> tuple[list[dict], Optional[str], bool]:
+        return await self._get_structured_memory_repository().list_plans_paged(
+            limit=limit,
+            plan_type=plan_type,
+            status=status,
+            active=active,
+            cursor=cursor,
         )
 
     async def update_plan(self, plan_id: str, **updates: object) -> Optional[dict]:
@@ -194,6 +244,28 @@ class MemoryStructuredGateway:
             entity_id=entity_id,
             status=status,
             active=active,
+        )
+
+    async def list_commitments_paged(
+        self,
+        limit: int = 50,
+        commitment_type: Optional[str] = None,
+        plan_id: Optional[str] = None,
+        milestone_id: Optional[str] = None,
+        entity_id: Optional[str] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        cursor: Optional[str] = None,
+    ) -> tuple[list[dict], Optional[str], bool]:
+        return await self._get_structured_memory_repository().list_commitments_paged(
+            limit=limit,
+            commitment_type=commitment_type,
+            plan_id=plan_id,
+            milestone_id=milestone_id,
+            entity_id=entity_id,
+            status=status,
+            active=active,
+            cursor=cursor,
         )
 
     async def update_commitment(

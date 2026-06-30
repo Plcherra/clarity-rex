@@ -1,5 +1,7 @@
 from typing import Optional
 
+from app.models.pagination import decode_offset_cursor, paginate_rows
+
 ENTITIES_TABLE = "entities"
 ENTITY_EVENTS_TABLE = "entity_events"
 PERSONAL_RULES_TABLE = "personal_rules"
@@ -43,6 +45,27 @@ class StructuredMemoryRepository:
     def __init__(self, store: object) -> None:
         self.store = store
 
+    async def _list_table_paged(
+        self,
+        *,
+        table: str,
+        select: str,
+        filters: dict[str, object],
+        order: str,
+        limit: int,
+        cursor: Optional[str] = None,
+    ) -> tuple[list[dict], Optional[str], bool]:
+        offset = decode_offset_cursor(cursor)
+        rows = await self.store._list_records(
+            table,
+            select=select,
+            filters=filters,
+            order=order,
+            limit=limit + 1,
+            offset=offset,
+        )
+        return paginate_rows(rows, limit=limit, offset=offset)
+
     async def create_entity(self, entity: dict) -> dict:
         return await self.store._create_record(ENTITIES_TABLE, entity, ENTITY_SELECT)
 
@@ -54,8 +77,26 @@ class StructuredMemoryRepository:
         active: Optional[bool] = None,
         normalized_name: Optional[str] = None,
     ) -> list[dict]:
-        return await self.store._list_records(
-            ENTITIES_TABLE,
+        items, _, _ = await self.list_entities_paged(
+            limit=limit,
+            entity_type=entity_type,
+            status=status,
+            active=active,
+            normalized_name=normalized_name,
+        )
+        return items
+
+    async def list_entities_paged(
+        self,
+        limit: int = 50,
+        entity_type: Optional[str] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        normalized_name: Optional[str] = None,
+        cursor: Optional[str] = None,
+    ) -> tuple[list[dict], Optional[str], bool]:
+        return await self._list_table_paged(
+            table=ENTITIES_TABLE,
             select=ENTITY_SELECT,
             filters={
                 "entity_type": entity_type,
@@ -65,6 +106,7 @@ class StructuredMemoryRepository:
             },
             order="importance.desc,last_seen_at.desc,updated_at.desc",
             limit=limit,
+            cursor=cursor,
         )
 
     async def update_entity(self, entity_id: str, **updates: object) -> Optional[dict]:
@@ -135,8 +177,24 @@ class StructuredMemoryRepository:
         status: Optional[str] = None,
         active: Optional[bool] = None,
     ) -> list[dict]:
-        return await self.store._list_records(
-            PERSONAL_RULES_TABLE,
+        items, _, _ = await self.list_personal_rules_paged(
+            limit=limit,
+            rule_type=rule_type,
+            status=status,
+            active=active,
+        )
+        return items
+
+    async def list_personal_rules_paged(
+        self,
+        limit: int = 50,
+        rule_type: Optional[str] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        cursor: Optional[str] = None,
+    ) -> tuple[list[dict], Optional[str], bool]:
+        return await self._list_table_paged(
+            table=PERSONAL_RULES_TABLE,
             select=PERSONAL_RULE_SELECT,
             filters={
                 "rule_type": rule_type,
@@ -145,6 +203,7 @@ class StructuredMemoryRepository:
             },
             order="priority.desc,updated_at.desc",
             limit=limit,
+            cursor=cursor,
         )
 
     async def update_personal_rule(
@@ -177,8 +236,24 @@ class StructuredMemoryRepository:
         status: Optional[str] = None,
         active: Optional[bool] = None,
     ) -> list[dict]:
-        return await self.store._list_records(
-            PLANS_TABLE,
+        items, _, _ = await self.list_plans_paged(
+            limit=limit,
+            plan_type=plan_type,
+            status=status,
+            active=active,
+        )
+        return items
+
+    async def list_plans_paged(
+        self,
+        limit: int = 50,
+        plan_type: Optional[str] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        cursor: Optional[str] = None,
+    ) -> tuple[list[dict], Optional[str], bool]:
+        return await self._list_table_paged(
+            table=PLANS_TABLE,
             select=PLAN_SELECT,
             filters={
                 "plan_type": plan_type,
@@ -187,6 +262,7 @@ class StructuredMemoryRepository:
             },
             order="priority.desc,target_date.asc,updated_at.desc",
             limit=limit,
+            cursor=cursor,
         )
 
     async def update_plan(self, plan_id: str, **updates: object) -> Optional[dict]:
@@ -264,8 +340,30 @@ class StructuredMemoryRepository:
         status: Optional[str] = None,
         active: Optional[bool] = None,
     ) -> list[dict]:
-        return await self.store._list_records(
-            COMMITMENTS_TABLE,
+        items, _, _ = await self.list_commitments_paged(
+            limit=limit,
+            commitment_type=commitment_type,
+            plan_id=plan_id,
+            milestone_id=milestone_id,
+            entity_id=entity_id,
+            status=status,
+            active=active,
+        )
+        return items
+
+    async def list_commitments_paged(
+        self,
+        limit: int = 50,
+        commitment_type: Optional[str] = None,
+        plan_id: Optional[str] = None,
+        milestone_id: Optional[str] = None,
+        entity_id: Optional[str] = None,
+        status: Optional[str] = None,
+        active: Optional[bool] = None,
+        cursor: Optional[str] = None,
+    ) -> tuple[list[dict], Optional[str], bool]:
+        return await self._list_table_paged(
+            table=COMMITMENTS_TABLE,
             select=COMMITMENT_SELECT,
             filters={
                 "commitment_type": commitment_type,
@@ -277,6 +375,7 @@ class StructuredMemoryRepository:
             },
             order="priority.desc,due_at.asc,updated_at.desc",
             limit=limit,
+            cursor=cursor,
         )
 
     async def update_commitment(

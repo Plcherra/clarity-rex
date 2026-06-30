@@ -82,6 +82,26 @@ class RuleService:
         except MemoryServiceError as error:
             raise RuleServiceError(error.detail, error.status_code) from error
 
+    async def list_rules_paged(
+        self,
+        *,
+        rule_type: str | None = None,
+        status: str | None = None,
+        active: bool | None = True,
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None, bool]:
+        try:
+            return await self.memory_service.list_personal_rules_paged(
+                rule_type=rule_type,
+                status=status,
+                active=active,
+                limit=limit,
+                cursor=cursor,
+            )
+        except MemoryServiceError as error:
+            raise RuleServiceError(error.detail, error.status_code) from error
+
     async def update_rule(
         self, rule_id: str, request: PersonalRuleUpdateRequest
     ) -> dict[str, Any]:

@@ -7,12 +7,14 @@ class SavedMemoryResults {
     required this.peopleMemories,
     required this.people,
     required this.places,
+    required this.placeEntities,
     required this.goalMemories,
     required this.rules,
     required this.plans,
     required this.commitments,
     required this.events,
-    required this.other,
+    required this.otherMemories,
+    required this.otherEntities,
   });
 
   final List<MemoryItem> facts;
@@ -20,12 +22,14 @@ class SavedMemoryResults {
   final List<MemoryItem> peopleMemories;
   final List<PersonMemoryItem> people;
   final List<MemoryItem> places;
+  final List<EntityMemoryItem> placeEntities;
   final List<MemoryItem> goalMemories;
   final List<RuleMemoryItem> rules;
   final List<PlanMemoryItem> plans;
   final List<CommitmentMemoryItem> commitments;
   final List<MemoryItem> events;
-  final List<MemoryItem> other;
+  final List<MemoryItem> otherMemories;
+  final List<EntityMemoryItem> otherEntities;
 
   bool get isEmpty {
     return facts.isEmpty &&
@@ -33,11 +37,13 @@ class SavedMemoryResults {
         peopleMemories.isEmpty &&
         people.isEmpty &&
         places.isEmpty &&
+        placeEntities.isEmpty &&
         goalMemories.isEmpty &&
         rules.isEmpty &&
         plans.isEmpty &&
         commitments.isEmpty &&
         events.isEmpty &&
-        other.isEmpty;
+        otherMemories.isEmpty &&
+        otherEntities.isEmpty;
   }
 }

@@ -19,6 +19,17 @@ void main() {
     expect(find.text(es.commonCancel), findsOneWidget);
   });
 
+  testWidgets('memory group headers render in Spanish', (tester) async {
+    await tester.pumpWidget(
+      wrapWithSpanishL10n(
+        Scaffold(body: Text(es.memoryGroupPlaces)),
+      ),
+    );
+
+    expect(find.text(es.memoryGroupPlaces), findsOneWidget);
+    expect(es.memoryGroupPlaces, 'Lugares');
+  });
+
   testWidgets('profile screen title renders in Spanish', (tester) async {
     await tester.pumpWidget(
       wrapWithSpanishL10n(

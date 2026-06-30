@@ -27,6 +27,23 @@ class EntityRepository:
             limit=limit,
         )
 
+    async def list_entities_paged(
+        self,
+        *,
+        entity_type: str | None = None,
+        normalized_name: str | None = None,
+        active: bool | None = True,
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None, bool]:
+        return await self.memory_service.list_entities_paged(
+            entity_type=entity_type,
+            normalized_name=normalized_name,
+            active=active,
+            limit=limit,
+            cursor=cursor,
+        )
+
     async def update_entity(
         self,
         entity_id: str,

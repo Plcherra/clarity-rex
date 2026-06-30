@@ -1331,6 +1331,176 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memoryHeaderActiveOnly => 'Sólo información activa';
 
   @override
+  String get memoryOverviewTruncated =>
+      'Mostrando los primeros 50 elementos guardados en cada categoría. Desliza hacia abajo para actualizar.';
+
+  @override
+  String get memoryGroupFacts => 'Hechos';
+
+  @override
+  String get memoryGroupPreferences => 'Preferencias';
+
+  @override
+  String get memoryGroupPeople => 'Personas';
+
+  @override
+  String get memoryGroupPlaces => 'Lugares';
+
+  @override
+  String get memoryGroupGoals => 'Metas';
+
+  @override
+  String get memoryGroupRules => 'Reglas';
+
+  @override
+  String get memoryGroupEvents => 'Eventos';
+
+  @override
+  String get memoryGroupOther => 'Otros';
+
+  @override
+  String get memoryTypeFact => 'Hecho';
+
+  @override
+  String get memoryTypePreference => 'Preferencia';
+
+  @override
+  String get memoryTypeEvent => 'Evento';
+
+  @override
+  String get memoryTypeOther => 'Otra memoria';
+
+  @override
+  String get memoryEntityTypePlace => 'Lugar';
+
+  @override
+  String get memoryEntityTypeOrganization => 'Organización';
+
+  @override
+  String get memoryEditEditEntityTitle => 'Editar elemento guardado';
+
+  @override
+  String get memoryPageEntityUpdated => 'Elemento guardado actualizado';
+
+  @override
+  String get memoryOverviewLoadMore => 'Cargar más';
+
+  @override
+  String get memoryOverviewTruncatedMax =>
+      'Mostrando los primeros 100 elementos guardados en cada categoría.';
+
+  @override
+  String get memoryRecordLongTermMemory => 'Nota de memoria';
+
+  @override
+  String get memoryRecordMemoryUpdate => 'Actualización de memoria';
+
+  @override
+  String get memoryRecordEntity => 'Persona / lugar';
+
+  @override
+  String get memoryRecordEntityEvent => 'Evento relacionado';
+
+  @override
+  String get memoryRecordPersonalRule => 'Regla';
+
+  @override
+  String get memoryRecordPlan => 'Plan';
+
+  @override
+  String get memoryRecordPlanMilestone => 'Hito';
+
+  @override
+  String get memoryRecordCommitment => 'Compromiso';
+
+  @override
+  String get memoryRecordCorrection => 'Corrección';
+
+  @override
+  String get memoryRecordArchive => 'Archivar';
+
+  @override
+  String get memoryRecordMerge => 'Combinar';
+
+  @override
+  String get memoryRecordGentleDirect => 'Recordatorio amable';
+
+  @override
+  String get memoryRecordCheckpoint => 'Punto de control';
+
+  @override
+  String get memoryRecordApproved => 'Aprobado';
+
+  @override
+  String get memoryRecordApplied => 'Guardado';
+
+  @override
+  String get memoryRecordRejected => 'Rechazado';
+
+  @override
+  String get memoryRecordFailed => 'Necesita atención';
+
+  @override
+  String get memoryRecordSkipped => 'Omitido';
+
+  @override
+  String get memoryRecordActive => 'Activo';
+
+  @override
+  String get memoryRecordInactive => 'Inactivo';
+
+  @override
+  String get memoryRecordOpen => 'Abierto';
+
+  @override
+  String get memoryRecordCompleted => 'Completado';
+
+  @override
+  String get memoryRecordResolved => 'Resuelto';
+
+  @override
+  String get memoryRecordDismissed => 'Descartado';
+
+  @override
+  String get memoryRecordArchived => 'Archivado';
+
+  @override
+  String get memoryRecordLowRisk => 'Riesgo bajo';
+
+  @override
+  String get memoryRecordMediumRisk => 'Riesgo medio';
+
+  @override
+  String get memoryRecordHighRisk => 'Riesgo alto';
+
+  @override
+  String get memoryRecordCriticalRisk => 'Riesgo crítico';
+
+  @override
+  String get memoryRecordInfo => 'Información';
+
+  @override
+  String get memoryRecordEventNote => 'Nota';
+
+  @override
+  String get memoryRecordEventInteraction => 'Interacción';
+
+  @override
+  String get memoryRecordEventRelationshipUpdate => 'Actualización de relación';
+
+  @override
+  String get memoryRecordEventConflict => 'Conflicto';
+
+  @override
+  String get memoryRecordEventMilestone => 'Hito';
+
+  @override
+  String get memoryRecordProject => 'Proyecto';
+
+  @override
+  String get memoryRecordTask => 'Tarea';
+
+  @override
   String get memoryHeaderLoading => 'Cargando memoria';
 
   @override

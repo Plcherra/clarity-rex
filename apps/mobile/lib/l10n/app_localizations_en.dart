@@ -1313,6 +1313,176 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryHeaderActiveOnly => 'Active information only';
 
   @override
+  String get memoryOverviewTruncated =>
+      'Showing the first 50 saved items in each category. Pull to refresh for the latest information.';
+
+  @override
+  String get memoryGroupFacts => 'Facts';
+
+  @override
+  String get memoryGroupPreferences => 'Preferences';
+
+  @override
+  String get memoryGroupPeople => 'People';
+
+  @override
+  String get memoryGroupPlaces => 'Places';
+
+  @override
+  String get memoryGroupGoals => 'Goals';
+
+  @override
+  String get memoryGroupRules => 'Rules';
+
+  @override
+  String get memoryGroupEvents => 'Events';
+
+  @override
+  String get memoryGroupOther => 'Other';
+
+  @override
+  String get memoryTypeFact => 'Fact';
+
+  @override
+  String get memoryTypePreference => 'Preference';
+
+  @override
+  String get memoryTypeEvent => 'Event';
+
+  @override
+  String get memoryTypeOther => 'Other memory';
+
+  @override
+  String get memoryEntityTypePlace => 'Place';
+
+  @override
+  String get memoryEntityTypeOrganization => 'Organization';
+
+  @override
+  String get memoryEditEditEntityTitle => 'Edit saved item';
+
+  @override
+  String get memoryPageEntityUpdated => 'Saved item updated';
+
+  @override
+  String get memoryOverviewLoadMore => 'Load more';
+
+  @override
+  String get memoryOverviewTruncatedMax =>
+      'Showing the first 100 saved items in each category.';
+
+  @override
+  String get memoryRecordLongTermMemory => 'Memory note';
+
+  @override
+  String get memoryRecordMemoryUpdate => 'Memory update';
+
+  @override
+  String get memoryRecordEntity => 'Person / place';
+
+  @override
+  String get memoryRecordEntityEvent => 'Related event';
+
+  @override
+  String get memoryRecordPersonalRule => 'Rule';
+
+  @override
+  String get memoryRecordPlan => 'Plan';
+
+  @override
+  String get memoryRecordPlanMilestone => 'Milestone';
+
+  @override
+  String get memoryRecordCommitment => 'Commitment';
+
+  @override
+  String get memoryRecordCorrection => 'Correction';
+
+  @override
+  String get memoryRecordArchive => 'Archive';
+
+  @override
+  String get memoryRecordMerge => 'Merge';
+
+  @override
+  String get memoryRecordGentleDirect => 'Gentle reminder';
+
+  @override
+  String get memoryRecordCheckpoint => 'Checkpoint';
+
+  @override
+  String get memoryRecordApproved => 'Approved';
+
+  @override
+  String get memoryRecordApplied => 'Saved';
+
+  @override
+  String get memoryRecordRejected => 'Rejected';
+
+  @override
+  String get memoryRecordFailed => 'Needs attention';
+
+  @override
+  String get memoryRecordSkipped => 'Skipped';
+
+  @override
+  String get memoryRecordActive => 'Active';
+
+  @override
+  String get memoryRecordInactive => 'Inactive';
+
+  @override
+  String get memoryRecordOpen => 'Open';
+
+  @override
+  String get memoryRecordCompleted => 'Completed';
+
+  @override
+  String get memoryRecordResolved => 'Resolved';
+
+  @override
+  String get memoryRecordDismissed => 'Dismissed';
+
+  @override
+  String get memoryRecordArchived => 'Archived';
+
+  @override
+  String get memoryRecordLowRisk => 'Low risk';
+
+  @override
+  String get memoryRecordMediumRisk => 'Medium risk';
+
+  @override
+  String get memoryRecordHighRisk => 'High risk';
+
+  @override
+  String get memoryRecordCriticalRisk => 'Critical risk';
+
+  @override
+  String get memoryRecordInfo => 'Info';
+
+  @override
+  String get memoryRecordEventNote => 'Note';
+
+  @override
+  String get memoryRecordEventInteraction => 'Interaction';
+
+  @override
+  String get memoryRecordEventRelationshipUpdate => 'Relationship update';
+
+  @override
+  String get memoryRecordEventConflict => 'Conflict';
+
+  @override
+  String get memoryRecordEventMilestone => 'Milestone';
+
+  @override
+  String get memoryRecordProject => 'Project';
+
+  @override
+  String get memoryRecordTask => 'Task';
+
+  @override
   String get memoryHeaderLoading => 'Loading memory';
 
   @override

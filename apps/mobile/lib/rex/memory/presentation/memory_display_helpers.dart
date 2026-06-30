@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
+import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
 bool memoryTextsMatch(String? a, String? b) {
@@ -84,6 +85,38 @@ List<String> personSupplementalLabels(
     addIfMissing(date, label: l10n.memoryDisplayImportantDate);
   }
   return labels;
+}
+
+List<String> planMilestonePreviewLabels(
+  AppLocalizations l10n,
+  List<PlanMilestoneMemoryItem> milestones,
+) {
+  return milestones
+      .map((milestone) {
+        final preview = milestone.previewLabel;
+        if (preview.isEmpty) {
+          return null;
+        }
+        return '${localizedMemoryRecordLabel(l10n, 'plan_milestone')}: $preview';
+      })
+      .whereType<String>()
+      .toList(growable: false);
+}
+
+List<String> entityEventPreviewLabels(
+  AppLocalizations l10n,
+  List<EntityEventItem> events,
+) {
+  return events
+      .map((event) {
+        final preview = event.previewLabel;
+        if (preview.isEmpty) {
+          return null;
+        }
+        return '${localizedMemoryRecordLabel(l10n, event.eventType)}: $preview';
+      })
+      .whereType<String>()
+      .toList(growable: false);
 }
 
 String? ruleMemorySubtitle(RuleMemoryItem rule) {

@@ -9,7 +9,10 @@ import 'package:clarity/rex/memory/presentation/widgets/memory_create_sheets.dar
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_sheets.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_filters.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_header_widgets.dart';
+import 'package:clarity/rex/memory/data/memory_constants.dart';
+import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_quick_filter.dart';
+import 'package:clarity/rex/memory/presentation/widgets/memory_truncation_banner.dart';
 import 'package:clarity/rex/memory/presentation/widgets/saved_memory_group_list.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
@@ -50,9 +53,9 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
   }
 
   Future<void> _setActiveOnly(bool activeOnly) async {
-    await ref
-        .read(memoryProvider.notifier)
-        .loadSavedOverview(activeOnly: activeOnly);
+    await ref.read(memoryProvider.notifier).loadSavedOverview(
+          activeOnly: activeOnly,
+        );
   }
 
   Future<void> _setQuickFilter(MemoryQuickFilter filter) async {
@@ -233,12 +236,46 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     }
   }
 
+  Future<void> _editEntity(EntityMemoryItem entity) async {
+    final l10n = context.l10n;
+    final result = await showStructuredEditSheet(
+      context,
+      title: l10n.memoryEditEditEntityTitle,
+      typeLabel: entityTypeLabel(l10n, entity.entityType),
+      primaryLabel: l10n.commonName,
+      primaryValue: entity.displayName,
+      detailLabel: l10n.commonSummary,
+      detailValue: entity.summary,
+      importanceLabel: l10n.commonImportance,
+      importance: entity.importance,
+      status: entity.status,
+      active: entity.active,
+      updatedAt: entity.updatedAt,
+      createdAt: entity.createdAt,
+    );
+    if (result == null) {
+      return;
+    }
+
+    final saved = await ref.read(memoryProvider.notifier).updateEntity(
+          entity.id,
+          displayName: result.primary,
+          summary: result.detail,
+          importance: result.importance,
+          status: result.status,
+          active: result.active,
+        );
+    if (mounted) {
+      _showSnackBar(saved ? l10n.memoryPageEntityUpdated : _currentError());
+    }
+  }
+
   Future<void> _editRule(RuleMemoryItem rule) async {
     final l10n = context.l10n;
     final result = await showStructuredEditSheet(
       context,
       title: l10n.memoryEditEditRuleTitle,
-      typeLabel: rule.ruleType.memoryRecordLabel,
+      typeLabel: localizedMemoryRecordLabel(l10n, rule.ruleType),
       primaryLabel: l10n.commonTitle,
       primaryValue: rule.title,
       detailLabel: l10n.memoryEditRuleTextLabel,
@@ -277,7 +314,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     final result = await showStructuredEditSheet(
       context,
       title: l10n.memoryEditEditPlanTitle,
-      typeLabel: plan.planType.memoryRecordLabel,
+      typeLabel: localizedMemoryRecordLabel(l10n, plan.planType),
       primaryLabel: l10n.commonTitle,
       primaryValue: plan.title,
       detailLabel: l10n.commonDescription,
@@ -316,7 +353,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     final result = await showStructuredEditSheet(
       context,
       title: l10n.memoryEditEditCommitmentTitle,
-      typeLabel: commitment.commitmentType.memoryRecordLabel,
+      typeLabel: localizedMemoryRecordLabel(l10n, commitment.commitmentType),
       primaryLabel: l10n.commonTitle,
       primaryValue: commitment.title,
       detailLabel: l10n.commonCommitment,
@@ -348,7 +385,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
   }
 
   Future<void> _archiveStructuredMemory(
-    MemoryLayer layer,
+    StructuredMemoryKind kind,
     String id,
     String label,
   ) async {
@@ -362,7 +399,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
 
     final archived = await ref
         .read(memoryProvider.notifier)
-        .archiveStructuredMemory(layer, id);
+        .archiveStructuredMemory(kind, id);
     if (mounted) {
       _showSnackBar(
         archived ? context.l10n.commonArchivedNamed(label) : _currentError(),
@@ -431,6 +468,15 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                       value: state.activeOnly,
                       onChanged: state.isLoading ? null : _setActiveOnly,
                     ),
+                    if (state.overviewCanLoadMore)
+                      MemoryTruncationBanner(
+                        canLoadMore: state.overviewCanLoadMore,
+                        onLoadMore: state.isLoading
+                            ? null
+                            : () => ref
+                                  .read(memoryProvider.notifier)
+                                  .loadMoreSavedOverview(),
+                      ),
                     if (state.errorMessage != null)
                       Padding(
                         padding: const EdgeInsets.only(
@@ -457,9 +503,12 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
             else
               SavedMemoryGroupList(
                 saved: filteredSaved,
+                eventPreviewsFor: state.eventPreviewsFor,
+                milestonePreviewsFor: state.milestonePreviewsFor,
                 onEditMemory: _editMemory,
                 onArchiveMemory: _archiveMemory,
                 onEditPerson: _editPerson,
+                onEditEntity: _editEntity,
                 onEditRule: _editRule,
                 onEditPlan: _editPlan,
                 onEditCommitment: _editCommitment,

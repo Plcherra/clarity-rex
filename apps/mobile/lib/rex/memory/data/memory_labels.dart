@@ -10,6 +10,8 @@ enum MemoryGroup {
 }
 
 extension MemoryGroupLabel on MemoryGroup {
+  /// English fallback for tests, search indexing, and backend category keys.
+  /// UI should use `MemoryGroupL10n.localizedLabel`.
   String get label {
     switch (this) {
       case MemoryGroup.facts:

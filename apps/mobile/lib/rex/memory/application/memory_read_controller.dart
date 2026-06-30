@@ -1,108 +1,31 @@
 part of 'memory_controller.dart';
 
 mixin MemoryReadController on Notifier<MemoryState> {
-  Future<void> loadMemories({
-    MemoryLayer? layer,
-    MemoryType? memoryType,
-    bool? activeOnly,
-  }) async {
-    final nextLayer = layer ?? state.selectedLayer;
-    final nextActiveOnly = activeOnly ?? state.activeOnly;
-    state = state.copyWith(
-      selectedLayer: nextLayer,
-      selectedType: memoryType,
-      clearSelectedType:
-          nextLayer != MemoryLayer.longTerm || memoryType == null,
-      activeOnly: nextActiveOnly,
-      isLoading: true,
-      clearError: true,
-    );
-
-    try {
-      final api = ref.read(memoryApiProvider);
-      switch (nextLayer) {
-        case MemoryLayer.longTerm:
-          final memories = await api.getMemories(
-            memoryType: memoryType,
-            active: nextActiveOnly ? true : null,
-          );
-          state = state.copyWith(
-            memories: memories,
-            isLoading: false,
-            clearError: true,
-          );
-        case MemoryLayer.people:
-          final people = await api.getPeople(
-            active: nextActiveOnly ? true : null,
-          );
-          state = state.copyWith(
-            people: people,
-            isLoading: false,
-            clearError: true,
-          );
-        case MemoryLayer.rules:
-          final rules = await api.getRules(
-            active: nextActiveOnly ? true : null,
-          );
-          state = state.copyWith(
-            rules: rules,
-            isLoading: false,
-            clearError: true,
-          );
-        case MemoryLayer.plans:
-          final plans = await api.getPlans(
-            active: nextActiveOnly ? true : null,
-          );
-          state = state.copyWith(
-            plans: plans,
-            isLoading: false,
-            clearError: true,
-          );
-        case MemoryLayer.commitments:
-          final commitments = await api.getCommitments(
-            active: nextActiveOnly ? true : null,
-          );
-          state = state.copyWith(
-            commitments: commitments,
-            isLoading: false,
-            clearError: true,
-          );
-      }
-    } on Object catch (error) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.load),
-      );
-    }
-  }
-
   Future<void> loadSavedOverview({bool? activeOnly}) async {
     final nextActiveOnly = activeOnly ?? state.activeOnly;
     state = state.copyWith(
-      selectedLayer: MemoryLayer.longTerm,
-      clearSelectedType: true,
       activeOnly: nextActiveOnly,
       isLoading: true,
       clearError: true,
     );
 
     try {
-      final api = ref.read(memoryApiProvider);
-      final active = nextActiveOnly ? true : null;
-      final results = await Future.wait<Object>([
-        api.getMemories(active: active),
-        api.getPeople(active: active),
-        api.getRules(active: active),
-        api.getPlans(active: active),
-        api.getCommitments(active: active),
-      ]);
-
+      final overview = await _fetchSavedOverview(
+        activeOnly: nextActiveOnly,
+        pages: const MemoryOverviewPages(),
+        append: false,
+      );
       state = state.copyWith(
-        memories: results[0] as List<MemoryItem>,
-        people: results[1] as List<PersonMemoryItem>,
-        rules: results[2] as List<RuleMemoryItem>,
-        plans: results[3] as List<PlanMemoryItem>,
-        commitments: results[4] as List<CommitmentMemoryItem>,
+        memories: overview.memories,
+        people: overview.people,
+        placeEntities: overview.placeEntities,
+        otherEntities: overview.otherEntities,
+        rules: overview.rules,
+        plans: overview.plans,
+        commitments: overview.commitments,
+        entityEventPreviews: overview.entityEventPreviews,
+        planMilestonePreviews: overview.planMilestonePreviews,
+        overviewPages: overview.pages,
         isLoading: false,
         clearError: true,
       );
@@ -113,4 +36,373 @@ mixin MemoryReadController on Notifier<MemoryState> {
       );
     }
   }
+
+  Future<void> loadMoreSavedOverview() async {
+    if (!state.overviewCanLoadMore || state.isLoading) {
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final overview = await _fetchSavedOverview(
+        activeOnly: state.activeOnly,
+        pages: state.overviewPages,
+        append: true,
+      );
+      state = state.copyWith(
+        memories: overview.memories,
+        people: overview.people,
+        placeEntities: overview.placeEntities,
+        otherEntities: overview.otherEntities,
+        rules: overview.rules,
+        plans: overview.plans,
+        commitments: overview.commitments,
+        entityEventPreviews: {
+          ...state.entityEventPreviews,
+          ...overview.entityEventPreviews,
+        },
+        planMilestonePreviews: {
+          ...state.planMilestonePreviews,
+          ...overview.planMilestonePreviews,
+        },
+        overviewPages: overview.pages,
+        isLoading: false,
+        clearError: true,
+      );
+    } on Object catch (error) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.load),
+      );
+    }
+  }
+
+  Future<_SavedOverviewSnapshot> _fetchSavedOverview({
+    required bool activeOnly,
+    required MemoryOverviewPages pages,
+    required bool append,
+  }) async {
+    final api = ref.read(memoryApiProvider);
+    final active = activeOnly ? true : null;
+    final results = await Future.wait<Object>([
+      _fetchMemoriesPage(api, active: active, pages: pages, append: append),
+      _fetchEntitiesPage(api, active: active, pages: pages, append: append),
+      _fetchRulesPage(api, active: active, pages: pages, append: append),
+      _fetchPlansPage(api, active: active, pages: pages, append: append),
+      _fetchCommitmentsPage(api, active: active, pages: pages, append: append),
+    ]);
+
+    final memoriesPage = results[0] as MemoryPagedResult<MemoryItem>;
+    final entitiesPage = results[1] as MemoryPagedResult<EntityMemoryItem>;
+    final rulesPage = results[2] as MemoryPagedResult<RuleMemoryItem>;
+    final plansPage = results[3] as MemoryPagedResult<PlanMemoryItem>;
+    final commitmentsPage = results[4] as MemoryPagedResult<CommitmentMemoryItem>;
+
+    final memories = append
+        ? appendUniqueById(
+            existing: state.memories,
+            incoming: memoriesPage.items,
+            idFor: (item) => item.id,
+          )
+        : memoriesPage.items;
+
+    final incomingPeople = <PersonMemoryItem>[];
+    final incomingPlaces = <EntityMemoryItem>[];
+    final incomingOther = <EntityMemoryItem>[];
+    for (final entity in entitiesPage.items) {
+      switch (entity.entityType) {
+        case 'person':
+          incomingPeople.add(PersonMemoryItem.fromEntity(entity));
+        case 'place':
+          incomingPlaces.add(entity);
+        default:
+          incomingOther.add(entity);
+      }
+    }
+
+    final people = append
+        ? appendUniqueById(
+            existing: state.people,
+            incoming: incomingPeople,
+            idFor: (item) => item.id,
+          )
+        : incomingPeople;
+    final placeEntities = append
+        ? appendUniqueById(
+            existing: state.placeEntities,
+            incoming: incomingPlaces,
+            idFor: (item) => item.id,
+          )
+        : incomingPlaces;
+    final otherEntities = append
+        ? appendUniqueById(
+            existing: state.otherEntities,
+            incoming: incomingOther,
+            idFor: (item) => item.id,
+          )
+        : incomingOther;
+    final rules = append
+        ? appendUniqueById(
+            existing: state.rules,
+            incoming: rulesPage.items,
+            idFor: (item) => item.id,
+          )
+        : rulesPage.items;
+    final plans = append
+        ? appendUniqueById(
+            existing: state.plans,
+            incoming: plansPage.items,
+            idFor: (item) => item.id,
+          )
+        : plansPage.items;
+    final commitments = append
+        ? appendUniqueById(
+            existing: state.commitments,
+            incoming: commitmentsPage.items,
+            idFor: (item) => item.id,
+          )
+        : commitmentsPage.items;
+
+    final entityEventPreviews = await _loadEntityEventPreviews(
+      api: api,
+      targets: [
+        for (final person in people)
+          _PreviewTarget(id: person.id, importance: person.importance),
+        for (final entity in placeEntities)
+          _PreviewTarget(id: entity.id, importance: entity.importance),
+        for (final entity in otherEntities)
+          _PreviewTarget(id: entity.id, importance: entity.importance),
+      ],
+      active: active,
+    );
+    final planMilestonePreviews = await _loadPlanMilestonePreviews(
+      api: api,
+      targets: [
+        for (final plan in plans)
+          _PreviewTarget(id: plan.id, importance: plan.priority),
+      ],
+      active: active,
+    );
+
+    final nextPages = MemoryOverviewPages(
+      memoriesCursor: memoriesPage.nextCursor ?? pages.memoriesCursor,
+      memoriesHasMore: append
+          ? (pages.memoriesHasMore ? memoriesPage.hasMore : false)
+          : memoriesPage.hasMore,
+      entitiesCursor: entitiesPage.nextCursor ?? pages.entitiesCursor,
+      entitiesHasMore: append
+          ? (pages.entitiesHasMore ? entitiesPage.hasMore : false)
+          : entitiesPage.hasMore,
+      rulesCursor: rulesPage.nextCursor ?? pages.rulesCursor,
+      rulesHasMore: append
+          ? (pages.rulesHasMore ? rulesPage.hasMore : false)
+          : rulesPage.hasMore,
+      plansCursor: plansPage.nextCursor ?? pages.plansCursor,
+      plansHasMore: append
+          ? (pages.plansHasMore ? plansPage.hasMore : false)
+          : plansPage.hasMore,
+      commitmentsCursor: commitmentsPage.nextCursor ?? pages.commitmentsCursor,
+      commitmentsHasMore: append
+          ? (pages.commitmentsHasMore ? commitmentsPage.hasMore : false)
+          : commitmentsPage.hasMore,
+    );
+
+    return _SavedOverviewSnapshot(
+      memories: memories,
+      people: people,
+      placeEntities: placeEntities,
+      otherEntities: otherEntities,
+      rules: rules,
+      plans: plans,
+      commitments: commitments,
+      entityEventPreviews: entityEventPreviews,
+      planMilestonePreviews: planMilestonePreviews,
+      pages: nextPages,
+    );
+  }
+
+  Future<Map<String, List<EntityEventItem>>> _loadEntityEventPreviews({
+    required MemoryApi api,
+    required List<_PreviewTarget> targets,
+    required bool? active,
+  }) async {
+    if (targets.isEmpty) {
+      return const {};
+    }
+
+    final sorted = [...targets]
+      ..sort((a, b) => b.importance.compareTo(a.importance));
+    final capped = sorted.take(kEntityEventFetchCap).toList(growable: false);
+    final previews = <String, List<EntityEventItem>>{};
+
+    await Future.wait<void>(
+      capped.map((target) async {
+        try {
+          final events = await api.getEntityEvents(
+            target.id,
+            active: active,
+            limit: kEntityEventPreviewLimit,
+          );
+          if (events.isNotEmpty) {
+            previews[target.id] = events;
+          }
+        } on Object {
+          // Event previews are optional context; a failed fetch should not block Knows.
+        }
+      }),
+    );
+
+    return previews;
+  }
+
+  Future<Map<String, List<PlanMilestoneMemoryItem>>> _loadPlanMilestonePreviews({
+    required MemoryApi api,
+    required List<_PreviewTarget> targets,
+    required bool? active,
+  }) async {
+    if (targets.isEmpty) {
+      return const {};
+    }
+
+    final sorted = [...targets]
+      ..sort((a, b) => b.importance.compareTo(a.importance));
+    final capped = sorted.take(kPlanMilestoneFetchCap).toList(growable: false);
+    final previews = <String, List<PlanMilestoneMemoryItem>>{};
+
+    await Future.wait<void>(
+      capped.map((target) async {
+        try {
+          final milestones = await api.getPlanMilestones(
+            target.id,
+            active: active,
+            limit: kPlanMilestonePreviewLimit,
+          );
+          if (milestones.isNotEmpty) {
+            previews[target.id] = milestones;
+          }
+        } on Object {
+          // Milestone previews are optional context; a failed fetch should not block Knows.
+        }
+      }),
+    );
+
+    return previews;
+  }
+
+  Future<MemoryPagedResult<MemoryItem>> _fetchMemoriesPage(
+    MemoryApi api, {
+    required bool? active,
+    required MemoryOverviewPages pages,
+    required bool append,
+  }) async {
+    if (append && !pages.memoriesHasMore) {
+      return const MemoryPagedResult(items: []);
+    }
+    return api.getMemoriesPaged(
+      active: active,
+      limit: kMemoryListLimit,
+      cursor: append ? pages.memoriesCursor : null,
+    );
+  }
+
+  Future<MemoryPagedResult<EntityMemoryItem>> _fetchEntitiesPage(
+    MemoryApi api, {
+    required bool? active,
+    required MemoryOverviewPages pages,
+    required bool append,
+  }) async {
+    if (append && !pages.entitiesHasMore) {
+      return const MemoryPagedResult(items: []);
+    }
+    return api.getEntitiesPaged(
+      active: active,
+      limit: kMemoryListLimit,
+      cursor: append ? pages.entitiesCursor : null,
+    );
+  }
+
+  Future<MemoryPagedResult<RuleMemoryItem>> _fetchRulesPage(
+    MemoryApi api, {
+    required bool? active,
+    required MemoryOverviewPages pages,
+    required bool append,
+  }) async {
+    if (append && !pages.rulesHasMore) {
+      return const MemoryPagedResult(items: []);
+    }
+    return api.getRulesPaged(
+      active: active,
+      limit: kMemoryListLimit,
+      cursor: append ? pages.rulesCursor : null,
+    );
+  }
+
+  Future<MemoryPagedResult<PlanMemoryItem>> _fetchPlansPage(
+    MemoryApi api, {
+    required bool? active,
+    required MemoryOverviewPages pages,
+    required bool append,
+  }) async {
+    if (append && !pages.plansHasMore) {
+      return const MemoryPagedResult(items: []);
+    }
+    return api.getPlansPaged(
+      active: active,
+      limit: kMemoryListLimit,
+      cursor: append ? pages.plansCursor : null,
+    );
+  }
+
+  Future<MemoryPagedResult<CommitmentMemoryItem>> _fetchCommitmentsPage(
+    MemoryApi api, {
+    required bool? active,
+    required MemoryOverviewPages pages,
+    required bool append,
+  }) async {
+    if (append && !pages.commitmentsHasMore) {
+      return const MemoryPagedResult(items: []);
+    }
+    return api.getCommitmentsPaged(
+      active: active,
+      limit: kMemoryListLimit,
+      cursor: append ? pages.commitmentsCursor : null,
+    );
+  }
+}
+
+class _PreviewTarget {
+  const _PreviewTarget({
+    required this.id,
+    required this.importance,
+  });
+
+  final String id;
+  final int importance;
+}
+
+class _SavedOverviewSnapshot {
+  const _SavedOverviewSnapshot({
+    required this.memories,
+    required this.people,
+    required this.placeEntities,
+    required this.otherEntities,
+    required this.rules,
+    required this.plans,
+    required this.commitments,
+    required this.entityEventPreviews,
+    required this.planMilestonePreviews,
+    required this.pages,
+  });
+
+  final List<MemoryItem> memories;
+  final List<PersonMemoryItem> people;
+  final List<EntityMemoryItem> placeEntities;
+  final List<EntityMemoryItem> otherEntities;
+  final List<RuleMemoryItem> rules;
+  final List<PlanMemoryItem> plans;
+  final List<CommitmentMemoryItem> commitments;
+  final Map<String, List<EntityEventItem>> entityEventPreviews;
+  final Map<String, List<PlanMilestoneMemoryItem>> planMilestonePreviews;
+  final MemoryOverviewPages pages;
 }

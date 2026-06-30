@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
@@ -13,31 +13,45 @@ from app.models.entity import (
     EntityType,
     EntityUpdateRequest,
 )
+from app.models.pagination import PagedResponse
+from app.routes.list_pagination import list_with_optional_pagination
 from app.services.entity_service import EntityService, EntityServiceError
 
 
 router = APIRouter(prefix="/entities", tags=["entities"])
 
 
-@router.get("", response_model=list[EntityResponse])
+@router.get("")
 async def list_entities(
     entity_type: Optional[EntityType] = Query(default=None),
     normalized_name: Optional[str] = Query(default=None),
     active: Optional[bool] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
+    paginated: bool = Query(default=False),
+    cursor: Optional[str] = Query(default=None),
     entity_service: EntityService = Depends(get_entity_service),
-) -> list[EntityResponse]:
+) -> Union[list[EntityResponse], PagedResponse[EntityResponse]]:
     try:
-        entities = await entity_service.list_entities(
-            entity_type=entity_type,
-            normalized_name=normalized_name,
-            active=active,
+        return await list_with_optional_pagination(
+            paginated=paginated,
+            cursor=cursor,
             limit=limit,
+            list_items=lambda **kwargs: entity_service.list_entities(
+                entity_type=entity_type,
+                normalized_name=normalized_name,
+                active=active,
+                **kwargs,
+            ),
+            list_paged=lambda **kwargs: entity_service.list_entities_paged(
+                entity_type=entity_type,
+                normalized_name=normalized_name,
+                active=active,
+                **kwargs,
+            ),
+            to_response=lambda row: EntityResponse(**row),
         )
     except EntityServiceError as error:
         raise _entity_http_error(error) from error
-
-    return [EntityResponse(**entity) for entity in entities]
 
 
 @router.post("", response_model=EntityResponse, status_code=201)

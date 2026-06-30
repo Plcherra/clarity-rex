@@ -137,7 +137,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     state = state.copyWith(isSaving: true, clearError: true);
 
     try {
-      final memory = await ref
+      await ref
           .read(memoryApiProvider)
           .updateMemory(
             memoryId,
@@ -146,12 +146,8 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
             importance: importance,
             active: active,
           );
-      final updatedMemories = state.memories
-          .map((item) => item.id == memoryId ? memory : item)
-          .where(_matchesCurrentFilters)
-          .toList(growable: false);
+      await loadSavedOverview(activeOnly: state.activeOnly);
       state = state.copyWith(
-        memories: updatedMemories,
         isSaving: false,
         clearError: true,
       );
@@ -217,6 +213,40 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
           .read(memoryApiProvider)
           .updatePerson(
             personId,
+            displayName: displayName,
+            relationship: relationship,
+            summary: summary,
+            aliases: aliases,
+            importance: importance,
+            status: status,
+            active: active,
+          );
+      await loadSavedOverview(activeOnly: state.activeOnly);
+      state = state.copyWith(isSaving: false, clearError: true);
+      return true;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.edit),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> updateEntity(
+    String entityId, {
+    String? displayName,
+    String? relationship,
+    String? summary,
+    List<String>? aliases,
+    int? importance,
+    String? status,
+    bool? active,
+  }) async {
+    state = state.copyWith(isSaving: true, clearError: true);
+    try {
+      await ref.read(memoryApiProvider).updateEntity(
+            entityId,
             displayName: displayName,
             relationship: relationship,
             summary: summary,
@@ -341,24 +371,32 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     }
   }
 
-  Future<bool> deactivateStructuredMemory(MemoryLayer layer, String id) async {
-    return archiveStructuredMemory(layer, id);
+  Future<bool> deactivateStructuredMemory(
+    StructuredMemoryKind kind,
+    String id,
+  ) async {
+    return archiveStructuredMemory(kind, id);
   }
 
-  Future<bool> archiveStructuredMemory(MemoryLayer layer, String id) async {
+  Future<bool> archiveStructuredMemory(
+    StructuredMemoryKind kind,
+    String id,
+  ) async {
     state = state.copyWith(isSaving: true, clearError: true);
     try {
       final api = ref.read(memoryApiProvider);
-      switch (layer) {
-        case MemoryLayer.people:
+      switch (kind) {
+        case StructuredMemoryKind.person:
           await api.archivePerson(id);
-        case MemoryLayer.rules:
+        case StructuredMemoryKind.entity:
+          await api.archiveEntity(id);
+        case StructuredMemoryKind.rule:
           await api.archiveRule(id);
-        case MemoryLayer.plans:
+        case StructuredMemoryKind.plan:
           await api.archivePlan(id);
-        case MemoryLayer.commitments:
+        case StructuredMemoryKind.commitment:
           await api.archiveCommitment(id);
-        case MemoryLayer.longTerm:
+        case StructuredMemoryKind.flatMemory:
           await api.archiveMemory(id);
       }
       await loadSavedOverview(activeOnly: state.activeOnly);
@@ -371,16 +409,5 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
       );
       return false;
     }
-  }
-
-  bool _matchesCurrentFilters(MemoryItem memory) {
-    if (state.activeOnly && !memory.active) {
-      return false;
-    }
-    if (state.selectedType != null && memory.memoryType != state.selectedType) {
-      return false;
-    }
-
-    return true;
   }
 }

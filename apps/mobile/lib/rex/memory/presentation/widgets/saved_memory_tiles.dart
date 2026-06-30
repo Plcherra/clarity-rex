@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
+import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
 import 'package:clarity/rex/memory/presentation/widgets/saved_memory_tile_shell.dart';
 
 class MemoryTile extends StatelessWidget {
@@ -19,11 +20,12 @@ class MemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return SavedMemoryTileShell(
       icon: _iconForGroup(memory.memoryGroup),
       active: memory.active,
       title: memory.content,
-      typeLabel: memory.memoryType.label,
+      typeLabel: memory.memoryType.localizedLabel(l10n),
       importance: memory.importance,
       updatedAt: memory.updatedAt,
       createdAt: memory.createdAt,
@@ -59,10 +61,12 @@ class PersonMemoryTile extends StatelessWidget {
     required this.person,
     required this.onEdit,
     required this.onDeactivate,
+    this.eventPreviews = const [],
     super.key,
   });
 
   final PersonMemoryItem person;
+  final List<EntityEventItem> eventPreviews;
   final VoidCallback onEdit;
   final VoidCallback? onDeactivate;
 
@@ -78,7 +82,10 @@ class PersonMemoryTile extends StatelessWidget {
       importance: person.importance,
       updatedAt: person.updatedAt,
       createdAt: person.createdAt,
-      supplementalLabels: personSupplementalLabels(l10n, person),
+      supplementalLabels: [
+        ...personSupplementalLabels(l10n, person),
+        ...entityEventPreviewLabels(l10n, eventPreviews),
+      ],
       onEdit: onEdit,
       onDeactivate: onDeactivate,
     );
@@ -99,6 +106,7 @@ class RuleMemoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final supplementalLabels = <String>[
       if (rule.triggerKeywords.isNotEmpty)
         rule.triggerKeywords.join(', '),
@@ -109,7 +117,7 @@ class RuleMemoryTile extends StatelessWidget {
       active: rule.active,
       title: rule.title,
       subtitle: ruleMemorySubtitle(rule),
-      typeLabel: rule.ruleType.memoryRecordLabel,
+      typeLabel: localizedMemoryRecordLabel(l10n, rule.ruleType),
       importance: rule.priority,
       updatedAt: rule.updatedAt,
       createdAt: rule.createdAt,
@@ -125,10 +133,12 @@ class PlanMemoryTile extends StatelessWidget {
     required this.plan,
     required this.onEdit,
     required this.onDeactivate,
+    this.milestonePreviews = const [],
     super.key,
   });
 
   final PlanMemoryItem plan;
+  final List<PlanMilestoneMemoryItem> milestonePreviews;
   final VoidCallback onEdit;
   final VoidCallback? onDeactivate;
 
@@ -138,6 +148,7 @@ class PlanMemoryTile extends StatelessWidget {
     final supplementalLabels = <String>[
       if (plan.targetDate != null)
         l10n.commonTargetDateValue(shortMemoryDate(plan.targetDate!)),
+      ...planMilestonePreviewLabels(l10n, milestonePreviews),
     ];
 
     return StructuredMemoryTile(
@@ -145,7 +156,7 @@ class PlanMemoryTile extends StatelessWidget {
       active: plan.active,
       title: plan.title,
       subtitle: planMemorySubtitle(plan),
-      typeLabel: plan.planType.memoryRecordLabel,
+      typeLabel: localizedMemoryRecordLabel(l10n, plan.planType),
       importance: plan.priority,
       updatedAt: plan.updatedAt,
       createdAt: plan.createdAt,
@@ -181,7 +192,7 @@ class CommitmentMemoryTile extends StatelessWidget {
       active: commitment.active,
       title: commitment.title,
       subtitle: commitmentMemorySubtitle(commitment),
-      typeLabel: commitment.commitmentType.memoryRecordLabel,
+      typeLabel: localizedMemoryRecordLabel(l10n, commitment.commitmentType),
       importance: commitment.priority,
       updatedAt: commitment.updatedAt,
       createdAt: commitment.createdAt,

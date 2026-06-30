@@ -2463,6 +2463,342 @@ abstract class AppLocalizations {
   /// **'Active information only'**
   String get memoryHeaderActiveOnly;
 
+  /// No description provided for @memoryOverviewTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the first 50 saved items in each category. Pull to refresh for the latest information.'**
+  String get memoryOverviewTruncated;
+
+  /// No description provided for @memoryGroupFacts.
+  ///
+  /// In en, this message translates to:
+  /// **'Facts'**
+  String get memoryGroupFacts;
+
+  /// No description provided for @memoryGroupPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get memoryGroupPreferences;
+
+  /// No description provided for @memoryGroupPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get memoryGroupPeople;
+
+  /// No description provided for @memoryGroupPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Places'**
+  String get memoryGroupPlaces;
+
+  /// No description provided for @memoryGroupGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get memoryGroupGoals;
+
+  /// No description provided for @memoryGroupRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules'**
+  String get memoryGroupRules;
+
+  /// No description provided for @memoryGroupEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get memoryGroupEvents;
+
+  /// No description provided for @memoryGroupOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get memoryGroupOther;
+
+  /// No description provided for @memoryTypeFact.
+  ///
+  /// In en, this message translates to:
+  /// **'Fact'**
+  String get memoryTypeFact;
+
+  /// No description provided for @memoryTypePreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Preference'**
+  String get memoryTypePreference;
+
+  /// No description provided for @memoryTypeEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get memoryTypeEvent;
+
+  /// No description provided for @memoryTypeOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other memory'**
+  String get memoryTypeOther;
+
+  /// No description provided for @memoryEntityTypePlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get memoryEntityTypePlace;
+
+  /// No description provided for @memoryEntityTypeOrganization.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get memoryEntityTypeOrganization;
+
+  /// No description provided for @memoryEditEditEntityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit saved item'**
+  String get memoryEditEditEntityTitle;
+
+  /// No description provided for @memoryPageEntityUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved item updated'**
+  String get memoryPageEntityUpdated;
+
+  /// No description provided for @memoryOverviewLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get memoryOverviewLoadMore;
+
+  /// No description provided for @memoryOverviewTruncatedMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the first 100 saved items in each category.'**
+  String get memoryOverviewTruncatedMax;
+
+  /// No description provided for @memoryRecordLongTermMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory note'**
+  String get memoryRecordLongTermMemory;
+
+  /// No description provided for @memoryRecordMemoryUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory update'**
+  String get memoryRecordMemoryUpdate;
+
+  /// No description provided for @memoryRecordEntity.
+  ///
+  /// In en, this message translates to:
+  /// **'Person / place'**
+  String get memoryRecordEntity;
+
+  /// No description provided for @memoryRecordEntityEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Related event'**
+  String get memoryRecordEntityEvent;
+
+  /// No description provided for @memoryRecordPersonalRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule'**
+  String get memoryRecordPersonalRule;
+
+  /// No description provided for @memoryRecordPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get memoryRecordPlan;
+
+  /// No description provided for @memoryRecordPlanMilestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone'**
+  String get memoryRecordPlanMilestone;
+
+  /// No description provided for @memoryRecordCommitment.
+  ///
+  /// In en, this message translates to:
+  /// **'Commitment'**
+  String get memoryRecordCommitment;
+
+  /// No description provided for @memoryRecordCorrection.
+  ///
+  /// In en, this message translates to:
+  /// **'Correction'**
+  String get memoryRecordCorrection;
+
+  /// No description provided for @memoryRecordArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get memoryRecordArchive;
+
+  /// No description provided for @memoryRecordMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get memoryRecordMerge;
+
+  /// No description provided for @memoryRecordGentleDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Gentle reminder'**
+  String get memoryRecordGentleDirect;
+
+  /// No description provided for @memoryRecordCheckpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkpoint'**
+  String get memoryRecordCheckpoint;
+
+  /// No description provided for @memoryRecordApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get memoryRecordApproved;
+
+  /// No description provided for @memoryRecordApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get memoryRecordApplied;
+
+  /// No description provided for @memoryRecordRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get memoryRecordRejected;
+
+  /// No description provided for @memoryRecordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get memoryRecordFailed;
+
+  /// No description provided for @memoryRecordSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get memoryRecordSkipped;
+
+  /// No description provided for @memoryRecordActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get memoryRecordActive;
+
+  /// No description provided for @memoryRecordInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get memoryRecordInactive;
+
+  /// No description provided for @memoryRecordOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get memoryRecordOpen;
+
+  /// No description provided for @memoryRecordCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get memoryRecordCompleted;
+
+  /// No description provided for @memoryRecordResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get memoryRecordResolved;
+
+  /// No description provided for @memoryRecordDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismissed'**
+  String get memoryRecordDismissed;
+
+  /// No description provided for @memoryRecordArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get memoryRecordArchived;
+
+  /// No description provided for @memoryRecordLowRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Low risk'**
+  String get memoryRecordLowRisk;
+
+  /// No description provided for @memoryRecordMediumRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium risk'**
+  String get memoryRecordMediumRisk;
+
+  /// No description provided for @memoryRecordHighRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'High risk'**
+  String get memoryRecordHighRisk;
+
+  /// No description provided for @memoryRecordCriticalRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical risk'**
+  String get memoryRecordCriticalRisk;
+
+  /// No description provided for @memoryRecordInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get memoryRecordInfo;
+
+  /// No description provided for @memoryRecordEventNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get memoryRecordEventNote;
+
+  /// No description provided for @memoryRecordEventInteraction.
+  ///
+  /// In en, this message translates to:
+  /// **'Interaction'**
+  String get memoryRecordEventInteraction;
+
+  /// No description provided for @memoryRecordEventRelationshipUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship update'**
+  String get memoryRecordEventRelationshipUpdate;
+
+  /// No description provided for @memoryRecordEventConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict'**
+  String get memoryRecordEventConflict;
+
+  /// No description provided for @memoryRecordEventMilestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone'**
+  String get memoryRecordEventMilestone;
+
+  /// No description provided for @memoryRecordProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get memoryRecordProject;
+
+  /// No description provided for @memoryRecordTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get memoryRecordTask;
+
   /// No description provided for @memoryHeaderLoading.
   ///
   /// In en, this message translates to:

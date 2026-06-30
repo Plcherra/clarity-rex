@@ -74,6 +74,28 @@ class CommitmentService:
         except MemoryServiceError as error:
             raise CommitmentServiceError(error.detail, error.status_code) from error
 
+    async def list_commitments_paged(
+        self,
+        *,
+        commitment_type: str | None = None,
+        milestone_id: str | None = None,
+        status: str | None = None,
+        active: bool | None = True,
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None, bool]:
+        try:
+            return await self.memory_service.list_commitments_paged(
+                commitment_type=commitment_type,
+                milestone_id=milestone_id,
+                status=status,
+                active=active,
+                limit=limit,
+                cursor=cursor,
+            )
+        except MemoryServiceError as error:
+            raise CommitmentServiceError(error.detail, error.status_code) from error
+
     async def update_commitment(
         self, commitment_id: str, request: CommitmentUpdateRequest
     ) -> dict[str, Any]:

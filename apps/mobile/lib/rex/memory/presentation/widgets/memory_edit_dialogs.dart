@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
+import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
 
 class StructuredEditDialog extends StatefulWidget {
   const StructuredEditDialog({
@@ -218,7 +219,7 @@ class _MemoryEditDialogState extends State<MemoryEditDialog> {
                     (type) => DropdownMenuItem(
                       value: type,
                       enabled: type != MemoryType.other,
-                      child: Text(type.label),
+                      child: Text(type.localizedLabel(l10n)),
                     ),
                   )
                   .toList(growable: false),

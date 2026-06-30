@@ -1,8 +1,11 @@
+import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
+import 'package:clarity/rex/memory/data/memory_constants.dart';
 import 'package:clarity/rex/memory/data/memory_api.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
+import 'package:clarity/rex/memory/data/memory_paged_result.dart';
 import 'package:clarity/rex/presentation/assistant_screen.dart';
 import 'package:clarity/rex/presentation/assistant_tab.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
@@ -11,10 +14,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/l10n_test_wrapper.dart';
+
 void main() {
   testWidgets('Assistant navigation renders the four tabs in contract order', (
     tester,
   ) async {
+    final l10n = lookupAppLocalizations(const Locale('en'));
     await _pumpAssistantNavigation(tester);
 
     final tabs = tester.widgetList<Tab>(find.byType(Tab)).toList();
@@ -24,7 +30,7 @@ void main() {
       AssistantTab.values.map((tab) => tab.key),
     );
     for (final tab in AssistantTab.values) {
-      expect(find.text(tab.label), findsOneWidget);
+      expect(find.text(tab.label(l10n)), findsOneWidget);
       final tabSemantics = tester.widgetList<Semantics>(
         find.descendant(
           of: find.byKey(tab.key),
@@ -33,7 +39,7 @@ void main() {
       );
       expect(
         tabSemantics.any(
-          (semantics) => semantics.properties.label == tab.semanticLabel,
+          (semantics) => semantics.properties.label == tab.semanticLabel(l10n),
         ),
         isTrue,
       );
@@ -178,7 +184,7 @@ Future<void> _pumpAssistantNavigation(
         if (voiceController != null)
           voiceCallProvider.overrideWith(() => voiceController),
       ],
-      child: MaterialApp(home: AssistantScreen(key: rootKey)),
+      child: wrapWithL10n(AssistantScreen(key: rootKey)),
     ),
   );
   await tester.pump();
@@ -214,7 +220,25 @@ class _FakeMemoryApi extends MemoryApi {
   Future<List<MemoryItem>> getMemories({
     MemoryType? memoryType,
     bool? active,
-    int limit = 50,
+    int limit = kMemoryListLimit,
+  }) async {
+    return const [];
+  }
+
+  @override
+  Future<List<EntityMemoryItem>> getEntities({
+    String? entityType,
+    bool? active,
+    int limit = kMemoryListLimit,
+  }) async {
+    return const [];
+  }
+
+  @override
+  Future<List<EntityEventItem>> getEntityEvents(
+    String entityId, {
+    bool? active,
+    int limit = kEntityEventPreviewLimit,
   }) async {
     return const [];
   }
@@ -222,25 +246,87 @@ class _FakeMemoryApi extends MemoryApi {
   @override
   Future<List<PersonMemoryItem>> getPeople({
     bool? active,
-    int limit = 50,
+    int limit = kMemoryListLimit,
   }) async {
     return const [];
   }
 
   @override
-  Future<List<RuleMemoryItem>> getRules({bool? active, int limit = 50}) async {
+  Future<List<RuleMemoryItem>> getRules({
+    bool? active,
+    int limit = kMemoryListLimit,
+  }) async {
     return const [];
   }
 
   @override
-  Future<List<PlanMemoryItem>> getPlans({bool? active, int limit = 50}) async {
+  Future<List<PlanMemoryItem>> getPlans({
+    bool? active,
+    int limit = kMemoryListLimit,
+  }) async {
     return const [];
   }
 
   @override
   Future<List<CommitmentMemoryItem>> getCommitments({
     bool? active,
-    int limit = 50,
+    int limit = kMemoryListLimit,
+  }) async {
+    return const [];
+  }
+
+  @override
+  Future<MemoryPagedResult<MemoryItem>> getMemoriesPaged({
+    MemoryType? memoryType,
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    return const MemoryPagedResult(items: []);
+  }
+
+  @override
+  Future<MemoryPagedResult<EntityMemoryItem>> getEntitiesPaged({
+    String? entityType,
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    return const MemoryPagedResult(items: []);
+  }
+
+  @override
+  Future<MemoryPagedResult<RuleMemoryItem>> getRulesPaged({
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    return const MemoryPagedResult(items: []);
+  }
+
+  @override
+  Future<MemoryPagedResult<PlanMemoryItem>> getPlansPaged({
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    return const MemoryPagedResult(items: []);
+  }
+
+  @override
+  Future<MemoryPagedResult<CommitmentMemoryItem>> getCommitmentsPaged({
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    return const MemoryPagedResult(items: []);
+  }
+
+  @override
+  Future<List<PlanMilestoneMemoryItem>> getPlanMilestones(
+    String planId, {
+    bool? active,
+    int limit = kPlanMilestonePreviewLimit,
   }) async {
     return const [];
   }

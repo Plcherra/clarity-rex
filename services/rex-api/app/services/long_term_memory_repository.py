@@ -1,6 +1,7 @@
 import re
 from typing import Optional
 
+from app.models.pagination import decode_offset_cursor, paginate_rows
 from app.services.memory_categories import (
     VALID_MEMORY_CATEGORIES,
     normalize_memory_category,
@@ -70,22 +71,39 @@ class LongTermMemoryRepository:
         memory_type: Optional[str] = None,
         active: Optional[bool] = None,
     ) -> list[dict]:
+        items, _, _ = await self.list_long_term_memory_paged(
+            limit=limit,
+            memory_type=memory_type,
+            active=active,
+        )
+        return items
+
+    async def list_long_term_memory_paged(
+        self,
+        limit: int = 50,
+        memory_type: Optional[str] = None,
+        active: Optional[bool] = None,
+        cursor: Optional[str] = None,
+    ) -> tuple[list[dict], Optional[str], bool]:
         self.validate_memory_type(memory_type)
+        offset = decode_offset_cursor(cursor)
         query = {
             "select": LONG_TERM_MEMORY_SELECT,
             "order": "importance.desc,last_accessed_at.desc,created_at.desc",
-            "limit": str(limit),
+            "limit": str(limit + 1),
+            "offset": str(offset),
         }
         if memory_type is not None:
             query["memory_type"] = f"eq.{memory_type}"
         if active is not None:
             query["active"] = f"eq.{str(active).lower()}"
 
-        return await self.store._request(
+        rows = await self.store._request(
             "GET",
             self.store.settings.supabase_long_term_memory_table,
             query=query,
         )
+        return paginate_rows(rows, limit=limit, offset=offset)
 
     async def update_long_term_memory(
         self,

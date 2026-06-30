@@ -1,4 +1,6 @@
 import 'package:clarity/features/profile/application/locale_controller.dart';
+import 'package:clarity/rex/memory/data/memory_constants.dart';
+import 'package:clarity/rex/memory/data/memory_paged_result.dart';
 import 'package:clarity/rex/memory/data/memory_api.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/pages/memory_page.dart';
@@ -64,19 +66,22 @@ Future<void> openMemoryActionsForText(WidgetTester tester, String text) async {
 }
 
 class MemoryPageFakeMemoryApi extends MemoryApi {
-  MemoryPageFakeMemoryApi({this.loadError, this.archiveError});
+  MemoryPageFakeMemoryApi({this.loadError, this.archiveError, this.truncateLists = false});
 
   final Object? loadError;
   final Object? archiveError;
+  final bool truncateLists;
   final archivedMemoryIds = <String>[];
   String? updatedMemoryId;
   String? updatedContent;
   MemoryType? updatedMemoryType;
   final memoryActiveFilters = <bool?>[];
+  final entityActiveFilters = <bool?>[];
   final peopleActiveFilters = <bool?>[];
   final ruleActiveFilters = <bool?>[];
   final planActiveFilters = <bool?>[];
   final commitmentActiveFilters = <bool?>[];
+  final memoryListLimits = <int>[];
   String? createMemoryContent;
   String? createPersonNameValue;
 
@@ -129,12 +134,16 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
   Future<List<MemoryItem>> getMemories({
     MemoryType? memoryType,
     bool? active,
-    int limit = 50,
+    int limit = kMemoryListLimit,
   }) async {
     if (loadError != null) {
       throw loadError!;
     }
     memoryActiveFilters.add(active);
+    memoryListLimits.add(limit);
+    if (truncateLists) {
+      return _manyMemories(startIndex: 0, count: limit);
+    }
     final memories = [
       MemoryItem(
         id: 'memory-0',
@@ -196,15 +205,32 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
     return _filterMemories(memories, memoryType: memoryType, active: active);
   }
 
+  List<MemoryItem> _manyMemories({required int startIndex, required int count}) {
+    return List<MemoryItem>.generate(count, (index) {
+      final absoluteIndex = startIndex + index;
+      return MemoryItem(
+        id: 'memory-bulk-$absoluteIndex',
+        memoryType: MemoryType.fact,
+        content: 'Bulk memory item $absoluteIndex.',
+        importance: 2,
+        active: true,
+        createdAt: DateTime.utc(2026, 5, 31, 12),
+        updatedAt: DateTime.utc(2026, 5, 31, 12),
+      );
+    }, growable: false);
+  }
+
   @override
-  Future<List<PersonMemoryItem>> getPeople({
+  Future<List<EntityMemoryItem>> getEntities({
+    String? entityType,
     bool? active,
-    int limit = 50,
+    int limit = kMemoryListLimit,
   }) async {
-    peopleActiveFilters.add(active);
-    final people = [
-      PersonMemoryItem(
+    entityActiveFilters.add(active);
+    final entities = [
+      EntityMemoryItem(
         id: 'person-1',
+        entityType: 'person',
         displayName: 'Pedro Martins',
         relationship: 'self',
         summary:
@@ -227,8 +253,9 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
         createdAt: DateTime.utc(2026, 5, 30),
         updatedAt: DateTime.utc(2026, 5, 31, 12),
       ),
-      PersonMemoryItem(
+      EntityMemoryItem(
         id: 'person-inactive',
+        entityType: 'person',
         displayName: 'Inactive Person',
         relationship: 'former context',
         summary: 'Archived person record.',
@@ -240,12 +267,169 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
         createdAt: DateTime.utc(2026, 5, 30),
         updatedAt: DateTime.utc(2026, 5, 31, 12),
       ),
+      EntityMemoryItem(
+        id: 'place-1',
+        entityType: 'place',
+        displayName: 'Somerville',
+        relationship: null,
+        summary: 'Home city.',
+        aliases: const [],
+        importance: 4,
+        status: 'active',
+        active: true,
+        metadata: const {
+          'attributes': {'location': 'Somerville'},
+        },
+        createdAt: DateTime.utc(2026, 5, 30),
+        updatedAt: DateTime.utc(2026, 5, 31, 12),
+      ),
     ];
-    return _filterActive(people, active, (person) => person.active);
+    return entities
+        .where((entity) {
+          if (entityType != null && entity.entityType != entityType) {
+            return false;
+          }
+          if (active != null && entity.active != active) {
+            return false;
+          }
+          return true;
+        })
+        .toList(growable: false);
   }
 
   @override
-  Future<List<RuleMemoryItem>> getRules({bool? active, int limit = 50}) async {
+  Future<List<PersonMemoryItem>> getPeople({
+    bool? active,
+    int limit = kMemoryListLimit,
+  }) async {
+    peopleActiveFilters.add(active);
+    final entities = await getEntities(entityType: 'person', active: active);
+    return entities.map(PersonMemoryItem.fromEntity).toList(growable: false);
+  }
+
+  @override
+  Future<List<EntityEventItem>> getEntityEvents(
+    String entityId, {
+    bool? active,
+    int limit = kEntityEventPreviewLimit,
+  }) async {
+    if (entityId == 'place-1') {
+      return [
+        EntityEventItem(
+          id: 'event-1',
+          entityId: entityId,
+          eventType: 'note',
+          title: 'Moved to Somerville',
+          content: 'Moved to Somerville in 2024.',
+          importance: 3,
+          active: true,
+        ),
+      ];
+    }
+    return const [];
+  }
+
+  @override
+  Future<MemoryPagedResult<MemoryItem>> getMemoriesPaged({
+    MemoryType? memoryType,
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    memoryListLimits.add(limit);
+    if (truncateLists) {
+      if (cursor != null) {
+        return MemoryPagedResult(
+          items: _manyMemories(
+            startIndex: kMemoryListLimit,
+            count: kMemoryLoadMoreStep,
+          ),
+        );
+      }
+      return MemoryPagedResult(
+        items: _manyMemories(startIndex: 0, count: kMemoryListLimit),
+        hasMore: true,
+        nextCursor: 'offset-50',
+      );
+    }
+    final items = await getMemories(
+      memoryType: memoryType,
+      active: active,
+      limit: limit,
+    );
+    return MemoryPagedResult(items: items);
+  }
+
+  @override
+  Future<MemoryPagedResult<EntityMemoryItem>> getEntitiesPaged({
+    String? entityType,
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    final items = await getEntities(
+      entityType: entityType,
+      active: active,
+      limit: limit,
+    );
+    return MemoryPagedResult(items: items);
+  }
+
+  @override
+  Future<MemoryPagedResult<RuleMemoryItem>> getRulesPaged({
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    final items = await getRules(active: active, limit: limit);
+    return MemoryPagedResult(items: items);
+  }
+
+  @override
+  Future<MemoryPagedResult<PlanMemoryItem>> getPlansPaged({
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    final items = await getPlans(active: active, limit: limit);
+    return MemoryPagedResult(items: items);
+  }
+
+  @override
+  Future<MemoryPagedResult<CommitmentMemoryItem>> getCommitmentsPaged({
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    final items = await getCommitments(active: active, limit: limit);
+    return MemoryPagedResult(items: items);
+  }
+
+  @override
+  Future<List<PlanMilestoneMemoryItem>> getPlanMilestones(
+    String planId, {
+    bool? active,
+    int limit = kPlanMilestonePreviewLimit,
+  }) async {
+    if (planId == 'plan-1') {
+      return [
+        PlanMilestoneMemoryItem(
+          id: 'milestone-1',
+          planId: planId,
+          title: 'Submit compliance docs',
+          description: 'Gather policy and security material.',
+          milestoneType: 'checkpoint',
+          priority: 4,
+          status: 'open',
+          active: true,
+        ),
+      ];
+    }
+    return const [];
+  }
+
+  @override
+  Future<List<RuleMemoryItem>> getRules({bool? active, int limit = kMemoryListLimit}) async {
     ruleActiveFilters.add(active);
     final rules = [
       RuleMemoryItem(
@@ -265,7 +449,7 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
   }
 
   @override
-  Future<List<PlanMemoryItem>> getPlans({bool? active, int limit = 50}) async {
+  Future<List<PlanMemoryItem>> getPlans({bool? active, int limit = kMemoryListLimit}) async {
     planActiveFilters.add(active);
     final plans = [
       PlanMemoryItem(
@@ -289,7 +473,7 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
   @override
   Future<List<CommitmentMemoryItem>> getCommitments({
     bool? active,
-    int limit = 50,
+    int limit = kMemoryListLimit,
   }) async {
     commitmentActiveFilters.add(active);
     return const [];

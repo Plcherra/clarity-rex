@@ -27,6 +27,23 @@ class PlanRepository:
             limit=limit,
         )
 
+    async def list_plans_paged(
+        self,
+        *,
+        plan_type: str | None = None,
+        status: str | None = None,
+        active: bool | None = True,
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None, bool]:
+        return await self.memory_service.list_plans_paged(
+            plan_type=plan_type,
+            status=status,
+            active=active,
+            limit=limit,
+            cursor=cursor,
+        )
+
     async def update_plan(
         self,
         plan_id: str,

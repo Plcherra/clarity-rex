@@ -28,10 +28,12 @@ class SupabaseMemoryTransport:
         filters: Optional[dict[str, object]] = None,
         order: Optional[str] = None,
         limit: int = 50,
+        offset: int = 0,
     ) -> list[dict]:
         query = {
             "select": select,
             "limit": str(limit),
+            "offset": str(max(offset, 0)),
         }
         if order is not None:
             query["order"] = order

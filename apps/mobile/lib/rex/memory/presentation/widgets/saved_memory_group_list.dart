@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
+import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
+import 'package:clarity/rex/memory/presentation/widgets/entity_memory_tile.dart';
 import 'package:clarity/rex/memory/presentation/widgets/saved_memory_results.dart';
 import 'package:clarity/rex/memory/presentation/widgets/saved_memory_tiles.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
@@ -9,9 +12,12 @@ import 'package:clarity/theme/clarity_colors.dart';
 class SavedMemoryGroupList extends StatelessWidget {
   const SavedMemoryGroupList({
     required this.saved,
+    required this.eventPreviewsFor,
+    required this.milestonePreviewsFor,
     required this.onEditMemory,
     required this.onArchiveMemory,
     required this.onEditPerson,
+    required this.onEditEntity,
     required this.onEditRule,
     required this.onEditPlan,
     required this.onEditCommitment,
@@ -20,24 +26,31 @@ class SavedMemoryGroupList extends StatelessWidget {
   });
 
   final SavedMemoryResults saved;
+  final List<EntityEventItem> Function(String entityId) eventPreviewsFor;
+  final List<PlanMilestoneMemoryItem> Function(String planId)
+      milestonePreviewsFor;
   final ValueChanged<MemoryItem> onEditMemory;
   final ValueChanged<MemoryItem> onArchiveMemory;
   final ValueChanged<PersonMemoryItem> onEditPerson;
+  final ValueChanged<EntityMemoryItem> onEditEntity;
   final ValueChanged<RuleMemoryItem> onEditRule;
   final ValueChanged<PlanMemoryItem> onEditPlan;
   final ValueChanged<CommitmentMemoryItem> onEditCommitment;
-  final void Function(MemoryLayer layer, String id, String label)
+  final void Function(StructuredMemoryKind kind, String id, String label)
   onArchiveStructuredMemory;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final children = <Widget>[];
 
     void addGroup(MemoryGroup group, List<Widget> tiles) {
       if (tiles.isEmpty) {
         return;
       }
-      children.add(_MemoryGroupHeader(group: group));
+      children.add(_MemoryGroupHeader(
+        label: group.localizedLabel(l10n),
+      ));
       for (final tile in tiles) {
         children.add(tile);
       }
@@ -47,12 +60,13 @@ class SavedMemoryGroupList extends StatelessWidget {
       ...saved.people.map(
         (person) => PersonMemoryTile(
           person: person,
+          eventPreviews: eventPreviewsFor(person.id),
           onEdit: () => onEditPerson(person),
           onDeactivate: person.active
               ? () => onArchiveStructuredMemory(
-                  MemoryLayer.people,
+                  StructuredMemoryKind.person,
                   person.id,
-                  'person',
+                  l10n.commonPerson,
                 )
               : null,
         ),
@@ -67,18 +81,32 @@ class SavedMemoryGroupList extends StatelessWidget {
       MemoryGroup.preferences,
       saved.preferences.map(_memoryTile).toList(growable: false),
     );
-    addGroup(
-      MemoryGroup.places,
-      saved.places.map(_memoryTile).toList(growable: false),
-    );
+    addGroup(MemoryGroup.places, [
+      ...saved.placeEntities.map(
+        (entity) => EntityMemoryTile(
+          entity: entity,
+          eventPreviews: eventPreviewsFor(entity.id),
+          onEdit: () => onEditEntity(entity),
+          onDeactivate: entity.active
+              ? () => onArchiveStructuredMemory(
+                  StructuredMemoryKind.entity,
+                  entity.id,
+                  entityTypeLabel(l10n, entity.entityType),
+                )
+              : null,
+        ),
+      ),
+      ...saved.places.map(_memoryTile),
+    ]);
     addGroup(MemoryGroup.goals, [
       ...saved.plans.map(
         (plan) => PlanMemoryTile(
           plan: plan,
+          milestonePreviews: milestonePreviewsFor(plan.id),
           onEdit: () => onEditPlan(plan),
           onDeactivate: plan.active
               ? () => onArchiveStructuredMemory(
-                  MemoryLayer.plans,
+                  StructuredMemoryKind.plan,
                   plan.id,
                   'plan',
                 )
@@ -91,7 +119,7 @@ class SavedMemoryGroupList extends StatelessWidget {
           onEdit: () => onEditCommitment(commitment),
           onDeactivate: commitment.active
               ? () => onArchiveStructuredMemory(
-                  MemoryLayer.commitments,
+                  StructuredMemoryKind.commitment,
                   commitment.id,
                   'commitment',
                 )
@@ -109,7 +137,7 @@ class SavedMemoryGroupList extends StatelessWidget {
               onEdit: () => onEditRule(rule),
               onDeactivate: rule.active
                   ? () => onArchiveStructuredMemory(
-                      MemoryLayer.rules,
+                      StructuredMemoryKind.rule,
                       rule.id,
                       'rule',
                     )
@@ -122,10 +150,23 @@ class SavedMemoryGroupList extends StatelessWidget {
       MemoryGroup.events,
       saved.events.map(_memoryTile).toList(growable: false),
     );
-    addGroup(
-      MemoryGroup.other,
-      saved.other.map(_memoryTile).toList(growable: false),
-    );
+    addGroup(MemoryGroup.other, [
+      ...saved.otherEntities.map(
+        (entity) => EntityMemoryTile(
+          entity: entity,
+          eventPreviews: eventPreviewsFor(entity.id),
+          onEdit: () => onEditEntity(entity),
+          onDeactivate: entity.active
+              ? () => onArchiveStructuredMemory(
+                  StructuredMemoryKind.entity,
+                  entity.id,
+                  entityTypeLabel(l10n, entity.entityType),
+                )
+              : null,
+        ),
+      ),
+      ...saved.otherMemories.map(_memoryTile),
+    ]);
 
     return SliverList.list(children: children);
   }
@@ -140,9 +181,9 @@ class SavedMemoryGroupList extends StatelessWidget {
 }
 
 class _MemoryGroupHeader extends StatelessWidget {
-  const _MemoryGroupHeader({required this.group});
+  const _MemoryGroupHeader({required this.label});
 
-  final MemoryGroup group;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +197,7 @@ class _MemoryGroupHeader extends StatelessWidget {
         RexUiTokens.space8,
       ),
       child: Text(
-        group.label,
+        label,
         style: theme.textTheme.labelLarge?.copyWith(
           color: colors.textSecondary,
           fontWeight: FontWeight.w600,

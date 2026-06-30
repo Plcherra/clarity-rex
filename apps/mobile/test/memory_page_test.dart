@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:clarity/l10n/app_localizations.dart';
+import 'package:clarity/rex/memory/data/memory_constants.dart';
+import 'package:clarity/rex/memory/data/memory_paged_result.dart';
+
 import 'memory_page_test_helpers.dart';
 
 void main() {
@@ -66,6 +70,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('MFA was enabled successfully.'), findsOneWidget);
+    expect(find.text('Somerville'), findsWidgets);
     expect(find.text('Other'), findsNothing);
   });
 
@@ -107,7 +112,7 @@ void main() {
       await pumpMemoryPage(tester, api);
 
       expect(api.memoryActiveFilters.last, isTrue);
-      expect(api.peopleActiveFilters.last, isTrue);
+      expect(api.entityActiveFilters.last, isTrue);
       expect(find.text('Inactive flat fallback memory.'), findsNothing);
       expect(listTileText('Inactive Person'), findsNothing);
 
@@ -115,7 +120,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(api.memoryActiveFilters.last, isNull);
-      expect(api.peopleActiveFilters.last, isNull);
+      expect(api.entityActiveFilters.last, isNull);
 
       await tester.drag(find.byType(Scrollable).first, const Offset(0, -250));
       await tester.pumpAndSettle();
@@ -132,4 +137,56 @@ void main() {
       expect(find.text('Inactive flat fallback memory.'), findsOneWidget);
     },
   );
+
+  testWidgets('MemoryPage shows truncation banner when a list hits the limit', (
+    tester,
+  ) async {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    final api = MemoryPageFakeMemoryApi(truncateLists: true);
+
+    await pumpMemoryPage(tester, api);
+
+    expect(find.text(l10n.memoryOverviewTruncated), findsOneWidget);
+    expect(find.text(l10n.memoryOverviewLoadMore), findsOneWidget);
+
+    await tester.tap(find.text(l10n.memoryOverviewLoadMore));
+    await tester.pumpAndSettle();
+
+    expect(api.memoryListLimits, [50, 50]);
+    expect(find.text(l10n.memoryOverviewLoadMore), findsNothing);
+  });
+
+  testWidgets('MemoryPage shows plan milestone previews on plan cards', (
+    tester,
+  ) async {
+    final api = MemoryPageFakeMemoryApi();
+
+    await pumpMemoryPage(tester, api);
+
+    await tester.scrollUntilVisible(
+      find.textContaining('Submit compliance docs'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Submit compliance docs'), findsOneWidget);
+  });
+
+  testWidgets('MemoryPage shows entity event previews on place cards', (
+    tester,
+  ) async {
+    final api = MemoryPageFakeMemoryApi();
+
+    await pumpMemoryPage(tester, api);
+
+    await tester.scrollUntilVisible(
+      find.textContaining('Moved to Somerville'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Moved to Somerville'), findsOneWidget);
+  });
 }

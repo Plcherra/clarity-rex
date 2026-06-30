@@ -1,17 +1,20 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'package:clarity/rex/memory/data/memory_json_parsing.dart';
 import 'package:clarity/rex/memory/data/memory_labels.dart';
 
+export 'package:clarity/rex/memory/data/entity_event_model.dart';
+export 'package:clarity/rex/memory/data/entity_memory_model.dart';
 export 'package:clarity/rex/memory/data/memory_labels.dart';
 export 'package:clarity/rex/memory/data/person_memory_model.dart';
+export 'package:clarity/rex/memory/data/plan_milestone_model.dart';
 export 'package:clarity/rex/memory/data/rule_memory_model.dart';
+export 'package:clarity/rex/memory/data/structured_memory_kind.dart';
 
 part 'memory_models.freezed.dart';
 part 'memory_models.g.dart';
 
 enum MemoryType { fact, preference, event, other }
-
-enum MemoryLayer { longTerm, people, rules, plans, commitments }
 
 @freezed
 abstract class MemoryItem with _$MemoryItem {
@@ -35,6 +38,8 @@ abstract class MemoryItem with _$MemoryItem {
 }
 
 extension MemoryTypeLabel on MemoryType {
+  /// English fallback for tests and search indexing.
+  /// UI should use `MemoryTypeL10n.localizedLabel`.
   String get label {
     switch (this) {
       case MemoryType.fact:
@@ -114,23 +119,6 @@ MemoryGroup? _memoryCategoryFromMetadata(Map<String, dynamic> metadata) {
   }
 }
 
-extension MemoryLayerLabel on MemoryLayer {
-  String get label {
-    switch (this) {
-      case MemoryLayer.longTerm:
-        return 'Notes';
-      case MemoryLayer.people:
-        return 'People';
-      case MemoryLayer.rules:
-        return 'Rules';
-      case MemoryLayer.plans:
-        return 'Plans';
-      case MemoryLayer.commitments:
-        return 'Commitments';
-    }
-  }
-}
-
 class PlanMemoryItem {
   const PlanMemoryItem({
     required this.id,
@@ -149,18 +137,18 @@ class PlanMemoryItem {
 
   factory PlanMemoryItem.fromJson(Map<String, dynamic> json) {
     return PlanMemoryItem(
-      id: _string(json['id']) ?? '',
-      planType: _string(json['plan_type']) ?? 'other',
-      title: _string(json['title']) ?? 'Plan',
-      description: _string(json['description']),
-      desiredOutcome: _string(json['desired_outcome']),
-      priority: _int(json['priority']) ?? 3,
-      status: _string(json['status']) ?? 'active',
-      active: _bool(json['active']) ?? true,
-      targetDate: _dateTime(json['target_date']),
-      primaryEntityId: _string(json['primary_entity_id']),
-      createdAt: _dateTime(json['created_at']),
-      updatedAt: _dateTime(json['updated_at']),
+      id: memoryJsonString(json['id']) ?? '',
+      planType: memoryJsonString(json['plan_type']) ?? 'other',
+      title: memoryJsonString(json['title']) ?? 'Plan',
+      description: memoryJsonString(json['description']),
+      desiredOutcome: memoryJsonString(json['desired_outcome']),
+      priority: memoryJsonInt(json['priority']) ?? 3,
+      status: memoryJsonString(json['status']) ?? 'active',
+      active: memoryJsonBool(json['active']) ?? true,
+      targetDate: memoryJsonDateTime(json['target_date']),
+      primaryEntityId: memoryJsonString(json['primary_entity_id']),
+      createdAt: memoryJsonDateTime(json['created_at']),
+      updatedAt: memoryJsonDateTime(json['updated_at']),
     );
   }
 
@@ -196,18 +184,18 @@ class CommitmentMemoryItem {
 
   factory CommitmentMemoryItem.fromJson(Map<String, dynamic> json) {
     return CommitmentMemoryItem(
-      id: _string(json['id']) ?? '',
-      commitmentType: _string(json['commitment_type']) ?? 'other',
-      title: _string(json['title']) ?? 'Commitment',
-      commitmentText: _string(json['commitment_text']) ?? '',
-      priority: _int(json['priority']) ?? 3,
-      status: _string(json['status']) ?? 'open',
-      active: _bool(json['active']) ?? true,
-      dueAt: _dateTime(json['due_at']),
-      planId: _string(json['plan_id']),
-      entityId: _string(json['entity_id']),
-      createdAt: _dateTime(json['created_at']),
-      updatedAt: _dateTime(json['updated_at']),
+      id: memoryJsonString(json['id']) ?? '',
+      commitmentType: memoryJsonString(json['commitment_type']) ?? 'other',
+      title: memoryJsonString(json['title']) ?? 'Commitment',
+      commitmentText: memoryJsonString(json['commitment_text']) ?? '',
+      priority: memoryJsonInt(json['priority']) ?? 3,
+      status: memoryJsonString(json['status']) ?? 'open',
+      active: memoryJsonBool(json['active']) ?? true,
+      dueAt: memoryJsonDateTime(json['due_at']),
+      planId: memoryJsonString(json['plan_id']),
+      entityId: memoryJsonString(json['entity_id']),
+      createdAt: memoryJsonDateTime(json['created_at']),
+      updatedAt: memoryJsonDateTime(json['updated_at']),
     );
   }
 
@@ -223,25 +211,4 @@ class CommitmentMemoryItem {
   final String? entityId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-}
-
-String? _string(Object? value) => value is String ? value : null;
-
-int? _int(Object? value) {
-  if (value is int) {
-    return value;
-  }
-  if (value is num) {
-    return value.toInt();
-  }
-  return null;
-}
-
-bool? _bool(Object? value) => value is bool ? value : null;
-
-DateTime? _dateTime(Object? value) {
-  if (value is! String || value.isEmpty) {
-    return null;
-  }
-  return DateTime.tryParse(value);
 }

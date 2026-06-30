@@ -4,9 +4,26 @@ mixin _SavedMemoryApi on _MemoryApiTransport {
   Future<List<MemoryItem>> getMemories({
     MemoryType? memoryType,
     bool? active,
-    int limit = 50,
+    int limit = kMemoryListLimit,
   }) async {
-    final query = <String, String>{'limit': limit.toString()};
+    final page = await getMemoriesPaged(
+      memoryType: memoryType,
+      active: active,
+      limit: limit,
+    );
+    return page.items;
+  }
+
+  Future<MemoryPagedResult<MemoryItem>> getMemoriesPaged({
+    MemoryType? memoryType,
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    final query = <String, String>{
+      'limit': limit.toString(),
+      if (cursor != null) 'cursor': cursor,
+    };
     if (memoryType != null) {
       query['memory_type'] = memoryType.apiValue;
     }
@@ -14,17 +31,8 @@ mixin _SavedMemoryApi on _MemoryApiTransport {
       query['active'] = active.toString();
     }
 
-    final response = await _apiClient.get('/memory', query: query);
-    final data = _decodeResponse(response);
-
-    if (data is! List) {
-      throw const MemoryApiException('Backend returned an invalid response.');
-    }
-
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(MemoryItem.fromJson)
-        .toList(growable: false);
+    final data = await _getPagedMap('/memory', query);
+    return MemoryPagedResult.fromJson(data, MemoryItem.fromJson);
   }
 
   Future<MemoryItem> createMemory({

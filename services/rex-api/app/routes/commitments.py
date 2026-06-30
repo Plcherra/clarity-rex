@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import APIRouter, Depends, Query, Response
 
@@ -10,33 +10,48 @@ from app.models.commitment import (
     CommitmentType,
     CommitmentUpdateRequest,
 )
+from app.models.pagination import PagedResponse
+from app.routes.list_pagination import list_with_optional_pagination
 from app.services.commitment_service import CommitmentService, CommitmentServiceError
 
 
 router = APIRouter(prefix="/commitments", tags=["commitments"])
 
 
-@router.get("", response_model=list[CommitmentResponse])
+@router.get("")
 async def list_commitments(
     commitment_type: Optional[CommitmentType] = Query(default=None),
     milestone_id: Optional[str] = Query(default=None),
     status: Optional[CommitmentStatus] = Query(default=None),
     active: Optional[bool] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
+    paginated: bool = Query(default=False),
+    cursor: Optional[str] = Query(default=None),
     commitment_service: CommitmentService = Depends(get_commitment_service),
-) -> list[CommitmentResponse]:
+) -> Union[list[CommitmentResponse], PagedResponse[CommitmentResponse]]:
     try:
-        commitments = await commitment_service.list_commitments(
-            commitment_type=commitment_type,
-            milestone_id=milestone_id,
-            status=status,
-            active=active,
+        return await list_with_optional_pagination(
+            paginated=paginated,
+            cursor=cursor,
             limit=limit,
+            list_items=lambda **kwargs: commitment_service.list_commitments(
+                commitment_type=commitment_type,
+                milestone_id=milestone_id,
+                status=status,
+                active=active,
+                **kwargs,
+            ),
+            list_paged=lambda **kwargs: commitment_service.list_commitments_paged(
+                commitment_type=commitment_type,
+                milestone_id=milestone_id,
+                status=status,
+                active=active,
+                **kwargs,
+            ),
+            to_response=lambda row: CommitmentResponse(**row),
         )
     except CommitmentServiceError as error:
         raise _commitment_http_error(error) from error
-
-    return [CommitmentResponse(**commitment) for commitment in commitments]
 
 
 @router.post("", response_model=CommitmentResponse, status_code=201)

@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import APIRouter, Depends, Query, Response
 
 from app.dependencies import get_plan_service
+from app.models.pagination import PagedResponse
 from app.models.plan import (
     MilestoneStatus,
     PlanCreateRequest,
@@ -14,31 +15,44 @@ from app.models.plan import (
     PlanType,
     PlanUpdateRequest,
 )
+from app.routes.list_pagination import list_with_optional_pagination
 from app.services.plan_service import PlanService, PlanServiceError
 
 
 router = APIRouter(prefix="/plans", tags=["plans"])
 
 
-@router.get("", response_model=list[PlanResponse])
+@router.get("")
 async def list_plans(
     plan_type: Optional[PlanType] = Query(default=None),
     status: Optional[PlanStatus] = Query(default=None),
     active: Optional[bool] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
+    paginated: bool = Query(default=False),
+    cursor: Optional[str] = Query(default=None),
     plan_service: PlanService = Depends(get_plan_service),
-) -> list[PlanResponse]:
+) -> Union[list[PlanResponse], PagedResponse[PlanResponse]]:
     try:
-        plans = await plan_service.list_plans(
-            plan_type=plan_type,
-            status=status,
-            active=active,
+        return await list_with_optional_pagination(
+            paginated=paginated,
+            cursor=cursor,
             limit=limit,
+            list_items=lambda **kwargs: plan_service.list_plans(
+                plan_type=plan_type,
+                status=status,
+                active=active,
+                **kwargs,
+            ),
+            list_paged=lambda **kwargs: plan_service.list_plans_paged(
+                plan_type=plan_type,
+                status=status,
+                active=active,
+                **kwargs,
+            ),
+            to_response=lambda row: PlanResponse(**row),
         )
     except PlanServiceError as error:
         raise _plan_http_error(error) from error
-
-    return [PlanResponse(**plan) for plan in plans]
 
 
 @router.post("", response_model=PlanResponse, status_code=201)

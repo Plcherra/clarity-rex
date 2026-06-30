@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
+import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_dialogs.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_shared_widgets.dart';
 import 'package:clarity/theme/clarity_colors.dart';
@@ -83,7 +84,7 @@ class _MemoryFlatEditSheetState extends State<MemoryFlatEditSheet> {
                     (type) => DropdownMenuItem(
                       value: type,
                       enabled: type != MemoryType.other,
-                      child: Text(type.label),
+                      child: Text(type.localizedLabel(l10n)),
                     ),
                   )
                   .toList(growable: false),

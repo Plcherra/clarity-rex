@@ -5,7 +5,9 @@ import 'package:http/http.dart' as http;
 
 import 'package:clarity/core/rex/rex_api_client.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
+import 'package:clarity/rex/memory/data/memory_constants.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
+import 'package:clarity/rex/memory/data/memory_paged_result.dart';
 
 part 'memory_saved_api.dart';
 part 'memory_structured_api.dart';
@@ -28,6 +30,11 @@ abstract class _MemoryApiTransport {
   Future<void> _delete(String path);
 
   Future<List<Map<String, dynamic>>> _getList(
+    String path,
+    Map<String, String> query,
+  );
+
+  Future<Map<String, dynamic>> _getPagedMap(
     String path,
     Map<String, String> query,
   );
@@ -107,6 +114,27 @@ class MemoryApi extends _MemoryApiTransport
     }
 
     return data.whereType<Map<String, dynamic>>().toList(growable: false);
+  }
+
+  @override
+  Future<Map<String, dynamic>> _getPagedMap(
+    String path,
+    Map<String, String> query,
+  ) async {
+    final response = await _apiClient.get(
+      path,
+      query: {
+        ...query,
+        'paginated': 'true',
+      },
+    );
+    final data = _decodeResponse(response);
+
+    if (data is! Map<String, dynamic>) {
+      throw const MemoryApiException('Backend returned an invalid response.');
+    }
+
+    return data;
   }
 
   @override

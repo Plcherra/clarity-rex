@@ -1,16 +1,44 @@
 part of 'memory_api.dart';
 
 mixin _StructuredMemoryApi on _MemoryApiTransport {
+  Future<List<EntityMemoryItem>> getEntities({
+    String? entityType,
+    bool? active,
+    int limit = kMemoryListLimit,
+  }) async {
+    final page = await getEntitiesPaged(
+      entityType: entityType,
+      active: active,
+      limit: limit,
+    );
+    return page.items;
+  }
+
+  Future<MemoryPagedResult<EntityMemoryItem>> getEntitiesPaged({
+    String? entityType,
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    final data = await _getPagedMap('/entities', {
+      'limit': limit.toString(),
+      if (entityType != null) 'entity_type': entityType,
+      if (active != null) 'active': active.toString(),
+      if (cursor != null) 'cursor': cursor,
+    });
+    return MemoryPagedResult.fromJson(data, EntityMemoryItem.fromJson);
+  }
+
   Future<List<PersonMemoryItem>> getPeople({
     bool? active,
-    int limit = 50,
+    int limit = kMemoryListLimit,
   }) async {
-    final data = await _getList('/entities', {
-      'entity_type': 'person',
-      'limit': limit.toString(),
-      if (active != null) 'active': active.toString(),
-    });
-    return data.map(PersonMemoryItem.fromJson).toList(growable: false);
+    final entities = await getEntities(
+      entityType: 'person',
+      active: active,
+      limit: limit,
+    );
+    return entities.map(PersonMemoryItem.fromEntity).toList(growable: false);
   }
 
   Future<PersonMemoryItem> createPerson({
@@ -66,12 +94,67 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
     await deactivatePerson(personId);
   }
 
-  Future<List<RuleMemoryItem>> getRules({bool? active, int limit = 50}) async {
-    final data = await _getList('/rules', {
+  Future<EntityMemoryItem> updateEntity(
+    String entityId, {
+    String? displayName,
+    String? relationship,
+    String? summary,
+    List<String>? aliases,
+    int? importance,
+    String? status,
+    bool? active,
+  }) async {
+    final data = await _patchJson(
+      '/entities/$entityId',
+      _withoutNulls({
+        'display_name': displayName,
+        'normalized_name': displayName?.toLowerCase(),
+        'relationship': relationship,
+        'summary': summary,
+        'aliases': aliases,
+        'importance': importance,
+        'status': status,
+        'active': active,
+      }),
+    );
+    return EntityMemoryItem.fromJson(data);
+  }
+
+  Future<void> archiveEntity(String entityId) async {
+    await _delete('/entities/$entityId');
+  }
+
+  Future<List<EntityEventItem>> getEntityEvents(
+    String entityId, {
+    bool? active,
+    int limit = kEntityEventPreviewLimit,
+  }) async {
+    final data = await _getList('/entities/$entityId/events', {
       'limit': limit.toString(),
       if (active != null) 'active': active.toString(),
     });
-    return data.map(RuleMemoryItem.fromJson).toList(growable: false);
+    return data.map(EntityEventItem.fromJson).toList(growable: false);
+  }
+
+  Future<List<RuleMemoryItem>> getRules({
+    bool? active,
+    int limit = kMemoryListLimit,
+  }) async {
+    final page = await getRulesPaged(active: active, limit: limit);
+    return page.items;
+  }
+
+  Future<MemoryPagedResult<RuleMemoryItem>> getRulesPaged({
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    final data = await _getPagedMap('/rules', {
+      'limit': limit.toString(),
+      if (active != null) 'active': active.toString(),
+      if (cursor != null) 'cursor': cursor,
+    });
+    return MemoryPagedResult.fromJson(data, RuleMemoryItem.fromJson);
   }
 
   Future<RuleMemoryItem> createRule({
@@ -120,12 +203,37 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
     await deactivateRule(ruleId);
   }
 
-  Future<List<PlanMemoryItem>> getPlans({bool? active, int limit = 50}) async {
-    final data = await _getList('/plans', {
+  Future<List<PlanMemoryItem>> getPlans({
+    bool? active,
+    int limit = kMemoryListLimit,
+  }) async {
+    final page = await getPlansPaged(active: active, limit: limit);
+    return page.items;
+  }
+
+  Future<MemoryPagedResult<PlanMemoryItem>> getPlansPaged({
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    final data = await _getPagedMap('/plans', {
+      'limit': limit.toString(),
+      if (active != null) 'active': active.toString(),
+      if (cursor != null) 'cursor': cursor,
+    });
+    return MemoryPagedResult.fromJson(data, PlanMemoryItem.fromJson);
+  }
+
+  Future<List<PlanMilestoneMemoryItem>> getPlanMilestones(
+    String planId, {
+    bool? active,
+    int limit = kPlanMilestonePreviewLimit,
+  }) async {
+    final data = await _getList('/plans/$planId/milestones', {
       'limit': limit.toString(),
       if (active != null) 'active': active.toString(),
     });
-    return data.map(PlanMemoryItem.fromJson).toList(growable: false);
+    return data.map(PlanMilestoneMemoryItem.fromJson).toList(growable: false);
   }
 
   Future<PlanMemoryItem> createPlan({
@@ -180,13 +288,23 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
 
   Future<List<CommitmentMemoryItem>> getCommitments({
     bool? active,
-    int limit = 50,
+    int limit = kMemoryListLimit,
   }) async {
-    final data = await _getList('/commitments', {
+    final page = await getCommitmentsPaged(active: active, limit: limit);
+    return page.items;
+  }
+
+  Future<MemoryPagedResult<CommitmentMemoryItem>> getCommitmentsPaged({
+    bool? active,
+    int limit = kMemoryListLimit,
+    String? cursor,
+  }) async {
+    final data = await _getPagedMap('/commitments', {
       'limit': limit.toString(),
       if (active != null) 'active': active.toString(),
+      if (cursor != null) 'cursor': cursor,
     });
-    return data.map(CommitmentMemoryItem.fromJson).toList(growable: false);
+    return MemoryPagedResult.fromJson(data, CommitmentMemoryItem.fromJson);
   }
 
   Future<CommitmentMemoryItem> createCommitment({

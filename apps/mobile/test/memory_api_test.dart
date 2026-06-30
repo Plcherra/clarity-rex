@@ -4,6 +4,7 @@ import 'package:http/testing.dart';
 
 import 'package:clarity/core/rex/rex_api_client.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
+import 'package:clarity/rex/memory/data/memory_constants.dart';
 import 'package:clarity/rex/memory/data/memory_api.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 
@@ -45,6 +46,7 @@ void main() {
     );
 
     await api.getMemories(active: true);
+    await api.getEntities(active: true);
     await api.getPeople(active: true);
     await api.getPeople();
 
@@ -52,8 +54,33 @@ void main() {
     expect(requests[0].url.queryParameters['active'], 'true');
     expect(requests[1].url.path, '/entities');
     expect(requests[1].url.queryParameters['active'], 'true');
+    expect(requests[1].url.queryParameters.containsKey('entity_type'), isFalse);
     expect(requests[2].url.path, '/entities');
-    expect(requests[2].url.queryParameters.containsKey('active'), isFalse);
+    expect(requests[2].url.queryParameters['active'], 'true');
+    expect(requests[2].url.queryParameters['entity_type'], 'person');
+    expect(requests[3].url.path, '/entities');
+    expect(requests[3].url.queryParameters.containsKey('active'), isFalse);
+    expect(requests[3].url.queryParameters['entity_type'], 'person');
+  });
+
+  test('MemoryApi getEntities uses the shared list limit', () async {
+    final requests = <http.Request>[];
+    final api = MemoryApi(
+      apiClient: RexApiClient(
+        baseUrl: 'https://clarity.example.com',
+        authHeaders: const RexAuthHeaders(
+          accessTokenProvider: _testAccessToken,
+        ),
+        httpClient: MockClient((request) async {
+          requests.add(request);
+          return http.Response('[]', 200);
+        }),
+      ),
+    );
+
+    await api.getEntities(active: true);
+
+    expect(requests.single.url.queryParameters['limit'], '$kMemoryListLimit');
   });
 
   test('MemoryApi creates memory through POST /memory', () async {

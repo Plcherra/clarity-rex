@@ -95,6 +95,20 @@ class MemoryLongTermGateway:
             active=active,
         )
 
+    async def list_long_term_memory_paged(
+        self,
+        limit: int = 50,
+        memory_type: Optional[str] = None,
+        active: Optional[bool] = None,
+        cursor: Optional[str] = None,
+    ) -> tuple[list[dict], Optional[str], bool]:
+        return await self._get_long_term_memory_repository().list_long_term_memory_paged(
+            limit=limit,
+            memory_type=memory_type,
+            active=active,
+            cursor=cursor,
+        )
+
     async def update_long_term_memory(
         self,
         memory_id: str,

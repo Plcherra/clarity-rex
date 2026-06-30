@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
@@ -11,6 +11,8 @@ from app.models.memory import (
     MemoryType,
     MemoryUpdateRequest,
 )
+from app.models.pagination import PagedResponse
+from app.routes.list_pagination import list_with_optional_pagination
 from app.services.memory_discipline_writes import MemoryWriteError
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 from app.services.memory_write_service import MemoryWriteService
@@ -21,23 +23,34 @@ router = APIRouter(prefix="/memory", tags=["memory"])
 _memory_observer = MemoryOperationObserver()
 
 
-@router.get("", response_model=list[MemoryResponse])
+@router.get("")
 async def list_memory(
     memory_type: Optional[MemoryType] = Query(default=None),
     active: Optional[bool] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
+    paginated: bool = Query(default=False),
+    cursor: Optional[str] = Query(default=None),
     memory_service: SupabaseMemoryService = Depends(get_memory_service),
-) -> list[MemoryResponse]:
+) -> Union[list[MemoryResponse], PagedResponse[MemoryResponse]]:
     try:
-        memories = await memory_service.list_long_term_memory(
+        return await list_with_optional_pagination(
+            paginated=paginated,
+            cursor=cursor,
             limit=limit,
-            memory_type=memory_type,
-            active=active,
+            list_items=lambda **kwargs: memory_service.list_long_term_memory(
+                memory_type=memory_type,
+                active=active,
+                **kwargs,
+            ),
+            list_paged=lambda **kwargs: memory_service.list_long_term_memory_paged(
+                memory_type=memory_type,
+                active=active,
+                **kwargs,
+            ),
+            to_response=lambda row: MemoryResponse(**row),
         )
     except MemoryServiceError as error:
         raise _memory_http_error("list_memory", error) from error
-
-    return [MemoryResponse(**memory) for memory in memories]
 
 
 @router.post("", response_model=MemoryResponse, status_code=201)

@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import APIRouter, Depends, Query, Response
 
 from app.dependencies import get_rule_service
+from app.models.pagination import PagedResponse
 from app.models.personal_rule import (
     PersonalRuleCreateRequest,
     PersonalRuleResponse,
@@ -10,31 +11,44 @@ from app.models.personal_rule import (
     RuleStatus,
     RuleType,
 )
+from app.routes.list_pagination import list_with_optional_pagination
 from app.services.rule_service import RuleService, RuleServiceError
 
 
 router = APIRouter(prefix="/rules", tags=["rules"])
 
 
-@router.get("", response_model=list[PersonalRuleResponse])
+@router.get("")
 async def list_rules(
     rule_type: Optional[RuleType] = Query(default=None),
     status: Optional[RuleStatus] = Query(default=None),
     active: Optional[bool] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
+    paginated: bool = Query(default=False),
+    cursor: Optional[str] = Query(default=None),
     rule_service: RuleService = Depends(get_rule_service),
-) -> list[PersonalRuleResponse]:
+) -> Union[list[PersonalRuleResponse], PagedResponse[PersonalRuleResponse]]:
     try:
-        rules = await rule_service.list_rules(
-            rule_type=rule_type,
-            status=status,
-            active=active,
+        return await list_with_optional_pagination(
+            paginated=paginated,
+            cursor=cursor,
             limit=limit,
+            list_items=lambda **kwargs: rule_service.list_rules(
+                rule_type=rule_type,
+                status=status,
+                active=active,
+                **kwargs,
+            ),
+            list_paged=lambda **kwargs: rule_service.list_rules_paged(
+                rule_type=rule_type,
+                status=status,
+                active=active,
+                **kwargs,
+            ),
+            to_response=lambda row: PersonalRuleResponse(**row),
         )
     except RuleServiceError as error:
         raise _rule_http_error(error) from error
-
-    return [PersonalRuleResponse(**rule) for rule in rules]
 
 
 @router.post("", response_model=PersonalRuleResponse, status_code=201)

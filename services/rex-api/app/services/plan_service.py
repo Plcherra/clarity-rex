@@ -140,6 +140,26 @@ class PlanService:
         except MemoryServiceError as error:
             raise PlanServiceError(error.detail, error.status_code) from error
 
+    async def list_plans_paged(
+        self,
+        *,
+        plan_type: str | None = None,
+        status: str | None = None,
+        active: bool | None = True,
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> tuple[list[dict[str, Any]], str | None, bool]:
+        try:
+            return await self.repository.list_plans_paged(
+                plan_type=plan_type,
+                status=status,
+                active=active,
+                limit=limit,
+                cursor=cursor,
+            )
+        except MemoryServiceError as error:
+            raise PlanServiceError(error.detail, error.status_code) from error
+
     async def update_plan(
         self, plan_id: str, request: PlanUpdateRequest
     ) -> dict[str, Any]:
