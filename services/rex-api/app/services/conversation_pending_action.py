@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional, Protocol
 
 from app.services.memory_correction_types import CorrectionAffectedRecord
@@ -22,9 +22,10 @@ class PendingAction:
     target_label: str
     resolver_target: str
     scope_tables: tuple[str, ...] = ()
+    context: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> dict[str, str | list[str]]:
-        payload: dict[str, str | list[str]] = {
+    def to_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
             "action_type": self.action_type,
             "target_type": self.target_type,
             "target_id": self.target_id,
@@ -33,6 +34,8 @@ class PendingAction:
         }
         if self.scope_tables:
             payload["scope_tables"] = list(self.scope_tables)
+        if self.context:
+            payload["context"] = self.context
         return payload
 
     @classmethod
@@ -48,6 +51,8 @@ class PendingAction:
         ).strip()
         raw_scope = payload.get("scope_tables") or ()
         scope_tables = tuple(str(item) for item in raw_scope if str(item).strip())
+        raw_context = payload.get("context") or {}
+        context = dict(raw_context) if isinstance(raw_context, dict) else {}
         if not action_type or not resolver_target:
             return None
         return cls(
@@ -57,6 +62,7 @@ class PendingAction:
             target_label=target_label or resolver_target,
             resolver_target=resolver_target,
             scope_tables=scope_tables,
+            context=context,
         )
 
 
@@ -173,3 +179,13 @@ def pending_delete_resolver_target(
     if conversation_history:
         return pending_delete_target_from_history(conversation_history)
     return None
+
+
+def should_defer_to_pending_plan(
+    message: str,
+    *,
+    pending_action: Optional[PendingAction],
+) -> bool:
+    if pending_action is None or pending_action.action_type != "save_plan":
+        return False
+    return is_delete_confirmation_message(message) or is_delete_rejection_message(message)

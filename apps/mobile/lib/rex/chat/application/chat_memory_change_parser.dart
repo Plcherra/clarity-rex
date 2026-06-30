@@ -6,15 +6,16 @@ List<ClarityActionCard> clarityActionCardsFromMemoryChanges(
   if (memoryChanges == null) {
     return const [];
   }
-  final proposals = memoryChanges['clarity_action_proposals'];
-  if (proposals is! List) {
-    return const [];
-  }
-
   final cards = <ClarityActionCard>[];
-  for (final proposal in proposals) {
-    if (proposal is Map<String, dynamic>) {
-      cards.add(ClarityActionCard.fromJson(proposal));
+  for (final key in ['clarity_action_proposals', 'plan_save_proposals']) {
+    final proposals = memoryChanges[key];
+    if (proposals is! List) {
+      continue;
+    }
+    for (final proposal in proposals) {
+      if (proposal is Map<String, dynamic>) {
+        cards.add(ClarityActionCard.fromJson(proposal));
+      }
     }
   }
   return List.unmodifiable(cards);

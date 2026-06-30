@@ -26,6 +26,7 @@ from app.services.clarity_action_parser import (
     ClarityActionStreamFilter,
 )
 from app.services.goal_command_service import GoalCommandService
+from app.services.conversational_plan_service import ConversationalPlanService
 from app.services.memory_turn_service import MemoryTurnService
 from app.services.rex_channel import RexBrainChannel
 from app.services.simple_rex_brain import SimpleRexBrain
@@ -45,6 +46,7 @@ class ChatTurnOrchestrator:
         chat_turn_context_service: ChatTurnContextService,
         memory_turn_service: MemoryTurnService,
         goal_command_service: GoalCommandService,
+        conversational_plan_service: ConversationalPlanService,
         clarity_action_parser: ClarityActionParser,
         financial_guard: ChatFinancialGuard,
         truth_service: ChatResponseTruthService,
@@ -58,6 +60,7 @@ class ChatTurnOrchestrator:
         self.chat_turn_context_service = chat_turn_context_service
         self.memory_turn_service = memory_turn_service
         self.goal_command_service = goal_command_service
+        self.conversational_plan_service = conversational_plan_service
         self.clarity_action_parser = clarity_action_parser
         self.financial_guard = financial_guard
         self.truth_service = truth_service
@@ -347,6 +350,23 @@ class ChatTurnOrchestrator:
         turn_started_at: float,
     ) -> Optional[dict]:
         conversation_id = turn_context.conversation_id
+        conversational_plan_turn = await self.conversational_plan_service.handle_turn(
+            brain_message,
+            conversation_id=conversation_id,
+            user_message=turn_context.user_message,
+            conversation_history=turn_context.conversation_history,
+            time_context=turn_context.time_context,
+            pending_action=pending_action,
+        )
+        if conversational_plan_turn:
+            finish_short_circuit(
+                self.turn_observer,
+                self.usage_recorder,
+                turn_trace,
+                turn_started_at,
+                "conversational_plan",
+            )
+            return conversational_plan_turn
         goal_command_turn = await self.goal_command_service.handle_turn(
             brain_message,
             conversation_id=conversation_id,

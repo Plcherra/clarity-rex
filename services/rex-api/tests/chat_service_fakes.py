@@ -70,6 +70,7 @@ class FakeMemoryService:
         self.next_entity_id = 1
         self.next_entity_event_id = 1
         self.next_plan_id = 1
+        self.next_plan_milestone_id = 1
         self.next_commitment_id = 1
         self.relevant_memory_queries = []
         self.search_message_queries = []
@@ -78,8 +79,10 @@ class FakeMemoryService:
         self.entities = []
         self.entity_events = []
         self.plans = []
+        self.plan_milestones = []
         self.commitments = []
         self.created_plans = []
+        self.created_plan_milestones = []
         self.created_commitments = []
         self.memory_corrections = []
         self.pending_actions: dict[str, dict] = {}
@@ -400,7 +403,40 @@ class FakeMemoryService:
         active=True,
         limit=50,
     ):
-        return []
+        milestones = self.plan_milestones
+        if plan_id is not None:
+            milestones = [
+                milestone
+                for milestone in milestones
+                if milestone.get("plan_id") == plan_id
+            ]
+        if status is not None:
+            milestones = [
+                milestone
+                for milestone in milestones
+                if milestone.get("status") == status
+            ]
+        if active is not None:
+            milestones = [
+                milestone
+                for milestone in milestones
+                if milestone.get("active", True) is active
+            ]
+        return milestones[:limit]
+
+    async def create_plan_milestone(self, payload):
+        milestone = {
+            "id": f"milestone-{self.next_plan_milestone_id}",
+            "status": "open",
+            "active": True,
+            "created_at": "2026-05-11T00:00:00Z",
+            "updated_at": "2026-05-11T00:00:00Z",
+            **payload,
+        }
+        self.next_plan_milestone_id += 1
+        self.plan_milestones.append(milestone)
+        self.created_plan_milestones.append(milestone)
+        return milestone
 
     async def create_commitment(self, payload):
         commitment = {

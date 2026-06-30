@@ -103,27 +103,29 @@ async def clarification_turn_result(
     conversation_id: str,
     user_message: dict,
     response: str,
+    memory_changes: Optional[dict] = None,
 ) -> dict:
     assistant_message = await memory_service.save_message(
         conversation_id,
         "assistant",
         response,
     )
+    resolved_memory_changes = memory_changes or {
+        "created": 0,
+        "updated": 0,
+        "archived": 0,
+        "merged": 0,
+        "skipped": 0,
+        "confirmation_required": 0,
+        "records": [],
+    }
     return {
         "conversation_id": conversation_id,
         "response": response,
         "user_message": user_message,
         "assistant_message": assistant_message,
         "memory_correction": None,
-        "memory_changes": {
-            "created": 0,
-            "updated": 0,
-            "archived": 0,
-            "merged": 0,
-            "skipped": 0,
-            "confirmation_required": 0,
-            "records": [],
-        },
+        "memory_changes": resolved_memory_changes,
         "messages": await memory_service.get_recent_messages(
             conversation_id,
             limit=20,

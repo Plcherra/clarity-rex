@@ -24,6 +24,7 @@ from app.services.chat_voice_metadata import ChatVoiceMetadataMixin
 from app.services.clarity_action_parser import ClarityActionParser
 from app.services.file_service import FileService
 from app.services.goal_command_service import GoalCommandService
+from app.services.conversational_plan_service import ConversationalPlanService
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_intent_service import MemoryIntentService
 from app.services.memory_turn_service import MemoryTurnService
@@ -67,6 +68,10 @@ class ChatService(ChatVoiceMetadataMixin):
         self.goal_command_service = goal_command_service or GoalCommandService(
             memory_service
         )
+        self.conversational_plan_service = ConversationalPlanService(
+            memory_service,
+            discipline=MemoryDisciplineService(memory_service),
+        )
         self.clarity_action_parser = clarity_action_parser or ClarityActionParser()
         self.rex_intent_router = rex_intent_router or RexIntentRouter()
         self.usage_tracking_service = usage_tracking_service or UsageTrackingService()
@@ -103,6 +108,7 @@ class ChatService(ChatVoiceMetadataMixin):
             chat_turn_context_service=self.chat_turn_context_service,
             memory_turn_service=self.memory_turn_service,
             goal_command_service=self.goal_command_service,
+            conversational_plan_service=self.conversational_plan_service,
             clarity_action_parser=self.clarity_action_parser,
             financial_guard=self.financial_guard,
             truth_service=self.truth_service,

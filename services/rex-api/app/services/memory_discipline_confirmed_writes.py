@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 CONFIRMED_PLAN_SERVICE_CHANNEL = "confirmed_plan_service"
+CHAT_CONFIRMED_PLAN_CHANNEL = "chat_confirmed_plan"
 CONFIRMED_ENTITY_SERVICE_CHANNEL = "confirmed_entity_service"
 CONFIRMED_RULE_SERVICE_CHANNEL = "confirmed_rule_service"
 CONFIRMED_COMMITMENT_SERVICE_CHANNEL = "confirmed_commitment_service"
@@ -22,6 +23,7 @@ CONFIRMED_EXPLICIT_PLAN_SOURCES = frozenset(
         "memory_to_goal_reclassification",
         "goals_tab",
         "knows_manual_create",
+        "conversational_plan_confirmed",
     }
 )
 

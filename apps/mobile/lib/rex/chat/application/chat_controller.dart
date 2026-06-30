@@ -67,6 +67,11 @@ class ChatController extends Notifier<ChatState> {
   }
 
   Future<void> executeClarityAction(ClarityActionCard action) async {
+    if (_isPlanSaveAction(action.action)) {
+      await _confirmPlanSave(action);
+      return;
+    }
+
     _updateClarityAction(
       action.id,
       (current) => current.copyWith(status: 'applying', clearError: true),
@@ -116,6 +121,11 @@ class ChatController extends Notifier<ChatState> {
   }
 
   void dismissClarityAction(ClarityActionCard action) {
+    if (_isPlanSaveAction(action.action)) {
+      unawaited(_rejectPlanSave(action));
+      return;
+    }
+
     _updateClarityAction(
       action.id,
       (current) => current.copyWith(status: 'dismissed', clearError: true),
@@ -594,5 +604,48 @@ class ChatController extends Notifier<ChatState> {
           message,
     ];
     state = state.copyWith(messages: List.unmodifiable(updatedMessages));
+  }
+
+  bool _isPlanSaveAction(String action) {
+    return action == 'save_plan' ||
+        action == 'save_plan_milestone' ||
+        action == 'save_commitment';
+  }
+
+  Future<void> _confirmPlanSave(ClarityActionCard action) async {
+    _updateClarityAction(
+      action.id,
+      (current) => current.copyWith(status: 'applying', clearError: true),
+    );
+    final response = await sendMessageForAssistantResponse('Yes', stream: false);
+    if (response == null) {
+      _updateClarityAction(
+        action.id,
+        (current) => current.copyWith(
+          status: 'failed',
+          errorMessage: 'Could not confirm the plan save.',
+        ),
+      );
+      return;
+    }
+    _updateClarityAction(
+      action.id,
+      (current) => current.copyWith(status: 'applied', clearError: true),
+    );
+  }
+
+  Future<void> _rejectPlanSave(ClarityActionCard action) async {
+    _updateClarityAction(
+      action.id,
+      (current) => current.copyWith(status: 'applying', clearError: true),
+    );
+    final response = await sendMessageForAssistantResponse('No', stream: false);
+    _updateClarityAction(
+      action.id,
+      (current) => current.copyWith(
+        status: response == null ? 'failed' : 'dismissed',
+        clearError: true,
+      ),
+    );
   }
 }

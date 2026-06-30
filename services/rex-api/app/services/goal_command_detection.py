@@ -31,6 +31,7 @@ from app.services.goal_command_reclassify import (
 )
 from app.services.goal_command_types import GoalCommand
 from app.services.memory_delete_reference import should_defer_to_delete_confirmation
+from app.services.conversation_pending_action import should_defer_to_pending_plan
 
 _CONTEXTUAL_GOAL_PATTERN = re.compile(
     r"\b(?:track|save|add)\s+this\s+as\s+(?:a\s+)?goal\b",
@@ -109,6 +110,11 @@ class GoalCommandDetector:
                 message,
                 conversation_history,
                 pending_action_payload(pending_action),
+            ):
+                return []
+            if should_defer_to_pending_plan(
+                message,
+                pending_action=_pending_action(pending_action),
             ):
                 return []
             substantive = substantive_goal_from_history(conversation_history)
@@ -377,3 +383,11 @@ def pending_action_payload(pending_action) -> dict | None:
     if isinstance(pending_action, dict):
         return pending_action
     return None
+
+
+def _pending_action(pending_action):
+    from app.services.conversation_pending_action import PendingAction
+
+    if isinstance(pending_action, PendingAction):
+        return pending_action
+    return PendingAction.from_dict(pending_action)
