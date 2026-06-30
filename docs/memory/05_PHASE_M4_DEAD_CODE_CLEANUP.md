@@ -10,10 +10,10 @@ Remove or wire orphaned memory subsystems, consolidate scripts, and document leg
 
 ## Current Gaps
 
-- [`memory_verification_service.py`](../../services/rex-api/app/services/memory_verification_service.py) — orphaned after candidate/confirmation tables dropped.
-- [`MemoryDisciplineService`](../../services/rex-api/app/services/memory_discipline_service.py) — should be wired by M1; if not, wire or delete here.
-- Duplicate [`backfill_structured_memory.py`](../../services/rex-api/scripts/backfill_structured_memory.py) and [`backend/scripts/backfill_structured_memory.py`](../../services/rex-api/backend/scripts/backfill_structured_memory.py).
-- [`apply_memory_discipline.py`](../../services/rex-api/scripts/apply_memory_discipline.py) — misleading name (runs corrections, not discipline).
+- ~~[`memory_verification_service.py`](../../services/rex-api/app/services/memory_verification_service.py) — orphaned after candidate/confirmation tables dropped.~~ Removed in M4.
+- [`MemoryDisciplineService`](../../services/rex-api/app/services/memory_discipline_service.py) — wired by M1 on create hot paths.
+- ~~Duplicate [`backfill_structured_memory.py`](../../services/rex-api/scripts/backfill_structured_memory.py) and [`backend/scripts/backfill_structured_memory.py`](../../services/rex-api/backend/scripts/backfill_structured_memory.py).~~ Consolidated to `scripts/` in M4.
+- ~~[`apply_memory_discipline.py`](../../services/rex-api/scripts/apply_memory_discipline.py) — misleading name (runs corrections, not discipline).~~ Renamed to `apply_memory_corrections.py` in M4.
 - Legacy migrations created then dropped: `memory_candidates`, `memory_confirmations`, review sessions.
 - `SupabaseMemoryService` mixes conversations + memory — naming confusion.
 
@@ -50,11 +50,11 @@ Remove or wire orphaned memory subsystems, consolidate scripts, and document leg
 
 ## Acceptance Criteria
 
-- [ ] No unused `MemoryVerificationService` in production imports.
-- [ ] One canonical backfill script path documented.
-- [ ] Ops script name matches behavior.
-- [ ] Legacy migration drops documented in source-of-truth.
-- [ ] Full memory test suite passes.
+- [x] No unused `MemoryVerificationService` in production imports.
+- [x] One canonical backfill script path documented.
+- [x] Ops script name matches behavior.
+- [x] Legacy migration drops documented in source-of-truth.
+- [x] Full memory test suite passes.
 
 ## Verification
 

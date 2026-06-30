@@ -102,10 +102,10 @@ audit view, not as active saved knowledge.
 
 ### 6. Cleanup Oversized Services
 
-Deferred from the Plan 03 product gate. These are maintainability refactors, not
-current blockers for Plan 04.
+**M2 god-file splits complete** (memory refactor phases M0–M3). Remaining
+oversized modules below are optional hardening, not blockers for Plan 04.
 
-Priority backend modules:
+Priority backend modules still eligible for future splits:
 
 - `memory_correction_service.py`
 - `person_memory_materializer.py`
@@ -129,7 +129,8 @@ a concrete bug is found in one of the modules.
 - Knows reflects backend saved memory truth.
 - Recall tests pass for arbitrary people, places, dates, goals, payments, devices, and exact phrases.
 - No production recall logic contains smoke-topic-specific branches.
-- Large service splits are explicitly deferred and do not block Plan 04.
+- M2 memory god-file splits are complete (see `docs/memory/03_PHASE_M2_SPLIT_GOD_FILES.md`).
+- Optional future service splits do not block Plan 04.
 
 ## Suggested Tests
 

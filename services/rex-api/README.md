@@ -202,6 +202,23 @@ flutter analyze
 flutter test
 ```
 
+## Ops Scripts
+
+Run from `services/rex-api` with environment loaded:
+
+```sh
+# Dry-run structured memory backfill
+python -m scripts.backfill_structured_memory
+
+# Dry-run correction audit (no args) or classify a correction
+python -m scripts.apply_memory_corrections
+python -m scripts.apply_memory_corrections "My mom's name is Maria" --apply
+```
+
+Canonical paths live under `scripts/`. See
+[`docs/MEMORY_RECALL_SOURCE_OF_TRUTH.md`](../../docs/MEMORY_RECALL_SOURCE_OF_TRUTH.md)
+for legacy table and facade notes.
+
 Current expected status after Phase 8 plus pre-deploy cleanup:
 
 - Backend tests: 363 passing

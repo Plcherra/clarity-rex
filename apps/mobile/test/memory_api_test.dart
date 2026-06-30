@@ -8,6 +8,9 @@ import 'package:clarity/rex/memory/data/memory_constants.dart';
 import 'package:clarity/rex/memory/data/memory_api.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 
+const _emptyPagedResponse =
+    '{"items":[],"next_cursor":null,"has_more":false}';
+
 void main() {
   test('MemoryApi archives memory through the safe deactivate route', () async {
     final requests = <http.Request>[];
@@ -40,7 +43,7 @@ void main() {
         ),
         httpClient: MockClient((request) async {
           requests.add(request);
-          return http.Response('[]', 200);
+          return http.Response(_emptyPagedResponse, 200);
         }),
       ),
     );
@@ -52,14 +55,18 @@ void main() {
 
     expect(requests[0].url.path, '/memory');
     expect(requests[0].url.queryParameters['active'], 'true');
+    expect(requests[0].url.queryParameters['paginated'], 'true');
     expect(requests[1].url.path, '/entities');
     expect(requests[1].url.queryParameters['active'], 'true');
+    expect(requests[1].url.queryParameters['paginated'], 'true');
     expect(requests[1].url.queryParameters.containsKey('entity_type'), isFalse);
     expect(requests[2].url.path, '/entities');
     expect(requests[2].url.queryParameters['active'], 'true');
+    expect(requests[2].url.queryParameters['paginated'], 'true');
     expect(requests[2].url.queryParameters['entity_type'], 'person');
     expect(requests[3].url.path, '/entities');
     expect(requests[3].url.queryParameters.containsKey('active'), isFalse);
+    expect(requests[3].url.queryParameters['paginated'], 'true');
     expect(requests[3].url.queryParameters['entity_type'], 'person');
   });
 
@@ -73,7 +80,7 @@ void main() {
         ),
         httpClient: MockClient((request) async {
           requests.add(request);
-          return http.Response('[]', 200);
+          return http.Response(_emptyPagedResponse, 200);
         }),
       ),
     );
@@ -81,6 +88,7 @@ void main() {
     await api.getEntities(active: true);
 
     expect(requests.single.url.queryParameters['limit'], '$kMemoryListLimit');
+    expect(requests.single.url.queryParameters['paginated'], 'true');
   });
 
   test('MemoryApi creates memory through POST /memory', () async {

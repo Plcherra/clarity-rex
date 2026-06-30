@@ -1,6 +1,6 @@
 import pytest
 
-from scripts.apply_memory_discipline import run_audit
+from scripts.apply_memory_corrections import run_audit
 
 
 class FakeRolloutMemoryService:

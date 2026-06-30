@@ -260,7 +260,7 @@ def _semantic_duplicate_key(text: str) -> str:
 
 async def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Apply reusable memory discipline correction workflows."
+        description="Classify, audit, or apply memory corrections and duplicate cleanup."
     )
     parser.add_argument(
         "correction",

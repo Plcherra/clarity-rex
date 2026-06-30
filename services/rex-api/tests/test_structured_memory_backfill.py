@@ -1,6 +1,6 @@
 import pytest
 
-from backend.scripts.backfill_structured_memory import (
+from scripts.backfill_structured_memory import (
     backfill_structured_memory,
     build_backfill_candidates,
 )

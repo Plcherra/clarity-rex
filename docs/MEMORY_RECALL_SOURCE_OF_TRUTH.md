@@ -121,5 +121,40 @@ Current backend prompt labeling already separates sources:
 - Flat memories covered by structured person cards are archived while duplicate
   detection still recognizes the covered source memory.
 - Targeted recall and memory tests passed for the current behavior.
-- Large memory/recall service splits are deferred as cleanup and do not block
-  Plan 04.
+- Memory refactor god-file splits (M2) are complete; see
+  [`docs/memory/03_PHASE_M2_SPLIT_GOD_FILES.md`](memory/03_PHASE_M2_SPLIT_GOD_FILES.md).
+
+## Legacy Memory Review Tables (M4)
+
+The early Rex memory review flow used `memory_candidates` and
+`memory_confirmations` tables for candidate/confirmation UX. That path was
+retired and archived in migration
+`20260604120456_archive_legacy_rex_memory_review_tables.sql`:
+
+- Live tables were dropped after copying rows into
+  `legacy_memory_candidates_archive` and `legacy_memory_confirmations_archive`.
+- `MemoryVerificationService` (which scanned those tables) was removed in M4;
+  verification now relies on discipline + confirmed writes and correction audit.
+- Durable memory today uses `MemoryDisciplineService` and backend-confirmed
+  creates/updates only — no separate candidate queue.
+
+## SupabaseMemoryService Facade (M4)
+
+`SupabaseMemoryService` in `memory_service.py` is the production Supabase
+facade for **both conversations and memory** (flat + structured). The name
+predates the split gateways (`MemoryConversationGateway`,
+`MemoryLongTermGateway`, `MemoryStructuredGateway`). Renaming to something like
+`SupabaseAssistantStore` is deferred due to blast radius; treat it as the
+user-scoped assistant data store, not memory-only.
+
+## Ops Scripts (M4)
+
+Canonical paths under `services/rex-api/scripts/`:
+
+| Script | Purpose |
+| --- | --- |
+| `backfill_structured_memory.py` | One-time or batch promotion of flat memories into structured entities/plans/rules |
+| `apply_memory_corrections.py` | Classify/apply user corrections and dry-run duplicate audits |
+
+Run from `services/rex-api` with `python -m scripts.<module>` or
+`python scripts/<module>.py` after env is loaded.
