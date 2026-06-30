@@ -52,6 +52,7 @@ class _BudgetsScaffold extends StatelessWidget {
     final rows = dataNotifier.data?.rows ?? const <BudgetCategoryRow>[];
     return Scaffold(
       backgroundColor: cs.surface,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         toolbarHeight: 52,
         titleSpacing: 6,
@@ -71,7 +72,12 @@ class _BudgetsScaffold extends StatelessWidget {
               return IconButton(
                 tooltip: l10n.budgetsScreenSaveChangesTooltip,
                 visualDensity: VisualDensity.compact,
-                onPressed: canSave ? () async => onSave(rows) : null,
+                onPressed: canSave
+                    ? () async {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        await onSave(rows);
+                      }
+                    : null,
                 icon: Icon(
                   Icons.check_rounded,
                   size: 22,
@@ -85,43 +91,47 @@ class _BudgetsScaffold extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
-          child: ListenableBuilder(
-            listenable: dataNotifier,
-            builder: (context, _) {
-              final data = dataNotifier.data;
-              if (data == null) {
-                if (dataNotifier.error != null) {
-                  return Center(child: Text(l10n.budgetsScreenLoadError));
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+            child: ListenableBuilder(
+              listenable: dataNotifier,
+              builder: (context, _) {
+                final data = dataNotifier.data;
+                if (data == null) {
+                  if (dataNotifier.error != null) {
+                    return Center(child: Text(l10n.budgetsScreenLoadError));
+                  }
+                  return Center(
+                    child: ClarityDiamondLoader(
+                      size: 56,
+                      label: l10n.budgetsScreenLoadingLabel,
+                    ),
+                  );
                 }
-                return Center(
-                  child: ClarityDiamondLoader(
-                    size: 56,
-                    label: l10n.budgetsScreenLoadingLabel,
-                  ),
+                return _BudgetsLoadedContent(
+                  viewModel: viewModel,
+                  selectedType: selectedType,
+                  selectedPeriodKey: selectedPeriodKey,
+                  keys: keys,
+                  weeklyDate: weeklyDate,
+                  customStart: customStart,
+                  customEnd: customEnd,
+                  compactButtonStyle: compactButtonStyle,
+                  data: data,
+                  controllers: controllers,
+                  focusNodes: focusNodes,
+                  onPeriodTypeChanged: onPeriodTypeChanged,
+                  onPickMonthly: onPickMonthly,
+                  onPickWeekly: onPickWeekly,
+                  onPickCustomStart: onPickCustomStart,
+                  onPickCustomEnd: onPickCustomEnd,
+                  onDraftEdited: onDraftEdited,
                 );
-              }
-              return _BudgetsLoadedContent(
-                viewModel: viewModel,
-                selectedType: selectedType,
-                selectedPeriodKey: selectedPeriodKey,
-                keys: keys,
-                weeklyDate: weeklyDate,
-                customStart: customStart,
-                customEnd: customEnd,
-                compactButtonStyle: compactButtonStyle,
-                data: data,
-                controllers: controllers,
-                focusNodes: focusNodes,
-                onPeriodTypeChanged: onPeriodTypeChanged,
-                onPickMonthly: onPickMonthly,
-                onPickWeekly: onPickWeekly,
-                onPickCustomStart: onPickCustomStart,
-                onPickCustomEnd: onPickCustomEnd,
-                onDraftEdited: onDraftEdited,
-              );
-            },
+              },
+            ),
           ),
         ),
       ),
@@ -172,6 +182,7 @@ class _BudgetsLoadedContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final metrics = data.metrics;
     final l10n = context.l10n;
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -201,23 +212,25 @@ class _BudgetsLoadedContent extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         _BudgetSummaryStrip(metrics: metrics),
-        const SizedBox(height: 14),
-        ClarityCard(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.budgetsScreenBudgetVsSpentTitle,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
+        if (!keyboardOpen) ...[
+          const SizedBox(height: 14),
+          ClarityCard(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.budgetsScreenBudgetVsSpentTitle,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              BudgetVsSpentChart(performance: metrics.performance),
-            ],
+                const SizedBox(height: 12),
+                BudgetVsSpentChart(performance: metrics.performance),
+              ],
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: 14),
         Expanded(
           child: BudgetCategoryList(

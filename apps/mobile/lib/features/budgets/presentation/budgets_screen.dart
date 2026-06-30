@@ -335,6 +335,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   Future<bool> _save(List<BudgetCategoryRow> rows) async {
     if (_selectedPeriodKey.trim().isEmpty) return false;
+    FocusManager.instance.primaryFocus?.unfocus();
     final draft = _viewModel.buildDraft(rows: rows, controllers: _controllers);
     final ok = await widget.controller.commitBudgetDraft(
       _selectedType,

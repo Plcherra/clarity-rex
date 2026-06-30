@@ -24,6 +24,7 @@ class BudgetCategoryRowTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
@@ -63,6 +64,10 @@ class BudgetCategoryRowTile extends StatelessWidget {
                     decimal: true,
                     signed: false,
                   ),
+                  textInputAction: TextInputAction.done,
+                  onEditingComplete: focusNode.unfocus,
+                  onSubmitted: (_) => focusNode.unfocus(),
+                  scrollPadding: EdgeInsets.only(bottom: keyboardInset + 160),
                   textAlign: TextAlign.end,
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,

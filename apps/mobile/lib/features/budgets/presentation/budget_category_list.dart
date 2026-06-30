@@ -29,6 +29,7 @@ class BudgetCategoryList extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = context.l10n;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return ClarityCard(
       padding: EdgeInsets.zero,
@@ -69,9 +70,13 @@ class BudgetCategoryList extends StatelessWidget {
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 4,
-                      horizontal: 4,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(
+                      4,
+                      4,
+                      4,
+                      4 + keyboardInset,
                     ),
                     itemCount: items.length,
                     separatorBuilder: (context, index) => Divider(
