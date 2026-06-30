@@ -2,15 +2,18 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
-from app.dependencies import get_memory_service
+from app.dependencies import get_memory_service, get_memory_write_service
 from app.models.memory import (
     MemoryCorrectionResponse,
     MemoryCorrectionType,
+    MemoryCreateRequest,
     MemoryResponse,
     MemoryType,
     MemoryUpdateRequest,
 )
+from app.services.memory_discipline_writes import MemoryWriteError
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
+from app.services.memory_write_service import MemoryWriteService
 from app.services.rex_observability import MemoryOperationObserver
 
 
@@ -35,6 +38,43 @@ async def list_memory(
         raise _memory_http_error("list_memory", error) from error
 
     return [MemoryResponse(**memory) for memory in memories]
+
+
+@router.post("", response_model=MemoryResponse, status_code=201)
+async def create_memory(
+    request: MemoryCreateRequest,
+    memory_write_service: MemoryWriteService = Depends(get_memory_write_service),
+    memory_service: SupabaseMemoryService = Depends(get_memory_service),
+) -> MemoryResponse:
+    try:
+        memory = await memory_write_service.create_memory(request)
+    except MemoryWriteError as error:
+        raise _memory_write_http_error("create_memory", error) from error
+    except MemoryServiceError as error:
+        raise _memory_http_error("create_memory", error) from error
+
+    memory_id = str(memory.get("id") or "")
+    try:
+        active_memories = await memory_service.list_long_term_memory(
+            limit=100,
+            active=True,
+        )
+    except MemoryServiceError as error:
+        raise _memory_http_error("create_memory_verify", error, memory_id=memory_id) from error
+
+    if not any(str(item.get("id") or "") == memory_id for item in active_memories):
+        _memory_observer.log_failure(
+            operation="create_memory",
+            error=MemoryServiceError("Memory create was not confirmed.", 409),
+            memory_id=memory_id,
+            status_code=409,
+        )
+        raise HTTPException(
+            status_code=409,
+            detail="Memory create was not confirmed.",
+        )
+
+    return MemoryResponse(**memory)
 
 
 @router.get("/corrections", response_model=list[MemoryCorrectionResponse])
@@ -142,6 +182,20 @@ def _memory_http_error(
     _memory_observer.log_failure(
         operation=operation,
         error=error,
+        memory_id=memory_id,
+        status_code=error.status_code,
+    )
+    return HTTPException(status_code=error.status_code, detail=error.detail)
+
+
+def _memory_write_http_error(
+    operation: str,
+    error: MemoryWriteError,
+    memory_id: Optional[str] = None,
+) -> HTTPException:
+    _memory_observer.log_failure(
+        operation=operation,
+        error=MemoryServiceError(error.detail, error.status_code),
         memory_id=memory_id,
         status_code=error.status_code,
     )

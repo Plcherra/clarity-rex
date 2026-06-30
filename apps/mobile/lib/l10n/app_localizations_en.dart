@@ -2595,6 +2595,69 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryPageCommitmentUpdated => 'Commitment updated';
 
   @override
+  String get memoryCreateAddTooltip => 'Add saved information';
+
+  @override
+  String get memoryCreateChooseType => 'What should Clarity remember?';
+
+  @override
+  String get memoryCreateFact => 'Fact';
+
+  @override
+  String get memoryCreatePreference => 'Preference';
+
+  @override
+  String get memoryCreateRule => 'Rule';
+
+  @override
+  String get memoryCreatePlan => 'Plan';
+
+  @override
+  String get memoryCreateCommitment => 'Commitment';
+
+  @override
+  String get memoryCreateFactTitle => 'Add a fact';
+
+  @override
+  String get memoryCreatePreferenceTitle => 'Add a preference';
+
+  @override
+  String get memoryCreatePersonTitle => 'Add a person';
+
+  @override
+  String get memoryCreateRuleTitle => 'Add a rule';
+
+  @override
+  String get memoryCreatePlanTitle => 'Add a plan';
+
+  @override
+  String get memoryCreateCommitmentTitle => 'Add a commitment';
+
+  @override
+  String get memoryCreateCategoryLabel => 'Category';
+
+  @override
+  String get memoryCreateRelationshipLabel => 'Relationship';
+
+  @override
+  String get memoryCreateSave => 'Save to Knows';
+
+  @override
+  String get memoryPageMemoryCreated => 'Saved to Knows';
+
+  @override
+  String get memoryPagePersonCreated => 'Person saved';
+
+  @override
+  String get memoryPageRuleCreated => 'Rule saved';
+
+  @override
+  String get memoryPagePlanCreated => 'Plan saved';
+
+  @override
+  String get memoryPageCommitmentCreated => 'Commitment saved';
+
+  @override
   String get memoryEditEditPersonTitle => 'Edit person';
 
   @override
@@ -2878,6 +2941,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get memoryErrorArchiveFailed =>
       'Could not archive this memory. Please try again.';
+
+  @override
+  String get memoryErrorCreateValidation =>
+      'That memory could not be saved. Check the fields and try again.';
+
+  @override
+  String get memoryErrorCreateFailed =>
+      'Could not save this memory. Please try again.';
 
   @override
   String get serviceErrorGeneric => 'Something went wrong. Please try again.';

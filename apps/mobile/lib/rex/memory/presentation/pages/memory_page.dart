@@ -5,6 +5,7 @@ import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/application/memory_controller.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_archive_dialogs.dart';
+import 'package:clarity/rex/memory/presentation/widgets/memory_create_sheets.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_sheets.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_filters.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_header_widgets.dart';
@@ -63,6 +64,100 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
 
   Future<void> _refresh() =>
       ref.read(memoryProvider.notifier).loadSavedOverview();
+
+  Future<void> _startCreate() async {
+    final kind = await showMemoryCreateTypePicker(context);
+    if (kind == null || !mounted) {
+      return;
+    }
+
+    final l10n = context.l10n;
+    final notifier = ref.read(memoryProvider.notifier);
+    var saved = false;
+    String successMessage = l10n.memoryPageMemoryCreated;
+
+    switch (kind) {
+      case MemoryCreateKind.fact:
+      case MemoryCreateKind.preference:
+        final result = await showFlatMemoryCreateSheet(context, kind: kind);
+        if (result == null) {
+          return;
+        }
+        saved = await notifier.createMemory(
+          memoryType: result.memoryType,
+          content: result.content,
+          importance: result.importance,
+          memoryCategory: result.memoryCategory,
+        );
+      case MemoryCreateKind.person:
+        final result = await showPersonCreateSheet(context);
+        if (result == null) {
+          return;
+        }
+        saved = await notifier.createPerson(
+          displayName: result.displayName,
+          relationship: result.relationship,
+          summary: result.summary,
+          importance: result.importance,
+        );
+        successMessage = l10n.memoryPagePersonCreated;
+      case MemoryCreateKind.rule:
+        final result = await showStructuredCreateSheet(
+          context,
+          title: l10n.memoryCreateRuleTitle,
+          primaryLabel: l10n.commonTitle,
+          detailLabel: l10n.memoryEditRuleTextLabel,
+        );
+        if (result == null) {
+          return;
+        }
+        saved = await notifier.createRule(
+          title: result.title,
+          ruleText: result.detail,
+          priority: result.importance,
+        );
+        successMessage = l10n.memoryPageRuleCreated;
+      case MemoryCreateKind.plan:
+        final result = await showStructuredCreateSheet(
+          context,
+          title: l10n.memoryCreatePlanTitle,
+          primaryLabel: l10n.commonTitle,
+          detailLabel: l10n.commonDescription,
+          extraLabel: l10n.memoryEditDesiredOutcomeLabel,
+        );
+        if (result == null) {
+          return;
+        }
+        saved = await notifier.createPlan(
+          title: result.title,
+          description: result.detail,
+          desiredOutcome: result.extra,
+          priority: result.importance,
+        );
+        successMessage = l10n.memoryPagePlanCreated;
+      case MemoryCreateKind.commitment:
+        final result = await showStructuredCreateSheet(
+          context,
+          title: l10n.memoryCreateCommitmentTitle,
+          primaryLabel: l10n.commonTitle,
+          detailLabel: l10n.commonCommitment,
+        );
+        if (result == null) {
+          return;
+        }
+        saved = await notifier.createCommitment(
+          title: result.title,
+          commitmentText: result.detail,
+          priority: result.importance,
+        );
+        successMessage = l10n.memoryPageCommitmentCreated;
+    }
+
+    if (!mounted) {
+      return;
+    }
+    _showSnackBar(saved ? successMessage : _currentError());
+  }
 
   Future<void> _editMemory(MemoryItem memory) async {
     final result = await showMemoryEditSheet(context, memory: memory);
@@ -298,6 +393,11 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           ? AppBar(
               title: Text(context.l10n.memoryPageTitle),
               actions: [
+                IconButton(
+                  onPressed: state.isLoading || state.isSaving ? null : _startCreate,
+                  icon: const Icon(Icons.add_rounded),
+                  tooltip: context.l10n.memoryCreateAddTooltip,
+                ),
                 IconButton(
                   onPressed: state.isLoading ? null : _refresh,
                   icon: const Icon(Icons.refresh_rounded),

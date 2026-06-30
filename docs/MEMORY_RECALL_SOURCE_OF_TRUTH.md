@@ -19,19 +19,44 @@ recall boundaries.
 | Area | Backend | Mobile |
 | --- | --- | --- |
 | Chat turn | `ChatService`, `ChatTurnOrchestrator`, `SimpleRexBrain` | `ChatController`, `ChatApi` |
-| Saved flat memory | `/memory`, `long_term_memory_repository.py` | `MemoryApi.getMemories`, `MemoryPage` |
+| Saved flat memory | `/memory`, `long_term_memory_repository.py`, `memory_write_service.py` | `MemoryApi.getMemories`, `MemoryApi.createMemory`, `MemoryPage` |
 | Structured memory | `/entities`, `/rules`, `/plans`, `/commitments` | `memory_structured_api.dart`, Knows tiles |
 | Person/entity cards | `entity_service.py`, `person_memory_materializer.py` | person memory models and saved memory group list |
 | Old chat search | `conversation_repository.py`, `chat_search_*`, `chat_recall_*` | Chats tab search and Rex recall context |
 | Prompt labels | `prompt_memory_context.py`, `prompt_structured_context.py` | Not built on mobile |
 | Truth enforcement | `chat_response_truth.py`, `action_truth_policy.py` | Chat UI displays backend response/action state |
 
+## Write Lifecycle (M1)
+
+All durable memory writes follow one lifecycle:
+
+```text
+UserIntent → MemoryDisciplineService.decide()
+          → BackendConfirmedWrite (create/update via service or repository)
+          → Optional person materialization (save path only, not read path)
+          → memory_changes / Knows refresh
+```
+
+Rules:
+
+- `MemoryDisciplineService` runs before structured creates (entities, rules,
+  plans, commitments) and flat creates (`POST /memory`, Rex chat direct saves).
+- Duplicate detection merges or updates existing records instead of silently
+  creating duplicates.
+- UI success is allowed only after the backend returns a confirmed record id
+  and active visibility checks pass where applicable.
+- Person materialization runs after confirmed person-category flat saves and
+  person entity creates; it must not run on Knows read/list paths.
+
 ## Current UX Decision
 
-For MVP, Knows remains primarily read/edit/archive for backend-confirmed memory.
-Manual memory creation in Knows is not yet marked required. If this changes, it
-must use Rex API create routes or a new backend-confirmed create path and must
-not bypass Rex memory truth rules.
+Knows supports manual create for backend-confirmed memory:
+
+- Flat fact/preference via `POST /memory`
+- Person, rule, plan, commitment via existing structured create routes
+
+Create flows must use Rex API routes, run discipline, refresh Knows only after
+backend confirmation, and must not bypass Rex memory truth rules.
 
 ## Recall Failure Classes
 

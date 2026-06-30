@@ -20,6 +20,11 @@ abstract class _MemoryApiTransport {
     Map<String, dynamic> body,
   );
 
+  Future<Map<String, dynamic>> _postJson(
+    String path,
+    Map<String, dynamic> body,
+  );
+
   Future<void> _delete(String path);
 
   Future<List<Map<String, dynamic>>> _getList(
@@ -58,6 +63,19 @@ class MemoryApi extends _MemoryApiTransport
     Map<String, dynamic> body,
   ) async {
     final response = await _apiClient.patchJson(path, body);
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const MemoryApiException('Backend returned an invalid response.');
+    }
+    return data;
+  }
+
+  @override
+  Future<Map<String, dynamic>> _postJson(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    final response = await _apiClient.postJson(path, body);
     final data = _decodeResponse(response);
     if (data is! Map<String, dynamic>) {
       throw const MemoryApiException('Backend returned an invalid response.');

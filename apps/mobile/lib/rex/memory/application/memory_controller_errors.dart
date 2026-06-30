@@ -1,6 +1,6 @@
 part of 'memory_controller.dart';
 
-enum _MemoryOperation { load, edit, archive }
+enum _MemoryOperation { load, edit, archive, create }
 
 String _memoryErrorMessage(
   Ref ref,
@@ -17,6 +17,8 @@ String _memoryErrorMessage(
   }
   if (statusCode != null && statusCode >= 400 && statusCode < 500) {
     switch (operation) {
+      case _MemoryOperation.create:
+        return l10n.memoryErrorCreateValidation;
       case _MemoryOperation.edit:
         return l10n.memoryErrorEditValidation;
       case _MemoryOperation.archive:
@@ -29,6 +31,8 @@ String _memoryErrorMessage(
   switch (operation) {
     case _MemoryOperation.load:
       return l10n.memoryErrorLoadConnection;
+    case _MemoryOperation.create:
+      return l10n.memoryErrorCreateFailed;
     case _MemoryOperation.edit:
       return l10n.memoryErrorUpdateFailed;
     case _MemoryOperation.archive:

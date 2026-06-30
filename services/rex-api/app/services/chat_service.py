@@ -24,6 +24,7 @@ from app.services.chat_voice_metadata import ChatVoiceMetadataMixin
 from app.services.clarity_action_parser import ClarityActionParser
 from app.services.file_service import FileService
 from app.services.goal_command_service import GoalCommandService
+from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_intent_service import MemoryIntentService
 from app.services.memory_turn_service import MemoryTurnService
 from app.services.prompt_service import PromptService
@@ -61,6 +62,7 @@ class ChatService(ChatVoiceMetadataMixin):
         self.memory_turn_service = memory_turn_service or MemoryTurnService(
             memory_service,
             memory_intent_service=memory_intent_service,
+            discipline=MemoryDisciplineService(memory_service),
         )
         self.goal_command_service = goal_command_service or GoalCommandService(
             memory_service

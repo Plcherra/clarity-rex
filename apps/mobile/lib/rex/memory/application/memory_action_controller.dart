@@ -1,6 +1,132 @@
 part of 'memory_controller.dart';
 
 mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
+  Future<bool> createMemory({
+    required MemoryType memoryType,
+    required String content,
+    int importance = 3,
+    String? memoryCategory,
+  }) async {
+    state = state.copyWith(isSaving: true, clearError: true);
+    try {
+      await ref.read(memoryApiProvider).createMemory(
+            memoryType: memoryType,
+            content: content,
+            importance: importance,
+            memoryCategory: memoryCategory,
+          );
+      await loadSavedOverview(activeOnly: state.activeOnly);
+      state = state.copyWith(isSaving: false, clearError: true);
+      return true;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.create),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> createPerson({
+    required String displayName,
+    String? relationship,
+    String? summary,
+    int importance = 3,
+  }) async {
+    state = state.copyWith(isSaving: true, clearError: true);
+    try {
+      await ref.read(memoryApiProvider).createPerson(
+            displayName: displayName,
+            relationship: relationship,
+            summary: summary,
+            importance: importance,
+          );
+      await loadSavedOverview(activeOnly: state.activeOnly);
+      state = state.copyWith(isSaving: false, clearError: true);
+      return true;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.create),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> createRule({
+    required String title,
+    required String ruleText,
+    int priority = 3,
+  }) async {
+    state = state.copyWith(isSaving: true, clearError: true);
+    try {
+      await ref.read(memoryApiProvider).createRule(
+            title: title,
+            ruleText: ruleText,
+            priority: priority,
+          );
+      await loadSavedOverview(activeOnly: state.activeOnly);
+      state = state.copyWith(isSaving: false, clearError: true);
+      return true;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.create),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> createPlan({
+    required String title,
+    String? description,
+    String? desiredOutcome,
+    int priority = 3,
+  }) async {
+    state = state.copyWith(isSaving: true, clearError: true);
+    try {
+      await ref.read(memoryApiProvider).createPlan(
+            title: title,
+            description: description,
+            desiredOutcome: desiredOutcome,
+            priority: priority,
+          );
+      await loadSavedOverview(activeOnly: state.activeOnly);
+      state = state.copyWith(isSaving: false, clearError: true);
+      return true;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.create),
+      );
+      return false;
+    }
+  }
+
+  Future<bool> createCommitment({
+    required String title,
+    required String commitmentText,
+    int priority = 3,
+  }) async {
+    state = state.copyWith(isSaving: true, clearError: true);
+    try {
+      await ref.read(memoryApiProvider).createCommitment(
+            title: title,
+            commitmentText: commitmentText,
+            priority: priority,
+          );
+      await loadSavedOverview(activeOnly: state.activeOnly);
+      state = state.copyWith(isSaving: false, clearError: true);
+      return true;
+    } on Object catch (error) {
+      state = state.copyWith(
+        isSaving: false,
+        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.create),
+      );
+      return false;
+    }
+  }
+
   Future<bool> updateMemory(
     String memoryId, {
     MemoryType? memoryType,

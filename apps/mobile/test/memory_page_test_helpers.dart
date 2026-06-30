@@ -77,6 +77,53 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
   final ruleActiveFilters = <bool?>[];
   final planActiveFilters = <bool?>[];
   final commitmentActiveFilters = <bool?>[];
+  String? createMemoryContent;
+  String? createPersonNameValue;
+
+  @override
+  Future<MemoryItem> createMemory({
+    required MemoryType memoryType,
+    required String content,
+    int importance = 3,
+    String? memoryCategory,
+  }) async {
+    createMemoryContent = content;
+    return MemoryItem(
+      id: 'memory-created',
+      memoryType: memoryType,
+      content: content,
+      importance: importance,
+      active: true,
+      metadata: {
+        if (memoryCategory != null) 'memory_category': memoryCategory,
+      },
+      createdAt: DateTime.utc(2026, 6, 1),
+      updatedAt: DateTime.utc(2026, 6, 1),
+    );
+  }
+
+  @override
+  Future<PersonMemoryItem> createPerson({
+    required String displayName,
+    String? relationship,
+    String? summary,
+    int importance = 3,
+  }) async {
+    createPersonNameValue = displayName;
+    return PersonMemoryItem(
+      id: 'person-created',
+      displayName: displayName,
+      relationship: relationship,
+      summary: summary,
+      aliases: const [],
+      importance: importance,
+      status: 'active',
+      active: true,
+      metadata: const {},
+      createdAt: DateTime.utc(2026, 6, 1),
+      updatedAt: DateTime.utc(2026, 6, 1),
+    );
+  }
 
   @override
   Future<List<MemoryItem>> getMemories({

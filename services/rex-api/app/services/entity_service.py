@@ -8,6 +8,7 @@ from app.models.entity import (
     EntityEventUpdateRequest,
     EntityUpdateRequest,
 )
+from app.models.memory_discipline import MemoryRecordKind
 from app.services.entity_errors import EntityServiceError
 from app.services.entity_merge_service import (
     EntityMergeService,
@@ -21,15 +22,26 @@ from app.services.entity_merge_service import (
     normalize_key,
 )
 from app.services.entity_repository import EntityRepository
+from app.services.memory_discipline_service import MemoryDisciplineService
+from app.services.memory_discipline_writes import (
+    MemoryWriteError,
+    execute_disciplined_create,
+)
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 from app.services.person_memory_materializer import PersonMemoryMaterializer
 
 
 class EntityService:
-    def __init__(self, memory_service: SupabaseMemoryService) -> None:
+    def __init__(
+        self,
+        memory_service: SupabaseMemoryService,
+        *,
+        discipline: MemoryDisciplineService | None = None,
+    ) -> None:
         self.repository = EntityRepository(memory_service)
         self.merge_service = EntityMergeService(self.repository)
         self.person_memory_materializer = PersonMemoryMaterializer()
+        self.discipline = discipline or MemoryDisciplineService(memory_service)
 
     async def create_entity(self, request: EntityCreateRequest) -> dict[str, Any]:
         payload = _payload(request)
@@ -61,10 +73,22 @@ class EntityService:
         wrong_names = correction_wrong_names(payload)
 
         try:
-            return await self.merge_service.create_or_merge_entity(
-                payload,
-                wrong_names=wrong_names,
+            if wrong_names:
+                return await self.merge_service.create_or_merge_entity(
+                    payload,
+                    wrong_names=wrong_names,
+                )
+            return await execute_disciplined_create(
+                self.discipline,
+                kind=MemoryRecordKind.ENTITY,
+                payload=payload,
+                create_fn=lambda item: self.merge_service.create_or_merge_entity(
+                    item,
+                    wrong_names=wrong_names,
+                ),
             )
+        except MemoryWriteError as error:
+            raise EntityServiceError(error.detail, error.status_code) from error
         except MemoryServiceError as error:
             raise EntityServiceError(error.detail, error.status_code) from error
 

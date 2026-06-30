@@ -27,6 +27,21 @@ mixin _SavedMemoryApi on _MemoryApiTransport {
         .toList(growable: false);
   }
 
+  Future<MemoryItem> createMemory({
+    required MemoryType memoryType,
+    required String content,
+    int importance = 3,
+    String? memoryCategory,
+  }) async {
+    final data = await _postJson('/memory', _withoutNulls({
+      'memory_type': memoryType.apiValue,
+      'content': content,
+      'importance': importance,
+      'memory_category': memoryCategory,
+    }));
+    return MemoryItem.fromJson(data);
+  }
+
   Future<MemoryItem> updateMemory(
     String memoryId, {
     MemoryType? memoryType,

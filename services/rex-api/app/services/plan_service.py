@@ -8,12 +8,18 @@ from app.models.plan import (
     PlanMilestoneUpdateRequest,
     PlanUpdateRequest,
 )
+from app.models.memory_discipline import MemoryRecordKind
 from app.services.goal_command_formatting import goal_title
 from app.services.goal_command_parsing import (
     expand_goal_save_items,
     normalize_equipment_goal_title,
 )
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
+from app.services.memory_discipline_service import MemoryDisciplineService
+from app.services.memory_discipline_writes import (
+    MemoryWriteError,
+    execute_disciplined_create,
+)
 from app.services.plan_entity_linker import PlanEntityLinker
 from app.services.plan_errors import PlanServiceError
 from app.services.plan_merge_service import (
@@ -28,10 +34,16 @@ from app.services.plan_repository import PlanRepository
 
 
 class PlanService:
-    def __init__(self, memory_service: SupabaseMemoryService) -> None:
+    def __init__(
+        self,
+        memory_service: SupabaseMemoryService,
+        *,
+        discipline: MemoryDisciplineService | None = None,
+    ) -> None:
         self.repository = PlanRepository(memory_service)
         self.entity_linker = PlanEntityLinker(self.repository)
         self.merge_service = PlanMergeService(self.repository)
+        self.discipline = discipline or MemoryDisciplineService(memory_service)
 
     async def create_plan(self, request: PlanCreateRequest) -> dict[str, Any]:
         payload = _payload(request)
@@ -88,10 +100,17 @@ class PlanService:
         wrong_names: set[str],
     ) -> dict[str, Any]:
         try:
-            return await self.merge_service.create_or_merge_plan(
-                payload,
-                wrong_names=wrong_names,
+            return await execute_disciplined_create(
+                self.discipline,
+                kind=MemoryRecordKind.PLAN,
+                payload=payload,
+                create_fn=lambda item: self.merge_service.create_or_merge_plan(
+                    item,
+                    wrong_names=wrong_names,
+                ),
             )
+        except MemoryWriteError as error:
+            raise PlanServiceError(error.detail, error.status_code) from error
         except MemoryServiceError as error:
             raise PlanServiceError(error.detail, error.status_code) from error
 

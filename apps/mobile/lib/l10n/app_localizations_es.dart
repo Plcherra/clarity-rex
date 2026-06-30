@@ -2646,6 +2646,69 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memoryPageCommitmentUpdated => 'Compromiso actualizado';
 
   @override
+  String get memoryCreateAddTooltip => 'Agregar información guardada';
+
+  @override
+  String get memoryCreateChooseType => '¿Qué debe recordar Clarity?';
+
+  @override
+  String get memoryCreateFact => 'Hecho';
+
+  @override
+  String get memoryCreatePreference => 'Preferencia';
+
+  @override
+  String get memoryCreateRule => 'Regla';
+
+  @override
+  String get memoryCreatePlan => 'Plan';
+
+  @override
+  String get memoryCreateCommitment => 'Compromiso';
+
+  @override
+  String get memoryCreateFactTitle => 'Agregar un hecho';
+
+  @override
+  String get memoryCreatePreferenceTitle => 'Agregar una preferencia';
+
+  @override
+  String get memoryCreatePersonTitle => 'Agregar una persona';
+
+  @override
+  String get memoryCreateRuleTitle => 'Agregar una regla';
+
+  @override
+  String get memoryCreatePlanTitle => 'Agregar un plan';
+
+  @override
+  String get memoryCreateCommitmentTitle => 'Agregar un compromiso';
+
+  @override
+  String get memoryCreateCategoryLabel => 'Categoría';
+
+  @override
+  String get memoryCreateRelationshipLabel => 'Relación';
+
+  @override
+  String get memoryCreateSave => 'Guardar en Lo que sabe';
+
+  @override
+  String get memoryPageMemoryCreated => 'Guardado en Lo que sabe';
+
+  @override
+  String get memoryPagePersonCreated => 'Persona guardada';
+
+  @override
+  String get memoryPageRuleCreated => 'Regla guardada';
+
+  @override
+  String get memoryPagePlanCreated => 'Plan guardado';
+
+  @override
+  String get memoryPageCommitmentCreated => 'Compromiso guardado';
+
+  @override
   String get memoryEditEditPersonTitle => 'Editar persona';
 
   @override
@@ -2934,6 +2997,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get memoryErrorArchiveFailed =>
       'No se pudo archivar esta memoria. Por favor inténtalo de nuevo.';
+
+  @override
+  String get memoryErrorCreateValidation =>
+      'Esa memoria no se pudo guardar. Verifique los campos e inténtelo nuevamente.';
+
+  @override
+  String get memoryErrorCreateFailed =>
+      'No se pudo guardar esta memoria. Por favor inténtalo de nuevo.';
 
   @override
   String get serviceErrorGeneric => 'Algo salió mal. Inténtalo de nuevo.';

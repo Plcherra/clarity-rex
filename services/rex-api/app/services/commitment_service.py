@@ -4,7 +4,13 @@ import re
 from typing import Any
 
 from app.models.commitment import CommitmentCreateRequest, CommitmentUpdateRequest
+from app.models.memory_discipline import MemoryRecordKind
 from app.services.entity_normalization_service import EntityNormalizationService
+from app.services.memory_discipline_service import MemoryDisciplineService
+from app.services.memory_discipline_writes import (
+    MemoryWriteError,
+    execute_disciplined_create,
+)
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 
 
@@ -16,9 +22,15 @@ class CommitmentServiceError(Exception):
 
 
 class CommitmentService:
-    def __init__(self, memory_service: SupabaseMemoryService) -> None:
+    def __init__(
+        self,
+        memory_service: SupabaseMemoryService,
+        *,
+        discipline: MemoryDisciplineService | None = None,
+    ) -> None:
         self.memory_service = memory_service
         self.normalization_service = EntityNormalizationService()
+        self.discipline = discipline or MemoryDisciplineService(memory_service)
 
     async def create_commitment(
         self, request: CommitmentCreateRequest
@@ -31,22 +43,14 @@ class CommitmentService:
         payload = await self._normalize_entity_references(payload)
 
         try:
-            existing = await self.memory_service.list_commitments(
-                commitment_type=payload["commitment_type"],
-                active=True,
-                limit=100,
+            return await execute_disciplined_create(
+                self.discipline,
+                kind=MemoryRecordKind.COMMITMENT,
+                payload=payload,
+                create_fn=self.memory_service.create_commitment,
             )
-            duplicate = next(
-                (
-                    commitment
-                    for commitment in existing
-                    if self._matches_existing_commitment(commitment, payload)
-                ),
-                None,
-            )
-            if duplicate:
-                return await self._merge_existing_commitment(duplicate, payload)
-            return await self.memory_service.create_commitment(payload)
+        except MemoryWriteError as error:
+            raise CommitmentServiceError(error.detail, error.status_code) from error
         except MemoryServiceError as error:
             raise CommitmentServiceError(error.detail, error.status_code) from error
 

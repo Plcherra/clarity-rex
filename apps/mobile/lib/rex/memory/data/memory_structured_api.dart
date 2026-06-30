@@ -13,6 +13,25 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
     return data.map(PersonMemoryItem.fromJson).toList(growable: false);
   }
 
+  Future<PersonMemoryItem> createPerson({
+    required String displayName,
+    String? relationship,
+    String? summary,
+    int importance = 3,
+  }) async {
+    final normalizedName = displayName.trim().toLowerCase();
+    final data = await _postJson('/entities', {
+      'entity_type': 'person',
+      'display_name': displayName.trim(),
+      'normalized_name': normalizedName,
+      if (relationship != null && relationship.trim().isNotEmpty)
+        'relationship': relationship.trim(),
+      if (summary != null && summary.trim().isNotEmpty) 'summary': summary.trim(),
+      'importance': importance,
+    });
+    return PersonMemoryItem.fromJson(data);
+  }
+
   Future<PersonMemoryItem> updatePerson(
     String personId, {
     String? displayName,
@@ -55,6 +74,21 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
     return data.map(RuleMemoryItem.fromJson).toList(growable: false);
   }
 
+  Future<RuleMemoryItem> createRule({
+    required String title,
+    required String ruleText,
+    String ruleType = 'personal',
+    int priority = 3,
+  }) async {
+    final data = await _postJson('/rules', {
+      'rule_type': ruleType,
+      'title': title.trim(),
+      'rule_text': ruleText.trim(),
+      'priority': priority,
+    });
+    return RuleMemoryItem.fromJson(data);
+  }
+
   Future<RuleMemoryItem> updateRule(
     String ruleId, {
     String? title,
@@ -92,6 +126,23 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
       if (active != null) 'active': active.toString(),
     });
     return data.map(PlanMemoryItem.fromJson).toList(growable: false);
+  }
+
+  Future<PlanMemoryItem> createPlan({
+    required String title,
+    String? description,
+    String? desiredOutcome,
+    String planType = 'personal',
+    int priority = 3,
+  }) async {
+    final data = await _postJson('/plans', _withoutNulls({
+      'plan_type': planType,
+      'title': title.trim(),
+      'description': description?.trim(),
+      'desired_outcome': desiredOutcome?.trim(),
+      'priority': priority,
+    }));
+    return PlanMemoryItem.fromJson(data);
   }
 
   Future<PlanMemoryItem> updatePlan(
@@ -136,6 +187,21 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
       if (active != null) 'active': active.toString(),
     });
     return data.map(CommitmentMemoryItem.fromJson).toList(growable: false);
+  }
+
+  Future<CommitmentMemoryItem> createCommitment({
+    required String title,
+    required String commitmentText,
+    String commitmentType = 'task',
+    int priority = 3,
+  }) async {
+    final data = await _postJson('/commitments', {
+      'commitment_type': commitmentType,
+      'title': title.trim(),
+      'commitment_text': commitmentText.trim(),
+      'priority': priority,
+    });
+    return CommitmentMemoryItem.fromJson(data);
   }
 
   Future<CommitmentMemoryItem> updateCommitment(

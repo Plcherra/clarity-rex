@@ -12,6 +12,9 @@ from app.services.conversation_pending_action import (
     is_delete_rejection_message,
 )
 from app.services.memory_intent_service import MemoryIntentService, SimpleMemoryIntent
+from app.models.memory_discipline import MemoryRecordKind
+from app.services.memory_discipline_service import MemoryDisciplineService
+from app.services.memory_discipline_writes import MemoryWriteError, execute_disciplined_create
 from app.services.memory_path_policy import (
     direct_save_metadata,
 )
@@ -79,9 +82,11 @@ class MemoryTurnService(
         self,
         memory_service: MemoryTurnStore,
         memory_intent_service: Optional[MemoryIntentService] = None,
+        discipline: Optional[MemoryDisciplineService] = None,
     ) -> None:
         self.memory_service = memory_service
         self.memory_intent_service = memory_intent_service or MemoryIntentService()
+        self.discipline = discipline
         self.person_memory_materializer = PersonMemoryMaterializer()
         self.memory_correction_service = MemoryCorrectionService(memory_service)
 
@@ -268,14 +273,12 @@ class MemoryTurnService(
 
         try:
             memory_metadata = direct_save_metadata(intent.metadata)
-            record = await self.memory_service.save_long_term_memory(
-                memory_type=intent.memory_type,
-                content=intent.content,
-                source_conversation_id=conversation_id,
+            record = await self._persist_confirmed_memory(
+                intent,
+                conversation_id=conversation_id,
                 source_message_id=source_message_id
                 or str(user_message.get("id") or "")
                 or None,
-                importance=intent.importance,
                 metadata=memory_metadata,
             )
         except Exception as error:
@@ -407,6 +410,51 @@ class MemoryTurnService(
             "memory_changes": self._simple_memory_saved_summary(intent, record),
             "messages": await self.recent_public_messages(conversation_id),
         }
+
+    async def _persist_confirmed_memory(
+        self,
+        intent: SimpleMemoryIntent,
+        *,
+        conversation_id: str,
+        source_message_id: Optional[str],
+        metadata: dict,
+    ) -> dict:
+        if self.discipline is None:
+            return await self.memory_service.save_long_term_memory(
+                memory_type=intent.memory_type,
+                content=intent.content,
+                source_conversation_id=conversation_id,
+                source_message_id=source_message_id,
+                importance=intent.importance,
+                metadata=metadata,
+            )
+
+        payload = {
+            "memory_type": intent.memory_type,
+            "content": intent.content,
+            "importance": intent.importance,
+            "metadata": metadata,
+        }
+
+        async def create_fn(item: dict) -> dict:
+            return await self.memory_service.save_long_term_memory(
+                memory_type=str(item["memory_type"]),
+                content=str(item["content"]),
+                source_conversation_id=conversation_id,
+                source_message_id=source_message_id,
+                importance=int(item.get("importance") or 3),
+                metadata=dict(item.get("metadata") or {}),
+            )
+
+        try:
+            return await execute_disciplined_create(
+                self.discipline,
+                kind=MemoryRecordKind.LONG_TERM_MEMORY,
+                payload=payload,
+                create_fn=create_fn,
+            )
+        except MemoryWriteError as error:
+            raise RuntimeError(error.detail) from error
 
     async def _clarify_unclear_memory(
         self,

@@ -12,7 +12,9 @@ from app.services.deepgram_streaming_service import DeepgramStreamingService
 from app.services.entity_service import EntityService
 from app.services.file_service import FileService
 from app.services.google_tts_service import GoogleTTSService
+from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_service import SupabaseMemoryService
+from app.services.memory_write_service import MemoryWriteService
 from app.services.plan_service import PlanService
 from app.services.plaid_account_service import PlaidAccountService
 from app.services.plaid_api_client import PlaidApiClient
@@ -49,28 +51,45 @@ def get_clarity_control_service(
     )
 
 
+def get_memory_discipline_service(
+    memory_service: SupabaseMemoryService = Depends(get_memory_service),
+) -> MemoryDisciplineService:
+    return MemoryDisciplineService(memory_service)
+
+
+def get_memory_write_service(
+    memory_service: SupabaseMemoryService = Depends(get_memory_service),
+    discipline: MemoryDisciplineService = Depends(get_memory_discipline_service),
+) -> MemoryWriteService:
+    return MemoryWriteService(memory_service, discipline)
+
+
 def get_entity_service(
     memory_service: SupabaseMemoryService = Depends(get_memory_service),
+    discipline: MemoryDisciplineService = Depends(get_memory_discipline_service),
 ) -> EntityService:
-    return EntityService(memory_service)
+    return EntityService(memory_service, discipline=discipline)
 
 
 def get_rule_service(
     memory_service: SupabaseMemoryService = Depends(get_memory_service),
+    discipline: MemoryDisciplineService = Depends(get_memory_discipline_service),
 ) -> RuleService:
-    return RuleService(memory_service)
+    return RuleService(memory_service, discipline=discipline)
 
 
 def get_plan_service(
     memory_service: SupabaseMemoryService = Depends(get_memory_service),
+    discipline: MemoryDisciplineService = Depends(get_memory_discipline_service),
 ) -> PlanService:
-    return PlanService(memory_service)
+    return PlanService(memory_service, discipline=discipline)
 
 
 def get_commitment_service(
     memory_service: SupabaseMemoryService = Depends(get_memory_service),
+    discipline: MemoryDisciplineService = Depends(get_memory_discipline_service),
 ) -> CommitmentService:
-    return CommitmentService(memory_service)
+    return CommitmentService(memory_service, discipline=discipline)
 
 
 def get_accountability_service() -> AccountabilityService:

@@ -4512,6 +4512,132 @@ abstract class AppLocalizations {
   /// **'Commitment updated'**
   String get memoryPageCommitmentUpdated;
 
+  /// No description provided for @memoryCreateAddTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add saved information'**
+  String get memoryCreateAddTooltip;
+
+  /// No description provided for @memoryCreateChooseType.
+  ///
+  /// In en, this message translates to:
+  /// **'What should Clarity remember?'**
+  String get memoryCreateChooseType;
+
+  /// No description provided for @memoryCreateFact.
+  ///
+  /// In en, this message translates to:
+  /// **'Fact'**
+  String get memoryCreateFact;
+
+  /// No description provided for @memoryCreatePreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Preference'**
+  String get memoryCreatePreference;
+
+  /// No description provided for @memoryCreateRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule'**
+  String get memoryCreateRule;
+
+  /// No description provided for @memoryCreatePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get memoryCreatePlan;
+
+  /// No description provided for @memoryCreateCommitment.
+  ///
+  /// In en, this message translates to:
+  /// **'Commitment'**
+  String get memoryCreateCommitment;
+
+  /// No description provided for @memoryCreateFactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a fact'**
+  String get memoryCreateFactTitle;
+
+  /// No description provided for @memoryCreatePreferenceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a preference'**
+  String get memoryCreatePreferenceTitle;
+
+  /// No description provided for @memoryCreatePersonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a person'**
+  String get memoryCreatePersonTitle;
+
+  /// No description provided for @memoryCreateRuleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a rule'**
+  String get memoryCreateRuleTitle;
+
+  /// No description provided for @memoryCreatePlanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a plan'**
+  String get memoryCreatePlanTitle;
+
+  /// No description provided for @memoryCreateCommitmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a commitment'**
+  String get memoryCreateCommitmentTitle;
+
+  /// No description provided for @memoryCreateCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get memoryCreateCategoryLabel;
+
+  /// No description provided for @memoryCreateRelationshipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get memoryCreateRelationshipLabel;
+
+  /// No description provided for @memoryCreateSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Knows'**
+  String get memoryCreateSave;
+
+  /// No description provided for @memoryPageMemoryCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to Knows'**
+  String get memoryPageMemoryCreated;
+
+  /// No description provided for @memoryPagePersonCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Person saved'**
+  String get memoryPagePersonCreated;
+
+  /// No description provided for @memoryPageRuleCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule saved'**
+  String get memoryPageRuleCreated;
+
+  /// No description provided for @memoryPagePlanCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan saved'**
+  String get memoryPagePlanCreated;
+
+  /// No description provided for @memoryPageCommitmentCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Commitment saved'**
+  String get memoryPageCommitmentCreated;
+
   /// No description provided for @memoryEditEditPersonTitle.
   ///
   /// In en, this message translates to:
@@ -4987,6 +5113,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not archive this memory. Please try again.'**
   String get memoryErrorArchiveFailed;
+
+  /// No description provided for @memoryErrorCreateValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'That memory could not be saved. Check the fields and try again.'**
+  String get memoryErrorCreateValidation;
+
+  /// No description provided for @memoryErrorCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save this memory. Please try again.'**
+  String get memoryErrorCreateFailed;
 
   /// No description provided for @serviceErrorGeneric.
   ///

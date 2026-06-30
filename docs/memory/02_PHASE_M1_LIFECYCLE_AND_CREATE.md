@@ -90,13 +90,13 @@ UserIntent → DisciplineCheck → BackendConfirmedWrite → OptionalMaterialize
 
 ## Acceptance Criteria
 
-- [ ] Lifecycle documented in `MEMORY_RECALL_SOURCE_OF_TRUTH.md`.
-- [ ] `MemoryDisciplineService` runs on all structured and flat creates.
-- [ ] `POST /memory` creates backend-confirmed flat memory.
-- [ ] Knows can create each supported record type.
-- [ ] Success UI only after backend returns id.
-- [ ] Duplicate entity/plan attempts are handled by discipline policy (not silent duplicates).
-- [ ] Integration tests pass.
+- [x] Lifecycle documented in `MEMORY_RECALL_SOURCE_OF_TRUTH.md`.
+- [x] `MemoryDisciplineService` runs on all structured and flat creates.
+- [x] `POST /memory` creates backend-confirmed flat memory.
+- [x] Knows can create each supported record type.
+- [x] Success UI only after backend returns id.
+- [x] Duplicate entity/plan attempts are handled by discipline policy (not silent duplicates).
+- [x] Integration tests pass.
 
 ## Verification
 

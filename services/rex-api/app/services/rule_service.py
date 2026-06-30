@@ -7,7 +7,13 @@ from app.models.personal_rule import (
     PersonalRuleCreateRequest,
     PersonalRuleUpdateRequest,
 )
+from app.models.memory_discipline import MemoryRecordKind
 from app.services.entity_normalization_service import EntityNormalizationService
+from app.services.memory_discipline_service import MemoryDisciplineService
+from app.services.memory_discipline_writes import (
+    MemoryWriteError,
+    execute_disciplined_create,
+)
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 
 
@@ -19,9 +25,15 @@ class RuleServiceError(Exception):
 
 
 class RuleService:
-    def __init__(self, memory_service: SupabaseMemoryService) -> None:
+    def __init__(
+        self,
+        memory_service: SupabaseMemoryService,
+        *,
+        discipline: MemoryDisciplineService | None = None,
+    ) -> None:
         self.memory_service = memory_service
         self.normalization_service = EntityNormalizationService()
+        self.discipline = discipline or MemoryDisciplineService(memory_service)
 
     async def create_rule(self, request: PersonalRuleCreateRequest) -> dict[str, Any]:
         payload = _payload(request)
@@ -33,23 +45,14 @@ class RuleService:
         payload = await self._normalize_entity_references(payload)
 
         try:
-            existing = await self.memory_service.list_personal_rules(
-                rule_type=payload["rule_type"],
-                active=True,
-                limit=100,
+            return await execute_disciplined_create(
+                self.discipline,
+                kind=MemoryRecordKind.PERSONAL_RULE,
+                payload=payload,
+                create_fn=self.memory_service.create_personal_rule,
             )
-            duplicate = next(
-                (
-                    rule
-                    for rule in existing
-                    if _normalize_text(rule.get("rule_text"))
-                    == _normalize_text(payload["rule_text"])
-                ),
-                None,
-            )
-            if duplicate:
-                return await self._merge_existing_rule(duplicate, payload)
-            return await self.memory_service.create_personal_rule(payload)
+        except MemoryWriteError as error:
+            raise RuleServiceError(error.detail, error.status_code) from error
         except MemoryServiceError as error:
             raise RuleServiceError(error.detail, error.status_code) from error
 

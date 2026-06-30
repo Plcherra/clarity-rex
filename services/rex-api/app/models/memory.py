@@ -46,6 +46,14 @@ class MemoryUpdateRequest(BaseModel):
     metadata: Optional[dict] = None
 
 
+class MemoryCreateRequest(BaseModel):
+    memory_type: MemoryType
+    content: str = Field(min_length=1)
+    importance: int = Field(default=3, ge=1, le=5)
+    memory_category: Optional[str] = None
+    metadata: Optional[dict] = None
+
+
 class MemoryCorrectionResponse(BaseModel):
     id: str
     correction_type: MemoryCorrectionType

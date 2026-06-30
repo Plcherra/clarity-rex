@@ -238,7 +238,8 @@ async def test_entity_service_deduplicates_by_alias_and_descriptive_name():
     assert row["aliases"] == ["Clara", "Clara from work", "the girl Clara"]
     assert row["summary"] == "Clara is part of the current dating story."
     assert row["importance"] == 5
-    assert row["metadata"] == {"source": "manual", "extracted": True}
+    assert row["metadata"]["source"] == "manual"
+    assert row["metadata"]["extracted"] is True
     assert len(memory.entities) == 1
 
 
