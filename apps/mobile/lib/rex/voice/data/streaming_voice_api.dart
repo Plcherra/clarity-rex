@@ -1,45 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:clarity/core/rex/rex_api_client.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
+import 'package:clarity/rex/voice/data/voice_websocket.dart';
 
-class StreamingVoiceApiException implements Exception {
-  const StreamingVoiceApiException(this.message);
+import 'streaming_voice_api_io.dart'
+    if (dart.library.html) 'streaming_voice_api_web.dart';
 
-  final String message;
-
-  @override
-  String toString() => message;
-}
-
-typedef VoiceWebSocketConnector =
-    Future<VoiceWebSocket> Function(Uri uri, {Map<String, String>? headers});
-
-abstract class VoiceWebSocket {
-  Stream<dynamic> get stream;
-
-  void add(dynamic data);
-
-  Future<void> close();
-}
-
-class IoVoiceWebSocket implements VoiceWebSocket {
-  IoVoiceWebSocket(this._socket);
-
-  final WebSocket _socket;
-
-  @override
-  Stream<dynamic> get stream => _socket;
-
-  @override
-  void add(dynamic data) => _socket.add(data);
-
-  @override
-  Future<void> close() => _socket.close();
-}
+export 'voice_websocket.dart';
 
 class VoiceStreamEvent {
   const VoiceStreamEvent(this.name, this.data);
@@ -150,7 +120,7 @@ class StreamingVoiceApi {
     RexApiClient? apiClient,
     String? Function()? resolveLocale,
   }) : _apiClient = apiClient ?? RexApiClient(baseUrl: baseUrl),
-       _connector = connector ?? _connectIoWebSocket,
+       _connector = connector ?? connectVoiceWebSocket,
        _resolveLocale = resolveLocale;
 
   final RexApiClient _apiClient;
@@ -196,24 +166,6 @@ class StreamingVoiceApi {
     } on Object {
       throw const StreamingVoiceApiException(
         'Clarity API URL must use http, https, ws, or wss.',
-      );
-    }
-  }
-
-  static Future<VoiceWebSocket> _connectIoWebSocket(
-    Uri uri, {
-    Map<String, String>? headers,
-  }) async {
-    try {
-      return IoVoiceWebSocket(
-        await WebSocket.connect(
-          uri.toString(),
-          headers: headers,
-        ).timeout(const Duration(seconds: 8)),
-      );
-    } on Object {
-      throw const StreamingVoiceApiException(
-        'Could not open Assistant voice stream. Check your connection and try again.',
       );
     }
   }

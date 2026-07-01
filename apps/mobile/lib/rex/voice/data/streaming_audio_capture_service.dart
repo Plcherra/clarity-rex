@@ -5,7 +5,8 @@ import 'dart:typed_data';
 
 import 'package:record/record.dart';
 
-import 'package:clarity/rex/voice/data/audio_capture_service.dart';
+import 'package:clarity/rex/voice/data/voice_capture_config.dart';
+import 'package:clarity/rex/voice/data/voice_pcm16.dart';
 
 typedef AudioChunkCallback = Future<void> Function(Uint8List chunk);
 typedef SpeechEndCallback = void Function();
@@ -85,7 +86,7 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
           return;
         }
 
-        final currentDb = _pcm16Decibels(chunk);
+        final currentDb = pcm16Decibels(chunk);
         if (currentDb < _bargeInSpeechThresholdDb) {
           _speechStartedAt = null;
           _preRollChunks.clear();
@@ -121,27 +122,6 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
     } on Object {
       // The recorder may already be stopped.
     }
-  }
-
-  double _pcm16Decibels(Uint8List chunk) {
-    if (chunk.length < 2) {
-      return -160;
-    }
-
-    var sumSquares = 0.0;
-    var sampleCount = 0;
-    final byteData = ByteData.sublistView(chunk);
-    for (var offset = 0; offset + 1 < chunk.length; offset += 2) {
-      final sample = byteData.getInt16(offset, Endian.little) / 32768.0;
-      sumSquares += sample * sample;
-      sampleCount++;
-    }
-    if (sampleCount == 0 || sumSquares == 0) {
-      return -160;
-    }
-
-    final rms = sqrt(sumSquares / sampleCount);
-    return 20 * log(rms) / ln10;
   }
 
   void _rememberPreRollChunk(Uint8List chunk) {
@@ -217,7 +197,7 @@ class PackageStreamingAudioCaptureService
       (chunk) {
         unawaited(onAudioChunk(chunk));
         final update = detector.addAmplitude(
-          currentDb: _pcm16Decibels(chunk),
+          currentDb: pcm16Decibels(chunk),
           now: _now(),
         );
         if (update.speechStarted) {
@@ -321,26 +301,5 @@ class PackageStreamingAudioCaptureService
 
   Duration _shorterDuration(Duration value, Duration maximum) {
     return value.compareTo(maximum) <= 0 ? value : maximum;
-  }
-
-  double _pcm16Decibels(Uint8List chunk) {
-    if (chunk.length < 2) {
-      return -160;
-    }
-
-    var sumSquares = 0.0;
-    var sampleCount = 0;
-    final byteData = ByteData.sublistView(chunk);
-    for (var offset = 0; offset + 1 < chunk.length; offset += 2) {
-      final sample = byteData.getInt16(offset, Endian.little) / 32768.0;
-      sumSquares += sample * sample;
-      sampleCount++;
-    }
-    if (sampleCount == 0 || sumSquares == 0) {
-      return -160;
-    }
-
-    final rms = sqrt(sumSquares / sampleCount);
-    return 20 * log(rms) / ln10;
   }
 }

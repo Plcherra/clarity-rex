@@ -40,7 +40,7 @@ final class AppCapabilities {
       platform: platform,
       supportsNativePlaidLink: nativeMobile,
       supportsWebPlaidLink: isWeb,
-      supportsStreamingVoice: nativeMobile,
+      supportsStreamingVoice: isWeb || nativeMobile,
       supportsBackgroundVoice: nativeMobile,
       supportsNativeVoiceBridge: !isWeb && platform == TargetPlatform.iOS,
       supportsCsvImport: !isWeb,
@@ -58,7 +58,7 @@ final class AppCapabilities {
   /// Plaid Link in the browser (Flutter web).
   final bool supportsWebPlaidLink;
 
-  /// Streaming voice WebSocket pipeline. Disabled on web until P5.
+  /// Streaming voice WebSocket pipeline (mobile + Flutter web).
   final bool supportsStreamingVoice;
 
   /// Native background audio session for voice calls.
@@ -77,6 +77,10 @@ final class AppCapabilities {
   /// Any voice interaction path available on this platform.
   bool get supportsAnyVoice =>
       supportsStreamingVoice || supportsNativeVoiceBridge;
+
+  /// Profile voice usage charts and Supabase `user_voice_summaries` reads.
+  /// Same on web and mobile when the user is signed in.
+  bool get supportsVoiceUsageSummary => true;
 
   @override
   bool operator ==(Object other) {

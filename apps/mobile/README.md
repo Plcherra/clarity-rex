@@ -192,6 +192,41 @@ flutter test
 </details>
 
 <details>
+<summary><strong>Flutter web (PWA at goclarity.app/app/)</strong></summary>
+
+Production web uses the same `apps/mobile` codebase as iOS/Android. See [`docs/flutter-web/00_FLUTTER_WEB_MASTER.md`](../../docs/flutter-web/00_FLUTTER_WEB_MASTER.md).
+
+**Local dev (Chrome):**
+
+```bash
+./scripts/flutter_web_dev.sh          # macOS/Linux
+./scripts/flutter_web_dev.ps1       # Windows
+```
+
+**Release build** (served at `/app/` on the root domain):
+
+```bash
+./scripts/flutter_web_release_build.sh
+# Output: apps/mobile/build/web  (built with --base-href=/app/)
+```
+
+Windows: `.\scripts\flutter_web_release_build.ps1`
+
+**Full site deploy** (landing + PWA → Cloudflare Pages):
+
+```bash
+./scripts/goclarity_web_deploy.sh
+```
+
+Stage only (after separate builds): `./scripts/flutter_web_stage_into_landing.sh`
+
+Regenerate PWA icons: `.\scripts\generate_web_pwa_icons.ps1`
+
+Browser smoke checklist: [`docs/flutter-web/WEB_SMOKE_RUNBOOK.md`](../../docs/flutter-web/WEB_SMOKE_RUNBOOK.md)
+
+</details>
+
+<details>
 <summary><strong>Project structure (mobile)</strong></summary>
 
 ```text

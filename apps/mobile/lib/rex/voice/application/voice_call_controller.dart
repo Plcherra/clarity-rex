@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/core/l10n/app_locale.dart';
 import 'package:clarity/core/l10n/app_localizations_lookup.dart';
 import 'package:clarity/core/l10n/friendly_service_error.dart';
+import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
@@ -15,7 +17,7 @@ import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/audio_playback_service.dart';
-import 'package:clarity/rex/voice/data/audio_recording_service.dart';
+import 'package:clarity/rex/voice/data/recorded_voice_audio.dart';
 import 'package:clarity/rex/voice/data/audio_session_service.dart';
 import 'package:clarity/rex/voice/data/background_voice_service.dart';
 import 'package:clarity/rex/voice/data/cloud_voice_api.dart';
@@ -170,7 +172,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden) {
-      unawaited(_backgroundVoiceService.start());
+      if (AppCapabilities.instance.supportsBackgroundVoice) {
+        unawaited(_backgroundVoiceService.start());
+      }
+      return;
     }
   }
 

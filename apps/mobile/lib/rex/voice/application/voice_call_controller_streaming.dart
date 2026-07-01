@@ -48,7 +48,10 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
       try {
         final connectedSession = await ref
             .read(streamingVoiceApiProvider)
-            .connect(conversationId: state.conversationId);
+            .connect(
+              conversationId: state.conversationId,
+              client: ref.read(streamingVoiceClientProvider),
+            );
         session = connectedSession;
         _activeStreamingSession = connectedSession;
         _activeStreamingEventsTask = _handleStreamingEvents(connectedSession);

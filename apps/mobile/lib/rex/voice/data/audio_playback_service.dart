@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
+
+import 'package:clarity/rex/voice/data/voice_playback_mime.dart';
 
 typedef AudioPlaybackCompleteCallback = void Function();
 typedef AudioPlaybackErrorCallback = void Function(String message);
@@ -44,36 +47,46 @@ class PackageAudioPlaybackService implements AudioPlaybackService {
       return;
     }
 
+    final mimeType = normalizeVoicePlaybackMimeType(contentType);
+
     try {
       await _audioPlayer.stop();
-      await _audioPlayer.setAudioContext(
-        AudioContext(
-          android: const AudioContextAndroid(
-            isSpeakerphoneOn: true,
-            stayAwake: true,
-            contentType: AndroidContentType.speech,
-            usageType: AndroidUsageType.voiceCommunication,
-            audioFocus: AndroidAudioFocus.gain,
-          ),
-          iOS: AudioContextIOS(
-            category: AVAudioSessionCategory.playAndRecord,
-            options: const {
-              AVAudioSessionOptions.allowBluetooth,
-              AVAudioSessionOptions.allowBluetoothA2DP,
-              AVAudioSessionOptions.allowAirPlay,
-              AVAudioSessionOptions.defaultToSpeaker,
-            },
-          ),
-        ),
-      );
+      if (!kIsWeb) {
+        await _configureNativeAudioContext();
+      }
       await _audioPlayer.setPlayerMode(PlayerMode.mediaPlayer);
       await _audioPlayer.setReleaseMode(ReleaseMode.stop);
       await _audioPlayer.setVolume(1.0);
-      _audioPlayer.onPlayerComplete.first.then((_) => onComplete());
-      await _audioPlayer.play(BytesSource(audioBytes, mimeType: contentType));
-    } catch (_) {
+      final playbackComplete = _audioPlayer.onPlayerComplete.first;
+      await _audioPlayer.play(BytesSource(audioBytes, mimeType: mimeType));
+      await playbackComplete;
+      onComplete();
+    } on Object {
       onError('Voice playback failed.');
     }
+  }
+
+  Future<void> _configureNativeAudioContext() async {
+    await _audioPlayer.setAudioContext(
+      AudioContext(
+        android: const AudioContextAndroid(
+          isSpeakerphoneOn: true,
+          stayAwake: true,
+          contentType: AndroidContentType.speech,
+          usageType: AndroidUsageType.voiceCommunication,
+          audioFocus: AndroidAudioFocus.gain,
+        ),
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playAndRecord,
+          options: const {
+            AVAudioSessionOptions.allowBluetooth,
+            AVAudioSessionOptions.allowBluetoothA2DP,
+            AVAudioSessionOptions.allowAirPlay,
+            AVAudioSessionOptions.defaultToSpeaker,
+          },
+        ),
+      ),
+    );
   }
 
   @override

@@ -2,8 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/core/platform/app_capabilities.dart';
+import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/core/rex/rex_config.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
+import 'package:clarity/rex/voice/data/audio_capture_service_io.dart'
+    if (dart.library.html) 'package:clarity/rex/voice/data/audio_capture_service_web.dart'
+    as audio_capture_platform;
 import 'package:clarity/rex/voice/data/audio_playback_service.dart';
 import 'package:clarity/rex/voice/data/audio_session_service.dart';
 import 'package:clarity/rex/voice/data/background_voice_service.dart';
@@ -12,6 +16,7 @@ import 'package:clarity/rex/voice/data/native_voice_session_service.dart';
 import 'package:clarity/rex/voice/data/speech_to_text_service.dart';
 import 'package:clarity/rex/voice/data/streaming_audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/streaming_audio_playback_queue.dart';
+import 'package:clarity/rex/voice/data/streaming_voice_client.dart';
 import 'package:clarity/rex/voice/data/streaming_voice_api.dart';
 import 'package:clarity/rex/voice/data/web_voice_service_stubs.dart';
 import 'package:clarity/rex/voice/application/voice_permission_service.dart';
@@ -69,7 +74,7 @@ final cloudVoiceEnabledProvider = Provider<bool>(
 );
 
 final audioCaptureServiceProvider = Provider<AudioCaptureService>(
-  (ref) => PackageAudioCaptureService(),
+  (ref) => audio_capture_platform.createPackageAudioCaptureService(),
 );
 
 final streamingAudioCaptureServiceProvider =
@@ -82,6 +87,10 @@ final bargeInDetectionServiceProvider = Provider<BargeInDetectionService>(
 );
 
 final voiceCallBargeInEnabledProvider = Provider<bool>((ref) => false);
+
+final streamingVoiceClientProvider = Provider<String>(
+  (ref) => streamingVoiceClientTag(isWeb: ref.watch(appCapabilitiesProvider).isWeb),
+);
 
 final streamingVoiceApiProvider = Provider<StreamingVoiceApi>(
   (ref) => StreamingVoiceApi(),

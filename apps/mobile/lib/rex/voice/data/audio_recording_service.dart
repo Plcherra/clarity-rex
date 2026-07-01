@@ -3,12 +3,7 @@ import 'dart:io';
 import 'package:cross_file/cross_file.dart';
 import 'package:record/record.dart';
 
-class RecordedVoiceAudio {
-  const RecordedVoiceAudio({required this.file, required this.inputMimeType});
-
-  final XFile file;
-  final String inputMimeType;
-}
+import 'package:clarity/rex/voice/data/recorded_voice_audio.dart';
 
 abstract class AudioRecordingService {
   Future<void> startRecording();

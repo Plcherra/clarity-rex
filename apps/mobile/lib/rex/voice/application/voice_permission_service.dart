@@ -1,11 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:record/record.dart';
+
+import 'package:clarity/rex/voice/data/voice_microphone_context.dart';
 
 enum MicrophonePermissionDecision {
   granted,
   denied,
   permanentlyDenied,
   restricted,
+  insecureContext,
 }
 
 abstract class MicrophonePermissionService {
@@ -31,11 +35,25 @@ class RecordMicrophonePermissionService implements MicrophonePermissionService {
   Future<MicrophonePermissionDecision> requestMicrophonePermission({
     bool includeSpeechRecognition = true,
   }) async {
+    if (kIsWeb && !isVoiceMicrophoneContextSecure()) {
+      return MicrophonePermissionDecision.insecureContext;
+    }
+
     try {
-      final granted = await _recorder.hasPermission();
-      return granted
-          ? MicrophonePermissionDecision.granted
-          : MicrophonePermissionDecision.denied;
+      final granted = await _recorder.hasPermission(request: true);
+      if (granted) {
+        return MicrophonePermissionDecision.granted;
+      }
+
+      if (kIsWeb) {
+        final permanentlyDenied =
+            await isWebMicrophonePermissionPermanentlyDenied();
+        return permanentlyDenied
+            ? MicrophonePermissionDecision.permanentlyDenied
+            : MicrophonePermissionDecision.denied;
+      }
+
+      return MicrophonePermissionDecision.denied;
     } on MissingPluginException {
       return MicrophonePermissionDecision.granted;
     } on PlatformException {
@@ -45,6 +63,10 @@ class RecordMicrophonePermissionService implements MicrophonePermissionService {
 
   @override
   Future<void> openSettings() async {
+    if (kIsWeb) {
+      return;
+    }
+
     try {
       await _settingsChannel.invokeMethod<void>('openAppSettings');
     } on MissingPluginException {

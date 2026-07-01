@@ -624,7 +624,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get profileVoiceUsageSubtitle =>
-      'Minutos de hoy, esta semana y este mes.';
+      'Minutos de hoy, esta semana y este mes en web y móvil';
 
   @override
   String get profileSessionSection => 'Sesión';
@@ -1180,11 +1180,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get chatInputStartVoiceModeTooltip => 'Iniciar modo de voz';
 
   @override
-  String get chatInputVoiceWebTooltip => 'Voz disponible pronto en la web';
+  String get chatInputVoiceWebTooltip =>
+      'La voz no está disponible en este dispositivo';
 
   @override
   String get voiceWebUnavailableMessage =>
-      'La voz llegará pronto a la app web. Usa el chat por ahora.';
+      'La voz no está disponible en este dispositivo. Usa el chat por ahora.';
 
   @override
   String get chatInputMessageHint => 'Asistente de mensajes…';
@@ -3525,12 +3526,28 @@ class AppLocalizationsEs extends AppLocalizations {
       'El permiso del micrófono está bloqueado. Actívalo en Ajustes de iOS > Privacidad y seguridad > Micrófono para llamar a Rex.';
 
   @override
+  String get voiceErrorMicPermanentlyDeniedWeb =>
+      'El acceso al micrófono está bloqueado para este sitio. Abre la configuración del sitio en tu navegador, permite el micrófono para Clarity e inténtalo de nuevo.';
+
+  @override
   String get voiceErrorMicRestricted =>
       'El acceso al micrófono está restringido en este dispositivo.';
 
   @override
   String get voiceErrorMicDenied =>
       'Se requiere permiso del micrófono para llamar a Rex. Toca Probar de nuevo para solicitar acceso, o actívalo en Ajustes de iOS > Privacidad y seguridad > Micrófono.';
+
+  @override
+  String get voiceErrorMicDeniedWeb =>
+      'Se requiere permiso del micrófono para llamar a Rex. Haz clic en Probar de nuevo y permite el acceso al micrófono cuando tu navegador lo solicite.';
+
+  @override
+  String get voiceErrorMicInsecureContext =>
+      'La voz necesita una conexión segura. Abre Clarity con https:// en lugar de http://.';
+
+  @override
+  String get voiceErrorMicBrowserSettings =>
+      'Permite el micrófono para Clarity en la configuración del sitio de tu navegador (icono de candado en la barra de direcciones) y luego toca Probar de nuevo.';
 
   @override
   String get voiceErrorBackgroundMicRestart =>

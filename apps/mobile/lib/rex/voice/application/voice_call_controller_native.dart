@@ -4,7 +4,8 @@ part of 'voice_call_controller.dart';
 
 extension VoiceCallControllerNativeSession on VoiceCallController {
   bool get _shouldUseNativeVoice {
-    return ref.read(nativeIosVoiceEnabledProvider) &&
+    return AppCapabilities.instance.supportsNativeVoiceBridge &&
+        ref.read(nativeIosVoiceEnabledProvider) &&
         ref.read(voiceCallPlatformProvider) == TargetPlatform.iOS;
   }
 

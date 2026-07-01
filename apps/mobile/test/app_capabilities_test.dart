@@ -1,10 +1,11 @@
 import 'package:clarity/core/platform/app_capabilities.dart';
+import 'package:clarity/rex/voice/data/streaming_voice_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('AppCapabilities.forPlatform', () {
-    test('web disables native-only features', () {
+    test('web enables streaming voice and disables native-only bridges', () {
       final caps = AppCapabilities.forPlatform(
         isWeb: true,
         platform: TargetPlatform.windows,
@@ -13,12 +14,12 @@ void main() {
       expect(caps.isWeb, isTrue);
       expect(caps.supportsNativePlaidLink, isFalse);
       expect(caps.supportsWebPlaidLink, isTrue);
-      expect(caps.supportsStreamingVoice, isFalse);
+      expect(caps.supportsStreamingVoice, isTrue);
       expect(caps.supportsBackgroundVoice, isFalse);
       expect(caps.supportsNativeVoiceBridge, isFalse);
       expect(caps.supportsCsvImport, isFalse);
       expect(caps.supportsAnyPlaidLink, isTrue);
-      expect(caps.supportsAnyVoice, isFalse);
+      expect(caps.supportsAnyVoice, isTrue);
     });
 
     test('iOS enables native mobile features except web Plaid', () {
@@ -61,6 +62,18 @@ void main() {
       expect(caps.supportsBackgroundVoice, isFalse);
       expect(caps.supportsNativeVoiceBridge, isFalse);
       expect(caps.supportsCsvImport, isTrue);
+      expect(caps.supportsAnyVoice, isFalse);
+    });
+
+    test('web and mobile both use streaming voice client tags', () {
+      expect(
+        streamingVoiceClientTag(isWeb: true),
+        'flutter_streaming_web',
+      );
+      expect(
+        streamingVoiceClientTag(isWeb: false),
+        'flutter_streaming',
+      );
     });
   });
 }

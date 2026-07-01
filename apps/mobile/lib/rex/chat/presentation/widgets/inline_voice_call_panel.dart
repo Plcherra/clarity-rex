@@ -331,6 +331,11 @@ String? _remapLegacyEnglishVoiceFailure(AppLocalizations l10n, String error) {
       message.contains('settings')) {
     return l10n.voiceFailureMicrophoneAccess;
   }
+  if (message.contains('secure connection') ||
+      message.contains('https://') ||
+      message.contains('insecure')) {
+    return l10n.voiceErrorMicInsecureContext;
+  }
   if (message.contains('empty_audio') ||
       message.contains('no audio') ||
       message.contains('did not catch') ||

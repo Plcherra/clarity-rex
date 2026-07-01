@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:audio_session/audio_session.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
@@ -9,7 +11,7 @@ import 'package:clarity/rex/memory/data/memory_api.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/audio_playback_service.dart';
-import 'package:clarity/rex/voice/data/audio_recording_service.dart';
+import 'package:clarity/rex/voice/data/recorded_voice_audio.dart';
 import 'package:clarity/rex/voice/data/audio_session_service.dart';
 import 'package:clarity/rex/voice/data/background_voice_service.dart';
 import 'package:clarity/rex/voice/data/cloud_voice_api.dart';
@@ -254,6 +256,54 @@ void main() {
     expect(state.phase, VoiceCallPhase.failed);
     expect(state.errorMessage, contains('disconnected'));
   });
+
+  test(
+    'streaming voice falls back to REST when websocket connect fails',
+    () async {
+      final captureService = _RecordingAudioCaptureService();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final playbackService = _ControlledAudioPlaybackService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(captureService),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          cloudVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(
+            _FailingStreamingVoiceApi(),
+          ),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            const _NoopStreamingAudioCaptureService(),
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await playbackService.playStarted.future;
+
+      expect(captureService.captureCount, 1);
+      expect(cloudVoiceApi.voiceTurnCount, 1);
+      expect(cloudVoiceApi.voiceTurns.single.inputMimeType, 'audio/linear16');
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+    },
+  );
 
   test(
     'streaming voice keeps listening quietly when no speech arrives',

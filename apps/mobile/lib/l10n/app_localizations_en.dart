@@ -620,7 +620,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileVoiceUsageSubtitle =>
-      'Minutes today, this week, and this month';
+      'Minutes today, this week, and this month on web and mobile';
 
   @override
   String get profileSessionSection => 'Session';
@@ -1163,11 +1163,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatInputStartVoiceModeTooltip => 'Start voice mode';
 
   @override
-  String get chatInputVoiceWebTooltip => 'Voice coming soon on web';
+  String get chatInputVoiceWebTooltip =>
+      'Voice is not available on this device';
 
   @override
   String get voiceWebUnavailableMessage =>
-      'Voice is coming soon on the web app. Use chat for now.';
+      'Voice is not available on this device. Use chat for now.';
 
   @override
   String get chatInputMessageHint => 'Message Assistant…';
@@ -3449,12 +3450,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Microphone permission is blocked. Enable it in iOS Settings > Privacy & Security > Microphone to call Rex.';
 
   @override
+  String get voiceErrorMicPermanentlyDeniedWeb =>
+      'Microphone access is blocked for this site. Open your browser site settings, allow the microphone for Clarity, then try again.';
+
+  @override
   String get voiceErrorMicRestricted =>
       'Microphone access is restricted on this device.';
 
   @override
   String get voiceErrorMicDenied =>
       'Microphone permission is required to call Rex. Tap Try again to prompt access, or enable it in iOS Settings > Privacy & Security > Microphone.';
+
+  @override
+  String get voiceErrorMicDeniedWeb =>
+      'Microphone permission is required to call Rex. Click Try again and allow microphone access when your browser prompts you.';
+
+  @override
+  String get voiceErrorMicInsecureContext =>
+      'Voice needs a secure connection. Open Clarity with https:// instead of http://.';
+
+  @override
+  String get voiceErrorMicBrowserSettings =>
+      'Allow the microphone for Clarity in your browser site settings (lock icon in the address bar), then tap Try again.';
 
   @override
   String get voiceErrorBackgroundMicRestart =>

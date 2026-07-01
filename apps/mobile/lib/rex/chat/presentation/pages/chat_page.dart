@@ -355,11 +355,6 @@ class _ChatPageState extends ConsumerState<ChatPage>
   }
 
   Future<void> _startVoiceCall() async {
-    if (!AppCapabilities.instance.supportsAnyVoice) {
-      _showSnackBar(context.l10n.voiceWebUnavailableMessage);
-      return;
-    }
-
     FocusScope.of(context).unfocus();
     final voice = ref.read(voiceCallProvider);
     if (voice.isCallActive) {
@@ -381,6 +376,14 @@ class _ChatPageState extends ConsumerState<ChatPage>
       return;
     }
     _scrollToBottom();
+  }
+
+  Future<void> _openVoiceMicSettings() async {
+    if (AppCapabilities.instance.isWeb) {
+      _showSnackBar(context.l10n.voiceErrorMicBrowserSettings);
+      return;
+    }
+    await ref.read(voiceCallProvider.notifier).openVoiceSettings();
   }
 
   void _signalVoicePhase(VoiceCallPhase phase, {bool isReadyToSpeak = false}) {
@@ -481,7 +484,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
                 onRetry: _startVoiceCall,
                 onEnd: voiceController.endCall,
                 onToggleMute: voiceController.toggleMuted,
-                onOpenSettings: voiceController.openVoiceSettings,
+                onOpenSettings: _openVoiceMicSettings,
               ),
             ChatInputBar(
               controller: _messageController,

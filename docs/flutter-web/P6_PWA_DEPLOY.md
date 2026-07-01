@@ -86,10 +86,23 @@ Adapt `docs/CLARITY_BETA_SMOKE_RUNBOOK.md` for browser:
 
 ## Exit criteria
 
-- [ ] Installable PWA on Chrome and Edge desktop
-- [ ] Full parity smoke pass documented
-- [ ] `goclarity.app` "Sign in on web" lands on working login
+- [ ] Installable PWA on Chrome and Edge desktop — **code ready**; verify with [WEB_SMOKE_RUNBOOK.md](./WEB_SMOKE_RUNBOOK.md)
+- [ ] Full parity smoke pass documented — **runbook added**
+- [ ] `goclarity.app` "Sign in on web" lands on working login — **landing link configured**; verify after deploy
 - [ ] App Store / Play Store CTAs unchanged; web path live
+
+## Status (code complete)
+
+| Task | Status |
+|------|--------|
+| PWA manifest + index.html | Done — dark theme `#081827`, product copy |
+| Web icons (192/512/maskable + favicon) | Done — from `assets/brand/clarity_app_icon.png` |
+| `flutter_web_release_build.sh` / `.ps1` | Done — `--base-href=/app/`, production dart-defines |
+| Stage + deploy scripts | Done — `goclarity_web_deploy.sh`, Cloudflare `_redirects` |
+| nginx template | Done — `deploy/templates/nginx-goclarity-web.conf` |
+| Web smoke runbook | Done — [WEB_SMOKE_RUNBOOK.md](./WEB_SMOKE_RUNBOOK.md) |
+| Infrastructure (Supabase, CORS, Plaid, WSS) | **Manual ops** — checklist in runbook |
+| Production deploy + smoke pass | **Manual** — you must run deploy and browser smoke |
 
 ## Files likely touched
 

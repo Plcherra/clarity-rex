@@ -18,8 +18,8 @@ Ship **one Flutter codebase** (`apps/mobile`) as a **PWA on the root domain** wi
 | **P2** | [P2_ADAPTIVE_SHELL.md](./P2_ADAPTIVE_SHELL.md) | P1 | 5–7 days | **Complete** |
 | **P3** | [P3_REX_CHAT_KNOWS.md](./P3_REX_CHAT_KNOWS.md) | P1, P2 | 4–6 days | **In progress** |
 | **P4** | [P4_PLAID_WEB.md](./P4_PLAID_WEB.md) | P1, P2 | 5–8 days |
-| **P5** | [P5_VOICE_WEB.md](./P5_VOICE_WEB.md) | P1, P3 | 5–8 days |
-| **P6** | [P6_PWA_DEPLOY.md](./P6_PWA_DEPLOY.md) | P1–P5 | 3–5 days |
+| **P5** | [P5_VOICE_WEB.md](./P5_VOICE_WEB.md) | P1, P3 | 5–8 days | **Complete** |
+| **P6** | [P6_PWA_DEPLOY.md](./P6_PWA_DEPLOY.md) | P1–P5 | 3–5 days | **Code complete** — deploy + browser smoke pending |
 | **P7** | [P7_NATIVE_DESKTOP.md](./P7_NATIVE_DESKTOP.md) | P6 | 1–2 weeks (optional) |
 
 **Do not start the next phase until the current phase exit criteria pass.**

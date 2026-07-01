@@ -136,6 +136,24 @@ class _NoopAudioPlaybackService implements AudioPlaybackService {
   Future<void> stop() async {}
 }
 
+class _NoopStreamingAudioCaptureService implements StreamingAudioCaptureService {
+  const _NoopStreamingAudioCaptureService();
+
+  @override
+  Future<void> cancel() async {}
+
+  @override
+  Future<bool> streamUtterance({
+    required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
+    required SpeechStartCallback onSpeechStart,
+    required SpeechEndCallback onSpeechEnded,
+    required AudioChunkCallback onAudioChunk,
+  }) async {
+    return false;
+  }
+}
+
 class _HangingStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
   final started = Completer<void>();
@@ -340,6 +358,8 @@ class _FakeCloudVoiceApi extends CloudVoiceApi {
   _FakeCloudVoiceApi() : super(baseUrl: 'http://localhost');
 
   final synthesizedTexts = <String>[];
+  final voiceTurns = <RecordedVoiceAudio>[];
+  var voiceTurnCount = 0;
 
   @override
   Future<CloudVoiceSynthesisResponse> synthesize(String text) async {
@@ -352,6 +372,69 @@ class _FakeCloudVoiceApi extends CloudVoiceApi {
       languageCode: 'en-US',
     );
   }
+
+  @override
+  Future<CloudVoiceTurnResponse> sendVoiceTurn({
+    required XFile audio,
+    required String inputMimeType,
+    String? conversationId,
+    Map<String, dynamic>? financialContext,
+  }) async {
+    voiceTurnCount++;
+    voiceTurns.add(
+      RecordedVoiceAudio(
+        file: audio,
+        inputMimeType: inputMimeType,
+      ),
+    );
+    return CloudVoiceTurnResponse(
+      conversationId: conversationId ?? 'conversation-rest-fallback',
+      transcript: 'Hello from REST fallback',
+      responseText: 'REST fallback reply',
+      audioContentType: 'audio/mpeg',
+      audioBase64: base64Encode([1, 2, 3]),
+      audioEncoding: 'mp3',
+      voiceName: 'test-voice',
+      languageCode: 'en-US',
+    );
+  }
+}
+
+class _RecordingAudioCaptureService implements AudioCaptureService {
+  var captureCount = 0;
+
+  @override
+  Future<void> cancel() async {}
+
+  @override
+  Future<RecordedVoiceAudio?> captureUtterance({
+    required VoiceCaptureConfig config,
+    required CaptureReadyCallback onReady,
+    required SpeechStartCallback onSpeechStart,
+  }) async {
+    captureCount++;
+    onReady();
+    onSpeechStart();
+    return RecordedVoiceAudio(
+      file: XFile.fromData(
+        Uint8List.fromList([1, 2, 3, 4]),
+        name: 'rex-voice-call.pcm',
+        mimeType: 'audio/pcm',
+      ),
+      inputMimeType: 'audio/linear16',
+    );
+  }
+}
+
+class _FailingStreamingVoiceApi extends StreamingVoiceApi {
+  _FailingStreamingVoiceApi()
+    : super(
+        connector: (_, {headers}) async {
+          throw const StreamingVoiceApiException(
+            'Could not open Assistant voice stream. Check your connection and try again.',
+          );
+        },
+      );
 }
 
 class _FakeStreamingVoiceApi extends StreamingVoiceApi {

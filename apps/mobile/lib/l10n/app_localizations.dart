@@ -1217,7 +1217,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileVoiceUsageSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Minutes today, this week, and this month'**
+  /// **'Minutes today, this week, and this month on web and mobile'**
   String get profileVoiceUsageSubtitle;
 
   /// No description provided for @profileSessionSection.
@@ -2172,13 +2172,13 @@ abstract class AppLocalizations {
   /// No description provided for @chatInputVoiceWebTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Voice coming soon on web'**
+  /// **'Voice is not available on this device'**
   String get chatInputVoiceWebTooltip;
 
   /// No description provided for @voiceWebUnavailableMessage.
   ///
   /// In en, this message translates to:
-  /// **'Voice is coming soon on the web app. Use chat for now.'**
+  /// **'Voice is not available on this device. Use chat for now.'**
   String get voiceWebUnavailableMessage;
 
   /// No description provided for @chatInputMessageHint.
@@ -5993,6 +5993,12 @@ abstract class AppLocalizations {
   /// **'Microphone permission is blocked. Enable it in iOS Settings > Privacy & Security > Microphone to call Rex.'**
   String get voiceErrorMicPermanentlyDenied;
 
+  /// No description provided for @voiceErrorMicPermanentlyDeniedWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access is blocked for this site. Open your browser site settings, allow the microphone for Clarity, then try again.'**
+  String get voiceErrorMicPermanentlyDeniedWeb;
+
   /// No description provided for @voiceErrorMicRestricted.
   ///
   /// In en, this message translates to:
@@ -6004,6 +6010,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Microphone permission is required to call Rex. Tap Try again to prompt access, or enable it in iOS Settings > Privacy & Security > Microphone.'**
   String get voiceErrorMicDenied;
+
+  /// No description provided for @voiceErrorMicDeniedWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission is required to call Rex. Click Try again and allow microphone access when your browser prompts you.'**
+  String get voiceErrorMicDeniedWeb;
+
+  /// No description provided for @voiceErrorMicInsecureContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice needs a secure connection. Open Clarity with https:// instead of http://.'**
+  String get voiceErrorMicInsecureContext;
+
+  /// No description provided for @voiceErrorMicBrowserSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow the microphone for Clarity in your browser site settings (lock icon in the address bar), then tap Try again.'**
+  String get voiceErrorMicBrowserSettings;
 
   /// No description provided for @voiceErrorBackgroundMicRestart.
   ///

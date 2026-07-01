@@ -133,21 +133,35 @@ async def test_websocket_auth_uses_bearer_header_instead_of_query_param(
 
 
 @pytest.mark.asyncio
-async def test_websocket_auth_rejects_query_param_tokens_when_supabase_configured():
+async def test_websocket_auth_accepts_query_param_when_header_missing(
+    monkeypatch,
+):
+    calls = []
+
+    async def fake_request(method, url, headers=None, **kwargs):
+        calls.append({"method": method, "url": url, "headers": headers})
+        return FakeSupabaseUserResponse(
+            {
+                "id": "user-123",
+                "email": "person@example.com",
+            }
+        )
+
+    monkeypatch.setattr(supabase_auth, "request_with_retries", fake_request)
     websocket = SimpleNamespace(
         headers={},
         query_params={"access_token": "query-token"},
     )
 
-    with pytest.raises(HTTPException) as exc:
-        await authenticate_websocket(
-            websocket,
-            settings=Settings(
-                supabase_url="https://example.supabase.co",
-                supabase_anon_key="anon-key",
-                _env_file=None,
-            ),
-        )
+    user = await authenticate_websocket(
+        websocket,
+        settings=Settings(
+            supabase_url="https://example.supabase.co",
+            supabase_anon_key="anon-key",
+            _env_file=None,
+        ),
+    )
 
-    assert exc.value.status_code == 401
-    assert exc.value.detail == "Missing Supabase access token."
+    assert user.id == "user-123"
+    assert user.access_token == "query-token"
+    assert calls[0]["headers"]["Authorization"] == "Bearer query-token"
