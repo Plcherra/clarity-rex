@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import '../l10n/app_localizations.dart';
 import '../core/l10n/app_l10n.dart';
 import '../core/l10n/clarity_material_app.dart';
 import '../core/rex/rex_config.dart';
@@ -176,52 +177,57 @@ final class _BootErrorApp extends StatelessWidget {
     return ClarityMaterialApp(
       themeModeController: themeModeController,
       localeController: localeController,
-      home: Scaffold(
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48),
-                    const SizedBox(height: 18),
-                    Text(
-                      context.l10n.bootErrorTitle,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
+      home: Builder(
+        builder: (context) {
+          final l10n = context.l10n;
+          return Scaffold(
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48),
+                        const SizedBox(height: 18),
+                        Text(
+                          l10n.bootErrorTitle,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _bootErrorMessage(l10n, error),
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 22),
+                        FilledButton.icon(
+                          onPressed: retry,
+                          icon: const Icon(Icons.refresh),
+                          label: Text(l10n.bootErrorTryAgain),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _bootErrorMessage(context, error),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 22),
-                    FilledButton.icon(
-                      onPressed: retry,
-                      icon: const Icon(Icons.refresh),
-                      label: Text(context.l10n.bootErrorTryAgain),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 }
 
-String _bootErrorMessage(BuildContext context, Object? error) {
+String _bootErrorMessage(AppLocalizations l10n, Object? error) {
   final message = error?.toString().trim();
   if (message == null || message.isEmpty) {
-    return context.l10n.bootErrorFallbackMessage;
+    return l10n.bootErrorFallbackMessage;
   }
   return message;
 }
