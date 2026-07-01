@@ -3,12 +3,29 @@ import { downloadLinks } from '@content/site';
 
 type Props = {
   layout?: 'hero' | 'footer' | 'compact';
+  showGhostLink?: boolean;
 };
 
-const { layout = 'hero' } = Astro.props;
+const { layout = 'hero', showGhostLink = false } = Astro.props;
 ---
 
 <div class:list={['download-actions', `download-actions--${layout}`]}>
+  <a class="button button--primary" href={downloadLinks.webLogin}>
+    {layout === 'compact' ? 'Open Clarity on web' : 'Start on web'}
+  </a>
+  {
+    downloadLinks.playStore ? (
+      <a
+        class="store-badge store-badge--google"
+        href={downloadLinks.playStore}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <span class="store-badge__label">Get it on</span>
+        <span class="store-badge__name">Google Play</span>
+      </a>
+    ) : null
+  }
   {
     downloadLinks.appStore ? (
       <a
@@ -23,19 +40,10 @@ const { layout = 'hero' } = Astro.props;
     ) : null
   }
   {
-    downloadLinks.playStore ? (
-      <a
-        class="store-badge store-badge--google"
-        href={downloadLinks.playStore}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        <span class="store-badge__label">Get it on</span>
-        <span class="store-badge__name">Google Play</span>
+    showGhostLink ? (
+      <a class="button button--ghost" href="#how-it-works">
+        See how it works
       </a>
     ) : null
   }
-  <a class="button button--web" href={downloadLinks.webLogin}>
-    Sign in on web
-  </a>
 </div>

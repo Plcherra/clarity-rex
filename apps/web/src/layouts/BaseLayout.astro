@@ -11,7 +11,7 @@ const { title, description } = Astro.props;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? product.siteUrl);
 const socialImageUrl = new URL(product.socialImagePath, Astro.site ?? product.siteUrl);
 const isHome = Astro.url.pathname === '/';
-const socialTitle = isHome ? `${product.name} - Money, Memory, and Rex` : title;
+const socialTitle = isHome ? `${product.name} — Money, Memory, and Rex` : title;
 ---
 
 <!doctype html>
@@ -21,7 +21,7 @@ const socialTitle = isHome ? `${product.name} - Money, Memory, and Rex` : title;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#081827" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="dark" />
     <link rel="canonical" href={canonicalUrl.toString()} />
     <link rel="icon" type="image/png" sizes="96x96" href="/clarity-mark-96.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="/clarity-mark-192.png" />
@@ -71,7 +71,7 @@ const socialTitle = isHome ? `${product.name} - Money, Memory, and Rex` : title;
       <section>
         <h2>{product.name}</h2>
         <p>{product.tagline}</p>
-        <p>Privacy-first finance and Rex — on iPhone, Android, and web.</p>
+        <p>{product.oneLiner}</p>
       </section>
       <nav class="footer-nav" aria-label="Footer navigation">
         {

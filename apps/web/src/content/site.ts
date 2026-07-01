@@ -3,14 +3,16 @@ const playStoreUrl =
   import.meta.env.PUBLIC_PLAY_STORE_URL?.trim() ||
   'https://play.google.com/store/apps/details?id=com.clarity.clarity';
 const webLoginUrl =
-  import.meta.env.PUBLIC_WEB_LOGIN_URL?.trim() || 'https://goclarity.app/app';
+  import.meta.env.PUBLIC_WEB_LOGIN_URL?.trim() || 'https://goclarity.app/app/';
 
 export const product = {
   name: 'Clarity',
   assistantName: 'Rex',
   tagline: 'One calm place for money, memory, and Rex.',
+  oneLiner:
+    'Personal finance, budgets, and durable memory — with Rex, the assistant that explains your picture from real data, not guesses.',
   description:
-    'Clarity is a privacy-first personal finance and AI assistant app. Connect accounts with consent, track budgets and goals, organize what Clarity knows, and talk to Rex in chat or voice — on iPhone, Android, and web.',
+    'Connect accounts, track budgets, and talk to Rex on web, iPhone, and Android. One calm workspace for your money and what matters.',
   supportEmail: 'clarity.rex@gmail.com',
   operatorName: 'Clarity',
   siteUrl: 'https://goclarity.app',
@@ -37,9 +39,8 @@ export const publicRoutes = [
   {
     path: '/',
     label: 'Home',
-    title: 'Clarity - Money, Memory, and Rex in One Place',
-    description:
-      'Meet Clarity: privacy-first finance, budgets, goals, and Rex — the AI assistant inside the app. Available on iPhone, Android, and web.',
+    title: 'Clarity — Money, Memory, and Rex',
+    description: product.description,
     footerRequired: true,
   },
   {
@@ -87,7 +88,7 @@ export const publicRoutes = [
     label: 'Form Success',
     title: 'Request Received - Clarity',
     description:
-      'Confirmation that Clarity received a public waitlist, contact, privacy, deletion, or security request.',
+      'Confirmation that Clarity received a public contact, privacy, deletion, or security request.',
     footerRequired: false,
   },
   {
@@ -108,22 +109,52 @@ export const publicRoutes = [
   },
 ] satisfies PublicRoute[];
 
-export const headerLinks = publicRoutes.filter((route) =>
-  ['/', '/privacy', '/security', '/terms', '/contact'].includes(route.path),
-);
+export const headerLinks = (
+  ['/privacy', '/security', '/terms', '/contact'] as const
+).map((path) => publicRoutes.find((route) => route.path === path)!);
 
 export const footerLinks = publicRoutes.filter((route) => route.footerRequired);
 
 export const primaryCta = {
-  label: 'Get Clarity',
-  href: '/#get-clarity',
+  label: 'Open Clarity',
+  href: downloadLinks.webLogin,
 } as const;
 
-export const trustNotes = [
-  'User-controlled connections through Plaid',
-  'Privacy-first design and public data controls',
-  'Your data stays yours',
-  'No bank credentials collected by Clarity',
+export const subscriptionValue = {
+  headline: 'Finance and Rex — one subscription, one workspace.',
+  subhead:
+    'Stop juggling a money app, notes app, and a generic chatbot. Clarity keeps the numbers, memory, and assistant in sync.',
+  columns: [
+    {
+      title: 'Your money picture',
+      body: 'Balances, cash flow, budgets, and transactions — updated from accounts you connect.',
+    },
+    {
+      title: 'Memory that stays organized',
+      body: 'People, goals, events, and preferences — separate from chat history.',
+    },
+    {
+      title: 'Rex when you need context',
+      body: 'Chat and voice on the same data you see in the app.',
+    },
+  ],
+  pricingNote:
+    'Start on web today. Subscription activates with your account when billing goes live — no surprise charges on the marketing site.',
+} as const;
+
+export const howItWorksSteps = [
+  {
+    title: 'Create your account on web',
+    body: 'Sign up at goclarity.app in minutes. Download on iPhone or Android when store links are live — same login everywhere.',
+  },
+  {
+    title: 'Connect accounts with consent',
+    body: 'Link banks through Plaid when you choose. Clarity never asks for your bank password.',
+  },
+  {
+    title: 'Review your month and talk to Rex',
+    body: 'Dashboard, budgets, Knows, and Rex share one source of truth on phone and web.',
+  },
 ] as const;
 
 export const faqs = [
@@ -135,32 +166,27 @@ export const faqs = [
   {
     question: 'How does Clarity connect financial accounts?',
     answer:
-      'Clarity is designed to use user-authorized account connections through providers such as Plaid. Users choose what to connect and can disconnect access.',
+      'Clarity uses user-authorized account connections through Plaid. You choose what to connect and can disconnect at any time. See our Security page for details.',
   },
   {
     question: 'Does Clarity store my bank password?',
     answer:
-      'No. Clarity is designed around provider-based account authorization. Users should never send bank credentials, one-time codes, account numbers, or sensitive documents through public forms.',
+      'No. Authorization goes through Plaid. Never send bank credentials, one-time codes, or account numbers through public forms or chat.',
   },
   {
     question: 'Does Rex replace professional financial advice?',
     answer:
-      'No. Rex can help organize context and think through options, but users remain responsible for decisions and should consult qualified professionals when needed.',
+      'No. Rex helps organize context and explain your picture from connected data. You remain responsible for decisions — consult qualified professionals when needed.',
   },
   {
     question: 'What can Rex see?',
     answer:
-      'Rex can use the context you choose to provide or connect inside Clarity, such as transactions, budgets, goals, approved memory, and conversation history. Access depends on product settings and user authorization.',
+      'Rex uses the context you connect or save inside Clarity: transactions, budgets, goals, saved memory, and conversation history. Rex does not move money or guess balances.',
   },
   {
     question: 'Can I delete my data?',
     answer:
-      'Yes. Clarity publishes a data deletion path and contact route. Some records may be retained for limited legal, security, backup, or operational reasons as described in the Privacy Policy.',
-  },
-  {
-    question: 'Where can I get Clarity?',
-    answer:
-      'Clarity is available on iPhone, Android, and web. Download from the App Store or Google Play, or sign in on the web with the same Clarity account.',
+      'Yes. Use our data deletion page or contact support. Some records may be retained for limited legal, security, or operational reasons as described in the Privacy Policy.',
   },
 ] as const;
 
@@ -168,7 +194,7 @@ export const formCopy = {
   sensitiveDataWarning:
     'Do not include bank passwords, account numbers, card numbers, SSNs, one-time codes, API keys, screenshots, CSV files, or other sensitive financial details.',
   waitlistConsent:
-    'I agree that Clarity may contact me about beta access, product updates, and my request. I understand I should not include bank credentials or sensitive financial details in this form.',
+    'I agree that Clarity may contact me about product updates and my request. I understand I should not include bank credentials or sensitive financial details in this form.',
   contactConsent:
     'I agree that Clarity may contact me about this request. I understand I should not include bank credentials or sensitive financial details in this form.',
   success:
