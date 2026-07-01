@@ -11,7 +11,7 @@ const { title, description } = Astro.props;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? product.siteUrl);
 const socialImageUrl = new URL(product.socialImagePath, Astro.site ?? product.siteUrl);
 const isHome = Astro.url.pathname === '/';
-const socialTitle = isHome ? `${product.name} - Personal AI Financial Co-Pilot` : title;
+const socialTitle = isHome ? `${product.name} - Money, Memory, and Rex` : title;
 ---
 
 <!doctype html>
@@ -20,10 +20,11 @@ const socialTitle = isHome ? `${product.name} - Personal AI Financial Co-Pilot` 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#f7fbff" />
-    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#081827" />
+    <meta name="color-scheme" content="light dark" />
     <link rel="canonical" href={canonicalUrl.toString()} />
     <link rel="icon" type="image/png" sizes="96x96" href="/clarity-mark-96.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/clarity-mark-192.png" />
 
     <meta property="og:site_name" content={product.name} />
     <meta property="og:locale" content={product.locale} />
@@ -49,9 +50,9 @@ const socialTitle = isHome ? `${product.name} - Personal AI Financial Co-Pilot` 
       <div class="site-header__inner">
         <a class="brand-link" href="/" aria-label="Clarity home">
           <span class="brand-mark brand-mark--image" aria-hidden="true">
-            <img src="/clarity-mark-96.png" alt="" width="34" height="34" decoding="async" />
+            <img src="/clarity-mark-96.png" alt="" width="36" height="36" decoding="async" />
           </span>
-          <span>{product.name}</span>
+          <span class="brand-link__name">{product.name}</span>
         </a>
         <nav class="site-nav" aria-label="Primary navigation">
           {
@@ -70,7 +71,7 @@ const socialTitle = isHome ? `${product.name} - Personal AI Financial Co-Pilot` 
       <section>
         <h2>{product.name}</h2>
         <p>{product.tagline}</p>
-        <p>Built around user-authorized account connections and clear data controls.</p>
+        <p>Privacy-first finance and Rex — mobile beta today, webapp PWA coming soon.</p>
       </section>
       <nav class="footer-nav" aria-label="Footer navigation">
         {

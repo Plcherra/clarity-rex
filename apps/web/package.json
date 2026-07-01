@@ -8,12 +8,14 @@
     "build": "astro build",
     "release:build": "PUBLIC_SITE_URL=${PUBLIC_SITE_URL:-https://goclarity.app} astro build",
     "preview": "astro preview",
-    "check": "astro build"
+    "check": "astro build",
+    "sync:assets": "node scripts/sync-landing-assets.mjs"
   },
   "dependencies": {
     "astro": "^6.4.2"
   },
   "devDependencies": {
+    "sharp": "^0.35.2",
     "typescript": "^5.8.3"
   }
 }

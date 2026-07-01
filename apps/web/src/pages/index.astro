@@ -1,14 +1,14 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 import PublicForm from '../components/PublicForm.astro';
-import { faqs, primaryCta, product, publicRoutes } from '@content/site';
+import { faqs, primaryCta, publicRoutes } from '@content/site';
 
 const page = publicRoutes.find((route) => route.path === '/')!;
 
 const heroTrustSignals = [
   'User-authorized connections',
   'No bank credentials collected',
-  'Private financial context for Rex',
+  'Private context for Rex only',
 ] as const;
 
 const trustSignalCards = [
@@ -35,9 +35,9 @@ const trustSignalCards = [
 ] as const;
 
 const heroMetrics = [
-  ['Income', '$2,383.22'],
-  ['Spending', '$1,301.58'],
-  ['Net flow', '$1,081.64'],
+  ['Income', '$2,715.10'],
+  ['Spending', '$1,582.61'],
+  ['Net flow', '$1,132.49'],
 ] as const;
 
 const problemCards = [
@@ -46,8 +46,8 @@ const problemCards = [
     body: 'Transactions, budgets, goals, and context usually live apart, so the real story gets buried.',
   },
   {
-    title: 'Categories need judgment.',
-    body: 'A clean label is only useful when it becomes a pattern you can understand and act on.',
+    title: 'Memory and money should not be separate apps.',
+    body: 'Rex works best when spending, goals, and what Clarity knows stay in one calm workspace.',
   },
   {
     title: 'AI needs approved context.',
@@ -57,32 +57,61 @@ const problemCards = [
 
 const featureCards = [
   {
-    label: 'Transaction intelligence',
-    title: 'Know what changed before it surprises you.',
-    body: 'Clarity groups spending, highlights pressure points, and keeps transaction history easy to inspect.',
-    image: '/images/app/transactions.webp',
-    alt: 'Clarity transactions screen with month, category, account, history, and role filters.',
+    label: 'Dashboard',
+    title: 'See the month at a glance.',
+    body: 'Balances, cash flow, spending by category, and trends — all in a polished dark UI built for daily use.',
+    image: '/images/app/dashboard-cash-flow.webp',
+    alt: 'Clarity dashboard with total balance, monthly cash flow chart, and spending by category.',
   },
   {
-    label: 'Rex assistant',
-    title: 'Ask in chat or voice when you need context.',
-    body: 'Rex is the AI assistant inside Clarity. It can explain your money picture without moving money or making decisions for you.',
+    label: 'Rex chat',
+    title: 'Ask in chat when you need context.',
+    body: 'Rex is the AI assistant inside Clarity. Talk naturally about money, goals, and life without leaving the app.',
     image: '/images/app/rex-chat.webp',
-    alt: 'Clarity assistant chat screen with Rex conversation and message composer.',
+    alt: 'Clarity Rex assistant chat screen with starter prompts and message composer.',
   },
   {
-    label: 'Budgets and insights',
+    label: 'Knows',
+    title: 'What Clarity remembers — clearly labeled.',
+    body: 'People, facts, events, and preferences stay organized. Saved memory is separate from searchable chat history.',
+    image: '/images/app/knows.webp',
+    alt: 'Clarity Knows screen showing people, facts, and events Clarity remembers.',
+  },
+  {
+    label: 'Budgets',
     title: 'Budget from real categories and real behavior.',
     body: 'Set category targets, watch what is left, and compare budget pressure against actual spending.',
     image: '/images/app/budgets.webp',
     alt: 'Clarity budgets screen showing monthly category targets and spending totals.',
   },
   {
-    label: 'Category controls',
-    title: 'Keep transaction organization understandable.',
-    body: 'Review built-in categories, custom categories, and rule history without exposing bank credentials.',
-    image: '/images/app/category-management.webp',
-    alt: 'Clarity category management screen with saved categories, rules, and history tabs.',
+    label: 'Transactions',
+    title: 'Know what changed before it surprises you.',
+    body: 'Filter by month, category, account, and history. Keep transaction organization understandable.',
+    image: '/images/app/transactions.webp',
+    alt: 'Clarity transactions screen with month, category, account, and history filters.',
+  },
+  {
+    label: 'Voice',
+    title: 'Talk to Rex hands-free.',
+    body: 'Voice sessions use the same Rex Brain as chat — same memory rules, same financial truth, same privacy boundaries.',
+    image: '/images/app/voice.webp',
+    alt: 'Clarity voice usage screen showing Rex voice activity and daily call charts.',
+  },
+] as const;
+
+const webappHighlights = [
+  {
+    title: 'Desktop-friendly layout',
+    body: 'The webapp adapts Clarity’s dark UI for wider screens — dashboards, chat, and Knows stay scannable.',
+  },
+  {
+    title: 'Installable PWA',
+    body: 'Add Clarity to your home screen or dock. One tap back to your money picture and Rex.',
+  },
+  {
+    title: 'Same Rex Brain',
+    body: 'Chat, voice, memory, and financial context follow the same rules on mobile and web.',
   },
 ] as const;
 
@@ -96,21 +125,59 @@ const consentSteps = [
 const showcaseScreens = [
   {
     title: 'Cash flow overview',
-    body: 'Income, spending, and net monthly movement with enough context to understand the month.',
+    body: 'Income, spending, net flow, and monthly trends with enough context to understand the month.',
     image: '/images/app/dashboard-cash-flow.webp',
-    alt: 'Clarity dashboard showing cash flow and spending pressure.',
+    alt: 'Clarity dashboard showing total balance, cash flow chart, and spending categories.',
+    featured: true,
   },
   {
-    title: 'Account summary',
+    title: 'Rex assistant',
+    body: 'Chat, Knows, goals, and conversation history in one assistant workspace.',
+    image: '/images/app/rex-chat.webp',
+    alt: 'Clarity Rex assistant chat with starter prompts.',
+    featured: false,
+  },
+  {
+    title: 'What Clarity knows',
+    body: 'People, facts, events, and preferences — organized and editable.',
+    image: '/images/app/knows.webp',
+    alt: 'Clarity Knows screen with people, facts, and events.',
+    featured: false,
+  },
+  {
+    title: 'Accounts',
     body: 'Connected account summaries keep the headline number focused on monthly net flow.',
     image: '/images/app/accounts.webp',
-    alt: 'Clarity accounts screen showing one connected Bank of America checking account.',
+    alt: 'Clarity accounts screen showing connected accounts and balances.',
+    featured: false,
   },
   {
-    title: 'Budget and account health',
-    body: 'Budget coverage and account health stay visible without turning the dashboard into clutter.',
-    image: '/images/app/dashboard-health.webp',
-    alt: 'Clarity dashboard showing budget performance and account health insights.',
+    title: 'Budgets',
+    body: 'Category targets, remaining budget, and spending pressure in one view.',
+    image: '/images/app/budgets.webp',
+    alt: 'Clarity budgets screen with category targets.',
+    featured: false,
+  },
+  {
+    title: 'Transactions',
+    body: 'Searchable history with filters for month, category, account, and role.',
+    image: '/images/app/transactions.webp',
+    alt: 'Clarity transactions screen with filters and history.',
+    featured: false,
+  },
+  {
+    title: 'Goals',
+    body: 'Track commitments and progress alongside your financial picture.',
+    image: '/images/app/goals.webp',
+    alt: 'Clarity goals screen showing active goals and progress.',
+    featured: false,
+  },
+  {
+    title: 'Voice with Rex',
+    body: 'Hands-free conversations with the same assistant brain as chat.',
+    image: '/images/app/voice.webp',
+    alt: 'Clarity voice usage screen with Rex activity charts.',
+    featured: false,
   },
 ] as const;
 
@@ -120,19 +187,38 @@ const faqItems = faqs.slice(0, 7);
 <BaseLayout title={page.title} description={page.description}>
   <section class="landing-hero">
     <div class="landing-hero__copy">
-      <p class="eyebrow">Clarity beta</p>
-      <h1>Understand your money before it becomes noise.</h1>
+      <div class="hero-brand-lockup" aria-hidden="true">
+        <img
+          class="hero-brand-lockup__mark"
+          src="/clarity-mark-192.png"
+          alt=""
+          width="72"
+          height="72"
+          decoding="async"
+        />
+        <div class="hero-brand-lockup__text">
+          <p class="eyebrow">Clarity beta · Mobile today · Web next</p>
+        </div>
+      </div>
+      <h1>One calm place for money, memory, and Rex.</h1>
       <p class="landing-hero__lede">
-        Clarity turns user-authorized account context into clear spending patterns, budgets, goals,
-        and conversations with Rex, the AI assistant inside Clarity.
+        Clarity combines user-authorized accounts, budgets, goals, and durable memory with Rex —
+        the AI assistant that explains your financial picture without moving money or guessing.
       </p>
+      <div class="webapp-banner" role="note">
+        <span class="webapp-banner__badge">Coming soon</span>
+        <div>
+          <strong>Now building the webapp version</strong>
+          <p>Works great on desktop too — installable as a PWA with the same dark UI and Rex Brain.</p>
+        </div>
+      </div>
       <div class="hero-trust-row" aria-label="Clarity trust highlights">
         {heroTrustSignals.map((signal) => <span>{signal}</span>)}
       </div>
       <div class="landing-hero__actions">
         <a class="button button--large" href={primaryCta.href}>Request early access</a>
-        <a class="button button--secondary button--large" href="#data-consent">
-          See how data is handled
+        <a class="button button--secondary button--large" href="#product-gallery">
+          See the app
         </a>
       </div>
       <div class="landing-hero__metrics" aria-label="Sample monthly snapshot">
@@ -148,8 +234,8 @@ const faqItems = faqs.slice(0, 7);
     <div class="hero-device-stack hero-device-stack--premium" aria-label="Clarity mobile app screenshots">
       <div class="device-card device-card--secondary device-card--left">
         <img
-          src="/images/app/accounts.webp"
-          alt="Clarity account summary screen showing connected account net flow."
+          src="/images/app/rex-chat.webp"
+          alt="Clarity Rex assistant chat screen."
           width="720"
           height="1415"
           loading="eager"
@@ -159,7 +245,7 @@ const faqItems = faqs.slice(0, 7);
       <div class="device-card device-card--primary">
         <img
           src="/images/app/dashboard-cash-flow.webp"
-          alt="Clarity mobile dashboard showing cash flow, spending pressure, and budget context."
+          alt="Clarity mobile dashboard showing balances, cash flow, and spending by category."
           width="720"
           height="1415"
           loading="eager"
@@ -168,8 +254,8 @@ const faqItems = faqs.slice(0, 7);
       </div>
       <div class="device-card device-card--secondary device-card--right">
         <img
-          src="/images/app/budgets.webp"
-          alt="Clarity budgets screen showing monthly category targets."
+          src="/images/app/knows.webp"
+          alt="Clarity Knows screen showing saved people, facts, and events."
           width="720"
           height="1415"
           loading="eager"
@@ -177,12 +263,12 @@ const faqItems = faqs.slice(0, 7);
         />
       </div>
       <div class="hero-proof-card hero-proof-card--top">
-        <span>Budget signal</span>
-        <strong>6/6 categories on track</strong>
+        <span>Dark UI</span>
+        <strong>Built for daily review — mobile and web</strong>
       </div>
       <div class="hero-proof-card hero-proof-card--bottom">
         <span>Rex context</span>
-        <strong>Answers with approved account context</strong>
+        <strong>Answers from approved account and memory context</strong>
       </div>
     </div>
   </section>
@@ -221,23 +307,48 @@ const faqItems = faqs.slice(0, 7);
     </div>
   </section>
 
+  <section class="section webapp-section" id="webapp" aria-labelledby="webapp-heading">
+    <div class="webapp-section__copy">
+      <p class="eyebrow">Webapp · PWA</p>
+      <h2 id="webapp-heading">Clarity on desktop — same product, wider canvas.</h2>
+      <p>
+        We are building a webapp version of Clarity that works great on desktop and laptop screens.
+        Install it as a PWA, pick up where you left off, and use Rex with the same privacy-first
+        boundaries as mobile.
+      </p>
+      <ul class="webapp-section__list">
+        <li>Responsive layouts for dashboard, chat, Knows, budgets, and transactions</li>
+        <li>Installable progressive web app — no app store required on desktop</li>
+        <li>Same user-authorized Plaid connections and data controls</li>
+      </ul>
+      <div class="landing-hero__actions">
+        <a class="button" href={primaryCta.href}>Join the beta waitlist</a>
+        <a class="button button--secondary" href="#data-consent">Privacy &amp; consent</a>
+      </div>
+    </div>
+    <div class="webapp-section__cards">
+      {webappHighlights.map((item) => (
+        <article class="webapp-section__card">
+          <h3>{item.title}</h3>
+          <p>{item.body}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
   <section class="section" aria-labelledby="features-heading">
     <div class="section__header section__header--center">
       <p class="eyebrow">What Clarity does</p>
-      <h2 id="features-heading">A calmer financial workspace with Rex inside.</h2>
+      <h2 id="features-heading">Finance, memory, and Rex — one polished workspace.</h2>
       <p>
-        Clarity combines transaction organization, budgets, memory, goals, and assistant
-        conversations without claiming to replace professional financial advice.
+        Current mobile screens shown below with sample data. Clarity combines transaction
+        organization, budgets, memory, goals, voice, and assistant conversations without claiming
+        to replace professional financial advice.
       </p>
     </div>
-    <div class="feature-showcase">
+    <div class="feature-showcase feature-showcase--six">
       {featureCards.map((feature) => (
         <article class="feature-showcase__card">
-          <div>
-            <span>{feature.label}</span>
-            <h3>{feature.title}</h3>
-            <p>{feature.body}</p>
-          </div>
           <figure>
             <img
               src={feature.image}
@@ -248,6 +359,11 @@ const faqItems = faqs.slice(0, 7);
               decoding="async"
             />
           </figure>
+          <div>
+            <span>{feature.label}</span>
+            <h3>{feature.title}</h3>
+            <p>{feature.body}</p>
+          </div>
         </article>
       ))}
     </div>
@@ -293,18 +409,23 @@ const faqItems = faqs.slice(0, 7);
     </div>
   </section>
 
-  <section class="section product-showcase" aria-labelledby="showcase-heading">
+  <section class="section product-showcase" id="product-gallery" aria-labelledby="showcase-heading">
     <div class="section__header section__header--center">
-      <p class="eyebrow">Product preview</p>
-      <h2 id="showcase-heading">A product surface built for review, not noise.</h2>
+      <p class="eyebrow">Product gallery</p>
+      <h2 id="showcase-heading">The current Clarity experience — dark, calm, scannable.</h2>
       <p>
-        Current mobile screens shown with sample or redacted financial data, selected to show the
-        practical Clarity experience reviewers and early users can expect.
+        Screens from the latest mobile build, selected to show dashboard, Rex, Knows, budgets,
+        transactions, goals, and voice. Sample or redacted financial data for review.
       </p>
     </div>
-    <div class="screen-gallery">
+    <div class="screen-gallery screen-gallery--expanded">
       {showcaseScreens.map((screen) => (
-        <article class="screen-gallery__item">
+        <article
+          class:list={[
+            'screen-gallery__item',
+            screen.featured && 'screen-gallery__item--featured',
+          ]}
+        >
           <figure>
             <img
               src={screen.image}
@@ -348,8 +469,8 @@ const faqItems = faqs.slice(0, 7);
       <p class="eyebrow">Early access</p>
       <h2 id="request-access-heading">Request early access to Clarity.</h2>
       <p>
-        Join the beta list and tell us what you want Clarity to help with. Keep it high level and
-        do not submit bank credentials, account numbers, or sensitive financial details.
+        Join the beta list for mobile today and webapp updates as the desktop PWA ships. Keep it
+        high level and do not submit bank credentials, account numbers, or sensitive financial details.
       </p>
     </div>
     <PublicForm variant="waitlist" />

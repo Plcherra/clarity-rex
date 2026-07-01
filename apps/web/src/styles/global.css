@@ -1026,6 +1026,128 @@ body {
   gap: 24px;
 }
 
+.hero-brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hero-brand-lockup__mark {
+  display: block;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(8, 24, 39, 0.14);
+}
+
+.hero-brand-lockup__text {
+  display: grid;
+  gap: 4px;
+}
+
+.hero-brand-lockup__text .eyebrow {
+  margin: 0;
+}
+
+.webapp-banner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: start;
+  max-width: 680px;
+  border: 1px solid rgba(31, 95, 153, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(233, 243, 255, 0.92), rgba(232, 247, 241, 0.88));
+  box-shadow: var(--premium-shadow-small);
+  padding: 16px 18px;
+}
+
+.webapp-banner__badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--premium-navy);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+
+.webapp-banner strong {
+  display: block;
+  color: var(--premium-navy);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.webapp-banner p {
+  margin-top: 4px;
+  color: #3f5163;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.webapp-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(320px, 0.88fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.webapp-section__copy {
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--premium-line);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f7fbff 58%, #eef9f5 100%);
+  box-shadow: var(--premium-shadow-small);
+  padding: 34px;
+}
+
+.webapp-section__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.webapp-section__list li {
+  color: #3f5163;
+  font-weight: 650;
+}
+
+.webapp-section__cards {
+  display: grid;
+  gap: 12px;
+}
+
+.webapp-section__card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--premium-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 12px 30px rgba(8, 24, 39, 0.05);
+  padding: 20px;
+}
+
+.webapp-section__card h3 {
+  color: var(--premium-navy);
+}
+
+.webapp-section__card p {
+  color: #667584;
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.brand-link__name {
+  font-weight: 850;
+}
+
 .landing-hero h1 {
   max-width: 760px;
   color: var(--premium-navy);
@@ -1293,6 +1415,27 @@ body {
   gap: 18px;
 }
 
+.feature-showcase--six {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.feature-showcase--six .feature-showcase__card {
+  min-height: auto;
+  grid-template-rows: auto 1fr;
+}
+
+.feature-showcase--six .feature-showcase__card figure {
+  order: -1;
+  min-height: 280px;
+  padding: 18px 18px 0;
+}
+
+.feature-showcase--six .feature-showcase__card img {
+  width: min(100%, 220px);
+  border-radius: 22px;
+  box-shadow: 0 18px 44px rgba(8, 24, 39, 0.16);
+}
+
 .feature-showcase__card {
   display: grid;
   min-height: 560px;
@@ -1421,6 +1564,23 @@ body {
   align-items: stretch;
 }
 
+.screen-gallery--expanded {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.screen-gallery--expanded .screen-gallery__item--featured {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.screen-gallery--expanded .screen-gallery__item--featured figure {
+  min-height: 520px;
+}
+
+.screen-gallery--expanded .screen-gallery__item--featured img {
+  width: min(100%, 340px);
+}
+
 .screen-gallery__item {
   display: grid;
   overflow: hidden;
@@ -1477,7 +1637,8 @@ body {
 
 @media (max-width: 1060px) {
   .landing-hero,
-  .data-consent {
+  .data-consent,
+  .webapp-section {
     grid-template-columns: 1fr;
   }
 
@@ -1505,12 +1666,19 @@ body {
   }
 
   .feature-showcase,
+  .feature-showcase--six,
   .trust-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .screen-gallery {
-    grid-template-columns: 1fr;
+  .screen-gallery,
+  .screen-gallery--expanded {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .screen-gallery--expanded .screen-gallery__item--featured {
+    grid-column: span 2;
+    grid-row: span 1;
   }
 
   .screen-gallery__item:first-child {
@@ -1539,8 +1707,27 @@ body {
 
   .landing-hero__metrics,
   .feature-showcase,
+  .feature-showcase--six,
   .trust-strip {
     grid-template-columns: 1fr;
+  }
+
+  .screen-gallery,
+  .screen-gallery--expanded {
+    grid-template-columns: 1fr;
+  }
+
+  .screen-gallery--expanded .screen-gallery__item--featured {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .webapp-banner {
+    grid-template-columns: 1fr;
+  }
+
+  .webapp-section__copy {
+    padding: 24px;
   }
 
   .hero-trust-row {

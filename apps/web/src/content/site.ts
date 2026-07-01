@@ -1,15 +1,15 @@
 export const product = {
   name: 'Clarity',
   assistantName: 'Rex',
-  tagline: 'Understand your money before it becomes noise.',
+  tagline: 'One calm place for money, memory, and Rex.',
   description:
-    'Clarity is a personal AI financial co-pilot that turns user-authorized account context into spending clarity, budgets, goals, and conversations with Rex, the assistant inside the app.',
+    'Clarity is a privacy-first personal finance and AI assistant app. Connect accounts with consent, track budgets and goals, organize what Clarity knows, and talk to Rex in chat or voice — mobile today, webapp PWA coming soon.',
   supportEmail: 'clarity.rex@gmail.com',
   operatorName: 'Clarity',
   siteUrl: 'https://goclarity.app',
   locale: 'en_US',
   socialImagePath: '/og-image.jpg',
-  socialImageAlt: 'Clarity personal AI financial co-pilot product preview.',
+  socialImageAlt: 'Clarity dashboard preview — money, memory, and Rex in one calm place.',
 } as const;
 
 export type PublicRoute = {
@@ -24,9 +24,9 @@ export const publicRoutes = [
   {
     path: '/',
     label: 'Home',
-    title: 'Clarity - Personal AI Financial Co-Pilot',
+    title: 'Clarity - Money, Memory, and Rex in One Place',
     description:
-      'Meet Clarity, a personal AI financial co-pilot that helps organize spending, budgets, goals, and financial context with Rex inside.',
+      'Meet Clarity: privacy-first finance, budgets, goals, and Rex — the AI assistant inside the app. Mobile beta today. Webapp PWA for desktop coming soon.',
     footerRequired: true,
   },
   {
