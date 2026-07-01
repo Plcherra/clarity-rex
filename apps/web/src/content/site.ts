@@ -1,4 +1,4 @@
-/** Live App Store listing — override with PUBLIC_APP_STORE_URL at build time. */
+/** Set when the App Store listing is live. Until then the badge shows but stays inactive. */
 const DEFAULT_APP_STORE_LISTING_URL = '';
 
 const appStoreUrl =
