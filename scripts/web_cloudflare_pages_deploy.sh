@@ -13,8 +13,6 @@ cd "${ROOT_DIR}"
 PUBLIC_SITE_URL="${PUBLIC_SITE_URL}" ./scripts/web_release_build.sh
 
 echo "==> Deploying apps/web/dist to Cloudflare Pages"
-echo "    If this is your first deploy on this machine, run: npx wrangler login"
 
-npx wrangler pages deploy apps/web/dist \
-  --project-name "${PROJECT_NAME}" \
-  --branch main
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+"${ROOT_DIR}/scripts/wrangler_pages_deploy.sh" "${ROOT_DIR}/apps/web/dist"

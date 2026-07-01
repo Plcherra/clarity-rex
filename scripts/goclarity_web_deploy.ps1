@@ -29,11 +29,11 @@ if (-not (Test-Path (Join-Path $DistApp "index.html"))) {
 Write-Output "==> Deploying combined site to Cloudflare Pages"
 Write-Output "    PUBLIC_SITE_URL=$PublicSiteUrl"
 Write-Output "    CLOUDFLARE_PAGES_PROJECT=$ProjectName"
-Write-Output "    First time? Run: npx wrangler login"
+Write-Output "    First time? npx wrangler@3 login"
 
 Push-Location $RootDir
 try {
-  npx wrangler pages deploy apps/web/dist `
+  npx wrangler@3 pages deploy apps/web/dist `
     --project-name $ProjectName `
     --branch main
 } finally {

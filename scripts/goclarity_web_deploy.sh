@@ -31,12 +31,8 @@ fi
 echo "==> Deploying combined site to Cloudflare Pages"
 echo "    PUBLIC_SITE_URL=${PUBLIC_SITE_URL}"
 echo "    CLOUDFLARE_PAGES_PROJECT=${PROJECT_NAME}"
-echo "    If this is your first deploy on this machine, run: npx wrangler login"
 
-cd "${ROOT_DIR}"
-npx wrangler pages deploy apps/web/dist \
-  --project-name "${PROJECT_NAME}" \
-  --branch main
+"${ROOT_DIR}/scripts/wrangler_pages_deploy.sh" "${ROOT_DIR}/apps/web/dist"
 
 echo "==> Deploy complete"
 echo "    Landing: ${PUBLIC_SITE_URL}/"
