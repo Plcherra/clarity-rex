@@ -315,6 +315,10 @@ String voiceFailureMessage(AppLocalizations l10n, String? error) {
 }
 
 String? _remapLegacyEnglishVoiceFailure(AppLocalizations l10n, String error) {
+  if (_isKnownVoicePermissionMessage(l10n, error)) {
+    return null;
+  }
+
   final message = error.toLowerCase();
   if (message.contains('auth') ||
       message.contains('token') ||
@@ -360,4 +364,23 @@ String? _remapLegacyEnglishVoiceFailure(AppLocalizations l10n, String error) {
     return l10n.voiceFailurePlaybackFailed;
   }
   return null;
+}
+
+bool _isKnownVoicePermissionMessage(AppLocalizations l10n, String error) {
+  final trimmed = error.trim();
+  if (trimmed.isEmpty) {
+    return false;
+  }
+
+  final known = {
+    l10n.voiceErrorMicDenied,
+    l10n.voiceErrorMicDeniedWeb,
+    l10n.voiceErrorMicPermanentlyDenied,
+    l10n.voiceErrorMicPermanentlyDeniedWeb,
+    l10n.voiceErrorMicRestricted,
+    l10n.voiceErrorMicInsecureContext,
+    l10n.voiceErrorMicBrowserSettings,
+    l10n.voiceFailureMicrophoneAccess,
+  };
+  return known.contains(trimmed);
 }

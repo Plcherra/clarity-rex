@@ -194,11 +194,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
     final activeConversationId =
         conversationId ?? ref.read(chatProvider).conversationId;
 
-    state = VoiceCallState(
-      phase: VoiceCallPhase.listening,
-      conversationId: activeConversationId,
-      callStartedAt: startedAt,
-    );
     final permissionDecision = await ref
         .read(microphonePermissionProvider)
         .requestMicrophonePermission(includeSpeechRecognition: false);
@@ -211,6 +206,12 @@ class VoiceCallController extends Notifier<VoiceCallState>
       _isStartingCall = false;
       return false;
     }
+
+    state = VoiceCallState(
+      phase: VoiceCallPhase.listening,
+      conversationId: activeConversationId,
+      callStartedAt: startedAt,
+    );
 
     if (_shouldUseNativeVoice) {
       final nativeStarted = await _startNativeVoiceSession(

@@ -17,3 +17,26 @@ Future<bool> isWebMicrophonePermissionPermanentlyDenied() async {
     return false;
   }
 }
+
+/// Requests microphone access via [getUserMedia].
+///
+/// Must invoke [getUserMedia] synchronously when this function is called so
+/// the browser still has the user's click gesture (awaiting [permissions.query]
+/// first — as the record package does — drops activation and suppresses the
+/// prompt).
+Future<bool> requestWebMicrophoneAccess() {
+  final mediaDevices = html.window.navigator.mediaDevices;
+  if (mediaDevices == null) {
+    return Future.value(false);
+  }
+
+  return mediaDevices
+      .getUserMedia({'audio': true})
+      .then((stream) {
+        for (final track in stream.getAudioTracks()) {
+          track.stop();
+        }
+        return true;
+      })
+      .catchError((_) => false);
+}

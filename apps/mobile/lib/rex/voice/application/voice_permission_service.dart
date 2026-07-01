@@ -39,18 +39,23 @@ class RecordMicrophonePermissionService implements MicrophonePermissionService {
       return MicrophonePermissionDecision.insecureContext;
     }
 
-    try {
-      final granted = await _recorder.hasPermission(request: true);
+    if (kIsWeb) {
+      final granted = await requestWebMicrophoneAccess();
       if (granted) {
         return MicrophonePermissionDecision.granted;
       }
 
-      if (kIsWeb) {
-        final permanentlyDenied =
-            await isWebMicrophonePermissionPermanentlyDenied();
-        return permanentlyDenied
-            ? MicrophonePermissionDecision.permanentlyDenied
-            : MicrophonePermissionDecision.denied;
+      final permanentlyDenied =
+          await isWebMicrophonePermissionPermanentlyDenied();
+      return permanentlyDenied
+          ? MicrophonePermissionDecision.permanentlyDenied
+          : MicrophonePermissionDecision.denied;
+    }
+
+    try {
+      final granted = await _recorder.hasPermission(request: true);
+      if (granted) {
+        return MicrophonePermissionDecision.granted;
       }
 
       return MicrophonePermissionDecision.denied;
