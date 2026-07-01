@@ -651,6 +651,8 @@
   "chatPageCallRexTooltip": "Call Rex",
   "chatInputAttachTooltip": "Attach file or image",
   "chatInputStartVoiceModeTooltip": "Start voice mode",
+  "chatInputVoiceWebTooltip": "Voice coming soon on web",
+  "voiceWebUnavailableMessage": "Voice is coming soon on the web app. Use chat for now.",
   "chatInputMessageHint": "Message Assistant…",
   "chatInputSendTooltip": "Send",
   "chatInputRemoveAttachmentTooltip": "Remove attachment",

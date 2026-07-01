@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
+import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart'
     show ChatState;
@@ -148,6 +149,11 @@ class _ChatPageState extends ConsumerState<ChatPage>
   }
 
   Future<void> _pickAttachment() async {
+    if (AppCapabilities.instance.isWeb) {
+      await _pickFileAttachment();
+      return;
+    }
+
     final source = await showModalBottomSheet<ChatAttachmentSource>(
       context: context,
       backgroundColor: context.clarityColors.surfaceElevated,
@@ -260,7 +266,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
     if (isChatImageAttachmentName(fileName)) {
       if (bytes != null) {
         previewBytes = bytes;
-      } else if (attachment.path.trim().isEmpty) {
+      } else {
         try {
           previewBytes = Uint8List.fromList(await attachment.readAsBytes());
         } on Object {
@@ -295,6 +301,11 @@ class _ChatPageState extends ConsumerState<ChatPage>
   }
 
   Future<void> _startVoiceCall() async {
+    if (!AppCapabilities.instance.supportsAnyVoice) {
+      _showSnackBar(context.l10n.voiceWebUnavailableMessage);
+      return;
+    }
+
     FocusScope.of(context).unfocus();
     final voice = ref.read(voiceCallProvider);
     if (voice.isCallActive) {
@@ -361,6 +372,12 @@ class _ChatPageState extends ConsumerState<ChatPage>
     final voiceController = ref.read(voiceCallProvider.notifier);
     final currentConversation = ref.watch(currentConversationProvider);
     final l10n = context.l10n;
+    final voiceSupported = AppCapabilities.instance.supportsAnyVoice;
+    final voiceTooltip = voiceSupported
+        ? (voiceCall.isCallActive
+            ? l10n.chatPageShowVoiceCallTooltip
+            : l10n.chatInputStartVoiceModeTooltip)
+        : l10n.chatInputVoiceWebTooltip;
 
     return RexScaffold(
       appBar: widget.showAppBar
@@ -374,9 +391,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
                         ? Icons.graphic_eq_rounded
                         : Icons.call_rounded,
                   ),
-                  tooltip: voiceCall.isCallActive
-                      ? l10n.chatPageShowVoiceCallTooltip
-                      : l10n.chatPageCallRexTooltip,
+                  tooltip: voiceTooltip,
                 ),
               ],
             )
@@ -406,7 +421,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
                     .dismissClarityAction(action),
               ),
             ),
-            if (!voiceCall.isIdle)
+            if (voiceSupported && !voiceCall.isIdle)
               InlineVoiceCallPanel(
                 state: voiceCall,
                 onRetry: _startVoiceCall,
@@ -422,6 +437,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
               onPickAttachment: _pickAttachment,
               onRemoveAttachment: _removeAttachment,
               onStartVoice: _startVoiceCall,
+              voiceTooltip: voiceTooltip,
               isVoiceCallActive: voiceCall.isCallActive,
               attachment: _attachment,
               attachmentPreviewBytes: _attachmentPreviewBytes,

@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
 import 'package:clarity/rex/chat/domain/chat_message.dart';
+import 'package:clarity/rex/chat/presentation/widgets/chat_attachment_image.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_bubble_effects.dart'
     show ChatStreamingCursor, ChatTypingDots;
 import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
@@ -163,18 +163,6 @@ class ChatMessageBubble extends StatelessWidget {
       return null;
     }
 
-    final image = hasPath
-        ? Image.file(
-            File(path),
-            fit: BoxFit.cover,
-            filterQuality: FilterQuality.medium,
-          )
-        : Image.memory(
-            Uint8List.fromList(bytes!),
-            fit: BoxFit.cover,
-            filterQuality: FilterQuality.medium,
-          );
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
       child: ConstrainedBox(
@@ -182,7 +170,12 @@ class ChatMessageBubble extends StatelessWidget {
           maxWidth: maxWidth,
           maxHeight: 280,
         ),
-        child: image,
+        child: ChatAttachmentImage(
+          previewBytes: hasBytes ? Uint8List.fromList(bytes!) : null,
+          localPath: hasPath ? path : null,
+          fit: BoxFit.cover,
+          maxHeight: 280,
+        ),
       ),
     );
   }

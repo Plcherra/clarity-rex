@@ -137,6 +137,7 @@ class _FakeChatApi extends ChatApi {
     String? conversationId,
     XFile? attachment,
     Map<String, dynamic>? financialContext,
+    Map<String, dynamic>? writeConfirmation,
   }) async {
     financialContexts.add(financialContext);
     return response;

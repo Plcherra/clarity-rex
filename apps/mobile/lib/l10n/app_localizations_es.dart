@@ -1180,6 +1180,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get chatInputStartVoiceModeTooltip => 'Iniciar modo de voz';
 
   @override
+  String get chatInputVoiceWebTooltip => 'Voz disponible pronto en la web';
+
+  @override
+  String get voiceWebUnavailableMessage =>
+      'La voz llegará pronto a la app web. Usa el chat por ahora.';
+
+  @override
   String get chatInputMessageHint => 'Asistente de mensajes…';
 
   @override

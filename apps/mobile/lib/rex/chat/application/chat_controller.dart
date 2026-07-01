@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/core/l10n/app_localizations_lookup.dart';
@@ -610,14 +611,14 @@ class ChatController extends Notifier<ChatState> {
       return (localPath: null, previewBytes: null, name: name);
     }
 
-    final path = attachment.path.trim();
-    if (path.isNotEmpty) {
-      return (localPath: path, previewBytes: null, name: name);
-    }
-
     try {
       final bytes = await attachment.readAsBytes();
-      return (localPath: null, previewBytes: bytes, name: name);
+      final path = attachment.path.trim();
+      return (
+        localPath: !kIsWeb && path.isNotEmpty ? path : null,
+        previewBytes: bytes,
+        name: name,
+      );
     } on Object {
       return (localPath: null, previewBytes: null, name: name);
     }

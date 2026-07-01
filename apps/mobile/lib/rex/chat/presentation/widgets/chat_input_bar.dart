@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
@@ -6,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
+import 'package:clarity/rex/chat/presentation/widgets/chat_attachment_image.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
@@ -19,6 +19,7 @@ class ChatInputBar extends StatelessWidget {
     this.onPickAttachment,
     this.onRemoveAttachment,
     this.onStartVoice,
+    this.voiceTooltip,
     this.attachment,
     this.attachmentPreviewBytes,
     this.attachmentName,
@@ -33,6 +34,7 @@ class ChatInputBar extends StatelessWidget {
   final VoidCallback? onPickAttachment;
   final VoidCallback? onRemoveAttachment;
   final VoidCallback? onStartVoice;
+  final String? voiceTooltip;
   final XFile? attachment;
   final Uint8List? attachmentPreviewBytes;
   final String? attachmentName;
@@ -82,9 +84,10 @@ class ChatInputBar extends StatelessWidget {
                     icon: isVoiceCallActive
                         ? Icons.graphic_eq_rounded
                         : Icons.mic_rounded,
-                    tooltip: isVoiceCallActive
-                        ? l10n.chatPageShowVoiceCallTooltip
-                        : l10n.chatInputStartVoiceModeTooltip,
+                    tooltip: voiceTooltip ??
+                        (isVoiceCallActive
+                            ? l10n.chatPageShowVoiceCallTooltip
+                            : l10n.chatInputStartVoiceModeTooltip),
                     onPressed: isLoading ? null : onStartVoice,
                     isActive: isVoiceCallActive,
                   ),
@@ -386,21 +389,21 @@ class _ImagePreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final bytes = previewBytes;
     if (bytes != null && bytes.isNotEmpty) {
-      return Image.memory(
-        bytes,
+      return ChatAttachmentImage(
+        previewBytes: bytes,
         fit: BoxFit.cover,
         width: double.infinity,
-        filterQuality: FilterQuality.medium,
+        maxHeight: 132,
       );
     }
 
     final path = attachment?.path.trim() ?? '';
     if (path.isNotEmpty) {
-      return Image.file(
-        File(path),
+      return ChatAttachmentImage(
+        localPath: path,
         fit: BoxFit.cover,
         width: double.infinity,
-        filterQuality: FilterQuality.medium,
+        maxHeight: 132,
       );
     }
 

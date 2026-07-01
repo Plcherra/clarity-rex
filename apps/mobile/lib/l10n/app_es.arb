@@ -576,6 +576,8 @@
   "chatInputRemoveAttachmentTooltip": "Quitar archivo adjunto",
   "chatInputSendTooltip": "Enviar",
   "chatInputStartVoiceModeTooltip": "Iniciar modo de voz",
+  "chatInputVoiceWebTooltip": "Voz disponible pronto en la web",
+  "voiceWebUnavailableMessage": "La voz llegará pronto a la app web. Usa el chat por ahora.",
   "chatPageCallRexTooltip": "llamar a rex",
   "chatPageDefaultTitle": "Rex",
   "chatPageReadFileFailed": "No se pudo leer el archivo seleccionado.",

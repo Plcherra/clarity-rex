@@ -2169,6 +2169,18 @@ abstract class AppLocalizations {
   /// **'Start voice mode'**
   String get chatInputStartVoiceModeTooltip;
 
+  /// No description provided for @chatInputVoiceWebTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice coming soon on web'**
+  String get chatInputVoiceWebTooltip;
+
+  /// No description provided for @voiceWebUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice is coming soon on the web app. Use chat for now.'**
+  String get voiceWebUnavailableMessage;
+
   /// No description provided for @chatInputMessageHint.
   ///
   /// In en, this message translates to:

@@ -3,6 +3,8 @@
 **Previous:** [P2_ADAPTIVE_SHELL.md](./P2_ADAPTIVE_SHELL.md) (exit criteria met)  
 **Next:** [P4_PLAID_WEB.md](./P4_PLAID_WEB.md) or [P5_VOICE_WEB.md](./P5_VOICE_WEB.md)
 
+**Status:** **In progress** (2026-06-30)
+
 ## Objective
 
 Assistant parity for text-based Rex workflows on web.
@@ -20,8 +22,9 @@ Verify `chat_api.dart` HTTP streaming on Chrome.
 
 Fix web blockers:
 
-- Remove or conditionalize `dart:io` in chat attachment path (`chat_input_bar.dart`, `chat_message_bubble.dart`)
-- File/image attachments: work via `file_picker` / `cross_file` on web, or gate with clear copy
+- Remove or conditionalize `dart:io` in chat attachment path (`chat_input_bar.dart`, `chat_message_bubble.dart`) — **done** via `ChatAttachmentImage` + conditional local file helper
+- File/image attachments: work via `file_picker` / `cross_file` on web, or gate with clear copy — **web uses file picker directly**; mobile keeps gallery/camera sheet
+- Voice mic shows honest “coming soon on web” copy until P5 — **done**
 
 ### 2. Knows / memory
 

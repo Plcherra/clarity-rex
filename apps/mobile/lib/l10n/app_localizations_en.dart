@@ -1163,6 +1163,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatInputStartVoiceModeTooltip => 'Start voice mode';
 
   @override
+  String get chatInputVoiceWebTooltip => 'Voice coming soon on web';
+
+  @override
+  String get voiceWebUnavailableMessage =>
+      'Voice is coming soon on the web app. Use chat for now.';
+
+  @override
   String get chatInputMessageHint => 'Message Assistant…';
 
   @override

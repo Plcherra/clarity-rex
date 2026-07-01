@@ -352,6 +352,11 @@ class ChatApi {
     return MediaType.parse(contentType);
   }
 
+  @visibleForTesting
+  Stream<ChatStreamEvent> parseSseEventsForTesting(Stream<List<int>> byteStream) {
+    return _eventsFromSse(byteStream);
+  }
+
   Stream<ChatStreamEvent> _eventsFromSse(Stream<List<int>> byteStream) async* {
     var eventName = 'message';
     final dataLines = <String>[];

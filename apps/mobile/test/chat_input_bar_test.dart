@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:clarity/rex/chat/presentation/widgets/chat_input_bar.dart';
 
+import 'helpers/l10n_test_wrapper.dart';
+
 void main() {
   testWidgets('ChatInputBar keeps the composer focused on message actions', (
     tester,
@@ -14,8 +16,8 @@ void main() {
     var voiceStarted = false;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
+      wrapWithL10n(
+        Scaffold(
           body: Align(
             alignment: Alignment.bottomCenter,
             child: ChatInputBar(
@@ -47,8 +49,8 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
+      wrapWithL10n(
+        Scaffold(
           body: Align(
             alignment: Alignment.bottomCenter,
             child: ChatInputBar(
@@ -75,8 +77,8 @@ void main() {
     var voiceTapped = false;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
+      wrapWithL10n(
+        Scaffold(
           body: Align(
             alignment: Alignment.bottomCenter,
             child: ChatInputBar(
@@ -106,8 +108,8 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
+      wrapWithL10n(
+        Scaffold(
           body: Align(
             alignment: Alignment.bottomCenter,
             child: ChatInputBar(controller: controller),
