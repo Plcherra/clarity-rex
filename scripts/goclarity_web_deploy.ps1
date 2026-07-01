@@ -29,13 +29,25 @@ if (-not (Test-Path (Join-Path $DistApp "index.html"))) {
 Write-Output "==> Deploying combined site to Cloudflare Pages"
 Write-Output "    PUBLIC_SITE_URL=$PublicSiteUrl"
 Write-Output "    CLOUDFLARE_PAGES_PROJECT=$ProjectName"
-Write-Output "    First time? npx wrangler@3 login"
+
+if (-not $env:CLOUDFLARE_API_TOKEN) {
+  Write-Output "    Tip: set CLOUDFLARE_API_TOKEN (Edit Cloudflare Workers template)"
+}
 
 Push-Location $RootDir
 try {
+  $previousEap = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -Scope Global -ErrorAction SilentlyContinue) {
+    $global:PSNativeCommandUseErrorActionPreference = $false
+  }
   npx wrangler@3 pages deploy apps/web/dist `
     --project-name $ProjectName `
     --branch main
+  if ($LASTEXITCODE -ne 0) {
+    throw "wrangler pages deploy failed with exit code $LASTEXITCODE"
+  }
+  $ErrorActionPreference = $previousEap
 } finally {
   Pop-Location
 }

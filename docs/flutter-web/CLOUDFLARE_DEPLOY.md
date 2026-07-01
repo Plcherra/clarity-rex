@@ -38,9 +38,18 @@ Avoids browser OAuth and `localhost:8976` callback issues.
 
 1. Cloudflare Dashboard → **My Profile** → **API Tokens** → **Create Token**
 2. Use template **Edit Cloudflare Workers** (includes Pages deploy), or custom with:
-   - Account → Cloudflare Pages → Edit
-   - Account → Account Settings → Read
-3. On the machine that deploys:
+   - Account → Cloudflare Pages → **Edit**
+   - Account → Account Settings → **Read**
+   - User → User Details → **Read** (optional; fixes whoami email warning)
+
+**Do not use** Access / Custom Pages permissions — that token will fail with `Authentication error [code: 10000]`.
+
+After creating the token, verify:
+
+```bash
+export CLOUDFLARE_API_TOKEN="your-token"
+npx wrangler@3 pages project list    # must succeed before deploy
+```
 
 ```bash
 export CLOUDFLARE_API_TOKEN="your-token-here"
@@ -113,12 +122,18 @@ whoami          # should be rex, not root
 cd /opt/clarity/current
 ```
 
-### A) Shell script not executable
+### A) Shell script not executable / `command not found`
+
+Often Windows CRLF line endings on `.sh` files. Fix:
 
 ```bash
+git pull
+sed -i 's/\r$//' scripts/*.sh
 chmod +x scripts/*.sh
 bash scripts/goclarity_web_deploy.sh --skip-build
 ```
+
+Always prefer `bash scripts/...` over `sudo ./scripts/...`.
 
 ### B) API token not visible to sudo
 
