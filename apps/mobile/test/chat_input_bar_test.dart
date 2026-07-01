@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:clarity/rex/chat/presentation/widgets/chat_input_bar.dart';
@@ -122,5 +123,42 @@ void main() {
     expect(field.maxLines, 7);
     expect(find.text('Deep Think'), findsNothing);
     expect(find.byTooltip('Send'), findsOneWidget);
+  });
+
+  testWidgets('ChatInputBar sends on Enter and keeps Shift+Enter as newline', (
+    tester,
+  ) async {
+    final controller = TextEditingController(text: 'Hello Rex');
+    addTearDown(controller.dispose);
+
+    var sent = false;
+
+    await tester.pumpWidget(
+      wrapWithL10n(
+        Scaffold(
+          body: ChatInputBar(
+            controller: controller,
+            onSend: () => sent = true,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(TextField), warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+
+    expect(sent, isTrue);
+    expect(controller.text, 'Hello Rex');
+
+    sent = false;
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.pump();
+
+    expect(sent, isFalse);
   });
 }

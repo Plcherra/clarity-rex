@@ -12,7 +12,7 @@ import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
 /// Composer row: text field, optional attachment preview, and send action.
-class ChatInputBar extends StatelessWidget {
+class ChatInputBar extends StatefulWidget {
   const ChatInputBar({
     super.key,
     required this.controller,
@@ -45,18 +45,59 @@ class ChatInputBar extends StatelessWidget {
   final bool isVoiceCallActive;
 
   @override
+  State<ChatInputBar> createState() => _ChatInputBarState();
+}
+
+class _ChatInputBarState extends State<ChatInputBar> {
+  late final FocusNode _composerFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _composerFocusNode = FocusNode(onKeyEvent: _handleComposerKey);
+  }
+
+  @override
+  void dispose() {
+    _composerFocusNode.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _handleComposerKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    if (key != LogicalKeyboardKey.enter &&
+        key != LogicalKeyboardKey.numpadEnter) {
+      return KeyEventResult.ignored;
+    }
+    if (HardwareKeyboard.instance.isShiftPressed) {
+      return KeyEventResult.ignored;
+    }
+    final hasAttachment =
+        widget.attachment != null || widget.attachmentName != null;
+    final canSend = _canSend(
+      widget.controller.text,
+      hasAttachment: hasAttachment,
+      isLoading: widget.isLoading,
+      hasBlockingAttachmentError: widget.attachmentError != null,
+    );
+    if (!canSend || widget.onSend == null) {
+      return KeyEventResult.ignored;
+    }
+    widget.onSend!();
+    return KeyEventResult.handled;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
     final l10n = context.l10n;
-    final hasBlockingAttachmentError = attachmentError != null;
-    final hasAttachment = attachment != null || attachmentName != null;
-    final canSend = _canSend(
-      controller.text,
-      hasAttachment: hasAttachment,
-      isLoading: isLoading,
-      hasBlockingAttachmentError: hasBlockingAttachmentError,
-    );
+    final hasBlockingAttachmentError = widget.attachmentError != null;
+    final hasAttachment =
+        widget.attachment != null || widget.attachmentName != null;
 
     return Material(
       color: colors.background,
@@ -67,16 +108,16 @@ class ChatInputBar extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (hasAttachment || attachmentError != null)
+              if (hasAttachment || widget.attachmentError != null)
                 Padding(
                   padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
                   child: _AttachmentPreview(
-                    attachment: attachment,
-                    previewBytes: attachmentPreviewBytes,
-                    fileName: attachmentName,
-                    fileSize: attachmentSize,
-                    errorMessage: attachmentError,
-                    onRemove: isLoading ? null : onRemoveAttachment,
+                    attachment: widget.attachment,
+                    previewBytes: widget.attachmentPreviewBytes,
+                    fileName: widget.attachmentName,
+                    fileSize: widget.attachmentSize,
+                    errorMessage: widget.attachmentError,
+                    onRemove: widget.isLoading ? null : widget.onRemoveAttachment,
                   ),
                 ),
               Row(
@@ -85,81 +126,66 @@ class ChatInputBar extends StatelessWidget {
                   _ComposerIconButton(
                     icon: Icons.attach_file_rounded,
                     tooltip: l10n.chatInputAttachTooltip,
-                    onPressed: isLoading ? null : onPickAttachment,
+                    onPressed: widget.isLoading ? null : widget.onPickAttachment,
                   ),
                   _ComposerIconButton(
-                    icon: isVoiceCallActive
+                    icon: widget.isVoiceCallActive
                         ? Icons.graphic_eq_rounded
                         : Icons.mic_rounded,
-                    tooltip: voiceTooltip ??
-                        (isVoiceCallActive
+                    tooltip: widget.voiceTooltip ??
+                        (widget.isVoiceCallActive
                             ? l10n.chatPageShowVoiceCallTooltip
                             : l10n.chatInputStartVoiceModeTooltip),
-                    onPressed: isLoading ? null : onStartVoice,
-                    isActive: isVoiceCallActive,
+                    onPressed: widget.isLoading ? null : widget.onStartVoice,
+                    isActive: widget.isVoiceCallActive,
                   ),
                   Expanded(
-                    child: Focus(
-                      onKeyEvent: (node, event) {
-                        if (event is! KeyDownEvent ||
-                            event.logicalKey != LogicalKeyboardKey.enter) {
-                          return KeyEventResult.ignored;
-                        }
-                        if (HardwareKeyboard.instance.isShiftPressed) {
-                          return KeyEventResult.ignored;
-                        }
-                        if (!canSend || onSend == null) {
-                          return KeyEventResult.ignored;
-                        }
-                        onSend!();
-                        return KeyEventResult.handled;
-                      },
-                      child: TextField(
-                        controller: controller,
-                        minLines: 1,
-                        maxLines: 7,
-                        keyboardType: TextInputType.multiline,
-                        textInputAction: TextInputAction.newline,
-                        textCapitalization: TextCapitalization.sentences,
-                        cursorColor: colors.accent,
-                        decoration: InputDecoration(
-                          hintText: l10n.chatInputMessageHint,
-                          border: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 12,
-                          ),
-                          hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                            color: colors.textMuted.withValues(
-                              alpha: 0.7,
-                            ),
+                    child: TextField(
+                      focusNode: _composerFocusNode,
+                      controller: widget.controller,
+                      minLines: 1,
+                      maxLines: 7,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      textCapitalization: TextCapitalization.sentences,
+                      cursorColor: colors.accent,
+                      decoration: InputDecoration(
+                        hintText: l10n.chatInputMessageHint,
+                        border: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 12,
+                        ),
+                        hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                          color: colors.textMuted.withValues(
+                            alpha: 0.7,
                           ),
                         ),
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: colors.textPrimary,
-                          height: 1.35,
-                        ),
+                      ),
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: colors.textPrimary,
+                        height: 1.35,
                       ),
                     ),
                   ),
                   ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: controller,
+                    valueListenable: widget.controller,
                     builder: (context, value, child) {
                       final canSendNow = _canSend(
                         value.text,
                         hasAttachment: hasAttachment,
-                        isLoading: isLoading,
+                        isLoading: widget.isLoading,
                         hasBlockingAttachmentError:
                             hasBlockingAttachmentError,
                       );
                       return _ComposerIconButton(
                         icon: Icons.arrow_upward_rounded,
                         tooltip: l10n.chatInputSendTooltip,
-                        onPressed: canSendNow ? onSend : null,
+                        onPressed: canSendNow ? widget.onSend : null,
                         isActive: canSendNow,
-                        isLoading: isLoading,
+                        isLoading: widget.isLoading,
                       );
                     },
                   ),
@@ -172,7 +198,7 @@ class ChatInputBar extends StatelessWidget {
     );
   }
 
-  static bool _canSend(
+  bool _canSend(
     String text, {
     required bool hasAttachment,
     required bool isLoading,
