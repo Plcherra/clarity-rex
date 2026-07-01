@@ -195,6 +195,26 @@ def test_mapper_prefers_authorized_datetime_when_authorized_date_missing():
     assert payload["date"] == "2026-06-30"
 
 
+def test_mapper_authorized_datetime_utc_uses_app_timezone_calendar_date():
+    """9:15pm ET on June 30 must not become July 1 when Plaid sends UTC Z."""
+    payload = map_plaid_transaction(
+        user_id="user-1",
+        item_id="item-record-1",
+        linked_account_id="account-1",
+        transaction={
+            "transaction_id": "txn-4",
+            "account_id": "plaid-account-1",
+            "amount": 12.0,
+            "date": "2026-07-01",
+            "authorized_datetime": "2026-07-01T01:15:00Z",
+            "name": "Late dinner",
+            "pending": False,
+        },
+    )
+
+    assert payload["date"] == "2026-06-30"
+
+
 @pytest.mark.asyncio
 async def test_transaction_sync_upserts_removes_and_updates_cursor_last():
     plaid_client = SinglePagePlaidClient()
