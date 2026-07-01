@@ -105,6 +105,28 @@ class PlaidApiClient:
             {"access_token": self._required_access_token(access_token)},
         )
 
+    async def get_transactions(
+        self,
+        access_token: str,
+        *,
+        start_date: str,
+        end_date: str,
+        offset: int = 0,
+        count: int = 500,
+    ) -> dict[str, Any]:
+        return await self._post(
+            "/transactions/get",
+            {
+                "access_token": self._required_access_token(access_token),
+                "start_date": start_date,
+                "end_date": end_date,
+                "options": {
+                    "offset": offset,
+                    "count": count,
+                },
+            },
+        )
+
     async def sync_transactions(
         self,
         access_token: str,

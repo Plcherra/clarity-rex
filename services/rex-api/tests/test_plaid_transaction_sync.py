@@ -8,6 +8,27 @@ from app.services.plaid_transaction_sync import PlaidTransactionSync
 class SinglePagePlaidClient:
     def __init__(self):
         self.cursors = []
+        self.get_transaction_calls = []
+
+    async def get_transactions(
+        self,
+        access_token,
+        *,
+        start_date,
+        end_date,
+        offset=0,
+        count=500,
+    ):
+        self.get_transaction_calls.append(
+            {
+                "access_token": access_token,
+                "start_date": start_date,
+                "end_date": end_date,
+                "offset": offset,
+                "count": count,
+            }
+        )
+        return {"transactions": [], "total_transactions": 0}
 
     async def sync_transactions(self, access_token, *, cursor=None, count=100):
         assert access_token == "access-token-secret"
@@ -155,6 +176,25 @@ def test_mapper_prefers_authorized_date_over_posting_date():
     assert payload["date"] == "2026-06-30"
 
 
+def test_mapper_prefers_authorized_datetime_when_authorized_date_missing():
+    payload = map_plaid_transaction(
+        user_id="user-1",
+        item_id="item-record-1",
+        linked_account_id="account-1",
+        transaction={
+            "transaction_id": "txn-3",
+            "account_id": "plaid-account-1",
+            "amount": 12.0,
+            "date": "2026-07-01",
+            "authorized_datetime": "2026-06-30T21:15:00-04:00",
+            "name": "Late dinner",
+            "pending": False,
+        },
+    )
+
+    assert payload["date"] == "2026-06-30"
+
+
 @pytest.mark.asyncio
 async def test_transaction_sync_upserts_removes_and_updates_cursor_last():
     plaid_client = SinglePagePlaidClient()
@@ -177,6 +217,7 @@ async def test_transaction_sync_upserts_removes_and_updates_cursor_last():
         "modified": 0,
         "removed": 1,
         "next_cursor": "cursor-next",
+        "dates_repaired": 0,
     }
     assert plaid_client.cursors == ["cursor-old"]
     assert {
@@ -460,3 +501,73 @@ async def test_transaction_sync_backfills_existing_uncategorized_plaid_rows():
     )
     assert backfill_call["body"]["category_id"] == "category-created-1"
     assert backfill_call["query"]["category_id"] == "is.null"
+
+
+@pytest.mark.asyncio
+async def test_transaction_sync_repairs_recent_dates_via_transactions_get():
+    class RepairPlaidClient(SinglePagePlaidClient):
+        async def sync_transactions(self, access_token, *, cursor=None, count=100):
+            return {
+                "added": [],
+                "modified": [],
+                "removed": [],
+                "next_cursor": "cursor-next",
+                "has_more": False,
+            }
+
+        async def get_transactions(
+            self,
+            access_token,
+            *,
+            start_date,
+            end_date,
+            offset=0,
+            count=500,
+        ):
+            await super().get_transactions(
+                access_token,
+                start_date=start_date,
+                end_date=end_date,
+                offset=offset,
+                count=count,
+            )
+            return {
+                "transactions": [
+                    {
+                        "transaction_id": "txn-late-night",
+                        "account_id": "plaid-account-1",
+                        "amount": 18.5,
+                        "date": "2026-07-01",
+                        "authorized_date": "2026-06-30",
+                        "name": "Late purchase",
+                        "pending": False,
+                    }
+                ],
+                "total_transactions": 1,
+            }
+
+    cursor_service = FakeCursorService()
+    plaid_client = RepairPlaidClient()
+    sync = PlaidTransactionSync(
+        plaid_client=plaid_client,
+        cursor_service=cursor_service,
+    )
+
+    result = await sync.sync_transactions(
+        user_id="user-1",
+        item_id="item-record-1",
+        access_token="access-token-secret",
+        cursor=None,
+        account_map={"plaid-account-1": "linked-account-1"},
+    )
+
+    assert result["dates_repaired"] == 1
+    assert len(plaid_client.get_transaction_calls) == 1
+    repair_upsert = next(
+        call
+        for call in cursor_service.calls
+        if call.get("method") == "POST"
+        and call.get("table") == "transactions"
+        and call.get("body", {}).get("plaid_transaction_id") == "txn-late-night"
+    )
+    assert repair_upsert["body"]["date"] == "2026-06-30"

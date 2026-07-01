@@ -26,6 +26,20 @@ class FullSyncPlaidClient:
         self.sync_cursors = []
         self.refresh_calls = 0
         self.balance_get_calls = 0
+        self.get_transaction_calls = 0
+
+    async def get_transactions(
+        self,
+        access_token,
+        *,
+        start_date,
+        end_date,
+        offset=0,
+        count=500,
+    ):
+        assert access_token == "access-token-secret"
+        self.get_transaction_calls += 1
+        return {"transactions": [], "total_transactions": 0}
 
     async def exchange_public_token(self, public_token):
         raise AssertionError("exchange should not be called during sync")

@@ -11,12 +11,22 @@ from app.services.plaid_sync_models import (
 
 
 def _plaid_transaction_date(transaction: dict[str, Any]) -> str:
-    """Prefer authorized_date — when the user made the purchase — over posting date."""
-    return (
-        string_or_none(transaction.get("authorized_date"))
-        or string_or_none(transaction.get("date"))
-        or utc_now_iso()[:10]
-    )
+    """Prefer when the user made the purchase over when the bank posted it."""
+    authorized = string_or_none(transaction.get("authorized_date"))
+    if authorized:
+        return authorized
+
+    authorized_dt = string_or_none(transaction.get("authorized_datetime"))
+    if authorized_dt:
+        date_part = authorized_dt.split("T", 1)[0].strip()
+        if date_part:
+            return date_part
+
+    primary = string_or_none(transaction.get("date"))
+    if primary:
+        return primary
+
+    return utc_now_iso()[:10]
 
 
 def map_plaid_transaction(

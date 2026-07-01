@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import date, timedelta
 from typing import Any, Optional
 
 from app.services.plaid_api_client import PlaidApiClient
@@ -23,6 +24,7 @@ from app.services.plaid_transaction_mapper import (
 
 TRANSACTIONS_TABLE = "transactions"
 CATEGORIES_TABLE = "categories"
+RECENT_TRANSACTION_REPAIR_DAYS = 45
 logger = logging.getLogger(__name__)
 
 
@@ -99,10 +101,17 @@ class PlaidTransactionSync:
             user_id=user_id,
             category_cache=category_cache,
         )
+        repaired_dates = await self._repair_recent_plaid_transaction_dates(
+            user_id=user_id,
+            item_id=item_id,
+            access_token=access_token,
+            account_map=account_map,
+            category_cache=category_cache,
+        )
         logger.info(
             "plaid_transaction_sync_complete user_id=%s item_id=%s pages=%s "
             "added=%s modified=%s removed=%s pending_seen=%s date_min=%s "
-            "date_max=%s category_backfilled=%s",
+            "date_max=%s category_backfilled=%s dates_repaired=%s",
             user_id,
             item_id,
             pages,
@@ -113,12 +122,14 @@ class PlaidTransactionSync:
             min(dates_seen) if dates_seen else None,
             max(dates_seen) if dates_seen else None,
             backfilled,
+            repaired_dates,
         )
         return {
             "added": added,
             "modified": modified,
             "removed": removed,
             "next_cursor": next_cursor,
+            "dates_repaired": repaired_dates,
         }
 
     async def _upsert_transaction(
@@ -267,6 +278,51 @@ class PlaidTransactionSync:
             )
             updated += 1
         return updated
+
+    async def _repair_recent_plaid_transaction_dates(
+        self,
+        *,
+        user_id: str,
+        item_id: str,
+        access_token: str,
+        account_map: dict[str, str],
+        category_cache: dict[str, str],
+    ) -> int:
+        """Re-upsert recent Plaid rows so stored dates pick up authorized_date fixes."""
+        end = date.today()
+        start = end - timedelta(days=RECENT_TRANSACTION_REPAIR_DAYS)
+        repaired = 0
+        offset = 0
+        page_size = 500
+
+        while True:
+            response = await self.plaid_client.get_transactions(
+                access_token,
+                start_date=start.isoformat(),
+                end_date=end.isoformat(),
+                offset=offset,
+                count=page_size,
+            )
+            transactions = list_of_dicts(response.get("transactions"))
+            if not transactions:
+                break
+
+            for transaction in transactions:
+                if await self._upsert_transaction(
+                    user_id=user_id,
+                    item_id=item_id,
+                    transaction=transaction,
+                    account_map=account_map,
+                    category_cache=category_cache,
+                ):
+                    repaired += 1
+
+            total = int(response.get("total_transactions") or 0)
+            offset += len(transactions)
+            if offset >= total or len(transactions) < page_size:
+                break
+
+        return repaired
 
     async def _mark_transaction_removed(
         self,
