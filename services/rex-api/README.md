@@ -42,7 +42,7 @@ Required backend values:
 
 ```env
 APP_ENVIRONMENT=development
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:8080,https://app.goclarity.app
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:8080,http://localhost:8081,https://goclarity.app,https://app.goclarity.app
 GROK_API_KEY=
 GROK_MODEL=
 GROK_FAST_MODEL=

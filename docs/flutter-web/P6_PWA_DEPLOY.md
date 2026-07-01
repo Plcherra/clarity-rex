@@ -5,12 +5,13 @@
 
 ## Objective
 
-Public launch at `app.goclarity.app` as an installable PWA with full parity smoke pass.
+Public launch at **`goclarity.app/app/`** as an installable PWA with full parity smoke pass.
 
 ## Prerequisites
 
 - P1–P5 complete
-- Domain `app.goclarity.app` DNS ready
+- Domain `goclarity.app` DNS on Cloudflare (landing + `/app/` path for Flutter)
+- Optional: `app.goclarity.app` → 301 redirect to `goclarity.app/app/`
 - Cloudflare Pages or VPS nginx slot for Flutter web build
 
 ## Tasks
@@ -48,19 +49,21 @@ Document in `apps/mobile/README.md` (short section, not a new master doc).
 
 ### 3. Deploy
 
-Target: `app.goclarity.app` serving `apps/mobile/build/web/`
+Target: **`goclarity.app/app/`** serving `apps/mobile/build/web/` (build with `--base-href=/app/`)
 
 Options:
 
-- Cloudflare Pages (separate project from `apps/web` landing)
-- VPS nginx location block
+- Cloudflare Pages: Astro at site root, Flutter at `/app/` path (path rules or second project)
+- VPS nginx: Astro static at `/`, Flutter static at `/app/`
+
+Legacy redirect: `app.goclarity.app` → `https://goclarity.app/app/`
 
 ### 4. Infrastructure checklist
 
-- [ ] Supabase: Site URL + redirect URLs include `https://app.goclarity.app`
-- [ ] rex-api: `CORS_ALLOWED_ORIGINS` includes `https://app.goclarity.app`
+- [ ] Supabase: Site URL + redirect URLs include `https://goclarity.app` and `https://goclarity.app/app`
+- [ ] rex-api: `CORS_ALLOWED_ORIGINS` includes `https://goclarity.app`
 - [ ] Plaid: redirect URI registered for web OAuth
-- [ ] Landing: `PUBLIC_WEB_LOGIN_URL=https://app.goclarity.app` in Cloudflare env for `apps/web`
+- [ ] Landing: `PUBLIC_WEB_LOGIN_URL=https://goclarity.app/app` in Cloudflare env for `apps/web`
 - [ ] WSS: `api.goclarity.app` proxies WebSocket for voice
 
 ### 5. QA — web smoke runbook

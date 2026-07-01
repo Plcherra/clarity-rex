@@ -1,7 +1,8 @@
 /// Supabase Auth redirect targets for email links opened in the browser.
 ///
-/// Production web app: `https://app.goclarity.app` (add to Supabase Auth
-/// redirect allow-list alongside marketing auth pages).
+/// Production web app lives on the root domain at `/app/` (see
+/// `docs/flutter-web/00_FLUTTER_WEB_MASTER.md`). Add `https://goclarity.app`
+/// to Supabase Auth redirect allow-list alongside marketing auth pages.
 /// Email confirmation and password-reset links continue to land on
 /// `goclarity.app/auth/*` pages served by `apps/web`.
 /// Local web dev: add `http://localhost:<flutter-web-port>` to Supabase Auth
@@ -17,6 +18,9 @@ class AuthConfig {
     defaultValue: 'https://goclarity.app/auth/reset-password',
   );
 
-  /// Primary Flutter web PWA origin (P6 deploy target).
-  static const String webAppOrigin = 'https://app.goclarity.app';
+  /// Primary Flutter web PWA origin (P6 deploy target, `/app/` path on root domain).
+  static const String webAppOrigin = 'https://goclarity.app';
+
+  /// Production path prefix when Flutter web is served under the marketing domain.
+  static const String webAppPathPrefix = '/app';
 }

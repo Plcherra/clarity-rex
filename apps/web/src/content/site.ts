@@ -3,7 +3,7 @@ const playStoreUrl =
   import.meta.env.PUBLIC_PLAY_STORE_URL?.trim() ||
   'https://play.google.com/store/apps/details?id=com.clarity.clarity';
 const webLoginUrl =
-  import.meta.env.PUBLIC_WEB_LOGIN_URL?.trim() || 'https://app.goclarity.app';
+  import.meta.env.PUBLIC_WEB_LOGIN_URL?.trim() || 'https://goclarity.app/app';
 
 export const product = {
   name: 'Clarity',

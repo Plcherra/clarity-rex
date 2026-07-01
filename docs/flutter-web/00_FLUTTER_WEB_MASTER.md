@@ -1,6 +1,6 @@
 # Clarity Flutter Web — Master Plan
 
-Ship **one Flutter codebase** (`apps/mobile`) as a **PWA at `app.goclarity.app`** with **full product parity** before public launch:
+Ship **one Flutter codebase** (`apps/mobile`) as a **PWA on the root domain** with **full product parity** before public launch:
 
 - Supabase auth (incl. MFA)
 - Dashboard, accounts, budgets, transactions
@@ -26,14 +26,22 @@ Ship **one Flutter codebase** (`apps/mobile`) as a **PWA at `app.goclarity.app`*
 
 P3 and P4 can run in parallel only if two people work on separate branches; otherwise **sequential P1 → P2 → P3 → P4 → P5 → P6**.
 
-## Architecture
+## Architecture (updated — root domain)
+
+Users enter from **`goclarity.app`**. Marketing and product share one brand domain; no separate `app.` subdomain required.
 
 ```text
-goclarity.app        → Astro marketing (apps/web)
-app.goclarity.app    → flutter build web (apps/mobile)
-api.goclarity.app    → rex-api
-Supabase             → Auth + Postgres
+goclarity.app/           → Astro landing, legal, contact (apps/web)
+goclarity.app/auth/*     → Email confirm / password reset pages (apps/web)
+goclarity.app/app/       → Flutter web PWA (apps/mobile, base-href /app/)
+app.goclarity.app        → Optional 301 redirect → goclarity.app/app/
+api.goclarity.app        → rex-api
+Supabase                 → Auth + Postgres
 ```
+
+**Cloudflare routing (P6):** one zone (`goclarity.app`). Static Astro at `/`, Flutter build at `/app/*`. Workers or Pages path rules if needed.
+
+**Why `flutter run -d chrome` locally?** Same codebase, local dev server (`localhost:8081`) before anything is deployed to `goclarity.app`. Production users never use Chrome dev — they hit the deployed URL.
 
 ## Cross-cutting rules (all phases)
 
@@ -50,7 +58,8 @@ Supabase             → Auth + Postgres
 | Native Plaid only | `apps/mobile/lib/features/plaid/application/plaid_link_service.dart` | Guarded — web uses `UnsupportedPlaidLinkLauncher` |
 | Plaid backend ready for web | `services/rex-api/app/services/plaid_api_client.py` | Unchanged — P4 |
 | Voice uses dart:io WebSocket | `apps/mobile/lib/rex/voice/data/streaming_voice_api.dart` | Disabled on web via `AppCapabilities` — P5 |
-| CORS needs web origin | `services/rex-api/app/config.py` | `.env.example` updated; **VPS deploy pending** |
+| CORS needs web origin | `services/rex-api/app/config.py` | Add `https://goclarity.app` + localhost dev ports |
+| Passkeys web SDK | `apps/mobile/web/index.html` + `passkeys_bundle.js` | **Added** |
 | Platform capability gates | `apps/mobile/lib/core/platform/app_capabilities.dart` | **Added** |
 | Web dev script | `scripts/flutter_web_dev.sh` | **Added** |
 
