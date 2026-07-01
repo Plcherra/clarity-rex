@@ -101,3 +101,66 @@ The rex-api VPS usually does **not** have Flutter. Build on Windows, copy `apps/
 - `https://goclarity.app/` — landing
 - `https://goclarity.app/app/` — Flutter login / app (not landing HTML)
 - Hard refresh after deploy: `Ctrl+Shift+R`
+
+---
+
+## VPS: "Permission denied" (even with sudo)
+
+**Do not use `sudo` for deploy.** Run as your normal user (`rex`):
+
+```bash
+whoami          # should be rex, not root
+cd /opt/clarity/current
+```
+
+### A) Shell script not executable
+
+```bash
+chmod +x scripts/*.sh
+bash scripts/goclarity_web_deploy.sh --skip-build
+```
+
+### B) API token not visible to sudo
+
+`sudo` drops environment variables. Either skip sudo, or pass the token explicitly:
+
+```bash
+export CLOUDFLARE_API_TOKEN="your-token"
+./scripts/goclarity_web_deploy.sh --skip-build
+
+# If you must use sudo (you usually shouldn't):
+sudo -E env CLOUDFLARE_API_TOKEN="$CLOUDFLARE_API_TOKEN" \
+  bash scripts/goclarity_web_deploy.sh --skip-build
+```
+
+### C) Cloudflare API "permission denied" (Wrangler auth)
+
+This is **not** Linux sudo — your token lacks scope. Recreate using template **Edit Cloudflare Workers**, or add **Account → Cloudflare Pages → Edit**.
+
+Test:
+
+```bash
+export CLOUDFLARE_API_TOKEN="your-token"
+npx wrangler@3 whoami
+npx wrangler@3 pages project list
+```
+
+### D) Files owned by root from past sudo runs
+
+```bash
+sudo chown -R rex:rex /opt/clarity/current
+```
+
+### E) VPS has no Flutter — build on Windows first
+
+On Windows: `.\scripts\goclarity_web_deploy.ps1` (builds + deploys).
+
+Or copy only `apps/web/dist` to the VPS, then:
+
+```bash
+ls apps/web/dist/app/index.html   # must exist
+./scripts/goclarity_web_deploy.sh --skip-build
+```
+
+Paste the **exact error line** if none of the above match.
+
