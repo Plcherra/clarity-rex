@@ -67,15 +67,21 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
                     isCompactWidth: isCompactWidth,
                   ),
                   Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        for (final tab in AssistantTab.values)
-                          _AssistantTabContent(
-                            tab: tab,
-                            onConversationSelected: _openChatTab,
-                          ),
-                      ],
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 920),
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            for (final tab in AssistantTab.values)
+                              _AssistantTabContent(
+                                tab: tab,
+                                onConversationSelected: _openChatTab,
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],

@@ -31,6 +31,29 @@ String chatAttachmentName(XFile attachment) {
   return p.basename(attachment.path);
 }
 
+String resolvedChatAttachmentFileName(XFile attachment) {
+  final name = chatAttachmentName(attachment);
+  if (p.extension(name).isNotEmpty) {
+    return name;
+  }
+
+  final mimeType = attachment.mimeType?.trim().toLowerCase();
+  final extension = switch (mimeType) {
+    'application/pdf' => '.pdf',
+    'text/csv' => '.csv',
+    'text/plain' => '.txt',
+    'text/markdown' => '.md',
+    'image/jpeg' => '.jpg',
+    'image/png' => '.png',
+    'image/webp' => '.webp',
+    _ => '',
+  };
+  if (extension.isEmpty) {
+    return name;
+  }
+  return '$name$extension';
+}
+
 String? chatAttachmentContentType(String fileName) {
   final extension = p.extension(fileName).replaceFirst('.', '').toLowerCase();
   return switch (extension) {

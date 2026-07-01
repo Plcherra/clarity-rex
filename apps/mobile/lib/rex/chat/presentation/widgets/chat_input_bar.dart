@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
@@ -50,6 +51,12 @@ class ChatInputBar extends StatelessWidget {
     final l10n = context.l10n;
     final hasBlockingAttachmentError = attachmentError != null;
     final hasAttachment = attachment != null || attachmentName != null;
+    final canSend = _canSend(
+      controller.text,
+      hasAttachment: hasAttachment,
+      isLoading: isLoading,
+      hasBlockingAttachmentError: hasBlockingAttachmentError,
+    );
 
     return Material(
       color: colors.background,
@@ -92,39 +99,55 @@ class ChatInputBar extends StatelessWidget {
                     isActive: isVoiceCallActive,
                   ),
                   Expanded(
-                    child: TextField(
-                      controller: controller,
-                      minLines: 1,
-                      maxLines: 7,
-                      keyboardType: TextInputType.multiline,
-                      textInputAction: TextInputAction.newline,
-                      textCapitalization: TextCapitalization.sentences,
-                      cursorColor: colors.accent,
-                      decoration: InputDecoration(
-                        hintText: l10n.chatInputMessageHint,
-                        border: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 12,
-                        ),
-                        hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                          color: colors.textMuted.withValues(
-                            alpha: 0.7,
+                    child: Focus(
+                      onKeyEvent: (node, event) {
+                        if (event is! KeyDownEvent ||
+                            event.logicalKey != LogicalKeyboardKey.enter) {
+                          return KeyEventResult.ignored;
+                        }
+                        if (HardwareKeyboard.instance.isShiftPressed) {
+                          return KeyEventResult.ignored;
+                        }
+                        if (!canSend || onSend == null) {
+                          return KeyEventResult.ignored;
+                        }
+                        onSend!();
+                        return KeyEventResult.handled;
+                      },
+                      child: TextField(
+                        controller: controller,
+                        minLines: 1,
+                        maxLines: 7,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.newline,
+                        textCapitalization: TextCapitalization.sentences,
+                        cursorColor: colors.accent,
+                        decoration: InputDecoration(
+                          hintText: l10n.chatInputMessageHint,
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 12,
+                          ),
+                          hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                            color: colors.textMuted.withValues(
+                              alpha: 0.7,
+                            ),
                           ),
                         ),
-                      ),
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colors.textPrimary,
-                        height: 1.35,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: colors.textPrimary,
+                          height: 1.35,
+                        ),
                       ),
                     ),
                   ),
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: controller,
                     builder: (context, value, child) {
-                      final canSend = _canSend(
+                      final canSendNow = _canSend(
                         value.text,
                         hasAttachment: hasAttachment,
                         isLoading: isLoading,
@@ -134,8 +157,8 @@ class ChatInputBar extends StatelessWidget {
                       return _ComposerIconButton(
                         icon: Icons.arrow_upward_rounded,
                         tooltip: l10n.chatInputSendTooltip,
-                        onPressed: canSend ? onSend : null,
-                        isActive: canSend,
+                        onPressed: canSendNow ? onSend : null,
+                        isActive: canSendNow,
                         isLoading: isLoading,
                       );
                     },
@@ -245,49 +268,53 @@ class _AttachmentPreview extends StatelessWidget {
     if (isImage) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 132),
-                child: _ImagePreview(
-                  attachment: attachment,
-                  previewBytes: previewBytes,
-                ),
-              ),
-            ),
-            Positioned(
-              top: 6,
-              right: 6,
-              child: _RemoveAttachmentButton(onRemove: onRemove),
-            ),
-            if (subtitle != null)
-              Positioned(
-                left: 8,
-                bottom: 8,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.52),
-                    borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280, maxHeight: 112),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+                  child: _ImagePreview(
+                    attachment: attachment,
+                    previewBytes: previewBytes,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    child: Text(
-                      subtitle,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                ),
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: _RemoveAttachmentButton(onRemove: onRemove),
+                ),
+                if (subtitle != null)
+                  Positioned(
+                    left: 8,
+                    bottom: 8,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.52),
+                        borderRadius:
+                            BorderRadius.circular(RexUiTokens.radiusPill),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Text(
+                          subtitle,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
       );
     }
@@ -391,9 +418,9 @@ class _ImagePreview extends StatelessWidget {
     if (bytes != null && bytes.isNotEmpty) {
       return ChatAttachmentImage(
         previewBytes: bytes,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         width: double.infinity,
-        maxHeight: 132,
+        maxHeight: 112,
       );
     }
 
@@ -401,9 +428,9 @@ class _ImagePreview extends StatelessWidget {
     if (path.isNotEmpty) {
       return ChatAttachmentImage(
         localPath: path,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         width: double.infinity,
-        maxHeight: 132,
+        maxHeight: 112,
       );
     }
 

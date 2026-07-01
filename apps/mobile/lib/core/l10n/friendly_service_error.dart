@@ -139,6 +139,10 @@ String friendlyPlaidAccountError(
 }
 
 String friendlyChatApiError(AppLocalizations l10n, ChatApiException error) {
+  final detail = error.message.trim();
+  if (error.type == ChatApiErrorType.backendValidation && detail.isNotEmpty) {
+    return detail;
+  }
   return switch (error.type) {
     ChatApiErrorType.network => l10n.chatErrorNetwork,
     ChatApiErrorType.timeout => l10n.chatErrorTimeout,

@@ -260,7 +260,7 @@ class ChatController extends Notifier<ChatState> {
       clearError: true,
     );
 
-    if (stream) {
+    if (stream && attachment == null) {
       return _sendStreamingMessage(
         message,
         attachment: attachment,
@@ -566,7 +566,7 @@ class ChatController extends Notifier<ChatState> {
   ) {
     final pendingAttachments = [
       for (final message in previousMessages)
-        if (message.hasImageAttachment)
+        if (message.role == ChatMessageRole.user && message.hasNamedAttachment)
           (
             content: message.content,
             localPath: message.attachmentLocalPath,
@@ -584,7 +584,7 @@ class ChatController extends Notifier<ChatState> {
         index >= 0 && pendingIndex >= 0;
         index--) {
       final message = merged[index];
-      if (message.role != ChatMessageRole.user || message.hasImageAttachment) {
+      if (message.role != ChatMessageRole.user || message.hasNamedAttachment) {
         continue;
       }
 

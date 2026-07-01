@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clarity/core/layout/web_centered_dialog.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/chat/application/conversation_controller.dart';
@@ -183,7 +184,8 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
       initialDateRange: initialRange,
       firstDate: DateTime(now.year - 10),
       lastDate: DateTime(now.year + 1, 12, 31),
-      builder: (context, child) => child ?? const SizedBox.shrink(),
+      builder: (context, child) =>
+          wrapWebCenteredDialog(context, child, maxWidth: 420, maxHeight: 520),
     );
     if (!mounted || range == null) {
       return;

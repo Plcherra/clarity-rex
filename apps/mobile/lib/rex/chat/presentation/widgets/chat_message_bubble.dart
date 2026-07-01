@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_attachment_image.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_bubble_effects.dart'
@@ -57,6 +58,9 @@ class ChatMessageBubble extends StatelessWidget {
         ? foreground.withValues(alpha: isDark ? 0.16 : 0.20)
         : colors.background.withValues(alpha: isDark ? 0.42 : 0.54);
     final imageAttachment = _buildImageAttachment(maxWidth);
+    final fileAttachment = imageAttachment == null
+        ? _buildFileAttachmentChip(context, maxWidth)
+        : null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -104,6 +108,10 @@ class ChatMessageBubble extends StatelessWidget {
                           children: [
                             if (imageAttachment != null) ...[
                               imageAttachment,
+                              if (text.trim().isNotEmpty)
+                                const SizedBox(height: RexUiTokens.space8),
+                            ] else if (fileAttachment != null) ...[
+                              fileAttachment,
                               if (text.trim().isNotEmpty)
                                 const SizedBox(height: RexUiTokens.space8),
                             ],
@@ -175,6 +183,48 @@ class ChatMessageBubble extends StatelessWidget {
           localPath: hasPath ? path : null,
           fit: BoxFit.cover,
           maxHeight: 280,
+        ),
+      ),
+    );
+  }
+
+  Widget? _buildFileAttachmentChip(BuildContext context, double maxWidth) {
+    final name = attachmentName?.trim();
+    if (name == null || name.isEmpty || isChatImageAttachmentName(name)) {
+      return null;
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: isUser ? 0.14 : 0.08),
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: isUser ? 0.18 : 0.08),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              name.toLowerCase().endsWith('.pdf')
+                  ? Icons.picture_as_pdf_outlined
+                  : Icons.description_outlined,
+              size: 18,
+            ),
+            const SizedBox(width: RexUiTokens.space8),
+            Flexible(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

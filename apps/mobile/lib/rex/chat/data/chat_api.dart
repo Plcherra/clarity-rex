@@ -251,9 +251,7 @@ class ChatApi {
       request.fields['locale'] = locale;
     }
 
-    final fileName = attachment.name.trim().isNotEmpty
-        ? attachment.name.trim()
-        : p.basename(attachment.path);
+    final fileName = resolvedChatAttachmentFileName(attachment);
     request.files.add(
       http.MultipartFile.fromBytes(
         'file',
@@ -319,9 +317,7 @@ class ChatApi {
       request.fields['locale'] = locale;
     }
 
-    final fileName = attachment.name.trim().isNotEmpty
-        ? attachment.name.trim()
-        : p.basename(attachment.path);
+    final fileName = resolvedChatAttachmentFileName(attachment);
     request.files.add(
       http.MultipartFile.fromBytes(
         'file',

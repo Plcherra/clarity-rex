@@ -340,3 +340,43 @@ List<ClarityActionCard> pendingClarityActions(Iterable<ChatMessage> messages) {
   }
   return const [];
 }
+
+Future<void> showClarityActionConfirmationDialog(
+  BuildContext context, {
+  required ClarityActionCard action,
+  ValueChanged<ClarityActionCard>? onConfirm,
+  ValueChanged<ClarityActionCard>? onDismiss,
+}) {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: action.canDismiss,
+    builder: (dialogContext) {
+      return Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: _ClarityActionCard(
+              action: action,
+              onConfirm: onConfirm == null
+                  ? null
+                  : (confirmed) {
+                      Navigator.of(dialogContext).pop();
+                      onConfirm(confirmed);
+                    },
+              onDismiss: onDismiss == null
+                  ? null
+                  : (dismissed) {
+                      Navigator.of(dialogContext).pop();
+                      onDismiss(dismissed);
+                    },
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}

@@ -38,6 +38,9 @@ class ChatMessage {
         isChatImageAttachmentName(name);
   }
 
+  bool get hasNamedAttachment =>
+      attachmentName != null && attachmentName!.trim().isNotEmpty;
+
   ChatMessage copyWith({
     String? id,
     ChatMessageRole? role,

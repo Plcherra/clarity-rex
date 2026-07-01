@@ -10,9 +10,11 @@ import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart'
     show ChatState;
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
+import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/attachment_source_sheet.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_input_bar.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_transcript.dart';
+import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
@@ -38,6 +40,46 @@ class _ChatPageState extends ConsumerState<ChatPage>
   String? _attachmentName;
   int? _attachmentSize;
   String? _attachmentError;
+  String? _openClarityActionId;
+
+  void _clearComposerAttachment() {
+    setState(() {
+      _attachment = null;
+      _attachmentPreviewBytes = null;
+      _attachmentName = null;
+      _attachmentSize = null;
+      _attachmentError = null;
+    });
+  }
+
+  void _maybeShowClarityActionDialog(List<ClarityActionCard> pending) {
+    if (!mounted || pending.isEmpty) {
+      return;
+    }
+    final action = pending.first;
+    if (_openClarityActionId == action.id) {
+      return;
+    }
+    _openClarityActionId = action.id;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || _openClarityActionId != action.id) {
+        return;
+      }
+      await showClarityActionConfirmationDialog(
+        context,
+        action: action,
+        onConfirm: (confirmed) {
+          ref.read(chatProvider.notifier).executeClarityAction(confirmed);
+        },
+        onDismiss: (dismissed) {
+          ref.read(chatProvider.notifier).dismissClarityAction(dismissed);
+        },
+      );
+      if (mounted) {
+        _openClarityActionId = null;
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -57,6 +99,17 @@ class _ChatPageState extends ConsumerState<ChatPage>
           next.errorMessage != previous?.errorMessage;
       if (shouldScroll) {
         _scrollToBottom();
+      }
+
+      final pending = pendingClarityActions(next.messages);
+      final previousPending = previous == null
+          ? const <ClarityActionCard>[]
+          : pendingClarityActions(previous.messages);
+      if (pending.isNotEmpty &&
+          (previousPending.isEmpty ||
+              pending.first.id !=
+                  (previousPending.isEmpty ? null : previousPending.first.id))) {
+        _maybeShowClarityActionDialog(pending);
       }
     });
     ref.listenManual<VoiceCallState>(voiceCallProvider, (previous, next) {
@@ -102,6 +155,7 @@ class _ChatPageState extends ConsumerState<ChatPage>
     final voiceWasActive = ref.read(voiceCallProvider).isCallActive;
 
     _messageController.clear();
+    _clearComposerAttachment();
 
     if (voiceWasActive) {
       final voiceLabel = message.trim().isEmpty && attachment != null
@@ -119,13 +173,6 @@ class _ChatPageState extends ConsumerState<ChatPage>
     }
 
     if (sent) {
-      setState(() {
-        _attachment = null;
-        _attachmentPreviewBytes = null;
-        _attachmentName = null;
-        _attachmentSize = null;
-        _attachmentError = null;
-      });
       if (voiceWasActive && response.trim().isNotEmpty) {
         await voiceController.speakTypedAssistantResponse(response);
       }
@@ -136,6 +183,12 @@ class _ChatPageState extends ConsumerState<ChatPage>
     _messageController.selection = TextSelection.collapsed(
       offset: message.length,
     );
+    if (attachment != null) {
+      setState(() {
+        _attachment = attachment;
+        _attachmentName = chatAttachmentName(attachment);
+      });
+    }
 
     final errorMessage =
         ref.read(chatProvider).errorMessage ?? context.l10n.chatPageSendFailed;
@@ -214,14 +267,15 @@ class _ChatPageState extends ConsumerState<ChatPage>
       return;
     }
 
-    final attachment = file.path != null
-        ? XFile(file.path!, name: file.name, length: file.size)
-        : XFile.fromData(
-            bytes!,
+    final attachment = bytes != null
+        ? XFile.fromData(
+            bytes,
             name: file.name,
             length: file.size,
+            mimeType: chatAttachmentContentType(file.name),
             path: file.name,
-          );
+          )
+        : XFile(file.path!, name: file.name, length: file.size);
     await _setPickedAttachment(attachment, bytes: bytes);
   }
 
