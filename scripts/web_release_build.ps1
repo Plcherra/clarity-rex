@@ -8,7 +8,7 @@ $RootDir = Split-Path -Parent $PSScriptRoot
 $WebDir = Join-Path $RootDir "apps\web"
 
 function Invoke-NpmCommand {
-  param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Args)
+  param([Parameter(ValueFromRemainingArguments = $true)][string[]]$NpmArgs)
   $previousNativeErrors = $null
   if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -Scope Global -ErrorAction SilentlyContinue) {
     $previousNativeErrors = $global:PSNativeCommandUseErrorActionPreference
@@ -17,9 +17,9 @@ function Invoke-NpmCommand {
   $previousEap = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   try {
-    & npm @Args
+    & npm @NpmArgs
     if ($LASTEXITCODE -ne 0) {
-      throw "npm $($Args -join ' ') failed with exit code $LASTEXITCODE"
+      throw "npm $($NpmArgs -join ' ') failed with exit code $LASTEXITCODE"
     }
   } finally {
     $ErrorActionPreference = $previousEap
