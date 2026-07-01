@@ -5,6 +5,7 @@ param(
   [string]$Device = "web-server",
   [int]$WebPort = 8081,
   [string]$RexBackendUrl = "",
+  [switch]$Release,
   [switch]$Print
 )
 
@@ -53,6 +54,9 @@ $args = @(
   "--dart-define=REX_STREAMING_VOICE_ENABLED=$StreamingVoice",
   "--dart-define=SUPABASE_AUTH_REDIRECT_URL=$AuthRedirect"
 )
+if ($Release) {
+  $args += "--release"
+}
 
 if ($Print) {
   Write-Output "cd $MobileDir"
@@ -65,6 +69,10 @@ if ($Device -eq "web-server") {
   Write-Output "    Open: http://localhost:$WebPort"
   Write-Output "    Voice testing needs localhost (mic works on http://localhost)"
   Write-Output "    For Chrome auto-launch instead: .\scripts\flutter_web_dev.ps1 -Device chrome"
+}
+if (-not $Release) {
+  Write-Output "    Debug mode: first load compiles ~1500 modules — wait 1–2 min on white/dark loader."
+  Write-Output "    Faster local test: .\scripts\flutter_web_dev.ps1 -Release -Device web-server"
 }
 
 Push-Location $MobileDir

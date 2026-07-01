@@ -32,8 +32,34 @@
 
   <title>Clarity</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #081827;
+      color: #e8eef4;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    #clarity-boot-loader {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+    }
+    #clarity-boot-loader p {
+      margin: 0;
+      opacity: 0.85;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
+  <div id="clarity-boot-loader" aria-live="polite">
+    <p>Loading Clarity…</p>
+    <p style="font-size:12px;opacity:.65">First debug load can take 1–2 minutes.</p>
+  </div>
   <!-- Required by supabase_flutter / passkeys_web on Flutter web (Corbado Passkeys SDK). -->
   <script src="passkeys_bundle.js" type="application/javascript"></script>
   <!-- Plaid Link (P4 web bank connect). -->

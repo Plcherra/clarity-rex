@@ -20,6 +20,7 @@ echo "    dist=${DIST_DIR}"
 echo "    project=${PROJECT_NAME}"
 echo "    branch=${BRANCH}"
 echo "    First time? npx wrangler@${WRANGLER_VERSION} login"
+echo "    Or set CLOUDFLARE_API_TOKEN (see docs/flutter-web/CLOUDFLARE_DEPLOY.md)"
 
 cd "${ROOT_DIR}"
 npx "wrangler@${WRANGLER_VERSION}" pages deploy "${DIST_DIR}" \
