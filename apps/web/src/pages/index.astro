@@ -62,8 +62,6 @@ const productScreens = [
     alt: 'Clarity voice usage screen showing Rex voice activity and daily call charts.',
   },
 ] as const;
-
-const showAppStoreNote = !downloadLinks.appStore;
 ---
 
 <BaseLayout title={page.title} description={page.description}>
@@ -76,11 +74,6 @@ const showAppStoreNote = !downloadLinks.appStore;
         assistant that explains your financial picture without moving money or guessing.
       </p>
       <DownloadActions layout="hero" showGhostLink />
-      {
-        showAppStoreNote ? (
-          <p class="landing-hero__store-note">iPhone app coming to the App Store soon.</p>
-        ) : null
-      }
       <p class="hero-trust-line" aria-label="Trust highlights">
         {heroTrustLine.join(' · ')}
       </p>
@@ -211,11 +204,6 @@ const showAppStoreNote = !downloadLinks.appStore;
           Same account when you install on iPhone or Android. One login, one Rex Brain, one source
           of truth for your money and memory.
         </p>
-        {
-          showAppStoreNote ? (
-            <p class="web-section__note">App Store link added when approved.</p>
-          ) : null
-        }
       </div>
       <DownloadActions layout="compact" />
     </div>

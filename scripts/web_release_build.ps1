@@ -38,6 +38,19 @@ Write-Output "    PUBLIC_SITE_URL=$PublicSiteUrl"
 
 Push-Location $WebDir
 try {
+  $envFile = Join-Path $WebDir ".env"
+  if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+      if ($_ -match '^\s*#' -or $_ -match '^\s*$') { return }
+      $pair = $_ -split '=', 2
+      if ($pair.Count -eq 2) {
+        $name = $pair[0].Trim()
+        $value = $pair[1].Trim().Trim('"')
+        Set-Item -Path "Env:$name" -Value $value
+      }
+    }
+  }
+
   if (Test-Path "package-lock.json") {
     Invoke-NpmCommand ci
   } else {

@@ -1,4 +1,8 @@
-const appStoreUrl = import.meta.env.PUBLIC_APP_STORE_URL?.trim() || '';
+/** Live App Store listing — override with PUBLIC_APP_STORE_URL at build time. */
+const DEFAULT_APP_STORE_LISTING_URL = '';
+
+const appStoreUrl =
+  import.meta.env.PUBLIC_APP_STORE_URL?.trim() || DEFAULT_APP_STORE_LISTING_URL;
 const playStoreUrl =
   import.meta.env.PUBLIC_PLAY_STORE_URL?.trim() ||
   'https://play.google.com/store/apps/details?id=com.clarity.clarity';

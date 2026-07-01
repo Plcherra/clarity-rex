@@ -15,6 +15,13 @@ echo "    PUBLIC_SITE_URL=${PUBLIC_SITE_URL}"
 
 cd "${WEB_DIR}"
 
+if [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
 if [ -f package-lock.json ]; then
   npm ci
 else

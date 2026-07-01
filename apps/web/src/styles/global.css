@@ -389,6 +389,17 @@ li {
   box-shadow: var(--shadow-card);
 }
 
+.store-badge--pending {
+  opacity: 0.78;
+  cursor: default;
+}
+
+.store-badge--pending:hover {
+  color: #ffffff;
+  transform: none;
+  box-shadow: none;
+}
+
 .store-badge__label {
   font-size: 0.68rem;
   font-weight: 650;

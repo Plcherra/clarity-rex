@@ -14,19 +14,6 @@ const { layout = 'hero', showGhostLink = false } = Astro.props;
     {layout === 'compact' ? 'Open Clarity on web' : 'Start on web'}
   </a>
   {
-    downloadLinks.playStore ? (
-      <a
-        class="store-badge store-badge--google"
-        href={downloadLinks.playStore}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        <span class="store-badge__label">Get it on</span>
-        <span class="store-badge__name">Google Play</span>
-      </a>
-    ) : null
-  }
-  {
     downloadLinks.appStore ? (
       <a
         class="store-badge store-badge--apple"
@@ -36,6 +23,24 @@ const { layout = 'hero', showGhostLink = false } = Astro.props;
       >
         <span class="store-badge__label">Download on the</span>
         <span class="store-badge__name">App Store</span>
+      </a>
+    ) : (
+      <span class="store-badge store-badge--apple store-badge--pending" aria-disabled="true">
+        <span class="store-badge__label">Download on the</span>
+        <span class="store-badge__name">App Store</span>
+      </span>
+    )
+  }
+  {
+    downloadLinks.playStore ? (
+      <a
+        class="store-badge store-badge--google"
+        href={downloadLinks.playStore}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <span class="store-badge__label">Get it on</span>
+        <span class="store-badge__name">Google Play</span>
       </a>
     ) : null
   }
