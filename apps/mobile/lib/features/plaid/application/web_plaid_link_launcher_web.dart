@@ -16,6 +16,11 @@ final class WebPlaidLinkLauncher implements PlaidLinkLauncher {
     if (token.value.trim().isEmpty) {
       throw const PlaidLinkServiceException('Could not start bank connection.');
     }
+    if (!isPlaidLinkScriptLoaded()) {
+      throw const PlaidLinkServiceException(
+        'Plaid Link is not loaded in this browser. Refresh the page and try again.',
+      );
+    }
 
     PlaidHandler? handler;
     try {

@@ -1759,6 +1759,7 @@
   },
   "plaidLinkCancelled": "Se canceló la conexión bancaria.",
   "plaidLinkConfigMissing": "La conexión bancaria aún no está configurada.",
+  "plaidLinkOpenFailed": "No se pudo abrir la conexión bancaria en este navegador. Actualiza la página e inténtalo de nuevo.",
   "plaidLinkGenericFailed": "No se pudo conectar este banco ahora.",
   "plaidLinkParseFailed": "No se pudo interpretar la conexión bancaria.",
   "plaidLinkSaveFailed": "No se pudo guardar la conexión bancaria.",

@@ -1983,6 +1983,7 @@
   "plaidLinkParseFailed": "Could not parse bank connection.",
   "plaidLinkConfigMissing": "Bank connection is not configured yet.",
   "plaidLinkCancelled": "Bank connection was cancelled.",
+  "plaidLinkOpenFailed": "Could not open bank connection in this browser. Refresh the page and try again.",
   "plaidLinkGenericFailed": "Could not connect this bank right now.",
   "plaidAccountNoConnectedBank": "No connected bank to refresh.",
   "plaidAccountParseStatusFailed": "Could not read bank connection status.",

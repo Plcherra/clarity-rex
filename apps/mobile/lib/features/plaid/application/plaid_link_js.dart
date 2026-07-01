@@ -29,6 +29,9 @@ class WebConfiguration {
   });
 }
 
+@JS('Plaid')
+external JSAny? get _plaidGlobal;
+
 @JS('window.location.href')
 external String get windowLocationHref;
 
@@ -38,6 +41,8 @@ external void historyReplaceState(
   String title,
   String url,
 );
+
+bool isPlaidLinkScriptLoaded() => _plaidGlobal != null;
 
 Map<dynamic, dynamic> jsObjectToMap(Object? jsObject) {
   if (jsObject is Map) return jsObject;

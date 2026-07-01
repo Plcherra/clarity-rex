@@ -5768,6 +5768,12 @@ abstract class AppLocalizations {
   /// **'Bank connection was cancelled.'**
   String get plaidLinkCancelled;
 
+  /// No description provided for @plaidLinkOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open bank connection in this browser. Refresh the page and try again.'**
+  String get plaidLinkOpenFailed;
+
   /// No description provided for @plaidLinkGenericFailed.
   ///
   /// In en, this message translates to:

@@ -52,6 +52,8 @@ Plaid is optional for `/ready`, but required for bank connections:
 | `PLAID_ENVIRONMENT` | `sandbox`, `development`, or `production` |
 | `PLAID_PRODUCTS` | Usually `transactions` |
 | `PLAID_COUNTRY_CODES` | Usually `US` |
+| `PLAID_REDIRECT_URI` | Native iOS OAuth redirect (keep existing production value) |
+| `PLAID_WEB_REDIRECT_URI` | Flutter web OAuth return, e.g. `https://goclarity.app/app/` — register same URL in Plaid Dashboard **Production** |
 | `PLAID_WEBHOOK_URL` | Webhook endpoint for sync updates |
 | `PLAID_TOKEN_ENCRYPTION_SECRET` | Encrypt stored access tokens |
 | `SUPABASE_SERVICE_ROLE_KEY` | Backend-owned Plaid persistence |

@@ -115,11 +115,20 @@ String friendlyPlaidLinkError(
   if (message.contains('parse bank connection')) {
     return l10n.plaidLinkParseFailed;
   }
-  if (message.contains('missing plaid config')) {
+  if (message.contains('missing plaid config') ||
+      message.contains('not configured')) {
     return l10n.plaidLinkConfigMissing;
   }
   if (message.contains('cancel')) {
     return l10n.plaidLinkCancelled;
+  }
+  if (message.contains('could not open bank connection') ||
+      message.contains('plaid link is not loaded')) {
+    return l10n.plaidLinkOpenFailed;
+  }
+  final trimmed = error.message.trim();
+  if (trimmed.isNotEmpty && trimmed != 'Could not connect bank.') {
+    return trimmed;
   }
   return l10n.plaidLinkGenericFailed;
 }

@@ -3361,6 +3361,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get plaidLinkCancelled => 'Se canceló la conexión bancaria.';
 
   @override
+  String get plaidLinkOpenFailed =>
+      'No se pudo abrir la conexión bancaria en este navegador. Actualiza la página e inténtalo de nuevo.';
+
+  @override
   String get plaidLinkGenericFailed => 'No se pudo conectar este banco ahora.';
 
   @override

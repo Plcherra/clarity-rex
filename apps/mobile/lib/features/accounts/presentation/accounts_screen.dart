@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/l10n/app_l10n.dart';
-import '../../../core/platform/app_capabilities.dart';
 import '../../../core/l10n/friendly_service_error.dart';
 import '../../../core/models/models.dart';
 import '../../plaid/application/plaid_connection_models.dart';
@@ -11,11 +10,10 @@ import '../data/connect_bank_entry_point_tracker.dart';
 import '../data/plaid_account_service.dart';
 import 'accounts_navigation_actions.dart';
 import 'accounts_plaid_status_helpers.dart';
+import 'widgets/add_account_options_dialog.dart';
 import 'widgets/accounts_app_bar.dart';
 import 'widgets/accounts_body.dart';
 import 'widgets/accounts_data_notifier.dart';
-
-enum _AddAccountAction { connectBank, importCsv, manual }
 
 class AccountsScreen extends StatefulWidget {
   const AccountsScreen({
@@ -153,97 +151,18 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   Future<void> _showAddAccountOptions(BuildContext context) async {
-    final action = await showModalBottomSheet<_AddAccountAction>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
-        final colorScheme = theme.colorScheme;
-        final l10n = sheetContext.l10n;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.accountsSheetAddAccountTitle,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.accountsSheetAddAccountSubtitle,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (AppCapabilities.instance.supportsAnyPlaidLink)
-                  ListTile(
-                    leading: const Icon(Icons.account_balance_rounded),
-                    title: Text(l10n.accountsSheetConnectBankTitle),
-                    subtitle: Text(l10n.accountsSheetConnectBankSubtitle),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_AddAccountAction.connectBank),
-                  )
-                else
-                  ListTile(
-                    leading: Icon(
-                      Icons.account_balance_rounded,
-                      color: colorScheme.onSurface.withValues(alpha: 0.38),
-                    ),
-                    title: Text(l10n.accountsSheetConnectBankTitle),
-                    subtitle: Text(l10n.plaidConnectWebUnavailableMessage),
-                    enabled: false,
-                  ),
-                if (AppCapabilities.instance.supportsCsvImport)
-                  ListTile(
-                    leading: const Icon(Icons.upload_file_rounded),
-                    title: Text(l10n.accountsSheetImportCsvTitle),
-                    subtitle: Text(l10n.accountsSheetImportCsvSubtitle),
-                    onTap: () => Navigator.of(
-                      sheetContext,
-                    ).pop(_AddAccountAction.importCsv),
-                  )
-                else
-                  ListTile(
-                    leading: Icon(
-                      Icons.upload_file_rounded,
-                      color: colorScheme.onSurface.withValues(alpha: 0.38),
-                    ),
-                    title: Text(l10n.accountsSheetImportCsvTitle),
-                    subtitle: Text(l10n.csvImportMobileOnlyMessage),
-                    enabled: false,
-                  ),
-                ListTile(
-                  leading: const Icon(Icons.add_rounded),
-                  title: Text(l10n.accountsSheetAddManualTitle),
-                  subtitle: Text(l10n.accountsSheetAddManualSubtitle),
-                  onTap: () =>
-                      Navigator.of(sheetContext).pop(_AddAccountAction.manual),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (!context.mounted || action == null) return;
+    final option = await showAddAccountOptionsDialog(context);
+    if (!context.mounted || option == null) return;
 
     final navigation = _navigation;
-    switch (action) {
-      case _AddAccountAction.connectBank:
+    switch (option) {
+      case AddAccountOption.connectBank:
         await _connectBank(context, surface: 'accounts_add');
         return;
-      case _AddAccountAction.importCsv:
+      case AddAccountOption.importCsv:
         await navigation.importCsvInstead(context, surface: 'accounts_add');
         return;
-      case _AddAccountAction.manual:
+      case AddAccountOption.manual:
         await navigation.addManualAccount(context, surface: 'accounts_add');
         return;
     }
