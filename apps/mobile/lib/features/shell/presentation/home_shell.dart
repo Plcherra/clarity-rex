@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../app/ui_dependencies.dart';
+import '../../../core/layout/finance_content_constraints.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/l10n/friendly_service_error.dart';
 import '../../auth/application/auth_controller.dart';
@@ -16,6 +16,8 @@ import '../../profile/application/profile_controller.dart';
 import '../../profile/application/theme_mode_controller.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../../rex/presentation/assistant_screen.dart';
+import '../../../app/ui_dependencies.dart';
+import 'home_shell_layout.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({
@@ -133,84 +135,101 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     });
   }
 
+  Widget _financeTab(Widget child) {
+    return FinanceContentConstraints(child: child);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final pages = <Widget>[
-      DashboardScreen(
-        controller: widget.ui.dashboard,
-        transactionController: widget.ui.transactions,
-        budgetController: widget.ui.budgets,
-        importJobStatusController: widget.ui.importJobStatus,
-        isRoot: true,
-        onConnectBank: () => _connectBank('dashboard_empty'),
-        onImportCsvInstead: _openAccountsForCsvFallback,
+      _financeTab(
+        DashboardScreen(
+          controller: widget.ui.dashboard,
+          transactionController: widget.ui.transactions,
+          budgetController: widget.ui.budgets,
+          importJobStatusController: widget.ui.importJobStatus,
+          isRoot: true,
+          onConnectBank: () => _connectBank('dashboard_empty'),
+          onImportCsvInstead: _openAccountsForCsvFallback,
+        ),
       ),
-      AccountsScreen(
-        controller: widget.ui.accounts,
-        dashboardController: widget.ui.dashboard,
-        transactionController: widget.ui.transactions,
-        budgetController: widget.ui.budgets,
-        importJobStatusController: widget.ui.importJobStatus,
-        isActive: _idx == 1,
+      _financeTab(
+        AccountsScreen(
+          controller: widget.ui.accounts,
+          dashboardController: widget.ui.dashboard,
+          transactionController: widget.ui.transactions,
+          budgetController: widget.ui.budgets,
+          importJobStatusController: widget.ui.importJobStatus,
+          isActive: _idx == 1,
+        ),
       ),
-      BudgetsScreen(
-        controller: widget.ui.budgets,
-        manageCategoriesRequest: _manageCategoriesRequest,
+      _financeTab(
+        BudgetsScreen(
+          controller: widget.ui.budgets,
+          manageCategoriesRequest: _manageCategoriesRequest,
+        ),
       ),
       const AssistantScreen(),
-      ProfileScreen(
-        profileController: widget.profileController,
-        authController: widget.authController,
-        themeModeController: widget.themeModeController,
-        localeController: widget.localeController,
-        signOut: widget.signOut,
+      _financeTab(
+        ProfileScreen(
+          profileController: widget.profileController,
+          authController: widget.authController,
+          themeModeController: widget.themeModeController,
+          localeController: widget.localeController,
+          signOut: widget.signOut,
+        ),
       ),
+    ];
+
+    final navDestinations = [
+      NavigationDestination(
+        icon: const Icon(Icons.dashboard_outlined),
+        selectedIcon: const Icon(Icons.dashboard_rounded),
+        label: l10n.navDashboard,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.account_balance_outlined),
+        selectedIcon: const Icon(Icons.account_balance_rounded),
+        label: l10n.navAccounts,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.savings_outlined),
+        selectedIcon: const Icon(Icons.savings_rounded),
+        label: l10n.navBudgets,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.psychology_alt_outlined),
+        selectedIcon: const Icon(Icons.psychology_alt_rounded),
+        label: l10n.navAssistant,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.person_outline_rounded),
+        selectedIcon: const Icon(Icons.person_rounded),
+        label: l10n.navProfile,
+      ),
+    ];
+
+    final railDestinations = [
+      for (final destination in navDestinations)
+        NavigationRailDestination(
+          icon: destination.icon,
+          selectedIcon: destination.selectedIcon,
+          label: Text(destination.label),
+        ),
     ];
 
     return HeroMode(
       enabled: false,
-      child: Scaffold(
+      child: HomeShellAdaptiveScaffold(
+        selectedIndex: _idx,
+        onDestinationSelected: (i) => setState(() => _selectIndex(i)),
+        destinations: navDestinations,
+        railDestinations: railDestinations,
         body: ImportJobStatusHost(
           controller: widget.ui.importJobStatus,
           onManageCategories: _openCategoryManagement,
           child: IndexedStack(index: _idx, children: pages),
-        ),
-        bottomNavigationBar: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            NavigationBar(
-              selectedIndex: _idx,
-              onDestinationSelected: (i) => setState(() => _selectIndex(i)),
-              destinations: [
-                NavigationDestination(
-                  icon: const Icon(Icons.dashboard_outlined),
-                  selectedIcon: const Icon(Icons.dashboard_rounded),
-                  label: l10n.navDashboard,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.account_balance_outlined),
-                  selectedIcon: const Icon(Icons.account_balance_rounded),
-                  label: l10n.navAccounts,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.savings_outlined),
-                  selectedIcon: const Icon(Icons.savings_rounded),
-                  label: l10n.navBudgets,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.psychology_alt_outlined),
-                  selectedIcon: const Icon(Icons.psychology_alt_rounded),
-                  label: l10n.navAssistant,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.person_outline_rounded),
-                  selectedIcon: const Icon(Icons.person_rounded),
-                  label: l10n.navProfile,
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );

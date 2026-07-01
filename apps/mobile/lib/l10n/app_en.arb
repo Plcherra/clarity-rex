@@ -522,6 +522,8 @@
   "connectBankCardConnectButton": "Connect Bank",
   "connectBankCardImportCsvButton": "Import CSV instead",
   "connectBankCardAddManualButton": "Add manual account",
+  "csvImportMobileOnlyMessage": "Import CSV is available in the mobile app for now.",
+  "plaidConnectWebUnavailableMessage": "Bank connect on the web app is coming soon. Use the mobile app to link accounts for now.",
   "accountsNoticeDismissTooltip": "Dismiss",
   "accountTileThisMonthNet": "This month {amount} net",
   "@accountTileThisMonthNet": {

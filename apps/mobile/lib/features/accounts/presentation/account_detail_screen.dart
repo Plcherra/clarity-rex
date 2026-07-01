@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/io/file_reader.dart';
+import '../../../core/platform/app_capabilities.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/models/models.dart';
@@ -366,6 +367,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   }
 
   void _maybePromptCsvImport(Account account) {
+    if (!AppCapabilities.instance.supportsCsvImport) return;
     if (!widget.promptCsvImport || _csvImportPromptHandled) return;
     _csvImportPromptHandled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -408,7 +410,8 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
           scope: AccountDashboardScope(widget.accountId),
           showBackButton: true,
           title: title,
-          onUploadTransactions: account == null
+          onUploadTransactions: account == null ||
+                  !AppCapabilities.instance.supportsCsvImport
               ? null
               : () => _importCsvForThisAccount(context, account),
           onDeleteCsvImportBatch: _deletingCsvUpload

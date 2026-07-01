@@ -15,7 +15,7 @@ Ship **one Flutter codebase** (`apps/mobile`) as a **PWA on the root domain** wi
 | Phase | Plan file | Depends on | Estimate | Status |
 |-------|-----------|------------|----------|--------|
 | **P1** | [P1_SPIKE_AND_BOOT.md](./P1_SPIKE_AND_BOOT.md) | — | 3–5 days | **Code complete** — manual auth/CORS sign-off pending |
-| **P2** | [P2_ADAPTIVE_SHELL.md](./P2_ADAPTIVE_SHELL.md) | P1 | 5–7 days | Not started |
+| **P2** | [P2_ADAPTIVE_SHELL.md](./P2_ADAPTIVE_SHELL.md) | P1 | 5–7 days | **Complete** |
 | **P3** | [P3_REX_CHAT_KNOWS.md](./P3_REX_CHAT_KNOWS.md) | P1, P2 | 4–6 days |
 | **P4** | [P4_PLAID_WEB.md](./P4_PLAID_WEB.md) | P1, P2 | 5–8 days |
 | **P5** | [P5_VOICE_WEB.md](./P5_VOICE_WEB.md) | P1, P3 | 5–8 days |
@@ -54,7 +54,7 @@ Supabase                 → Auth + Postgres
 
 | Area | Key file | P1 status |
 |------|----------|-----------|
-| Phone-first shell | `apps/mobile/lib/features/shell/presentation/home_shell.dart` | Unchanged — P2 |
+| Phone-first shell | `apps/mobile/lib/features/shell/presentation/home_shell.dart` | **P2 complete** — adaptive rail + max-width finance tabs |
 | Native Plaid only | `apps/mobile/lib/features/plaid/application/plaid_link_service.dart` | Guarded — web uses `UnsupportedPlaidLinkLauncher` |
 | Plaid backend ready for web | `services/rex-api/app/services/plaid_api_client.py` | Unchanged — P4 |
 | Voice uses dart:io WebSocket | `apps/mobile/lib/rex/voice/data/streaming_voice_api.dart` | Disabled on web via `AppCapabilities` — P5 |

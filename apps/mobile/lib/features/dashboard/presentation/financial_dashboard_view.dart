@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/layout/finance_content_constraints.dart';
 import '../../../core/l10n/app_l10n.dart';
+import '../../../core/platform/app_capabilities.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../budgets/domain/budget_models.dart';
 import '../../finance/application/financial_read_model_service.dart';
@@ -290,7 +292,7 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
     final cs = theme.colorScheme;
     final l10n = context.l10n;
 
-    return Scaffold(
+    final scaffold = Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -306,7 +308,8 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
               )
             : null,
         actions: [
-          if (widget.onUploadTransactions != null)
+          if (widget.onUploadTransactions != null &&
+              AppCapabilities.instance.supportsCsvImport)
             IconButton(
               tooltip: l10n.dashboardOverviewImportCsvTooltip,
               icon: _uploadingTransactions
@@ -376,6 +379,10 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
         },
       ),
     );
+
+    return widget.showBackButton
+        ? FinanceContentConstraints(child: scaffold)
+        : scaffold;
   }
 }
 

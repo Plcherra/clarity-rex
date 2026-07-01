@@ -918,6 +918,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get connectBankCardAddManualButton => 'Agregar cuenta manual';
 
   @override
+  String get csvImportMobileOnlyMessage =>
+      'La importación CSV está disponible en la app móvil por ahora.';
+
+  @override
+  String get plaidConnectWebUnavailableMessage =>
+      'La conexión bancaria en la web llegará pronto. Usa la app móvil para vincular cuentas por ahora.';
+
+  @override
   String get accountsNoticeDismissTooltip => 'Despedir';
 
   @override

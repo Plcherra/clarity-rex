@@ -316,6 +316,76 @@ void main() {
     expect(find.byTooltip('Mute mic'), findsOneWidget);
     expect(find.byTooltip('End voice'), findsOneWidget);
   });
+
+  testWidgets('home shell uses NavigationRail at desktop width', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final app = AppComposition(initialAuthenticated: true);
+    addTearDown(app.dispose);
+    app.profileController.profile = ProfileRecord(
+      id: 'user-1',
+      email: 'test@example.com',
+      fullName: 'Test User',
+      avatarUrl: null,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+    );
+
+    await tester.pumpWidget(
+      ClarityApp(
+        ui: app.ui,
+        authController: app.authController,
+        profileController: app.profileController,
+        themeModeController: app.themeModeController,
+        localeController: app.localeController,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(HomeShell), findsOneWidget);
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+  });
+
+  testWidgets('home shell keeps bottom navigation on narrow width', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final app = AppComposition(initialAuthenticated: true);
+    addTearDown(app.dispose);
+    app.profileController.profile = ProfileRecord(
+      id: 'user-1',
+      email: 'test@example.com',
+      fullName: 'Test User',
+      avatarUrl: null,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+    );
+
+    await tester.pumpWidget(
+      ClarityApp(
+        ui: app.ui,
+        authController: app.authController,
+        profileController: app.profileController,
+        themeModeController: app.themeModeController,
+        localeController: app.localeController,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(HomeShell), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(NavigationRail), findsNothing);
+  });
 }
 
 Future<void> _pumpAssistantScreen(

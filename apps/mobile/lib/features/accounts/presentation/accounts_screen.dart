@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/l10n/app_l10n.dart';
+import '../../../core/platform/app_capabilities.dart';
 import '../../../core/l10n/friendly_service_error.dart';
 import '../../../core/models/models.dart';
 import '../../plaid/application/plaid_connection_models.dart';
@@ -180,22 +181,44 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ListTile(
-                  leading: const Icon(Icons.account_balance_rounded),
-                  title: Text(l10n.accountsSheetConnectBankTitle),
-                  subtitle: Text(l10n.accountsSheetConnectBankSubtitle),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_AddAccountAction.connectBank),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.upload_file_rounded),
-                  title: Text(l10n.accountsSheetImportCsvTitle),
-                  subtitle: Text(l10n.accountsSheetImportCsvSubtitle),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_AddAccountAction.importCsv),
-                ),
+                if (AppCapabilities.instance.supportsAnyPlaidLink)
+                  ListTile(
+                    leading: const Icon(Icons.account_balance_rounded),
+                    title: Text(l10n.accountsSheetConnectBankTitle),
+                    subtitle: Text(l10n.accountsSheetConnectBankSubtitle),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_AddAccountAction.connectBank),
+                  )
+                else
+                  ListTile(
+                    leading: Icon(
+                      Icons.account_balance_rounded,
+                      color: colorScheme.onSurface.withValues(alpha: 0.38),
+                    ),
+                    title: Text(l10n.accountsSheetConnectBankTitle),
+                    subtitle: Text(l10n.plaidConnectWebUnavailableMessage),
+                    enabled: false,
+                  ),
+                if (AppCapabilities.instance.supportsCsvImport)
+                  ListTile(
+                    leading: const Icon(Icons.upload_file_rounded),
+                    title: Text(l10n.accountsSheetImportCsvTitle),
+                    subtitle: Text(l10n.accountsSheetImportCsvSubtitle),
+                    onTap: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_AddAccountAction.importCsv),
+                  )
+                else
+                  ListTile(
+                    leading: Icon(
+                      Icons.upload_file_rounded,
+                      color: colorScheme.onSurface.withValues(alpha: 0.38),
+                    ),
+                    title: Text(l10n.accountsSheetImportCsvTitle),
+                    subtitle: Text(l10n.csvImportMobileOnlyMessage),
+                    enabled: false,
+                  ),
                 ListTile(
                   leading: const Icon(Icons.add_rounded),
                   title: Text(l10n.accountsSheetAddManualTitle),

@@ -847,6 +847,8 @@
   "commonWeekly": "Semanal",
   "commonYesterday": "Ayer",
   "connectBankCardAddManualButton": "Agregar cuenta manual",
+  "csvImportMobileOnlyMessage": "La importación CSV está disponible en la app móvil por ahora.",
+  "plaidConnectWebUnavailableMessage": "La conexión bancaria en la web llegará pronto. Usa la app móvil para vincular cuentas por ahora.",
   "connectBankCardConnectButton": "Conectar banco",
   "connectBankCardImportCsvButton": "Importar CSV en su lugar",
   "conversationDateFilterCustomRange": "{start} - {end}",

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/layout/finance_content_constraints.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 import '../../../core/formatting/formatting.dart';
@@ -83,9 +84,10 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return ListenableBuilder(
-      listenable: _dataNotifier,
-      builder: (context, _) {
+    return FinanceContentConstraints(
+      child: ListenableBuilder(
+        listenable: _dataNotifier,
+        builder: (context, _) {
         final title = formatYearMonthLabel(widget.group.yearMonth);
         final lines = _dataNotifier.data;
         final monthDeletePolicy = lines == null
@@ -200,6 +202,7 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                 ),
         );
       },
+      ),
     );
   }
 }

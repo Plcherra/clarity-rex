@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/app_l10n.dart';
+import '../../../../core/platform/app_capabilities.dart';
 import '../../../../widgets/clarity_button.dart';
 import '../../../../widgets/clarity_card.dart';
 
@@ -27,6 +28,12 @@ class ConnectBankSetupCard extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = context.l10n;
+    final caps = AppCapabilities.instance;
+    final mutedBodyStyle = theme.textTheme.bodySmall?.copyWith(
+      color: cs.onSurface.withValues(alpha: 0.58),
+      height: 1.35,
+    );
+
     return ClarityCard(
       padding: EdgeInsets.all(compact ? 16 : 20),
       child: Column(
@@ -58,19 +65,35 @@ class ConnectBankSetupCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: compact ? 14 : 16),
-          ClarityButton.filled(
-            label: l10n.connectBankCardConnectButton,
-            onPressed: onConnectBank,
-            icon: const Icon(Icons.add_link_rounded, size: 18),
-            expanded: true,
-          ),
+          if (caps.supportsAnyPlaidLink) ...[
+            ClarityButton.filled(
+              label: l10n.connectBankCardConnectButton,
+              onPressed: onConnectBank,
+              icon: const Icon(Icons.add_link_rounded, size: 18),
+              expanded: true,
+            ),
+          ] else ...[
+            Text(
+              l10n.plaidConnectWebUnavailableMessage,
+              textAlign: TextAlign.center,
+              style: mutedBodyStyle,
+            ),
+          ],
           const SizedBox(height: 8),
-          ClarityButton.text(
-            label: l10n.connectBankCardImportCsvButton,
-            onPressed: onImportCsvInstead,
-            icon: const Icon(Icons.upload_file_rounded, size: 18),
-            expanded: true,
-          ),
+          if (caps.supportsCsvImport) ...[
+            ClarityButton.text(
+              label: l10n.connectBankCardImportCsvButton,
+              onPressed: onImportCsvInstead,
+              icon: const Icon(Icons.upload_file_rounded, size: 18),
+              expanded: true,
+            ),
+          ] else ...[
+            Text(
+              l10n.csvImportMobileOnlyMessage,
+              textAlign: TextAlign.center,
+              style: mutedBodyStyle,
+            ),
+          ],
           if (onAddManualAccount != null) ...[
             const SizedBox(height: 4),
             ClarityButton.text(

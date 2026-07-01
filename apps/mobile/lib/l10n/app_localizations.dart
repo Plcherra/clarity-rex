@@ -1707,6 +1707,18 @@ abstract class AppLocalizations {
   /// **'Add manual account'**
   String get connectBankCardAddManualButton;
 
+  /// No description provided for @csvImportMobileOnlyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Import CSV is available in the mobile app for now.'**
+  String get csvImportMobileOnlyMessage;
+
+  /// No description provided for @plaidConnectWebUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank connect on the web app is coming soon. Use the mobile app to link accounts for now.'**
+  String get plaidConnectWebUnavailableMessage;
+
   /// No description provided for @accountsNoticeDismissTooltip.
   ///
   /// In en, this message translates to:

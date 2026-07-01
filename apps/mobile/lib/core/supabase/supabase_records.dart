@@ -355,13 +355,29 @@ DateTime _dateTime(Map<String, dynamic> json, String key) {
 
 DateTime _date(Map<String, dynamic> json, String key) {
   final value = json[key];
-  if (value is String) return DateTime.parse(value);
+  if (value is String) {
+    final trimmed = value.trim();
+    final parsed = DateTime.parse(trimmed);
+    // Date-only Supabase fields (YYYY-MM-DD) parse as UTC midnight and can
+    // shift to the wrong local calendar day. Use local noon like CSV import.
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(trimmed)) {
+      return DateTime(parsed.year, parsed.month, parsed.day, 12);
+    }
+    return parsed;
+  }
   throw FormatException('Missing or invalid "$key".');
 }
 
 DateTime? _nullableDate(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value == null) return null;
-  if (value is String) return DateTime.parse(value);
+  if (value is String) {
+    final trimmed = value.trim();
+    final parsed = DateTime.parse(trimmed);
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(trimmed)) {
+      return DateTime(parsed.year, parsed.month, parsed.day, 12);
+    }
+    return parsed;
+  }
   throw FormatException('Invalid "$key".');
 }
