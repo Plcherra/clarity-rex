@@ -1,6 +1,8 @@
 # Flutter web dev helper for Windows (reads apps/mobile/.env).
 param(
-  [string]$Device = "chrome",
+  # Use web-server when Chrome debug tooling fails on Windows (open URL manually).
+  [ValidateSet("chrome", "edge", "web-server")]
+  [string]$Device = "web-server",
   [int]$WebPort = 8081,
   [string]$RexBackendUrl = "",
   [switch]$Print
@@ -30,9 +32,9 @@ if (-not $RexBackendUrl) {
   if (-not $RexBackendUrl) { $RexBackendUrl = "https://api.goclarity.app" }
 }
 $CloudVoice = Get-DotEnvValue "REX_CLOUD_VOICE_ENABLED"
-if (-not $CloudVoice) { $CloudVoice = "false" }
+if (-not $CloudVoice) { $CloudVoice = "true" }
 $StreamingVoice = Get-DotEnvValue "REX_STREAMING_VOICE_ENABLED"
-if (-not $StreamingVoice) { $StreamingVoice = "false" }
+if (-not $StreamingVoice) { $StreamingVoice = "true" }
 $AuthRedirect = Get-DotEnvValue "SUPABASE_AUTH_REDIRECT_URL"
 if (-not $AuthRedirect) { $AuthRedirect = "https://goclarity.app/auth/confirmed" }
 
@@ -43,6 +45,7 @@ if (-not $SupabaseUrl -or -not $SupabaseAnonKey) {
 $args = @(
   "run", "-d", $Device,
   "--web-port=$WebPort",
+  "--web-hostname=localhost",
   "--dart-define=SUPABASE_URL=$SupabaseUrl",
   "--dart-define=SUPABASE_ANON_KEY=$SupabaseAnonKey",
   "--dart-define=REX_BACKEND_URL=$RexBackendUrl",
@@ -55,6 +58,13 @@ if ($Print) {
   Write-Output "cd $MobileDir"
   Write-Output ("flutter " + ($args -join " "))
   exit 0
+}
+
+if ($Device -eq "web-server") {
+  Write-Output "==> Starting Flutter web dev server (no Chrome debugger)"
+  Write-Output "    Open: http://localhost:$WebPort"
+  Write-Output "    Voice testing needs localhost (mic works on http://localhost)"
+  Write-Output "    For Chrome auto-launch instead: .\scripts\flutter_web_dev.ps1 -Device chrome"
 }
 
 Push-Location $MobileDir

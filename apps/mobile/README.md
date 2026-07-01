@@ -218,7 +218,16 @@ Windows: `.\scripts\flutter_web_release_build.ps1`
 ./scripts/goclarity_web_deploy.sh
 ```
 
-Stage only (after separate builds): `./scripts/flutter_web_stage_into_landing.sh`
+Windows:
+
+```powershell
+.\scripts\goclarity_web_deploy.ps1
+# First time: npx wrangler login
+```
+
+Stage only (after separate builds): `./scripts/flutter_web_stage_into_landing.sh` or `.\scripts\flutter_web_stage_into_landing.ps1`
+
+**Local dev on Windows** — default uses `web-server` (open http://localhost:8081 manually). Chrome auto-launch: `.\scripts\flutter_web_dev.ps1 -Device chrome`
 
 Regenerate PWA icons: `.\scripts\generate_web_pwa_icons.ps1`
 
