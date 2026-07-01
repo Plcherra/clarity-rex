@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/core/rex/rex_config.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/audio_playback_service.dart';
@@ -12,7 +13,12 @@ import 'package:clarity/rex/voice/data/speech_to_text_service.dart';
 import 'package:clarity/rex/voice/data/streaming_audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/streaming_audio_playback_queue.dart';
 import 'package:clarity/rex/voice/data/streaming_voice_api.dart';
+import 'package:clarity/rex/voice/data/web_voice_service_stubs.dart';
 import 'package:clarity/rex/voice/application/voice_permission_service.dart';
+
+final appCapabilitiesProvider = Provider<AppCapabilities>(
+  (ref) => AppCapabilities.instance,
+);
 
 final microphonePermissionProvider = Provider<MicrophonePermissionService>(
   (ref) => RecordMicrophonePermissionService(),
@@ -27,15 +33,33 @@ final audioPlaybackServiceProvider = Provider<AudioPlaybackService>(
 );
 
 final voiceAudioSessionServiceProvider = Provider<VoiceAudioSessionService>(
-  (ref) => PackageVoiceAudioSessionService(),
+  (ref) {
+    final caps = ref.watch(appCapabilitiesProvider);
+    if (caps.supportsBackgroundVoice) {
+      return PackageVoiceAudioSessionService();
+    }
+    return const NoOpVoiceAudioSessionService();
+  },
 );
 
 final backgroundVoiceServiceProvider = Provider<BackgroundVoiceService>(
-  (ref) => MethodChannelBackgroundVoiceService(),
+  (ref) {
+    final caps = ref.watch(appCapabilitiesProvider);
+    if (caps.supportsBackgroundVoice) {
+      return MethodChannelBackgroundVoiceService();
+    }
+    return const NoOpBackgroundVoiceService();
+  },
 );
 
 final nativeVoiceSessionServiceProvider = Provider<NativeVoiceSessionService>(
-  (ref) => MethodChannelNativeVoiceSessionService(),
+  (ref) {
+    final caps = ref.watch(appCapabilitiesProvider);
+    if (caps.supportsNativeVoiceBridge) {
+      return MethodChannelNativeVoiceSessionService();
+    }
+    return const NoOpNativeVoiceSessionService();
+  },
 );
 
 final cloudVoiceApiProvider = Provider<CloudVoiceApi>((ref) => CloudVoiceApi());

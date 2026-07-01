@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/platform/app_capabilities.dart';
 import '../../../core/rex/rex_api_client.dart';
 export 'plaid_connection_models.dart';
 import 'plaid_connection_models.dart';
@@ -15,7 +16,7 @@ final class PlaidLinkService {
     PlaidLinkLauncher? launcher,
   }) : _tokenApi = tokenApi ?? RexPlaidApi(),
        _exchangeApi = exchangeApi ?? RexPlaidApi(),
-       _launcher = launcher ?? const NativePlaidLinkLauncher();
+       _launcher = launcher ?? _defaultPlaidLinkLauncher();
 
   final PlaidLinkTokenApi _tokenApi;
   final PlaidPublicTokenExchangeApi _exchangeApi;
@@ -197,11 +198,33 @@ final class RexPlaidApi
   }
 
   String _plaidLinkPlatform() {
+    if (kIsWeb) return 'web';
     return switch (defaultTargetPlatform) {
       TargetPlatform.android => 'android',
       TargetPlatform.iOS => 'ios',
       _ => 'unknown',
     };
+  }
+}
+
+PlaidLinkLauncher _defaultPlaidLinkLauncher() {
+  if (AppCapabilities.instance.supportsNativePlaidLink) {
+    return const NativePlaidLinkLauncher();
+  }
+  return const UnsupportedPlaidLinkLauncher();
+}
+
+/// Returns a user-visible exit when Plaid Link is unavailable (web until P4).
+final class UnsupportedPlaidLinkLauncher implements PlaidLinkLauncher {
+  const UnsupportedPlaidLinkLauncher();
+
+  @override
+  Future<PlaidLinkLaunchResult> open(PlaidLinkToken token) async {
+    return const PlaidLinkLaunchExit(
+      status: 'unsupported_platform',
+      errorCode: 'unsupported_platform',
+      errorType: 'PLATFORM',
+    );
   }
 }
 
