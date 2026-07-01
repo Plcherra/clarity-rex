@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     plaid_products: str = "transactions"
     plaid_country_codes: str = "US"
     plaid_redirect_uri: Optional[str] = None
+    plaid_web_redirect_uri: Optional[str] = None
     plaid_webhook_url: Optional[str] = None
     plaid_ios_bundle_id: Optional[str] = "app.goclarity.clarity"
     plaid_android_package_name: Optional[str] = "com.clarity.clarity"

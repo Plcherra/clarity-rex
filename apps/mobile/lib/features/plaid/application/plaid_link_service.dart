@@ -8,6 +8,8 @@ import '../../../core/platform/app_capabilities.dart';
 import '../../../core/rex/rex_api_client.dart';
 export 'plaid_connection_models.dart';
 import 'plaid_connection_models.dart';
+import 'web_plaid_link_launcher_stub.dart'
+    if (dart.library.html) 'web_plaid_link_launcher_web.dart';
 
 final class PlaidLinkService {
   PlaidLinkService({
@@ -211,10 +213,13 @@ PlaidLinkLauncher _defaultPlaidLinkLauncher() {
   if (AppCapabilities.instance.supportsNativePlaidLink) {
     return const NativePlaidLinkLauncher();
   }
+  if (AppCapabilities.instance.supportsWebPlaidLink) {
+    return const WebPlaidLinkLauncher();
+  }
   return const UnsupportedPlaidLinkLauncher();
 }
 
-/// Returns a user-visible exit when Plaid Link is unavailable (web until P4).
+/// Returns a user-visible exit when Plaid Link is unavailable on this platform.
 final class UnsupportedPlaidLinkLauncher implements PlaidLinkLauncher {
   const UnsupportedPlaidLinkLauncher();
 

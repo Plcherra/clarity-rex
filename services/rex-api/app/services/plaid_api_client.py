@@ -58,8 +58,9 @@ class PlaidApiClient:
             "products": list(payload.products or config.products),
             "user": {"client_user_id": user_id},
         }
-        if self.settings.plaid_redirect_uri and platform != "android":
-            body["redirect_uri"] = self.settings.plaid_redirect_uri
+        redirect_uri = self._link_redirect_uri(platform)
+        if redirect_uri:
+            body["redirect_uri"] = redirect_uri
         if self.settings.plaid_android_package_name and platform == "android":
             body["android_package_name"] = self.settings.plaid_android_package_name
         if self.settings.plaid_webhook_url:
@@ -76,6 +77,16 @@ class PlaidApiClient:
             "account_filters" in body,
         )
         return await self._post("/link/token/create", body)
+
+    def _link_redirect_uri(self, platform: str) -> str | None:
+        if platform == "android":
+            return None
+        if platform == "web":
+            web_uri = (self.settings.plaid_web_redirect_uri or "").strip()
+            if web_uri:
+                return web_uri
+        redirect_uri = (self.settings.plaid_redirect_uri or "").strip()
+        return redirect_uri or None
 
     async def exchange_public_token(self, public_token: str) -> dict[str, Any]:
         normalized_token = public_token.strip()

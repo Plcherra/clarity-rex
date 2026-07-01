@@ -67,6 +67,21 @@ async def fake_current_user():
     )
 
 
+def test_link_token_route_forwards_web_platform():
+    plaid_client = FakePlaidApiClient()
+    app.dependency_overrides[get_current_user] = fake_current_user
+    app.dependency_overrides[get_plaid_api_client] = lambda: plaid_client
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/plaid/link-token",
+            json={"platform": "web"},
+        )
+
+    assert response.status_code == 200
+    assert plaid_client.payload.platform == "web"
+
+
 def test_link_token_route_returns_only_safe_metadata():
     plaid_client = FakePlaidApiClient()
     app.dependency_overrides[get_current_user] = fake_current_user

@@ -39,7 +39,7 @@ final class AppCapabilities {
       isWeb: isWeb,
       platform: platform,
       supportsNativePlaidLink: nativeMobile,
-      supportsWebPlaidLink: false,
+      supportsWebPlaidLink: isWeb,
       supportsStreamingVoice: nativeMobile,
       supportsBackgroundVoice: nativeMobile,
       supportsNativeVoiceBridge: !isWeb && platform == TargetPlatform.iOS,
@@ -55,7 +55,7 @@ final class AppCapabilities {
   /// Native Plaid Link via platform MethodChannel (iOS/Android).
   final bool supportsNativePlaidLink;
 
-  /// Plaid Link in the browser. Enabled in P4.
+  /// Plaid Link in the browser (Flutter web).
   final bool supportsWebPlaidLink;
 
   /// Streaming voice WebSocket pipeline. Disabled on web until P5.

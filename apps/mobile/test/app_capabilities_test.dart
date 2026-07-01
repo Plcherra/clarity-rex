@@ -12,12 +12,12 @@ void main() {
 
       expect(caps.isWeb, isTrue);
       expect(caps.supportsNativePlaidLink, isFalse);
-      expect(caps.supportsWebPlaidLink, isFalse);
+      expect(caps.supportsWebPlaidLink, isTrue);
       expect(caps.supportsStreamingVoice, isFalse);
       expect(caps.supportsBackgroundVoice, isFalse);
       expect(caps.supportsNativeVoiceBridge, isFalse);
       expect(caps.supportsCsvImport, isFalse);
-      expect(caps.supportsAnyPlaidLink, isFalse);
+      expect(caps.supportsAnyPlaidLink, isTrue);
       expect(caps.supportsAnyVoice, isFalse);
     });
 

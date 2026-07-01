@@ -78,6 +78,59 @@ async def test_create_link_token_posts_ios_oauth_payload(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_create_link_token_posts_web_oauth_payload(monkeypatch):
+    calls = []
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return make_response(json_data={"link_token": "link-sandbox"})
+
+    monkeypatch.setattr(
+        "app.services.plaid_api_client.request_with_retries",
+        fake_request,
+    )
+    client = PlaidApiClient(
+        configured_settings(
+            plaid_android_package_name="com.app",
+            plaid_redirect_uri="https://api.goclarity.app/plaid/oauth",
+            plaid_web_redirect_uri="https://goclarity.app/app/",
+        )
+    )
+
+    await client.create_link_token(
+        PlaidLinkTokenPayload(user_id="user-1", platform="web")
+    )
+
+    assert calls[0]["json"]["redirect_uri"] == "https://goclarity.app/app/"
+    assert "android_package_name" not in calls[0]["json"]
+
+
+@pytest.mark.asyncio
+async def test_create_link_token_web_falls_back_to_shared_redirect_uri(monkeypatch):
+    calls = []
+
+    async def fake_request(method, url, **kwargs):
+        calls.append({"method": method, "url": url, **kwargs})
+        return make_response(json_data={"link_token": "link-production"})
+
+    monkeypatch.setattr(
+        "app.services.plaid_api_client.request_with_retries",
+        fake_request,
+    )
+    client = PlaidApiClient(
+        configured_settings(
+            plaid_redirect_uri="https://api.goclarity.app/plaid/oauth",
+        )
+    )
+
+    await client.create_link_token(
+        PlaidLinkTokenPayload(user_id="user-1", platform="web")
+    )
+
+    assert calls[0]["json"]["redirect_uri"] == "https://api.goclarity.app/plaid/oauth"
+
+
+@pytest.mark.asyncio
 async def test_create_link_token_posts_android_package_payload(monkeypatch):
     calls = []
 
