@@ -1,15 +1,28 @@
+const appStoreUrl = import.meta.env.PUBLIC_APP_STORE_URL?.trim() || '';
+const playStoreUrl =
+  import.meta.env.PUBLIC_PLAY_STORE_URL?.trim() ||
+  'https://play.google.com/store/apps/details?id=com.clarity.clarity';
+const webLoginUrl =
+  import.meta.env.PUBLIC_WEB_LOGIN_URL?.trim() || 'https://app.goclarity.app';
+
 export const product = {
   name: 'Clarity',
   assistantName: 'Rex',
   tagline: 'One calm place for money, memory, and Rex.',
   description:
-    'Clarity is a privacy-first personal finance and AI assistant app. Connect accounts with consent, track budgets and goals, organize what Clarity knows, and talk to Rex in chat or voice — mobile today, webapp PWA coming soon.',
+    'Clarity is a privacy-first personal finance and AI assistant app. Connect accounts with consent, track budgets and goals, organize what Clarity knows, and talk to Rex in chat or voice — on iPhone, Android, and web.',
   supportEmail: 'clarity.rex@gmail.com',
   operatorName: 'Clarity',
   siteUrl: 'https://goclarity.app',
   locale: 'en_US',
   socialImagePath: '/og-image.jpg',
   socialImageAlt: 'Clarity dashboard preview — money, memory, and Rex in one calm place.',
+} as const;
+
+export const downloadLinks = {
+  appStore: appStoreUrl,
+  playStore: playStoreUrl,
+  webLogin: webLoginUrl,
 } as const;
 
 export type PublicRoute = {
@@ -26,7 +39,7 @@ export const publicRoutes = [
     label: 'Home',
     title: 'Clarity - Money, Memory, and Rex in One Place',
     description:
-      'Meet Clarity: privacy-first finance, budgets, goals, and Rex — the AI assistant inside the app. Mobile beta today. Webapp PWA for desktop coming soon.',
+      'Meet Clarity: privacy-first finance, budgets, goals, and Rex — the AI assistant inside the app. Available on iPhone, Android, and web.',
     footerRequired: true,
   },
   {
@@ -66,7 +79,7 @@ export const publicRoutes = [
     label: 'Contact',
     title: 'Contact - Clarity',
     description:
-      'Contact Clarity for product questions, beta access, privacy requests, data deletion, or security concerns.',
+      'Contact Clarity for product questions, privacy requests, data deletion, or security concerns.',
     footerRequired: true,
   },
   {
@@ -102,8 +115,8 @@ export const headerLinks = publicRoutes.filter((route) =>
 export const footerLinks = publicRoutes.filter((route) => route.footerRequired);
 
 export const primaryCta = {
-  label: 'Request early access',
-  href: '/#request-access',
+  label: 'Get Clarity',
+  href: '/#get-clarity',
 } as const;
 
 export const trustNotes = [
@@ -145,9 +158,9 @@ export const faqs = [
       'Yes. Clarity publishes a data deletion path and contact route. Some records may be retained for limited legal, security, backup, or operational reasons as described in the Privacy Policy.',
   },
   {
-    question: 'Is the public waitlist form safe for financial details?',
+    question: 'Where can I get Clarity?',
     answer:
-      'The waitlist form is only for high-level requests. Do not submit account numbers, card numbers, SSNs, bank credentials, one-time codes, screenshots, CSVs, or financial documents.',
+      'Clarity is available on iPhone, Android, and web. Download from the App Store or Google Play, or sign in on the web with the same Clarity account.',
   },
 ] as const;
 

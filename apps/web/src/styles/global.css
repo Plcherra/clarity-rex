@@ -1066,7 +1066,7 @@ body {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  background: var(--premium-navy);
+  background: var(--premium-teal);
   color: #ffffff;
   font-size: 0.72rem;
   font-weight: 950;
@@ -1074,6 +1074,85 @@ body {
   text-transform: uppercase;
   padding: 7px 10px;
   white-space: nowrap;
+}
+
+.download-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.download-actions--hero {
+  margin-top: 2px;
+}
+
+.download-actions--footer {
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.download-actions--compact {
+  margin-top: 4px;
+}
+
+.store-badge {
+  display: grid;
+  gap: 2px;
+  min-width: 168px;
+  border: 1px solid rgba(8, 24, 39, 0.14);
+  border-radius: 12px;
+  background: #081827;
+  color: #ffffff;
+  padding: 10px 16px;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.store-badge:hover {
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(8, 24, 39, 0.18);
+}
+
+.store-badge__label {
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1.1;
+  opacity: 0.82;
+}
+
+.store-badge__name {
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.button--web {
+  min-height: 52px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #eef9f5 100%);
+  color: var(--premium-navy);
+  box-shadow: 0 10px 24px rgba(8, 24, 39, 0.08);
+  padding-inline: 18px;
+}
+
+.button--web:hover {
+  color: var(--premium-teal);
+}
+
+.landing-hero__actions--secondary {
+  margin-top: -4px;
+}
+
+.final-cta__note {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 0.92rem;
+}
+
+.final-cta__note a {
+  color: var(--premium-blue);
+  font-weight: 750;
 }
 
 .webapp-banner strong {

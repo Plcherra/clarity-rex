@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-import PublicForm from '../components/PublicForm.astro';
-import { faqs, primaryCta, publicRoutes } from '@content/site';
+import DownloadActions from '../components/DownloadActions.astro';
+import { faqs, publicRoutes } from '@content/site';
 
 const page = publicRoutes.find((route) => route.path === '/')!;
 
@@ -103,15 +103,15 @@ const featureCards = [
 const webappHighlights = [
   {
     title: 'Desktop-friendly layout',
-    body: 'The webapp adapts Clarity’s dark UI for wider screens — dashboards, chat, and Knows stay scannable.',
+    body: 'Clarity’s dark UI adapts for wider screens — dashboards, chat, and Knows stay scannable on laptop and desktop.',
   },
   {
     title: 'Installable PWA',
-    body: 'Add Clarity to your home screen or dock. One tap back to your money picture and Rex.',
+    body: 'Add Clarity to your home screen or dock for one-tap access to your money picture and Rex.',
   },
   {
     title: 'Same Rex Brain',
-    body: 'Chat, voice, memory, and financial context follow the same rules on mobile and web.',
+    body: 'Chat, voice, memory, and financial context follow the same rules on iPhone, Android, and web.',
   },
 ] as const;
 
@@ -197,7 +197,7 @@ const faqItems = faqs.slice(0, 7);
           decoding="async"
         />
         <div class="hero-brand-lockup__text">
-          <p class="eyebrow">Clarity beta · Mobile today · Web next</p>
+          <p class="eyebrow">Clarity · iPhone · Android · Web</p>
         </div>
       </div>
       <h1>One calm place for money, memory, and Rex.</h1>
@@ -206,19 +206,22 @@ const faqItems = faqs.slice(0, 7);
         the AI assistant that explains your financial picture without moving money or guessing.
       </p>
       <div class="webapp-banner" role="note">
-        <span class="webapp-banner__badge">Coming soon</span>
+        <span class="webapp-banner__badge">Available</span>
         <div>
-          <strong>Now building the webapp version</strong>
-          <p>Works great on desktop too — installable as a PWA with the same dark UI and Rex Brain.</p>
+          <strong>Get Clarity on iPhone, Android, or web</strong>
+          <p>Download the app or sign in on desktop — same account, same Rex Brain, same privacy-first controls.</p>
         </div>
       </div>
       <div class="hero-trust-row" aria-label="Clarity trust highlights">
         {heroTrustSignals.map((signal) => <span>{signal}</span>)}
       </div>
-      <div class="landing-hero__actions">
-        <a class="button button--large" href={primaryCta.href}>Request early access</a>
+      <DownloadActions layout="hero" />
+      <div class="landing-hero__actions landing-hero__actions--secondary">
         <a class="button button--secondary button--large" href="#product-gallery">
           See the app
+        </a>
+        <a class="button button--secondary button--large" href="#data-consent">
+          Privacy &amp; consent
         </a>
       </div>
       <div class="landing-hero__metrics" aria-label="Sample monthly snapshot">
@@ -309,22 +312,18 @@ const faqItems = faqs.slice(0, 7);
 
   <section class="section webapp-section" id="webapp" aria-labelledby="webapp-heading">
     <div class="webapp-section__copy">
-      <p class="eyebrow">Webapp · PWA</p>
+      <p class="eyebrow">Web · PWA</p>
       <h2 id="webapp-heading">Clarity on desktop — same product, wider canvas.</h2>
       <p>
-        We are building a webapp version of Clarity that works great on desktop and laptop screens.
-        Install it as a PWA, pick up where you left off, and use Rex with the same privacy-first
-        boundaries as mobile.
+        Use Clarity in the browser on laptop and desktop. Sign in with the same account as mobile,
+        install it as a PWA, and talk to Rex with the same privacy-first boundaries everywhere.
       </p>
       <ul class="webapp-section__list">
         <li>Responsive layouts for dashboard, chat, Knows, budgets, and transactions</li>
         <li>Installable progressive web app — no app store required on desktop</li>
         <li>Same user-authorized Plaid connections and data controls</li>
       </ul>
-      <div class="landing-hero__actions">
-        <a class="button" href={primaryCta.href}>Join the beta waitlist</a>
-        <a class="button button--secondary" href="#data-consent">Privacy &amp; consent</a>
-      </div>
+      <DownloadActions layout="compact" />
     </div>
     <div class="webapp-section__cards">
       {webappHighlights.map((item) => (
@@ -464,15 +463,19 @@ const faqItems = faqs.slice(0, 7);
     </div>
   </section>
 
-  <section class="section final-cta final-cta--premium" id="request-access" aria-labelledby="request-access-heading">
-    <div class="section__header">
-      <p class="eyebrow">Early access</p>
-      <h2 id="request-access-heading">Request early access to Clarity.</h2>
+  <section class="section final-cta final-cta--premium" id="get-clarity" aria-labelledby="get-clarity-heading">
+    <div class="section__header section__header--center">
+      <p class="eyebrow">Get Clarity</p>
+      <h2 id="get-clarity-heading">Download or sign in — your money picture is ready.</h2>
       <p>
-        Join the beta list for mobile today and webapp updates as the desktop PWA ships. Keep it
-        high level and do not submit bank credentials, account numbers, or sensitive financial details.
+        Clarity is available on iPhone, Android, and web. Connect accounts with consent, talk to Rex,
+        and keep saved memory and chat history under your control.
       </p>
     </div>
-    <PublicForm variant="waitlist" />
+    <DownloadActions layout="footer" />
+    <p class="final-cta__note">
+      Need help? <a href="/contact">Contact support</a> or read our <a href="/privacy">Privacy Policy</a>.
+      Do not send bank credentials through public forms.
+    </p>
   </section>
 </BaseLayout>

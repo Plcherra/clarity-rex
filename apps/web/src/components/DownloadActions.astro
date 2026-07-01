@@ -1,0 +1,41 @@
+---
+import { downloadLinks } from '@content/site';
+
+type Props = {
+  layout?: 'hero' | 'footer' | 'compact';
+};
+
+const { layout = 'hero' } = Astro.props;
+---
+
+<div class:list={['download-actions', `download-actions--${layout}`]}>
+  {
+    downloadLinks.appStore ? (
+      <a
+        class="store-badge store-badge--apple"
+        href={downloadLinks.appStore}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <span class="store-badge__label">Download on the</span>
+        <span class="store-badge__name">App Store</span>
+      </a>
+    ) : null
+  }
+  {
+    downloadLinks.playStore ? (
+      <a
+        class="store-badge store-badge--google"
+        href={downloadLinks.playStore}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <span class="store-badge__label">Get it on</span>
+        <span class="store-badge__name">Google Play</span>
+      </a>
+    ) : null
+  }
+  <a class="button button--web" href={downloadLinks.webLogin}>
+    Sign in on web
+  </a>
+</div>
