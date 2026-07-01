@@ -353,17 +353,26 @@ DateTime _dateTime(Map<String, dynamic> json, String key) {
   throw FormatException('Missing or invalid "$key".');
 }
 
+DateTime _calendarDateFromSupabase(String trimmed) {
+  if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(trimmed)) {
+    final parts = trimmed.split('-');
+    return DateTime(
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+      int.parse(parts[2]),
+      12,
+    );
+  }
+
+  final parsed = DateTime.parse(trimmed);
+  final local = parsed.isUtc ? parsed.toLocal() : parsed;
+  return DateTime(local.year, local.month, local.day, 12);
+}
+
 DateTime _date(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value is String) {
-    final trimmed = value.trim();
-    final parsed = DateTime.parse(trimmed);
-    // Date-only Supabase fields (YYYY-MM-DD) parse as UTC midnight and can
-    // shift to the wrong local calendar day. Use local noon like CSV import.
-    if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(trimmed)) {
-      return DateTime(parsed.year, parsed.month, parsed.day, 12);
-    }
-    return parsed;
+    return _calendarDateFromSupabase(value.trim());
   }
   throw FormatException('Missing or invalid "$key".');
 }
@@ -372,12 +381,7 @@ DateTime? _nullableDate(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value == null) return null;
   if (value is String) {
-    final trimmed = value.trim();
-    final parsed = DateTime.parse(trimmed);
-    if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(trimmed)) {
-      return DateTime(parsed.year, parsed.month, parsed.day, 12);
-    }
-    return parsed;
+    return _calendarDateFromSupabase(value.trim());
   }
   throw FormatException('Invalid "$key".');
 }

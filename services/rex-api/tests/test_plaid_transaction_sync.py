@@ -136,6 +136,25 @@ def test_mapper_preserves_pending_transaction_fields():
     assert payload["removed_at"] is None
 
 
+def test_mapper_prefers_authorized_date_over_posting_date():
+    payload = map_plaid_transaction(
+        user_id="user-1",
+        item_id="item-record-1",
+        linked_account_id="account-1",
+        transaction={
+            "transaction_id": "txn-2",
+            "account_id": "plaid-account-1",
+            "amount": 42.0,
+            "date": "2026-07-01",
+            "authorized_date": "2026-06-30",
+            "name": "Late dinner",
+            "pending": False,
+        },
+    )
+
+    assert payload["date"] == "2026-06-30"
+
+
 @pytest.mark.asyncio
 async def test_transaction_sync_upserts_removes_and_updates_cursor_last():
     plaid_client = SinglePagePlaidClient()

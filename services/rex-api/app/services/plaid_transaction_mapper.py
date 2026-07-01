@@ -10,6 +10,15 @@ from app.services.plaid_sync_models import (
 )
 
 
+def _plaid_transaction_date(transaction: dict[str, Any]) -> str:
+    """Prefer authorized_date — when the user made the purchase — over posting date."""
+    return (
+        string_or_none(transaction.get("authorized_date"))
+        or string_or_none(transaction.get("date"))
+        or utc_now_iso()[:10]
+    )
+
+
 def map_plaid_transaction(
     *,
     user_id: str,
@@ -27,7 +36,7 @@ def map_plaid_transaction(
         "amount": abs(amount),
         "type": "expense" if amount >= 0 else "income",
         "description": string_or_none(transaction.get("name")),
-        "date": string_or_none(transaction.get("date")) or utc_now_iso()[:10],
+        "date": _plaid_transaction_date(transaction),
         "merchant": string_or_none(transaction.get("merchant_name"))
         or string_or_none(transaction.get("name")),
         "imported_from_csv": False,

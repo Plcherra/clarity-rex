@@ -292,8 +292,14 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
     final cs = theme.colorScheme;
     final l10n = context.l10n;
 
-    final scaffold = Scaffold(
+    Widget constrainBody(Widget child) {
+      if (!widget.showBackButton) return child;
+      return FinanceContentConstraints(child: child);
+    }
+
+    return Scaffold(
       extendBodyBehindAppBar: true,
+      backgroundColor: cs.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -342,21 +348,25 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
           final data = _dataNotifier.data;
           if (data == null) {
             if (_dataNotifier.error != null) {
-              return _DashboardLoadMessage(message: '${_dataNotifier.error}');
+              return constrainBody(
+                _DashboardLoadMessage(message: '${_dataNotifier.error}'),
+              );
             }
-            return const _DashboardLoadingBody();
+            return constrainBody(const _DashboardLoadingBody());
           }
           if (data.isResolvingImportedTransactions && !data.isTrulyEmpty) {
-            return const _DashboardResolvingDataBody();
+            return constrainBody(const _DashboardResolvingDataBody());
           }
           if (data.isTrulyEmpty &&
               widget.scope is GlobalDashboardScope &&
               widget.onConnectBank != null &&
               widget.onImportCsvInstead != null) {
-            return _DashboardEmptySetupBody(
-              title: widget.title,
-              onConnectBank: widget.onConnectBank!,
-              onImportCsvInstead: widget.onImportCsvInstead!,
+            return constrainBody(
+              _DashboardEmptySetupBody(
+                title: widget.title,
+                onConnectBank: widget.onConnectBank!,
+                onImportCsvInstead: widget.onImportCsvInstead!,
+              ),
             );
           }
           final scrollBody = _DashboardScrollBody(
@@ -370,19 +380,16 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             loadIssues: data.loadIssues,
             accountCount: data.accountCount,
           );
-          return widget.showBackButton
+          final body = widget.showBackButton
               ? ImportJobStatusHost(
                   controller: widget.importJobStatusController,
                   child: scrollBody,
                 )
               : scrollBody;
+          return constrainBody(body);
         },
       ),
     );
-
-    return widget.showBackButton
-        ? FinanceContentConstraints(child: scaffold)
-        : scaffold;
   }
 }
 

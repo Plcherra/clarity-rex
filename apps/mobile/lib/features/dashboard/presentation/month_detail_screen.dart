@@ -84,10 +84,9 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return FinanceContentConstraints(
-      child: ListenableBuilder(
-        listenable: _dataNotifier,
-        builder: (context, _) {
+    return ListenableBuilder(
+      listenable: _dataNotifier,
+      builder: (context, _) {
         final title = formatYearMonthLabel(widget.group.yearMonth);
         final lines = _dataNotifier.data;
         final monthDeletePolicy = lines == null
@@ -177,32 +176,33 @@ class _MonthDetailScreenState extends State<MonthDetailScreen> {
                 ),
             ],
           ),
-          body: lines == null
-              ? _dataNotifier.error != null
-                    ? Center(
-                        child: Text(context.l10n.dashboardTransactionsLoadError),
-                      )
-                    : Center(
-                        child: ClarityDiamondLoader(
-                          size: 56,
-                          label: context.l10n.monthDetailLoadingMonth,
-                        ),
-                      )
-              : _MonthDetailBody(
-                  lines: lines,
-                  monthDeleteProtectionMessage:
-                      monthDeletePolicy?.blockReason ==
-                          MonthDeletionBlockReason.plaidSynced
-                      ? context.l10n.monthDetailPlaidDeleteProtection
-                      : null,
-                  controller: widget.controller,
-                  transactionController: widget.transactionController,
-                  theme: theme,
-                  colorScheme: cs,
-                ),
+          body: FinanceContentConstraints(
+            child: lines == null
+                ? _dataNotifier.error != null
+                      ? Center(
+                          child: Text(context.l10n.dashboardTransactionsLoadError),
+                        )
+                      : Center(
+                          child: ClarityDiamondLoader(
+                            size: 56,
+                            label: context.l10n.monthDetailLoadingMonth,
+                          ),
+                        )
+                : _MonthDetailBody(
+                    lines: lines,
+                    monthDeleteProtectionMessage:
+                        monthDeletePolicy?.blockReason ==
+                            MonthDeletionBlockReason.plaidSynced
+                        ? context.l10n.monthDetailPlaidDeleteProtection
+                        : null,
+                    controller: widget.controller,
+                    transactionController: widget.transactionController,
+                    theme: theme,
+                    colorScheme: cs,
+                  ),
+          ),
         );
       },
-      ),
     );
   }
 }
