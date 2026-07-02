@@ -121,7 +121,14 @@ final voiceCallPlatformProvider = Provider<TargetPlatform>(
 );
 
 final voiceCaptureConfigProvider = Provider<VoiceCaptureConfig>(
-  (ref) => const VoiceCaptureConfig(),
+  (ref) => kIsWeb
+      ? const VoiceCaptureConfig(
+          speechStartThresholdDb: -62,
+          silenceThresholdDb: -68,
+          silenceAfterSpeech: Duration(milliseconds: 1200),
+          noSpeechTimeout: Duration(seconds: 18),
+        )
+      : const VoiceCaptureConfig(),
 );
 
 typedef VoiceCallNow = DateTime Function();

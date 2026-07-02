@@ -16,8 +16,8 @@ class WebStreamingAudioCaptureService implements StreamingAudioCaptureService {
     milliseconds: 950,
   );
   static const _minimumStreamingSpeechDuration = Duration(milliseconds: 260);
-  static const _streamingSpeechStartThresholdDb = -50.0;
-  static const _streamingSilenceThresholdDb = -58.0;
+  static const _streamingSpeechStartThresholdDb = -62.0;
+  static const _streamingSilenceThresholdDb = -68.0;
 
   WebStreamingAudioCaptureService({DateTime Function()? now})
     : _now = now ?? DateTime.now;

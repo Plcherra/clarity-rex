@@ -40,16 +40,13 @@ class RecordMicrophonePermissionService implements MicrophonePermissionService {
     }
 
     if (kIsWeb) {
-      final granted = await requestWebMicrophoneAccess();
-      if (granted) {
-        return MicrophonePermissionDecision.granted;
+      if (await isWebMicrophonePermissionPermanentlyDenied()) {
+        return MicrophonePermissionDecision.permanentlyDenied;
       }
-
-      final permanentlyDenied =
-          await isWebMicrophonePermissionPermanentlyDenied();
-      return permanentlyDenied
-          ? MicrophonePermissionDecision.permanentlyDenied
-          : MicrophonePermissionDecision.denied;
+      // Defer the real getUserMedia call to voice capture so we only open the
+      // mic once. A throwaway probe can waste the tap gesture and bounce
+      // Bluetooth headsets between A2DP and HFP before capture starts.
+      return MicrophonePermissionDecision.granted;
     }
 
     try {

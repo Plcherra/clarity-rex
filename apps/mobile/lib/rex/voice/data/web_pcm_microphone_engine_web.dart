@@ -18,6 +18,7 @@ class WebPcmMicrophoneEngine {
   web.MediaStream? _mediaStream;
   web.MediaStreamAudioSourceNode? _source;
   web.AudioWorkletNode? _workletNode;
+  web.GainNode? _silentSink;
   StreamController<Uint8List>? _chunkController;
   Future<void>? _bootstrapping;
   var _workletReady = false;
@@ -34,7 +35,15 @@ class WebPcmMicrophoneEngine {
     final mediaDevices = web.window.navigator.mediaDevices;
 
     _mediaStream = await mediaDevices
-        .getUserMedia(web.MediaStreamConstraints(audio: {true}.toJSBox))
+        .getUserMedia(
+          web.MediaStreamConstraints(
+            audio: {
+              'echoCancellation': true,
+              'noiseSuppression': true,
+              'autoGainControl': true,
+            }.jsify()!,
+          ),
+        )
         .toDart;
 
     _chunkController = StreamController<Uint8List>.broadcast();
@@ -53,7 +62,15 @@ class WebPcmMicrophoneEngine {
 
     _workletNode!.port.onmessage =
         ((web.MessageEvent event) => _onWorkletMessage(event)).toJS;
-    _source!.connect(_workletNode!)?.connect(context.destination);
+    // Keep the graph alive without routing mic audio to speakers/headphones.
+    // Direct `destination` routing can switch Bluetooth headsets into HFP mode
+    // and disconnect them when the mic track stops.
+    _silentSink = context.createGain();
+    _silentSink!.gain.value = 0;
+    _source!.connect(_workletNode!);
+    _workletNode!.connect(_silentSink!);
+    _silentSink!.connect(context.destination);
+    await _resumeContext(context);
 
     return WebPcmCaptureSession(stream: _chunkController!.stream);
   }
@@ -69,6 +86,8 @@ class WebPcmMicrophoneEngine {
     _source = null;
     _workletNode?.disconnect();
     _workletNode = null;
+    _silentSink?.disconnect();
+    _silentSink = null;
 
     final mediaStream = _mediaStream;
     _mediaStream = null;
@@ -96,6 +115,7 @@ class WebPcmMicrophoneEngine {
   Future<void> _bootstrap() async {
     await _closeContext();
     _context = web.AudioContext();
+    await _resumeContext(_context!);
     final urls = [
       Uri.base.resolve('js/record.worklet.js').toString(),
       Uri.base.resolve(
@@ -106,6 +126,7 @@ class WebPcmMicrophoneEngine {
     for (final url in urls) {
       try {
         await _context!.audioWorklet.addModule(url).toDart;
+        await _resumeContext(_context!);
         _workletReady = true;
         return;
       } on Object catch (error) {
@@ -116,6 +137,15 @@ class WebPcmMicrophoneEngine {
     throw StateError(
       'Could not load the browser microphone worklet: $lastError',
     );
+  }
+
+  Future<void> _resumeContext(web.AudioContext context) async {
+    if (context.state == 'closed') {
+      return;
+    }
+    if (context.state == 'suspended') {
+      await context.resume().toDart;
+    }
   }
 
   Future<void> _closeContext() async {
