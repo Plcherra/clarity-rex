@@ -328,11 +328,20 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
   }
 
   void _deferBackgroundStreamingRestart(StreamingVoiceSession session) {
+    unawaited(_streamingCaptureService.cancel());
+    _cancelThinkingTimeout();
+    if (kIsWeb) {
+      state = state.copyWith(
+        phase: VoiceCallPhase.listening,
+        isCapturingSpeech: false,
+        clearError: true,
+      );
+      return;
+    }
     if (identical(_activeStreamingSession, session)) {
       _activeStreamingSession = null;
       _activeStreamingEventsTask = null;
     }
-    _cancelThinkingTimeout();
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       errorMessage: voiceL10n.voiceErrorBackgroundMicRestart,
@@ -610,7 +619,17 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
             _streamingPlaybackQueue.finishResponse(
               callbacks: playbackCallbacks(),
             );
-            await _streamingPlaybackQueue.waitUntilIdle();
+            if (kIsWeb && !_isAppInForeground) {
+              await _streamingPlaybackQueue.cancel();
+            } else {
+              try {
+                await _streamingPlaybackQueue.waitUntilIdle().timeout(
+                  const Duration(seconds: 30),
+                );
+              } on TimeoutException {
+                await _streamingPlaybackQueue.cancel();
+              }
+            }
             _stopBargeInMonitoring();
             if (isActiveSession()) {
               if (firstAudioChunkAt == null &&

@@ -29,6 +29,9 @@ import 'package:clarity/rex/voice/data/streaming_voice_api.dart';
 import 'package:clarity/rex/voice/application/voice_permission_service.dart';
 import 'package:clarity/rex/voice/application/voice_transcript_buffer.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
+import 'package:clarity/rex/voice/data/web_pcm_microphone_engine_stub.dart'
+    if (dart.library.html) 'package:clarity/rex/voice/data/web_pcm_microphone_engine_web.dart';
+import 'package:clarity/rex/voice/data/web_page_visibility.dart';
 
 import 'voice_call_controller_providers.dart';
 export 'package:clarity/rex/voice/application/voice_permission_service.dart';
@@ -81,8 +84,14 @@ class VoiceCallController extends Notifier<VoiceCallState>
   VoiceCallState build() {
     WidgetsFlutterBinding.ensureInitialized();
     WidgetsBinding.instance.addObserver(this);
+    if (kIsWeb) {
+      listenWebPageVisibility(_handleWebPageVisibilityChanged);
+    }
     ref.onDispose(() {
       WidgetsBinding.instance.removeObserver(this);
+      if (kIsWeb) {
+        disposeWebPageVisibilityListener();
+      }
       _callGeneration++;
       _cancelThinkingTimeout();
       _cancelListeningEndpointTimeout();

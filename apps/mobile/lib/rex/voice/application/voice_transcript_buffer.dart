@@ -3,18 +3,11 @@ class VoiceTranscriptBuffer {
   var _partialText = '';
 
   String get visible {
-    final finalText = _normalize(_finalText);
     final partialText = _normalize(_partialText);
-    if (finalText.isEmpty) {
+    if (partialText.isNotEmpty) {
       return partialText;
     }
-    if (partialText.isEmpty || _contains(finalText, partialText)) {
-      return finalText;
-    }
-    if (_contains(partialText, finalText)) {
-      return partialText;
-    }
-    return _collapseRepeatedText('$finalText $partialText');
+    return _normalize(_finalText);
   }
 
   void clear() {
@@ -32,11 +25,7 @@ class VoiceTranscriptBuffer {
       return;
     }
 
-    final previousPartial = _normalize(_partialText);
     _partialText = '';
-    if (previousPartial.isNotEmpty && !_contains(next, previousPartial)) {
-      _appendSegment(previousPartial);
-    }
     _appendSegment(next);
   }
 

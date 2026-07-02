@@ -98,4 +98,57 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
     streamingSession.endUtterance();
     return true;
   }
+
+  void _handleWebPageVisibilityChanged(bool isVisible) {
+    if (isVisible) {
+      _isAppInForeground = true;
+      if (state.isCallActive && !_isUsingNativeVoice) {
+        unawaited(_handleWebForegroundResume());
+      }
+      return;
+    }
+    _isAppInForeground = false;
+  }
+
+  Future<void> _handleWebForegroundResume() async {
+    if (_isHandlingLifecycleResume) {
+      return;
+    }
+    _isHandlingLifecycleResume = true;
+    try {
+      await WebPcmMicrophoneEngine.instance.resumeIfSuspended();
+
+      if (state.isCallActive &&
+          (state.phase == VoiceCallPhase.speaking ||
+              state.phase == VoiceCallPhase.thinking)) {
+        if (!_streamingPlaybackQueue.isIdle) {
+          await _streamingPlaybackQueue.cancel();
+        }
+        if (state.phase == VoiceCallPhase.speaking) {
+          completeSpeaking();
+        }
+        if (!state.isMuted && state.phase != VoiceCallPhase.listening) {
+          resumeListening();
+        }
+      }
+
+      if (!state.isCallActive ||
+          state.phase != VoiceCallPhase.listening ||
+          state.isMuted) {
+        return;
+      }
+
+      if (_finishPendingStreamingUtteranceOnResume()) {
+        return;
+      }
+
+      final generation = ++_callGeneration;
+      await _streamingCaptureService.cancel();
+      _stopBargeInMonitoring();
+      state = state.copyWith(isCapturingSpeech: false, clearError: true);
+      _startListeningCycle(generation);
+    } finally {
+      _isHandlingLifecycleResume = false;
+    }
+  }
 }

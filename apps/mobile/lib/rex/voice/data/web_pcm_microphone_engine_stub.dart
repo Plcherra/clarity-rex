@@ -18,6 +18,10 @@ class WebPcmMicrophoneEngine {
   Future<void> stopCapture() async {}
 }
 
+extension WebPcmMicrophoneEngineResume on WebPcmMicrophoneEngine {
+  Future<void> resumeIfSuspended() async {}
+}
+
 final class WebPcmCaptureSession {
   WebPcmCaptureSession({required Stream<Uint8List> stream}) : stream = stream;
 

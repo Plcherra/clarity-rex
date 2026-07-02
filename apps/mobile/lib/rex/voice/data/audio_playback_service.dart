@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -59,7 +60,16 @@ class PackageAudioPlaybackService implements AudioPlaybackService {
       await _audioPlayer.setVolume(1.0);
       final playbackComplete = _audioPlayer.onPlayerComplete.first;
       await _audioPlayer.play(BytesSource(audioBytes, mimeType: mimeType));
-      await playbackComplete;
+      if (kIsWeb) {
+        await playbackComplete.timeout(
+          const Duration(seconds: 8),
+          onTimeout: () {
+            throw TimeoutException('Voice playback timed out.');
+          },
+        );
+      } else {
+        await playbackComplete;
+      }
       onComplete();
     } on Object {
       onError('Voice playback failed.');

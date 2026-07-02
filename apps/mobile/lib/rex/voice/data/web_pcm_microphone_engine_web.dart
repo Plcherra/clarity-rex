@@ -193,6 +193,14 @@ class WebPcmMicrophoneEngine {
     final bytes = boostPcm16Chunk(Uint8List.sublistView(output));
     controller.add(bytes);
   }
+
+  Future<void> resumeIfSuspended() async {
+    final context = _context;
+    if (context == null) {
+      return;
+    }
+    await _resumeContext(context);
+  }
 }
 
 final class WebPcmCaptureSession {
