@@ -2056,5 +2056,6 @@
   "voicePanelUnmuteMicTooltip": "Activar micrófono",
   "voicePanelVoiceMuted": "Voz silenciada",
   "voicePanelVoicePaused": "Voz en pausa",
+  "voiceSessionReturnToChat": "Volver al chat de Assistant",
   "voicePanelVoiceReady": "Voz lista"
 }

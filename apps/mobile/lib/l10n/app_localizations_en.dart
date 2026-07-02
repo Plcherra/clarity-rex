@@ -2730,6 +2730,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voicePanelVoicePaused => 'Voice paused';
 
   @override
+  String get voiceSessionReturnToChat => 'Return to Assistant chat';
+
+  @override
   String get voiceFailureSessionReconnect =>
       'Your Clarity session needs to reconnect before voice can continue. Sign in again if this keeps happening.';
 

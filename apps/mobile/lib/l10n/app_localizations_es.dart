@@ -2781,6 +2781,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get voicePanelVoicePaused => 'Voz en pausa';
 
   @override
+  String get voiceSessionReturnToChat => 'Volver al chat de Assistant';
+
+  @override
   String get voiceFailureSessionReconnect =>
       'Su sesión de Clarity debe volver a conectarse antes de que la voz pueda continuar. Inicie sesión nuevamente si esto continúa sucediendo.';
 

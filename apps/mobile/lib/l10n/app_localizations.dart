@@ -4788,6 +4788,12 @@ abstract class AppLocalizations {
   /// **'Voice paused'**
   String get voicePanelVoicePaused;
 
+  /// No description provided for @voiceSessionReturnToChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to Assistant chat'**
+  String get voiceSessionReturnToChat;
+
   /// No description provided for @voiceFailureSessionReconnect.
   ///
   /// In en, this message translates to:

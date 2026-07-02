@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-import '../../../core/layout/finance_content_constraints.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/l10n/friendly_service_error.dart';
 import '../../auth/application/auth_controller.dart';
@@ -15,11 +17,14 @@ import '../../profile/application/locale_controller.dart';
 import '../../profile/application/profile_controller.dart';
 import '../../profile/application/theme_mode_controller.dart';
 import '../../profile/presentation/profile_screen.dart';
+import '../../../rex/presentation/assistant_chat_visible_provider.dart';
 import '../../../rex/presentation/assistant_screen.dart';
+import '../../../rex/voice/application/voice_call_controller.dart';
+import '../../../rex/voice/presentation/voice_session_shell_bar.dart';
 import '../../../app/ui_dependencies.dart';
 import 'home_shell_layout.dart';
 
-class HomeShell extends StatefulWidget {
+class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({
     super.key,
     required this.ui,
@@ -38,10 +43,10 @@ class HomeShell extends StatefulWidget {
   final Future<void> Function()? signOut;
 
   @override
-  State<HomeShell> createState() => _HomeShellState();
+  ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
+class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserver {
   static int _lastSelectedIndex = 0;
 
   int _idx = _lastSelectedIndex;
@@ -226,6 +231,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         onDestinationSelected: (i) => setState(() => _selectIndex(i)),
         destinations: navDestinations,
         railDestinations: railDestinations,
+        onOpenAssistantChat: _openAssistantChat,
+        onRetryVoice: () => unawaited(_retryVoiceCall()),
         body: ImportJobStatusHost(
           controller: widget.ui.importJobStatus,
           onManageCategories: _openCategoryManagement,
@@ -238,5 +245,25 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   void _selectIndex(int index) {
     _idx = index;
     _lastSelectedIndex = index;
+    if (index != VoiceSessionShellBar.assistantShellIndex) {
+      ref.read(assistantChatVisibleProvider.notifier).setVisible(false);
+    }
+  }
+
+  void _openAssistantChat() {
+    setState(() => _selectIndex(VoiceSessionShellBar.assistantShellIndex));
+    ref.read(assistantChatTabRequestProvider.notifier).request();
+  }
+
+  Future<void> _retryVoiceCall() async {
+    final started = await ref.read(voiceCallProvider.notifier).startCall();
+    if (!started && mounted) {
+      final error = ref.read(voiceCallProvider).errorMessage;
+      if (error != null && error.trim().isNotEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error)));
+      }
+    }
   }
 }

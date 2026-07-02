@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,7 +6,7 @@ import '../accountability/presentation/pages/accountability_page.dart';
 import '../chat/presentation/pages/chat_page.dart';
 import '../chat/presentation/pages/conversation_list_page.dart';
 import '../memory/presentation/pages/memory_page.dart';
-import '../voice/application/voice_call_controller.dart';
+import 'assistant_chat_visible_provider.dart';
 import '../../theme/clarity_colors.dart';
 import 'assistant_tab.dart';
 import 'rex_surfaces.dart';
@@ -37,17 +35,20 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       initialIndex: AssistantTab.chat.index,
     );
     _tabController.addListener(_handleAssistantTabChanged);
+    _updateAssistantChatVisibility();
   }
 
   void _handleAssistantTabChanged() {
-    if (_tabController.indexIsChanging ||
-        _tabController.index == AssistantTab.chat.index) {
+    if (_tabController.indexIsChanging) {
       return;
     }
-    final voice = ref.read(voiceCallProvider);
-    if (voice.isCallActive) {
-      unawaited(ref.read(voiceCallProvider.notifier).endCall());
-    }
+    _updateAssistantChatVisibility();
+  }
+
+  void _updateAssistantChatVisibility() {
+    ref.read(assistantChatVisibleProvider.notifier).setVisible(
+      _tabController.index == AssistantTab.chat.index,
+    );
   }
 
   @override
@@ -63,6 +64,20 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(assistantChatTabRequestProvider, (previous, next) {
+      if (_tabController.index == AssistantTab.chat.index) {
+        return;
+      }
+      _tabController.animateTo(AssistantTab.chat.index);
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _updateAssistantChatVisibility();
+    });
+
     final isCompactWidth =
         MediaQuery.sizeOf(context).width < _assistantCompactWidth;
 

@@ -1698,6 +1698,7 @@
   "voicePanelThinking": "Thinking",
   "voicePanelSpeaking": "Speaking",
   "voicePanelVoicePaused": "Voice paused",
+  "voiceSessionReturnToChat": "Return to Assistant chat",
   "voiceFailureSessionReconnect": "Your Clarity session needs to reconnect before voice can continue. Sign in again if this keeps happening.",
   "voiceFailureMicrophoneAccess": "Microphone access is needed for voice. Check Settings, then try again.",
   "voiceFailureDidNotCatch": "I didn't catch that. Tap Try again when you are ready.",
