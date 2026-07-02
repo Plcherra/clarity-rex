@@ -13,6 +13,7 @@ class _DashboardScrollBody extends StatefulWidget {
     required this.accountCount,
     this.scrollToAnchor,
     this.onScrollToAnchorHandled,
+    this.onSeeAllInsights,
   });
 
   final String title;
@@ -26,6 +27,7 @@ class _DashboardScrollBody extends StatefulWidget {
   final int accountCount;
   final DashboardInsightAnchor? scrollToAnchor;
   final VoidCallback? onScrollToAnchorHandled;
+  final VoidCallback? onSeeAllInsights;
 
   @override
   State<_DashboardScrollBody> createState() => _DashboardScrollBodyState();
@@ -155,6 +157,7 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
                     _DashboardInsightsStrip(
                       items: insightItems,
                       onSeeChart: _scrollToInsightAnchor,
+                      onSeeAllInsights: widget.onSeeAllInsights,
                     ),
                   ],
                   const SizedBox(height: _sectionGap),

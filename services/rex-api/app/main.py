@@ -10,6 +10,7 @@ from app.routes.accountability import router as accountability_router
 from app.routes.apple_app_site_association import (
     router as apple_app_site_association_router,
 )
+from app.routes.insights import router as insights_router
 from app.routes.chat import router as chat_router
 from app.routes.clarity import router as clarity_router
 from app.routes.commitments import router as commitments_router
@@ -139,6 +140,7 @@ def readiness_check() -> dict:
 auth_dependencies = [Depends(get_current_user)]
 
 app.include_router(chat_router, dependencies=auth_dependencies)
+app.include_router(insights_router, dependencies=auth_dependencies)
 app.include_router(clarity_router, dependencies=auth_dependencies)
 app.include_router(conversations_router, dependencies=auth_dependencies)
 app.include_router(memory_router, dependencies=auth_dependencies)

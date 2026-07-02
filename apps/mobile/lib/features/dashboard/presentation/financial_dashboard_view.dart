@@ -9,6 +9,7 @@ import '../../budgets/domain/budget_models.dart';
 import '../../finance/application/financial_read_model_service.dart';
 import '../domain/dashboard_snapshot.dart';
 import '../domain/dashboard_insight_anchor.dart';
+import '../../insights/domain/insight_generator.dart';
 import '../domain/dashboard_transaction_groups.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
@@ -202,6 +203,7 @@ class FinancialDashboardView extends StatefulWidget {
     this.onImportCsvInstead,
     this.scrollToAnchor,
     this.onScrollToAnchorHandled,
+    this.onSeeAllInsights,
   });
 
   final DashboardUiController controller;
@@ -225,6 +227,7 @@ class FinancialDashboardView extends StatefulWidget {
   final VoidCallback? onImportCsvInstead;
   final DashboardInsightAnchor? scrollToAnchor;
   final VoidCallback? onScrollToAnchorHandled;
+  final VoidCallback? onSeeAllInsights;
 
   @override
   State<FinancialDashboardView> createState() => _FinancialDashboardViewState();
@@ -388,6 +391,9 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             accountCount: data.accountCount,
             scrollToAnchor: widget.scrollToAnchor,
             onScrollToAnchorHandled: widget.onScrollToAnchorHandled,
+            onSeeAllInsights: widget.scope is GlobalDashboardScope
+                ? widget.onSeeAllInsights
+                : null,
           );
           final body = widget.showBackButton
               ? ImportJobStatusHost(

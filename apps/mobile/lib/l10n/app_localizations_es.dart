@@ -819,6 +819,33 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardInsightsSeeChart => 'Ver gráfico';
 
   @override
+  String get insightsSeeAll => 'Ver todo';
+
+  @override
+  String get insightsFeedTitle => 'Insights';
+
+  @override
+  String get insightsFeedEmpty =>
+      'Aún no hay insights guardados. Activa los insights proactivos en Perfil para guardar alertas deterministas cuando cambien tus datos.';
+
+  @override
+  String get insightsOptInRequired =>
+      'Activa los insights proactivos en Perfil para guardarlos aquí. La franja del Panel sigue mostrando señales actuales sin guardarlas.';
+
+  @override
+  String get insightsSourceDashboard => 'Desde tu panel';
+
+  @override
+  String get insightsSourceAccountability => 'Desde metas y accountability';
+
+  @override
+  String get profileProactiveInsightsTitle => 'Insights financieros proactivos';
+
+  @override
+  String get profileProactiveInsightsSubtitle =>
+      'Guarda alertas deterministas cuando cambien tus datos. No hay monitoreo en segundo plano hasta que lo actives.';
+
+  @override
   String get dashboardChartCategorySpendSubtitle => 'Total de este mes';
 
   @override

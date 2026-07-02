@@ -200,15 +200,30 @@ No pie charts, no chart-image export, no Syncfusion — stay on `fl_chart` + cus
 
 **Goal:** Only if product explicitly wants a first-class Insights surface — not required for MVP trust.
 
-**Status:** Not started — **do not start until Phases 1–3 ship**
+**Status:** Partial (5a complete) — persisted feed + opt-in groundwork shipped; push, balance history, and production RexBrain routing remain deferred (5b)
 
 ### Scope (future)
 
-- [ ] Insights tab or feed route (persisted items, read/unread)
-- [ ] User opt-in for proactive monitoring + push notifications
-- [ ] Wire production brain only after `user_enabled_proactive_insights` (or equivalent) exists on mobile
+- [x] Insights feed route (persisted items, read/unread) — Dashboard-linked `InsightsFeedScreen`, not a 6th nav tab
+- [x] User opt-in for proactive monitoring (Profile toggle → `profiles.proactive_insights_enabled`)
+- [x] Mobile sends `user_enabled_proactive_insights` on chat requests
+- [x] Proactive monitoring opt-in guard in `SimpleRexBrain` production path (not experimental `RexBrain` routing)
 - [ ] Account balances over time — requires historical balance storage Plaid may not provide directly
-- [ ] Unify experimental `needs_proactive_insight` routing in `RexBrain` with truth policy — **not** `SimpleRexBrain` until settings + backend confirmation exist
+- [ ] Push notifications when new insights are generated
+- [ ] Unify experimental `needs_proactive_insight` routing in `RexBrain` with truth policy — **deferred**; production uses `SimpleRexBrain` guard only
+
+### Phase 5a (shipped)
+
+- Supabase: `user_insights` table + `profiles.proactive_insights_enabled`
+- Shared deterministic generator: `insight_generator.dart` / `insight_generator.py`
+- Rex API: `GET /insights`, `POST /insights/sync`, `PATCH /insights/{id}/read`
+- Mobile: insights feed, Dashboard “See all”, Profile opt-in toggle
+
+### Phase 5b (deferred)
+
+- Push notifications (FCM/APNs + backend job)
+- Account balance snapshots over time
+- Wire experimental `RexBrain` proactive routing to production (explicitly not shipped — would create second brain path)
 
 ### Hard stops (from product rules)
 
@@ -253,6 +268,6 @@ No pie charts, no chart-image export, no Syncfusion — stay on `fl_chart` + cus
 | Phase 2 | Complete | Insights strip + collapsible chart groups + chart subtitles |
 | Phase 3 | Complete | Chart tests, `budget_risk` detector, Goals UI wiring, owner chart labels |
 | Phase 4 | Complete | Transactions mini-analytics, Rex dashboard deep links, account detail parity |
-| Phase 5 | Deferred | Net-new Insights product |
+| Phase 5 | Partial (5a) | Persisted insights feed, opt-in, SimpleRexBrain guard; 5b deferred |
 
 Update this table as phases complete.

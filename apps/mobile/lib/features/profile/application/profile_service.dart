@@ -75,6 +75,7 @@ final class ProfileService {
     String? fullName,
     String? avatarUrl,
     String? preferredLocale,
+    bool? proactiveInsightsEnabled,
   }) async {
     final user = _currentUser;
     final payload = <String, dynamic>{};
@@ -82,6 +83,12 @@ final class ProfileService {
     if (fullName != null) payload['full_name'] = fullName;
     if (avatarUrl != null) payload['avatar_url'] = avatarUrl;
     if (preferredLocale != null) payload['preferred_locale'] = preferredLocale;
+    if (proactiveInsightsEnabled != null) {
+      payload['proactive_insights_enabled'] = proactiveInsightsEnabled;
+      payload['proactive_insights_enabled_at'] = proactiveInsightsEnabled
+          ? DateTime.now().toUtc().toIso8601String()
+          : null;
+    }
     if (payload.isEmpty) {
       throw const SupabaseDataException(
         table: 'profiles',
@@ -108,6 +115,10 @@ final class ProfileService {
         cause: e,
       );
     }
+  }
+
+  Future<ProfileRecord> updateProactiveInsightsEnabled(bool enabled) async {
+    return updateCurrentProfile(proactiveInsightsEnabled: enabled);
   }
 
   Stream<ProfileRecord?> watchCurrentProfile() {

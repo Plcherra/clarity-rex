@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../domain/dashboard_snapshot.dart';
+import '../../insights/presentation/insights_feed_screen.dart';
 import '../domain/dashboard_insight_anchor.dart';
 import 'financial_dashboard_view.dart';
 
@@ -43,6 +44,15 @@ class DashboardScreen extends StatelessWidget {
       onImportCsvInstead: onImportCsvInstead,
       scrollToAnchor: scrollToAnchor,
       onScrollToAnchorHandled: onScrollToAnchorHandled,
+      onSeeAllInsights: isRoot
+          ? () {
+              Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (context) => const InsightsFeedScreen(),
+                ),
+              );
+            }
+          : null,
     );
   }
 }

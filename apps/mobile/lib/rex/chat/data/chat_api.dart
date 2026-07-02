@@ -40,6 +40,7 @@ class ChatApi {
     RexAuthHeaders? authHeaders,
     RexApiClient? apiClient,
     String? Function()? resolveLocale,
+    bool Function()? resolveProactiveInsightsEnabled,
   }) : _apiClient =
            apiClient ??
            RexApiClient(
@@ -47,15 +48,24 @@ class ChatApi {
              baseUrl: baseUrl,
              authHeaders: authHeaders,
            ),
-       _resolveLocale = resolveLocale;
+       _resolveLocale = resolveLocale,
+       _resolveProactiveInsightsEnabled = resolveProactiveInsightsEnabled;
 
   final RexApiClient _apiClient;
   final String? Function()? _resolveLocale;
+  final bool Function()? _resolveProactiveInsightsEnabled;
 
   void _attachLocale(Map<String, dynamic> payload) {
     final locale = _resolveLocale?.call()?.trim();
     if (locale != null && locale.isNotEmpty) {
       payload['locale'] = locale;
+    }
+  }
+
+  void _attachProactiveInsightsEnabled(Map<String, dynamic> payload) {
+    final enabled = _resolveProactiveInsightsEnabled?.call();
+    if (enabled != null) {
+      payload['user_enabled_proactive_insights'] = enabled;
     }
   }
 
@@ -227,6 +237,7 @@ class ChatApi {
       payload['write_confirmation'] = writeConfirmation;
     }
     _attachLocale(payload);
+    _attachProactiveInsightsEnabled(payload);
 
     return _apiClient.postJson('/chat', payload);
   }
@@ -249,6 +260,10 @@ class ChatApi {
     final locale = _resolveLocale?.call()?.trim();
     if (locale != null && locale.isNotEmpty) {
       request.fields['locale'] = locale;
+    }
+    final proactiveEnabled = _resolveProactiveInsightsEnabled?.call();
+    if (proactiveEnabled != null) {
+      request.fields['user_enabled_proactive_insights'] = proactiveEnabled.toString();
     }
 
     final fileName = resolvedChatAttachmentFileName(attachment);
@@ -286,6 +301,7 @@ class ChatApi {
     if (locale != null && locale.isNotEmpty) {
       payload['locale'] = locale;
     }
+    _attachProactiveInsightsEnabled(payload);
 
     return http.Request('POST', uri)
       ..headers['Content-Type'] = 'application/json'
@@ -315,6 +331,10 @@ class ChatApi {
     final locale = _resolveLocale?.call()?.trim();
     if (locale != null && locale.isNotEmpty) {
       request.fields['locale'] = locale;
+    }
+    final proactiveEnabled = _resolveProactiveInsightsEnabled?.call();
+    if (proactiveEnabled != null) {
+      request.fields['user_enabled_proactive_insights'] = proactiveEnabled.toString();
     }
 
     final fileName = resolvedChatAttachmentFileName(attachment);

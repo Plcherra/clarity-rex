@@ -5,6 +5,8 @@ final class ProfileRecord {
     this.fullName,
     this.avatarUrl,
     this.preferredLocale,
+    this.proactiveInsightsEnabled = false,
+    this.proactiveInsightsEnabledAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -14,6 +16,8 @@ final class ProfileRecord {
   final String? fullName;
   final String? avatarUrl;
   final String? preferredLocale;
+  final bool proactiveInsightsEnabled;
+  final DateTime? proactiveInsightsEnabledAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -24,6 +28,12 @@ final class ProfileRecord {
       fullName: _nullableString(json, 'full_name'),
       avatarUrl: _nullableString(json, 'avatar_url'),
       preferredLocale: _nullableString(json, 'preferred_locale'),
+      proactiveInsightsEnabled:
+          json['proactive_insights_enabled'] as bool? ?? false,
+      proactiveInsightsEnabledAt: _nullableDateTime(
+        json,
+        'proactive_insights_enabled_at',
+      ),
       createdAt: _dateTime(json, 'created_at'),
       updatedAt: _dateTime(json, 'updated_at'),
     );
@@ -35,6 +45,7 @@ final class ProfileRecord {
     'full_name': fullName,
     'avatar_url': avatarUrl,
     if (preferredLocale != null) 'preferred_locale': preferredLocale,
+    'proactive_insights_enabled': proactiveInsightsEnabled,
   };
 
   Map<String, dynamic> toUpdateJson() => {
@@ -42,6 +53,10 @@ final class ProfileRecord {
     if (fullName != null) 'full_name': fullName,
     if (avatarUrl != null) 'avatar_url': avatarUrl,
     if (preferredLocale != null) 'preferred_locale': preferredLocale,
+    'proactive_insights_enabled': proactiveInsightsEnabled,
+    if (proactiveInsightsEnabledAt != null)
+      'proactive_insights_enabled_at':
+          proactiveInsightsEnabledAt!.toUtc().toIso8601String(),
   };
 }
 
@@ -351,6 +366,15 @@ DateTime _dateTime(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value is String) return DateTime.parse(value);
   throw FormatException('Missing or invalid "$key".');
+}
+
+DateTime? _nullableDateTime(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is String && value.trim().isNotEmpty) {
+    return DateTime.tryParse(value);
+  }
+  return null;
 }
 
 DateTime _calendarDateFromSupabase(String trimmed) {

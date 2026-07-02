@@ -90,6 +90,7 @@ class ChatTurnOrchestrator:
         user_requested_deep_thinking: bool = False,
         locale: Optional[str] = None,
         write_confirmation: Optional[dict] = None,
+        user_enabled_proactive_insights: bool = False,
     ) -> dict:
         stored_message, brain_message = brain_messages(
             self.transcript_normalizer,
@@ -147,6 +148,7 @@ class ChatTurnOrchestrator:
             attachment_context=turn_context.attachment_context,
             response_instructions=response_instructions,
             locale=locale,
+            user_enabled_proactive_insights=user_enabled_proactive_insights,
         )
         assistant_response, clarity_action_proposals = await self._generate_truthful_response(
             ai_messages=ai_messages,
@@ -198,6 +200,7 @@ class ChatTurnOrchestrator:
         include_turn_trace: bool = False,
         locale: Optional[str] = None,
         write_confirmation: Optional[dict] = None,
+        user_enabled_proactive_insights: bool = False,
     ) -> AsyncIterator[dict]:
         stored_message, brain_message = brain_messages(
             self.transcript_normalizer,
@@ -267,6 +270,7 @@ class ChatTurnOrchestrator:
             attachment_context=turn_context.attachment_context,
             response_instructions=response_instructions,
             locale=locale,
+            user_enabled_proactive_insights=user_enabled_proactive_insights,
         )
         response_parts = []
         stream_filter = ClarityActionStreamFilter()
@@ -510,6 +514,7 @@ class ChatTurnOrchestrator:
         attachment_context,
         response_instructions: Optional[str],
         locale: Optional[str] = None,
+        user_enabled_proactive_insights: bool = False,
     ) -> list[dict]:
         ai_messages = self.simple_rex_brain.build_prompt_messages(
             message=brain_message,
@@ -523,6 +528,7 @@ class ChatTurnOrchestrator:
             financial_context=financial_context,
             channel=channel,
             locale=locale,
+            user_enabled_proactive_insights=user_enabled_proactive_insights,
         )
         if response_instructions:
             ai_messages.append({"role": "system", "content": response_instructions})

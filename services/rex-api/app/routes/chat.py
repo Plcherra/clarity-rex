@@ -36,6 +36,7 @@ async def chat(
                 user_requested_deep_thinking=chat_request.deep_think,
                 locale=chat_request.locale,
                 write_confirmation=chat_request.write_confirmation,
+                user_enabled_proactive_insights=chat_request.user_enabled_proactive_insights,
             ),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
@@ -50,6 +51,7 @@ async def chat(
             user_requested_deep_thinking=chat_request.deep_think,
             locale=chat_request.locale,
             write_confirmation=chat_request.write_confirmation,
+            user_enabled_proactive_insights=chat_request.user_enabled_proactive_insights,
         )
     except ConversationNotFoundError as error:
         raise HTTPException(status_code=404, detail="Conversation not found.") from error
@@ -82,6 +84,7 @@ async def _stream_chat_events(
     user_requested_deep_thinking: bool = False,
     locale: Optional[str] = None,
     write_confirmation: Optional[dict] = None,
+    user_enabled_proactive_insights: bool = False,
 ):
     try:
         async for event in chat_service.stream_message(
@@ -92,6 +95,7 @@ async def _stream_chat_events(
             user_requested_deep_thinking=user_requested_deep_thinking,
             locale=locale,
             write_confirmation=write_confirmation,
+            user_enabled_proactive_insights=user_enabled_proactive_insights,
         ):
             yield _sse_event(event.pop("event"), event)
     except ConversationNotFoundError:
@@ -135,6 +139,9 @@ async def _parse_chat_request(request: Request) -> tuple[ChatRequest, Optional[U
                     deep_think=_as_bool(form.get("deep_think")),
                     locale=locale or None,
                     write_confirmation=_json_dict(form.get("write_confirmation")),
+                    user_enabled_proactive_insights=_as_bool(
+                        form.get("user_enabled_proactive_insights"),
+                    ),
                 ),
                 file,
             )

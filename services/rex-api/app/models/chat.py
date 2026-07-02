@@ -12,6 +12,7 @@ class ChatRequest(BaseModel):
     deep_think: bool = False
     locale: Optional[str] = None
     write_confirmation: Optional[dict[str, Any]] = None
+    user_enabled_proactive_insights: bool = False
 
 
 class ChatResponse(BaseModel):

@@ -26,6 +26,8 @@ from app.services.plaid_webhook_service import PlaidWebhookService
 from app.services.plaid_webhook_verifier import PlaidWebhookVerifier
 from app.services.rule_service import RuleService
 from app.services.time_context_service import TimeContextService
+from app.services.insight_repository import InsightRepository
+from app.services.insight_sync_service import InsightSyncService
 from app.services.usage_tracking_service import UsageTrackingService
 
 
@@ -175,6 +177,16 @@ def get_plaid_webhook_service(
     plaid_webhook_verifier: PlaidWebhookVerifier = Depends(get_plaid_webhook_verifier),
 ) -> PlaidWebhookService:
     return PlaidWebhookService(plaid_sync_service, plaid_webhook_verifier)
+
+
+def get_insight_sync_service(
+    current_user: AuthenticatedUser = Depends(get_current_user),
+) -> InsightSyncService:
+    repository = InsightRepository(
+        user_id=current_user.id,
+        access_token=current_user.access_token,
+    )
+    return InsightSyncService(repository)
 
 
 def get_chat_service(

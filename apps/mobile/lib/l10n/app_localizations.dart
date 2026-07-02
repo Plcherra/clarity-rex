@@ -1521,6 +1521,54 @@ abstract class AppLocalizations {
   /// **'See chart'**
   String get dashboardInsightsSeeChart;
 
+  /// No description provided for @insightsSeeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get insightsSeeAll;
+
+  /// No description provided for @insightsFeedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get insightsFeedTitle;
+
+  /// No description provided for @insightsFeedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved insights yet. Turn on proactive insights in Profile to save deterministic alerts when your data changes.'**
+  String get insightsFeedEmpty;
+
+  /// No description provided for @insightsOptInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on proactive insights in Profile to save alerts here. The Dashboard strip still shows current signals without saving them.'**
+  String get insightsOptInRequired;
+
+  /// No description provided for @insightsSourceDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'From your dashboard'**
+  String get insightsSourceDashboard;
+
+  /// No description provided for @insightsSourceAccountability.
+  ///
+  /// In en, this message translates to:
+  /// **'From goals & accountability'**
+  String get insightsSourceAccountability;
+
+  /// No description provided for @profileProactiveInsightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Proactive financial insights'**
+  String get profileProactiveInsightsTitle;
+
+  /// No description provided for @profileProactiveInsightsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save deterministic alerts when your data changes. No background monitoring runs until you turn this on.'**
+  String get profileProactiveInsightsSubtitle;
+
   /// No description provided for @dashboardChartCategorySpendSubtitle.
   ///
   /// In en, this message translates to:

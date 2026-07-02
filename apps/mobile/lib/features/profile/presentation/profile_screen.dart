@@ -315,6 +315,44 @@ final class ProfileScreen extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 18),
+              _ProfileSectionLabel(l10n.profileProactiveInsightsTitle),
+              const SizedBox(height: 8),
+              _ProfileActionGroup(
+                children: [
+                  SwitchListTile.adaptive(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    secondary: Icon(
+                      Icons.notifications_active_outlined,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(
+                        alpha: 0.72,
+                      ),
+                    ),
+                    title: Text(l10n.profileProactiveInsightsTitle),
+                    subtitle: Text(l10n.profileProactiveInsightsSubtitle),
+                    value: profile?.proactiveInsightsEnabled ?? false,
+                    onChanged: profileController.isLoading
+                        ? null
+                        : (enabled) async {
+                            try {
+                              await profileController.updateProactiveInsightsEnabled(
+                                enabled,
+                              );
+                            } on Object {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    profileController.errorMessage ??
+                                        l10n.profileUpdateFailed,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
               _ProfileSectionLabel(l10n.profileLanguage),
               const SizedBox(height: 8),
               ListenableBuilder(

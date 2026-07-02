@@ -171,6 +171,26 @@ final class ProfileController extends ChangeNotifier {
     await updateCurrentProfile(preferredLocale: localeTag);
   }
 
+  Future<void> updateProactiveInsightsEnabled(bool enabled) async {
+    if (profile?.proactiveInsightsEnabled == enabled) {
+      return;
+    }
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      profile = await profileService.updateProactiveInsightsEnabled(enabled);
+      await syncAfterProfileChanged();
+    } catch (e) {
+      errorMessage = e.toString();
+      rethrow;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> _cacheOnboardingName(String? fullName) async {
     final normalized = fullName?.trim();
     if (normalized == null || normalized.isEmpty) {

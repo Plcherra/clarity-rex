@@ -812,6 +812,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardInsightsSeeChart => 'See chart';
 
   @override
+  String get insightsSeeAll => 'See all';
+
+  @override
+  String get insightsFeedTitle => 'Insights';
+
+  @override
+  String get insightsFeedEmpty =>
+      'No saved insights yet. Turn on proactive insights in Profile to save deterministic alerts when your data changes.';
+
+  @override
+  String get insightsOptInRequired =>
+      'Turn on proactive insights in Profile to save alerts here. The Dashboard strip still shows current signals without saving them.';
+
+  @override
+  String get insightsSourceDashboard => 'From your dashboard';
+
+  @override
+  String get insightsSourceAccountability => 'From goals & accountability';
+
+  @override
+  String get profileProactiveInsightsTitle => 'Proactive financial insights';
+
+  @override
+  String get profileProactiveInsightsSubtitle =>
+      'Save deterministic alerts when your data changes. No background monitoring runs until you turn this on.';
+
+  @override
   String get dashboardChartCategorySpendSubtitle => 'This month total';
 
   @override
