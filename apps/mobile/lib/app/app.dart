@@ -51,29 +51,24 @@ final class ClarityApp extends StatelessWidget {
           ),
         ),
         localeControllerProvider.overrideWithValue(localeController),
-        chatApiProvider.overrideWith(
-          (ref) => ChatApi(
-            resolveLocale: () =>
-                AppLocale.rexLocaleTag(ref.read(localeControllerProvider)),
+        chatApiProvider.overrideWithValue(
+          ChatApi(
+            resolveLocale: () => AppLocale.rexLocaleTag(localeController),
           ),
         ),
-        streamingVoiceApiProvider.overrideWith(
-          (ref) => StreamingVoiceApi(
-            resolveLocale: () =>
-                AppLocale.rexLocaleTag(ref.read(localeControllerProvider)),
+        streamingVoiceApiProvider.overrideWithValue(
+          StreamingVoiceApi(
+            resolveLocale: () => AppLocale.rexLocaleTag(localeController),
           ),
         ),
-        cloudVoiceApiProvider.overrideWith(
-          (ref) => CloudVoiceApi(
-            resolveLocale: () =>
-                AppLocale.rexLocaleTag(ref.read(localeControllerProvider)),
+        cloudVoiceApiProvider.overrideWithValue(
+          CloudVoiceApi(
+            resolveLocale: () => AppLocale.rexLocaleTag(localeController),
           ),
         ),
-        actionResultMessageFormatterProvider.overrideWith(
-          (ref) => (action, result) {
-            final l10n = lookupForLocale(
-              ref.read(localeControllerProvider).locale,
-            );
+        actionResultMessageFormatterProvider.overrideWithValue(
+          (action, result) {
+            final l10n = lookupForLocale(localeController.locale);
             return actionResultMessage(l10n, action, result);
           },
         ),

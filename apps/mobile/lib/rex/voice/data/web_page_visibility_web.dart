@@ -14,7 +14,8 @@ void listenWebPageVisibility(WebPageVisibilityCallback callback) {
 
   _listener = handler.toJS;
   web.document.addEventListener('visibilitychange', _listener!);
-  callback(!web.document.hidden);
+  // Avoid running voice lifecycle callbacks during Riverpod provider build.
+  Future<void>.microtask(() => callback(!web.document.hidden));
 }
 
 void disposeWebPageVisibilityListener() {

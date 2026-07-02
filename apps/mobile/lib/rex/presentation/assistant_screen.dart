@@ -74,13 +74,6 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       _tabController.animateTo(AssistantTab.chat.index);
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      _updateAssistantChatVisibility();
-    });
-
     final isCompactWidth =
         MediaQuery.sizeOf(context).width < _assistantCompactWidth;
 
