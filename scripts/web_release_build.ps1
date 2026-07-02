@@ -1,6 +1,7 @@
 # Build Astro landing site (apps/web/dist).
 param(
-  [string]$PublicSiteUrl = "https://goclarity.app"
+  [string]$PublicSiteUrl = "https://goclarity.app",
+  [switch]$ExpectFlutterStage
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,13 +65,17 @@ try {
 
 $distAppIndex = Join-Path $WebDir "dist\app\index.html"
 if (-not (Test-Path $distAppIndex)) {
-  Write-Warning @"
-dist/app/ is missing — astro build replaced the output directory.
+  if ($ExpectFlutterStage) {
+    Write-Output "    (Flutter /app/ will be staged in the next combined-deploy step.)"
+  } else {
+    Write-Warning @"
+dist/app/ is missing - astro build replaced the output directory.
 'Start on web' will NOT show login until you stage Flutter:
   .\scripts\flutter_web_release_build.ps1
   .\scripts\flutter_web_stage_into_landing.ps1
 Or run the full deploy: .\scripts\goclarity_web_deploy.ps1
 "@
+  }
 }
 
 Write-Output "==> Web release build ready at $WebDir\dist"

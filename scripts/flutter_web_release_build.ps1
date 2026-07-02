@@ -39,7 +39,7 @@ if (-not $SupabaseUrl -or -not $SupabaseAnonKey) {
 
 $args = @(
   "build", "web", "--release",
-  "--pwa-strategy=none",
+  "--no-wasm-dry-run",
   "--base-href=$BaseHref",
   "--dart-define=SUPABASE_URL=$SupabaseUrl",
   "--dart-define=SUPABASE_ANON_KEY=$SupabaseAnonKey",

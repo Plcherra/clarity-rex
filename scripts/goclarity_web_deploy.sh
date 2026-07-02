@@ -15,7 +15,7 @@ if [ "${SKIP_BUILD}" != "true" ]; then
   "${ROOT_DIR}/scripts/flutter_web_release_build.sh"
 
   echo "==> Step 2/3: Landing site build"
-  PUBLIC_SITE_URL="${PUBLIC_SITE_URL}" "${ROOT_DIR}/scripts/web_release_build.sh"
+  EXPECT_FLUTTER_STAGE=true PUBLIC_SITE_URL="${PUBLIC_SITE_URL}" "${ROOT_DIR}/scripts/web_release_build.sh"
 
   echo "==> Step 3/3: Stage Flutter into landing dist"
   "${ROOT_DIR}/scripts/flutter_web_stage_into_landing.sh"

@@ -14,7 +14,7 @@ if (-not $SkipBuild) {
   & (Join-Path $RootDir "scripts\flutter_web_release_build.ps1")
 
   Write-Output "==> Step 2/3: Landing site build"
-  & (Join-Path $RootDir "scripts\web_release_build.ps1") -PublicSiteUrl $PublicSiteUrl
+  & (Join-Path $RootDir "scripts\web_release_build.ps1") -PublicSiteUrl $PublicSiteUrl -ExpectFlutterStage
 
   Write-Output "==> Step 3/3: Stage Flutter into landing dist"
   & (Join-Path $RootDir "scripts\flutter_web_stage_into_landing.ps1")
@@ -36,23 +36,10 @@ if (-not $env:CLOUDFLARE_API_TOKEN) {
   Write-Output "    Tip: set CLOUDFLARE_API_TOKEN (Edit Cloudflare Workers template)"
 }
 
-Push-Location $RootDir
-try {
-  $previousEap = $ErrorActionPreference
-  $ErrorActionPreference = "Continue"
-  if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -Scope Global -ErrorAction SilentlyContinue) {
-    $global:PSNativeCommandUseErrorActionPreference = $false
-  }
-  npx wrangler@3 pages deploy apps/web/dist `
-    --project-name $ProjectName `
-    --branch main
-  if ($LASTEXITCODE -ne 0) {
-    throw "wrangler pages deploy failed with exit code $LASTEXITCODE"
-  }
-  $ErrorActionPreference = $previousEap
-} finally {
-  Pop-Location
-}
+& (Join-Path $RootDir "scripts\wrangler_pages_deploy.ps1") `
+  -DistDir (Join-Path $RootDir "apps\web\dist") `
+  -ProjectName $ProjectName `
+  -Branch main
 
 Write-Output "==> Deploy complete"
 Write-Output "    Landing: $PublicSiteUrl/"

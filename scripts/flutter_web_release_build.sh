@@ -91,7 +91,7 @@ fi
 command=(
   flutter build web
   --release
-  --pwa-strategy=none
+  --no-wasm-dry-run
   "--base-href=${BASE_HREF}"
   "--dart-define=SUPABASE_URL=${SUPABASE_URL}"
   "--dart-define=SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
