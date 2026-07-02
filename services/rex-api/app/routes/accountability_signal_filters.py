@@ -27,6 +27,7 @@ async def analyze_signals(
             plan_milestones=context["plan_milestones"],
             entity_events=context["entity_events"],
             relevant_memories=context["relevant_memories"],
+            budget_performance=context.get("budget_performance"),
         )
     except Exception as error:
         raise HTTPException(

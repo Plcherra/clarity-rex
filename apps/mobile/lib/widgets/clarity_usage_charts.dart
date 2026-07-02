@@ -1,11 +1,16 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:meta/meta.dart';
 
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 
 import '../core/l10n/app_l10n.dart';
 
+/// Usage chart granularity (owner admin + profile usage):
+/// - [VoiceUsageDailyLineChart] and [UsageDailyBarChart]: one point/bar per day
+///   in the loaded daily series (voice seconds or LLM call counts).
+/// - [UsageRadarChart]: month-to-date totals across usage dimensions, not daily.
 class VoiceUsageDailyLineChart extends StatelessWidget {
   const VoiceUsageDailyLineChart({
     required this.values,
@@ -190,13 +195,12 @@ class UsageDailyBarChart extends StatelessWidget {
     }
 
     final colors = context.clarityColors;
-    final maxY = values.reduce((a, b) => a > b ? a : b);
 
     return SizedBox(
       height: 160,
       child: BarChart(
         BarChartData(
-          maxY: maxY <= 0 ? 1 : maxY * 1.2,
+          maxY: usageChartMaxY(values),
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
@@ -299,4 +303,13 @@ String shortDayLabel(AppLocalizations l10n, DateTime date) {
     DateTime.sunday => l10n.usageChartDaySun,
     _ => l10n.usageChartDayMon,
   };
+}
+
+@visibleForTesting
+double usageChartMaxY(Iterable<double> values) {
+  final maxY = values.fold<double>(
+    0,
+    (max, value) => value > max ? value : max,
+  );
+  return maxY <= 0 ? 1 : maxY * 1.2;
 }

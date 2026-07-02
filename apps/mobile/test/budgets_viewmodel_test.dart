@@ -124,6 +124,29 @@ void main() {
     expect(items.single.statusText, 'Spent \$0.00 · No budget');
   });
 
+  test('shows saved custom categories before any spend exists', () {
+    final items = buildBudgetCategoryListItemsForRows(
+      l10n: l10n,
+      rows: const [
+        BudgetCategoryRow(
+          canonical: 'id:cat-code-ai',
+          categoryId: 'cat-code-ai',
+          categoryKey: 'code ai tools',
+          displayLabel: 'Code Ai Tools',
+          identityKeys: {'id:cat-code-ai', 'key:code ai tools'},
+        ),
+      ],
+      hasSelectedPeriod: true,
+      budgets: const [],
+      spentByIdentity: const {},
+    );
+
+    expect(items, hasLength(1));
+    expect(items.single.displayLabel, 'Code Ai Tools');
+    expect(items.single.hasBudget, isFalse);
+    expect(items.single.statusText, 'Spent \$0.00 · No budget');
+  });
+
   test('keeps transaction-backed categories visible for future budget months', () {
     final items = buildBudgetCategoryListItemsForRows(
       l10n: l10n,

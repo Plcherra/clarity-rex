@@ -137,6 +137,28 @@ final class AssistantFinancialContextService {
     _notifyDataChanged();
   }
 
+  Future<Map<String, dynamic>?> budgetPerformanceSummary() async {
+    try {
+      const scope = GlobalDashboardScope();
+      final model = await _safeFinancialReadModel();
+      final reference = model.dashboardReferenceForScope(
+        scope,
+        requested: _spendReference(),
+      );
+      final budgetPerformance = model.budgetPerformanceForScope(
+        scope,
+        periodType: BudgetPeriodType.monthly,
+        periodKey: _monthKey(reference),
+      );
+      if (budgetPerformance.budgetedCategoryCount == 0) {
+        return null;
+      }
+      return _budgetSummary(budgetPerformance);
+    } on Object {
+      return null;
+    }
+  }
+
   static Map<String, dynamic> unavailableSummary({
     required String source,
     required String message,

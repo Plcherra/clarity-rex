@@ -114,6 +114,12 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              Text(
+                l10n.usageAdminDailyChartsCaption,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colors.textMuted,
+                ),
+              ),
               const SizedBox(height: 8),
               VoiceUsageDailyLineChart(values: voiceValues, labels: labels),
               const SizedBox(height: 16),
@@ -130,6 +136,12 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
                 l10n.usageAdminUsageShape,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                l10n.usageAdminRadarChartCaption,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colors.textMuted,
                 ),
               ),
               const SizedBox(height: 8),

@@ -221,6 +221,13 @@ class _SignalTile extends StatelessWidget {
     };
   }
 
+  IconData _signalIcon() {
+    return switch (signal.signalType) {
+      AccountabilitySignalType.budgetRisk => Icons.pie_chart_outline_rounded,
+      _ => Icons.insights_outlined,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
@@ -240,7 +247,7 @@ class _SignalTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
-                Icons.insights_outlined,
+                _signalIcon(),
                 size: 16,
                 color: _severityColor(colors),
               ),
@@ -258,6 +265,16 @@ class _SignalTile extends StatelessWidget {
               _SeverityChip(severity: signal.severity),
             ],
           ),
+          if (signal.signalType == AccountabilitySignalType.budgetRisk) ...[
+            const SizedBox(height: RexUiTokens.space4),
+            Text(
+              signal.signalType.label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
           if (subtitle != null) ...[
             const SizedBox(height: RexUiTokens.space4),
             Text(

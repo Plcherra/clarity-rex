@@ -1,6 +1,10 @@
 from typing import Any, Optional
 
 from app.models.accountability import AccountabilityContext, AccountabilitySignal
+from app.services.accountability_budget_risk import (
+    detect_budget_risk_signals,
+    financial_budget_performance,
+)
 from app.services.accountability_commitment_detector import detect_commitment_signals
 from app.services.accountability_pattern_detector import detect_repeated_patterns
 from app.services.accountability_plan_drift import detect_plan_signals
@@ -20,6 +24,7 @@ class AccountabilityService:
         plan_milestones: Optional[list[dict]] = None,
         entity_events: Optional[list[dict]] = None,
         relevant_memories: Optional[list[dict]] = None,
+        budget_performance: Optional[dict[str, Any]] = None,
     ) -> list[AccountabilitySignal]:
         context = await self.analyze(
             message=message,
@@ -30,6 +35,7 @@ class AccountabilityService:
             plan_milestones=plan_milestones,
             entity_events=entity_events,
             relevant_memories=relevant_memories,
+            budget_performance=budget_performance,
         )
         return context.signals
 
@@ -44,6 +50,7 @@ class AccountabilityService:
         plan_milestones: Optional[list[dict]] = None,
         entity_events: Optional[list[dict]] = None,
         relevant_memories: Optional[list[dict]] = None,
+        budget_performance: Optional[dict[str, Any]] = None,
     ) -> AccountabilityContext:
         now = current_time(time_context)
         normalized_rules = personal_rules or []
@@ -72,6 +79,7 @@ class AccountabilityService:
                 relevant_memories=normalized_memories,
                 current_time=now,
             ),
+            *detect_budget_risk_signals(budget_performance),
         ]
 
         return AccountabilityContext(
@@ -85,6 +93,7 @@ class AccountabilityService:
                 "plan_milestone_count": len(normalized_milestones),
                 "entity_event_count": len(normalized_events),
                 "relevant_memory_count": len(normalized_memories),
+                "budget_performance_present": bool(budget_performance),
             },
         )
 

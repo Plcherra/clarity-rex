@@ -5562,6 +5562,18 @@ abstract class AppLocalizations {
   /// **'Usage shape'**
   String get usageAdminUsageShape;
 
+  /// No description provided for @usageAdminDailyChartsCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily totals for the loaded date range'**
+  String get usageAdminDailyChartsCaption;
+
+  /// No description provided for @usageAdminRadarChartCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Month-to-date totals (not daily)'**
+  String get usageAdminRadarChartCaption;
+
   /// No description provided for @usageAdminRadarVoiceMin.
   ///
   /// In en, this message translates to:

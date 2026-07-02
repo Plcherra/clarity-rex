@@ -31,7 +31,7 @@
 | Rex financial analysis | On-demand via chat — production |
 | Accountability signals | Backend built — **Goals UI does not render them** |
 | `burnRunwayDays` | Computed + sent to Rex — **not on Dashboard** |
-| `budget_risk` signal type | Enum exists — **no detector emits it** |
+| `budget_risk` signal type | Enum exists — detector emits from budget performance snapshot |
 | Proactive insight routing | Experimental `RexBrain` only — non-production |
 
 ---
@@ -139,25 +139,25 @@ No pie charts, no chart-image export, no Syncfusion — stay on `fl_chart` + cus
 
 **Goal:** Harden what Phase 1–2 expose; fix dead enum / missing detector.
 
-**Status:** Not started
+**Status:** Complete
 
 ### Tasks
 
-- [ ] **Chart widget tests**
+- [x] **Chart widget tests**
   - New: `apps/mobile/test/finance_charts_test.dart`, `clarity_usage_charts_test.dart`
   - Cover: empty states, 6-month window trim, max-Y scaling, dark theme tokens not hardcoded wrong
 
-- [ ] **`budget_risk` detector**
-  - Backend: `services/rex-api/app/services/accountability_service.py` (or dedicated detector module)
-  - Input: budget performance already in financial/accountability context
+- [x] **`budget_risk` detector**
+  - Backend: `services/rex-api/app/services/accountability_budget_risk.py`
+  - Input: budget performance from mobile read model (`budget_performance` query on `/accountability/overview`) or Rex financial context `budget` block
   - Emit `AccountabilitySignalType.budget_risk` when category materially over budget
   - Tests: `services/rex-api/tests/test_accountability_service.py`
 
-- [ ] **Mobile renders `budget_risk`**
+- [x] **Mobile renders `budget_risk`**
   - Map in `accountability_models.dart` (partially exists)
   - Show in Goals signals section from Phase 1
 
-- [ ] **Radar vs daily usage consistency (owner admin)**
+- [x] **Radar vs daily usage consistency (owner admin)**
   - Document in code comment which granularity each owner chart uses
   - Optional: align time window labels in `OwnerUserDetailScreen` so owners aren’t misled
 
@@ -251,7 +251,7 @@ No pie charts, no chart-image export, no Syncfusion — stay on `fl_chart` + cus
 |-------|--------|-------|
 | Phase 1 | Complete | Hidden metrics surfaced in Dashboard + Goals |
 | Phase 2 | Complete | Insights strip + collapsible chart groups + chart subtitles |
-| Phase 3 | Not started | Tests + `budget_risk` detector |
+| Phase 3 | Complete | Chart tests, `budget_risk` detector, Goals UI wiring, owner chart labels |
 | Phase 4 | Not started | Transactions mini-analytics, Rex links |
 | Phase 5 | Deferred | Net-new Insights product |
 

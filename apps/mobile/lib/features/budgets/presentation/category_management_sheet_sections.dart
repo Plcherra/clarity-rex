@@ -184,22 +184,41 @@ class _CategoryManagementTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final theme = Theme.of(context);
     return SegmentedButton<_CategoryManagementSection>(
+      style: SegmentedButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        textStyle: theme.textTheme.labelSmall,
+      ),
+      showSelectedIcon: false,
       segments: [
         ButtonSegment(
           value: _CategoryManagementSection.categories,
-          icon: const Icon(Icons.category_outlined),
-          label: Text(l10n.commonCategories),
+          label: Text(
+            l10n.commonCategories,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+          ),
         ),
         ButtonSegment(
           value: _CategoryManagementSection.merchantRules,
-          icon: const Icon(Icons.storefront_outlined),
-          label: Text(l10n.commonRules),
+          label: Text(
+            l10n.commonRules,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+          ),
         ),
         ButtonSegment(
           value: _CategoryManagementSection.auditTrail,
-          icon: const Icon(Icons.history_rounded),
-          label: Text(l10n.commonHistory),
+          label: Text(
+            l10n.commonHistory,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+          ),
         ),
       ],
       selected: {section},

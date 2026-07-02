@@ -183,6 +183,18 @@ class BudgetsViewModel with BudgetsViewModelPeriods {
       );
     }
 
+    for (final category in categories) {
+      if (!_isBudgetableExpenseCategory(category)) continue;
+      putRow(
+        displayLabel: category.name,
+        categoryId: category.id,
+        categoryKey: categoryRecordKey(
+          name: category.name,
+          normalizedName: category.normalizedName,
+        ),
+      );
+    }
+
     final rows = rowsByCanonical.values.toList();
     rows.sort(
       (a, b) =>
@@ -413,10 +425,12 @@ List<BudgetCategoryListItemData> buildBudgetCategoryListItemsForRows({
   for (final row in rows) {
     final spent = _spentForBudgetRow(row, spentByIdentity);
     final budget = hasSelectedPeriod ? _budgetForBudgetRow(row, budgets) : null;
+    final categoryId = row.categoryId?.trim();
     if (spent.abs() < 1e-9 &&
         budget == null &&
         !row.hasSavedBudgetHistory &&
-        !row.hasTransactionHistory) {
+        !row.hasTransactionHistory &&
+        (categoryId == null || categoryId.isEmpty)) {
       continue;
     }
     final overspent = budget != null && spent > budget;
@@ -481,4 +495,15 @@ String _budgetCategoryKeyForRecord(BudgetRecord budget) {
   final stored = budget.categoryKey?.trim();
   if (stored != null && stored.isNotEmpty) return stored;
   return normalizedCategoryKey(budget.name);
+}
+
+bool _isBudgetableExpenseCategory(CategoryRecord category) {
+  if (category.hidden) return false;
+  if (category.type != 'expense') return false;
+  if (isUnresolvedCategoryLabel(category.name) ||
+      isIgnoredCategoryLabel(category.name) ||
+      isIncomeCategoryLabel(category.name)) {
+    return false;
+  }
+  return true;
 }

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/rex/accountability/data/accountability_api.dart';
 import 'package:clarity/rex/accountability/data/accountability_models.dart';
+import 'package:clarity/rex/data/financial_context_service.dart';
 
 final accountabilityProvider =
     NotifierProvider<AccountabilityController, AccountabilityState>(
@@ -41,7 +42,13 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final overview = await ref.read(accountabilityApiProvider).getOverview();
+      final financialService = ref.read(assistantFinancialContextServiceProvider);
+      final budgetPerformance = financialService == null
+          ? null
+          : await financialService.budgetPerformanceSummary();
+      final overview = await ref
+          .read(accountabilityApiProvider)
+          .getOverview(budgetPerformance: budgetPerformance);
       state = state.copyWith(
         overview: overview,
         isLoading: false,
@@ -141,7 +148,13 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       await action();
-      final overview = await ref.read(accountabilityApiProvider).getOverview();
+      final financialService = ref.read(assistantFinancialContextServiceProvider);
+      final budgetPerformance = financialService == null
+          ? null
+          : await financialService.budgetPerformanceSummary();
+      final overview = await ref
+          .read(accountabilityApiProvider)
+          .getOverview(budgetPerformance: budgetPerformance);
       state = state.copyWith(
         overview: overview,
         isLoading: false,

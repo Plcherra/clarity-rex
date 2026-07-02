@@ -27,10 +27,17 @@ class AccountabilityApi {
 
   final RexApiClient _apiClient;
 
-  Future<AccountabilityOverview> getOverview({int limit = 25}) async {
+  Future<AccountabilityOverview> getOverview({
+    int limit = 25,
+    Map<String, dynamic>? budgetPerformance,
+  }) async {
+    final query = <String, String>{'limit': limit.toString()};
+    if (budgetPerformance != null && budgetPerformance.isNotEmpty) {
+      query['budget_performance'] = jsonEncode(budgetPerformance);
+    }
     final response = await _apiClient.get(
       '/accountability/overview',
-      query: {'limit': limit.toString()},
+      query: query,
     );
     final data = _decodeResponse(response);
 

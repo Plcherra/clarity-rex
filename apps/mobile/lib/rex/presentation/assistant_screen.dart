@@ -35,7 +35,10 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       initialIndex: AssistantTab.chat.index,
     );
     _tabController.addListener(_handleAssistantTabChanged);
-    _updateAssistantChatVisibility();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _updateAssistantChatVisibility();
+    });
   }
 
   void _handleAssistantTabChanged() {

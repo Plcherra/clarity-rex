@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -115,10 +116,12 @@ async def list_recent_patterns(
 async def accountability_overview(
     message: str = Query(default=DEFAULT_ACCOUNTABILITY_MESSAGE, min_length=1),
     limit: int = Query(default=25, ge=1, le=100),
+    budget_performance: Optional[str] = Query(default=None),
     memory_service: SupabaseMemoryService = Depends(get_memory_service),
     accountability_service: AccountabilityService = Depends(get_accountability_service),
 ) -> AccountabilityOverviewResponse:
     context = await _load_context(memory_service, message)
+    _attach_budget_performance(context, budget_performance)
     signals = await analyze_signals(accountability_service, message, context)
     return build_accountability_overview(
         message=message,
@@ -136,3 +139,14 @@ async def _load_context(
         return await load_accountability_context(memory_service, message)
     except MemoryServiceError as error:
         raise HTTPException(status_code=error.status_code, detail=error.detail) from error
+
+
+def _attach_budget_performance(context: dict, budget_performance: Optional[str]) -> None:
+    if not budget_performance:
+        return
+    try:
+        parsed = json.loads(budget_performance)
+    except json.JSONDecodeError:
+        return
+    if isinstance(parsed, dict):
+        context["budget_performance"] = parsed

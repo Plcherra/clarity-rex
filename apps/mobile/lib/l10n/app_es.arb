@@ -2045,6 +2045,8 @@
   "usageAdminSubtitle": "Todos los usuarios · voz, chat, costo estimado",
   "usageAdminTitle": "Administración de uso",
   "usageAdminUsageShape": "Forma de uso",
+  "usageAdminDailyChartsCaption": "Totales diarios del rango de fechas cargado",
+  "usageAdminRadarChartCaption": "Totales del mes en curso (no diarios)",
   "usageAdminUserLoadFailed": "No se pudo cargar el historial de uso del usuario.",
   "usageAdminUserTileSummary": "{voiceMinutes} voz · {chatCalls} chat · {voiceCalls} llamadas de voz",
   "@usageAdminUserTileSummary": {

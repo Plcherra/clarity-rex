@@ -3238,6 +3238,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get usageAdminUsageShape => 'Forma de uso';
 
   @override
+  String get usageAdminDailyChartsCaption =>
+      'Totales diarios del rango de fechas cargado';
+
+  @override
+  String get usageAdminRadarChartCaption =>
+      'Totales del mes en curso (no diarios)';
+
+  @override
   String get usageAdminRadarVoiceMin => 'Voz mínima';
 
   @override

@@ -99,6 +99,7 @@ async def test_accountability_service_skeleton_returns_empty_context_metadata():
         "plan_milestone_count": 1,
         "entity_event_count": 1,
         "relevant_memory_count": 1,
+        "budget_performance_present": False,
     }
 
 
@@ -804,3 +805,88 @@ async def test_accountability_service_requires_current_message_pattern_match():
     )
 
     assert signals == []
+
+
+@pytest.mark.asyncio
+async def test_accountability_service_detects_budget_risk_from_overspending_categories():
+    service = AccountabilityService()
+
+    signals = await service.analyze_signals(
+        message="Review my goals.",
+        budget_performance={
+            "period_type": "monthly",
+            "period_key": "2026-03",
+            "total_budgeted": 18,
+            "total_spent": 17,
+            "total_overspent": 2,
+            "top_overspending_categories": [
+                {
+                    "category": "Coffee / Quick Food",
+                    "budgeted": 10,
+                    "spent": 12,
+                    "overspent": 2,
+                }
+            ],
+        },
+    )
+
+    assert len(signals) == 1
+    signal = signals[0]
+    assert signal.signal_type == "budget_risk"
+    assert signal.severity == "medium"
+    assert signal.metadata["category"] == "Coffee / Quick Food"
+    assert signal.metadata["overspent"] == 2
+    assert signal.source_refs[0].source_type == "system"
+
+
+@pytest.mark.asyncio
+async def test_accountability_service_ignores_on_track_budget_performance():
+    service = AccountabilityService()
+
+    signals = await service.analyze_signals(
+        message="Review my goals.",
+        budget_performance={
+            "period_type": "monthly",
+            "period_key": "2026-03",
+            "total_budgeted": 100,
+            "total_spent": 40,
+            "total_overspent": 0,
+            "top_overspending_categories": [],
+            "categories": [
+                {
+                    "category": "Groceries",
+                    "budgeted": 100,
+                    "spent": 40,
+                    "overspent": 0,
+                    "on_track": True,
+                }
+            ],
+        },
+    )
+
+    assert signals == []
+
+
+@pytest.mark.asyncio
+async def test_accountability_service_detects_material_budget_risk_severity():
+    service = AccountabilityService()
+
+    signals = await service.analyze_signals(
+        message="Review my goals.",
+        budget_performance={
+            "period_type": "monthly",
+            "period_key": "2026-03",
+            "top_overspending_categories": [
+                {
+                    "category": "Dining",
+                    "budgeted": 200,
+                    "spent": 280,
+                    "overspent": 80,
+                }
+            ],
+        },
+    )
+
+    assert len(signals) == 1
+    assert signals[0].signal_type == "budget_risk"
+    assert signals[0].severity == "high"

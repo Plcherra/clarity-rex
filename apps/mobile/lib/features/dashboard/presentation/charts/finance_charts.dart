@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:meta/meta.dart';
 
 import 'package:clarity/core/formatting/formatting.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
@@ -22,24 +23,18 @@ class MonthlyCashFlowChart extends StatelessWidget {
       );
     }
 
-    final recent = monthlyGroups.length <= 6
-        ? monthlyGroups
-        : monthlyGroups.sublist(monthlyGroups.length - 6);
+    final recent = trimFinanceChartMonths(monthlyGroups);
     final colors = context.clarityColors;
     final l10n = context.l10n;
     final labels = recent.map((group) => _monthLabel(l10n, group)).toList();
     final incomeValues = recent.map(_incomeForGroup).toList();
     final spendValues = recent.map(_spendForGroup).toList();
-    final maxY = [
-      ...incomeValues,
-      ...spendValues,
-    ].fold<double>(0, (max, value) => value > max ? value : max);
 
     return SizedBox(
       height: 200,
       child: BarChart(
         BarChartData(
-          maxY: maxY <= 0 ? 1 : maxY * 1.15,
+          maxY: financeChartMaxY([...incomeValues, ...spendValues]),
           gridData: FlGridData(
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) => FlLine(
@@ -234,17 +229,11 @@ class SixMonthSpendTrendChart extends StatelessWidget {
       );
     }
 
-    final recent = monthlyGroups.length <= 6
-        ? monthlyGroups
-        : monthlyGroups.sublist(monthlyGroups.length - 6);
+    final recent = trimFinanceChartMonths(monthlyGroups);
     final spendValues = recent.map(_spendForGroup).toList();
     final l10n = context.l10n;
     final labels = recent.map((group) => _monthLabel(l10n, group)).toList();
     final colors = context.clarityColors;
-    final maxY = spendValues.fold<double>(
-      0,
-      (max, value) => value > max ? value : max,
-    );
     final spots = [
       for (var i = 0; i < spendValues.length; i++)
         FlSpot(i.toDouble(), spendValues[i]),
@@ -255,7 +244,7 @@ class SixMonthSpendTrendChart extends StatelessWidget {
       child: LineChart(
         LineChartData(
           minY: 0,
-          maxY: maxY <= 0 ? 1 : maxY * 1.15,
+          maxY: financeChartMaxY(spendValues),
           gridData: FlGridData(
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) => FlLine(
@@ -482,4 +471,21 @@ double _spendForGroup(MonthlyBankGroup group) {
     }
   }
   return total;
+}
+
+@visibleForTesting
+List<T> trimFinanceChartMonths<T>(List<T> items) {
+  if (items.length <= 6) {
+    return items;
+  }
+  return items.sublist(items.length - 6);
+}
+
+@visibleForTesting
+double financeChartMaxY(Iterable<double> values) {
+  final maxY = values.fold<double>(
+    0,
+    (max, value) => value > max ? value : max,
+  );
+  return maxY <= 0 ? 1 : maxY * 1.15;
 }

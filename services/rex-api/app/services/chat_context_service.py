@@ -4,6 +4,7 @@ import logging
 import time
 from typing import Optional
 
+from app.services.accountability_budget_risk import financial_budget_performance
 from app.services.accountability_service import AccountabilityService
 from app.services.chat_recall_service import (
     CHAT_SEARCH_RESULTS_LIMIT,
@@ -367,6 +368,7 @@ class ChatContextService:
         time_context: dict,
         long_term_memory: list[dict],
         structured_context: dict,
+        financial_context: Optional[dict] = None,
     ) -> list:
         if self.accountability_service is None:
             return []
@@ -381,6 +383,7 @@ class ChatContextService:
                 plan_milestones=structured_context.get("plan_milestones") or [],
                 entity_events=structured_context.get("entity_events") or [],
                 relevant_memories=long_term_memory,
+                budget_performance=financial_budget_performance(financial_context),
             )
         except Exception:
             return []
