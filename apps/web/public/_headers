@@ -1,3 +1,11 @@
+/app/js/record.worklet.js
+  Cache-Control: public, max-age=3600, must-revalidate
+  Content-Type: application/javascript
+
+/app/assets/packages/record_web/assets/js/record.worklet.js
+  Cache-Control: public, max-age=3600, must-revalidate
+  Content-Type: application/javascript
+
 /app/*
   Cache-Control: public, max-age=3600, must-revalidate
 

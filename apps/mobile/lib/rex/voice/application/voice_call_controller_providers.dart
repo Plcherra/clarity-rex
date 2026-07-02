@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/core/platform/app_capabilities.dart';
-import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/core/rex/rex_config.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service_io.dart'
@@ -15,6 +14,8 @@ import 'package:clarity/rex/voice/data/cloud_voice_api.dart';
 import 'package:clarity/rex/voice/data/native_voice_session_service.dart';
 import 'package:clarity/rex/voice/data/speech_to_text_service.dart';
 import 'package:clarity/rex/voice/data/streaming_audio_capture_service.dart';
+import 'package:clarity/rex/voice/data/web_streaming_audio_capture_service.dart'
+    as streaming_capture_platform;
 import 'package:clarity/rex/voice/data/streaming_audio_playback_queue.dart';
 import 'package:clarity/rex/voice/data/streaming_voice_client.dart';
 import 'package:clarity/rex/voice/data/streaming_voice_api.dart';
@@ -79,7 +80,8 @@ final audioCaptureServiceProvider = Provider<AudioCaptureService>(
 
 final streamingAudioCaptureServiceProvider =
     Provider<StreamingAudioCaptureService>(
-      (ref) => PackageStreamingAudioCaptureService(),
+      (ref) => streaming_capture_platform
+          .createPlatformStreamingAudioCaptureService(),
     );
 
 final bargeInDetectionServiceProvider = Provider<BargeInDetectionService>(

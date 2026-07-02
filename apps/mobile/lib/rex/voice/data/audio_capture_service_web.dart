@@ -6,17 +6,13 @@ import 'package:record/record.dart';
 
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/voice_pcm16.dart';
+import 'package:clarity/rex/voice/data/web_pcm_microphone_engine.dart';
 
-/// Browser REST fallback capture: stream PCM16 @ 16 kHz via [record] web and
-/// return in-memory audio (no `dart:io` temp files).
+/// Browser REST fallback capture using the shared web PCM engine.
 class WebStreamBackedAudioCaptureService implements AudioCaptureService {
-  WebStreamBackedAudioCaptureService({
-    AudioRecorder? recorder,
-    DateTime Function()? now,
-  }) : _recorder = recorder ?? AudioRecorder(),
-       _now = now ?? DateTime.now;
+  WebStreamBackedAudioCaptureService({DateTime Function()? now})
+    : _now = now ?? DateTime.now;
 
-  final AudioRecorder _recorder;
   final DateTime Function() _now;
   StreamSubscription<Uint8List>? _streamSubscription;
   Completer<RecordedVoiceAudio?>? _captureCompleter;
@@ -35,16 +31,13 @@ class WebStreamBackedAudioCaptureService implements AudioCaptureService {
     _captureCompleter = Completer<RecordedVoiceAudio?>();
 
     final detector = VoiceEndpointDetector(config: config, startedAt: _now());
-    final stream = await _recorder.startStream(
-      const RecordConfig(
-        encoder: AudioEncoder.pcm16bits,
-        sampleRate: 16000,
-        numChannels: 1,
-      ),
+    final session = await WebPcmMicrophoneEngine.instance.startCapture(
+      sampleRate: 16000,
+      numChannels: 1,
     );
     onReady();
 
-    _streamSubscription = stream.listen(
+    _streamSubscription = session.stream.listen(
       (chunk) {
         if (chunk.isNotEmpty) {
           _chunks.add(Uint8List.fromList(chunk));
@@ -93,11 +86,7 @@ class WebStreamBackedAudioCaptureService implements AudioCaptureService {
       _captureCompleter!.complete(null);
     }
     _captureCompleter = null;
-    try {
-      await _recorder.cancel();
-    } on Object {
-      // The recorder may not have an active browser session yet.
-    }
+    await WebPcmMicrophoneEngine.instance.stopCapture();
   }
 
   Future<void> _completeCapture({required bool keepRecording}) async {
@@ -112,22 +101,12 @@ class WebStreamBackedAudioCaptureService implements AudioCaptureService {
     _noSpeechTimer = null;
     await _streamSubscription?.cancel();
     _streamSubscription = null;
+    await WebPcmMicrophoneEngine.instance.stopCapture();
 
     if (!keepRecording) {
       _chunks.clear();
-      try {
-        await _recorder.cancel();
-      } on Object {
-        // Treat cancel failures as an empty capture.
-      }
       completer.complete(null);
       return;
-    }
-
-    try {
-      await _recorder.stop();
-    } on Object {
-      // Treat stop failures as an empty capture.
     }
 
     final pcmBytes = mergePcm16Chunks(_chunks);
@@ -154,5 +133,5 @@ AudioCaptureService createPackageAudioCaptureService({
   AudioRecorder? recorder,
   DateTime Function()? now,
 }) {
-  return WebStreamBackedAudioCaptureService(recorder: recorder, now: now);
+  return WebStreamBackedAudioCaptureService(now: now);
 }
