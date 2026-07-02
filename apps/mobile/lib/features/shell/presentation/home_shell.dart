@@ -11,6 +11,8 @@ import '../../accounts/data/connect_bank_entry_point_tracker.dart';
 import '../../accounts/presentation/accounts_navigation_actions.dart';
 import '../../accounts/presentation/accounts_screen.dart';
 import '../../budgets/presentation/budgets_screen.dart';
+import '../../dashboard/application/dashboard_deep_link_navigation.dart';
+import '../../dashboard/domain/dashboard_insight_anchor.dart';
 import '../../dashboard/presentation/dashboard_screen.dart';
 import '../../plaid/application/plaid_link_service.dart';
 import '../../profile/application/locale_controller.dart';
@@ -51,6 +53,8 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
 
   int _idx = _lastSelectedIndex;
   int _manageCategoriesRequest = 0;
+  DashboardInsightAnchor? _pendingDashboardAnchor;
+  int _handledDashboardDeepLinkToken = 0;
 
   @override
   void initState() {
@@ -146,6 +150,19 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<DashboardDeepLinkRequest?>(dashboardDeepLinkRequestProvider, (
+      previous,
+      next,
+    ) {
+      if (next == null || next.token == _handledDashboardDeepLinkToken) {
+        return;
+      }
+      setState(() {
+        _selectIndex(0);
+        _pendingDashboardAnchor = next.anchor;
+      });
+    });
+
     final l10n = context.l10n;
     final pages = <Widget>[
       _financeTab(
@@ -157,6 +174,16 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
           isRoot: true,
           onConnectBank: () => _connectBank('dashboard_empty'),
           onImportCsvInstead: _openAccountsForCsvFallback,
+          scrollToAnchor: _pendingDashboardAnchor,
+          onScrollToAnchorHandled: () {
+            final request = ref.read(dashboardDeepLinkRequestProvider);
+            if (request != null) {
+              _handledDashboardDeepLinkToken = request.token;
+            }
+            if (_pendingDashboardAnchor != null) {
+              setState(() => _pendingDashboardAnchor = null);
+            }
+          },
         ),
       ),
       _financeTab(

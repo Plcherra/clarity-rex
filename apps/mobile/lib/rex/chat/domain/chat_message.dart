@@ -1,5 +1,6 @@
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
+import 'package:clarity/features/dashboard/domain/dashboard_insight_anchor.dart';
 
 enum ChatMessageRole { user, assistant }
 
@@ -14,6 +15,7 @@ class ChatMessage {
     this.attachmentLocalPath,
     this.attachmentPreviewBytes,
     this.attachmentName,
+    this.dashboardLinkAnchor,
   });
 
   final String id;
@@ -25,6 +27,7 @@ class ChatMessage {
   final String? attachmentLocalPath;
   final List<int>? attachmentPreviewBytes;
   final String? attachmentName;
+  final DashboardInsightAnchor? dashboardLinkAnchor;
 
   bool get isUser => role == ChatMessageRole.user;
 
@@ -51,9 +54,11 @@ class ChatMessage {
     String? attachmentLocalPath,
     List<int>? attachmentPreviewBytes,
     String? attachmentName,
+    DashboardInsightAnchor? dashboardLinkAnchor,
     bool clearAttachmentLocalPath = false,
     bool clearAttachmentPreviewBytes = false,
     bool clearAttachmentName = false,
+    bool clearDashboardLinkAnchor = false,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -71,6 +76,9 @@ class ChatMessage {
       attachmentName: clearAttachmentName
           ? null
           : attachmentName ?? this.attachmentName,
+      dashboardLinkAnchor: clearDashboardLinkAnchor
+          ? null
+          : dashboardLinkAnchor ?? this.dashboardLinkAnchor,
     );
   }
 }

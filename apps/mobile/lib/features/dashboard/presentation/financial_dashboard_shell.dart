@@ -11,6 +11,8 @@ class _DashboardScrollBody extends StatefulWidget {
     required this.transactionCount,
     required this.loadIssues,
     required this.accountCount,
+    this.scrollToAnchor,
+    this.onScrollToAnchorHandled,
   });
 
   final String title;
@@ -22,6 +24,8 @@ class _DashboardScrollBody extends StatefulWidget {
   final int transactionCount;
   final List<FinancialReadModelLoadIssue> loadIssues;
   final int accountCount;
+  final DashboardInsightAnchor? scrollToAnchor;
+  final VoidCallback? onScrollToAnchorHandled;
 
   @override
   State<_DashboardScrollBody> createState() => _DashboardScrollBodyState();
@@ -33,6 +37,33 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
   final _budgetPerformanceKey = GlobalKey();
   final _coreChartsController = ExpansionTileController();
   final _spendingAnalysisController = ExpansionTileController();
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeScrollToPendingAnchor();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DashboardScrollBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.scrollToAnchor != oldWidget.scrollToAnchor &&
+        widget.scrollToAnchor != null) {
+      _maybeScrollToPendingAnchor();
+    }
+  }
+
+  void _maybeScrollToPendingAnchor() {
+    final anchor = widget.scrollToAnchor;
+    if (anchor == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scrollToInsightAnchor(anchor);
+      widget.onScrollToAnchorHandled?.call();
+    });
+  }
 
   @override
   void dispose() {

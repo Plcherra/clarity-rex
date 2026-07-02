@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
+import 'package:clarity/features/dashboard/domain/dashboard_insight_anchor.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_message_bubble.dart';
@@ -18,6 +19,7 @@ class ChatTranscript extends StatelessWidget {
     required this.onPromptSelected,
     required this.onConfirmClarityAction,
     required this.onDismissClarityAction,
+    this.onDashboardLinkTap,
     this.voiceState,
   });
 
@@ -27,6 +29,7 @@ class ChatTranscript extends StatelessWidget {
   final ValueChanged<String> onPromptSelected;
   final ValueChanged<ClarityActionCard> onConfirmClarityAction;
   final ValueChanged<ClarityActionCard> onDismissClarityAction;
+  final ValueChanged<DashboardInsightAnchor>? onDashboardLinkTap;
   final VoiceCallState? voiceState;
 
   static String welcomeMessage(AppLocalizations l10n) =>
@@ -80,6 +83,14 @@ class ChatTranscript extends StatelessWidget {
                         onConfirmClarityAction: onConfirmClarityAction,
                         onDismissClarityAction: onDismissClarityAction,
                         suppressClarityActions: true,
+                        dashboardLinkAnchor: message.dashboardLinkAnchor,
+                        onDashboardLinkTap:
+                            message.dashboardLinkAnchor == null ||
+                                onDashboardLinkTap == null
+                            ? null
+                            : () => onDashboardLinkTap!(
+                                message.dashboardLinkAnchor!,
+                              ),
                       ),
                     ),
                   ),

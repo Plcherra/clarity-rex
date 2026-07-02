@@ -845,6 +845,29 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardTransactionsSectionTitle => 'Actas';
 
   @override
+  String get transactionsMiniAnalyticsTitle => 'Este mes de un vistazo';
+
+  @override
+  String get transactionsMiniAnalyticsSubtitle =>
+      'Mismos totales que el Panel para el mes actual';
+
+  @override
+  String get transactionsMiniAnalyticsSpent => 'Gastado';
+
+  @override
+  String get transactionsMiniAnalyticsIncome => 'Ingresos';
+
+  @override
+  String get transactionsMiniAnalyticsNet => 'Neto';
+
+  @override
+  String get transactionsMiniAnalyticsTrend =>
+      'Tendencia de gasto a seis meses';
+
+  @override
+  String get transactionsMiniAnalyticsTopCategories => 'Principales categorías';
+
+  @override
   String get dashboardTransactionsClearFilters => 'Claro';
 
   @override
@@ -1289,6 +1312,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get chatTranscriptWelcomeMessage =>
       'Soy Rex. Cuéntame qué está pasando, qué cambió o qué quieres que recuerde.';
+
+  @override
+  String get rexViewOnDashboard => 'Ver en el Panel';
 
   @override
   String get chatTranscriptReadyTitle => 'Rex está listo';

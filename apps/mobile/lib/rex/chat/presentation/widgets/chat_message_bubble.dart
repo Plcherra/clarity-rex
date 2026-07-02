@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/l10n/app_l10n.dart';
+import 'package:clarity/features/dashboard/domain/dashboard_insight_anchor.dart';
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_attachment_image.dart';
@@ -26,6 +28,8 @@ class ChatMessageBubble extends StatelessWidget {
     this.onConfirmClarityAction,
     this.onDismissClarityAction,
     this.suppressClarityActions = false,
+    this.dashboardLinkAnchor,
+    this.onDashboardLinkTap,
   });
 
   final String text;
@@ -39,6 +43,8 @@ class ChatMessageBubble extends StatelessWidget {
   final ValueChanged<ClarityActionCard>? onConfirmClarityAction;
   final ValueChanged<ClarityActionCard>? onDismissClarityAction;
   final bool suppressClarityActions;
+  final DashboardInsightAnchor? dashboardLinkAnchor;
+  final VoidCallback? onDashboardLinkTap;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +155,37 @@ class ChatMessageBubble extends StatelessWidget {
                                 actions: clarityActions,
                                 onConfirm: onConfirmClarityAction,
                                 onDismiss: onDismissClarityAction,
+                              ),
+                            ],
+                            if (!isUser &&
+                                dashboardLinkAnchor != null &&
+                                onDashboardLinkTap != null) ...[
+                              if (text.trim().isNotEmpty ||
+                                  imageAttachment != null ||
+                                  clarityActions.isNotEmpty)
+                                const SizedBox(height: RexUiTokens.space8),
+                              ActionChip(
+                                label: Text(context.l10n.rexViewOnDashboard),
+                                avatar: Icon(
+                                  Icons.dashboard_outlined,
+                                  size: 18,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                onPressed: onDashboardLinkTap,
+                                backgroundColor: Colors.transparent,
+                                side: BorderSide(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.35),
+                                ),
+                                labelStyle: Theme.of(context)
+                                    .textTheme
+                                    .labelLarge
+                                    ?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                               ),
                             ],
                           ],

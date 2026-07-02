@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/core/platform/app_capabilities.dart';
+import 'package:clarity/features/dashboard/application/dashboard_deep_link_navigation.dart';
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart'
     show ChatState;
@@ -478,6 +479,9 @@ class _ChatPageState extends ConsumerState<ChatPage>
                 onDismissClarityAction: (action) => ref
                     .read(chatProvider.notifier)
                     .dismissClarityAction(action),
+                onDashboardLinkTap: (anchor) => ref
+                    .read(dashboardDeepLinkRequestProvider.notifier)
+                    .request(anchor),
               ),
             ),
             if (voiceSupported && !voiceCall.isIdle)

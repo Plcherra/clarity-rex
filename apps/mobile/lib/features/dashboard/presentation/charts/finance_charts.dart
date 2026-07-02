@@ -463,7 +463,10 @@ double _incomeForGroup(MonthlyBankGroup group) {
   return total;
 }
 
-double _spendForGroup(MonthlyBankGroup group) {
+double _spendForGroup(MonthlyBankGroup group) => spendForMonthlyBankGroup(group);
+
+@visibleForTesting
+double spendForMonthlyBankGroup(MonthlyBankGroup group) {
   var total = 0.0;
   for (final line in group.transactions) {
     if (line.transaction.amount < 0) {

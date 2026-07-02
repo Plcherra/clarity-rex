@@ -173,20 +173,20 @@ No pie charts, no chart-image export, no Syncfusion — stay on `fl_chart` + cus
 
 **Goal:** Extend visuals to adjacent tabs; connect chat to UI — still no Insights tab.
 
-**Status:** Not started
+**Status:** Complete
 
 ### Tasks
 
-- [ ] **Transactions tab mini-analytics (optional)**
+- [x] **Transactions tab mini-analytics (optional)**
   - Small sparkline or category summary for current month filter
   - File: `apps/mobile/lib/features/transactions/presentation/`
   - Must use same read model slice — no second aggregation
 
-- [ ] **Rex → chart deep links (optional)**
+- [x] **Rex → chart deep links (optional)**
   - When Rex cites a metric in chat, optional chip: “View on Dashboard” with route + scroll target
   - Requires stable section keys in dashboard shell
 
-- [ ] **Account detail parity check**
+- [x] **Account detail parity check**
   - Confirm embedded `FinancialDashboardView` stays in sync after Phase 1–2 dashboard changes
 
 ### Acceptance
@@ -252,7 +252,7 @@ No pie charts, no chart-image export, no Syncfusion — stay on `fl_chart` + cus
 | Phase 1 | Complete | Hidden metrics surfaced in Dashboard + Goals |
 | Phase 2 | Complete | Insights strip + collapsible chart groups + chart subtitles |
 | Phase 3 | Complete | Chart tests, `budget_risk` detector, Goals UI wiring, owner chart labels |
-| Phase 4 | Not started | Transactions mini-analytics, Rex links |
+| Phase 4 | Complete | Transactions mini-analytics, Rex dashboard deep links, account detail parity |
 | Phase 5 | Deferred | Net-new Insights product |
 
 Update this table as phases complete.

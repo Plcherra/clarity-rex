@@ -47,6 +47,10 @@ class _DashboardTransactionsSectionState
 
   bool get _isAccountScope => widget.scope is AccountDashboardScope;
 
+  bool get _showsDashboardMonthMiniAnalytics =>
+      _timeFilter == _TransactionsTimeFilter.dashboardMonth ||
+      _timeFilter == _TransactionsTimeFilter.all;
+
   @override
   void initState() {
     super.initState();
@@ -360,6 +364,10 @@ class _DashboardTransactionsSectionState
           onRoleChanged: (value) => setState(() => _roleFilter = value),
         ),
         const SizedBox(height: 16),
+        if (_showsDashboardMonthMiniAnalytics) ...[
+          TransactionsMonthMiniAnalytics(snapshot: widget.snapshot),
+          const SizedBox(height: 16),
+        ],
         if (_loading)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 28),

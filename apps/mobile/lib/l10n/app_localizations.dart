@@ -1569,6 +1569,48 @@ abstract class AppLocalizations {
   /// **'Transactions'**
   String get dashboardTransactionsSectionTitle;
 
+  /// No description provided for @transactionsMiniAnalyticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This month at a glance'**
+  String get transactionsMiniAnalyticsTitle;
+
+  /// No description provided for @transactionsMiniAnalyticsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Same totals as Dashboard for the current month'**
+  String get transactionsMiniAnalyticsSubtitle;
+
+  /// No description provided for @transactionsMiniAnalyticsSpent.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent'**
+  String get transactionsMiniAnalyticsSpent;
+
+  /// No description provided for @transactionsMiniAnalyticsIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get transactionsMiniAnalyticsIncome;
+
+  /// No description provided for @transactionsMiniAnalyticsNet.
+  ///
+  /// In en, this message translates to:
+  /// **'Net'**
+  String get transactionsMiniAnalyticsNet;
+
+  /// No description provided for @transactionsMiniAnalyticsTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Six-month spend trend'**
+  String get transactionsMiniAnalyticsTrend;
+
+  /// No description provided for @transactionsMiniAnalyticsTopCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Top categories'**
+  String get transactionsMiniAnalyticsTopCategories;
+
   /// No description provided for @dashboardTransactionsClearFilters.
   ///
   /// In en, this message translates to:
@@ -2352,6 +2394,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'I\'m Rex. Tell me what\'s happening, what changed, or what you want me to remember.'**
   String get chatTranscriptWelcomeMessage;
+
+  /// No description provided for @rexViewOnDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'View on Dashboard'**
+  String get rexViewOnDashboard;
 
   /// No description provided for @chatTranscriptReadyTitle.
   ///

@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clarity/core/l10n/app_localizations_lookup.dart';
 import 'package:clarity/core/l10n/friendly_service_error.dart';
 import 'package:clarity/features/profile/application/locale_controller.dart';
+import 'package:clarity/features/dashboard/application/dashboard_deep_link_navigation.dart';
+import 'package:clarity/features/dashboard/domain/dashboard_insight_anchor.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/actions/data/clarity_actions_api.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
@@ -283,6 +285,7 @@ class ChatController extends Notifier<ChatState> {
     try {
       final api = ref.read(chatApiProvider);
       final financialContext = await _financialContext(message);
+      final dashboardLink = _dashboardLinkAnchor(message, financialContext);
       final result = await api.sendMessage(
         message,
         conversationId: state.conversationId,
@@ -294,7 +297,10 @@ class ChatController extends Notifier<ChatState> {
       state = state.copyWith(
         conversationId: result.conversationId,
         messages: result.messages.isNotEmpty
-            ? _messagesFromApiResponse(result)
+            ? _messagesFromApiResponse(
+                result,
+                dashboardLink: dashboardLink,
+              )
             : List.unmodifiable([
                 ...state.messages,
                 ChatMessage(
@@ -305,6 +311,7 @@ class ChatController extends Notifier<ChatState> {
                   clarityActions: clarityActionCardsFromMemoryChanges(
                     result.memoryChanges,
                   ),
+                  dashboardLinkAnchor: dashboardLink,
                 ),
               ]),
         isLoading: false,
@@ -335,6 +342,7 @@ class ChatController extends Notifier<ChatState> {
     try {
       final api = ref.read(chatApiProvider);
       final financialContext = await _financialContext(message);
+      final dashboardLink = _dashboardLinkAnchor(message, financialContext);
       await for (final event in api.streamMessage(
         message,
         conversationId: state.conversationId,
@@ -364,10 +372,14 @@ class ChatController extends Notifier<ChatState> {
           state = state.copyWith(
             conversationId: response.conversationId,
             messages: response.messages.isNotEmpty
-                ? _messagesFromApiResponse(response)
-                : _messagesWithClarityActions(
+                ? _messagesFromApiResponse(
+                    response,
+                    dashboardLink: dashboardLink,
+                  )
+                : _messagesWithAssistantExtras(
                     _messagesWithStreamingStopped(state.messages),
-                    response.memoryChanges,
+                    memoryChanges: response.memoryChanges,
+                    dashboardLink: dashboardLink,
                   ),
             isLoading: false,
             clearError: true,
@@ -426,6 +438,17 @@ class ChatController extends Notifier<ChatState> {
         error: error,
       );
     }
+  }
+
+  DashboardInsightAnchor? _dashboardLinkAnchor(
+    String message,
+    Map<String, dynamic>? financialContext,
+  ) {
+    if (financialContext == null ||
+        !shouldAttachAssistantFinancialContext(message)) {
+      return null;
+    }
+    return resolveDashboardInsightAnchor(message);
   }
 
   Future<void> _refreshSavedMemoryOverviewIfNeeded(
@@ -550,12 +573,19 @@ class ChatController extends Notifier<ChatState> {
 
   ChatMessage _messageFromApi(ChatApiMessage message) => message.toDomain();
 
-  List<ChatMessage> _messagesFromApiResponse(ChatApiResponse response) {
+  List<ChatMessage> _messagesFromApiResponse(
+    ChatApiResponse response, {
+    DashboardInsightAnchor? dashboardLink,
+  }) {
     return _mergePendingAttachments(
       state.messages,
-      _messagesFromApiMessages(
-        response.messages,
+      _messagesWithAssistantExtras(
+        _messagesFromApiMessages(
+          response.messages,
+          memoryChanges: response.memoryChanges,
+        ),
         memoryChanges: response.memoryChanges,
+        dashboardLink: dashboardLink,
       ),
     );
   }
@@ -628,16 +658,16 @@ class ChatController extends Notifier<ChatState> {
     List<ChatApiMessage> messages, {
     Map<String, dynamic>? memoryChanges,
   }) {
-    final mapped = messages.map(_messageFromApi).toList(growable: false);
-    return _messagesWithClarityActions(mapped, memoryChanges);
+    return messages.map(_messageFromApi).toList(growable: false);
   }
 
-  List<ChatMessage> _messagesWithClarityActions(
-    List<ChatMessage> messages,
+  List<ChatMessage> _messagesWithAssistantExtras(
+    List<ChatMessage> messages, {
     Map<String, dynamic>? memoryChanges,
-  ) {
+    DashboardInsightAnchor? dashboardLink,
+  }) {
     final clarityActions = clarityActionCardsFromMemoryChanges(memoryChanges);
-    if (clarityActions.isEmpty || messages.isEmpty) {
+    if (clarityActions.isEmpty && dashboardLink == null) {
       return List.unmodifiable(messages);
     }
 
@@ -645,7 +675,11 @@ class ChatController extends Notifier<ChatState> {
     for (var index = updated.length - 1; index >= 0; index--) {
       if (updated[index].role == ChatMessageRole.assistant) {
         updated[index] = updated[index].copyWith(
-          clarityActions: clarityActions,
+          clarityActions: clarityActions.isEmpty
+              ? updated[index].clarityActions
+              : clarityActions,
+          dashboardLinkAnchor:
+              dashboardLink ?? updated[index].dashboardLinkAnchor,
         );
         return List.unmodifiable(updated);
       }

@@ -8,12 +8,14 @@ import '../../../l10n/app_localizations.dart';
 import '../../budgets/domain/budget_models.dart';
 import '../../finance/application/financial_read_model_service.dart';
 import '../domain/dashboard_snapshot.dart';
+import '../domain/dashboard_insight_anchor.dart';
 import '../domain/dashboard_transaction_groups.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
 import '../../accounts/presentation/widgets/connect_bank_setup_card.dart';
 import '../../shell/presentation/import_job_progress_banner.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
+import '../../transactions/presentation/widgets/transactions_month_mini_analytics.dart';
 import '../../transactions/domain/spend_categories.dart';
 import '../../transactions/domain/transaction_resolution.dart';
 import '../../../theme/clarity_colors.dart';
@@ -198,6 +200,8 @@ class FinancialDashboardView extends StatefulWidget {
     this.onDeleteAccount,
     this.onConnectBank,
     this.onImportCsvInstead,
+    this.scrollToAnchor,
+    this.onScrollToAnchorHandled,
   });
 
   final DashboardUiController controller;
@@ -219,6 +223,8 @@ class FinancialDashboardView extends StatefulWidget {
 
   final VoidCallback? onConnectBank;
   final VoidCallback? onImportCsvInstead;
+  final DashboardInsightAnchor? scrollToAnchor;
+  final VoidCallback? onScrollToAnchorHandled;
 
   @override
   State<FinancialDashboardView> createState() => _FinancialDashboardViewState();
@@ -380,6 +386,8 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             transactionCount: data.scopedTransactionCount,
             loadIssues: data.loadIssues,
             accountCount: data.accountCount,
+            scrollToAnchor: widget.scrollToAnchor,
+            onScrollToAnchorHandled: widget.onScrollToAnchorHandled,
           );
           final body = widget.showBackButton
               ? ImportJobStatusHost(

@@ -1,11 +1,5 @@
 part of 'financial_dashboard_view.dart';
 
-enum DashboardInsightAnchor {
-  monthlyCashFlow,
-  spendingPressure,
-  budgetPerformance,
-}
-
 class DashboardInsightItem {
   const DashboardInsightItem({
     required this.message,
