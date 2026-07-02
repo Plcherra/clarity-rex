@@ -1,7 +1,7 @@
 import pytest
 
 from app.services.plaid_sync_models import PlaidSyncServiceError
-from app.services.plaid_transaction_mapper import map_plaid_transaction
+from app.services.plaid_transaction_mapper import map_plaid_transaction, resolve_plaid_transaction_date
 from app.services.plaid_transaction_sync import PlaidTransactionSync
 
 
@@ -234,6 +234,25 @@ def test_mapper_prefers_posted_datetime_over_posting_date():
     )
 
     assert payload["date"] == "2026-06-30"
+
+
+def test_resolve_date_keeps_pending_calendar_day_when_posting_date_advances():
+    transaction = {
+        "transaction_id": "txn-posted",
+        "account_id": "plaid-account-1",
+        "amount": 14.0,
+        "date": "2026-07-01",
+        "name": "PEDRO MARTINS",
+        "pending": False,
+    }
+
+    resolved = resolve_plaid_transaction_date(
+        transaction,
+        app_timezone="America/New_York",
+        stored_date="2026-06-30",
+    )
+
+    assert resolved == "2026-06-30"
 
 
 @pytest.mark.asyncio

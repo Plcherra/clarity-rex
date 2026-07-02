@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
@@ -71,6 +71,43 @@ def _plaid_transaction_date(
     return utc_now_iso()[:10]
 
 
+def _uses_posting_date_only(transaction: dict[str, Any]) -> bool:
+    if string_or_none(transaction.get("authorized_date")):
+        return False
+    if string_or_none(transaction.get("authorized_datetime")):
+        return False
+    if string_or_none(transaction.get("datetime")):
+        return False
+    return bool(string_or_none(transaction.get("date")))
+
+
+def _is_next_calendar_day(earlier: str, later: str) -> bool:
+    try:
+        first = date.fromisoformat(earlier)
+        second = date.fromisoformat(later)
+    except ValueError:
+        return False
+    return second - first == timedelta(days=1)
+
+
+def resolve_plaid_transaction_date(
+    transaction: dict[str, Any],
+    *,
+    app_timezone: str = DEFAULT_APP_TIMEZONE,
+    stored_date: Optional[str] = None,
+) -> str:
+    """Map Plaid payload to stored calendar date, preserving pending-era dates."""
+    mapped = _plaid_transaction_date(transaction, app_timezone=app_timezone)
+    if (
+        stored_date
+        and _uses_posting_date_only(transaction)
+        and mapped != stored_date
+        and _is_next_calendar_day(stored_date, mapped)
+    ):
+        return stored_date
+    return mapped
+
+
 def map_plaid_transaction(
     *,
     user_id: str,
@@ -79,6 +116,7 @@ def map_plaid_transaction(
     transaction: dict[str, Any],
     category_id: Optional[str] = None,
     app_timezone: str = DEFAULT_APP_TIMEZONE,
+    stored_date: Optional[str] = None,
 ) -> dict[str, Any]:
     amount = number_or_zero(transaction.get("amount"))
     plaid_account_id = required_string(transaction, "account_id")
@@ -89,7 +127,11 @@ def map_plaid_transaction(
         "amount": abs(amount),
         "type": "expense" if amount >= 0 else "income",
         "description": string_or_none(transaction.get("name")),
-        "date": _plaid_transaction_date(transaction, app_timezone=app_timezone),
+        "date": resolve_plaid_transaction_date(
+            transaction,
+            app_timezone=app_timezone,
+            stored_date=stored_date,
+        ),
         "merchant": string_or_none(transaction.get("merchant_name"))
         or string_or_none(transaction.get("name")),
         "imported_from_csv": False,

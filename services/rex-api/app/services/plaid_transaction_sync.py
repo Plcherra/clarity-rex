@@ -153,6 +153,11 @@ class PlaidTransactionSync:
             transaction=transaction,
             category_cache=category_cache,
         )
+        plaid_transaction_id = required_string(transaction, "transaction_id")
+        stored_date = await self._stored_transaction_date(
+            user_id=user_id,
+            plaid_transaction_id=plaid_transaction_id,
+        )
         rows = await self.cursor_service.supabase_request(
             "POST",
             TRANSACTIONS_TABLE,
@@ -163,12 +168,34 @@ class PlaidTransactionSync:
                 transaction=transaction,
                 category_id=category_id,
                 app_timezone=self.app_timezone,
+                stored_date=stored_date,
             ),
             query={"on_conflict": "user_id,plaid_transaction_id"},
             prefer="resolution=merge-duplicates,return=minimal",
         )
         del rows
         return True
+
+    async def _stored_transaction_date(
+        self,
+        *,
+        user_id: str,
+        plaid_transaction_id: str,
+    ) -> Optional[str]:
+        rows = await self.cursor_service.supabase_request(
+            "GET",
+            TRANSACTIONS_TABLE,
+            query={
+                "select": "date",
+                "user_id": f"eq.{user_id}",
+                "plaid_transaction_id": f"eq.{plaid_transaction_id}",
+                "source": "eq.plaid",
+                "limit": "1",
+            },
+        )
+        if not rows:
+            return None
+        return string_or_none(rows[0].get("date"))
 
     async def _load_category_cache(self, user_id: str) -> dict[str, str]:
         rows = await self.cursor_service.supabase_request(
