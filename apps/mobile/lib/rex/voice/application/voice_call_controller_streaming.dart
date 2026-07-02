@@ -42,6 +42,24 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
       return;
     }
 
+    if (kIsWeb && _activeStreamingSession == null) {
+      await _streamNextUtteranceWeb(
+        generation,
+        initialAudioChunks: initialAudioChunks,
+      );
+      return;
+    }
+
+    await _streamNextUtteranceConnected(
+      generation,
+      initialAudioChunks: initialAudioChunks,
+    );
+  }
+
+  Future<void> _streamNextUtteranceConnected(
+    int generation, {
+    List<Uint8List> initialAudioChunks = const [],
+  }) async {
     late final StreamingVoiceSession session;
     final existingSession = _activeStreamingSession;
     if (existingSession == null) {
@@ -144,6 +162,152 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
 
     endpointUtterance();
     _sendStreamingUtteranceEndIfNeeded(session, turnSequence);
+  }
+
+  Future<void> _streamNextUtteranceWeb(
+    int generation, {
+    List<Uint8List> initialAudioChunks = const [],
+  }) async {
+    StreamingVoiceSession? session;
+    final pendingChunks = <Uint8List>[...initialAudioChunks];
+    final turnSequence = ++_streamingTurnSequence;
+    _streamingUtteranceEndSent = false;
+
+    if (initialAudioChunks.isNotEmpty) {
+      startCapturingSpeech();
+    }
+
+    void flushPendingChunks(StreamingVoiceSession activeSession) {
+      if (pendingChunks.isEmpty) {
+        return;
+      }
+      for (final chunk in pendingChunks) {
+        activeSession.sendAudioChunk(chunk);
+      }
+      pendingChunks.clear();
+    }
+
+    void notifyListeningReady() {
+      if (!_isCurrentCall(generation) ||
+          state.phase != VoiceCallPhase.listening) {
+        return;
+      }
+      final activeSession = session ?? _activeStreamingSession;
+      if (activeSession == null) {
+        return;
+      }
+      _markListeningReady();
+      _armNoSpeechTimeout(generation);
+      if (state.isCapturingSpeech) {
+        _armSpeechStartedEndpointTimeout(generation);
+      }
+    }
+
+    // Open the mic before any network I/O so browser user activation is still
+    // valid when the user just tapped start voice on web.
+    final captureFuture = _streamingCaptureService.streamUtterance(
+      config: ref.read(voiceCaptureConfigProvider),
+      onReady: notifyListeningReady,
+      onSpeechStart: () {
+        if (_isCurrentCall(generation) &&
+            state.phase == VoiceCallPhase.listening) {
+          startCapturingSpeech();
+          _armSpeechStartedEndpointTimeout(generation);
+        }
+      },
+      onSpeechEnded: () {
+        if (_isCurrentCall(generation) &&
+            state.phase == VoiceCallPhase.listening) {
+          endpointUtterance();
+          final activeSession = session ?? _activeStreamingSession;
+          if (activeSession != null) {
+            _sendStreamingUtteranceEndIfNeeded(activeSession, turnSequence);
+          }
+        }
+      },
+      onAudioChunk: (chunk) async {
+        if (!_isCurrentCall(generation)) {
+          return;
+        }
+        final activeSession = session ?? _activeStreamingSession;
+        if (activeSession != null) {
+          activeSession.sendAudioChunk(chunk);
+        } else {
+          pendingChunks.add(chunk);
+        }
+      },
+    );
+
+    try {
+      final connectedSession = await ref
+          .read(streamingVoiceApiProvider)
+          .connect(
+            conversationId: state.conversationId,
+            client: ref.read(streamingVoiceClientProvider),
+          );
+      if (!_isCurrentCall(generation) ||
+          state.phase != VoiceCallPhase.listening ||
+          state.isMuted) {
+        await _streamingCaptureService.cancel();
+        unawaited(connectedSession.endSession());
+        return;
+      }
+      session = connectedSession;
+      _activeStreamingSession = connectedSession;
+      _activeStreamingEventsTask = _handleStreamingEvents(connectedSession);
+      unawaited(_activeStreamingEventsTask);
+      flushPendingChunks(connectedSession);
+      notifyListeningReady();
+    } on StreamingVoiceApiException catch (error) {
+      await _streamingCaptureService.cancel();
+      if (_isCurrentCall(generation)) {
+        await _fallbackToCloudVoiceCapture(generation, error.message);
+      }
+      return;
+    } on Object {
+      await _streamingCaptureService.cancel();
+      if (_isCurrentCall(generation)) {
+        await _fallbackToCloudVoiceCapture(
+          generation,
+          voiceL10n.voiceErrorOpenAssistantStreamFailed,
+        );
+      }
+      return;
+    }
+
+    final bool capturedAudio;
+    try {
+      capturedAudio = await captureFuture;
+    } on Object {
+      if (_isCurrentCall(generation)) {
+        failL10n((l10n) => l10n.voiceErrorStreamVoiceAudioFailed);
+      }
+      if (session != null && !identical(_activeStreamingSession, session)) {
+        unawaited(session.endSession());
+      }
+      return;
+    }
+
+    if (!_isCurrentCall(generation) || !state.isCallActive) {
+      if (session != null && !identical(_activeStreamingSession, session)) {
+        unawaited(session.endSession());
+      }
+      return;
+    }
+    if (!capturedAudio) {
+      if (state.phase == VoiceCallPhase.thinking ||
+          state.phase == VoiceCallPhase.speaking) {
+        return;
+      }
+      _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
+      return;
+    }
+
+    endpointUtterance();
+    final activeSession = session ?? _activeStreamingSession;
+    if (activeSession != null) {
+      _sendStreamingUtteranceEndIfNeeded(activeSession, turnSequence);
+    }
   }
 
   Future<void> _fallbackToCloudVoiceCapture(

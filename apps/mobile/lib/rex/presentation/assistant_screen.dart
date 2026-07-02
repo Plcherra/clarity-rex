@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +8,7 @@ import '../accountability/presentation/pages/accountability_page.dart';
 import '../chat/presentation/pages/chat_page.dart';
 import '../chat/presentation/pages/conversation_list_page.dart';
 import '../memory/presentation/pages/memory_page.dart';
+import '../voice/application/voice_call_controller.dart';
 import '../../theme/clarity_colors.dart';
 import 'assistant_tab.dart';
 import 'rex_surfaces.dart';
@@ -33,10 +36,23 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       vsync: this,
       initialIndex: AssistantTab.chat.index,
     );
+    _tabController.addListener(_handleAssistantTabChanged);
+  }
+
+  void _handleAssistantTabChanged() {
+    if (_tabController.indexIsChanging ||
+        _tabController.index == AssistantTab.chat.index) {
+      return;
+    }
+    final voice = ref.read(voiceCallProvider);
+    if (voice.isCallActive) {
+      unawaited(ref.read(voiceCallProvider.notifier).endCall());
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleAssistantTabChanged);
     _tabController.dispose();
     super.dispose();
   }

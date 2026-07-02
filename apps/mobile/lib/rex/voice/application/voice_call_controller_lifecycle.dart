@@ -3,6 +3,33 @@
 part of 'voice_call_controller.dart';
 
 extension VoiceCallControllerLifecycle on VoiceCallController {
+  Future<void> _prepareVoiceAudioEnvironment() async {
+    try {
+      await _audioSessionService.configureForVoiceTurn();
+      await _backgroundVoiceService.start();
+    } on Object {
+      // Audio session setup should improve reliability, not block voice mode.
+    }
+  }
+
+  Future<void> _releaseVoiceHardware() async {
+    await _stopInterimTranscription();
+    _stopNativeVoiceSession();
+    _stopBargeInMonitoring();
+    final streamingSession = _activeStreamingSession;
+    _activeStreamingSession = null;
+    _activeStreamingEventsTask = null;
+    streamingSession?.interrupt();
+    await Future.wait([
+      _captureService.cancel(),
+      _streamingCaptureService.cancel(),
+      _streamingPlaybackQueue.cancel(),
+      _playbackService.stop(),
+      _backgroundVoiceService.stop(),
+      if (streamingSession != null) streamingSession.endSession(),
+      _audioSessionService.setActive(false),
+    ]);
+  }
   Future<void> _handleLifecycleResume() async {
     if (_isHandlingLifecycleResume) {
       return;

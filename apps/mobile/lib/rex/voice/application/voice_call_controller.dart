@@ -141,7 +141,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.detached) {
       _isAppInForeground = false;
-      endCall();
+      unawaited(endCall());
       return;
     }
     if (state == AppLifecycleState.resumed) {
@@ -224,19 +224,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
       }
     }
 
-    try {
-      await _audioSessionService.configureForVoiceTurn();
-      await _backgroundVoiceService.start();
-    } on Object {
-      failL10n((l10n) => l10n.voiceErrorAudioSessionStartFailed);
-      _isStartingCall = false;
-      return false;
-    }
-    if (!_isCurrentCall(generation)) {
-      _isStartingCall = false;
-      return false;
-    }
-
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       isCapturingSpeech: false,
@@ -244,6 +231,25 @@ class VoiceCallController extends Notifier<VoiceCallState>
       clearCallEndedAt: true,
     );
     _isStartingCall = false;
+
+    // Web browsers require mic capture to start while the tap gesture is still
+    // active. Do not block on audio-session setup before opening the mic.
+    if (kIsWeb) {
+      _startListeningCycle(generation);
+      unawaited(_prepareVoiceAudioEnvironment());
+      return true;
+    }
+
+    try {
+      await _prepareVoiceAudioEnvironment();
+    } on Object {
+      failL10n((l10n) => l10n.voiceErrorAudioSessionStartFailed);
+      return false;
+    }
+    if (!_isCurrentCall(generation)) {
+      return false;
+    }
+
     _startListeningCycle(generation);
     return true;
   }
@@ -388,7 +394,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _clearVisibleTranscript();
   }
 
-  void endCall() {
+  Future<void> endCall() async {
     if (!state.canEndCall) {
       return;
     }
@@ -399,20 +405,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _cancelThinkingTimeout();
     _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
-    unawaited(_stopInterimTranscription());
-    _stopNativeVoiceSession();
-    unawaited(_captureService.cancel());
-    unawaited(_streamingCaptureService.cancel());
-    _stopBargeInMonitoring();
-    final streamingSession = _activeStreamingSession;
-    _activeStreamingSession = null;
-    _activeStreamingEventsTask = null;
-    streamingSession?.interrupt();
-    unawaited(_streamingPlaybackQueue.cancel());
-    unawaited(streamingSession?.endSession());
-    unawaited(_playbackService.stop());
-    unawaited(_backgroundVoiceService.stop());
-    unawaited(_audioSessionService.setActive(false));
+    await _releaseVoiceHardware();
     state = state.copyWith(
       phase: VoiceCallPhase.idle,
       isCapturingSpeech: false,

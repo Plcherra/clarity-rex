@@ -191,6 +191,15 @@ class PackageStreamingAudioCaptureService
         numChannels: 1,
       ),
     );
+    final completer = _captureCompleter;
+    if (completer == null || completer.isCompleted) {
+      try {
+        await _recorder.cancel();
+      } on Object {
+        // The recorder may already be stopped.
+      }
+      return false;
+    }
     onReady();
 
     _streamSubscription = stream.listen(
