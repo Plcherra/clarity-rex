@@ -12,7 +12,9 @@ const webLoginUrl =
 export const product = {
   name: 'Clarity',
   assistantName: 'Rex',
-  tagline: 'One calm place for money, memory, and Rex.',
+  tagline: 'Money, memory, and Rex — one calm place.',
+  heroLede:
+    'Connect accounts, track budgets, and talk to Rex. One workspace for your financial picture and what matters — on web, iPhone, and Android.',
   oneLiner:
     'Personal finance, budgets, and durable memory — with Rex, the assistant that explains your picture from real data, not guesses.',
   description:
@@ -113,37 +115,75 @@ export const publicRoutes = [
   },
 ] satisfies PublicRoute[];
 
-export const headerLinks = (
-  ['/privacy', '/security', '/terms', '/contact'] as const
-).map((path) => publicRoutes.find((route) => route.path === path)!);
+export type FooterLink = {
+  label: string;
+  href: string;
+};
+
+export type FooterSection = {
+  title: string;
+  links: FooterLink[];
+};
+
+export const footerSections: FooterSection[] = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Features', href: '/#app-gallery' },
+      { label: 'How it works', href: '/#how-it-works' },
+      { label: 'FAQ', href: '/#faq' },
+      { label: 'Contact', href: '/contact' },
+    ],
+  },
+  {
+    title: 'Privacy & trust',
+    links: [
+      { label: 'Privacy', href: '/privacy' },
+      { label: 'Security', href: '/security' },
+      { label: 'Data deletion', href: '/data-deletion' },
+    ],
+  },
+  {
+    title: 'Legal',
+    links: [{ label: 'Terms', href: '/terms' }],
+  },
+];
 
 export const footerLinks = publicRoutes.filter((route) => route.footerRequired);
 
-export const primaryCta = {
-  label: 'Open Clarity',
-  href: downloadLinks.webLogin,
+export const authLinks = {
+  signIn: {
+    label: 'Sign in',
+    href: downloadLinks.webLogin,
+  },
+  createAccount: {
+    label: 'Create free account',
+    href: downloadLinks.webLogin,
+  },
 } as const;
 
+export const primaryCta = authLinks.createAccount;
+
 export const subscriptionValue = {
-  headline: 'Finance and Rex — one subscription, one workspace.',
+  headline: 'Why Clarity',
   subhead:
-    'Stop juggling a money app, notes app, and a generic chatbot. Clarity keeps the numbers, memory, and assistant in sync.',
+    'One subscription. One workspace. Your accounts, memory, and Rex — always in sync.',
   columns: [
     {
       title: 'Your money picture',
-      body: 'Balances, cash flow, budgets, and transactions — updated from accounts you connect.',
+      body: 'Balances, cash flow, budgets, and transactions — updated from accounts you connect through Plaid.',
     },
     {
       title: 'Memory that stays organized',
-      body: 'People, goals, events, and preferences — separate from chat history.',
+      body: 'People, goals, events, and preferences — saved clearly, separate from chat history.',
     },
     {
       title: 'Rex when you need context',
-      body: 'Chat and voice on the same data you see in the app.',
+      body: 'Chat and voice on the same data you see in the app. No guessing, no moving money.',
     },
   ],
   pricingNote:
-    'Start on web today. Subscription activates with your account when billing goes live — no surprise charges on the marketing site.',
+    'Free to start on web. Subscription activates with your account when billing goes live.',
 } as const;
 
 export const howItWorksSteps = [

@@ -1,5 +1,5 @@
 ---
-import { footerLinks, headerLinks, primaryCta, product } from '@content/site';
+import { authLinks, footerSections, primaryCta, product } from '@content/site';
 import '../styles/global.css';
 
 type Props = {
@@ -55,12 +55,8 @@ const socialTitle = isHome ? `${product.name} — Money, Memory, and Rex` : titl
           <span class="brand-link__name">{product.name}</span>
         </a>
         <nav class="site-nav" aria-label="Primary navigation">
-          {
-            headerLinks.map((link) => (
-              <a href={link.path}>{link.label}</a>
-            ))
-          }
-          <a class="button" href={primaryCta.href}>{primaryCta.label}</a>
+          <a class="header-sign-in" href={authLinks.signIn.href}>{authLinks.signIn.label}</a>
+          <a class="button button--primary" href={primaryCta.href}>{primaryCta.label}</a>
         </nav>
       </div>
     </header>
@@ -68,18 +64,28 @@ const socialTitle = isHome ? `${product.name} — Money, Memory, and Rex` : titl
       <slot />
     </main>
     <footer class="site-footer">
-      <section>
-        <h2>{product.name}</h2>
-        <p>{product.tagline}</p>
-        <p>{product.oneLiner}</p>
+      <section class="footer-brand">
+        <a class="brand-link footer-brand__link" href="/" aria-label="Clarity home">
+          <span class="brand-mark brand-mark--image" aria-hidden="true">
+            <img src="/clarity-mark-96.png" alt="" width="36" height="36" decoding="async" />
+          </span>
+          <span class="brand-link__name">{product.name}</span>
+        </a>
+        <p class="footer-brand__tagline">{product.tagline}</p>
+        <p class="footer-brand__about">{product.oneLiner}</p>
       </section>
-      <nav class="footer-nav" aria-label="Footer navigation">
-        {
-          footerLinks.map((link) => (
-            <a href={link.path}>{link.label}</a>
-          ))
-        }
-      </nav>
+      {
+        footerSections.map((section) => (
+          <nav class="footer-nav-group" aria-label={`${section.title} links`}>
+            <h2>{section.title}</h2>
+            {
+              section.links.map((link) => (
+                <a href={link.href}>{link.label}</a>
+              ))
+            }
+          </nav>
+        ))
+      }
       <section class="footer-meta">
         <p>
           Contact: <a href={`mailto:${product.supportEmail}`}>{product.supportEmail}</a>

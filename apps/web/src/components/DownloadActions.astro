@@ -1,54 +1,67 @@
 ---
-import { downloadLinks } from '@content/site';
+import { authLinks, downloadLinks } from '@content/site';
 
 type Props = {
   layout?: 'hero' | 'footer' | 'compact';
   showGhostLink?: boolean;
+  showStoreBadges?: boolean;
 };
 
-const { layout = 'hero', showGhostLink = false } = Astro.props;
+const {
+  layout = 'hero',
+  showGhostLink = false,
+  showStoreBadges = layout === 'hero' || layout === 'footer',
+} = Astro.props;
 ---
 
 <div class:list={['download-actions', `download-actions--${layout}`]}>
-  <a class="button button--primary" href={downloadLinks.webLogin}>
-    {layout === 'compact' ? 'Open Clarity on web' : 'Start on web'}
-  </a>
+  <div class="download-actions__primary">
+    <a class="button button--primary" href={authLinks.createAccount.href}>
+      {authLinks.createAccount.label}
+    </a>
+    {
+      showGhostLink ? (
+        <a class="button button--ghost" href="#how-it-works">
+          See how it works
+        </a>
+      ) : null
+    }
+  </div>
   {
-    downloadLinks.appStore ? (
-      <a
-        class="store-badge store-badge--apple"
-        href={downloadLinks.appStore}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        <span class="store-badge__label">Download on the</span>
-        <span class="store-badge__name">App Store</span>
-      </a>
-    ) : (
-      <span class="store-badge store-badge--apple store-badge--pending" aria-disabled="true">
-        <span class="store-badge__label">Download on the</span>
-        <span class="store-badge__name">App Store</span>
-      </span>
-    )
-  }
-  {
-    downloadLinks.playStore ? (
-      <a
-        class="store-badge store-badge--google"
-        href={downloadLinks.playStore}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        <span class="store-badge__label">Get it on</span>
-        <span class="store-badge__name">Google Play</span>
-      </a>
-    ) : null
-  }
-  {
-    showGhostLink ? (
-      <a class="button button--ghost" href="#how-it-works">
-        See how it works
-      </a>
+    showStoreBadges ? (
+      <div class="download-actions__stores" aria-label="Download Clarity for mobile">
+        {
+          downloadLinks.appStore ? (
+            <a
+              class="store-badge store-badge--apple"
+              href={downloadLinks.appStore}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <span class="store-badge__label">Download on the</span>
+              <span class="store-badge__name">App Store</span>
+            </a>
+          ) : (
+            <span class="store-badge store-badge--apple store-badge--pending" aria-disabled="true">
+              <span class="store-badge__label">Download on the</span>
+              <span class="store-badge__name">App Store</span>
+            </span>
+          )
+        }
+        {
+          downloadLinks.playStore ? (
+            <a
+              class="store-badge store-badge--google"
+              href={downloadLinks.playStore}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <span class="store-badge__label">Get it on</span>
+              <span class="store-badge__name">Google Play</span>
+            </a>
+          ) : null
+        }
+      </div>
     ) : null
   }
 </div>

@@ -2,7 +2,7 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import DownloadActions from '../components/DownloadActions.astro';
 import {
-  downloadLinks,
+  authLinks,
   faqs,
   howItWorksSteps,
   product,
@@ -14,7 +14,7 @@ const page = publicRoutes.find((route) => route.path === '/')!;
 
 const heroTrustLine = [
   'Plaid-authorized connections',
-  'No bank passwords on Clarity',
+  'No bank passwords stored on Clarity',
   'Your data, your controls',
 ] as const;
 
@@ -22,42 +22,42 @@ const productScreens = [
   {
     label: 'Dashboard',
     title: 'See the month at a glance.',
-    body: 'Balances, cash flow, and spending by category — one dark UI built for daily review.',
+    body: 'Balances, cash flow, and spending by category — mobile and web.',
     image: '/images/app/dashboard-cash-flow.webp',
     alt: 'Clarity dashboard with total balance, monthly cash flow chart, and spending by category.',
   },
   {
     label: 'Rex chat',
     title: 'Ask when you need context.',
-    body: 'Rex is the assistant inside Clarity — chat about money, goals, and life from real data.',
+    body: 'Rex answers from your connected data — not generic advice.',
     image: '/images/app/rex-chat.webp',
     alt: 'Clarity Rex assistant chat screen with starter prompts and message composer.',
   },
   {
     label: 'Knows',
-    title: 'What Clarity remembers — clearly labeled.',
-    body: 'People, events, goals, and preferences stay organized. Saved memory is not chat history.',
+    title: 'Memory, clearly labeled.',
+    body: 'People, events, goals, and preferences — separate from chat history.',
     image: '/images/app/knows.webp',
     alt: 'Clarity Knows screen showing people, facts, and events Clarity remembers.',
   },
   {
     label: 'Budgets',
     title: 'Budget from real categories.',
-    body: 'Set targets, watch what is left, and compare budget pressure against actual spending.',
+    body: 'Set targets and compare spending against what you actually connect.',
     image: '/images/app/budgets.webp',
     alt: 'Clarity budgets screen showing monthly category targets and spending totals.',
   },
   {
-    label: 'Transactions',
-    title: 'Know what changed.',
-    body: 'Filter by month, category, and account. Keep transaction history scannable.',
-    image: '/images/app/transactions.webp',
-    alt: 'Clarity transactions screen with month, category, account, and history filters.',
+    label: 'Accounts',
+    title: 'Every account in one view.',
+    body: 'Connect through Plaid when you choose. Disconnect anytime.',
+    image: '/images/app/accounts.webp',
+    alt: 'Clarity accounts screen showing connected bank accounts and balances.',
   },
   {
     label: 'Voice',
     title: 'Talk to Rex hands-free.',
-    body: 'Voice uses the same Rex Brain as chat — same memory rules, same financial truth.',
+    body: 'Same Rex Brain as chat — same memory rules, same financial truth.',
     image: '/images/app/voice.webp',
     alt: 'Clarity voice usage screen showing Rex voice activity and daily call charts.',
   },
@@ -67,29 +67,16 @@ const productScreens = [
 <BaseLayout title={page.title} description={page.description}>
   <section class="landing-hero">
     <div class="landing-hero__copy">
-      <p class="eyebrow">Clarity · iPhone · Android · Web</p>
+      <p class="eyebrow">Web · iPhone · Android</p>
       <h1>{product.tagline}</h1>
-      <p class="landing-hero__lede">
-        Clarity combines your accounts, budgets, goals, and what it remembers with Rex — the
-        assistant that explains your financial picture without moving money or guessing.
-      </p>
+      <p class="landing-hero__lede">{product.heroLede}</p>
       <DownloadActions layout="hero" showGhostLink />
       <p class="hero-trust-line" aria-label="Trust highlights">
         {heroTrustLine.join(' · ')}
       </p>
     </div>
 
-    <div class="hero-device-stack" aria-label="Clarity app screenshots">
-      <div class="device-card device-card--secondary device-card--left">
-        <img
-          src="/images/app/rex-chat.webp"
-          alt="Clarity Rex assistant chat screen."
-          width="720"
-          height="1415"
-          loading="eager"
-          decoding="async"
-        />
-      </div>
+    <div class="hero-device-stack" aria-label="Clarity app on mobile and web">
       <div class="device-card device-card--primary">
         <img
           src="/images/app/dashboard-cash-flow.webp"
@@ -100,32 +87,13 @@ const productScreens = [
           decoding="async"
         />
       </div>
-      <div class="device-card device-card--secondary device-card--right">
-        <img
-          src="/images/app/knows.webp"
-          alt="Clarity Knows screen showing saved people, facts, and events."
-          width="720"
-          height="1415"
-          loading="eager"
-          decoding="async"
-        />
-      </div>
-      <div class="hero-proof-card hero-proof-card--top">
-        <span>Dark UI</span>
-        <strong>Built for daily review — mobile and web</strong>
-      </div>
-      <div class="hero-proof-card hero-proof-card--bottom">
-        <span>Rex context</span>
-        <strong>Answers from your approved data</strong>
-      </div>
     </div>
   </section>
 
-  <section class="section value-section" id="pricing" aria-labelledby="value-heading">
+  <section class="section value-section" id="why-clarity" aria-labelledby="value-heading">
     <div class="section__header section__header--center">
       <p class="eyebrow">Why Clarity</p>
-      <h2 id="value-heading">{subscriptionValue.headline}</h2>
-      <p>{subscriptionValue.subhead}</p>
+      <h2 id="value-heading">{subscriptionValue.subhead}</h2>
     </div>
     <div class="value-columns">
       {
@@ -137,17 +105,14 @@ const productScreens = [
         ))
       }
     </div>
-    <div class="pricing-block">
-      <p class="pricing-block__note">{subscriptionValue.pricingNote}</p>
-      <a class="button button--primary" href={downloadLinks.webLogin}>Start on web</a>
-    </div>
+    <p class="value-section__note">{subscriptionValue.pricingNote}</p>
   </section>
 
   <section class="section how-section" id="how-it-works" aria-labelledby="how-heading">
     <div class="section__header section__header--center">
       <p class="eyebrow">How it works</p>
-      <h2 id="how-heading">Clarity is here. Start on web today.</h2>
-      <p>Create your account in minutes — same Clarity on laptop, phone, and browser.</p>
+      <h2 id="how-heading">Up and running in minutes.</h2>
+      <p>Create your account, connect what you want, and use the same Clarity everywhere.</p>
     </div>
     <ol class="how-steps">
       {
@@ -162,13 +127,18 @@ const productScreens = [
         ))
       }
     </ol>
+    <div class="section-cta">
+      <a class="button button--primary" href={authLinks.createAccount.href}>
+        {authLinks.createAccount.label}
+      </a>
+    </div>
   </section>
 
-  <section class="section product-section" aria-labelledby="product-heading">
+  <section class="section product-section" id="app-gallery" aria-labelledby="product-heading">
     <div class="section__header section__header--center">
       <p class="eyebrow">The app</p>
-      <h2 id="product-heading">Finance, memory, and Rex — one workspace.</h2>
-      <p>Real app screens with sample data. Dark, calm, and built for daily use.</p>
+      <h2 id="product-heading">Built for daily review — mobile and web.</h2>
+      <p>Real screens. Dark, calm UI. One account across every device.</p>
     </div>
     <div class="product-grid">
       {
@@ -195,21 +165,7 @@ const productScreens = [
     </div>
   </section>
 
-  <section class="section web-section" aria-labelledby="web-heading">
-    <div class="web-section__inner">
-      <div>
-        <p class="eyebrow">Web &amp; mobile</p>
-        <h2 id="web-heading">Use Clarity in the browser today.</h2>
-        <p>
-          Same account when you install on iPhone or Android. One login, one Rex Brain, one source
-          of truth for your money and memory.
-        </p>
-      </div>
-      <DownloadActions layout="compact" />
-    </div>
-  </section>
-
-  <section class="section faq-section" aria-labelledby="faq-heading">
+  <section class="section faq-section" id="faq" aria-labelledby="faq-heading">
     <div class="section__header">
       <p class="eyebrow">FAQ</p>
       <h2 id="faq-heading">Common questions</h2>
@@ -232,10 +188,13 @@ const productScreens = [
 
   <section class="section final-cta" aria-labelledby="final-cta-heading">
     <div class="final-cta__inner">
-      <h2 id="final-cta-heading">Open Clarity on web — your account works on every device.</h2>
-      <DownloadActions layout="footer" />
+      <h2 id="final-cta-heading">Ready to see your money clearly?</h2>
+      <p class="final-cta__lede">
+        Create your free account on web — same login on iPhone and Android when you download.
+      </p>
+      <DownloadActions layout="footer" showStoreBadges />
       <p class="final-cta__note">
-        Questions? <a href="/contact">Contact support</a> · <a href="/privacy">Privacy</a>
+        Already have an account? <a href={authLinks.signIn.href}>Sign in</a>
       </p>
     </div>
   </section>
