@@ -14,13 +14,13 @@ from app.services.plaid_sync_models import (
 DEFAULT_APP_TIMEZONE = "America/New_York"
 
 
-def _calendar_date_from_authorized_datetime(
-    authorized_dt: str,
+def _calendar_date_from_plaid_datetime(
+    plaid_dt: str,
     *,
     app_timezone: str = DEFAULT_APP_TIMEZONE,
 ) -> Optional[str]:
-    """Map Plaid authorized_datetime to a user-facing calendar date in app TZ."""
-    normalized = authorized_dt.strip()
+    """Map a Plaid ISO datetime to a user-facing calendar date in app TZ."""
+    normalized = plaid_dt.strip()
     if not normalized:
         return None
 
@@ -48,8 +48,17 @@ def _plaid_transaction_date(
 
     authorized_dt = string_or_none(transaction.get("authorized_datetime"))
     if authorized_dt:
-        calendar_date = _calendar_date_from_authorized_datetime(
+        calendar_date = _calendar_date_from_plaid_datetime(
             authorized_dt,
+            app_timezone=app_timezone,
+        )
+        if calendar_date:
+            return calendar_date
+
+    posted_dt = string_or_none(transaction.get("datetime"))
+    if posted_dt:
+        calendar_date = _calendar_date_from_plaid_datetime(
+            posted_dt,
             app_timezone=app_timezone,
         )
         if calendar_date:
@@ -69,6 +78,7 @@ def map_plaid_transaction(
     linked_account_id: str,
     transaction: dict[str, Any],
     category_id: Optional[str] = None,
+    app_timezone: str = DEFAULT_APP_TIMEZONE,
 ) -> dict[str, Any]:
     amount = number_or_zero(transaction.get("amount"))
     plaid_account_id = required_string(transaction, "account_id")
@@ -79,7 +89,7 @@ def map_plaid_transaction(
         "amount": abs(amount),
         "type": "expense" if amount >= 0 else "income",
         "description": string_or_none(transaction.get("name")),
-        "date": _plaid_transaction_date(transaction),
+        "date": _plaid_transaction_date(transaction, app_timezone=app_timezone),
         "merchant": string_or_none(transaction.get("merchant_name"))
         or string_or_none(transaction.get("name")),
         "imported_from_csv": False,

@@ -18,6 +18,7 @@ from app.services.plaid_category_mapper import (
     normalized_category_key,
 )
 from app.services.plaid_transaction_mapper import (
+    DEFAULT_APP_TIMEZONE,
     map_plaid_transaction,
     removed_transaction_id,
 )
@@ -34,9 +35,11 @@ class PlaidTransactionSync:
         *,
         plaid_client: PlaidApiClient,
         cursor_service: PlaidCursorService,
+        app_timezone: str = DEFAULT_APP_TIMEZONE,
     ) -> None:
         self.plaid_client = plaid_client
         self.cursor_service = cursor_service
+        self.app_timezone = app_timezone
 
     async def sync_transactions(
         self,
@@ -159,6 +162,7 @@ class PlaidTransactionSync:
                 linked_account_id=linked_account_id,
                 transaction=transaction,
                 category_id=category_id,
+                app_timezone=self.app_timezone,
             ),
             query={"on_conflict": "user_id,plaid_transaction_id"},
             prefer="resolution=merge-duplicates,return=minimal",

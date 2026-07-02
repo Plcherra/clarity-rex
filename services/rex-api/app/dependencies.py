@@ -1,7 +1,7 @@
 from fastapi import Depends
 
 from app.auth.supabase_auth import AuthenticatedUser, get_current_user
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.services.ai_service import AIService
 from app.services.accountability_service import AccountabilityService
 from app.services.chat_service import ChatService
@@ -137,10 +137,12 @@ def get_plaid_account_service(
 def get_plaid_transaction_service(
     plaid_api_client: PlaidApiClient = Depends(get_plaid_api_client),
     plaid_cursor_service: PlaidCursorService = Depends(get_plaid_cursor_service),
+    settings: Settings = Depends(get_settings),
 ) -> PlaidTransactionService:
     return PlaidTransactionService(
         plaid_client=plaid_api_client,
         cursor_service=plaid_cursor_service,
+        app_timezone=settings.app_timezone,
     )
 
 

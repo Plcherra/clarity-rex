@@ -210,6 +210,27 @@ def test_mapper_authorized_datetime_utc_uses_app_timezone_calendar_date():
             "name": "Late dinner",
             "pending": False,
         },
+        app_timezone="America/New_York",
+    )
+
+    assert payload["date"] == "2026-06-30"
+
+
+def test_mapper_prefers_posted_datetime_over_posting_date():
+    payload = map_plaid_transaction(
+        user_id="user-1",
+        item_id="item-record-1",
+        linked_account_id="account-1",
+        transaction={
+            "transaction_id": "txn-transfer",
+            "account_id": "plaid-account-1",
+            "amount": 14.0,
+            "date": "2026-07-01",
+            "datetime": "2026-06-30T21:30:00-04:00",
+            "name": "PEDRO MARTINS",
+            "pending": False,
+        },
+        app_timezone="America/New_York",
     )
 
     assert payload["date"] == "2026-06-30"

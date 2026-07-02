@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 from app.services.plaid_api_client import PlaidApiClient
 from app.services.plaid_cursor_service import PlaidCursorService
+from app.services.plaid_transaction_mapper import DEFAULT_APP_TIMEZONE
 from app.services.plaid_transaction_sync import PlaidTransactionSync
 
 
@@ -14,10 +15,12 @@ class PlaidTransactionService:
         plaid_client: PlaidApiClient,
         cursor_service: PlaidCursorService,
         transaction_sync: Optional[PlaidTransactionSync] = None,
+        app_timezone: str = DEFAULT_APP_TIMEZONE,
     ) -> None:
         self.transaction_sync = transaction_sync or PlaidTransactionSync(
             plaid_client=plaid_client,
             cursor_service=cursor_service,
+            app_timezone=app_timezone,
         )
 
     async def sync_transactions(

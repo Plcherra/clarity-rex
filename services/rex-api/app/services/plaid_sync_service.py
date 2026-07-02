@@ -43,6 +43,7 @@ class PlaidSyncService:
         self.transaction_service = transaction_service or PlaidTransactionService(
             plaid_client=self.plaid_client,
             cursor_service=self.cursor_service,
+            app_timezone=self.settings.app_timezone,
         )
 
     async def exchange_public_token(
