@@ -247,7 +247,73 @@ class _AccountHealthCard extends StatelessWidget {
                 ? ClarityColors.financeNegative
                 : cs.onSurface.withValues(alpha: 0.82),
           ),
+          if (snapshot.burnRunwayDays case final runway?) ...[
+            const SizedBox(height: 14),
+            _HealthMetricRow(
+              icon: Icons.hourglass_bottom_rounded,
+              label: l10n.dashboardHealthBurnRunwayLabel,
+              value: l10n.dashboardHealthBurnRunwayDays(runway),
+              detail: l10n.dashboardHealthBurnRunwayDetail(runway),
+              valueColor: runway <= 14
+                  ? ClarityColors.financeNegative
+                  : runway <= 30
+                  ? ClarityColors.warning
+                  : cs.onSurface.withValues(alpha: 0.82),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _DashboardBudgetChartPanel extends StatelessWidget {
+  const _DashboardBudgetChartPanel({required this.performance});
+
+  final BudgetPerformanceSnapshot performance;
+
+  @override
+  Widget build(BuildContext context) {
+    if (performance.budgetedCategoryCount == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final l10n = context.l10n;
+
+    return ClarityCard(
+      padding: EdgeInsets.zero,
+      backgroundColor: _dashboardPanel(context),
+      borderColor: _dashboardOutline(context),
+      child: Theme(
+        data: theme.copyWith(
+          dividerColor: Colors.transparent,
+          splashColor: cs.primary.withValues(alpha: 0.08),
+        ),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.fromLTRB(20, 2, 12, 2),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          initiallyExpanded: false,
+          iconColor: cs.onSurface.withValues(alpha: 0.56),
+          collapsedIconColor: cs.onSurface.withValues(alpha: 0.56),
+          title: Text(
+            l10n.dashboardOverviewBudgetVsSpentChart,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Text(
+            l10n.dashboardBudgetCategoriesOnTrack(
+              performance.onTrackCategoryCount,
+              performance.budgetedCategoryCount,
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurface.withValues(alpha: 0.58),
+            ),
+          ),
+          children: [BudgetVsSpentChart(performance: performance)],
+        ),
       ),
     );
   }

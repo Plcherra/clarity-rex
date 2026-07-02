@@ -121,6 +121,8 @@
   "commonNormal": "Normal",
   "commonMedium": "Medium",
   "commonHigh": "High",
+  "commonInfo": "Info",
+  "commonCritical": "Critical",
   "commonNotSet": "Not set",
   "commonDueDate": "Due date",
   "commonAccount": "Account",
@@ -433,6 +435,68 @@
   "dashboardOverviewFromConnectedAccounts": "From your connected accounts",
   "dashboardOverviewThisMonthLabel": "This month",
   "dashboardOverviewActivityNotBalanceNote": "Activity this month — not the same as balance",
+  "dashboardInsightsStripTitle": "What to watch",
+  "dashboardInsightsNetNegative": "Spending exceeds income by {amount} this month.",
+  "@dashboardInsightsNetNegative": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardInsightsNetPositive": "Net cash flow is {amount} ahead this month.",
+  "@dashboardInsightsNetPositive": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardInsightsNetBalanced": "Income and spending are balanced this month.",
+  "dashboardInsightsMomLeakUp": "{category} rose {percent} month-over-month ({amount}).",
+  "@dashboardInsightsMomLeakUp": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardInsightsMomLeakNew": "{category} is new spending pressure at {amount} this month.",
+  "@dashboardInsightsMomLeakNew": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardInsightsBudgetOver": "{category} is over budget by {amount}.",
+  "@dashboardInsightsBudgetOver": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardInsightsSeeChart": "See chart",
+  "dashboardChartCategorySpendSubtitle": "This month total",
+  "dashboardChartSpendingPressureSubtitle": "Month-over-month pressure",
+  "dashboardSectionCoreCharts": "Core charts",
+  "dashboardSectionTrendCharts": "Trends",
+  "dashboardSectionTrendChartsHint": "Income mix and six-month history",
+  "dashboardSectionSpendingAnalysis": "Spending analysis",
+  "dashboardSectionSpendingAnalysisHint": "Categories rising vs last month",
   "dashboardTransactionsSectionTitle": "Transactions",
   "dashboardTransactionsClearFilters": "Clear",
   "dashboardTransactionsLoadingLabel": "Loading transactions",
@@ -782,6 +846,12 @@
   "accountabilitySectionsNoActiveGoals": "No active goals yet.",
   "accountabilitySectionsOpenCommitments": "Open Commitments",
   "accountabilitySectionsNoOpenCommitments": "No open commitments.",
+  "accountabilitySectionsNeedsAttention": "Needs attention",
+  "accountabilitySectionsNoSignals": "Nothing needs attention right now.",
+  "accountabilitySectionsRuleRisks": "Rule risks",
+  "accountabilitySectionsNoRuleRisks": "No rule risks detected.",
+  "accountabilitySectionsRecentPatterns": "Recent patterns",
+  "accountabilitySectionsNoRecentPatterns": "No recent patterns to review.",
   "accountabilityTilesGoalActionsTooltip": "Goal actions",
   "accountabilityTilesCommitmentActionsTooltip": "Commitment actions",
   "accountabilityTilesMarkMissed": "Mark missed",
@@ -1462,6 +1532,24 @@
   "dashboardHealthThisMonthNet": "This month net",
   "dashboardHealthSpendPressureLabel": "Spend pressure",
   "dashboardHealthBudgetCoverageLabel": "Budget coverage",
+  "dashboardHealthBurnRunwayLabel": "Cash runway",
+  "dashboardHealthBurnRunwayDays": "{days} days",
+  "@dashboardHealthBurnRunwayDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardHealthBurnRunwayDetail": "At this month's spending pace, your balance lasts about {days} days.",
+  "@dashboardHealthBurnRunwayDetail": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardOverviewBudgetVsSpentChart": "Budget vs spent",
   "dashboardHealthIncomeSpendingLine": "Income {income} / Spending {spending}",
   "@dashboardHealthIncomeSpendingLine": {
     "placeholders": {

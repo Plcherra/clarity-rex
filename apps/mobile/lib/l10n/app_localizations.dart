@@ -572,6 +572,18 @@ abstract class AppLocalizations {
   /// **'High'**
   String get commonHigh;
 
+  /// No description provided for @commonInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get commonInfo;
+
+  /// No description provided for @commonCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get commonCritical;
+
   /// No description provided for @commonNotSet.
   ///
   /// In en, this message translates to:
@@ -1456,6 +1468,100 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Activity this month — not the same as balance'**
   String get dashboardOverviewActivityNotBalanceNote;
+
+  /// No description provided for @dashboardInsightsStripTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What to watch'**
+  String get dashboardInsightsStripTitle;
+
+  /// No description provided for @dashboardInsightsNetNegative.
+  ///
+  /// In en, this message translates to:
+  /// **'Spending exceeds income by {amount} this month.'**
+  String dashboardInsightsNetNegative(String amount);
+
+  /// No description provided for @dashboardInsightsNetPositive.
+  ///
+  /// In en, this message translates to:
+  /// **'Net cash flow is {amount} ahead this month.'**
+  String dashboardInsightsNetPositive(String amount);
+
+  /// No description provided for @dashboardInsightsNetBalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Income and spending are balanced this month.'**
+  String get dashboardInsightsNetBalanced;
+
+  /// No description provided for @dashboardInsightsMomLeakUp.
+  ///
+  /// In en, this message translates to:
+  /// **'{category} rose {percent} month-over-month ({amount}).'**
+  String dashboardInsightsMomLeakUp(
+    String category,
+    String percent,
+    String amount,
+  );
+
+  /// No description provided for @dashboardInsightsMomLeakNew.
+  ///
+  /// In en, this message translates to:
+  /// **'{category} is new spending pressure at {amount} this month.'**
+  String dashboardInsightsMomLeakNew(String category, String amount);
+
+  /// No description provided for @dashboardInsightsBudgetOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{category} is over budget by {amount}.'**
+  String dashboardInsightsBudgetOver(String category, String amount);
+
+  /// No description provided for @dashboardInsightsSeeChart.
+  ///
+  /// In en, this message translates to:
+  /// **'See chart'**
+  String get dashboardInsightsSeeChart;
+
+  /// No description provided for @dashboardChartCategorySpendSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This month total'**
+  String get dashboardChartCategorySpendSubtitle;
+
+  /// No description provided for @dashboardChartSpendingPressureSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Month-over-month pressure'**
+  String get dashboardChartSpendingPressureSubtitle;
+
+  /// No description provided for @dashboardSectionCoreCharts.
+  ///
+  /// In en, this message translates to:
+  /// **'Core charts'**
+  String get dashboardSectionCoreCharts;
+
+  /// No description provided for @dashboardSectionTrendCharts.
+  ///
+  /// In en, this message translates to:
+  /// **'Trends'**
+  String get dashboardSectionTrendCharts;
+
+  /// No description provided for @dashboardSectionTrendChartsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Income mix and six-month history'**
+  String get dashboardSectionTrendChartsHint;
+
+  /// No description provided for @dashboardSectionSpendingAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Spending analysis'**
+  String get dashboardSectionSpendingAnalysis;
+
+  /// No description provided for @dashboardSectionSpendingAnalysisHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories rising vs last month'**
+  String get dashboardSectionSpendingAnalysisHint;
 
   /// No description provided for @dashboardTransactionsSectionTitle.
   ///
@@ -2955,6 +3061,42 @@ abstract class AppLocalizations {
   /// **'No open commitments.'**
   String get accountabilitySectionsNoOpenCommitments;
 
+  /// No description provided for @accountabilitySectionsNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get accountabilitySectionsNeedsAttention;
+
+  /// No description provided for @accountabilitySectionsNoSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs attention right now.'**
+  String get accountabilitySectionsNoSignals;
+
+  /// No description provided for @accountabilitySectionsRuleRisks.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule risks'**
+  String get accountabilitySectionsRuleRisks;
+
+  /// No description provided for @accountabilitySectionsNoRuleRisks.
+  ///
+  /// In en, this message translates to:
+  /// **'No rule risks detected.'**
+  String get accountabilitySectionsNoRuleRisks;
+
+  /// No description provided for @accountabilitySectionsRecentPatterns.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent patterns'**
+  String get accountabilitySectionsRecentPatterns;
+
+  /// No description provided for @accountabilitySectionsNoRecentPatterns.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent patterns to review.'**
+  String get accountabilitySectionsNoRecentPatterns;
+
   /// No description provided for @accountabilityTilesGoalActionsTooltip.
   ///
   /// In en, this message translates to:
@@ -4341,6 +4483,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Budget coverage'**
   String get dashboardHealthBudgetCoverageLabel;
+
+  /// No description provided for @dashboardHealthBurnRunwayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash runway'**
+  String get dashboardHealthBurnRunwayLabel;
+
+  /// No description provided for @dashboardHealthBurnRunwayDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days'**
+  String dashboardHealthBurnRunwayDays(int days);
+
+  /// No description provided for @dashboardHealthBurnRunwayDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'At this month\'s spending pace, your balance lasts about {days} days.'**
+  String dashboardHealthBurnRunwayDetail(int days);
+
+  /// No description provided for @dashboardOverviewBudgetVsSpentChart.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget vs spent'**
+  String get dashboardOverviewBudgetVsSpentChart;
 
   /// No description provided for @dashboardHealthIncomeSpendingLine.
   ///

@@ -260,6 +260,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonHigh => 'Alto';
 
   @override
+  String get commonInfo => 'Info';
+
+  @override
+  String get commonCritical => 'Crítico';
+
+  @override
   String get commonNotSet => 'No establecido';
 
   @override
@@ -772,6 +778,68 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get dashboardOverviewActivityNotBalanceNote =>
       'Actividad este mes: no es lo mismo que el saldo';
+
+  @override
+  String get dashboardInsightsStripTitle => 'Qué vigilar';
+
+  @override
+  String dashboardInsightsNetNegative(String amount) {
+    return 'Los gastos superan los ingresos por $amount este mes.';
+  }
+
+  @override
+  String dashboardInsightsNetPositive(String amount) {
+    return 'El flujo neto va $amount adelante este mes.';
+  }
+
+  @override
+  String get dashboardInsightsNetBalanced =>
+      'Ingresos y gastos están equilibrados este mes.';
+
+  @override
+  String dashboardInsightsMomLeakUp(
+    String category,
+    String percent,
+    String amount,
+  ) {
+    return '$category subió $percent mes a mes ($amount).';
+  }
+
+  @override
+  String dashboardInsightsMomLeakNew(String category, String amount) {
+    return '$category es nueva presión de gasto con $amount este mes.';
+  }
+
+  @override
+  String dashboardInsightsBudgetOver(String category, String amount) {
+    return '$category supera el presupuesto por $amount.';
+  }
+
+  @override
+  String get dashboardInsightsSeeChart => 'Ver gráfico';
+
+  @override
+  String get dashboardChartCategorySpendSubtitle => 'Total de este mes';
+
+  @override
+  String get dashboardChartSpendingPressureSubtitle => 'Presión mes a mes';
+
+  @override
+  String get dashboardSectionCoreCharts => 'Gráficos principales';
+
+  @override
+  String get dashboardSectionTrendCharts => 'Tendencias';
+
+  @override
+  String get dashboardSectionTrendChartsHint =>
+      'Mezcla de ingresos e historial de seis meses';
+
+  @override
+  String get dashboardSectionSpendingAnalysis => 'Análisis de gastos';
+
+  @override
+  String get dashboardSectionSpendingAnalysisHint =>
+      'Categorías que suben vs el mes pasado';
 
   @override
   String get dashboardTransactionsSectionTitle => 'Actas';
@@ -1586,6 +1654,27 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get accountabilitySectionsNoOpenCommitments =>
       'Sin compromisos abiertos.';
+
+  @override
+  String get accountabilitySectionsNeedsAttention => 'Necesita atención';
+
+  @override
+  String get accountabilitySectionsNoSignals =>
+      'Nada requiere atención ahora mismo.';
+
+  @override
+  String get accountabilitySectionsRuleRisks => 'Riesgos de reglas';
+
+  @override
+  String get accountabilitySectionsNoRuleRisks =>
+      'No se detectaron riesgos de reglas.';
+
+  @override
+  String get accountabilitySectionsRecentPatterns => 'Patrones recientes';
+
+  @override
+  String get accountabilitySectionsNoRecentPatterns =>
+      'No hay patrones recientes para revisar.';
 
   @override
   String get accountabilityTilesGoalActionsTooltip => 'Acciones de objetivos';
@@ -2485,6 +2574,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dashboardHealthBudgetCoverageLabel => 'Cobertura presupuestaria';
+
+  @override
+  String get dashboardHealthBurnRunwayLabel => 'Reserva de efectivo';
+
+  @override
+  String dashboardHealthBurnRunwayDays(int days) {
+    return '$days días';
+  }
+
+  @override
+  String dashboardHealthBurnRunwayDetail(int days) {
+    return 'Al ritmo de gasto de este mes, su saldo dura unos $days días.';
+  }
+
+  @override
+  String get dashboardOverviewBudgetVsSpentChart => 'Presupuesto vs gastado';
 
   @override
   String dashboardHealthIncomeSpendingLine(String income, String spending) {

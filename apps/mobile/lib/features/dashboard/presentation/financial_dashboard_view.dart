@@ -31,6 +31,7 @@ part 'financial_dashboard_shell.dart';
 part 'financial_dashboard_summary_sections.dart';
 part 'financial_dashboard_cards.dart';
 part 'financial_dashboard_charts.dart';
+part 'dashboard_insights_strip.dart';
 
 const double _sectionGap = 20.0;
 const double _cardRadius = ClarityRadius.card;

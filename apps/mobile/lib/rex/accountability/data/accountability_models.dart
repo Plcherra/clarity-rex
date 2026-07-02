@@ -94,6 +94,11 @@ class AccountabilityOverview {
     return activePlans.isNotEmpty || standaloneCommitments.isNotEmpty;
   }
 
+  bool get hasInsightSignals =>
+      signals.isNotEmpty ||
+      ruleRisks.isNotEmpty ||
+      recentPatterns.isNotEmpty;
+
   int get activePlanCount =>
       _int(metadata['active_plan_count']) ?? activePlans.length;
 

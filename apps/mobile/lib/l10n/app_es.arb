@@ -162,6 +162,12 @@
   "accountabilitySectionsActiveGoals": "Metas activas",
   "accountabilitySectionsNoActiveGoals": "Aún no hay objetivos activos.",
   "accountabilitySectionsNoOpenCommitments": "Sin compromisos abiertos.",
+  "accountabilitySectionsNeedsAttention": "Necesita atención",
+  "accountabilitySectionsNoSignals": "Nada requiere atención ahora mismo.",
+  "accountabilitySectionsRuleRisks": "Riesgos de reglas",
+  "accountabilitySectionsNoRuleRisks": "No se detectaron riesgos de reglas.",
+  "accountabilitySectionsRecentPatterns": "Patrones recientes",
+  "accountabilitySectionsNoRecentPatterns": "No hay patrones recientes para revisar.",
   "accountabilitySectionsOpenCommitments": "Compromisos abiertos",
   "accountabilitySharedAddCommitment": "Agregar compromiso",
   "accountabilitySharedAddFirstGoal": "Añade tu primer objetivo",
@@ -694,6 +700,8 @@
   "commonExpense": "Gastos",
   "commonHidden": "Oculto",
   "commonHigh": "Alto",
+  "commonInfo": "Info",
+  "commonCritical": "Crítico",
   "commonHistory": "Historia",
   "commonImport": "Importar",
   "commonImportance": "Importancia",
@@ -1068,6 +1076,24 @@
       }
     }
   },
+  "dashboardHealthBurnRunwayLabel": "Reserva de efectivo",
+  "dashboardHealthBurnRunwayDays": "{days} días",
+  "@dashboardHealthBurnRunwayDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardHealthBurnRunwayDetail": "Al ritmo de gasto de este mes, su saldo dura unos {days} días.",
+  "@dashboardHealthBurnRunwayDetail": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardOverviewBudgetVsSpentChart": "Presupuesto vs gastado",
   "dashboardHealthThisMonthNet": "Este mes neto",
   "dashboardHealthTopSpendPressure": "{name} es la mayor presión de gasto este mes.",
   "@dashboardHealthTopSpendPressure": {
@@ -1080,6 +1106,68 @@
   "dashboardOverviewAccountBalance": "Saldo de cuenta",
   "dashboardOverviewAccountHealth": "Estado de la cuenta",
   "dashboardOverviewActivityNotBalanceNote": "Actividad este mes: no es lo mismo que el saldo",
+  "dashboardInsightsStripTitle": "Qué vigilar",
+  "dashboardInsightsNetNegative": "Los gastos superan los ingresos por {amount} este mes.",
+  "@dashboardInsightsNetNegative": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardInsightsNetPositive": "El flujo neto va {amount} adelante este mes.",
+  "@dashboardInsightsNetPositive": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardInsightsNetBalanced": "Ingresos y gastos están equilibrados este mes.",
+  "dashboardInsightsMomLeakUp": "{category} subió {percent} mes a mes ({amount}).",
+  "@dashboardInsightsMomLeakUp": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardInsightsMomLeakNew": "{category} es nueva presión de gasto con {amount} este mes.",
+  "@dashboardInsightsMomLeakNew": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardInsightsBudgetOver": "{category} supera el presupuesto por {amount}.",
+  "@dashboardInsightsBudgetOver": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardInsightsSeeChart": "Ver gráfico",
+  "dashboardChartCategorySpendSubtitle": "Total de este mes",
+  "dashboardChartSpendingPressureSubtitle": "Presión mes a mes",
+  "dashboardSectionCoreCharts": "Gráficos principales",
+  "dashboardSectionTrendCharts": "Tendencias",
+  "dashboardSectionTrendChartsHint": "Mezcla de ingresos e historial de seis meses",
+  "dashboardSectionSpendingAnalysis": "Análisis de gastos",
+  "dashboardSectionSpendingAnalysisHint": "Categorías que suben vs el mes pasado",
   "dashboardOverviewBudgetPerformance": "Desempeño del presupuesto",
   "dashboardOverviewDataLoadBannerBody": "Claridad muestra los registros disponibles, pero {sourceLabel} puede estar incompleto. Rex tratará las respuestas financieras como degradadas hasta que se actualice.",
   "@dashboardOverviewDataLoadBannerBody": {

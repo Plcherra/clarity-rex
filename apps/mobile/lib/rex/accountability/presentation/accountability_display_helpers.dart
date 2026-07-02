@@ -57,3 +57,29 @@ String statusShortLabel(AppLocalizations l10n, String status) {
   }
   return normalized[0].toUpperCase() + normalized.substring(1);
 }
+
+String? accountabilitySignalSubtitle(AccountabilitySignal signal) {
+  final summary = signal.summary.trim();
+  if (summary.isNotEmpty) {
+    return summary;
+  }
+  final reason = signal.reason.trim();
+  if (reason.isNotEmpty) {
+    return reason;
+  }
+  return null;
+}
+
+String accountabilitySeverityLabel(
+  AppLocalizations l10n,
+  AccountabilitySeverity severity,
+) {
+  return switch (severity) {
+    AccountabilitySeverity.info => l10n.commonInfo,
+    AccountabilitySeverity.low => l10n.commonLow,
+    AccountabilitySeverity.medium => l10n.commonMedium,
+    AccountabilitySeverity.high => l10n.commonHigh,
+    AccountabilitySeverity.critical => l10n.commonCritical,
+    AccountabilitySeverity.unknown => l10n.commonUnknown,
+  };
+}
