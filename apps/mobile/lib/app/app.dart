@@ -70,15 +70,11 @@ final class ClarityApp extends StatelessWidget {
           ),
         ),
         actionResultMessageFormatterProvider.overrideWith(
-          (ref) {
-            ref.listen(localeControllerProvider, (_, _) {
-              ref.invalidateSelf();
-            });
+          (ref) => (action, result) {
             final l10n = lookupForLocale(
               ref.read(localeControllerProvider).locale,
             );
-            return (action, result) =>
-                actionResultMessage(l10n, action, result);
+            return actionResultMessage(l10n, action, result);
           },
         ),
       ],

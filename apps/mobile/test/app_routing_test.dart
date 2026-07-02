@@ -118,6 +118,35 @@ void main() {
     expect(find.byType(HomeShell), findsOneWidget);
   });
 
+  testWidgets('signed in home shell settles without provider errors', (
+    tester,
+  ) async {
+    final app = AppComposition(initialAuthenticated: true);
+    addTearDown(app.dispose);
+    app.profileController.profile = ProfileRecord(
+      id: 'user-1',
+      email: 'test@example.com',
+      fullName: 'Test User',
+      avatarUrl: null,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+    );
+
+    await tester.pumpWidget(
+      ClarityApp(
+        ui: app.ui,
+        authController: app.authController,
+        profileController: app.profileController,
+        themeModeController: app.themeModeController,
+        localeController: app.localeController,
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byType(HomeShell), findsOneWidget);
+  });
+
   testWidgets('profile and security actions live in the Profile tab', (
     tester,
   ) async {
