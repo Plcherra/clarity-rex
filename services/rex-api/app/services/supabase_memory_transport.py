@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Optional
 from urllib.parse import quote, urlencode
 
@@ -6,6 +7,8 @@ import httpx
 
 from app.services.http_client import request_with_retries
 from app.services.memory_errors import MemoryServiceError
+
+logger = logging.getLogger(__name__)
 
 PROTECTED_WRITE_FIELDS = {"id", "user_id", "created_at", "updated_at"}
 
@@ -104,7 +107,7 @@ class SupabaseMemoryTransport:
             response.raise_for_status()
             raw_response = response.text
         except httpx.HTTPStatusError as error:
-            raise MemoryServiceError("Supabase memory returned an error.") from error
+            raise self._http_status_error(error, context="rpc") from error
         except (httpx.RequestError, TimeoutError) as error:
             raise MemoryServiceError("Cannot reach Supabase memory.") from error
 
@@ -167,7 +170,7 @@ class SupabaseMemoryTransport:
             response.raise_for_status()
             raw_response = response.text
         except httpx.HTTPStatusError as error:
-            raise MemoryServiceError("Supabase memory returned an error.") from error
+            raise self._http_status_error(error, context=table) from error
         except (httpx.RequestError, TimeoutError) as error:
             raise MemoryServiceError("Cannot reach Supabase memory.") from error
 
@@ -188,6 +191,43 @@ class SupabaseMemoryTransport:
             return [data]
 
         raise MemoryServiceError("Supabase memory returned an unreadable response.")
+
+    def _http_status_error(
+        self,
+        error: httpx.HTTPStatusError,
+        *,
+        context: str,
+    ) -> MemoryServiceError:
+        status_code = error.response.status_code
+        body = error.response.text
+        logger.warning(
+            "Supabase REST error context=%s status=%s body=%s",
+            context,
+            status_code,
+            body[:500],
+        )
+        if context == "user_insights" and status_code in {404, 406}:
+            return MemoryServiceError(
+                "Insights storage is not available yet.",
+                status_code=503,
+                error_code="insights_storage_unavailable",
+            )
+        if "user_insights" in body or "PGRST205" in body:
+            return MemoryServiceError(
+                "Insights storage is not available yet.",
+                status_code=503,
+                error_code="insights_storage_unavailable",
+            )
+        if status_code in {401, 403}:
+            return MemoryServiceError(
+                "Could not access stored data for this account.",
+                status_code=status_code,
+                error_code="storage_auth_failed",
+            )
+        return MemoryServiceError(
+            "Stored data is temporarily unavailable.",
+            status_code=503,
+        )
 
     def _supabase_api_key(self) -> Optional[str]:
         if self.access_token and self.settings.supabase_anon_key:

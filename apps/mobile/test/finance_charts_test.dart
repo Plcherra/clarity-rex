@@ -56,6 +56,22 @@ void main() {
       expect(chart.data.maxY, closeTo(115, 0.001));
     });
 
+    testWidgets('SixMonthSpendTrendChart shows each month label once', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrapWithClarityTheme(
+          SixMonthSpendTrendChart(
+            monthlyGroups: _monthlyGroups(count: 8, spend: 50),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mar'), findsOneWidget);
+      expect(find.text('Aug'), findsOneWidget);
+    });
+
     testWidgets('BudgetVsSpentChart shows empty state when no categories', (
       tester,
     ) async {

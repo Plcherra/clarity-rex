@@ -218,17 +218,6 @@ class _AccountHealthCard extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           _HealthMetricRow(
-            icon: Icons.sync_alt_rounded,
-            label: l10n.dashboardHealthThisMonthNet,
-            value: formatMoney(snapshot.availableThisMonth),
-            detail: l10n.dashboardHealthIncomeSpendingLine(
-              formatMoney(snapshot.incomeThisMonth),
-              formatMoney(snapshot.spentThisMonth),
-            ),
-            valueColor: _balanceColor(context, snapshot.availableThisMonth),
-          ),
-          const SizedBox(height: 14),
-          _HealthMetricRow(
             icon: Icons.trending_up_rounded,
             label: l10n.dashboardHealthSpendPressureLabel,
             value: pressureValue,

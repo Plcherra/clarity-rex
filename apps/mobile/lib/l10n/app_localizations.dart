@@ -1557,6 +1557,12 @@ abstract class AppLocalizations {
   /// **'From goals & accountability'**
   String get insightsSourceAccountability;
 
+  /// No description provided for @insightsStorageUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved insights are not available yet. The Dashboard strip still shows current signals. Turn on proactive insights in Profile once storage is ready.'**
+  String get insightsStorageUnavailable;
+
   /// No description provided for @profileProactiveInsightsTitle.
   ///
   /// In en, this message translates to:

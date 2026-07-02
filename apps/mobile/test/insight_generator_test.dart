@@ -54,7 +54,7 @@ void main() {
     expect(items, isEmpty);
   });
 
-  test('generateDashboardInsightItems includes net, leak, and budget items', () {
+  test('generateDashboardInsightItems includes leak and budget items without net duplicate', () {
     final l10n = lookupAppLocalizations(const Locale('en'));
     final items = generateDashboardInsightItems(
       l10n: l10n,
@@ -94,9 +94,8 @@ void main() {
       ),
     );
 
-    expect(items, hasLength(3));
+    expect(items, hasLength(2));
     expect(items.map((item) => item.type), [
-      InsightType.netCashFlow,
       InsightType.momLeak,
       InsightType.budgetOverspend,
     ]);

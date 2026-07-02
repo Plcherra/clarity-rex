@@ -839,6 +839,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get insightsSourceAccountability => 'Desde metas y accountability';
 
   @override
+  String get insightsStorageUnavailable =>
+      'Los insights guardados aún no están disponibles. La franja del Panel sigue mostrando señales actuales. Activa los insights proactivos en Perfil cuando el almacenamiento esté listo.';
+
+  @override
   String get profileProactiveInsightsTitle => 'Insights financieros proactivos';
 
   @override

@@ -9,7 +9,18 @@ from app.services.chat_usage_recorder import ChatUsageRecorder
 from app.services.conversation_pending_action import ConversationPendingActionService
 from app.services.file_service import AttachmentContext
 from app.services.rex_channel import RexBrainChannel
+from app.services.rex_intent_router import RexIntent
 from app.services.transcript_normalizer import TranscriptNormalizer
+
+_ACTION_TRUTH_STREAM_INTENTS = {
+    RexIntent.MEMORY_SAVE,
+    RexIntent.MEMORY_UPDATE,
+    RexIntent.GOAL_OR_COMMITMENT,
+}
+
+
+def stream_should_buffer_for_action_truth(intent_decision) -> bool:
+    return intent_decision.intent in _ACTION_TRUTH_STREAM_INTENTS
 
 
 def brain_messages(

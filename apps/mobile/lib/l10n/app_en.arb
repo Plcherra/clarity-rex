@@ -496,6 +496,7 @@
   "insightsOptInRequired": "Turn on proactive insights in Profile to save alerts here. The Dashboard strip still shows current signals without saving them.",
   "insightsSourceDashboard": "From your dashboard",
   "insightsSourceAccountability": "From goals & accountability",
+  "insightsStorageUnavailable": "Saved insights are not available yet. The Dashboard strip still shows current signals. Turn on proactive insights in Profile once storage is ready.",
   "profileProactiveInsightsTitle": "Proactive financial insights",
   "profileProactiveInsightsSubtitle": "Save deterministic alerts when your data changes. No background monitoring runs until you turn this on.",
   "dashboardChartCategorySpendSubtitle": "This month total",

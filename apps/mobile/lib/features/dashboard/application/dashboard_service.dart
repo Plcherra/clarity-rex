@@ -8,6 +8,10 @@ import '../domain/dashboard_metrics.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
 
 /// Derived dashboard aggregates recomputed when transactions/category state changes.
+///
+/// Deprecated: UI and Rex use [FinancialReadModelService] snapshots instead.
+/// This shadow recompute path is kept only for legacy refresh wiring.
+@Deprecated('Use FinancialReadModelService snapshots as the single read model.')
 class DashboardDerivedValues {
   const DashboardDerivedValues({
     required this.spentThisMonth,
@@ -28,6 +32,7 @@ class DashboardDerivedValues {
   final List<MonthlyBankGroup> monthlyGroups;
 }
 
+@Deprecated('Use FinancialReadModelService snapshots as the single read model.')
 class DashboardService {
   DateTime spendReference = DateTime.now();
   double totalBalance = 0;

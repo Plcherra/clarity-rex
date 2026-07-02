@@ -10,9 +10,12 @@ import '../domain/insight_item.dart';
 final insightsApiProvider = Provider<InsightsApi>((ref) => InsightsApi());
 
 class InsightsApiException implements Exception {
-  const InsightsApiException(this.message);
+  const InsightsApiException(this.message, {this.errorCode});
 
   final String message;
+  final String? errorCode;
+
+  bool get isStorageUnavailable => errorCode == 'insights_storage_unavailable';
 
   @override
   String toString() => message;
@@ -109,13 +112,17 @@ class InsightsApi {
 
   dynamic _decodeResponse(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw InsightsApiException(_errorMessage(response.body));
+      final message = _errorMessage(response.body);
+      if (message is InsightsApiException) {
+        throw message;
+      }
+      throw InsightsApiException(message);
     }
     if (response.body.trim().isEmpty) return null;
     return jsonDecode(response.body);
   }
 
-  String _errorMessage(String body) {
+  dynamic _errorMessage(String body) {
     try {
       final data = jsonDecode(body);
       if (data is Map<String, dynamic>) {
@@ -123,7 +130,19 @@ class InsightsApi {
         if (detail is String && detail.trim().isNotEmpty) {
           return detail;
         }
+        if (detail is Map<String, dynamic>) {
+          final message = detail['message'];
+          final errorCode = detail['error_code'];
+          if (message is String && message.trim().isNotEmpty) {
+            throw InsightsApiException(
+              message,
+              errorCode: errorCode is String ? errorCode : null,
+            );
+          }
+        }
       }
+    } on InsightsApiException {
+      rethrow;
     } on FormatException {
       return 'Backend returned an unreadable error.';
     }

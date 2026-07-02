@@ -27,12 +27,12 @@
 | Finance charts (Budgets) | `BudgetVsSpentChart` — collapsible |
 | Dashboard insight cards | 3 text cards — rule-based narratives |
 | Usage charts (Profile / Owner admin) | Live |
-| Dedicated Insights feature | **Not built** |
+| Dedicated Insights feature | **Partial (5a)** — persisted feed + Dashboard strip; 5b deferred |
 | Rex financial analysis | On-demand via chat — production |
 | Accountability signals | Backend built — **Goals UI does not render them** |
 | `burnRunwayDays` | Computed + sent to Rex — **not on Dashboard** |
 | `budget_risk` signal type | Enum exists — detector emits from budget performance snapshot |
-| Proactive insight routing | Experimental `RexBrain` only — non-production |
+| Proactive insight routing | Opt-in guard in `SimpleRexBrain` production path — experimental `RexBrain` routing remains non-production |
 
 ---
 

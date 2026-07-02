@@ -190,14 +190,6 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
                     initiallyExpanded: false,
                     children: [
                       _DashboardChartSection(
-                        title: l10n.dashboardOverviewIncomeVsSpending,
-                        child: IncomeSpendRatioChart(
-                          income: snapshot.incomeThisMonth,
-                          spent: snapshot.spentThisMonth,
-                        ),
-                      ),
-                      const SizedBox(height: _sectionGap),
-                      _DashboardChartSection(
                         title: l10n.dashboardOverviewSixMonthTrend,
                         child: SixMonthSpendTrendChart(
                           monthlyGroups: chronologicalGroups,

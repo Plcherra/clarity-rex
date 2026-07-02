@@ -18,6 +18,30 @@ class FakeInsightRepository:
 
 
 @pytest.mark.asyncio
+async def test_sync_upserts_accountability_signals_when_opt_in_enabled():
+    repository = FakeInsightRepository(proactive_enabled=True)
+    service = InsightSyncService(repository)
+
+    result = await service.sync(
+        proactive_insights_enabled=True,
+        financial_context={"period": {"reference_month": "2026-07"}},
+        accountability_signals=[
+            {
+                "id": "signal-1",
+                "signal_type": "budget_risk",
+                "title": "Budget risk",
+                "summary": "Housing is over budget.",
+                "status": "active",
+            }
+        ],
+    )
+
+    assert result.skipped is False
+    assert result.total_generated == 1
+    assert repository.upserts[0].source == "accountability"
+
+
+@pytest.mark.asyncio
 async def test_sync_skips_when_opt_in_disabled():
     repository = FakeInsightRepository(proactive_enabled=False)
     service = InsightSyncService(repository)

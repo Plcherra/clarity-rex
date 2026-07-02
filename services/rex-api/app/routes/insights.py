@@ -52,7 +52,10 @@ async def list_insights(
     try:
         rows = await service.list_insights(limit=min(max(limit, 1), 100))
     except MemoryServiceError as error:
-        raise HTTPException(status_code=error.status_code, detail=error.detail) from error
+        raise HTTPException(
+            status_code=error.status_code,
+            detail=error.http_detail(),
+        ) from error
     return InsightListResponse(items=[InsightRecordResponse(**row) for row in rows])
 
 
@@ -70,7 +73,10 @@ async def sync_insights(
             accountability_signals=payload.accountability_signals,
         )
     except MemoryServiceError as error:
-        raise HTTPException(status_code=error.status_code, detail=error.detail) from error
+        raise HTTPException(
+            status_code=error.status_code,
+            detail=error.http_detail(),
+        ) from error
     _ = current_user
     return InsightSyncResponse(
         skipped=result.skipped,
@@ -89,7 +95,10 @@ async def mark_insight_read(
     try:
         row = await service.mark_read(insight_id)
     except MemoryServiceError as error:
-        raise HTTPException(status_code=error.status_code, detail=error.detail) from error
+        raise HTTPException(
+            status_code=error.status_code,
+            detail=error.http_detail(),
+        ) from error
     if row is None:
         raise HTTPException(status_code=404, detail="Insight not found.")
     return InsightRecordResponse(**row)

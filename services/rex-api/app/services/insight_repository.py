@@ -78,8 +78,8 @@ class InsightRepository(SupabaseMemoryTransport):
             "POST",
             "user_insights",
             body=body,
-            query={"on_conflict": "user_id,fingerprint", "select": "id"},
-            prefer="resolution=merge-duplicates,return=minimal",
+            query={"select": "id"},
+            prefer="return=minimal",
         )
         return "created"
 

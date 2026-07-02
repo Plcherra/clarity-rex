@@ -1168,6 +1168,7 @@
   "insightsOptInRequired": "Activa los insights proactivos en Perfil para guardarlos aquí. La franja del Panel sigue mostrando señales actuales sin guardarlas.",
   "insightsSourceDashboard": "Desde tu panel",
   "insightsSourceAccountability": "Desde metas y accountability",
+  "insightsStorageUnavailable": "Los insights guardados aún no están disponibles. La franja del Panel sigue mostrando señales actuales. Activa los insights proactivos en Perfil cuando el almacenamiento esté listo.",
   "profileProactiveInsightsTitle": "Insights financieros proactivos",
   "profileProactiveInsightsSubtitle": "Guarda alertas deterministas cuando cambien tus datos. No hay monitoreo en segundo plano hasta que lo actives.",
   "dashboardChartCategorySpendSubtitle": "Total de este mes",

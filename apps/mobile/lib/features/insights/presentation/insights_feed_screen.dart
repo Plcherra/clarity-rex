@@ -54,14 +54,22 @@ class _InsightsFeedScreenState extends ConsumerState<InsightsFeedScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                 children: [
-                  if (state.errorMessage != null) ...[
+                  if (state.storageUnavailable) ...[
+                    _InsightsBanner(
+                      message: l10n.insightsStorageUnavailable,
+                      tone: _InsightsBannerTone.info,
+                    ),
+                    const SizedBox(height: 12),
+                  ] else if (state.errorMessage != null) ...[
                     _InsightsBanner(
                       message: state.errorMessage!,
                       tone: _InsightsBannerTone.error,
                     ),
                     const SizedBox(height: 12),
                   ],
-                  if (state.syncSkipped && state.syncReason == 'opt_in_required') ...[
+                  if (state.syncSkipped &&
+                      state.syncReason == 'opt_in_required' &&
+                      !state.storageUnavailable) ...[
                     _InsightsBanner(
                       message: l10n.insightsOptInRequired,
                       tone: _InsightsBannerTone.info,

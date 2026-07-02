@@ -14,9 +14,7 @@ List<InsightItem> generateDashboardInsightItems({
   final periodKey = budgetPerformance.periodKey;
   final items = <InsightItem>[];
 
-  final netItem = _netCashFlowInsight(l10n, snapshot, periodKey);
-  if (netItem != null) items.add(netItem);
-
+  // Net cash flow is already shown in the overview card above the strip.
   final leakItem = _momLeakInsight(l10n, snapshot.biggestLeaksThisMonth, periodKey);
   if (leakItem != null) items.add(leakItem);
 

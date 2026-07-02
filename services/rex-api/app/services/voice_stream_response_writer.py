@@ -143,10 +143,14 @@ class VoiceStreamResponseWriterMixin:
                 )
             elif event_name == "turn.trace":
                 self._last_turn_trace = self._safe_turn_trace(event)
-                delay_audio_until_done = (
-                    str(event.get("intent") or "").strip().lower()
-                    == "memory_recall"
-                )
+                delay_audio_until_done = str(
+                    event.get("intent") or ""
+                ).strip().lower() in {
+                    "memory_recall",
+                    "memory_save",
+                    "memory_update",
+                    "goal_or_commitment",
+                }
             elif event_name == "token":
                 token = str(event.get("token") or "")
                 if not token:

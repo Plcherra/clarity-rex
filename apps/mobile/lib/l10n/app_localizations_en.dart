@@ -832,6 +832,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsSourceAccountability => 'From goals & accountability';
 
   @override
+  String get insightsStorageUnavailable =>
+      'Saved insights are not available yet. The Dashboard strip still shows current signals. Turn on proactive insights in Profile once storage is ready.';
+
+  @override
   String get profileProactiveInsightsTitle => 'Proactive financial insights';
 
   @override

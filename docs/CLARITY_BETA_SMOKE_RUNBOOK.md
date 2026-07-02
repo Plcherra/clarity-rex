@@ -266,6 +266,10 @@ Pass criteria:
 - `[ ]` Check Knows page categories.
 - `[ ]` Check Goals loads.
 - `[ ]` Check Dashboard loads.
+- `[ ]` Dashboard "What to watch → See all" opens Insights without a red backend error banner.
+- `[ ]` With proactive insights off, Insights feed shows empty state plus opt-in guidance (not Supabase/memory errors).
+- `[ ]` Six-month trend chart month labels are not duplicated on the X axis.
+- `[ ]` Dashboard spent/income/net match a Rex finance question for the same month.
 - `[ ]` Check Accounts loads.
 - `[ ]` Check Budgets loads.
 

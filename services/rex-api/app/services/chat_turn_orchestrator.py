@@ -10,18 +10,14 @@ from app.services.chat_financial_guard import ChatFinancialGuard
 from app.services.chat_response_truth import ChatResponseTruthService
 from app.services.chat_turn_context import ChatTurnContextService, MemoryService
 from app.services.chat_turn_observability import ChatTurnObserver, ChatTurnTrace
-from app.services.conversation_pending_action import (
-    PendingAction,
-    is_delete_confirmation_message,
-    is_delete_rejection_message,
-)
+from app.services.chat_turn_orchestrator_short_circuit import try_short_circuit_turn
 from app.services.chat_turn_orchestrator_support import (
     annotate_pending_action,
     brain_messages,
     finish_short_circuit,
-    guarded_turn_response,
     load_pending_action,
     messages_with_attachment,
+    stream_should_buffer_for_action_truth,
     turn_trace_event,
 )
 from app.services.chat_usage_recorder import ChatUsageRecorder
@@ -121,7 +117,8 @@ class ChatTurnOrchestrator:
         )
         pending_action = await load_pending_action(self.memory_service, conversation_id)
         annotate_pending_action(turn_trace, pending_action)
-        short_circuit = await self._try_short_circuit_turn(
+        short_circuit = await try_short_circuit_turn(
+            self,
             brain_message=brain_message,
             turn_context=turn_context,
             pending_action=pending_action,
@@ -234,7 +231,8 @@ class ChatTurnOrchestrator:
             yield turn_trace_event(intent_decision, channel)
         pending_action = await load_pending_action(self.memory_service, conversation_id)
         annotate_pending_action(turn_trace, pending_action)
-        short_circuit = await self._try_short_circuit_turn(
+        short_circuit = await try_short_circuit_turn(
+            self,
             brain_message=brain_message,
             turn_context=turn_context,
             pending_action=pending_action,
@@ -274,6 +272,9 @@ class ChatTurnOrchestrator:
         )
         response_parts = []
         stream_filter = ClarityActionStreamFilter()
+        buffer_tokens_for_truth = stream_should_buffer_for_action_truth(
+            intent_decision
+        )
         ai_kwargs = {}
         if max_response_tokens is not None:
             ai_kwargs["max_tokens"] = max_response_tokens
@@ -286,6 +287,8 @@ class ChatTurnOrchestrator:
                 **ai_kwargs,
             ):
                 response_parts.append(token)
+                if buffer_tokens_for_truth:
+                    continue
                 for visible_token in stream_filter.feed(token):
                     if visible_token:
                         yield {"event": "token", "token": visible_token}
@@ -306,6 +309,8 @@ class ChatTurnOrchestrator:
             usage=usage_holder.usage,
         )
         for visible_token in stream_filter.finish():
+            if buffer_tokens_for_truth:
+                continue
             if visible_token:
                 yield {"event": "token", "token": visible_token}
 
@@ -329,6 +334,14 @@ class ChatTurnOrchestrator:
             conversation_history=conversation_history,
             turn_trace=turn_trace,
         )
+        if buffer_tokens_for_truth:
+            post_truth_filter = ClarityActionStreamFilter()
+            for visible_token in post_truth_filter.feed(assistant_response):
+                if visible_token:
+                    yield {"event": "token", "token": visible_token}
+            for visible_token in post_truth_filter.finish():
+                if visible_token:
+                    yield {"event": "token", "token": visible_token}
         finish_short_circuit(
             self.turn_observer,
             self.usage_recorder,
@@ -353,153 +366,6 @@ class ChatTurnOrchestrator:
                 clarity_action_proposals,
             ),
         }
-
-    async def _try_short_circuit_turn(
-        self,
-        *,
-        brain_message: str,
-        turn_context,
-        pending_action,
-        intent_decision,
-        financial_context,
-        turn_trace: ChatTurnTrace,
-        turn_started_at: float,
-        write_confirmation: Optional[dict] = None,
-    ) -> Optional[dict]:
-        conversation_id = turn_context.conversation_id
-        if self._should_apply_write_confirmation(write_confirmation):
-            durable_turn = await self.durable_write_service.try_handle_pending(
-                brain_message,
-                pending_action=pending_action,
-                conversation_id=conversation_id,
-                user_message=turn_context.user_message,
-                write_confirmation=write_confirmation,
-            )
-            if durable_turn is not None:
-                finish_short_circuit(
-                    self.turn_observer,
-                    self.usage_recorder,
-                    turn_trace,
-                    turn_started_at,
-                    "durable_write",
-                )
-                return durable_turn
-
-        conversational_plan_turn = await self.conversational_plan_service.handle_turn(
-            brain_message,
-            conversation_id=conversation_id,
-            user_message=turn_context.user_message,
-            conversation_history=turn_context.conversation_history,
-            time_context=turn_context.time_context,
-            pending_action=pending_action,
-        )
-        if conversational_plan_turn:
-            finish_short_circuit(
-                self.turn_observer,
-                self.usage_recorder,
-                turn_trace,
-                turn_started_at,
-                "conversational_plan",
-            )
-            return conversational_plan_turn
-        goal_command_turn = await self.goal_command_service.handle_turn(
-            brain_message,
-            conversation_id=conversation_id,
-            user_message=turn_context.user_message,
-            conversation_history=turn_context.conversation_history,
-            time_context=turn_context.time_context,
-            pending_action=pending_action,
-        )
-        if goal_command_turn:
-            finish_short_circuit(
-                self.turn_observer,
-                self.usage_recorder,
-                turn_trace,
-                turn_started_at,
-                "goal_command",
-            )
-            return goal_command_turn
-        simple_memory_turn = await self.memory_turn_service.handle_turn(
-            brain_message,
-            conversation_id=conversation_id,
-            user_message=turn_context.user_message,
-            conversation_history=turn_context.conversation_history,
-            time_context=turn_context.time_context,
-            pending_action=pending_action,
-        )
-        if simple_memory_turn:
-            finish_short_circuit(
-                self.turn_observer,
-                self.usage_recorder,
-                turn_trace,
-                turn_started_at,
-                "memory_turn",
-            )
-            return simple_memory_turn
-
-        if self._should_apply_pending_affirmation(
-            brain_message,
-            pending_action=pending_action,
-        ):
-            durable_turn = await self.durable_write_service.try_handle_pending(
-                brain_message,
-                pending_action=pending_action,
-                conversation_id=conversation_id,
-                user_message=turn_context.user_message,
-                write_confirmation=write_confirmation,
-            )
-            if durable_turn is not None:
-                finish_short_circuit(
-                    self.turn_observer,
-                    self.usage_recorder,
-                    turn_trace,
-                    turn_started_at,
-                    "durable_write",
-                )
-                return durable_turn
-        finance_guard_response = self.financial_guard.guard_response(
-            intent_decision,
-            financial_context,
-        )
-        if finance_guard_response:
-            finish_short_circuit(
-                self.turn_observer,
-                self.usage_recorder,
-                turn_trace,
-                turn_started_at,
-                "finance_guard",
-            )
-            return await guarded_turn_response(
-                memory_service=self.memory_service,
-                memory_turn_service=self.memory_turn_service,
-                conversation_id=conversation_id,
-                response=finance_guard_response,
-                user_message=turn_context.user_message,
-            )
-        return None
-
-    def _should_apply_write_confirmation(
-        self,
-        write_confirmation: Optional[dict],
-    ) -> bool:
-        return write_confirmation is not None
-
-    def _should_apply_pending_affirmation(
-        self,
-        message: str,
-        *,
-        pending_action,
-    ) -> bool:
-        pending = (
-            pending_action
-            if isinstance(pending_action, PendingAction)
-            else PendingAction.from_dict(pending_action)
-        )
-        if pending is None or pending.action_type != "durable_write":
-            return False
-        return is_delete_confirmation_message(message) or is_delete_rejection_message(
-            message
-        )
 
     def _build_llm_messages(
         self,

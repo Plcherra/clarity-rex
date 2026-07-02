@@ -45,20 +45,9 @@ class MonthlyCashFlowChart extends StatelessWidget {
             topTitles: const AxisTitles(),
             rightTitles: const AxisTitles(),
             leftTitles: const AxisTitles(),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, _) {
-                  final index = value.round();
-                  if (index < 0 || index >= labels.length) {
-                    return const SizedBox.shrink();
-                  }
-                  return Text(
-                    labels[index],
-                    style: TextStyle(color: colors.textMuted, fontSize: 10),
-                  );
-                },
-              ),
+            bottomTitles: _financeChartBottomTitles(
+              labels: labels,
+              textColor: colors.textMuted,
             ),
           ),
           borderData: FlBorderData(show: false),
@@ -243,6 +232,8 @@ class SixMonthSpendTrendChart extends StatelessWidget {
       height: 180,
       child: LineChart(
         LineChartData(
+          minX: 0,
+          maxX: spots.isEmpty ? 0 : spots.length - 1,
           minY: 0,
           maxY: financeChartMaxY(spendValues),
           gridData: FlGridData(
@@ -255,20 +246,9 @@ class SixMonthSpendTrendChart extends StatelessWidget {
             topTitles: const AxisTitles(),
             rightTitles: const AxisTitles(),
             leftTitles: const AxisTitles(),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, _) {
-                  final index = value.round();
-                  if (index < 0 || index >= labels.length) {
-                    return const SizedBox.shrink();
-                  }
-                  return Text(
-                    labels[index],
-                    style: TextStyle(color: colors.textMuted, fontSize: 10),
-                  );
-                },
-              ),
+            bottomTitles: _financeChartBottomTitles(
+              labels: labels,
+              textColor: colors.textMuted,
             ),
           ),
           borderData: FlBorderData(show: false),
@@ -451,6 +431,32 @@ String _monthLabel(AppLocalizations l10n, MonthlyBankGroup group) {
     12 => l10n.commonMonthShortDec,
     _ => l10n.commonMonthShortOld,
   };
+}
+
+AxisTitles _financeChartBottomTitles({
+  required List<String> labels,
+  required Color textColor,
+}) {
+  return AxisTitles(
+    sideTitles: SideTitles(
+      showTitles: true,
+      interval: 1,
+      reservedSize: 22,
+      getTitlesWidget: (value, _) {
+        final index = value.round();
+        if ((value - index).abs() > 0.001) {
+          return const SizedBox.shrink();
+        }
+        if (index < 0 || index >= labels.length) {
+          return const SizedBox.shrink();
+        }
+        return Text(
+          labels[index],
+          style: TextStyle(color: textColor, fontSize: 10),
+        );
+      },
+    ),
+  );
 }
 
 double _incomeForGroup(MonthlyBankGroup group) {
