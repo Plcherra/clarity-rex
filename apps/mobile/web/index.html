@@ -41,12 +41,15 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     }
     #clarity-boot-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-direction: column;
       gap: 12px;
-      height: 100%;
+      background: #081827;
     }
     #clarity-boot-loader p {
       margin: 0;
@@ -61,17 +64,10 @@
     <p style="font-size:12px;opacity:.65">This may take a moment on first visit.</p>
   </div>
   <!-- Required by supabase_flutter / passkeys_web on Flutter web (Corbado Passkeys SDK). -->
-  <script src="passkeys_bundle.js" type="application/javascript"></script>
-  <!-- Plaid Link (P4 web bank connect). -->
-  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="passkeys_bundle.js" type="application/javascript" data-cfasync="false"></script>
+  <!-- Plaid Link (P4): defer so CDN script cannot block Flutter boot on Cloudflare. -->
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js" defer data-cfasync="false"></script>
+  <!-- Custom boot logic lives in web/flutter_bootstrap.js (loader hide + boot errors). -->
+  <script src="flutter_bootstrap.js" defer data-cfasync="false"></script>
 </body>
 </html>

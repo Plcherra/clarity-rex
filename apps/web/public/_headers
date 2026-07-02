@@ -1,0 +1,11 @@
+/app/*
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/app/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/app/flutter_bootstrap.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/app/main.dart.js
+  Cache-Control: public, max-age=3600, must-revalidate

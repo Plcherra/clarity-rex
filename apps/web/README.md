@@ -98,6 +98,11 @@ Verify after deploy:
 - `https://goclarity.app/app/passkeys_bundle.js` — JavaScript, not HTML
 - `https://goclarity.app/app/main.dart.js` — JavaScript (~5 MB)
 
+**Cloudflare zone settings:** disable **Speed → Optimization → Auto Minify → JavaScript**
+for `goclarity.app`. Minifying Flutter's already-minified `main.dart.js` can leave the boot
+screen stuck on "Loading Clarity…". Script tags use `data-cfasync="false"` to opt out of
+Rocket Loader; Auto Minify must be off in the dashboard.
+
 See `docs/flutter-web/CLOUDFLARE_DEPLOY.md` for auth and VPS notes.
 
 ## Content

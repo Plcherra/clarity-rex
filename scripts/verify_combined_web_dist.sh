@@ -11,7 +11,6 @@ required_files=(
   "index.html"
   "main.dart.js"
   "flutter_bootstrap.js"
-  "flutter_service_worker.js"
   "passkeys_bundle.js"
   "manifest.json"
 )
