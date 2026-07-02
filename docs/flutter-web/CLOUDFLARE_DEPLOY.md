@@ -2,6 +2,11 @@
 
 Deploy the **combined** site: Astro landing at `/` + Flutter PWA at `/app/`.
 
+**Important:** If the Pages project runs `npm run build` from Git on every push, it deploys
+landing-only output and breaks `/app/` (marketing HTML or a stuck Flutter boot screen). Use
+`goclarity_web_deploy` via Wrangler for production, or disable Git-connected builds on the
+Pages project.
+
 ## Quick commands
 
 **Linux / VPS (Node 18):**
@@ -108,8 +113,20 @@ The rex-api VPS usually does **not** have Flutter. Build on Windows, copy `apps/
 ## Verify
 
 - `https://goclarity.app/` — landing
-- `https://goclarity.app/app/` — Flutter login / app (not landing HTML)
+- `https://goclarity.app/app/` — Flutter boot → login (not marketing HTML)
+- `https://goclarity.app/app/passkeys_bundle.js` — `Content-Type: application/javascript` (not HTML)
+- `https://goclarity.app/app/main.dart.js` — JavaScript (~5 MB)
 - Hard refresh after deploy: `Ctrl+Shift+R`
+
+Local dist check before deploy:
+
+```bash
+./scripts/verify_combined_web_dist.sh apps/web/dist
+```
+
+```powershell
+.\scripts\verify_combined_web_dist.ps1 -DistDir apps\web\dist
+```
 
 ---
 

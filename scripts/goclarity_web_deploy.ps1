@@ -26,10 +26,7 @@ if (-not (Test-Path (Join-Path $DistApp "index.html"))) {
   throw "Missing apps/web/dist/app/index.html. Run without -SkipBuild first."
 }
 
-$appIndex = Get-Content (Join-Path $DistApp "index.html") -Raw
-if ($appIndex -notmatch 'flutter_bootstrap') {
-  throw "apps/web/dist/app/index.html is not the Flutter PWA. Run the full goclarity_web_deploy.ps1 flow."
-}
+& (Join-Path $RootDir "scripts\verify_combined_web_dist.ps1") -DistDir (Join-Path $RootDir "apps\web\dist")
 
 Write-Output "==> Deploying combined site to Cloudflare Pages"
 Write-Output "    PUBLIC_SITE_URL=$PublicSiteUrl"
