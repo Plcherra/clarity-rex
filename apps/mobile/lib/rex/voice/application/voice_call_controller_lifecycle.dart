@@ -19,15 +19,20 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
     final streamingSession = _activeStreamingSession;
     _activeStreamingSession = null;
     _activeStreamingEventsTask = null;
+
+    // Stop mic capture before closing the websocket so late chunks are not
+    // sent into a closing socket and browser tracks are released promptly.
+    await _streamingCaptureService.cancel();
+    await _captureService.cancel();
+
     streamingSession?.interrupt();
+
     await Future.wait([
-      _captureService.cancel(),
-      _streamingCaptureService.cancel(),
       _streamingPlaybackQueue.cancel(),
       _playbackService.stop(),
       _backgroundVoiceService.stop(),
-      if (streamingSession != null) streamingSession.endSession(),
       _audioSessionService.setActive(false),
+      if (streamingSession != null) streamingSession.endSession(),
     ]);
   }
   Future<void> _handleLifecycleResume() async {

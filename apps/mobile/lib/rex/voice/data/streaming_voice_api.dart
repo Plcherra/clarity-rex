@@ -50,11 +50,12 @@ class StreamingVoiceSession {
   StreamingVoiceSession(this._socket);
 
   final VoiceWebSocket _socket;
+  var _closed = false;
 
   late final Stream<VoiceStreamEvent> events = _socket.stream.map(_parseEvent);
 
   void sendAudioChunk(Uint8List chunk) {
-    if (chunk.isEmpty) {
+    if (_closed || chunk.isEmpty) {
       return;
     }
     _socket.add(chunk);
@@ -79,11 +80,18 @@ class StreamingVoiceSession {
   }
 
   Future<void> endSession() async {
+    if (_closed) {
+      return;
+    }
+    _closed = true;
     _sendJson({'event': 'session.end'});
     await _socket.close();
   }
 
   void _sendJson(Map<String, dynamic> payload) {
+    if (_closed) {
+      return;
+    }
     _socket.add(jsonEncode(payload));
   }
 

@@ -123,9 +123,9 @@ final voiceCallPlatformProvider = Provider<TargetPlatform>(
 final voiceCaptureConfigProvider = Provider<VoiceCaptureConfig>(
   (ref) => kIsWeb
       ? const VoiceCaptureConfig(
-          speechStartThresholdDb: -62,
-          silenceThresholdDb: -68,
-          silenceAfterSpeech: Duration(milliseconds: 1200),
+          speechStartThresholdDb: -68,
+          silenceThresholdDb: -74,
+          silenceAfterSpeech: Duration(milliseconds: 1400),
           noSpeechTimeout: Duration(seconds: 18),
         )
       : const VoiceCaptureConfig(),

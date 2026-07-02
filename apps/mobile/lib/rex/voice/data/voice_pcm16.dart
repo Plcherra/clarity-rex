@@ -22,6 +22,23 @@ double pcm16Decibels(Uint8List chunk) {
   return 20 * log(rms) / ln10;
 }
 
+/// Applies a modest gain boost for quiet browser mics without clipping.
+Uint8List boostPcm16Chunk(Uint8List chunk, {double gain = 1.75}) {
+  if (gain == 1.0 || chunk.length < 2) {
+    return chunk;
+  }
+
+  final input = ByteData.sublistView(chunk);
+  final output = Uint8List(chunk.length);
+  final outData = ByteData.sublistView(output);
+  for (var offset = 0; offset + 1 < chunk.length; offset += 2) {
+    final sample = input.getInt16(offset, Endian.little);
+    final boosted = (sample * gain).round().clamp(-32768, 32767);
+    outData.setInt16(offset, boosted, Endian.little);
+  }
+  return output;
+}
+
 Uint8List mergePcm16Chunks(List<Uint8List> chunks) {
   if (chunks.isEmpty) {
     return Uint8List(0);

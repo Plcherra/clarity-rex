@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:typed_data';
 
+import 'package:clarity/rex/voice/data/voice_pcm16.dart';
 import 'package:web/web.dart' as web;
 
 /// Browser PCM capture for Flutter web at `/app/`.
@@ -22,6 +23,7 @@ class WebPcmMicrophoneEngine {
   StreamController<Uint8List>? _chunkController;
   Future<void>? _bootstrapping;
   var _workletReady = false;
+  double _contextSampleRate = 48000;
 
   Future<WebPcmCaptureSession> startCapture({
     int sampleRate = 16000,
@@ -29,23 +31,24 @@ class WebPcmMicrophoneEngine {
     int streamBufferSize = 2048,
   }) async {
     await stopCapture();
-    await _ensureBootstrapped();
 
-    final context = _context!;
     final mediaDevices = web.window.navigator.mediaDevices;
-
     _mediaStream = await mediaDevices
         .getUserMedia(
           web.MediaStreamConstraints(
             audio: {
               'echoCancellation': true,
-              'noiseSuppression': true,
+              'noiseSuppression': false,
               'autoGainControl': true,
             }.jsify()!,
           ),
         )
         .toDart;
 
+    final inputSampleRate = _readInputSampleRate(_mediaStream!);
+    await _ensureBootstrapped(inputSampleRate: inputSampleRate);
+
+    final context = _context!;
     _chunkController = StreamController<Uint8List>.broadcast();
     _source = context.createMediaStreamSource(_mediaStream!);
     _workletNode = web.AudioWorkletNode(
@@ -93,18 +96,22 @@ class WebPcmMicrophoneEngine {
     _mediaStream = null;
     if (mediaStream != null) {
       for (final track in mediaStream.getAudioTracks().toDart) {
+        track.enabled = false;
         track.stop();
       }
     }
   }
 
-  Future<void> _ensureBootstrapped() async {
+  Future<void> _ensureBootstrapped({required double inputSampleRate}) async {
     final context = _context;
-    if (_workletReady && context != null && context.state != 'closed') {
+    if (_workletReady &&
+        context != null &&
+        context.state != 'closed' &&
+        _contextSampleRate == inputSampleRate) {
       return;
     }
 
-    _bootstrapping ??= _bootstrap();
+    _bootstrapping ??= _bootstrap(inputSampleRate: inputSampleRate);
     try {
       await _bootstrapping;
     } finally {
@@ -112,9 +119,12 @@ class WebPcmMicrophoneEngine {
     }
   }
 
-  Future<void> _bootstrap() async {
+  Future<void> _bootstrap({required double inputSampleRate}) async {
     await _closeContext();
-    _context = web.AudioContext();
+    _contextSampleRate = inputSampleRate;
+    _context = web.AudioContext(
+      web.AudioContextOptions(sampleRate: inputSampleRate),
+    );
     await _resumeContext(_context!);
     final urls = [
       Uri.base.resolve('js/record.worklet.js').toString(),
@@ -137,6 +147,15 @@ class WebPcmMicrophoneEngine {
     throw StateError(
       'Could not load the browser microphone worklet: $lastError',
     );
+  }
+
+  double _readInputSampleRate(web.MediaStream mediaStream) {
+    final tracks = mediaStream.getAudioTracks().toDart;
+    if (tracks.isEmpty) {
+      return 48000;
+    }
+    final rate = tracks.first.getSettings().sampleRate;
+    return rate > 0 ? rate.toDouble() : 48000;
   }
 
   Future<void> _resumeContext(web.AudioContext context) async {
@@ -171,7 +190,8 @@ class WebPcmMicrophoneEngine {
     if (controller == null || controller.isClosed) {
       return;
     }
-    controller.add(output.buffer.asUint8List());
+    final bytes = boostPcm16Chunk(Uint8List.sublistView(output));
+    controller.add(bytes);
   }
 }
 

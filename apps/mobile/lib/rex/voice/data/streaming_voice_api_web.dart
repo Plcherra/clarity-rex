@@ -83,6 +83,9 @@ class WebVoiceWebSocket implements VoiceWebSocket {
 
   @override
   void add(dynamic data) {
+    if (_socket.readyState != html.WebSocket.OPEN) {
+      return;
+    }
     if (data is String) {
       _socket.sendString(data);
       return;
@@ -98,6 +101,11 @@ class WebVoiceWebSocket implements VoiceWebSocket {
 
   @override
   Future<void> close() async {
+    if (_socket.readyState == html.WebSocket.CLOSED ||
+        _socket.readyState == html.WebSocket.CLOSING) {
+      await _controller.close();
+      return;
+    }
     _socket.close();
     await _controller.close();
   }
