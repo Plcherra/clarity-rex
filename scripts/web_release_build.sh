@@ -31,4 +31,12 @@ fi
 PUBLIC_SITE_URL="${PUBLIC_SITE_URL}" npm run build
 npm audit
 
+if [ ! -f "${WEB_DIR}/dist/app/index.html" ]; then
+  echo "WARNING: dist/app/ is missing — astro build replaced the output directory." >&2
+  echo "         'Start on web' will NOT show login until you stage Flutter:" >&2
+  echo "           ./scripts/flutter_web_release_build.sh" >&2
+  echo "           ./scripts/flutter_web_stage_into_landing.sh" >&2
+  echo "         Or run the full deploy: ./scripts/goclarity_web_deploy.sh" >&2
+fi
+
 echo "==> Web release build ready at ${WEB_DIR}/dist"

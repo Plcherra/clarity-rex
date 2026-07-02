@@ -14,6 +14,8 @@ if [ ! -f "${DIST_DIR}/index.html" ]; then
   exit 1
 fi
 
+"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/verify_combined_web_dist.sh" "${DIST_DIR}"
+
 echo "==> Cloudflare Pages deploy"
 echo "    wrangler@${WRANGLER_VERSION}"
 echo "    dist=${DIST_DIR}"

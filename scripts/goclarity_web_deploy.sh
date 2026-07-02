@@ -28,6 +28,8 @@ if [ ! -d "${ROOT_DIR}/apps/web/dist/app" ]; then
   exit 1
 fi
 
+"${ROOT_DIR}/scripts/verify_combined_web_dist.sh" "${ROOT_DIR}/apps/web/dist"
+
 echo "==> Deploying combined site to Cloudflare Pages"
 echo "    PUBLIC_SITE_URL=${PUBLIC_SITE_URL}"
 echo "    CLOUDFLARE_PAGES_PROJECT=${PROJECT_NAME}"

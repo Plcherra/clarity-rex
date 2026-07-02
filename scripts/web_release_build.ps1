@@ -62,4 +62,15 @@ try {
   Pop-Location
 }
 
+$distAppIndex = Join-Path $WebDir "dist\app\index.html"
+if (-not (Test-Path $distAppIndex)) {
+  Write-Warning @"
+dist/app/ is missing — astro build replaced the output directory.
+'Start on web' will NOT show login until you stage Flutter:
+  .\scripts\flutter_web_release_build.ps1
+  .\scripts\flutter_web_stage_into_landing.ps1
+Or run the full deploy: .\scripts\goclarity_web_deploy.ps1
+"@
+}
+
 Write-Output "==> Web release build ready at $WebDir\dist"
