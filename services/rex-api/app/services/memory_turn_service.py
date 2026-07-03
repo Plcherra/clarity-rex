@@ -21,6 +21,7 @@ from app.services.memory_path_policy import (
 from app.services.memory_turn_correction_helpers import MemoryTurnCorrectionHelpers
 from app.services.memory_turn_delete_helpers import MemoryTurnDeleteHelpers
 from app.services.memory_turn_direct_helpers import MemoryTurnDirectHelpers
+from app.services.memory_turn_handle import MemoryTurnHandleMixin
 from app.services.memory_turn_summaries import MemoryTurnSummaries
 
 
@@ -70,6 +71,7 @@ class MemoryTurnStore(Protocol):
 
 
 class MemoryTurnService(
+    MemoryTurnHandleMixin,
     MemoryTurnDeleteHelpers,
     MemoryTurnCorrectionHelpers,
     MemoryTurnDirectHelpers,
@@ -89,143 +91,6 @@ class MemoryTurnService(
         self.discipline = discipline
         self.durable_write_service = durable_write_service
         self.memory_correction_service = MemoryCorrectionService(memory_service)
-
-    async def handle_turn(
-        self,
-        message: str,
-        *,
-        conversation_id: str,
-        user_message: dict,
-        conversation_history: list[dict],
-        time_context: dict,
-        pending_action=None,
-    ) -> Optional[dict]:
-        delete_confirmation = self._pending_delete_request_for_confirmation(
-            message,
-            conversation_history,
-            pending_action,
-        )
-        if delete_confirmation is not None:
-            scope_tables = ()
-            if pending_action is not None:
-                scope_tables = getattr(pending_action, "scope_tables", ()) or ()
-            if is_delete_confirmation_message(message):
-                return await self._apply_confirmed_delete(
-                    delete_confirmation,
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                    scope_tables=scope_tables,
-                )
-            if is_delete_rejection_message(message):
-                return await self._reject_confirmed_delete(
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                )
-
-        correction_turn = await self._try_apply_direct_correction(
-            message,
-            conversation_id=conversation_id,
-            user_message=user_message,
-        )
-        if correction_turn is not None:
-            return correction_turn
-
-        delete_intent = self.memory_correction_service.detect_correction_intent(
-            message,
-        )
-        if (
-            delete_intent.intent_type == CorrectionIntentType.REMOVE_OBSOLETE
-            and delete_intent.old_value
-        ):
-            if (
-                delete_intent.is_vague_delete_reference
-                or is_vague_delete_target(delete_intent.old_value)
-            ):
-                return await self._ask_delete_specifics(
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                )
-            return await self._ask_delete_confirmation(
-                delete_intent.old_value,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                conversation_history=conversation_history,
-                scope_tables=delete_intent.delete_scope_tables,
-                is_vague=delete_intent.is_vague_delete_reference,
-            )
-
-        intent = self.memory_intent_service.detect_simple_memory(
-            message,
-            time_context=time_context,
-        )
-        if intent is None:
-            if self.memory_intent_service.needs_direct_location_clarification(message):
-                return await self._clarify_contextual_location(
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                )
-            if self.memory_intent_service.needs_unclear_memory_clarification(message):
-                return await self._clarify_unclear_memory(
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                )
-
-            intent = self.memory_intent_service.detect_contextual_memory(
-                message,
-                conversation_history=conversation_history,
-                time_context=time_context,
-            )
-            if intent is not None:
-                if self.memory_intent_service.is_contextual_memory_reject_request(
-                    message
-                ):
-                    return await self._reject_simple_memory(
-                        intent,
-                        conversation_id=conversation_id,
-                        user_message=user_message,
-                    )
-                if self.memory_intent_service.is_contextual_memory_save_request(
-                    message
-                ):
-                    return await self._propose_simple_memory(
-                        intent,
-                        conversation_id=conversation_id,
-                        user_message=user_message,
-                    )
-            elif self.memory_intent_service.needs_contextual_location_clarification(
-                message,
-                conversation_history=conversation_history,
-            ):
-                return await self._clarify_contextual_location(
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                )
-        if intent is None:
-            return None
-
-        existing_memory = await self._find_equivalent_active_memory(intent)
-        if existing_memory is not None:
-            return await self._already_saved_simple_memory(
-                intent,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                record=existing_memory,
-            )
-
-        existing_topic_memory = await self._find_active_memory_by_topic(intent)
-        if existing_topic_memory is not None:
-            return await self._propose_memory_update(
-                intent,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                record=existing_topic_memory,
-            )
-
-        return await self._propose_simple_memory(
-            intent,
-            conversation_id=conversation_id,
-            user_message=user_message,
-        )
 
     async def recent_public_messages(
         self,
@@ -253,7 +118,8 @@ class MemoryTurnService(
         user_message: dict,
     ) -> dict:
         if self.durable_write_service is None:
-            return await self._clarify_unclear_memory(
+            return await self._save_confirmed_simple_memory(
+                intent,
                 conversation_id=conversation_id,
                 user_message=user_message,
             )
@@ -272,7 +138,20 @@ class MemoryTurnService(
         record: dict,
     ) -> dict:
         record_id = str(record.get("id") or "")
-        if self.durable_write_service is None or not record_id:
+        if self.durable_write_service is None:
+            if record_id:
+                return await self._update_simple_memory(
+                    intent,
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                    record=record,
+                )
+            return await self._save_confirmed_simple_memory(
+                intent,
+                conversation_id=conversation_id,
+                user_message=user_message,
+            )
+        if not record_id:
             return await self._clarify_unclear_memory(
                 conversation_id=conversation_id,
                 user_message=user_message,
@@ -435,6 +314,7 @@ class MemoryTurnService(
             }
 
         record = confirmed_record
+        await self._materialize_person_card(record)
         response = self.memory_intent_service.saved_response(intent)
         assistant_message = await self.memory_service.save_message(
             conversation_id,

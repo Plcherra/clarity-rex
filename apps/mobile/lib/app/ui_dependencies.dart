@@ -11,7 +11,7 @@ import '../features/budgets/domain/budget_models.dart';
 import '../features/categories/application/category_read_model.dart';
 import '../features/categories/data/category_service.dart';
 import '../features/categories/domain/category_normalization.dart';
-import '../features/dashboard/application/dashboard_service.dart';
+import '../features/dashboard/application/dashboard_spend_reference_controller.dart';
 import '../features/dashboard/domain/dashboard_snapshot.dart';
 import '../features/finance/application/financial_read_model_service.dart';
 import '../features/finance/data/financial_audit_service.dart';
@@ -29,7 +29,7 @@ import '../features/transactions/domain/spend_categories.dart';
 
 final class AppUiControllerBindings {
   const AppUiControllerBindings({
-    required this.dashboardService,
+    required this.spendReferenceController,
     required this.transactionService,
     required this.categoryService,
     required this.categoryWorkflowService,
@@ -47,7 +47,7 @@ final class AppUiControllerBindings {
     required this.notifyImportJobStatusChanged,
   });
 
-  final DashboardService dashboardService;
+  final DashboardSpendReferenceController spendReferenceController;
   final TransactionService transactionService;
   final CategoryService categoryService;
   final CategoryWorkflowService categoryWorkflowService;
@@ -239,7 +239,7 @@ final class DashboardViewData {
 final class DashboardUiController extends _UiController {
   DashboardUiController._(super.bindings);
 
-  DateTime get spendReference => bindings.dashboardService.spendReference;
+  DateTime get spendReference => bindings.spendReferenceController.spendReference;
 
   Map<String, String> get categoryDisplayRenames =>
       bindings.categoryReadModel.categoryDisplayRenames;
@@ -325,9 +325,9 @@ final class DashboardUiController extends _UiController {
   ) {
     final reference = model.dashboardReferenceForScope(
       scope,
-      requested: bindings.dashboardService.spendReference,
+      requested: bindings.spendReferenceController.spendReference,
     );
-    bindings.dashboardService.spendReference = reference;
+    bindings.spendReferenceController.spendReference = reference;
     return reference;
   }
 }
@@ -441,7 +441,7 @@ final class AccountUiController extends _UiController {
 
   Future<List<AccountOverviewItem>> get accountOverviewItems async {
     final model = await loadFinancialReadModel();
-    final requested = bindings.dashboardService.spendReference;
+    final requested = bindings.spendReferenceController.spendReference;
     return [
       for (final account in model.accounts)
         () {
@@ -571,7 +571,7 @@ final class AccountUiController extends _UiController {
 final class BudgetUiController extends _UiController {
   BudgetUiController._(super.bindings);
 
-  DateTime get spendReference => bindings.dashboardService.spendReference;
+  DateTime get spendReference => bindings.spendReferenceController.spendReference;
 
   List<String> get customCategories =>
       bindings.categoryReadModel.customCategories;

@@ -1,3 +1,4 @@
+from app.services.action_truth_policy import ACTION_TRUTH_POLICY_PROMPT
 from app.services.prompt_service import (
     CONVERSATION_CONTEXT_PREFIX,
     FILE_CONTEXT_PREFIX,
@@ -11,7 +12,10 @@ from app.services.prompt_service import (
 )
 from app.services.time_context_service import TimeContextService
 
-BASE_SYSTEM_PROMPT = f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}"
+BASE_SYSTEM_PROMPT = (
+    f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}\n\n"
+    f"{ACTION_TRUTH_POLICY_PROMPT}"
+)
 
 
 def test_prompt_service_casual_voice_prompt_is_tiny_by_default():

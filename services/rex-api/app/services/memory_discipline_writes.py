@@ -8,10 +8,10 @@ from app.models.memory_discipline import (
     MemoryDisciplineCandidate,
     MemoryRecordKind,
 )
+from app.services.memory_discipline_decision_factory import create_action_for_kind
 from app.services.memory_discipline_service import (
     DUPLICATE_SCORE_THRESHOLD,
     MemoryDisciplineService,
-    _create_action_for_kind,
 )
 
 
@@ -62,7 +62,7 @@ async def execute_disciplined_create(
             ],
         )
 
-    create_action = _create_action_for_kind(kind)
+    create_action = create_action_for_kind(kind)
     if create_action is not None and decision.action == create_action:
         record = await create_fn(payload)
         return _require_confirmed_record(record)

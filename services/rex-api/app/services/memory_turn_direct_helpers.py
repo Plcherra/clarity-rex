@@ -9,9 +9,23 @@ from app.services.memory_intent_service import SimpleMemoryIntent
 from app.services.memory_path_policy import direct_save_metadata
 from app.services.memory_save_matcher import MemorySaveMatcher
 from app.services.memory_save_verifier import MemorySaveVerifier
+from app.services.person_memory_materializer import PersonMemoryMaterializer
 
 
 class MemoryTurnDirectHelpers(MemorySaveMatcher, MemorySaveVerifier):
+    async def _materialize_person_card(self, memory: dict) -> None:
+        materializer = getattr(self, "_person_memory_materializer", None)
+        if materializer is None:
+            materializer = PersonMemoryMaterializer()
+            self._person_memory_materializer = materializer
+        try:
+            await materializer.materialize_from_memory(
+                self.memory_service,
+                memory,
+            )
+        except Exception:
+            return
+
     async def _already_saved_simple_memory(
         self,
         intent: SimpleMemoryIntent,

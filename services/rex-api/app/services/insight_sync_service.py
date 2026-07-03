@@ -69,12 +69,26 @@ class InsightSyncService:
             from app.services.insight_generator import _period_key
 
             period_key = _period_key(financial_context)
-            items.extend(generate_dashboard_insights(financial_context))
+            locale = financial_context.get("locale")
+            if isinstance(locale, dict):
+                locale = locale.get("code")
+            items.extend(
+                generate_dashboard_insights(
+                    financial_context,
+                    locale=locale if isinstance(locale, str) else None,
+                )
+            )
         if accountability_signals:
+            locale = None
+            if financial_context:
+                locale = financial_context.get("locale")
+                if isinstance(locale, dict):
+                    locale = locale.get("code")
             items.extend(
                 generate_accountability_insights(
                     accountability_signals,
                     period_key=period_key,
+                    locale=locale if isinstance(locale, str) else None,
                 )
             )
         return items

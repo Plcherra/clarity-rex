@@ -1,4 +1,6 @@
 import pytest
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from fastapi import HTTPException
 
 from chat_service_fakes import (
@@ -21,6 +23,21 @@ from app.services.chat_service import (
 from app.services.file_service import FileService
 from app.services.memory_service import SupabaseMemoryService, MemoryServiceError
 from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.time_context_service import TimeContextService
+
+
+def _fixed_time_context_service() -> TimeContextService:
+    return TimeContextService(
+        timezone_name="America/New_York",
+        now_provider=lambda: datetime(
+            2026,
+            6,
+            1,
+            12,
+            0,
+            tzinfo=ZoneInfo("America/New_York"),
+        ),
+    )
 
 
 @pytest.mark.asyncio
@@ -873,7 +890,12 @@ async def test_chat_service_reuses_duplicate_explicit_goal():
 async def test_chat_service_saves_explicit_commitment_without_llm_call():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
-    chat_service = ChatService(ai_service, FileService(), memory_service)
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
 
     proposed = await chat_service.send_message("Remind me to send her $200 on the 10th")
     result = await confirm_durable_write(chat_service, proposed)
@@ -890,7 +912,12 @@ async def test_chat_service_saves_explicit_commitment_without_llm_call():
 async def test_chat_service_saves_pc_upgrade_checklist_as_goal_without_llm():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
-    chat_service = ChatService(ai_service, FileService(), memory_service)
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
 
     message = (
         "Nice, it would be my next checklist for the next month purchase. "

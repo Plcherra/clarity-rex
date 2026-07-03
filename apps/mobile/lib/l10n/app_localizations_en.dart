@@ -836,6 +836,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Saved insights are not available yet. The Dashboard strip still shows current signals. Turn on proactive insights in Profile once storage is ready.';
 
   @override
+  String get insightsApiUnreadableError =>
+      'Backend returned an unreadable error.';
+
+  @override
+  String get insightsApiGenericError => 'Clarity API returned an error.';
+
+  @override
+  String get insightsApiInvalidListResponse =>
+      'Invalid insights list response.';
+
+  @override
+  String get insightsApiInvalidListPayload => 'Invalid insights list payload.';
+
+  @override
+  String get insightsApiInvalidSyncResponse =>
+      'Invalid insights sync response.';
+
+  @override
+  String get insightsApiInvalidMarkReadResponse =>
+      'Invalid mark-read response.';
+
+  @override
   String get profileProactiveInsightsTitle => 'Proactive financial insights';
 
   @override

@@ -1,4 +1,3 @@
-import '../core/models/models.dart';
 import '../core/supabase/supabase_repository.dart';
 import '../core/supabase/supabase_service.dart';
 import '../features/accounts/application/account_workflow_service.dart';
@@ -13,7 +12,7 @@ import '../features/budgets/application/budget_workflow_service.dart';
 import '../features/budgets/data/budget_service.dart';
 import '../features/categories/application/category_read_model.dart';
 import '../features/categories/data/category_service.dart';
-import '../features/dashboard/application/dashboard_service.dart';
+import '../features/dashboard/application/dashboard_spend_reference_controller.dart';
 import '../features/finance/application/financial_read_model_service.dart';
 import '../features/finance/data/financial_audit_service.dart';
 import '../features/plaid/application/plaid_link_service.dart';
@@ -25,7 +24,6 @@ import '../features/transactions/application/category_workflow_service.dart';
 import '../features/transactions/application/import_job_status_service.dart';
 import '../features/transactions/application/transaction_workflow_service.dart';
 import '../features/transactions/data/csv_import_service.dart';
-import '../features/transactions/data/csv_parser.dart';
 import '../features/transactions/data/merchant_category_rule_service.dart';
 import '../features/transactions/data/openai_proxy_client.dart';
 import '../features/transactions/data/transaction_service.dart';
@@ -86,7 +84,8 @@ final class AppComposition {
       supabaseRepository.accountStatementImports;
   late final PlaidLinkService plaidLinkService = PlaidLinkService();
   late final PlaidAccountService plaidAccountService = PlaidAccountService();
-  final DashboardService dashboardService = DashboardService();
+  final DashboardSpendReferenceController spendReferenceController =
+      DashboardSpendReferenceController();
   late final FinancialReadModelService financialReadModelService =
       FinancialReadModelService(
         accountService: accountService,
@@ -160,7 +159,6 @@ final class AppComposition {
 
   late final DashboardRefreshCoordinator dashboardRefreshCoordinator =
       DashboardRefreshCoordinator(
-        dashboardService: dashboardService,
         financialReadModelService: financialReadModelService,
         notifyTransactionDataChanged: () =>
             notifications.transactionDataChanged(),
@@ -185,14 +183,13 @@ final class AppComposition {
       TransactionWorkflowService(
         transactionService: transactionService,
         csvImportService: csvImportService,
-        dashboardService: dashboardService,
+        spendReferenceController: spendReferenceController,
         importJobStatusService: importJobStatusService,
         financialAuditService: financialAuditService,
         deleteStatementImport: accountStatementImportService.deleteImport,
         refreshCategories: categoryReadModel.refresh,
         categoryNameForId: categoryReadModel.categoryNameForId,
         refreshAllState: dashboardRefreshCoordinator.refreshAllState,
-        recomputeDashboard: _syncDashboardAfterTransactionWorkflow,
         notifyTransactionDataChanged: () =>
             notifications.transactionDataChanged(),
         notifyImportJobStatusChanged: () =>
@@ -201,7 +198,7 @@ final class AppComposition {
 
   late final AppUiDependencies ui = AppUiDependencies(
     AppUiControllerBindings(
-      dashboardService: dashboardService,
+      spendReferenceController: spendReferenceController,
       transactionService: transactionService,
       categoryService: categoryService,
       categoryWorkflowService: categoryWorkflowService,
@@ -233,20 +230,6 @@ final class AppComposition {
     accountStatementImportService: accountStatementImportService,
     openAiClient: openAiProxyClient,
   );
-
-  void _syncDashboardAfterTransactionWorkflow({
-    required List<Transaction> activeAccountTransactions,
-    required List<Transaction> allTransactionsForMetrics,
-    required List<Transaction> transactionsForCsvDiagnostics,
-    required CsvParseDiagnostics? diag,
-  }) {
-    dashboardRefreshCoordinator.syncAfterTransactionWorkflow(
-      activeAccountTransactions: activeAccountTransactions,
-      allTransactionsForMetrics: allTransactionsForMetrics,
-      transactionsForCsvDiagnostics: transactionsForCsvDiagnostics,
-      diagnostics: diag,
-    );
-  }
 
   void _onLocaleChangedForCategoryLabels() {
     ui.notifyBudgets();

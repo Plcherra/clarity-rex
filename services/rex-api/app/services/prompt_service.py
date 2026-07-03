@@ -17,6 +17,7 @@ from app.services.prompt_constants import (
 from app.services.prompt_financial_context import PromptFinancialContextMixin
 from app.services.prompt_memory_context import PromptMemoryContextMixin
 from app.services.prompt_structured_context import PromptStructuredContextMixin
+from app.services.action_truth_policy import ACTION_TRUTH_POLICY_PROMPT
 from app.services.locale_utils import locale_response_rule
 from app.services.time_context_service import TimeContextService
 
@@ -94,6 +95,7 @@ class PromptService(
         locale: Optional[str] = None,
     ) -> list[str]:
         sections = [f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}"]
+        sections.append(ACTION_TRUTH_POLICY_PROMPT)
 
         locale_rule = locale_response_rule(locale)
         if locale_rule:

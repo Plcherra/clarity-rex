@@ -10,10 +10,11 @@ import '../domain/insight_item.dart';
 final insightsApiProvider = Provider<InsightsApi>((ref) => InsightsApi());
 
 class InsightsApiException implements Exception {
-  const InsightsApiException(this.message, {this.errorCode});
+  const InsightsApiException(this.message, {this.errorCode, this.messageKey});
 
   final String message;
   final String? errorCode;
+  final String? messageKey;
 
   bool get isStorageUnavailable => errorCode == 'insights_storage_unavailable';
 
@@ -70,11 +71,17 @@ class InsightsApi {
     );
     final data = _decodeResponse(response);
     if (data is! Map<String, dynamic>) {
-      throw const InsightsApiException('Invalid insights list response.');
+      throw const InsightsApiException(
+        'Invalid insights list response.',
+        messageKey: 'insightsApiInvalidListResponse',
+      );
     }
     final items = data['items'];
     if (items is! List) {
-      throw const InsightsApiException('Invalid insights list payload.');
+      throw const InsightsApiException(
+        'Invalid insights list payload.',
+        messageKey: 'insightsApiInvalidListPayload',
+      );
     }
     return [
       for (final item in items)
@@ -96,7 +103,10 @@ class InsightsApi {
     final response = await _apiClient.postJson('/insights/sync', payload);
     final data = _decodeResponse(response);
     if (data is! Map<String, dynamic>) {
-      throw const InsightsApiException('Invalid insights sync response.');
+      throw const InsightsApiException(
+        'Invalid insights sync response.',
+        messageKey: 'insightsApiInvalidSyncResponse',
+      );
     }
     return InsightSyncResult.fromJson(data);
   }
@@ -105,7 +115,10 @@ class InsightsApi {
     final response = await _apiClient.patchJson('/insights/$insightId/read', {});
     final data = _decodeResponse(response);
     if (data is! Map<String, dynamic>) {
-      throw const InsightsApiException('Invalid mark-read response.');
+      throw const InsightsApiException(
+        'Invalid mark-read response.',
+        messageKey: 'insightsApiInvalidMarkReadResponse',
+      );
     }
     return InsightItem.fromJson(data);
   }
@@ -116,7 +129,13 @@ class InsightsApi {
       if (message is InsightsApiException) {
         throw message;
       }
-      throw InsightsApiException(message);
+      if (message is _InsightsApiError) {
+        throw InsightsApiException(
+          message.message,
+          messageKey: message.messageKey,
+        );
+      }
+      throw InsightsApiException(message as String);
     }
     if (response.body.trim().isEmpty) return null;
     return jsonDecode(response.body);
@@ -144,8 +163,21 @@ class InsightsApi {
     } on InsightsApiException {
       rethrow;
     } on FormatException {
-      return 'Backend returned an unreadable error.';
+      return _InsightsApiError(
+        message: 'Backend returned an unreadable error.',
+        messageKey: 'insightsApiUnreadableError',
+      );
     }
-    return 'Clarity API returned an error.';
+    return _InsightsApiError(
+      message: 'Clarity API returned an error.',
+      messageKey: 'insightsApiGenericError',
+    );
   }
+}
+
+class _InsightsApiError {
+  const _InsightsApiError({required this.message, this.messageKey});
+
+  final String message;
+  final String? messageKey;
 }

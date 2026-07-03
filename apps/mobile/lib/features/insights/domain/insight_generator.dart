@@ -24,67 +24,6 @@ List<InsightItem> generateDashboardInsightItems({
   return items.length <= 3 ? items : items.sublist(0, 3);
 }
 
-InsightItem? _netCashFlowInsight(
-  AppLocalizations l10n,
-  DashboardSnapshot snapshot,
-  String periodKey,
-) {
-  if (snapshot.incomeThisMonth <= 0 && snapshot.spentThisMonth <= 0) {
-    return null;
-  }
-
-  final net = snapshot.availableThisMonth;
-  if (net < 0) {
-    final body = l10n.dashboardInsightsNetNegative(formatMoney(-net));
-    return InsightItem(
-      fingerprint: buildInsightFingerprint(
-        source: InsightSource.dashboardSnapshot,
-        type: InsightType.netCashFlow,
-        periodKey: periodKey,
-        detailKey: 'negative',
-      ),
-      source: InsightSource.dashboardSnapshot,
-      type: InsightType.netCashFlow,
-      title: l10n.dashboardInsightsStripTitle,
-      body: body,
-      periodKey: periodKey,
-      anchor: DashboardInsightAnchor.monthlyCashFlow,
-    );
-  }
-  if (net > 0) {
-    final body = l10n.dashboardInsightsNetPositive(formatMoney(net));
-    return InsightItem(
-      fingerprint: buildInsightFingerprint(
-        source: InsightSource.dashboardSnapshot,
-        type: InsightType.netCashFlow,
-        periodKey: periodKey,
-        detailKey: 'positive',
-      ),
-      source: InsightSource.dashboardSnapshot,
-      type: InsightType.netCashFlow,
-      title: l10n.dashboardInsightsStripTitle,
-      body: body,
-      periodKey: periodKey,
-      anchor: DashboardInsightAnchor.monthlyCashFlow,
-    );
-  }
-  final body = l10n.dashboardInsightsNetBalanced;
-  return InsightItem(
-    fingerprint: buildInsightFingerprint(
-      source: InsightSource.dashboardSnapshot,
-      type: InsightType.netCashFlow,
-      periodKey: periodKey,
-      detailKey: 'balanced',
-    ),
-    source: InsightSource.dashboardSnapshot,
-    type: InsightType.netCashFlow,
-    title: l10n.dashboardInsightsStripTitle,
-    body: body,
-    periodKey: periodKey,
-    anchor: DashboardInsightAnchor.monthlyCashFlow,
-  );
-}
-
 InsightItem? _momLeakInsight(
   AppLocalizations l10n,
   List<CategoryLeakStat> leaks,

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clarity/core/l10n/app_locale.dart';
 import 'package:clarity/rex/accountability/data/accountability_api.dart';
 import 'package:clarity/features/finance/application/assistant_financial_context_service.dart';
 import '../data/insights_api.dart';
@@ -96,7 +97,7 @@ class InsightsController extends Notifier<InsightsState> {
         );
         return;
       }
-      state = state.copyWith(isLoading: false, errorMessage: error.message);
+      state = state.copyWith(isLoading: false, errorMessage: _localizedInsightsError(ref, error));
     } on Object catch (error) {
       state = state.copyWith(isLoading: false, errorMessage: error.toString());
     }
@@ -142,7 +143,7 @@ class InsightsController extends Notifier<InsightsState> {
         );
         return;
       }
-      state = state.copyWith(isSyncing: false, errorMessage: error.message);
+      state = state.copyWith(isSyncing: false, errorMessage: _localizedInsightsError(ref, error));
     } on Object catch (error) {
       state = state.copyWith(isSyncing: false, errorMessage: error.toString());
     }
@@ -161,9 +162,26 @@ class InsightsController extends Notifier<InsightsState> {
         clearError: true,
       );
     } on InsightsApiException catch (error) {
-      state = state.copyWith(errorMessage: error.message);
+      state = state.copyWith(errorMessage: _localizedInsightsError(ref, error));
     } on Object catch (error) {
       state = state.copyWith(errorMessage: error.toString());
     }
   }
+}
+
+String _localizedInsightsError(Ref ref, InsightsApiException error) {
+  final key = error.messageKey;
+  if (key == null) {
+    return error.message;
+  }
+  final l10n = lookupForLocale(ref.read(localeControllerProvider).locale);
+  return switch (key) {
+    'insightsApiUnreadableError' => l10n.insightsApiUnreadableError,
+    'insightsApiGenericError' => l10n.insightsApiGenericError,
+    'insightsApiInvalidListResponse' => l10n.insightsApiInvalidListResponse,
+    'insightsApiInvalidListPayload' => l10n.insightsApiInvalidListPayload,
+    'insightsApiInvalidSyncResponse' => l10n.insightsApiInvalidSyncResponse,
+    'insightsApiInvalidMarkReadResponse' => l10n.insightsApiInvalidMarkReadResponse,
+    _ => error.message,
+  };
 }

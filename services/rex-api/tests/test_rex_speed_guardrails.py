@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
+from app.services.action_truth_policy import ACTION_TRUTH_POLICY_PROMPT
 from app.services.prompt_service import (
     FINANCIAL_CONTEXT_PREFIX,
     LONG_TERM_MEMORY_PREFIX,
@@ -41,6 +42,11 @@ FORBIDDEN_SECOND_CALL_TERMS = (
     "memory_extraction",
     "extract_memory_after_success",
     "extract_memory_after",
+)
+
+BASE_SYSTEM_PROMPT = (
+    f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}\n\n"
+    f"{ACTION_TRUTH_POLICY_PROMPT}"
 )
 
 
@@ -97,7 +103,8 @@ async def test_normal_streaming_chat_turn_uses_exactly_one_llm_call():
     assert memory_service.relevant_memory_queries == []
     assert memory_service.structured_context_queries == []
     assert len(ai_service.messages) == 2
-    assert len(ai_service.messages[0]["content"]) <= MAX_DEFAULT_REX_PROMPT_CHARACTERS
+    base_prompt = ai_service.messages[0]["content"].split("\n\nCurrent time context:")[0]
+    assert len(base_prompt) <= MAX_DEFAULT_REX_PROMPT_CHARACTERS
 
     prompt_text = _prompt_text(ai_service.messages)
     assert LONG_TERM_MEMORY_PREFIX not in prompt_text
@@ -170,10 +177,12 @@ async def test_voice_trace_covers_exact_movie_memory_fixture():
         )
     ]
 
-    assert events[-1]["memory_changes"]["created"] == 1
-    assert memory_service.long_term_memory[0]["content"] == (
+    memory_changes = events[-1]["memory_changes"]
+    assert memory_changes["confirmation_required"] == 1
+    assert memory_changes["write_proposals"][0]["title"] == (
         "User plans to watch Masters of the Universe tonight."
     )
+    assert memory_service.long_term_memory == []
     assert ai_service.stream_calls == 0
 
 
@@ -203,9 +212,10 @@ async def test_voice_trace_covers_location_correction_fixture():
 
     trace = next(event for event in events if event["event"] == "turn.trace")
     assert trace["loaded_context"]["long_term_memory"] is True
-    assert events[-1]["memory_changes"]["updated"] == 1
+    memory_changes = events[-1]["memory_changes"]
+    assert memory_changes["confirmation_required"] == 1
     assert memory_service.long_term_memory[0]["content"] == (
-        "User lives in Somerville, Massachusetts."
+        "User lives in Summerville, Massachusetts."
     )
     assert ai_service.stream_calls == 0
 
@@ -280,7 +290,7 @@ async def test_memory_recall_voice_turn_is_one_call_with_bounded_context():
 def test_prompt_budgets_stay_under_voice_first_limits():
     prompt = PromptService().build_messages(user_message="Hello Rex")[0]["content"]
 
-    assert prompt == f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}"
+    assert prompt == BASE_SYSTEM_PROMPT
     assert len(prompt) <= MAX_DEFAULT_REX_PROMPT_CHARACTERS
 
     for contract in all_rex_prompt_contracts():

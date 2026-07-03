@@ -102,6 +102,7 @@ class FakeChatService:
         user_requested_deep_thinking=False,
         include_turn_trace=False,
         locale=None,
+        write_confirmation=None,
     ):
         self.stream_calls.append(
             {
@@ -115,6 +116,7 @@ class FakeChatService:
                 "user_requested_deep_thinking": user_requested_deep_thinking,
                 "include_turn_trace": include_turn_trace,
                 "locale": locale,
+                "write_confirmation": write_confirmation,
             }
         )
         if self.error is not None:

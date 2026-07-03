@@ -48,6 +48,7 @@ final class ClarityApp extends StatelessWidget {
             loadFinancialReadModel: ui.dashboard.loadFinancialReadModel,
             spendReference: () => ui.budgets.spendReference,
             notifyDataChanged: ui.notifyDataChanged,
+            localeTag: () => AppLocale.rexLocaleTag(localeController),
           ),
         ),
         localeControllerProvider.overrideWithValue(localeController),

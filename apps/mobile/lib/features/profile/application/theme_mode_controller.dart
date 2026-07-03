@@ -8,7 +8,7 @@ final class ThemeModeController extends ChangeNotifier {
   static const _preferenceKey = 'clarity.themeMode';
 
   final SharedPreferencesAsync? _preferencesOverride;
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.dark;
 
   SharedPreferencesAsync get _preferences =>
       _preferencesOverride ?? SharedPreferencesAsync();
@@ -38,7 +38,7 @@ final class ThemeModeController extends ChangeNotifier {
     return switch (value) {
       'dark' => ThemeMode.dark,
       'light' => ThemeMode.light,
-      _ => ThemeMode.system,
+      _ => ThemeMode.dark,
     };
   }
 }

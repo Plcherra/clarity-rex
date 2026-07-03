@@ -4,32 +4,34 @@ import logging
 import time
 from typing import Any, Optional
 
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
 
-from app.services.ai_service import AIServiceError
-from app.services.chat_service import ChatService, ConversationNotFoundError
-from app.services.deepgram_service import DeepgramServiceError
+from app.services.chat_service import ChatService
 from app.services.deepgram_streaming_service import DeepgramStreamingService
-from app.services.google_tts_service import GoogleTTSService, GoogleTTSServiceError
+from app.services.google_tts_service import GoogleTTSService
 from app.services.memory_service import MemoryServiceError
 from app.services.usage_tracking_service import UsageTrackingService
+from app.services.voice_stream_event_router import VoiceStreamEventRouterMixin
+from app.services.voice_stream_live_transcription import (
+    VoiceStreamLiveTranscriptionMixin,
+)
+from app.services.voice_stream_response_writer import VoiceStreamResponseWriterMixin
+from app.services.voice_stream_turn_processing import VoiceStreamTurnProcessingMixin
+from app.services.voice_stream_usage_tracking import VoiceStreamUsageTrackingMixin
 from app.services.voice_stream_config import (
     VOICE_DEEP_RESPONSE_MAX_TOKENS,
     VOICE_RESPONSE_INSTRUCTIONS,
     VOICE_RESPONSE_MAX_TOKENS,
     voice_response_max_tokens,
 )
-from app.services.voice_stream_live_transcription import (
-    VoiceStreamLiveTranscriptionMixin,
-)
-from app.services.voice_stream_response_writer import VoiceStreamResponseWriterMixin
-from app.services.voice_stream_usage_tracking import VoiceStreamUsageTrackingMixin
 
 
 LOGGER = logging.getLogger("rex.voice_stream")
 
 
 class VoiceStreamSession(
+    VoiceStreamEventRouterMixin,
+    VoiceStreamTurnProcessingMixin,
     VoiceStreamUsageTrackingMixin,
     VoiceStreamResponseWriterMixin,
     VoiceStreamLiveTranscriptionMixin,
@@ -72,388 +74,6 @@ class VoiceStreamSession(
         self._assistant_audio_started = False
         self._turn_generation = 0
         self.locale: Optional[str] = None
-
-    async def run(self) -> None:
-        await self.websocket.accept()
-        session_started_at = time.perf_counter()
-        session_status = "completed"
-
-        try:
-            while True:
-                message = await self.websocket.receive()
-                if message.get("type") == "websocket.disconnect":
-                    break
-
-                if message.get("bytes") is not None:
-                    await self._receive_audio_chunk(message["bytes"])
-                    continue
-
-                text = message.get("text")
-                if text is None:
-                    continue
-
-                should_continue = await self._receive_text_event(text)
-                if not should_continue:
-                    break
-        except WebSocketDisconnect:
-            return
-        except Exception:
-            session_status = "failure"
-            raise
-        finally:
-            await self._cancel_live_endpoint_check()
-            await self._cancel_active_turn()
-            await self._record_voice_session_usage(
-                self._elapsed_ms(session_started_at),
-                status=session_status,
-            )
-
-    async def _receive_audio_chunk(self, chunk: bytes) -> None:
-        if not chunk:
-            return
-        if self._active_turn_task is not None and not self._active_turn_task.done():
-            if self._assistant_audio_started:
-                LOGGER.info(
-                    "voice_barge_in_audio_accepted session_id=%s conversation_id=%s",
-                    self._session_id,
-                    self.conversation_id,
-                )
-                await self._interrupt_active_turn(reason="barge_in_audio")
-            else:
-                LOGGER.info(
-                    "voice_trailing_audio_ignored session_id=%s conversation_id=%s "
-                    "audio_bytes=%s audio_chunks=%s",
-                    self._session_id,
-                    self.conversation_id,
-                    len(chunk),
-                    self._audio_chunks_received,
-                )
-                return
-        self._audio_bytes += len(chunk)
-        self._audio_chunks_received += 1
-        if self._audio_started_at is None:
-            self._audio_started_at = time.perf_counter()
-        if self._supports_live_transcription():
-            live_transcription = await self._ensure_live_transcription()
-            await live_transcription.send_audio(chunk)
-        else:
-            self._audio_chunks.append(chunk)
-        await self._send_event(
-            "audio.received",
-            bytes_received=self._audio_bytes_received(),
-            chunk_count=self._audio_chunk_count(),
-        )
-
-    async def _receive_text_event(self, text: str) -> bool:
-        try:
-            payload = self.websocket_json_loads(text)
-        except ValueError:
-            await self._send_error("Invalid voice stream event.")
-            return True
-
-        event = payload.get("event")
-        if event == "session.start":
-            self.conversation_id = payload.get("conversation_id") or self.conversation_id
-            self.input_mime_type = payload.get("input_mime_type") or self.input_mime_type
-            self.client = str(payload.get("client") or self.client or "")
-            locale_value = payload.get("locale")
-            if isinstance(locale_value, str) and locale_value.strip():
-                self.locale = locale_value.strip()
-            sample_rate = payload.get("sample_rate")
-            if isinstance(sample_rate, int) and sample_rate > 0:
-                self.sample_rate = sample_rate
-            await self._send_event(
-                "session.started",
-                session_id=self._session_id,
-                conversation_id=self.conversation_id,
-                input_mime_type=self.input_mime_type,
-                sample_rate=self.sample_rate,
-            )
-            return True
-
-        if event == "utterance.end":
-            if self._active_turn_task is not None and not self._active_turn_task.done():
-                await self._send_error(
-                    "Rex is still answering the previous voice turn.",
-                    status_code=409,
-                    code="turn_in_progress",
-                )
-                return True
-            financial_context = payload.get("financial_context")
-            if isinstance(financial_context, dict):
-                self.financial_context = financial_context
-            else:
-                self.financial_context = None
-            write_confirmation = payload.get("write_confirmation")
-            if isinstance(write_confirmation, dict):
-                self.write_confirmation = write_confirmation
-            else:
-                self.write_confirmation = None
-            await self._cancel_live_endpoint_check()
-            if self._live_transcription is not None:
-                self._active_turn_task = asyncio.create_task(
-                    self._process_live_utterance()
-                )
-            else:
-                self._active_turn_task = asyncio.create_task(self._process_utterance())
-            return True
-
-        if event == "user.interrupt":
-            await self._interrupt_active_turn(reason="user_interrupt")
-            return True
-
-        if event == "session.end":
-            await self._cancel_active_turn()
-            await self._cancel_live_endpoint_check()
-            await self._close_live_transcription()
-            await self._send_event("session.ended", session_id=self._session_id)
-            await self.websocket.close()
-            return False
-
-        await self._send_error(f"Unsupported voice stream event: {event}")
-        return True
-
-    async def _process_utterance(self) -> None:
-        self._turn_generation += 1
-        turn_generation = self._turn_generation
-        self._assistant_audio_started = False
-        chunks = self._audio_chunks
-        self._audio_chunks = []
-        audio_started_at = self._audio_started_at
-        self._audio_started_at = None
-        self._turn_audio_bytes = self._audio_bytes_received()
-        self._turn_audio_chunks = self._audio_chunk_count()
-        self._audio_bytes = 0
-        self._audio_chunks_received = 0
-
-        if not chunks:
-            LOGGER.info(
-                "voice_empty_audio_recovered session_id=%s conversation_id=%s "
-                "mode=buffered",
-                self._session_id,
-                self.conversation_id,
-            )
-            await self._send_error("I did not catch any audio.", code="empty_audio")
-            return
-
-        timings: dict[str, int] = {}
-        started_at = time.perf_counter()
-        if audio_started_at is not None:
-            timings["capture_ms"] = self._elapsed_ms(audio_started_at)
-        LOGGER.info(
-            "voice_turn_accepted session_id=%s conversation_id=%s mode=buffered "
-            "audio_bytes=%s audio_chunks=%s",
-            self._session_id,
-            self.conversation_id,
-            self._turn_audio_bytes,
-            self._turn_audio_chunks,
-        )
-
-        try:
-            transcription = await self.deepgram_streaming_service.transcribe_audio_stream(
-                self._chunk_iterator(chunks),
-                content_type=self.input_mime_type,
-                sample_rate=self.sample_rate,
-                on_transcript=self._send_transcript_event,
-            )
-            timings["stt_ms"] = self._elapsed_ms(started_at)
-            await self._record_stt_usage(
-                transcription,
-                latency_ms=timings["stt_ms"],
-            )
-            transcript = str(transcription.get("transcript") or "").strip()
-            if not transcript:
-                LOGGER.info(
-                    "voice_blank_transcript_recovered session_id=%s "
-                    "conversation_id=%s mode=buffered",
-                    self._session_id,
-                    self.conversation_id,
-                )
-                await self._send_error("I did not catch any audio.", code="empty_audio")
-                return
-            transcription = {**transcription, "transcript": transcript}
-
-            await self._send_event(
-                "transcript.final",
-                transcript=transcript,
-                confidence=transcription.get("confidence"),
-                metadata=transcription.get("metadata") or {},
-            )
-
-            await self._send_event("assistant.started")
-            response_text = await self._stream_chat_and_audio(
-                transcript,
-                transcription,
-                timings,
-                turn_generation=turn_generation,
-            )
-            timings["turn_ms"] = self._elapsed_ms(started_at)
-            self._log_turn_timings(timings, mode="buffered")
-            await self._send_event(
-                "assistant.done",
-                conversation_id=self.conversation_id,
-                response_text=response_text,
-                memory_changes=getattr(self, "_last_memory_changes", None),
-                timings=timings,
-            )
-        except (
-            DeepgramServiceError,
-            ConversationNotFoundError,
-            AIServiceError,
-            MemoryServiceError,
-            GoogleTTSServiceError,
-        ) as error:
-            if isinstance(error, DeepgramServiceError):
-                await self._record_stt_usage(
-                    None,
-                    latency_ms=self._elapsed_ms(started_at),
-                    status="failure",
-                    error_class=error.__class__.__name__,
-                )
-            await self._send_turn_error(error)
-        except asyncio.CancelledError:
-            raise
-        except Exception as error:
-            self._log_unexpected_error(error)
-            await self._send_error("Voice stream failed.", status_code=500)
-        finally:
-            self._assistant_audio_started = False
-            current_task = asyncio.current_task()
-            if self._active_turn_task is current_task:
-                self._active_turn_task = None
-
-    async def _process_live_utterance(self) -> None:
-        self._turn_generation += 1
-        turn_generation = self._turn_generation
-        self._assistant_audio_started = False
-        await self._cancel_live_endpoint_check()
-        live_transcription = self._live_transcription
-        self._live_transcription = None
-        audio_started_at = self._audio_started_at
-        self._audio_started_at = None
-        self._turn_audio_bytes = self._audio_bytes_received()
-        self._turn_audio_chunks = self._audio_chunk_count()
-        self._audio_bytes = 0
-        self._audio_chunks_received = 0
-
-        if live_transcription is None:
-            LOGGER.info(
-                "voice_empty_audio_recovered session_id=%s conversation_id=%s "
-                "mode=live",
-                self._session_id,
-                self.conversation_id,
-            )
-            await self._send_error("I did not catch any audio.", code="empty_audio")
-            return
-
-        timings: dict[str, int] = {}
-        started_at = time.perf_counter()
-        if audio_started_at is not None:
-            timings["capture_ms"] = self._elapsed_ms(audio_started_at)
-        LOGGER.info(
-            "voice_turn_accepted session_id=%s conversation_id=%s mode=live "
-            "audio_bytes=%s audio_chunks=%s",
-            self._session_id,
-            self.conversation_id,
-            self._turn_audio_bytes,
-            self._turn_audio_chunks,
-        )
-
-        try:
-            transcription = await live_transcription.finish()
-            timings["stt_ms"] = self._elapsed_ms(started_at)
-            await self._record_stt_usage(
-                transcription,
-                latency_ms=timings["stt_ms"],
-            )
-            transcript = str(transcription.get("transcript") or "").strip()
-            if not transcript:
-                LOGGER.info(
-                    "voice_blank_transcript_recovered session_id=%s "
-                    "conversation_id=%s mode=live",
-                    self._session_id,
-                    self.conversation_id,
-                )
-                await self._send_error("I did not catch any audio.", code="empty_audio")
-                return
-            transcription = {**transcription, "transcript": transcript}
-            await self._send_event("assistant.started")
-            response_text = await self._stream_chat_and_audio(
-                transcript,
-                transcription,
-                timings,
-                turn_generation=turn_generation,
-            )
-            timings["turn_ms"] = self._elapsed_ms(started_at)
-            self._log_turn_timings(timings, mode="live")
-            await self._send_event(
-                "assistant.done",
-                conversation_id=self.conversation_id,
-                response_text=response_text,
-                memory_changes=getattr(self, "_last_memory_changes", None),
-                timings=timings,
-            )
-        except (
-            DeepgramServiceError,
-            ConversationNotFoundError,
-            AIServiceError,
-            MemoryServiceError,
-            GoogleTTSServiceError,
-        ) as error:
-            if isinstance(error, DeepgramServiceError):
-                await self._record_stt_usage(
-                    None,
-                    latency_ms=self._elapsed_ms(started_at),
-                    status="failure",
-                    error_class=error.__class__.__name__,
-                )
-            await self._send_turn_error(error)
-        except asyncio.CancelledError:
-            raise
-        except Exception as error:
-            self._log_unexpected_error(error)
-            await self._send_error("Voice stream failed.", status_code=500)
-        finally:
-            self._assistant_audio_started = False
-            current_task = asyncio.current_task()
-            if self._active_turn_task is current_task:
-                self._active_turn_task = None
-
-    def _audio_bytes_received(self) -> int:
-        if self._supports_live_transcription():
-            return self._audio_bytes
-        return sum(len(item) for item in self._audio_chunks)
-
-    def _audio_chunk_count(self) -> int:
-        if self._supports_live_transcription():
-            return self._audio_chunks_received
-        return len(self._audio_chunks)
-
-    def _log_turn_timings(self, timings: dict[str, int], *, mode: str) -> None:
-        turn_trace = getattr(self, "_last_turn_trace", {}) or {}
-        LOGGER.info(
-            "voice_turn_timing session_id=%s conversation_id=%s client=%s "
-            "mode=%s capture_ms=%s stt_ms=%s grok_first_token_ms=%s "
-            "tts_first_audio_ms=%s tts_chunk_count=%s tts_total_ms=%s "
-            "turn_ms=%s audio_bytes=%s audio_chunks=%s intent=%s "
-            "context_flags=%s memory_action=%s",
-            self._session_id,
-            self.conversation_id,
-            self.client,
-            mode,
-            timings.get("capture_ms"),
-            timings.get("stt_ms"),
-            timings.get("grok_first_token_ms"),
-            timings.get("tts_first_audio_ms"),
-            timings.get("tts_chunk_count", 0),
-            timings.get("tts_total_ms"),
-            timings.get("turn_ms"),
-            self._turn_audio_bytes,
-            self._turn_audio_chunks,
-            turn_trace.get("intent", "unknown"),
-            turn_trace.get("loaded_context", {}),
-            turn_trace.get("memory_action", "unknown"),
-        )
 
     async def _cancel_active_turn(self) -> None:
         task = self._active_turn_task
@@ -517,6 +137,11 @@ class VoiceStreamSession(
         )
 
     async def _send_turn_error(self, error: Exception) -> None:
+        from app.services.ai_service import AIServiceError
+        from app.services.chat_service import ConversationNotFoundError
+        from app.services.deepgram_service import DeepgramServiceError
+        from app.services.google_tts_service import GoogleTTSServiceError
+
         if isinstance(error, DeepgramServiceError):
             await self._send_error(
                 error.detail,

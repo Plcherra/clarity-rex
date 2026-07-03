@@ -8,6 +8,11 @@ import 'package:clarity/features/dashboard/domain/dashboard_snapshot.dart';
 import 'package:clarity/features/finance/application/financial_read_model_service.dart';
 import 'package:clarity/features/transactions/domain/transaction_fingerprint.dart';
 import 'package:clarity/rex/data/rex_financial_transaction_policy.dart';
+import 'package:clarity/core/formatting/formatting.dart';
+import 'package:clarity/features/insights/domain/insight_generator.dart';
+import 'package:clarity/features/insights/domain/insight_item.dart';
+import 'package:clarity/l10n/app_localizations.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -168,6 +173,88 @@ void main() {
         (category) => category['label'] == 'Grocery / Supermarket',
       );
       expect(grocery['spend'], 85);
+    },
+  );
+
+  test(
+    'dashboard insights strip amounts align with overview snapshot totals',
+    () {
+      final model = FinancialReadModel.fromRecords(
+        accounts: _accounts,
+        categories: _categories,
+        transactionRecords: [
+          _record(
+            id: 'payroll',
+            amount: 3000,
+            type: 'income',
+            description: 'PAYROLL DEPOSIT',
+            categoryId: 'cat-payroll',
+          ),
+          _record(
+            id: 'grocery',
+            amount: 95,
+            type: 'expense',
+            description: 'PEARL ST MARKET',
+            categoryId: 'cat-grocery',
+          ),
+          _record(
+            id: 'grocery-over',
+            amount: 65,
+            type: 'expense',
+            description: 'EXTRA GROCERY RUN',
+            categoryId: 'cat-grocery',
+            date: DateTime(2026, 2, 20),
+          ),
+        ],
+        budgets: [
+          _budget(
+            id: 'budget-grocery',
+            name: 'Grocery budget',
+            categoryId: 'cat-grocery',
+            amount: 90,
+          ),
+        ],
+        statementImports: [
+          _statementImport(
+            accountId: 'checking',
+            importId: 'checking-mar',
+            balance: 2400,
+          ),
+        ],
+      );
+
+      final snapshot = model.dashboardSnapshot(
+        scope: const GlobalDashboardScope(),
+        reference: DateTime(2026, 3, 20),
+      );
+      final budgetPerformance = model.budgetPerformanceForScope(
+        const GlobalDashboardScope(),
+        periodType: BudgetPeriodType.monthly,
+        periodKey: '2026-03',
+      );
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final stripItems = generateDashboardInsightItems(
+        l10n: l10n,
+        snapshot: snapshot,
+        budgetPerformance: budgetPerformance,
+      );
+
+      expect(snapshot.incomeThisMonth, 3000);
+      expect(snapshot.spentThisMonth, 95);
+      expect(snapshot.availableThisMonth, 2905);
+      expect(
+        stripItems.map((item) => item.type),
+        isNot(contains(InsightType.netCashFlow)),
+      );
+
+      final overspend = budgetPerformance.topOverspendingCategories.firstOrNull;
+      expect(overspend, isNotNull);
+      expect(
+        stripItems.any(
+          (item) => item.body.contains(formatMoney(overspend!.overspent)),
+        ),
+        isTrue,
+      );
     },
   );
 

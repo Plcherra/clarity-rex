@@ -3,42 +3,32 @@ import 'dart:io';
 
 import '../../../core/models/models.dart';
 import '../../../core/supabase/supabase_records.dart';
-import '../../dashboard/application/dashboard_service.dart';
+import '../../dashboard/application/dashboard_spend_reference_controller.dart';
 import '../../finance/data/financial_audit_service.dart';
 import '../data/csv_import_service.dart';
-import '../data/csv_parser.dart';
 import '../data/transaction_service.dart';
 import '../domain/spend_categories.dart';
 import 'import_job_status_service.dart';
 import 'transaction_record_mapper.dart';
 
-typedef TransactionDashboardRecompute =
-    FutureOr<void> Function({
-      required List<Transaction> activeAccountTransactions,
-      required List<Transaction> allTransactionsForMetrics,
-      required List<Transaction> transactionsForCsvDiagnostics,
-      required CsvParseDiagnostics? diag,
-    });
-
 class TransactionWorkflowService {
   TransactionWorkflowService({
     required this.transactionService,
     required this.csvImportService,
-    required this.dashboardService,
+    required this.spendReferenceController,
     required this.importJobStatusService,
     required this.financialAuditService,
     required this.deleteStatementImport,
     required this.refreshCategories,
     required this.categoryNameForId,
     required this.refreshAllState,
-    required this.recomputeDashboard,
     required this.notifyTransactionDataChanged,
     required this.notifyImportJobStatusChanged,
   });
 
   final TransactionService transactionService;
   final CsvImportService csvImportService;
-  final DashboardService dashboardService;
+  final DashboardSpendReferenceController spendReferenceController;
   final ImportJobStatusService importJobStatusService;
   final FinancialAuditService financialAuditService;
   final Future<void> Function({
@@ -49,7 +39,6 @@ class TransactionWorkflowService {
   final Future<void> Function() refreshCategories;
   final String? Function(String? id) categoryNameForId;
   final Future<void> Function() refreshAllState;
-  final TransactionDashboardRecompute recomputeDashboard;
   final void Function() notifyTransactionDataChanged;
   final void Function() notifyImportJobStatusChanged;
 
@@ -75,17 +64,9 @@ class TransactionWorkflowService {
         accountId: accountId,
         refreshAfterImport: (completed) async {
           await refreshCategories();
-          dashboardService.spendReference =
+          spendReferenceController.spendReference =
               reference ?? completed.spendReference;
-          final accountTransactions = await _fetchTransactions(
-            accountId: completed.accountId,
-          );
-          await recomputeDashboard(
-            activeAccountTransactions: accountTransactions,
-            allTransactionsForMetrics: await _fetchTransactions(),
-            transactionsForCsvDiagnostics: accountTransactions,
-            diag: completed.diagnostics,
-          );
+          await refreshAllState();
           notifyTransactionDataChanged();
         },
       )) {

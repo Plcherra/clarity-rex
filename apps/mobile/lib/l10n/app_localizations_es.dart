@@ -843,6 +843,29 @@ class AppLocalizationsEs extends AppLocalizations {
       'Los insights guardados aún no están disponibles. La franja del Panel sigue mostrando señales actuales. Activa los insights proactivos en Perfil cuando el almacenamiento esté listo.';
 
   @override
+  String get insightsApiUnreadableError =>
+      'El backend devolvió un error ilegible.';
+
+  @override
+  String get insightsApiGenericError => 'La API de Clarity devolvió un error.';
+
+  @override
+  String get insightsApiInvalidListResponse =>
+      'Respuesta de lista de insights no válida.';
+
+  @override
+  String get insightsApiInvalidListPayload =>
+      'Carga de lista de insights no válida.';
+
+  @override
+  String get insightsApiInvalidSyncResponse =>
+      'Respuesta de sincronización de insights no válida.';
+
+  @override
+  String get insightsApiInvalidMarkReadResponse =>
+      'Respuesta de marcar como leído no válida.';
+
+  @override
   String get profileProactiveInsightsTitle => 'Insights financieros proactivos';
 
   @override

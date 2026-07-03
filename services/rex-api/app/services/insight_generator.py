@@ -67,10 +67,27 @@ def _period_key(financial_context: dict[str, Any]) -> str:
 def generate_dashboard_insights(
     financial_context: dict[str, Any],
     *,
-    strip_title: str = "What to watch",
+    strip_title: str | None = None,
+    locale: str | None = None,
 ) -> list[GeneratedInsight]:
+    from app.services.insight_generator_locale import (
+        budget_overspend_body,
+        insight_strip_title,
+        mom_leak_new_body,
+        mom_leak_up_body,
+        net_cash_flow_body,
+    )
+
     if not financial_context:
         return []
+
+    locale = locale or financial_context.get("locale")
+    if isinstance(locale, dict):
+        locale = locale.get("code")
+    resolved_title = strip_title or insight_strip_title(
+        locale if isinstance(locale, str) else None
+    )
+    locale_str = locale if isinstance(locale, str) else None
 
     period_key = _period_key(financial_context)
     cash_flow = financial_context.get("cash_flow") or {}
@@ -81,15 +98,11 @@ def generate_dashboard_insights(
     items: list[GeneratedInsight] = []
 
     if income > 0 or spent > 0:
-        if available < 0:
-            body = f"Spending exceeds income by {_format_money(-available)} this month."
-            detail_key = "negative"
-        elif available > 0:
-            body = f"Net cash flow is {_format_money(available)} ahead this month."
-            detail_key = "positive"
-        else:
-            body = "Income and spending are balanced this month."
-            detail_key = "balanced"
+        detail_key, body = net_cash_flow_body(
+            locale=locale_str,
+            available=available,
+            format_money=_format_money,
+        )
         items.append(
             GeneratedInsight(
                 fingerprint=build_insight_fingerprint(
@@ -100,7 +113,7 @@ def generate_dashboard_insights(
                 ),
                 source=DASHBOARD_SOURCE,
                 insight_type="net_cash_flow",
-                title=strip_title,
+                title=resolved_title,
                 body=body,
                 period_key=period_key,
                 anchor_key="monthly_cash_flow",
@@ -115,18 +128,21 @@ def generate_dashboard_insights(
         if spent_this_month <= 0:
             leak = None
         elif percent_change is None:
-            body = (
-                f"{category} is new spending pressure at "
-                f"{_format_money(spent_this_month)} this month."
+            body = mom_leak_new_body(
+                locale=locale_str,
+                category=category,
+                spent=_format_money(spent_this_month),
             )
         else:
             pct = _money(percent_change)
             if pct <= 0:
                 leak = None
             else:
-                body = (
-                    f"{category} rose {_format_percent(pct / 100 if pct > 1 else pct)} "
-                    f"month-over-month ({_format_money(spent_this_month)})."
+                body = mom_leak_up_body(
+                    locale=locale_str,
+                    category=category,
+                    percent=_format_percent(pct / 100 if pct > 1 else pct),
+                    spent=_format_money(spent_this_month),
                 )
         if leak is not None:
             items.append(
@@ -139,7 +155,7 @@ def generate_dashboard_insights(
                     ),
                     source=DASHBOARD_SOURCE,
                     insight_type="mom_leak",
-                    title=strip_title,
+                    title=resolved_title,
                     body=body,
                     period_key=period_key,
                     anchor_key="spending_pressure",
@@ -164,9 +180,11 @@ def generate_dashboard_insights(
                     ),
                     source=DASHBOARD_SOURCE,
                     insight_type="budget_overspend",
-                    title=strip_title,
-                    body=(
-                        f"{category} is over budget by {_format_money(overspent)}."
+                    title=resolved_title,
+                    body=budget_overspend_body(
+                        locale=locale_str,
+                        category=category,
+                        overspent=_format_money(overspent),
                     ),
                     period_key=period_key,
                     anchor_key="budget_performance",
@@ -181,14 +199,17 @@ def generate_accountability_insights(
     signals: list[dict[str, Any]],
     *,
     period_key: str,
+    locale: str | None = None,
 ) -> list[GeneratedInsight]:
+    from app.services.insight_generator_locale import accountability_default_title
+
     items: list[GeneratedInsight] = []
     for signal in signals:
         if not isinstance(signal, dict):
             continue
         if signal.get("status") not in (None, "active"):
             continue
-        title = str(signal.get("title") or "Needs attention").strip()
+        title = str(signal.get("title") or accountability_default_title(locale)).strip()
         summary = str(signal.get("summary") or signal.get("reason") or title).strip()
         signal_type = str(signal.get("signal_type") or "accountability_signal")
         signal_id = str(signal.get("id") or title).strip()

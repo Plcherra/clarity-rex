@@ -1563,6 +1563,42 @@ abstract class AppLocalizations {
   /// **'Saved insights are not available yet. The Dashboard strip still shows current signals. Turn on proactive insights in Profile once storage is ready.'**
   String get insightsStorageUnavailable;
 
+  /// No description provided for @insightsApiUnreadableError.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend returned an unreadable error.'**
+  String get insightsApiUnreadableError;
+
+  /// No description provided for @insightsApiGenericError.
+  ///
+  /// In en, this message translates to:
+  /// **'Clarity API returned an error.'**
+  String get insightsApiGenericError;
+
+  /// No description provided for @insightsApiInvalidListResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid insights list response.'**
+  String get insightsApiInvalidListResponse;
+
+  /// No description provided for @insightsApiInvalidListPayload.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid insights list payload.'**
+  String get insightsApiInvalidListPayload;
+
+  /// No description provided for @insightsApiInvalidSyncResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid insights sync response.'**
+  String get insightsApiInvalidSyncResponse;
+
+  /// No description provided for @insightsApiInvalidMarkReadResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid mark-read response.'**
+  String get insightsApiInvalidMarkReadResponse;
+
   /// No description provided for @profileProactiveInsightsTitle.
   ///
   /// In en, this message translates to:

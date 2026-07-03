@@ -7,8 +7,6 @@ class DashboardCategoryTransactionGroup {
   final String category;
   final List<ResolvedTransaction> transactions;
 
-  String get amountLabel => 'Spent';
-
   int get transactionCount => transactions.length;
 
   double get spending => transactions

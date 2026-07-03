@@ -19,6 +19,12 @@ from app.services.memory_discipline_decision_applier import (
     MemoryDisciplineDecisionApplier,
 )
 from app.services.memory_discipline_repository import MemoryDisciplineRepository
+from app.services.memory_discipline_decision_factory import (
+    MemoryDisciplineDecisionFactoryMixin,
+    create_action_for_kind,
+    update_action_for_kind,
+)
+from app.services.plan_intelligence_service import PlanIntelligenceService
 from app.services.memory_discipline_similarity import (
     candidate_record_text,
     normalized_similarity_score,
@@ -27,7 +33,6 @@ from app.services.memory_discipline_similarity import (
     title_similarity_score,
     token_overlap_score,
 )
-from app.services.plan_intelligence_service import PlanIntelligenceService
 
 
 DISCIPLINE_VERSION = 1
@@ -36,7 +41,7 @@ RELATED_SCORE_THRESHOLD = 0.28
 DUPLICATE_SCORE_THRESHOLD = 0.86
 
 
-class MemoryDisciplineService:
+class MemoryDisciplineService(MemoryDisciplineDecisionFactoryMixin):
     """Shared pre-save policy for disciplined structured memory writes.
 
     Memory discipline policy:
@@ -152,34 +157,14 @@ class MemoryDisciplineService:
         context = context or await self.gather_context(candidate)
         candidate_text = candidate_record_text(candidate.payload)
         if not candidate_text:
-            return MemoryDisciplineDecision(
-                action=MemoryDisciplineAction.IGNORE_NOISY_CANDIDATE,
-                record_kind=candidate.kind,
-                payload=candidate.payload,
-                reason="Candidate has no useful searchable content.",
-                confidence=0.95,
-                metadata=self._decision_metadata(
-                    MemoryDisciplineAction.IGNORE_NOISY_CANDIDATE,
-                    candidate,
-                ),
-            )
+            return self._empty_candidate_decision(candidate)
 
         same_kind_related = self._same_kind_related(candidate.kind, context)
         duplicate = same_kind_related[0] if same_kind_related else None
         if duplicate and duplicate.score >= DUPLICATE_SCORE_THRESHOLD:
-            action = _update_action_for_kind(candidate.kind)
+            action = update_action_for_kind(candidate.kind)
             if action and not is_confirmed_service_write(candidate.payload):
-                return MemoryDisciplineDecision(
-                    action=action,
-                    record_kind=candidate.kind,
-                    payload=candidate.payload,
-                    reason="Candidate strongly matches an active existing record.",
-                    confidence=duplicate.score,
-                    target_table=duplicate.table,
-                    target_id=duplicate.id,
-                    related_records=[duplicate],
-                    metadata=self._decision_metadata(action, candidate),
-                )
+                return self._duplicate_update_decision(candidate, duplicate, action)
 
         if candidate.kind == MemoryRecordKind.PLAN:
             if not is_confirmed_plan_service_write(candidate.payload):
@@ -205,7 +190,7 @@ class MemoryDisciplineService:
             if milestone_decision is not None:
                 return milestone_decision
 
-        action = _create_action_for_kind(candidate.kind)
+        action = create_action_for_kind(candidate.kind)
         if action is None:
             return MemoryDisciplineDecision(
                 action=MemoryDisciplineAction.ASK_CONFIRMATION,
@@ -396,106 +381,3 @@ class MemoryDisciplineService:
         return sorted(records, key=lambda item: item.score, reverse=True)[
             :RELATED_RECORD_LIMIT
         ]
-
-    def _decision_metadata(
-        self,
-        action: MemoryDisciplineAction,
-        candidate: MemoryDisciplineCandidate,
-        *,
-        requires_confirmation: bool = False,
-    ) -> dict[str, Any]:
-        return {
-            "discipline_version": DISCIPLINE_VERSION,
-            "discipline_action": action.value,
-            "discipline_reason": "phase_1_foundation",
-            "merged_from_id": None,
-            "archived_by_correction_id": None,
-            "canonical_entity_id": None,
-            "source_record_kind": candidate.kind.value,
-            "requires_confirmation": requires_confirmation,
-        }
-
-    def _decision_from_plan_intelligence(
-        self,
-        candidate: MemoryDisciplineCandidate,
-        plan_decision,
-        context: MemoryDisciplineContext,
-    ) -> MemoryDisciplineDecision:
-        action_to_kind = {
-            MemoryDisciplineAction.CREATE_ENTITY_EVENT: MemoryRecordKind.ENTITY_EVENT,
-            MemoryDisciplineAction.UPDATE_PLAN: MemoryRecordKind.PLAN,
-            MemoryDisciplineAction.CREATE_MILESTONE: MemoryRecordKind.PLAN_MILESTONE,
-            MemoryDisciplineAction.UPDATE_MILESTONE: MemoryRecordKind.PLAN_MILESTONE,
-            MemoryDisciplineAction.CREATE_COMMITMENT: MemoryRecordKind.COMMITMENT,
-            MemoryDisciplineAction.UPDATE_COMMITMENT: MemoryRecordKind.COMMITMENT,
-            MemoryDisciplineAction.ASK_CONFIRMATION: MemoryRecordKind.PLAN,
-            MemoryDisciplineAction.IGNORE_NOISY_CANDIDATE: candidate.kind,
-        }
-        target_table = None
-        target_id = plan_decision.target_milestone_id
-        if plan_decision.action == MemoryDisciplineAction.CREATE_ENTITY_EVENT:
-            target_table = "entity_events"
-        elif plan_decision.action == MemoryDisciplineAction.UPDATE_PLAN:
-            target_table = "plans"
-            target_id = plan_decision.parent_plan_id
-        elif plan_decision.action in {
-            MemoryDisciplineAction.CREATE_MILESTONE,
-            MemoryDisciplineAction.UPDATE_MILESTONE,
-        }:
-            target_table = "plan_milestones"
-        elif plan_decision.action in {
-            MemoryDisciplineAction.CREATE_COMMITMENT,
-            MemoryDisciplineAction.UPDATE_COMMITMENT,
-        }:
-            target_table = "commitments"
-
-        metadata = {
-            **self._decision_metadata(
-                plan_decision.action,
-                candidate,
-                requires_confirmation=plan_decision.requires_confirmation,
-            ),
-            **plan_decision.metadata,
-        }
-        if plan_decision.parent_plan_id:
-            metadata["parent_plan_id"] = plan_decision.parent_plan_id
-        if plan_decision.target_milestone_id:
-            metadata["target_milestone_id"] = plan_decision.target_milestone_id
-
-        related_records = self._top_related_records(context)
-        return MemoryDisciplineDecision(
-            action=plan_decision.action,
-            record_kind=action_to_kind.get(plan_decision.action, candidate.kind),
-            payload=plan_decision.payload,
-            reason=plan_decision.reason,
-            confidence=plan_decision.confidence,
-            target_table=target_table,
-            target_id=target_id,
-            requires_confirmation=plan_decision.requires_confirmation,
-            related_records=related_records,
-            metadata=metadata,
-        )
-
-def _create_action_for_kind(
-    kind: MemoryRecordKind,
-) -> MemoryDisciplineAction | None:
-    return {
-        MemoryRecordKind.ENTITY: MemoryDisciplineAction.CREATE_ENTITY,
-        MemoryRecordKind.ENTITY_EVENT: MemoryDisciplineAction.CREATE_ENTITY_EVENT,
-        MemoryRecordKind.PERSONAL_RULE: MemoryDisciplineAction.CREATE_RULE,
-        MemoryRecordKind.PLAN: MemoryDisciplineAction.CREATE_PLAN,
-        MemoryRecordKind.PLAN_MILESTONE: MemoryDisciplineAction.CREATE_MILESTONE,
-        MemoryRecordKind.COMMITMENT: MemoryDisciplineAction.CREATE_COMMITMENT,
-    }.get(kind)
-
-
-def _update_action_for_kind(
-    kind: MemoryRecordKind,
-) -> MemoryDisciplineAction | None:
-    return {
-        MemoryRecordKind.ENTITY: MemoryDisciplineAction.UPDATE_ENTITY,
-        MemoryRecordKind.PERSONAL_RULE: MemoryDisciplineAction.UPDATE_RULE,
-        MemoryRecordKind.PLAN: MemoryDisciplineAction.UPDATE_PLAN,
-        MemoryRecordKind.PLAN_MILESTONE: MemoryDisciplineAction.UPDATE_MILESTONE,
-        MemoryRecordKind.COMMITMENT: MemoryDisciplineAction.UPDATE_COMMITMENT,
-    }.get(kind)

@@ -45,7 +45,6 @@ void main() {
         'Grocery / Supermarket',
         'Coffee / Quick Food',
       ]);
-      expect(groups.first.amountLabel, 'Spent');
       expect(groups.first.transactionCount, 1);
       expect(groups.first.spending, 6);
     },

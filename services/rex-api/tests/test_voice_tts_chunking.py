@@ -102,7 +102,7 @@ class _DelayedTTSService:
         self.started = []
         self.finished = []
 
-    async def synthesize_speech(self, text: str):
+    async def synthesize_speech(self, text: str, **kwargs):
         self.started.append((text, time.perf_counter()))
         await asyncio.sleep(self.delay)
         self.finished.append((text, time.perf_counter()))
@@ -122,7 +122,7 @@ class _PrefetchProbeTTSService:
         self.finished = []
         self._second_chunk_started = asyncio.Event()
 
-    async def synthesize_speech(self, text: str):
+    async def synthesize_speech(self, text: str, **kwargs):
         chunk_index = len(self.started)
         self.started.append((text, time.perf_counter()))
         if chunk_index == 0:

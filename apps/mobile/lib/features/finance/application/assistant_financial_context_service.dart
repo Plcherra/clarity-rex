@@ -123,13 +123,16 @@ final class AssistantFinancialContextService {
     required Future<FinancialReadModel> Function() loadFinancialReadModel,
     required DateTime Function() spendReference,
     required void Function() notifyDataChanged,
+    String Function()? localeTag,
   }) : _loadFinancialReadModel = loadFinancialReadModel,
        _spendReference = spendReference,
-       _notifyDataChanged = notifyDataChanged;
+       _notifyDataChanged = notifyDataChanged,
+       _localeTag = localeTag;
 
   final Future<FinancialReadModel> Function() _loadFinancialReadModel;
   final DateTime Function() _spendReference;
   final void Function() _notifyDataChanged;
+  final String Function()? _localeTag;
 
   void notifyDataChanged() {
     _notifyDataChanged();
@@ -258,6 +261,7 @@ final class AssistantFinancialContextService {
     return {
       'schema': 'clarity_unified_financial_context_v1',
       'generated_at': DateTime.now().toUtc().toIso8601String(),
+      'locale': _localeTag?.call(),
       'data_status': {
         'state': model.dataStatus,
         'financial_context_complete': !model.hasLoadIssues,

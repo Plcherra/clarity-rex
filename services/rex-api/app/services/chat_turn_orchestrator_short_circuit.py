@@ -14,6 +14,9 @@ from app.services.conversation_pending_action import (
     is_delete_confirmation_message,
     is_delete_rejection_message,
 )
+from app.services.durable_write_pending import proposal_from_pending_action
+from app.services.durable_write_results import pending_memory_changes
+from app.services.goal_command_results import clarification_turn_result
 
 
 def should_apply_write_confirmation(write_confirmation: Optional[dict]) -> bool:
@@ -143,6 +146,23 @@ async def try_short_circuit_turn(
             )
             return durable_turn
 
+    pending_write_reminder = await _try_remind_pending_durable_write(
+        orchestrator,
+        brain_message,
+        pending_action=pending_action,
+        conversation_id=conversation_id,
+        user_message=turn_context.user_message,
+    )
+    if pending_write_reminder is not None:
+        finish_short_circuit(
+            orchestrator.turn_observer,
+            orchestrator.usage_recorder,
+            turn_trace,
+            turn_started_at,
+            "durable_write_pending",
+        )
+        return pending_write_reminder
+
     finance_guard_response = orchestrator.financial_guard.guard_response(
         intent_decision,
         financial_context,
@@ -163,3 +183,37 @@ async def try_short_circuit_turn(
             user_message=turn_context.user_message,
         )
     return None
+
+
+async def _try_remind_pending_durable_write(
+    orchestrator,
+    message: str,
+    *,
+    pending_action,
+    conversation_id: str,
+    user_message: dict,
+) -> Optional[dict]:
+    pending = (
+        pending_action
+        if isinstance(pending_action, PendingAction)
+        else PendingAction.from_dict(pending_action)
+    )
+    if pending is None or pending.action_type != "durable_write":
+        return None
+    if is_delete_confirmation_message(message) or is_delete_rejection_message(message):
+        return None
+
+    proposal = proposal_from_pending_action(pending)
+    if proposal is None:
+        return None
+
+    return await clarification_turn_result(
+        orchestrator.memory_service,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        response=(
+            "I still have a pending save waiting for your confirmation. "
+            "Use the save card to confirm or dismiss it."
+        ),
+        memory_changes=pending_memory_changes(proposal=proposal),
+    )
