@@ -1686,7 +1686,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilitySharedAddGoal => 'Add goal';
 
   @override
-  String get accountabilitySharedAddCommitment => 'Add commitment';
+  String get accountabilitySharedAddCommitment => 'Add open thread';
 
   @override
   String get accountabilitySharedLoading => 'Loading goals';
@@ -1708,10 +1708,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilitySectionsNoActiveGoals => 'No active goals yet.';
 
   @override
-  String get accountabilitySectionsOpenCommitments => 'Open Commitments';
+  String get accountabilitySectionsOpenCommitments => 'Open Threads';
 
   @override
-  String get accountabilitySectionsNoOpenCommitments => 'No open commitments.';
+  String get accountabilitySectionsNoOpenCommitments => 'No open threads yet.';
 
   @override
   String get accountabilitySectionsNeedsAttention => 'Needs attention';

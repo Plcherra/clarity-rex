@@ -26,6 +26,16 @@ String? planSubtitle(PlanRecord plan) {
   return null;
 }
 
+String? openThreadSubtitle(OpenThread thread) {
+  final summary = thread.summary?.trim();
+  if (summary != null &&
+      summary.isNotEmpty &&
+      !accountabilityTextsMatch(summary, thread.title)) {
+    return summary;
+  }
+  return 'Companion follow-up — not saved memory';
+}
+
 String? commitmentSubtitle(Commitment commitment) {
   final text = commitment.commitmentText.trim();
   if (text.isEmpty || accountabilityTextsMatch(text, commitment.title)) {

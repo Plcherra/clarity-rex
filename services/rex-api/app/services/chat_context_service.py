@@ -16,6 +16,7 @@ from app.services.chat_prompt_context_builder import ChatPromptContextBuilder
 from app.services.chat_search_ranking import ChatSearchRanking
 from app.services.goal_context_service import GoalContextService
 from app.services.memory_context_status import MemoryContextAssembler
+from app.services.open_thread_context_loader import load_open_threads_context
 from app.services.prompt_inventory_context import format_inventory_context
 from app.services.prompt_service import PromptService
 from app.services.saved_knowledge_overview_service import SavedKnowledgeOverviewService
@@ -262,13 +263,23 @@ class ChatContextService:
                     ),
                 },
             }
-        return await self.memory_context.fetch_structured_context(
+        base = await self.memory_context.fetch_structured_context(
             self.memory_service,
             self.goal_context_service,
             message,
             include_structured_memory=load_plan.load_structured_memory,
             include_goal_context=load_plan.load_goal_context,
         )
+        return await self._merge_open_threads_context(message, base)
+
+    async def _merge_open_threads_context(self, message: str, structured_context: dict) -> dict:
+        thread_context = await load_open_threads_context(
+            self.memory_service,
+            message,
+        )
+        if not thread_context:
+            return structured_context
+        return {**structured_context, **thread_context}
 
     def _exclude_recall_conversation_id(
         self,

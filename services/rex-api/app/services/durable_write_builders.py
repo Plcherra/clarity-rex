@@ -109,6 +109,34 @@ async def proposal_from_goal_command(
     )
 
 
+def proposal_from_open_thread(
+    *,
+    title: str,
+    summary: str | None,
+    conversation_id: str,
+    source_message_id: str | None,
+) -> DurableWriteProposal:
+    body = summary or title
+    return DurableWriteProposal(
+        write_kind="open_thread",
+        title=title,
+        body=body,
+        editable_fields=("title", "body"),
+        apply_snapshot={
+            "type": "open_thread",
+            "payload": {
+                "title": title,
+                "summary": summary or body,
+                "status": "active",
+                "source": "user_confirmed",
+                "metadata": {"source": "durable_write_confirmed"},
+            },
+            "conversation_id": conversation_id,
+            "source_message_id": source_message_id,
+        },
+    )
+
+
 async def proposal_from_commitment_command(
     command: GoalCommand,
     *,

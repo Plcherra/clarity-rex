@@ -49,6 +49,7 @@ class ChatTurnOrchestrator:
         memory_turn_service: MemoryTurnService,
         goal_command_service: GoalCommandService,
         conversational_plan_service: ConversationalPlanService,
+        open_thread_turn_service,
         durable_write_service: DurableWriteService,
         clarity_action_parser: ClarityActionParser,
         financial_guard: ChatFinancialGuard,
@@ -64,6 +65,7 @@ class ChatTurnOrchestrator:
         self.memory_turn_service = memory_turn_service
         self.goal_command_service = goal_command_service
         self.conversational_plan_service = conversational_plan_service
+        self.open_thread_turn_service = open_thread_turn_service
         self.durable_write_service = durable_write_service
         self.clarity_action_parser = clarity_action_parser
         self.financial_guard = financial_guard

@@ -8,6 +8,7 @@ from app.services.memory_conversation_gateway import MemoryConversationGateway
 from app.services.memory_correction_repository import MemoryCorrectionRepository
 from app.services.memory_errors import MemoryServiceError
 from app.services.memory_long_term_gateway import MemoryLongTermGateway
+from app.services.memory_open_thread_gateway import MemoryOpenThreadGateway
 from app.services.memory_retrieval_service import MemoryRetrievalService
 from app.services.memory_structured_gateway import MemoryStructuredGateway
 from app.services.structured_memory_repository import StructuredMemoryRepository
@@ -17,6 +18,7 @@ from app.services.supabase_memory_transport import SupabaseMemoryTransport
 class SupabaseMemoryService(
     MemoryConversationGateway,
     MemoryLongTermGateway,
+    MemoryOpenThreadGateway,
     MemoryStructuredGateway,
     SupabaseMemoryTransport,
 ):

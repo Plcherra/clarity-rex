@@ -17,6 +17,7 @@ from app.services.durable_write_builders import (
     proposal_from_discipline_decision,
     proposal_from_goal_command,
     proposal_from_memory_update,
+    proposal_from_open_thread,
     proposal_from_simple_memory,
 )
 from app.services.durable_write_pending import (
@@ -115,6 +116,26 @@ class DurableWriteService:
     ) -> dict:
         proposal = await proposal_from_commitment_command(
             command,
+            conversation_id=conversation_id,
+            source_message_id=str(user_message.get("id") or "") or None,
+        )
+        return await self._propose(
+            proposal,
+            conversation_id=conversation_id,
+            user_message=user_message,
+        )
+
+    async def propose_open_thread(
+        self,
+        *,
+        title: str,
+        summary: str | None,
+        conversation_id: str,
+        user_message: dict,
+    ) -> dict:
+        proposal = proposal_from_open_thread(
+            title=title,
+            summary=summary,
             conversation_id=conversation_id,
             source_message_id=str(user_message.get("id") or "") or None,
         )
@@ -309,6 +330,11 @@ def _saved_response(
     if proposal.write_kind == "commitment":
         target = proposal.target_label or "your plan"
         return f"Saved commitment under {target}: {proposal.title}"
+    if proposal.write_kind == "open_thread":
+        return (
+            f"Tracking as an open thread in Goals: {proposal.title}. "
+            "This is companion follow-up — not saved memory."
+        )
     if proposal.write_kind == "milestone":
         target = proposal.target_label or "your plan"
         return f"Saved milestone under {target}: {proposal.title}"

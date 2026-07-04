@@ -11,6 +11,7 @@ from app.services.accountability_snapshot import (
     open_commitments_for,
     open_milestones_for,
 )
+from app.services.open_thread_service import active_open_threads_for
 
 
 def build_accountability_overview(
@@ -40,6 +41,13 @@ def build_accountability_overview(
         signal for signal in active_signals if signal.signal_type == "repeated_pattern"
     ]
     open_commitments = open_commitments_for(context["commitments"])
+    open_threads = active_open_threads_for(context.get("open_threads") or [])
+    # Standalone commitments are retired from product UX; keep plan-linked only.
+    product_open_commitments = [
+        commitment
+        for commitment in open_commitments
+        if commitment.get("plan_id") or commitment.get("milestone_id")
+    ]
     open_milestones = open_milestones_for(context["plan_milestones"])
     completed_milestones = completed_milestones_for(context["plan_milestones"])
     active_plans = active_plans_for(context["plans"])
@@ -69,7 +77,8 @@ def build_accountability_overview(
         plan_risks=plan_risks,
         recent_patterns=recent_patterns,
         active_rules=context["personal_rules"],
-        open_commitments=open_commitments,
+        open_commitments=product_open_commitments,
+        open_threads=open_threads,
         active_plans=active_plans,
         open_milestones=open_milestones,
         completed_milestones=completed_milestones,
@@ -79,11 +88,12 @@ def build_accountability_overview(
             "message": message,
             "signal_count": len(active_signals),
             "active_rule_count": len(context["personal_rules"]),
-            "open_commitment_count": len(open_commitments),
+            "open_commitment_count": len(product_open_commitments),
+            "open_thread_count": len(open_threads),
             "active_plan_count": len(active_plans),
             "open_milestone_count": len(open_milestones),
             "completed_milestone_count": len(completed_milestones),
-            "open_task_count": len(open_commitments),
+            "open_task_count": len(product_open_commitments),
             "duplicate_warning_count": len(duplicate_warnings),
             "loader_diagnostics": context.get("loader_diagnostics", []),
         },

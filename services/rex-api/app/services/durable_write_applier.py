@@ -14,6 +14,8 @@ from app.services.commitment_service import CommitmentService
 from app.services.confirmed_plan_write_applier import ConfirmedPlanWriteApplier
 from app.services.durable_write_proposal import DurableWriteProposal
 from app.services.memory_discipline_confirmed_writes import CONFIRMED_PLAN_SERVICE_CHANNEL
+from app.services.open_thread_service import OpenThreadService
+from app.models.open_thread import OpenThreadCreateRequest
 from app.services.plan_errors import PlanServiceError
 from app.services.plan_merge_service import normalize_text
 from app.services.plan_service import PlanService
@@ -26,11 +28,13 @@ class DurableWriteApplier:
         *,
         plan_service: Optional[PlanService] = None,
         commitment_service: Optional[CommitmentService] = None,
+        open_thread_service: Optional[OpenThreadService] = None,
         plan_applier: Optional[ConfirmedPlanWriteApplier] = None,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service or PlanService(memory_service)
         self.commitment_service = commitment_service or CommitmentService(memory_service)
+        self.open_thread_service = open_thread_service or OpenThreadService(memory_service)
         self.plan_applier = plan_applier or ConfirmedPlanWriteApplier(
             memory_service,
             plan_service=self.plan_service,
@@ -73,6 +77,12 @@ class DurableWriteApplier:
             )
         if snapshot_type in {"commitment", "create_commitment"}:
             return await self._apply_commitment(
+                snapshot,
+                conversation_id=conversation_id,
+                source_message_id=source_message_id,
+            )
+        if snapshot_type == "open_thread":
+            return await self._apply_open_thread(
                 snapshot,
                 conversation_id=conversation_id,
                 source_message_id=source_message_id,
@@ -183,6 +193,34 @@ class DurableWriteApplier:
             return {"applied": False}
         try:
             record = await create_commitment(payload)
+        except Exception:
+            return {"applied": False}
+        if not isinstance(record, dict) or not record.get("id"):
+            return {"applied": False}
+        return {"applied": True, "record": record, "merged": False}
+
+    async def _apply_open_thread(
+        self,
+        snapshot: dict[str, Any],
+        *,
+        conversation_id: str,
+        source_message_id: str | None,
+    ) -> dict[str, Any]:
+        payload = dict(snapshot.get("payload") or {})
+        metadata = dict(payload.get("metadata") or {})
+        metadata.setdefault("source", "durable_write_confirmed")
+        try:
+            record = await self.open_thread_service.create_thread(
+                OpenThreadCreateRequest(
+                    title=str(payload.get("title") or ""),
+                    summary=payload.get("summary"),
+                    status="active",
+                    source="user_confirmed",
+                    source_conversation_id=conversation_id,
+                    source_message_id=source_message_id,
+                    metadata=metadata,
+                )
+            )
         except Exception:
             return {"applied": False}
         if not isinstance(record, dict) or not record.get("id"):

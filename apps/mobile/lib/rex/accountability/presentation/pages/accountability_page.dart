@@ -58,69 +58,72 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     _showMutationResult(saved ? l10n.accountabilityGoalSaved : null);
   }
 
-  Future<void> _createCommitment() async {
+  Future<void> _createOpenThread() async {
     final l10n = context.l10n;
     final result = await showDialog<_GoalFormResult>(
       context: context,
       builder: (context) => _GoalFormDialog(
         title: l10n.accountabilityAddCommitmentTitle,
         primaryLabel: l10n.accountabilityAddCommitmentPrimaryLabel,
-        detailLabel: l10n.commonCommitment,
+        detailLabel: l10n.accountabilityDetailNotesHint,
         primaryHint: l10n.accountabilityAddCommitmentPrimaryHint,
         detailHint: l10n.accountabilityAddCommitmentDetailHint,
       ),
     );
     if (result == null || !mounted) return;
-    final commitmentType = _commitmentTypeFor(result);
-    final saved = await ref
-        .read(accountabilityProvider.notifier)
-        .createCommitment(
-          title: result.primary,
-          commitmentText: result.detail.isEmpty
-              ? result.primary
-              : result.detail,
-          commitmentType: commitmentType,
-        );
+    final saved = await ref.read(accountabilityProvider.notifier).createOpenThread(
+      title: result.primary,
+      summary: result.detail.isEmpty ? null : result.detail,
+    );
     if (!mounted) return;
     _showMutationResult(saved ? l10n.accountabilityCommitmentSaved : null);
   }
 
-  Future<void> _completeCommitment(Commitment commitment) async {
-    final saved = await ref
-        .read(accountabilityProvider.notifier)
-        .completeCommitment(commitment.id);
-    if (!mounted) return;
-    _showMutationResult(saved ? context.l10n.accountabilityCommitmentCompleted : null);
-  }
-
-  Future<void> _missCommitment(Commitment commitment) async {
-    final l10n = context.l10n;
-    final confirmed = await _confirmArchive(
-      title: l10n.accountabilityMarkMissedTitle,
-      body: l10n.accountabilityMarkMissedBody(commitment.title),
-      confirmLabel: l10n.accountabilityTilesMarkMissed,
-    );
-    if (confirmed != true || !mounted) return;
-    final saved = await ref
-        .read(accountabilityProvider.notifier)
-        .missCommitment(commitment.id);
-    if (!mounted) return;
-    _showMutationResult(saved ? l10n.accountabilityCommitmentMarkedMissed : null);
-  }
-
-  Future<void> _archiveCommitment(Commitment commitment) async {
+  Future<void> _closeOpenThread(OpenThread thread) async {
     final l10n = context.l10n;
     final confirmed = await _confirmArchive(
       title: l10n.accountabilityArchiveCommitmentTitle,
-      body: l10n.accountabilityArchiveCommitmentBody(commitment.title),
+      body: l10n.accountabilityArchiveCommitmentBody(thread.title),
       confirmLabel: l10n.commonArchive,
     );
     if (confirmed != true || !mounted) return;
     final saved = await ref
         .read(accountabilityProvider.notifier)
-        .archiveCommitment(commitment.id);
+        .closeOpenThread(thread.id);
     if (!mounted) return;
     _showMutationResult(saved ? l10n.accountabilityCommitmentArchived : null);
+  }
+
+  Future<void> _pauseOpenThread(OpenThread thread) async {
+    final saved = await ref
+        .read(accountabilityProvider.notifier)
+        .pauseOpenThread(thread.id);
+    if (!mounted) return;
+    _showMutationResult(saved ? context.l10n.accountabilityCommitmentUpdated : null);
+  }
+
+  Future<void> _editOpenThread(OpenThread thread) async {
+    final l10n = context.l10n;
+    final result = await showDialog<_GoalFormResult>(
+      context: context,
+      builder: (context) => _GoalFormDialog(
+        title: l10n.accountabilityDetailEditCommitment,
+        primaryLabel: l10n.accountabilityAddCommitmentPrimaryLabel,
+        detailLabel: l10n.accountabilityDetailNotesHint,
+        primaryHint: l10n.accountabilityAddCommitmentPrimaryHint,
+        detailHint: l10n.accountabilityAddCommitmentDetailHint,
+        initialPrimary: thread.title,
+        initialDetail: thread.summary ?? '',
+      ),
+    );
+    if (result == null || !mounted) return;
+    final saved = await ref.read(accountabilityProvider.notifier).updateOpenThread(
+      thread.id,
+      title: result.primary,
+      summary: result.detail.isEmpty ? null : result.detail,
+    );
+    if (!mounted) return;
+    _showMutationResult(saved ? l10n.accountabilityCommitmentUpdated : null);
   }
 
   Future<void> _archivePlan(PlanRecord plan) async {
@@ -166,27 +169,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     );
   }
 
-  Future<void> _editCommitment(Commitment commitment) async {
-    await _showCommitmentEditSheet(
-      context,
-      commitment: commitment,
-      onSave: ({title, commitmentText, priority}) async {
-        final saved =
-            await ref.read(accountabilityProvider.notifier).updateCommitment(
-          commitment.id,
-          title: title,
-          commitmentText: commitmentText,
-          priority: priority,
-        );
-        if (mounted) {
-          _showMutationResult(saved ? context.l10n.accountabilityCommitmentUpdated : null);
-        }
-        return saved;
-      },
-    );
-  }
-
-  Future<bool?> _confirmArchive({
+  Future<void> _archivePlan(PlanRecord plan) async {
     required String title,
     required String body,
     required String confirmLabel,
@@ -260,7 +243,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                   _GoalActionBar(
                     isBusy: state.isLoading,
                     onAddGoal: _createPlan,
-                    onAddCommitment: _createCommitment,
+                    onAddCommitment: _createOpenThread,
                   ),
                   const SizedBox(height: 20),
                   if (state.isLoading && overview == null)
@@ -281,18 +264,13 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                       onAddGoal: _createPlan,
                     ),
                     const SizedBox(height: 24),
-                    _CommitmentSection(
-                      commitments: overview.openCommitments
-                          .where(
-                            (commitment) =>
-                                commitment.planId == null &&
-                                commitment.milestoneId == null,
-                          )
+                    _OpenThreadsSection(
+                      threads: overview.openThreads
+                          .where((thread) => thread.status == 'active')
                           .toList(growable: false),
-                      onComplete: _completeCommitment,
-                      onMissed: _missCommitment,
-                      onArchive: _archiveCommitment,
-                      onEdit: _editCommitment,
+                      onClose: _closeOpenThread,
+                      onPause: _pauseOpenThread,
+                      onEdit: _editOpenThread,
                     ),
                     ],
                   ],
@@ -304,17 +282,6 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
       ),
     );
   }
-}
-
-String _commitmentTypeFor(_GoalFormResult result) {
-  final text = '${result.primary} ${result.detail}'.toLowerCase();
-  if (text.contains('wake') ||
-      text.contains('5 am') ||
-      text.contains('5:00') ||
-      text.contains('morning routine')) {
-    return 'habit';
-  }
-  return 'task';
 }
 
 class _GoalFormResult {
@@ -331,6 +298,8 @@ class _GoalFormDialog extends StatefulWidget {
     required this.detailLabel,
     required this.primaryHint,
     required this.detailHint,
+    this.initialPrimary = '',
+    this.initialDetail = '',
   });
 
   final String title;
@@ -338,14 +307,23 @@ class _GoalFormDialog extends StatefulWidget {
   final String detailLabel;
   final String primaryHint;
   final String detailHint;
+  final String initialPrimary;
+  final String initialDetail;
 
   @override
   State<_GoalFormDialog> createState() => _GoalFormDialogState();
 }
 
 class _GoalFormDialogState extends State<_GoalFormDialog> {
-  final _primaryController = TextEditingController();
-  final _detailController = TextEditingController();
+  late final TextEditingController _primaryController;
+  late final TextEditingController _detailController;
+
+  @override
+  void initState() {
+    super.initState();
+    _primaryController = TextEditingController(text: widget.initialPrimary);
+    _detailController = TextEditingController(text: widget.initialDetail);
+  }
 
   @override
   void dispose() {

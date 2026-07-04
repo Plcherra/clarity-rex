@@ -73,20 +73,18 @@ class _GoalsSection extends StatelessWidget {
   }
 }
 
-class _CommitmentSection extends StatelessWidget {
-  const _CommitmentSection({
-    required this.commitments,
-    required this.onComplete,
-    required this.onMissed,
-    required this.onArchive,
+class _OpenThreadsSection extends StatelessWidget {
+  const _OpenThreadsSection({
+    required this.threads,
+    required this.onClose,
+    required this.onPause,
     required this.onEdit,
   });
 
-  final List<Commitment> commitments;
-  final ValueChanged<Commitment> onComplete;
-  final ValueChanged<Commitment> onMissed;
-  final ValueChanged<Commitment> onArchive;
-  final ValueChanged<Commitment> onEdit;
+  final List<OpenThread> threads;
+  final ValueChanged<OpenThread> onClose;
+  final ValueChanged<OpenThread> onPause;
+  final ValueChanged<OpenThread> onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -94,14 +92,13 @@ class _CommitmentSection extends StatelessWidget {
     return _Section(
       title: l10n.accountabilitySectionsOpenCommitments,
       emptyText: l10n.accountabilitySectionsNoOpenCommitments,
-      children: commitments
+      children: threads
           .map(
-            (commitment) => _CommitmentTile(
-              commitment: commitment,
-              onComplete: () => onComplete(commitment),
-              onMissed: () => onMissed(commitment),
-              onArchive: () => onArchive(commitment),
-              onEdit: () => onEdit(commitment),
+            (thread) => _OpenThreadTile(
+              thread: thread,
+              onClose: () => onClose(thread),
+              onPause: () => onPause(thread),
+              onEdit: () => onEdit(thread),
             ),
           )
           .toList(),

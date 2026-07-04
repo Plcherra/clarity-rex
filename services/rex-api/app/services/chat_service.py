@@ -26,6 +26,8 @@ from app.services.file_service import FileService
 from app.services.goal_command_service import GoalCommandService
 from app.services.conversational_plan_service import ConversationalPlanService
 from app.services.durable_write_service import DurableWriteService
+from app.services.open_thread_service import OpenThreadService
+from app.services.open_thread_turn_service import OpenThreadTurnService
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_intent_service import MemoryIntentService
 from app.services.memory_turn_service import MemoryTurnService
@@ -68,6 +70,12 @@ class ChatService(ChatVoiceMetadataMixin):
         self.durable_write_service = DurableWriteService(
             memory_service,
             plan_service=self.goal_command_service.plan_service,
+        )
+        self.open_thread_service = OpenThreadService(memory_service)
+        self.open_thread_turn_service = OpenThreadTurnService(
+            memory_service,
+            open_thread_service=self.open_thread_service,
+            durable_write_service=self.durable_write_service,
         )
         self.conversational_plan_service = ConversationalPlanService(
             memory_service,
@@ -122,6 +130,7 @@ class ChatService(ChatVoiceMetadataMixin):
             memory_turn_service=self.memory_turn_service,
             goal_command_service=self.goal_command_service,
             conversational_plan_service=self.conversational_plan_service,
+            open_thread_turn_service=self.open_thread_turn_service,
             durable_write_service=self.durable_write_service,
             clarity_action_parser=self.clarity_action_parser,
             financial_guard=self.financial_guard,

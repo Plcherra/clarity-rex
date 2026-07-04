@@ -37,6 +37,7 @@ class AccountabilityOverview {
     required this.recentPatterns,
     required this.activeRules,
     required this.openCommitments,
+    required this.openThreads,
     required this.activePlans,
     required this.openMilestones,
     required this.completedMilestones,
@@ -56,6 +57,7 @@ class AccountabilityOverview {
       ),
       activeRules: _list(json['active_rules'], PersonalRule.fromJson),
       openCommitments: _list(json['open_commitments'], Commitment.fromJson),
+      openThreads: _list(json['open_threads'], OpenThread.fromJson),
       activePlans: _list(json['active_plans'], PlanRecord.fromJson),
       openMilestones: _list(json['open_milestones'], PlanMilestone.fromJson),
       completedMilestones: _list(
@@ -77,6 +79,7 @@ class AccountabilityOverview {
   final List<AccountabilitySignal> recentPatterns;
   final List<PersonalRule> activeRules;
   final List<Commitment> openCommitments;
+  final List<OpenThread> openThreads;
   final List<PlanRecord> activePlans;
   final List<PlanMilestone> openMilestones;
   final List<PlanMilestone> completedMilestones;
@@ -84,15 +87,13 @@ class AccountabilityOverview {
   final List<DuplicateWarning> duplicateWarnings;
   final Map<String, dynamic> metadata;
 
-  bool get isEmpty => !hasGoalsOrCommitments;
+  bool get isEmpty => !hasGoalsOrThreads;
 
-  bool get hasGoalsOrCommitments {
-    final standaloneCommitments = openCommitments.where(
-      (commitment) =>
-          commitment.planId == null && commitment.milestoneId == null,
-    );
-    return activePlans.isNotEmpty || standaloneCommitments.isNotEmpty;
-  }
+  bool get hasGoalsOrThreads =>
+      activePlans.isNotEmpty ||
+      openThreads.where((thread) => thread.status == 'active').isNotEmpty;
+
+  bool get hasGoalsOrCommitments => hasGoalsOrThreads;
 
   bool get hasInsightSignals =>
       signals.isNotEmpty ||
@@ -285,6 +286,44 @@ class Commitment {
   final bool active;
   final DateTime? dueAt;
   final DateTime? completedAt;
+}
+
+class OpenThread {
+  const OpenThread({
+    required this.id,
+    required this.title,
+    required this.summary,
+    required this.status,
+    required this.source,
+    required this.lastMentionedAt,
+    required this.lastFollowUpAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory OpenThread.fromJson(Map<String, dynamic> json) {
+    return OpenThread(
+      id: _string(json['id']) ?? '',
+      title: _string(json['title']) ?? 'Open thread',
+      summary: _string(json['summary']),
+      status: _string(json['status']) ?? 'active',
+      source: _string(json['source']) ?? 'user_created',
+      lastMentionedAt: _dateTime(json['last_mentioned_at']),
+      lastFollowUpAt: _dateTime(json['last_follow_up_at']),
+      createdAt: _dateTime(json['created_at']),
+      updatedAt: _dateTime(json['updated_at']),
+    );
+  }
+
+  final String id;
+  final String title;
+  final String? summary;
+  final String status;
+  final String source;
+  final DateTime? lastMentionedAt;
+  final DateTime? lastFollowUpAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 }
 
 class PlanHierarchyItem {

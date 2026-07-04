@@ -27,6 +27,38 @@ class _GoalTile extends StatelessWidget {
   }
 }
 
+class _OpenThreadTile extends StatelessWidget {
+  const _OpenThreadTile({
+    required this.thread,
+    required this.onClose,
+    required this.onPause,
+    required this.onEdit,
+  });
+
+  final OpenThread thread;
+  final VoidCallback onClose;
+  final VoidCallback onPause;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AccountabilityTile(
+      leading: Icon(Icons.chat_bubble_outline_rounded, size: 18, color: context.clarityColors.textSecondary),
+      icon: null,
+      title: thread.title,
+      subtitle: openThreadSubtitle(thread),
+      deadline: thread.updatedAt,
+      priority: 3,
+      status: thread.status,
+      trailing: _OpenThreadActions(
+        onEdit: onEdit,
+        onPause: onPause,
+        onClose: onClose,
+      ),
+    );
+  }
+}
+
 class _CommitmentTile extends StatelessWidget {
   const _CommitmentTile({
     required this.commitment,
@@ -375,16 +407,16 @@ class _GoalActions extends StatelessWidget {
   }
 }
 
-class _CommitmentActions extends StatelessWidget {
-  const _CommitmentActions({
+class _OpenThreadActions extends StatelessWidget {
+  const _OpenThreadActions({
     required this.onEdit,
-    required this.onMissed,
-    required this.onArchive,
+    required this.onPause,
+    required this.onClose,
   });
 
   final VoidCallback onEdit;
-  final VoidCallback onMissed;
-  final VoidCallback onArchive;
+  final VoidCallback onPause;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -396,20 +428,17 @@ class _CommitmentActions extends StatelessWidget {
       icon: Icon(Icons.more_horiz_rounded, color: colors.textMuted, size: 18),
       itemBuilder: (context) => [
         PopupMenuItem(value: 'edit', child: Text(l10n.commonEdit)),
-        PopupMenuItem(
-          value: 'missed',
-          child: Text(l10n.accountabilityTilesMarkMissed),
-        ),
-        PopupMenuItem(value: 'archive', child: Text(l10n.commonArchive)),
+        PopupMenuItem(value: 'pause', child: const Text('Pause')),
+        PopupMenuItem(value: 'close', child: Text(l10n.commonArchive)),
       ],
       onSelected: (value) {
         switch (value) {
           case 'edit':
             onEdit();
-          case 'missed':
-            onMissed();
-          case 'archive':
-            onArchive();
+          case 'pause':
+            onPause();
+          case 'close':
+            onClose();
         }
       },
     );

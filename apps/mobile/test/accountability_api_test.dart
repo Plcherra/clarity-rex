@@ -153,6 +153,35 @@ void main() {
 
     await api.archivePlan('plan-1');
   });
+
+  test('creates an open thread through Rex API', () async {
+    final api = _apiWith((request) async {
+      expect(request.method, 'POST');
+      expect(request.url.path, '/open-threads');
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      expect(body['title'], 'Morning routine');
+      expect(body['source'], 'user_created');
+      return http.Response(
+        jsonEncode({
+          'id': 'thread-1',
+          'title': body['title'],
+          'summary': body['summary'],
+          'status': 'active',
+          'source': 'user_created',
+        }),
+        201,
+      );
+    });
+
+    final thread = await api.createOpenThread(
+      title: 'Morning routine',
+      summary: 'Trying to wake up earlier',
+    );
+
+    expect(thread.id, 'thread-1');
+    expect(thread.title, 'Morning routine');
+    expect(thread.status, 'active');
+  });
 }
 
 AccountabilityApi _apiWith(MockClientHandler handler) {

@@ -20,6 +20,12 @@ async def load_accountability_context(
     memory_service: SupabaseMemoryService,
     message: str,
 ) -> dict[str, Any]:
+    list_open_threads = getattr(memory_service, "list_open_threads", None)
+    open_threads_task = (
+        list_open_threads(status="active", limit=ACCOUNTABILITY_CONTEXT_LIMIT)
+        if list_open_threads is not None
+        else _empty_list()
+    )
     (
         personal_rules,
         commitments,
@@ -28,6 +34,7 @@ async def load_accountability_context(
         entities_result,
         entity_events,
         relevant_memories,
+        open_threads,
     ) = await asyncio.gather(
         memory_service.list_personal_rules(
             active=True,
@@ -56,6 +63,7 @@ async def load_accountability_context(
             query=message,
             limit=ACCOUNTABILITY_CONTEXT_LIMIT,
         ),
+        open_threads_task,
     )
 
     diagnostics = [
@@ -72,6 +80,7 @@ async def load_accountability_context(
         "entities": entities_result.rows,
         "entity_events": entity_events,
         "relevant_memories": relevant_memories,
+        "open_threads": open_threads if isinstance(open_threads, list) else [],
         "loader_diagnostics": diagnostics,
         "time_context": TimeContextService(
             timezone_name=get_settings().app_timezone,
@@ -110,3 +119,7 @@ def _load_error_diagnostic(source: str, error: Exception) -> dict[str, str]:
         "error_class": error.__class__.__name__,
         "detail": str(error),
     }
+
+
+async def _empty_list() -> list:
+    return []

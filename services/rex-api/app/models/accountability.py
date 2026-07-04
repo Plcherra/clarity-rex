@@ -70,6 +70,7 @@ class AccountabilityOverviewResponse(BaseModel):
     recent_patterns: list[AccountabilitySignalResponse] = Field(default_factory=list)
     active_rules: list[dict[str, Any]] = Field(default_factory=list)
     open_commitments: list[dict[str, Any]] = Field(default_factory=list)
+    open_threads: list[dict[str, Any]] = Field(default_factory=list)
     active_plans: list[dict[str, Any]] = Field(default_factory=list)
     open_milestones: list[dict[str, Any]] = Field(default_factory=list)
     completed_milestones: list[dict[str, Any]] = Field(default_factory=list)

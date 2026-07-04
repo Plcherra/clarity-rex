@@ -280,6 +280,8 @@ class _ClarityActionCardState extends State<_ClarityActionCard> {
 
 String _pendingProposalHeadline(ClarityActionCard action) {
   switch (action.writeKind) {
+    case 'open_thread':
+      return 'Track in Goals';
     case 'plan':
     case 'milestone':
     case 'commitment':

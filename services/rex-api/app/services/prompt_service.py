@@ -148,4 +148,8 @@ class PromptService(
         if chat_search_section:
             sections.append(chat_search_section)
 
+        open_threads_section = structured_context.get("open_threads_context")
+        if isinstance(open_threads_section, str) and open_threads_section.strip():
+            sections.append(open_threads_section.strip())
+
         return sections

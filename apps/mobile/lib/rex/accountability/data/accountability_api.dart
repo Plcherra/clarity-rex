@@ -117,6 +117,63 @@ class AccountabilityApi {
     }
   }
 
+  Future<OpenThread> createOpenThread({
+    required String title,
+    String? summary,
+  }) async {
+    final response = await _apiClient.postJson('/open-threads', {
+      'title': title,
+      'summary': summary,
+      'status': 'active',
+      'source': 'user_created',
+      'metadata': {'source': 'goals_tab'},
+    });
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const AccountabilityApiException(
+        'Backend returned an invalid open thread response.',
+      );
+    }
+    return OpenThread.fromJson(data);
+  }
+
+  Future<OpenThread> updateOpenThread(
+    String threadId, {
+    String? title,
+    String? summary,
+    String? status,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (title != null) {
+      payload['title'] = title;
+    }
+    if (summary != null) {
+      payload['summary'] = summary;
+    }
+    if (status != null) {
+      payload['status'] = status;
+    }
+    final response = await _apiClient.patchJson('/open-threads/$threadId', payload);
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const AccountabilityApiException(
+        'Backend returned an invalid open thread response.',
+      );
+    }
+    return OpenThread.fromJson(data);
+  }
+
+  Future<void> closeOpenThread(String threadId) async {
+    final response = await _apiClient.delete('/open-threads/$threadId');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AccountabilityApiException(_errorMessage(response.body));
+    }
+  }
+
+  Future<OpenThread> pauseOpenThread(String threadId) async {
+    return updateOpenThread(threadId, status: 'paused');
+  }
+
   Future<Commitment> createCommitment({
     required String title,
     required String commitmentText,

@@ -93,6 +93,46 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     );
   }
 
+  Future<bool> createOpenThread({
+    required String title,
+    String? summary,
+  }) {
+    return _runMutation(
+      () => ref.read(accountabilityApiProvider).createOpenThread(
+        title: title,
+        summary: summary,
+      ),
+    );
+  }
+
+  Future<bool> updateOpenThread(
+    String threadId, {
+    String? title,
+    String? summary,
+    String? status,
+  }) {
+    return _runMutation(
+      () => ref.read(accountabilityApiProvider).updateOpenThread(
+        threadId,
+        title: title,
+        summary: summary,
+        status: status,
+      ),
+    );
+  }
+
+  Future<bool> closeOpenThread(String threadId) {
+    return _runMutation(
+      () => ref.read(accountabilityApiProvider).closeOpenThread(threadId),
+    );
+  }
+
+  Future<bool> pauseOpenThread(String threadId) {
+    return _runMutation(
+      () => ref.read(accountabilityApiProvider).pauseOpenThread(threadId),
+    );
+  }
+
   Future<bool> createCommitment({
     required String title,
     required String commitmentText,
