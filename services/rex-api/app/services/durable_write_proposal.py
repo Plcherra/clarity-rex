@@ -9,14 +9,12 @@ WriteKind = Literal[
     "memory",
     "plan",
     "milestone",
-    "commitment",
     "open_thread",
     "entity_event",
     "entity",
     "rule",
     "update_plan",
     "update_milestone",
-    "update_commitment",
     "delete",
 ]
 
@@ -24,12 +22,10 @@ _LEGACY_ACTION_BY_KIND: dict[str, str] = {
     "memory": "save_memory",
     "plan": "save_plan",
     "milestone": "save_plan_milestone",
-    "commitment": "save_commitment",
     "open_thread": "save_open_thread",
     "entity_event": "save_entity_event",
     "update_plan": "update_plan",
     "update_milestone": "update_plan_milestone",
-    "update_commitment": "update_commitment",
 }
 
 
@@ -63,9 +59,6 @@ class DurableWriteProposal:
         if self.write_kind == "milestone":
             target = self.target_label or "your plan"
             return f"Save as a milestone under {target}?\n{self.title}"
-        if self.write_kind == "commitment":
-            target = self.target_label or "your plan"
-            return f"Save as a commitment under {target}?\n{self.title}"
         if self.write_kind == "open_thread":
             return (
                 "Track as an open thread in Goals?\n"
@@ -91,7 +84,6 @@ class DurableWriteProposal:
             "memory": "a memory note",
             "plan": "a plan",
             "milestone": "a milestone",
-            "commitment": "a commitment",
             "open_thread": "an open thread",
             "entity_event": "a related note",
             "update_plan": "a plan update",
@@ -168,7 +160,6 @@ class DurableWriteProposal:
         if "body" in edits:
             inner["content"] = body
             inner["description"] = body
-            inner["commitment_text"] = body
             inner["desired_outcome"] = body
         if inner:
             snapshot["payload"] = inner

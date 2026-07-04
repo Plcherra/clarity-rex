@@ -1,4 +1,4 @@
-"""Title, type, date, and response helpers for goal/commitment commands."""
+"""Title, type, date, and response helpers for goal commands."""
 
 from __future__ import annotations
 
@@ -48,24 +48,6 @@ def plan_type(text: str) -> str:
     if any(term in lowered for term in ("health", "gym", "work out")):
         return "health"
     return "personal"
-
-
-def commitment_type(text: str) -> str:
-    lowered = text.casefold()
-    if any(
-        term in lowered
-        for term in ("wake up", "5 am", "5:00", "morning routine")
-    ):
-        return "habit"
-    if any(term in lowered for term in ("$", "send money", "pay", "money", "rent")):
-        return "money"
-    if any(term in lowered for term in ("work", "job", "email")):
-        return "work"
-    if any(term in lowered for term in ("gym", "work out", "doctor")):
-        return "health"
-    if any(term in lowered for term in ("mom", "dad", "friend", "call")):
-        return "relationship"
-    return "task"
 
 
 def date_from_text(text: str, *, time_context: dict) -> Optional[str]:
@@ -135,13 +117,11 @@ def reclassification_response(
     joined = ", ".join(titles) if titles else None
     if archived_record is None:
         return reclassified_without_memory_message(
-            kind=command.kind,
             title=command.title,
             total=total_goals,
             titles=joined,
         )
     return reclassified_from_memory_message(
-        kind=command.kind,
         title=command.title,
         total=total_goals,
         titles=joined,

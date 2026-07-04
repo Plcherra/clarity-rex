@@ -5,5 +5,4 @@ enum StructuredMemoryKind {
   rule,
   plan,
   planMilestone,
-  commitment,
 }

@@ -4,12 +4,12 @@ class _GoalActionBar extends StatelessWidget {
   const _GoalActionBar({
     required this.isBusy,
     required this.onAddGoal,
-    required this.onAddCommitment,
+    required this.onAddOpenThread,
   });
 
   final bool isBusy;
   final VoidCallback onAddGoal;
-  final VoidCallback onAddCommitment;
+  final VoidCallback onAddOpenThread;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class _GoalActionBar extends StatelessWidget {
           ),
         ),
         TextButton.icon(
-          onPressed: isBusy ? null : onAddCommitment,
+          onPressed: isBusy ? null : onAddOpenThread,
           icon: Icon(Icons.add_rounded, size: 16, color: colors.textSecondary),
           label: Text(
             l10n.accountabilitySharedAddCommitment,

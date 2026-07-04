@@ -36,7 +36,6 @@ class FakeContextMemoryStore:
         self.structured_context_queries = []
         self.plan_calls = []
         self.milestone_calls = []
-        self.commitment_calls = []
         self.chat_search_ranking = ChatSearchRanking()
         self.messages = [
             {
@@ -76,16 +75,7 @@ class FakeContextMemoryStore:
                 "id": "milestone-1",
                 "plan_id": "plan-1",
                 "title": "Save first $1,000",
-                "status": "open",
-                "active": True,
-            }
-        ]
-        self.commitments = [
-            {
-                "id": "commitment-1",
-                "plan_id": "plan-1",
-                "title": "Review spending weekly",
-                "commitment_text": "Review budget every Sunday.",
+                "description": "Review budget every Sunday.",
                 "status": "open",
                 "active": True,
             }
@@ -257,10 +247,6 @@ class FakeContextMemoryStore:
         self.milestone_calls.append(kwargs)
         return self.milestones
 
-    async def list_commitments(self, **kwargs):
-        self.commitment_calls.append(kwargs)
-        return self.commitments
-
 
 class FakeAccountabilityService:
     def __init__(self):
@@ -268,7 +254,7 @@ class FakeAccountabilityService:
 
     async def analyze_signals(self, **kwargs):
         self.calls.append(kwargs)
-        return [{"kind": "commitment", "status": "open"}]
+        return [{"signal_type": "plan_drift", "status": "active"}]
 
 
 @pytest.mark.asyncio
@@ -2414,7 +2400,7 @@ async def test_chat_context_loads_goals_without_long_term_memory_for_goal_intent
     _, memories, structured_context = await service.fetch_prompt_context(
         message="How am I doing on my goals?",
         conversation_id=None,
-        intent_decision=RexIntentDecision(RexIntent.GOAL_OR_COMMITMENT),
+        intent_decision=RexIntentDecision(RexIntent.GOAL),
     )
 
     assert memories == []
@@ -2502,17 +2488,14 @@ async def test_chat_context_adds_active_goal_context_for_goal_progress_questions
     )
     assert structured_context["plans"][0]["title"] == "Build emergency fund"
     assert structured_context["plan_milestones"][0]["title"] == "Save first $1,000"
-    assert structured_context["commitments"][0]["title"] == "Review spending weekly"
     assert structured_context["goal_context"] == {
         "source": "active_goal_context",
         "reason": "User asked about goals, progress, plans, or accountability.",
         "active_plan_count": 1,
         "related_milestone_count": 1,
-        "related_commitment_count": 1,
     }
     assert store.plan_calls == [{"active": True, "status": "active", "limit": 12}]
     assert store.milestone_calls == [{"active": True, "limit": 40}]
-    assert store.commitment_calls == [{"active": True, "limit": 40}]
 
 
 @pytest.mark.asyncio
@@ -2528,7 +2511,6 @@ async def test_chat_context_skips_goal_context_for_unrelated_chat():
     assert "plans" not in structured_context
     assert store.plan_calls == []
     assert store.milestone_calls == []
-    assert store.commitment_calls == []
 
 
 @pytest.mark.asyncio
@@ -2626,11 +2608,11 @@ async def test_chat_context_accountability_signal_errors_are_best_effort():
         message="I need to call mom tomorrow",
         time_context={"date": "2026-06-01"},
         long_term_memory=[{"content": "mom birthday is June 18"}],
-        structured_context={"commitments": [{"title": "Call mom"}]},
+        structured_context={"plan_milestones": [{"title": "Call mom"}]},
     )
 
-    assert signals == [{"kind": "commitment", "status": "open"}]
-    assert accountability_service.calls[0]["commitments"] == [{"title": "Call mom"}]
+    assert signals == [{"signal_type": "plan_drift", "status": "active"}]
+    assert accountability_service.calls[0]["plan_milestones"] == [{"title": "Call mom"}]
 
 
 @pytest.mark.asyncio
@@ -2652,15 +2634,12 @@ async def test_chat_context_goal_context_feeds_accountability_analysis():
         structured_context=structured_context,
     )
 
-    assert signals == [{"kind": "commitment", "status": "open"}]
+    assert signals == [{"signal_type": "plan_drift", "status": "active"}]
     assert accountability_service.calls[0]["plans"][0]["title"] == (
         "Build emergency fund"
     )
     assert accountability_service.calls[0]["plan_milestones"][0]["title"] == (
         "Save first $1,000"
-    )
-    assert accountability_service.calls[0]["commitments"][0]["title"] == (
-        "Review spending weekly"
     )
 
 

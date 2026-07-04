@@ -97,18 +97,12 @@ class MemoryDisciplineService(MemoryDisciplineDecisionFactoryMixin):
             active=True,
             limit=self.scan_limit,
         )
-        commitments = await self._safe_list(
-            "list_commitments",
-            active=True,
-            limit=self.scan_limit,
-        )
 
         return MemoryDisciplineContext(
             candidate=candidate,
             active_entities=entities,
             active_plans=plans,
             active_milestones=milestones,
-            active_commitments=commitments,
             active_rules=rules,
             active_long_term_memories=long_term_memories,
             related_entities=self._related_records(
@@ -128,12 +122,6 @@ class MemoryDisciplineService(MemoryDisciplineDecisionFactoryMixin):
                 candidate_text,
                 "plan_milestones",
                 milestones,
-            ),
-            related_commitments=self._related_records(
-                candidate,
-                candidate_text,
-                "commitments",
-                commitments,
             ),
             related_rules=self._related_records(
                 candidate,
@@ -272,7 +260,7 @@ class MemoryDisciplineService(MemoryDisciplineDecisionFactoryMixin):
                     "active_milestones": active_milestones,
                 },
             )
-            if plan_decision.action == MemoryDisciplineAction.CREATE_COMMITMENT:
+            if plan_decision.action == MemoryDisciplineAction.CREATE_MILESTONE:
                 return self._decision_from_plan_intelligence(candidate, plan_decision, context)
         if classification.kind in {"strategy_description_update", "entity_event"}:
             plan_decision = self.plan_intelligence_service.classify_plan_candidate(
@@ -362,8 +350,6 @@ class MemoryDisciplineService(MemoryDisciplineDecisionFactoryMixin):
             return context.related_plans
         if kind == MemoryRecordKind.PLAN_MILESTONE:
             return context.related_milestones
-        if kind == MemoryRecordKind.COMMITMENT:
-            return context.related_commitments
         return []
 
     def _top_related_records(
@@ -374,7 +360,6 @@ class MemoryDisciplineService(MemoryDisciplineDecisionFactoryMixin):
             *context.related_entities,
             *context.related_plans,
             *context.related_milestones,
-            *context.related_commitments,
             *context.related_rules,
             *context.related_long_term_memories,
         ]

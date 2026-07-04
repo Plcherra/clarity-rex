@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 from typing import Any, Optional
 
-from app.services.commitment_service import CommitmentService
 from app.services.plan_service import PlanService
 from app.services.rule_service import RuleService
 
@@ -25,12 +24,10 @@ class SavedKnowledgeOverviewService:
         memory_service: Any,
         *,
         plan_service: Optional[PlanService] = None,
-        commitment_service: Optional[CommitmentService] = None,
         rule_service: Optional[RuleService] = None,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service or PlanService(memory_service)
-        self.commitment_service = commitment_service or CommitmentService(memory_service)
         self.rule_service = rule_service or RuleService(memory_service)
 
     async def get_overview(
@@ -44,7 +41,6 @@ class SavedKnowledgeOverviewService:
         entities = await self._list_entities(active=active, limit=limit)
         rules = await self._list_rules(active=active, limit=limit)
         plans = await self._list_plans(active=active, limit=limit)
-        commitments = await self._list_commitments(active=active, limit=limit)
 
         people: list[dict[str, Any]] = []
         places: list[dict[str, Any]] = []
@@ -80,7 +76,6 @@ class SavedKnowledgeOverviewService:
             "facts": len(filtered_facts),
             "rules": len(rules),
             "plans": len(plans),
-            "commitments": len(commitments),
             "total": (
                 len(people)
                 + len(places)
@@ -88,7 +83,6 @@ class SavedKnowledgeOverviewService:
                 + len(filtered_facts)
                 + len(rules)
                 + len(plans)
-                + len(commitments)
             ),
         }
 
@@ -99,7 +93,6 @@ class SavedKnowledgeOverviewService:
             "facts": filtered_facts,
             "rules": rules,
             "plans": plans,
-            "commitments": commitments,
             "counts": counts,
         }
 
@@ -135,18 +128,6 @@ class SavedKnowledgeOverviewService:
     ) -> list[dict[str, Any]]:
         try:
             items = await self.plan_service.list_plans(active=active, limit=limit)
-        except Exception:
-            return []
-        return _sorted_by_importance(items, importance_key="priority")
-
-    async def _list_commitments(
-        self, *, active: bool | None, limit: int
-    ) -> list[dict[str, Any]]:
-        list_fn = getattr(self.commitment_service, "list_commitments", None)
-        if list_fn is None:
-            return []
-        try:
-            items = await list_fn(active=active, limit=limit)
         except Exception:
             return []
         return _sorted_by_importance(items, importance_key="priority")

@@ -3,7 +3,6 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 
 from app.dependencies import get_memory_service, get_plan_service, get_rule_service
-from app.services.commitment_service import CommitmentService
 from app.services.memory_service import SupabaseMemoryService
 from app.services.plan_service import PlanService
 from app.services.rule_service import RuleService
@@ -21,7 +20,6 @@ def get_saved_knowledge_overview_service(
     return SavedKnowledgeOverviewService(
         memory_service,
         plan_service=plan_service,
-        commitment_service=CommitmentService(memory_service),
         rule_service=rule_service,
     )
 

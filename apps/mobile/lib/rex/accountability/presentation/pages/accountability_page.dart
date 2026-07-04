@@ -169,7 +169,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     );
   }
 
-  Future<void> _archivePlan(PlanRecord plan) async {
+  Future<bool?> _confirmArchive({
     required String title,
     required String body,
     required String confirmLabel,
@@ -243,7 +243,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                   _GoalActionBar(
                     isBusy: state.isLoading,
                     onAddGoal: _createPlan,
-                    onAddCommitment: _createOpenThread,
+                    onAddOpenThread: _createOpenThread,
                   ),
                   const SizedBox(height: 20),
                   if (state.isLoading && overview == null)

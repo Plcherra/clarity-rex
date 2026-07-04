@@ -14,7 +14,6 @@ class FakeMemoryCorrectionRepository:
         self.rules = []
         self.plans = []
         self.milestones = []
-        self.commitments = []
         self.corrections = []
 
     async def list_long_term_memory(self, limit=50, memory_type=None, active=None):
@@ -60,18 +59,6 @@ class FakeMemoryCorrectionRepository:
     ):
         return _filter_active(self.milestones, active)[:limit]
 
-    async def list_commitments(
-        self,
-        limit=50,
-        commitment_type=None,
-        plan_id=None,
-        milestone_id=None,
-        entity_id=None,
-        status=None,
-        active=None,
-    ):
-        return _filter_active(self.commitments, active)[:limit]
-
     async def update_long_term_memory(self, memory_id, **updates):
         return _update(self.memories, memory_id, updates)
 
@@ -90,9 +77,6 @@ class FakeMemoryCorrectionRepository:
     async def update_plan_milestone(self, milestone_id, **updates):
         return _update(self.milestones, milestone_id, updates)
 
-    async def update_commitment(self, commitment_id, **updates):
-        return _update(self.commitments, commitment_id, updates)
-
     async def deactivate_long_term_memory(self, memory_id):
         return _deactivate(self.memories, memory_id)
 
@@ -110,9 +94,6 @@ class FakeMemoryCorrectionRepository:
 
     async def deactivate_plan_milestone(self, milestone_id):
         return _deactivate(self.milestones, milestone_id, status="canceled")
-
-    async def deactivate_commitment(self, commitment_id):
-        return _deactivate(self.commitments, commitment_id, status="archived")
 
     async def create_memory_correction(self, correction):
         row = {"id": f"correction-{len(self.corrections) + 1}", **correction}
@@ -174,11 +155,11 @@ async def test_apply_name_correction_updates_records_and_audits_changes():
             "metadata": {},
         }
     )
-    repo.commitments.append(
+    repo.milestones.append(
         {
-            "id": "commitment-1",
+            "id": "milestone-1",
             "title": "Ship Flowfirst MVP",
-            "commitment_text": "Finish Flowfirst this month.",
+            "description": "Finish Flowfirst this month.",
             "active": True,
             "metadata": {},
         }
@@ -192,7 +173,7 @@ async def test_apply_name_correction_updates_records_and_audits_changes():
 
     assert report.applied is True
     assert repo.plans[0]["title"] == "Launch FlowForce"
-    assert repo.commitments[0]["commitment_text"] == "Finish FlowForce this month."
+    assert repo.milestones[0]["description"] == "Finish FlowForce this month."
     assert len(repo.corrections) == 2
     assert repo.corrections[0]["old_value"] == "Flowfirst"
     assert repo.corrections[0]["new_value"] == "FlowForce"

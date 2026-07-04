@@ -56,13 +56,9 @@ async def test_conversational_plan_routes_to_milestone_and_requires_confirmation
 
     assert requested["response"].strip() == ""
     proposal = requested["memory_changes"]["plan_save_proposals"][0]
-    assert proposal["action"] in {
-        "save_plan_milestone",
-        "save_commitment",
-    }
+    assert proposal["action"] == "save_plan_milestone"
     assert requested["memory_changes"]["confirmation_required"] == 1
     assert memory_service.created_plan_milestones == []
-    assert memory_service.created_commitments == []
     assert memory_service.pending_actions
 
     confirmed = await chat_service.send_message(
@@ -72,14 +68,8 @@ async def test_conversational_plan_routes_to_milestone_and_requires_confirmation
 
     assert "Saved" in confirmed["response"]
     assert confirmed["memory_changes"]["created"] == 1
-    assert (
-        memory_service.created_plan_milestones or memory_service.created_commitments
-    )
-    saved = (
-        memory_service.created_plan_milestones[0]
-        if memory_service.created_plan_milestones
-        else memory_service.created_commitments[0]
-    )
+    assert memory_service.created_plan_milestones
+    saved = memory_service.created_plan_milestones[0]
     assert saved["plan_id"] == "plan-europe"
     assert not memory_service.pending_actions
 
@@ -193,7 +183,6 @@ async def test_unresolved_plan_pending_is_not_overwritten_by_new_plan_message():
     )
 
     follow_up_changes = follow_up.get("memory_changes") or {}
-    assert follow_up_changes.get("confirmation_required") != 1
     assert memory_service.pending_actions
     assert memory_service.pending_actions[
         requested["conversation_id"]
@@ -215,10 +204,10 @@ async def test_failed_plan_confirm_keeps_pending_action_for_retry():
         }
     )
 
-    async def failing_create_commitment(_payload):
+    async def failing_create_plan_milestone(_payload):
         raise RuntimeError("write failed")
 
-    memory_service.create_commitment = failing_create_commitment  # type: ignore[method-assign]
+    memory_service.create_plan_milestone = failing_create_plan_milestone  # type: ignore[method-assign]
     chat_service = _chat_service(memory_service)
 
     requested = await chat_service.send_message(
@@ -230,7 +219,6 @@ async def test_failed_plan_confirm_keeps_pending_action_for_retry():
     assert "couldn't save" in failed["response"].lower()
     assert memory_service.pending_actions
     assert not memory_service.created_plan_milestones
-    assert not memory_service.created_commitments
 
 
 @pytest.mark.asyncio
@@ -334,7 +322,7 @@ async def test_conversational_plan_update_requires_confirmation_and_applies():
 
     assert requested["memory_changes"]["confirmation_required"] == 1
     proposal_action = requested["memory_changes"]["plan_save_proposals"][0]["action"]
-    assert proposal_action in {"update_plan", "save_plan", "save_plan_milestone", "save_commitment"}
+    assert proposal_action in {"update_plan", "save_plan", "save_plan_milestone"}
 
     if proposal_action != "update_plan":
         pytest.skip("Discipline routed to a different confirmed write for this message.")

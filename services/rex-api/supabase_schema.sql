@@ -91,7 +91,6 @@ create table if not exists public.memory_corrections (
       'entity_relationship',
       'plan_detail',
       'rule_detail',
-      'commitment_detail',
       'location',
       'preference',
       'other'
@@ -135,7 +134,6 @@ create table if not exists public.memory_candidates (
       'personal_rule',
       'plan',
       'plan_milestone',
-      'commitment',
       'correction',
       'archive',
       'merge'
@@ -260,7 +258,6 @@ create table if not exists public.entity_events (
       'interaction',
       'relationship_update',
       'preference',
-      'commitment',
       'conflict',
       'milestone',
       'other'
@@ -471,88 +468,6 @@ create index if not exists plan_milestones_user_plan_target_idx
 create index if not exists plan_milestones_user_active_status_idx
   on public.plan_milestones (user_id, active, status, target_date);
 
-create table if not exists public.commitments (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  commitment_type text not null check (
-    commitment_type in (
-      'task',
-      'habit',
-      'promise',
-      'money',
-      'health',
-      'relationship',
-      'work',
-      'immigration',
-      'deadline',
-      'other'
-    )
-  ),
-  title text not null,
-  commitment_text text not null,
-  plan_id uuid,
-  milestone_id uuid,
-  entity_id uuid,
-  source_conversation_id uuid,
-  source_message_id uuid,
-  source_memory_id uuid,
-  priority integer not null default 3 check (priority between 1 and 5),
-  status text not null default 'open' check (
-    status in (
-      'open',
-      'in_progress',
-      'completed',
-      'missed',
-      'canceled',
-      'archived'
-    )
-  ),
-  active boolean not null default true,
-  due_at timestamptz,
-  completed_at timestamptz,
-  last_checked_at timestamptz,
-  metadata jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint commitments_user_id_id_uidx unique (user_id, id),
-  constraint commitments_plan_user_fk
-    foreign key (user_id, plan_id)
-    references public.plans(user_id, id)
-    on delete set null (plan_id),
-  constraint commitments_milestone_user_fk
-    foreign key (user_id, milestone_id)
-    references public.plan_milestones(user_id, id)
-    on delete set null (milestone_id),
-  constraint commitments_entity_user_fk
-    foreign key (user_id, entity_id)
-    references public.entities(user_id, id)
-    on delete set null (entity_id),
-  constraint commitments_source_conversation_user_fk
-    foreign key (user_id, source_conversation_id)
-    references public.conversations(user_id, id)
-    on delete set null (source_conversation_id),
-  constraint commitments_source_message_user_fk
-    foreign key (user_id, source_message_id)
-    references public.messages(user_id, id)
-    on delete set null (source_message_id),
-  constraint commitments_source_memory_user_fk
-    foreign key (user_id, source_memory_id)
-    references public.long_term_memory(user_id, id)
-    on delete set null (source_memory_id)
-);
-
-create index if not exists commitments_user_active_due_idx
-  on public.commitments (user_id, active, status, due_at);
-
-create index if not exists commitments_user_plan_idx
-  on public.commitments (user_id, plan_id);
-
-create index if not exists commitments_user_milestone_idx
-  on public.commitments (user_id, milestone_id);
-
-create index if not exists commitments_user_entity_idx
-  on public.commitments (user_id, entity_id);
-
 create table if not exists public.voice_turns (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -637,12 +552,6 @@ before update on public.plan_milestones
 for each row
 execute function public.set_updated_at();
 
-drop trigger if exists set_commitments_updated_at on public.commitments;
-create trigger set_commitments_updated_at
-before update on public.commitments
-for each row
-execute function public.set_updated_at();
-
 alter table public.conversations enable row level security;
 alter table public.messages enable row level security;
 alter table public.long_term_memory enable row level security;
@@ -653,7 +562,6 @@ alter table public.entity_events enable row level security;
 alter table public.personal_rules enable row level security;
 alter table public.plans enable row level security;
 alter table public.plan_milestones enable row level security;
-alter table public.commitments enable row level security;
 alter table public.voice_turns enable row level security;
 
 drop policy if exists "Users can manage their own assistant conversations"
@@ -732,14 +640,6 @@ drop policy if exists "Users can manage their own plan milestones"
   on public.plan_milestones;
 create policy "Users can manage their own plan milestones"
 on public.plan_milestones
-for all to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-
-drop policy if exists "Users can manage their own commitments"
-  on public.commitments;
-create policy "Users can manage their own commitments"
-on public.commitments
 for all to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);

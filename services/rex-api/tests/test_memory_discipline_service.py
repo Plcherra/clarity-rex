@@ -23,11 +23,9 @@ class FakeMemoryDisciplineRepository:
         self.rules = []
         self.plans = []
         self.milestones = []
-        self.commitments = []
         self.created_entities = []
         self.created_plans = []
         self.created_milestones = []
-        self.created_commitments = []
         self.created_rules = []
         self.calls = []
         self.return_empty_create = False
@@ -82,19 +80,6 @@ class FakeMemoryDisciplineRepository:
         self.calls.append(("list_plan_milestones", active, limit))
         return _filter_active(self.milestones, active)[:limit]
 
-    async def list_commitments(
-        self,
-        limit=50,
-        commitment_type=None,
-        plan_id=None,
-        milestone_id=None,
-        entity_id=None,
-        status=None,
-        active=None,
-    ):
-        self.calls.append(("list_commitments", active, limit))
-        return _filter_active(self.commitments, active)[:limit]
-
     async def create_entity(self, payload):
         row = {"id": f"entity-{len(self.created_entities) + 1}", **payload}
         self.created_entities.append(row)
@@ -108,17 +93,11 @@ class FakeMemoryDisciplineRepository:
         return row
 
     async def create_plan_milestone(self, payload):
+        if self.return_empty_create:
+            return None
         row = {"id": f"milestone-{len(self.created_milestones) + 1}", **payload}
         self.created_milestones.append(row)
         self.milestones.append(row)
-        return row
-
-    async def create_commitment(self, payload):
-        if self.return_empty_create:
-            return None
-        row = {"id": f"commitment-{len(self.created_commitments) + 1}", **payload}
-        self.created_commitments.append(row)
-        self.commitments.append(row)
         return row
 
     async def create_personal_rule(self, payload):
@@ -251,7 +230,7 @@ async def test_plan_candidate_routes_to_milestone_under_existing_top_level_plan(
 
 
 @pytest.mark.asyncio
-async def test_plan_candidate_small_step_routes_to_commitment():
+async def test_plan_candidate_small_step_routes_to_milestone():
     repo = FakeMemoryDisciplineRepository()
     repo.plans.append(
         {
@@ -277,10 +256,9 @@ async def test_plan_candidate_small_step_routes_to_commitment():
 
     decision = await MemoryDisciplineService(repo).decide(candidate)
 
-    assert decision.action == MemoryDisciplineAction.CREATE_COMMITMENT
-    assert decision.record_kind == MemoryRecordKind.COMMITMENT
+    assert decision.action == MemoryDisciplineAction.CREATE_MILESTONE
+    assert decision.record_kind == MemoryRecordKind.PLAN_MILESTONE
     assert decision.payload["plan_id"] == "plan-melissa"
-    assert decision.payload["commitment_type"] == "relationship"
 
 
 @pytest.mark.asyncio
@@ -367,11 +345,11 @@ async def test_apply_decision_creates_records_with_standard_metadata():
     repo = FakeMemoryDisciplineRepository()
     service = MemoryDisciplineService(repo)
     candidate = MemoryDisciplineCandidate(
-        kind=MemoryRecordKind.COMMITMENT,
+        kind=MemoryRecordKind.PLAN_MILESTONE,
         payload={
-            "commitment_type": "work",
+            "plan_id": "plan-1",
             "title": "Ship small piece",
-            "commitment_text": "Ship one small Rex improvement today.",
+            "description": "Ship one small Rex improvement today.",
         },
     )
     decision = await service.decide(candidate)
@@ -379,8 +357,8 @@ async def test_apply_decision_creates_records_with_standard_metadata():
     result = await service.apply_decision(decision)
 
     assert result["applied"] is True
-    assert repo.created_commitments[0]["metadata"]["discipline_action"] == (
-        "create_commitment"
+    assert repo.created_milestones[0]["metadata"]["discipline_action"] == (
+        "create_milestone"
     )
 
 
@@ -390,11 +368,11 @@ async def test_apply_decision_does_not_claim_unconfirmed_create():
     repo.return_empty_create = True
     service = MemoryDisciplineService(repo)
     candidate = MemoryDisciplineCandidate(
-        kind=MemoryRecordKind.COMMITMENT,
+        kind=MemoryRecordKind.PLAN_MILESTONE,
         payload={
-            "commitment_type": "work",
+            "plan_id": "plan-1",
             "title": "Ship small piece",
-            "commitment_text": "Ship one small Rex improvement today.",
+            "description": "Ship one small Rex improvement today.",
         },
     )
     decision = await service.decide(candidate)
@@ -403,7 +381,7 @@ async def test_apply_decision_does_not_claim_unconfirmed_create():
 
     assert result["applied"] is False
     assert result["reason"] == "Durable create was not confirmed."
-    assert repo.created_commitments == []
+    assert repo.created_milestones == []
 
 
 @pytest.mark.asyncio

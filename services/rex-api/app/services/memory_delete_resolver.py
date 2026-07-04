@@ -27,8 +27,7 @@ from app.services.memory_reference_resolver import (
 )
 
 GOAL_DELETE_SCOPE = ("plans", "plan_milestones")
-COMMITMENT_DELETE_SCOPE = ("commitments",)
-ACCOUNTABILITY_DELETE_SCOPE = ("plans", "plan_milestones", "commitments")
+ACCOUNTABILITY_DELETE_SCOPE = ("plans", "plan_milestones")
 MEMORY_DELETE_SCOPE = (
     "long_term_memory",
     "entities",
@@ -40,8 +39,6 @@ _VAGUE_KIND_ONLY = frozenset(
     {
         "goal",
         "goals",
-        "commitment",
-        "commitments",
         "memory",
         "memories",
         "plan",
@@ -66,7 +63,7 @@ def is_vague_delete_reference(reference: str) -> bool:
     if normalized in _VAGUE_KIND_ONLY:
         return True
     tokens = normalized.split()
-    return len(tokens) <= 3 and ("memory" in tokens or "commitment" in tokens)
+    return len(tokens) <= 3 and "memory" in tokens
 
 
 def parse_delete_request(text: str) -> Optional[ParsedDeleteRequest]:
@@ -75,7 +72,7 @@ def parse_delete_request(text: str) -> Optional[ParsedDeleteRequest]:
         return None
 
     goal_delete = re.search(
-        r"\b(?:delete|remove|archive)\s+(?:the\s+)?(?P<kind>goal|commitment)s?\b"
+        r"\b(?:delete|remove|archive)\s+(?:the\s+)?(?P<kind>goal)s?\b"
         r"(?:\s+(?:we\s+have(?:\s+saved)?|(?:that\s+)?(?:i\s+)?saved))?"
         r"(?:\s+['\"](?P<quoted>.+?)['\"])?",
         cleaned,
@@ -84,11 +81,7 @@ def parse_delete_request(text: str) -> Optional[ParsedDeleteRequest]:
     if goal_delete:
         quoted = goal_delete.group("quoted")
         kind = str(goal_delete.group("kind") or "goal").strip().lower()
-        scope = (
-            COMMITMENT_DELETE_SCOPE
-            if kind == "commitment"
-            else GOAL_DELETE_SCOPE
-        )
+        scope = GOAL_DELETE_SCOPE
         if quoted:
             reference = trim_removal_target(quoted)
             return ParsedDeleteRequest(

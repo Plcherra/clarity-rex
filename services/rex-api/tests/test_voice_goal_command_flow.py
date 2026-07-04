@@ -39,14 +39,14 @@ def _real_chat_service(ai_service, memory_service):
     )
 
 
-def test_voice_stream_creates_commitment_without_llm():
+def test_voice_stream_creates_goal_without_llm():
     app.dependency_overrides.clear()
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     chat = _real_chat_service(ai_service, memory_service)
     deepgram = FakeDeepgramStreamingService(
-        transcript="Set a reminder to send her $200 on the 10th",
-        partial_transcript="Set a reminder",
+        transcript="Track send her $200 on the 10th as a goal",
+        partial_transcript="Track send her",
     )
     tts = FakeGoogleTTSService()
     override_services(deepgram, chat, tts)
@@ -60,19 +60,17 @@ def test_voice_stream_creates_commitment_without_llm():
             websocket.send_json({"event": "utterance.end"})
 
             messages = receive_until(websocket, "messages.updated")
-            assert messages["memory_changes"]["created"] == 1
-            assert messages["memory_changes"]["records"][0]["kind"] == "commitment"
+            assert messages["memory_changes"]["confirmation_required"] == 1
+            assert messages["memory_changes"]["write_proposals"][0]["write_kind"] == (
+                "plan"
+            )
 
             done = receive_until(websocket, "assistant.done")
-            assert done["response_text"] == (
-                "Got it, I saved that commitment: Send her $200 on the 10th."
-            )
-            assert done["memory_changes"]["created"] == 1
+            assert done["memory_changes"]["confirmation_required"] == 1
+            assert done["memory_changes"]["write_proposals"][0]["write_kind"] == "plan"
+            assert done["memory_changes"]["write_proposals"][0]["title"]
 
     app.dependency_overrides.clear()
     assert ai_service.generate_calls == 0
     assert ai_service.stream_calls == 0
-    assert memory_service.created_commitments[0]["commitment_text"] == (
-        "send her $200 on the 10th"
-    )
-    assert memory_service.created_commitments[0]["due_at"] == "June 10"
+    assert memory_service.created_plans == []

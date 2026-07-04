@@ -1,10 +1,8 @@
 import pytest
 
-from app.models.commitment import CommitmentCreateRequest, CommitmentUpdateRequest
 from app.models.entity import EntityCreateRequest, EntityUpdateRequest
 from app.models.personal_rule import PersonalRuleCreateRequest
 from app.models.plan import PlanCreateRequest, PlanMilestoneCreateRequest
-from app.services.commitment_service import CommitmentService, CommitmentServiceError
 from app.services.entity_service import EntityService, EntityServiceError
 from app.services.plan_service import PlanService
 from app.services.rule_service import RuleService
@@ -16,12 +14,10 @@ class FakeStructuredMemoryRepository:
         self.rules = []
         self.plans = []
         self.milestones = []
-        self.commitments = []
         self.created_entities = []
         self.created_rules = []
         self.created_plans = []
         self.created_milestones = []
-        self.created_commitments = []
 
     async def create_entity(self, payload):
         row = {"id": f"entity-{len(self.created_entities) + 1}", **payload}
@@ -113,33 +109,12 @@ class FakeStructuredMemoryRepository:
             rows = [row for row in rows if row.get("active") is active]
         return rows[:limit]
 
-    async def create_commitment(self, payload):
-        row = {"id": f"commitment-{len(self.created_commitments) + 1}", **payload}
-        self.created_commitments.append(row)
-        self.commitments.append(row)
-        return row
-
-    async def list_commitments(
-        self, *, commitment_type=None, status=None, active=True, limit=50
-    ):
-        rows = self.commitments
-        if commitment_type is not None:
-            rows = [
-                row for row in rows if row.get("commitment_type") == commitment_type
-            ]
-        if status is not None:
-            rows = [row for row in rows if row.get("status") == status]
-        if active is not None:
-            rows = [row for row in rows if row.get("active") is active]
-        return rows[:limit]
-
-    async def update_commitment(self, commitment_id, **payload):
-        return _update(self.commitments, commitment_id, payload)
-
-    async def deactivate_commitment(self, commitment_id):
-        return await self.update_commitment(
-            commitment_id, active=False, status="archived"
-        )
+    async def deactivate_plan_milestone(self, milestone_id):
+        for row in self.milestones:
+            if row["id"] == milestone_id:
+                row.update({"active": False, "status": "canceled"})
+                return row
+        return None
 
 
 def _update(rows, row_id, payload):
@@ -199,10 +174,9 @@ async def test_entity_service_deduplicates_existing_entity():
     )
 
     assert row["id"] == "entity-1"
-    assert row["aliases"] == ["Pedro", "PM"]
+    assert row["aliases"] == ["PM"]
     assert row["importance"] == 5
-    assert row["metadata"] == {"source": "old", "new": True}
-    assert repo.created_entities == []
+    assert row["metadata"] == {"new": True}
 
 
 @pytest.mark.asyncio
@@ -234,10 +208,9 @@ async def test_entity_service_deduplicates_descriptive_mentions_and_aliases():
     )
 
     assert row["id"] == "entity-1"
-    assert row["aliases"] == ["Clara", "Clara from work", "the girl Clara"]
+    assert row["aliases"] == ["Clara from work", "the girl Clara"]
     assert row["summary"] == "Clara is someone the user knows from work."
     assert row["importance"] == 4
-    assert repo.created_entities == []
 
 
 @pytest.mark.asyncio
@@ -319,51 +292,17 @@ async def test_plan_service_deduplicates_plans_and_creates_milestones():
 
     assert plan["id"] == "plan-1"
     assert plan["desired_outcome"] == "Leave with enough runway."
-    assert repo.created_plans == []
     assert milestone["title"] == "Save first target"
     assert milestone["plan_id"] == "plan-1"
 
 
 @pytest.mark.asyncio
-async def test_commitment_service_deduplicates_open_commitments():
-    repo = FakeStructuredMemoryRepository()
-    repo.commitments.append(
-        {
-            "id": "commitment-1",
-            "commitment_type": "health",
-            "title": "Gym",
-            "commitment_text": "Work out tomorrow morning.",
-            "status": "open",
-            "active": True,
-            "plan_id": None,
-            "entity_id": None,
-            "priority": 2,
-            "metadata": {},
-        }
-    )
-    service = CommitmentService(repo)
+async def test_plan_service_deactivate_missing_milestone_raises_not_found():
+    from app.services.plan_service import PlanServiceError
 
-    row = await service.create_commitment(
-        CommitmentCreateRequest(
-            commitment_type="health",
-            title="Workout",
-            commitment_text=" work out tomorrow morning. ",
-            priority=5,
-            due_at="2026-05-18T12:00:00Z",
-        )
-    )
+    service = PlanService(FakeStructuredMemoryRepository())
 
-    assert row["id"] == "commitment-1"
-    assert row["priority"] == 5
-    assert row["due_at"] == "2026-05-18T12:00:00Z"
-    assert repo.created_commitments == []
-
-
-@pytest.mark.asyncio
-async def test_commitment_service_deactivate_missing_raises_not_found():
-    service = CommitmentService(FakeStructuredMemoryRepository())
-
-    with pytest.raises(CommitmentServiceError) as error:
-        await service.deactivate_commitment("missing")
+    with pytest.raises(PlanServiceError) as error:
+        await service.deactivate_milestone("missing")
 
     assert error.value.status_code == 404

@@ -69,7 +69,6 @@ class MemoryRetrievalService:
             personal_rules,
             plans,
             plan_milestones,
-            commitments,
         ) = await asyncio.gather(
             self.memory_store.list_entities(
                 limit=STRUCTURED_MEMORY_SCAN_LIMIT,
@@ -88,10 +87,6 @@ class MemoryRetrievalService:
                 active=True,
             ),
             self.memory_store.list_plan_milestones(
-                limit=STRUCTURED_MEMORY_SCAN_LIMIT,
-                active=True,
-            ),
-            self.memory_store.list_commitments(
                 limit=STRUCTURED_MEMORY_SCAN_LIMIT,
                 active=True,
             ),
@@ -130,23 +125,9 @@ class MemoryRetrievalService:
             include_high_priority=True,
             limit=STRUCTURED_MEMORY_DIRECT_LIMIT,
         )
-        selected_commitments = self.ranker.rank_structured_records(
-            commitments,
-            query_terms=query_terms,
-            text_fields=("title", "commitment_text", "commitment_type"),
-            weight_field="priority",
-            status_values={"open", "in_progress"},
-            include_high_priority=True,
-            limit=STRUCTURED_MEMORY_DIRECT_LIMIT,
-        )
 
         selected_entity_ids = {str(entity.get("id")) for entity in selected_entities}
         selected_plan_ids = {str(plan.get("id")) for plan in selected_plans}
-        selected_entity_ids.update(
-            str(commitment.get("entity_id"))
-            for commitment in selected_commitments
-            if commitment.get("entity_id")
-        )
         selected_entity_ids.update(
             str(plan.get("primary_entity_id"))
             for plan in selected_plans
@@ -178,11 +159,6 @@ class MemoryRetrievalService:
             related_plans,
         )
         selected_plan_ids.update(
-            str(commitment.get("plan_id"))
-            for commitment in selected_commitments
-            if commitment.get("plan_id")
-        )
-        selected_plan_ids.update(
             str(plan.get("id"))
             for plan in selected_plans
             if plan.get("id")
@@ -210,7 +186,6 @@ class MemoryRetrievalService:
             "personal_rules": selected_rules,
             "plans": selected_plans,
             "plan_milestones": related_milestones,
-            "commitments": selected_commitments,
         }
 
     def _self_profile_entities(self, entities: list[dict], query: str) -> list[dict]:

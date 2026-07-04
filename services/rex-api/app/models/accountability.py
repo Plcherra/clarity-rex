@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field
 
 AccountabilitySignalType = Literal[
     "rule_violation",
-    "missed_commitment",
     "plan_drift",
     "repeated_pattern",
     "upcoming_deadline",
@@ -19,7 +18,6 @@ AccountabilityStatus = Literal["active", "dismissed", "resolved", "archived"]
 
 AccountabilitySourceType = Literal[
     "personal_rule",
-    "commitment",
     "plan",
     "plan_milestone",
     "entity",
@@ -69,7 +67,6 @@ class AccountabilityOverviewResponse(BaseModel):
     plan_risks: list[AccountabilitySignalResponse] = Field(default_factory=list)
     recent_patterns: list[AccountabilitySignalResponse] = Field(default_factory=list)
     active_rules: list[dict[str, Any]] = Field(default_factory=list)
-    open_commitments: list[dict[str, Any]] = Field(default_factory=list)
     open_threads: list[dict[str, Any]] = Field(default_factory=list)
     active_plans: list[dict[str, Any]] = Field(default_factory=list)
     open_milestones: list[dict[str, Any]] = Field(default_factory=list)

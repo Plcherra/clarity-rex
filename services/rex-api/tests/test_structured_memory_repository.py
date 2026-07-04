@@ -89,15 +89,6 @@ class FakeStructuredMemoryService(SupabaseMemoryService):
                 "milestone_type": "deadline",
             },
         ),
-        (
-            "create_commitment",
-            "commitments",
-            {
-                "commitment_type": "health",
-                "title": "Morning workout",
-                "commitment_text": "Work out tomorrow morning.",
-            },
-        ),
     ],
 )
 async def test_structured_memory_create_methods_use_supabase_insert_shape(
@@ -132,7 +123,6 @@ async def test_structured_memory_list_methods_apply_filters_and_ordering():
     await service.list_personal_rules(rule_type="finance", active=True)
     await service.list_plans(plan_type="immigration", status="active")
     await service.list_plan_milestones(plan_id="plan-1", status="open")
-    await service.list_commitments(plan_id="plan-1", entity_id="entity-1")
     await service.list_memory_corrections(
         correction_type="entity_name",
         applied=True,
@@ -168,13 +158,7 @@ async def test_structured_memory_list_methods_apply_filters_and_ordering():
     assert milestones_request["query"]["plan_id"] == "eq.plan-1"
     assert milestones_request["query"]["limit"] == "50"
 
-    commitments_request = service.requests[4]
-    assert commitments_request["table"] == "commitments"
-    assert commitments_request["query"]["entity_id"] == "eq.entity-1"
-    assert commitments_request["query"]["limit"] == "51"
-    assert commitments_request["query"]["offset"] == "0"
-
-    corrections_request = service.requests[5]
+    corrections_request = service.requests[4]
     assert corrections_request["table"] == "memory_corrections"
     assert corrections_request["query"]["correction_type"] == "eq.entity_name"
     assert corrections_request["query"]["applied"] == "eq.true"
@@ -207,12 +191,6 @@ async def test_structured_memory_list_methods_apply_filters_and_ordering():
             "milestone-1",
             "plan_milestones",
             {"status": "completed"},
-        ),
-        (
-            "update_commitment",
-            "commitment-1",
-            "commitments",
-            {"status": "missed"},
         ),
     ],
 )
@@ -256,15 +234,13 @@ async def test_structured_memory_deactivate_methods_update_active_and_status():
     assert (await service.deactivate_personal_rule("rule-1"))["active"] is False
     assert (await service.deactivate_plan("plan-1"))["active"] is False
     assert (await service.deactivate_plan_milestone("milestone-1"))["active"] is False
-    assert (await service.deactivate_commitment("commitment-1"))["active"] is False
     assert (await service.deactivate_entity_event("event-1"))["active"] is False
 
     assert service.requests[0]["body"] == {"active": False, "status": "inactive"}
     assert service.requests[1]["body"] == {"active": False, "status": "archived"}
     assert service.requests[2]["body"] == {"active": False, "status": "archived"}
     assert service.requests[3]["body"] == {"active": False, "status": "canceled"}
-    assert service.requests[4]["body"] == {"active": False, "status": "archived"}
-    assert service.requests[5]["body"] == {"active": False}
+    assert service.requests[4]["body"] == {"active": False}
 
 
 @pytest.mark.asyncio
@@ -272,4 +248,4 @@ async def test_structured_memory_deactivate_returns_false_when_row_missing():
     service = FakeStructuredMemoryService()
     service.empty_patch_response = True
 
-    assert await service.deactivate_commitment("missing") is None
+    assert await service.deactivate_plan_milestone("missing") is None

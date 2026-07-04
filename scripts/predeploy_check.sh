@@ -14,6 +14,9 @@ if git ls-files | grep -E '(^|/)[.]env($|[.])'; then
   exit 1
 fi
 
+echo "==> Docs canon check"
+bash "$ROOT_DIR/scripts/verify_docs_canon.sh"
+
 echo "==> Flutter analyze"
 cd "$ROOT_DIR/apps/mobile"
 flutter analyze

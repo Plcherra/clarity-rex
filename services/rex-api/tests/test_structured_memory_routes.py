@@ -2,13 +2,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.dependencies import (
-    get_commitment_service,
     get_entity_service,
     get_plan_service,
     get_rule_service,
 )
 from app.main import app
-from app.services.commitment_service import CommitmentServiceError
 from app.services.entity_service import EntityServiceError
 from app.services.plan_service import PlanServiceError
 from app.services.rule_service import RuleServiceError
@@ -188,49 +186,6 @@ class FakePlanService:
         return {**_milestone_row(), "id": milestone_id, "active": False}
 
 
-class FakeCommitmentService:
-    def __init__(self, error=None):
-        self.error = error
-        self.list_call = None
-
-    def _raise_if_configured(self):
-        if self.error is not None:
-            raise self.error
-
-    async def list_commitments(
-        self, *, commitment_type=None, milestone_id=None, status=None, active=True, limit=50
-    ):
-        self._raise_if_configured()
-        self.list_call = {
-            "commitment_type": commitment_type,
-            "milestone_id": milestone_id,
-            "status": status,
-            "active": active,
-            "limit": limit,
-        }
-        return [_commitment_row(commitment_type=commitment_type or "task")]
-
-    async def create_commitment(self, request):
-        self._raise_if_configured()
-        return _commitment_row(
-            commitment_type=request.commitment_type,
-            title=request.title,
-            commitment_text=request.commitment_text,
-        )
-
-    async def update_commitment(self, commitment_id, request):
-        self._raise_if_configured()
-        return {
-            **_commitment_row(),
-            "id": commitment_id,
-            **request.model_dump(exclude_none=True),
-        }
-
-    async def deactivate_commitment(self, commitment_id):
-        self._raise_if_configured()
-        return {**_commitment_row(), "id": commitment_id, "active": False}
-
-
 def test_list_entities_uses_filters_and_response_model(client):
     fake_service = FakeEntityService()
     app.dependency_overrides[get_entity_service] = lambda: fake_service
@@ -253,25 +208,21 @@ def test_structured_list_routes_default_to_all_active_states(client):
     entity_service = FakeEntityService()
     rule_service = FakeRuleService()
     plan_service = FakePlanService()
-    commitment_service = FakeCommitmentService()
     app.dependency_overrides[get_entity_service] = lambda: entity_service
     app.dependency_overrides[get_rule_service] = lambda: rule_service
     app.dependency_overrides[get_plan_service] = lambda: plan_service
-    app.dependency_overrides[get_commitment_service] = lambda: commitment_service
 
     assert client.get("/entities?entity_type=person").status_code == 200
     assert client.get("/entities/entity-1/events").status_code == 200
     assert client.get("/rules").status_code == 200
     assert client.get("/plans").status_code == 200
     assert client.get("/plans/plan-1/milestones").status_code == 200
-    assert client.get("/commitments").status_code == 200
 
     assert entity_service.list_call["active"] is None
     assert entity_service.event_list_call["active"] is None
     assert rule_service.list_call["active"] is None
     assert plan_service.list_call["active"] is None
     assert plan_service.milestone_list_call["active"] is None
-    assert commitment_service.list_call["active"] is None
 
 
 def test_create_entity_event_rejects_entity_id_mismatch(client):
@@ -420,57 +371,6 @@ def test_plan_routes_map_service_errors(client):
     assert response.json()["detail"] == "Plan not found."
 
 
-def test_commitment_crud_routes(client):
-    app.dependency_overrides[get_commitment_service] = lambda: FakeCommitmentService()
-
-    create_response = client.post(
-        "/commitments",
-        json={
-            "commitment_type": "health",
-            "title": "Workout",
-            "commitment_text": "Work out tomorrow morning.",
-        },
-    )
-    list_response = client.get("/commitments?commitment_type=health&status=open")
-    update_response = client.patch("/commitments/commitment-1", json={"status": "missed"})
-    delete_response = client.delete("/commitments/commitment-1")
-
-    assert create_response.status_code == 201
-    assert create_response.json()["commitment_type"] == "health"
-    assert list_response.status_code == 200
-    assert list_response.json()[0]["status"] == "open"
-    assert update_response.status_code == 200
-    assert update_response.json()["status"] == "missed"
-    assert delete_response.status_code == 204
-
-
-def test_create_commitment_rejects_invalid_schema_payload(client):
-    app.dependency_overrides[get_commitment_service] = lambda: FakeCommitmentService()
-
-    response = client.post(
-        "/commitments",
-        json={
-            "commitment_type": "health",
-            "title": "Workout",
-            "commitment_text": "Work out tomorrow morning.",
-            "priority": 0,
-        },
-    )
-
-    assert response.status_code == 422
-
-
-def test_commitment_routes_map_service_errors(client):
-    app.dependency_overrides[get_commitment_service] = lambda: FakeCommitmentService(
-        CommitmentServiceError("Commitment not found.", 404)
-    )
-
-    response = client.delete("/commitments/missing")
-
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Commitment not found."
-
-
 def _entity_row(**overrides):
     return {
         "id": "entity-1",
@@ -542,15 +442,3 @@ def _milestone_row(**overrides):
     }
 
 
-def _commitment_row(**overrides):
-    return {
-        "id": "commitment-1",
-        "commitment_type": "task",
-        "title": "Workout",
-        "commitment_text": "Work out tomorrow morning.",
-        "priority": 3,
-        "status": "open",
-        "active": True,
-        "metadata": {},
-        **overrides,
-    }

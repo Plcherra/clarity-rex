@@ -7,7 +7,6 @@ Current stack:
 - Backend: FastAPI
 - AI: Grok API through the backend only
 - Database: Supabase for conversations, messages, memory, goals (`plans`), rules, open threads, and voice turns
-- Legacy (migration only): commitments table/routes remain for data migration only — not in Goals overview, Knows, prompts, or new UI
 - Memory: short-term transcript memory plus long-term facts, preferences, and events
 - Production voice target: Deepgram speech-to-text and Google Text-to-Speech through the backend
 

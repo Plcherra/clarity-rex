@@ -113,10 +113,6 @@ PATTERN_CATEGORIES = {
         "label": "coffee spending",
         "terms": {"coffee", "dunkin", "latte", "starbucks"},
     },
-    "missed_commitments": {
-        "label": "missed commitments",
-        "terms": {"missed", "overdue", "skipped", "didn't do", "did not do", "forgot"},
-    },
     "dating_anxiety": {
         "label": "dating hesitation",
         "terms": {
@@ -253,15 +249,6 @@ def bounded_int(value: Any, *, default: int, minimum: int, maximum: int) -> int:
     except (TypeError, ValueError):
         parsed = default
     return max(minimum, min(parsed, maximum))
-
-
-def commitment_source_ref(commitment: dict) -> AccountabilitySourceRef:
-    return AccountabilitySourceRef(
-        source_type="commitment",
-        source_id=str(commitment.get("id")) if commitment.get("id") else None,
-        title=str(commitment.get("title") or "Commitment"),
-        excerpt=str(commitment.get("commitment_text") or "") or None,
-    )
 
 
 def plan_source_ref(plan: dict) -> AccountabilitySourceRef:

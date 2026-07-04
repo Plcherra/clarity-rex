@@ -91,9 +91,6 @@ def _record_kind_labels(table: str, record: dict[str, Any]) -> list[str]:
     elif table == "plans":
         labels.extend(["plan", "plans", "goal", "goals"])
         labels.append(clean_text(record.get("plan_type")))
-    elif table == "commitments":
-        labels.extend(["commitment", "commitments", "goal", "goals", "task"])
-        labels.append(clean_text(record.get("commitment_type")))
     return [label for label in labels if label]
 
 
@@ -139,10 +136,5 @@ def _record_visible_text_fields(table: str, record: dict[str, Any]) -> list[str]
             clean_text(record.get("title")),
             clean_text(record.get("description")),
             clean_text(record.get("desired_outcome")),
-        ]
-    if table == "commitments":
-        return [
-            clean_text(record.get("title")),
-            clean_text(record.get("commitment_text")),
         ]
     return []

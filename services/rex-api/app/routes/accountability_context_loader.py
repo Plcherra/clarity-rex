@@ -28,7 +28,6 @@ async def load_accountability_context(
     )
     (
         personal_rules,
-        commitments,
         plans,
         plan_milestones,
         entities_result,
@@ -39,10 +38,6 @@ async def load_accountability_context(
         memory_service.list_personal_rules(
             active=True,
             status="active",
-            limit=ACCOUNTABILITY_CONTEXT_LIMIT,
-        ),
-        memory_service.list_commitments(
-            active=True,
             limit=ACCOUNTABILITY_CONTEXT_LIMIT,
         ),
         memory_service.list_plans(
@@ -74,7 +69,6 @@ async def load_accountability_context(
 
     return {
         "personal_rules": personal_rules,
-        "commitments": commitments,
         "plans": plans,
         "plan_milestones": plan_milestones,
         "entities": entities_result.rows,

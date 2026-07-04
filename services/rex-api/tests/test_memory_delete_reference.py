@@ -37,11 +37,11 @@ def test_intent_parser_parses_reference_delete():
     assert "be a goal" in intent.old_value.casefold()
 
 
-def test_intent_parser_delete_saved_commitment_targets_commitment():
+def test_intent_parser_delete_saved_goal_targets_accountability_scope():
     intent = MemoryCorrectionIntentParser().detect_correction_intent(
-        "Can you delete the commitment we have saved?"
+        "Can you delete the goal we have saved?"
     )
     assert intent.intent_type == CorrectionIntentType.REMOVE_OBSOLETE
-    assert intent.old_value == "commitment"
-    assert intent.delete_scope_tables == ("commitments",)
+    assert intent.old_value == "goal"
+    assert intent.delete_scope_tables == ("plans", "plan_milestones")
     assert intent.is_vague_delete_reference is True

@@ -15,7 +15,6 @@ class RegressionMemoryRepo:
         self.rules = []
         self.plans = []
         self.milestones = []
-        self.commitments = []
         self.archived_entities = []
 
     async def list_long_term_memory(self, **kwargs):
@@ -33,9 +32,6 @@ class RegressionMemoryRepo:
     async def list_plan_milestones(self, **kwargs):
         return self.milestones
 
-    async def list_commitments(self, **kwargs):
-        return self.commitments
-
     async def update_entity(self, entity_id, **updates):
         return _update(self.entities, entity_id, updates)
 
@@ -45,11 +41,6 @@ class RegressionMemoryRepo:
     async def create_plan_milestone(self, payload):
         row = {"id": f"milestone-{len(self.milestones) + 1}", **payload}
         self.milestones.append(row)
-        return row
-
-    async def create_commitment(self, payload):
-        row = {"id": f"commitment-{len(self.commitments) + 1}", **payload}
-        self.commitments.append(row)
         return row
 
     async def deactivate_entity(self, entity_id):
@@ -133,7 +124,7 @@ async def test_duplicate_dating_plan_does_not_create_new_top_level_plan():
 
     assert decision.action != MemoryDisciplineAction.CREATE_PLAN
     assert decision.action in {
-        MemoryDisciplineAction.CREATE_COMMITMENT,
+        MemoryDisciplineAction.CREATE_MILESTONE,
         MemoryDisciplineAction.UPDATE_PLAN,
     }
 
@@ -245,7 +236,7 @@ async def test_duplicate_rule_updates_existing_rule():
 
 
 @pytest.mark.asyncio
-async def test_small_task_misclassified_as_plan_becomes_commitment():
+async def test_small_task_misclassified_as_plan_becomes_milestone():
     repo = RegressionMemoryRepo()
     repo.plans.append(
         {
@@ -271,7 +262,7 @@ async def test_small_task_misclassified_as_plan_becomes_commitment():
         )
     )
 
-    assert decision.action == MemoryDisciplineAction.CREATE_COMMITMENT
+    assert decision.action == MemoryDisciplineAction.CREATE_MILESTONE
     applied = await service.apply_decision(decision)
     assert applied["record"]["plan_id"] == "plan-apps"
 

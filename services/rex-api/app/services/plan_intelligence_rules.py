@@ -59,7 +59,7 @@ def domain_bridge_score(candidate_value: str, plan_value: str) -> float:
     return boost
 
 
-def best_milestone_for_commitment(
+def best_milestone_for_small_step(
     candidate: dict[str, Any],
     active_milestones: list[dict[str, Any]],
 ) -> Optional[dict[str, Any]]:
@@ -221,19 +221,6 @@ def milestone_type(candidate: dict[str, Any]) -> str:
     if is_small_step(candidate):
         return "task"
     return "goal"
-
-
-def commitment_type(candidate: dict[str, Any], parent_plan: dict[str, Any]) -> str:
-    plan_type = str(
-        candidate.get("plan_type") or parent_plan.get("plan_type") or ""
-    ).lower()
-    if plan_type in {"health", "immigration", "dating"}:
-        return {"dating": "relationship"}.get(plan_type, plan_type)
-    if plan_type in {"career", "creative"}:
-        return "work"
-    if plan_type == "finance":
-        return "money"
-    return "task"
 
 
 _INCOME_TERMS = {

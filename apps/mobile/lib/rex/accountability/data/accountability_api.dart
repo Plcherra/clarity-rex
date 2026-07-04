@@ -174,97 +174,6 @@ class AccountabilityApi {
     return updateOpenThread(threadId, status: 'paused');
   }
 
-  Future<Commitment> createCommitment({
-    required String title,
-    required String commitmentText,
-    String commitmentType = 'task',
-  }) async {
-    final response = await _apiClient.postJson('/commitments', {
-      'commitment_type': commitmentType,
-      'title': title,
-      'commitment_text': commitmentText,
-      'priority': commitmentType == 'habit' ? 5 : 4,
-      'status': 'open',
-      'active': true,
-      'metadata': {
-        'source': 'goals_tab',
-        if (_isMorningRoutine(commitmentText)) 'routine': 'morning',
-      },
-    });
-    final data = _decodeResponse(response);
-    if (data is! Map<String, dynamic>) {
-      throw const AccountabilityApiException(
-        'Backend returned an invalid commitment response.',
-      );
-    }
-    return Commitment.fromJson(data);
-  }
-
-  Future<Commitment> updateCommitment(
-    String commitmentId, {
-    String? title,
-    String? commitmentText,
-    int? priority,
-  }) async {
-    final payload = <String, dynamic>{};
-    if (title != null) {
-      payload['title'] = title;
-    }
-    if (commitmentText != null) {
-      payload['commitment_text'] = commitmentText;
-    }
-    if (priority != null) {
-      payload['priority'] = priority;
-    }
-    final response =
-        await _apiClient.patchJson('/commitments/$commitmentId', payload);
-    final data = _decodeResponse(response);
-    if (data is! Map<String, dynamic>) {
-      throw const AccountabilityApiException(
-        'Backend returned an invalid commitment response.',
-      );
-    }
-    return Commitment.fromJson(data);
-  }
-
-  Future<Commitment> completeCommitment(String commitmentId) async {
-    final response = await _apiClient.patchJson('/commitments/$commitmentId', {
-      'status': 'completed',
-      'active': false,
-      'completed_at': DateTime.now().toUtc().toIso8601String(),
-      'last_checked_at': DateTime.now().toUtc().toIso8601String(),
-    });
-    final data = _decodeResponse(response);
-    if (data is! Map<String, dynamic>) {
-      throw const AccountabilityApiException(
-        'Backend returned an invalid commitment response.',
-      );
-    }
-    return Commitment.fromJson(data);
-  }
-
-  Future<Commitment> missCommitment(String commitmentId) async {
-    final response = await _apiClient.patchJson('/commitments/$commitmentId', {
-      'status': 'missed',
-      'active': false,
-      'last_checked_at': DateTime.now().toUtc().toIso8601String(),
-    });
-    final data = _decodeResponse(response);
-    if (data is! Map<String, dynamic>) {
-      throw const AccountabilityApiException(
-        'Backend returned an invalid commitment response.',
-      );
-    }
-    return Commitment.fromJson(data);
-  }
-
-  Future<void> archiveCommitment(String commitmentId) async {
-    final response = await _apiClient.delete('/commitments/$commitmentId');
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw AccountabilityApiException(_errorMessage(response.body));
-    }
-  }
-
   dynamic _decodeResponse(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw AccountabilityApiException(_errorMessage(response.body));
@@ -297,14 +206,6 @@ class AccountabilityApi {
 
     return 'Clarity API returned an accountability error.';
   }
-}
-
-bool _isMorningRoutine(String text) {
-  final normalized = text.toLowerCase();
-  return normalized.contains('wake') ||
-      normalized.contains('5 am') ||
-      normalized.contains('5:00') ||
-      normalized.contains('morning routine');
 }
 
 class AccountabilityApiException implements Exception {

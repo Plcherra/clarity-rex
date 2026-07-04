@@ -7,7 +7,6 @@ ENTITY_EVENTS_TABLE = "entity_events"
 PERSONAL_RULES_TABLE = "personal_rules"
 PLANS_TABLE = "plans"
 PLAN_MILESTONES_TABLE = "plan_milestones"
-COMMITMENTS_TABLE = "commitments"
 
 ENTITY_SELECT = (
     "id,entity_type,display_name,normalized_name,aliases,relationship,summary,"
@@ -33,11 +32,6 @@ PLAN_MILESTONE_SELECT = (
     "id,plan_id,title,description,milestone_type,target_date,completed_at,"
     "source_conversation_id,source_message_id,source_memory_id,priority,status,"
     "active,metadata,created_at,updated_at"
-)
-COMMITMENT_SELECT = (
-    "id,commitment_type,title,commitment_text,plan_id,milestone_id,entity_id,"
-    "source_conversation_id,source_message_id,source_memory_id,priority,status,"
-    "active,due_at,completed_at,last_checked_at,metadata,created_at,updated_at"
 )
 
 
@@ -321,79 +315,4 @@ class StructuredMemoryRepository:
             milestone_id,
             active=False,
             status="canceled",
-        )
-
-    async def create_commitment(self, commitment: dict) -> dict:
-        return await self.store._create_record(
-            COMMITMENTS_TABLE,
-            commitment,
-            COMMITMENT_SELECT,
-        )
-
-    async def list_commitments(
-        self,
-        limit: int = 50,
-        commitment_type: Optional[str] = None,
-        plan_id: Optional[str] = None,
-        milestone_id: Optional[str] = None,
-        entity_id: Optional[str] = None,
-        status: Optional[str] = None,
-        active: Optional[bool] = None,
-    ) -> list[dict]:
-        items, _, _ = await self.list_commitments_paged(
-            limit=limit,
-            commitment_type=commitment_type,
-            plan_id=plan_id,
-            milestone_id=milestone_id,
-            entity_id=entity_id,
-            status=status,
-            active=active,
-        )
-        return items
-
-    async def list_commitments_paged(
-        self,
-        limit: int = 50,
-        commitment_type: Optional[str] = None,
-        plan_id: Optional[str] = None,
-        milestone_id: Optional[str] = None,
-        entity_id: Optional[str] = None,
-        status: Optional[str] = None,
-        active: Optional[bool] = None,
-        cursor: Optional[str] = None,
-    ) -> tuple[list[dict], Optional[str], bool]:
-        return await self._list_table_paged(
-            table=COMMITMENTS_TABLE,
-            select=COMMITMENT_SELECT,
-            filters={
-                "commitment_type": commitment_type,
-                "plan_id": plan_id,
-                "milestone_id": milestone_id,
-                "entity_id": entity_id,
-                "status": status,
-                "active": active,
-            },
-            order="priority.desc,due_at.asc,updated_at.desc",
-            limit=limit,
-            cursor=cursor,
-        )
-
-    async def update_commitment(
-        self,
-        commitment_id: str,
-        **updates: object,
-    ) -> Optional[dict]:
-        return await self.store._update_record(
-            COMMITMENTS_TABLE,
-            commitment_id,
-            updates=updates,
-            select=COMMITMENT_SELECT,
-            empty_detail="At least one commitment field must be provided.",
-        )
-
-    async def deactivate_commitment(self, commitment_id: str) -> Optional[dict]:
-        return await self.update_commitment(
-            commitment_id,
-            active=False,
-            status="archived",
         )

@@ -195,7 +195,6 @@ class MemoryReferenceResolver:
         items.extend(await self._entity_event_items(limit=limit))
         items.extend(await self._entity_items(limit=limit))
         items.extend(await self._plan_items(limit=limit))
-        items.extend(await self._commitment_items(limit=limit))
         return items
 
     async def _plan_items(self, *, limit: int) -> list[KnowsReferenceMatch]:
@@ -221,36 +220,6 @@ class MemoryReferenceResolver:
             items.append(
                 KnowsReferenceMatch(
                     table="plans",
-                    id=record_id,
-                    title=title,
-                    record=record,
-                )
-            )
-        return items
-
-    async def _commitment_items(self, *, limit: int) -> list[KnowsReferenceMatch]:
-        method = getattr(self.memory_service, "list_commitments", None)
-        if method is None:
-            return []
-        try:
-            records = await method(active=True, limit=limit)
-        except TypeError:
-            try:
-                records = await method(limit=limit)
-            except Exception:
-                return []
-        except Exception:
-            return []
-
-        items: list[KnowsReferenceMatch] = []
-        for record in records:
-            record_id = clean_text(record.get("id"))
-            title = clean_text(record.get("title") or record.get("commitment_text"))
-            if not record_id or not title:
-                continue
-            items.append(
-                KnowsReferenceMatch(
-                    table="commitments",
                     id=record_id,
                     title=title,
                     record=record,

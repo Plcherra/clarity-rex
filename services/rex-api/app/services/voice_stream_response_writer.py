@@ -149,7 +149,7 @@ class VoiceStreamResponseWriterMixin:
                     "memory_recall",
                     "memory_save",
                     "memory_update",
-                    "goal_or_commitment",
+                    "goal",
                 }
             elif event_name == "token":
                 token = str(event.get("token") or "")

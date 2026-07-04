@@ -177,12 +177,4 @@ TABLE_SPECS = (
         text_fields=("title", "description"),
         correction_type="plan_detail",
     ),
-    TableSpec(
-        table="commitments",
-        list_method="list_commitments",
-        update_method="update_commitment",
-        deactivate_method="deactivate_commitment",
-        text_fields=("title", "commitment_text"),
-        correction_type="commitment_detail",
-    ),
 )

@@ -136,24 +136,21 @@ We execute **phase by phase**, not all at once.
 
 **Goal:** Prevent regression. Finish commitment retirement at API layer.
 
-**Status:** Not started
+**Status:** Done
 
-### 3.1 Deprecate `/commitments` for new product use
-
-| | |
-|---|---|
-| **Files** | `services/rex-api/app/routes/commitments.py`, `main.py` router registration |
-| **Approach** | Keep read/migration routes; block or remove mobile create/update after Phase 0–1 |
-| | `structured_memory_repository.py` — commitment CRUD stays for migration |
-| **Done when** | No mobile or prompt path creates standalone commitments; API documented as legacy |
-
-### 3.2 Prevent future doc sprawl
+### [x] 3.1 Full commitments removal
 
 | | |
 |---|---|
-| **Approach** | CI check or pre-commit: fail if new files appear under `docs/` outside the 3 canon files (allow `docs/archive/` with non-canon header) |
-| | Ensure git tracks only canon + this tracker; do not resurrect `docs/brain/` without archival label |
-| **Done when** | Automated check exists; `docs/` stays at 3 canon files (+ this file until deleted) |
+| **Approach** | Deleted `/commitments` routes, `CommitmentService`, mobile clients, assistant write paths; dropped `commitments` table; plan small-steps route to milestones |
+| **Done when** | No code path creates or reads commitments; Open Threads only for companion continuity |
+
+### [x] 3.2 Prevent future doc sprawl
+
+| | |
+|---|---|
+| **Approach** | `scripts/verify_docs_canon.sh` + CI `docs-canonical` job; documentation policy in `PROJECT_STRUCTURE.md` §13 |
+| **Done when** | Automated check exists; new non-canon `docs/` files blocked on PR |
 
 ---
 
@@ -172,4 +169,4 @@ We execute **phase by phase**, not all at once.
 | 0 | Knows + prompts + Open Thread l10n | Done |
 | 1 | READMEs + commitment copy sweep | Done |
 | 2 | Rex Brain naming + legacy module cleanup | Done |
-| 3 | `/commitments` deprecation + doc sprawl guard | Not started |
+| 3 | `/commitments` removal + doc sprawl guard | Done |

@@ -2,7 +2,6 @@ import 'package:clarity/rex/memory/data/memory_models.dart';
 
 enum AccountabilitySignalType {
   ruleViolation,
-  missedCommitment,
   planDrift,
   repeatedPattern,
   upcomingDeadline,
@@ -17,7 +16,6 @@ enum AccountabilityStatus { active, dismissed, resolved, archived, unknown }
 
 enum AccountabilitySourceType {
   personalRule,
-  commitment,
   plan,
   planMilestone,
   entity,
@@ -36,7 +34,6 @@ class AccountabilityOverview {
     required this.planRisks,
     required this.recentPatterns,
     required this.activeRules,
-    required this.openCommitments,
     required this.openThreads,
     required this.activePlans,
     required this.openMilestones,
@@ -56,7 +53,6 @@ class AccountabilityOverview {
         AccountabilitySignal.fromJson,
       ),
       activeRules: _list(json['active_rules'], PersonalRule.fromJson),
-      openCommitments: _list(json['open_commitments'], Commitment.fromJson),
       openThreads: _list(json['open_threads'], OpenThread.fromJson),
       activePlans: _list(json['active_plans'], PlanRecord.fromJson),
       openMilestones: _list(json['open_milestones'], PlanMilestone.fromJson),
@@ -78,7 +74,6 @@ class AccountabilityOverview {
   final List<AccountabilitySignal> planRisks;
   final List<AccountabilitySignal> recentPatterns;
   final List<PersonalRule> activeRules;
-  final List<Commitment> openCommitments;
   final List<OpenThread> openThreads;
   final List<PlanRecord> activePlans;
   final List<PlanMilestone> openMilestones;
@@ -93,8 +88,6 @@ class AccountabilityOverview {
       activePlans.isNotEmpty ||
       openThreads.where((thread) => thread.status == 'active').isNotEmpty;
 
-  bool get hasGoalsOrCommitments => hasGoalsOrThreads;
-
   bool get hasInsightSignals =>
       signals.isNotEmpty ||
       ruleRisks.isNotEmpty ||
@@ -108,9 +101,6 @@ class AccountabilityOverview {
 
   int get completedMilestoneCount =>
       _int(metadata['completed_milestone_count']) ?? completedMilestones.length;
-
-  int get openTaskCount =>
-      _int(metadata['open_task_count']) ?? openCommitments.length;
 }
 
 class AccountabilitySignal {
@@ -241,53 +231,6 @@ class PersonalRule {
   final DateTime? endsAt;
 }
 
-class Commitment {
-  const Commitment({
-    required this.id,
-    required this.commitmentType,
-    required this.title,
-    required this.commitmentText,
-    required this.planId,
-    required this.milestoneId,
-    required this.entityId,
-    required this.priority,
-    required this.status,
-    required this.active,
-    required this.dueAt,
-    required this.completedAt,
-  });
-
-  factory Commitment.fromJson(Map<String, dynamic> json) {
-    return Commitment(
-      id: _string(json['id']) ?? '',
-      commitmentType: _string(json['commitment_type']) ?? 'other',
-      title: _string(json['title']) ?? 'Commitment',
-      commitmentText: _string(json['commitment_text']) ?? '',
-      planId: _string(json['plan_id']),
-      milestoneId: _string(json['milestone_id']),
-      entityId: _string(json['entity_id']),
-      priority: _int(json['priority']) ?? 3,
-      status: _string(json['status']) ?? 'open',
-      active: _bool(json['active']) ?? true,
-      dueAt: _dateTime(json['due_at']),
-      completedAt: _dateTime(json['completed_at']),
-    );
-  }
-
-  final String id;
-  final String commitmentType;
-  final String title;
-  final String commitmentText;
-  final String? planId;
-  final String? milestoneId;
-  final String? entityId;
-  final int priority;
-  final String status;
-  final bool active;
-  final DateTime? dueAt;
-  final DateTime? completedAt;
-}
-
 class OpenThread {
   const OpenThread({
     required this.id,
@@ -331,7 +274,6 @@ class PlanHierarchyItem {
     required this.plan,
     required this.openMilestones,
     required this.completedMilestones,
-    required this.openCommitments,
     required this.counts,
   });
 
@@ -343,7 +285,6 @@ class PlanHierarchyItem {
         json['completed_milestones'],
         PlanMilestone.fromJson,
       ),
-      openCommitments: _list(json['open_commitments'], Commitment.fromJson),
       counts: _map(json['counts']),
     );
   }
@@ -351,7 +292,6 @@ class PlanHierarchyItem {
   final PlanRecord plan;
   final List<PlanMilestone> openMilestones;
   final List<PlanMilestone> completedMilestones;
-  final List<Commitment> openCommitments;
   final Map<String, dynamic> counts;
 }
 
@@ -437,7 +377,6 @@ class PlanMilestone {
     required this.status,
     required this.active,
     required this.completedAt,
-    required this.openCommitments,
   });
 
   factory PlanMilestone.fromJson(Map<String, dynamic> json) {
@@ -452,7 +391,6 @@ class PlanMilestone {
       status: _string(json['status']) ?? 'open',
       active: _bool(json['active']) ?? true,
       completedAt: _dateTime(json['completed_at']),
-      openCommitments: _list(json['open_commitments'], Commitment.fromJson),
     );
   }
 
@@ -466,7 +404,6 @@ class PlanMilestone {
   final String status;
   final bool active;
   final DateTime? completedAt;
-  final List<Commitment> openCommitments;
 }
 
 extension AccountabilitySignalTypeLabel on AccountabilitySignalType {
@@ -474,8 +411,6 @@ extension AccountabilitySignalTypeLabel on AccountabilitySignalType {
     switch (this) {
       case AccountabilitySignalType.ruleViolation:
         return 'Rule risk';
-      case AccountabilitySignalType.missedCommitment:
-        return 'Missed commitment';
       case AccountabilitySignalType.planDrift:
         return 'Plan drift';
       case AccountabilitySignalType.repeatedPattern:
@@ -522,8 +457,6 @@ extension AccountabilitySourceTypeLabel on AccountabilitySourceType {
     switch (this) {
       case AccountabilitySourceType.personalRule:
         return 'Rule';
-      case AccountabilitySourceType.commitment:
-        return 'Commitment';
       case AccountabilitySourceType.plan:
         return 'Plan';
       case AccountabilitySourceType.planMilestone:
@@ -610,7 +543,7 @@ AccountabilitySignalType _signalType(Object? value) {
     case 'rule_violation':
       return AccountabilitySignalType.ruleViolation;
     case 'missed_commitment':
-      return AccountabilitySignalType.missedCommitment;
+      return AccountabilitySignalType.unknown;
     case 'plan_drift':
       return AccountabilitySignalType.planDrift;
     case 'repeated_pattern':
@@ -663,7 +596,7 @@ AccountabilitySourceType _sourceType(Object? value) {
     case 'personal_rule':
       return AccountabilitySourceType.personalRule;
     case 'commitment':
-      return AccountabilitySourceType.commitment;
+      return AccountabilitySourceType.unknown;
     case 'plan':
       return AccountabilitySourceType.plan;
     case 'plan_milestone':

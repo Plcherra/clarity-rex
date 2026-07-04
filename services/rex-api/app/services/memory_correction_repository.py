@@ -7,7 +7,6 @@ VALID_MEMORY_CORRECTION_TYPES = {
     "entity_relationship",
     "plan_detail",
     "rule_detail",
-    "commitment_detail",
     "location",
     "preference",
     "other",

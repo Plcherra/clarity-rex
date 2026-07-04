@@ -24,7 +24,6 @@ def create_action_for_kind(
         MemoryRecordKind.PERSONAL_RULE: MemoryDisciplineAction.CREATE_RULE,
         MemoryRecordKind.PLAN: MemoryDisciplineAction.CREATE_PLAN,
         MemoryRecordKind.PLAN_MILESTONE: MemoryDisciplineAction.CREATE_MILESTONE,
-        MemoryRecordKind.COMMITMENT: MemoryDisciplineAction.CREATE_COMMITMENT,
     }.get(kind)
 
 
@@ -36,7 +35,6 @@ def update_action_for_kind(
         MemoryRecordKind.PERSONAL_RULE: MemoryDisciplineAction.UPDATE_RULE,
         MemoryRecordKind.PLAN: MemoryDisciplineAction.UPDATE_PLAN,
         MemoryRecordKind.PLAN_MILESTONE: MemoryDisciplineAction.UPDATE_MILESTONE,
-        MemoryRecordKind.COMMITMENT: MemoryDisciplineAction.UPDATE_COMMITMENT,
     }.get(kind)
 
 
@@ -70,8 +68,6 @@ class MemoryDisciplineDecisionFactoryMixin:
             MemoryDisciplineAction.UPDATE_PLAN: MemoryRecordKind.PLAN,
             MemoryDisciplineAction.CREATE_MILESTONE: MemoryRecordKind.PLAN_MILESTONE,
             MemoryDisciplineAction.UPDATE_MILESTONE: MemoryRecordKind.PLAN_MILESTONE,
-            MemoryDisciplineAction.CREATE_COMMITMENT: MemoryRecordKind.COMMITMENT,
-            MemoryDisciplineAction.UPDATE_COMMITMENT: MemoryRecordKind.COMMITMENT,
             MemoryDisciplineAction.ASK_CONFIRMATION: MemoryRecordKind.PLAN,
             MemoryDisciplineAction.IGNORE_NOISY_CANDIDATE: candidate.kind,
         }
@@ -87,11 +83,6 @@ class MemoryDisciplineDecisionFactoryMixin:
             MemoryDisciplineAction.UPDATE_MILESTONE,
         }:
             target_table = "plan_milestones"
-        elif plan_decision.action in {
-            MemoryDisciplineAction.CREATE_COMMITMENT,
-            MemoryDisciplineAction.UPDATE_COMMITMENT,
-        }:
-            target_table = "commitments"
 
         metadata = {
             **self._decision_metadata(

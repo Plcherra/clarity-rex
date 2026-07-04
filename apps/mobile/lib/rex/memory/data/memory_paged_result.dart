@@ -37,8 +37,6 @@ class MemoryOverviewPages {
     this.rulesHasMore = false,
     this.plansCursor,
     this.plansHasMore = false,
-    this.commitmentsCursor,
-    this.commitmentsHasMore = false,
   });
 
   final String? memoriesCursor;
@@ -49,15 +47,12 @@ class MemoryOverviewPages {
   final bool rulesHasMore;
   final String? plansCursor;
   final bool plansHasMore;
-  final String? commitmentsCursor;
-  final bool commitmentsHasMore;
 
   bool get hasMore =>
       memoriesHasMore ||
       entitiesHasMore ||
       rulesHasMore ||
-      plansHasMore ||
-      commitmentsHasMore;
+      plansHasMore;
 
   MemoryOverviewPages copyWith({
     String? memoriesCursor,
@@ -68,8 +63,6 @@ class MemoryOverviewPages {
     bool? rulesHasMore,
     String? plansCursor,
     bool? plansHasMore,
-    String? commitmentsCursor,
-    bool? commitmentsHasMore,
   }) {
     return MemoryOverviewPages(
       memoriesCursor: memoriesCursor ?? this.memoriesCursor,
@@ -80,8 +73,6 @@ class MemoryOverviewPages {
       rulesHasMore: rulesHasMore ?? this.rulesHasMore,
       plansCursor: plansCursor ?? this.plansCursor,
       plansHasMore: plansHasMore ?? this.plansHasMore,
-      commitmentsCursor: commitmentsCursor ?? this.commitmentsCursor,
-      commitmentsHasMore: commitmentsHasMore ?? this.commitmentsHasMore,
     );
   }
 }

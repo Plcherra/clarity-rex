@@ -1,4 +1,4 @@
-"""Read-only inventory turns for goals and commitments."""
+"""Read-only inventory turns for goals."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from app.services.goal_command_parsing import (
 from app.services.goal_command_results import read_only_turn_result
 
 
-async def try_list_goals_and_commitments(
+async def try_list_goals(
     message: str,
     *,
     conversation_id: str,
@@ -28,7 +28,6 @@ async def try_list_goals_and_commitments(
     )
     response = accountability_query_service.format_inventory_response(
         plans=inventory.active_plans,
-        commitments=inventory.open_commitments,
         scope=scope,
     )
     return await read_only_turn_result(

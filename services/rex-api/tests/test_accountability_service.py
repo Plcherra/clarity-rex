@@ -50,10 +50,10 @@ def test_accountability_signal_validates_stable_payload_shape():
 )
 def test_accountability_signal_rejects_unknown_enums(field, value):
     payload = {
-        "signal_type": "missed_commitment",
+        "signal_type": "plan_drift",
         "title": "Missed workout",
-        "summary": "The workout commitment is overdue.",
-        "reason": "Commitment due time has passed.",
+        "summary": "The workout milestone is overdue.",
+        "reason": "Milestone due time has passed.",
         field: value,
     }
 
@@ -82,7 +82,6 @@ async def test_accountability_service_skeleton_returns_empty_context_metadata():
         message=message,
         time_context={"timezone": "America/New_York (EDT)"},
         personal_rules=[{"id": "rule-1"}],
-        commitments=[{"id": "commitment-1"}],
         plans=[{"id": "plan-1"}],
         plan_milestones=[{"id": "milestone-1"}],
         entity_events=[{"id": "event-1"}],
@@ -94,7 +93,6 @@ async def test_accountability_service_skeleton_returns_empty_context_metadata():
         "message_character_count": len(message),
         "time_context_present": True,
         "personal_rule_count": 1,
-        "commitment_count": 1,
         "plan_count": 1,
         "plan_milestone_count": 1,
         "entity_event_count": 1,
@@ -111,7 +109,6 @@ async def test_accountability_service_exposes_list_returning_signal_interface():
         message="I ordered DoorDash again.",
         time_context={"timezone": "America/New_York (EDT)"},
         personal_rules=[{"id": "rule-1"}],
-        commitments=[],
         plans=[],
         plan_milestones=[],
         entity_events=[],
@@ -306,154 +303,6 @@ async def test_accountability_service_ignores_preventive_rule_mentions():
                 "active": True,
                 "last_reviewed_at": "2026-05-19T09:00:00-04:00",
             }
-        ],
-    )
-
-    assert signals == []
-
-
-@pytest.mark.asyncio
-async def test_accountability_service_detects_missed_commitment():
-    service = AccountabilityService()
-
-    signals = await service.analyze_signals(
-        message="What should I focus on today?",
-        time_context={"iso_timestamp": "2026-05-19T15:00:00-04:00"},
-        commitments=[
-            {
-                "id": "commitment-workout",
-                "commitment_type": "health",
-                "title": "Morning workout",
-                "commitment_text": "Work out tomorrow morning.",
-                "priority": 5,
-                "status": "open",
-                "active": True,
-                "due_at": "2026-05-19T09:00:00-04:00",
-            }
-        ],
-    )
-
-    assert len(signals) == 1
-    signal = signals[0]
-    assert signal.signal_type == "missed_commitment"
-    assert signal.severity == "high"
-    assert signal.source_refs[0].source_type == "commitment"
-    assert signal.source_refs[0].source_id == "commitment-workout"
-    assert signal.metadata["overdue_hours"] == 6
-
-
-@pytest.mark.asyncio
-async def test_accountability_service_detects_due_today_commitment():
-    service = AccountabilityService()
-
-    signals = await service.analyze_signals(
-        message="What do I still need to do?",
-        time_context={"iso_timestamp": "2026-05-19T10:00:00-04:00"},
-        commitments=[
-            {
-                "id": "commitment-paperwork",
-                "commitment_type": "immigration",
-                "title": "Review paperwork",
-                "commitment_text": "Review immigration paperwork.",
-                "priority": 4,
-                "status": "in_progress",
-                "active": True,
-                "due_at": "2026-05-19T18:00:00-04:00",
-            }
-        ],
-    )
-
-    assert len(signals) == 1
-    assert signals[0].signal_type == "upcoming_deadline"
-    assert signals[0].metadata["subtype"] == "commitment_due_today"
-    assert signals[0].metadata["hours_until_due"] == 8
-
-
-@pytest.mark.asyncio
-async def test_accountability_service_detects_reported_commitment_completion():
-    service = AccountabilityService()
-
-    signals = await service.analyze_signals(
-        message="I finished the immigration paperwork today.",
-        time_context={"iso_timestamp": "2026-05-19T10:00:00-04:00"},
-        commitments=[
-            {
-                "id": "commitment-paperwork",
-                "commitment_type": "immigration",
-                "title": "Review paperwork",
-                "commitment_text": "Review immigration paperwork.",
-                "priority": 4,
-                "status": "open",
-                "active": True,
-                "due_at": "2026-05-19T18:00:00-04:00",
-            }
-        ],
-    )
-
-    assert len(signals) == 1
-    assert signals[0].signal_type == "positive_follow_through"
-    assert signals[0].metadata["subtype"] == "reported_completion"
-    assert signals[0].metadata["matched_terms"] == [
-        "immigration",
-        "paperwork",
-    ]
-
-
-@pytest.mark.asyncio
-async def test_accountability_service_detects_commitment_follow_up_need():
-    service = AccountabilityService()
-
-    signals = await service.analyze_signals(
-        message="Give me a quick status check.",
-        time_context={"iso_timestamp": "2026-05-19T10:00:00-04:00"},
-        commitments=[
-            {
-                "id": "commitment-budget",
-                "commitment_type": "money",
-                "title": "Track grocery spending",
-                "commitment_text": "Track grocery spending every week.",
-                "priority": 4,
-                "status": "open",
-                "active": True,
-                "last_checked_at": "2026-05-01T10:00:00-04:00",
-            }
-        ],
-    )
-
-    assert len(signals) == 1
-    assert signals[0].signal_type == "upcoming_deadline"
-    assert signals[0].metadata["subtype"] == "commitment_follow_up"
-    assert signals[0].source_refs[0].source_id == "commitment-budget"
-
-
-@pytest.mark.asyncio
-async def test_accountability_service_ignores_completed_or_inactive_commitments():
-    service = AccountabilityService()
-
-    signals = await service.analyze_signals(
-        message="I finished the paperwork.",
-        time_context={"iso_timestamp": "2026-05-19T10:00:00-04:00"},
-        commitments=[
-            {
-                "id": "commitment-complete",
-                "commitment_type": "task",
-                "title": "Paperwork",
-                "commitment_text": "Finish the paperwork.",
-                "priority": 5,
-                "status": "completed",
-                "active": True,
-                "due_at": "2026-05-18T10:00:00-04:00",
-            },
-            {
-                "id": "commitment-inactive",
-                "commitment_type": "task",
-                "title": "Old workout",
-                "commitment_text": "Work out.",
-                "priority": 5,
-                "status": "open",
-                "active": False,
-                "due_at": "2026-05-18T10:00:00-04:00",
-            },
         ],
     )
 

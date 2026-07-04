@@ -145,14 +145,6 @@ String? planMemorySubtitle(PlanMemoryItem plan) {
   return null;
 }
 
-String? commitmentMemorySubtitle(CommitmentMemoryItem commitment) {
-  final text = commitment.commitmentText.trim();
-  if (text.isEmpty || memoryTextsMatch(text, commitment.title)) {
-    return null;
-  }
-  return text;
-}
-
 String memoryImportanceShortLabel(AppLocalizations l10n, int importance) {
   if (importance >= 5) {
     return l10n.commonHigh;

@@ -13,7 +13,6 @@ from app.routes.apple_app_site_association import (
 from app.routes.insights import router as insights_router
 from app.routes.chat import router as chat_router
 from app.routes.clarity import router as clarity_router
-from app.routes.commitments import router as commitments_router
 from app.routes.open_threads import router as open_threads_router
 from app.routes.conversations import router as conversations_router
 from app.routes.entities import router as entities_router
@@ -148,7 +147,6 @@ app.include_router(memory_router, dependencies=auth_dependencies)
 app.include_router(entities_router, dependencies=auth_dependencies)
 app.include_router(rules_router, dependencies=auth_dependencies)
 app.include_router(plans_router, dependencies=auth_dependencies)
-app.include_router(commitments_router, dependencies=auth_dependencies)
 app.include_router(open_threads_router, dependencies=auth_dependencies)
 app.include_router(saved_knowledge_router, dependencies=auth_dependencies)
 app.include_router(accountability_router, dependencies=auth_dependencies)

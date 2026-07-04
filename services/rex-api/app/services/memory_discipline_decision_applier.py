@@ -112,7 +112,6 @@ class MemoryDisciplineDecisionApplier:
             ),
             MemoryRecordKind.PLAN: ("title", "description", "desired_outcome"),
             MemoryRecordKind.PLAN_MILESTONE: ("title", "description"),
-            MemoryRecordKind.COMMITMENT: ("title", "commitment_text"),
             MemoryRecordKind.ENTITY_EVENT: ("title", "content"),
         }
         text_fields = text_fields_by_kind.get(decision.record_kind)
@@ -121,8 +120,6 @@ class MemoryDisciplineDecisionApplier:
         link_field = None
         if decision.record_kind == MemoryRecordKind.PLAN:
             link_field = "primary_entity_id"
-        elif decision.record_kind == MemoryRecordKind.COMMITMENT:
-            link_field = "entity_id"
         return self.entity_normalization_service.normalize_payload_references(
             payload,
             entities,
@@ -215,7 +212,6 @@ def create_method_for_action(action: MemoryDisciplineAction) -> str | None:
         MemoryDisciplineAction.CREATE_ENTITY_EVENT: "create_entity_event",
         MemoryDisciplineAction.CREATE_PLAN: "create_plan",
         MemoryDisciplineAction.CREATE_MILESTONE: "create_plan_milestone",
-        MemoryDisciplineAction.CREATE_COMMITMENT: "create_commitment",
         MemoryDisciplineAction.CREATE_RULE: "create_personal_rule",
     }.get(action)
 
@@ -225,7 +221,6 @@ def update_method_for_action(action: MemoryDisciplineAction) -> str | None:
         MemoryDisciplineAction.UPDATE_ENTITY: "update_entity",
         MemoryDisciplineAction.UPDATE_PLAN: "update_plan",
         MemoryDisciplineAction.UPDATE_MILESTONE: "update_plan_milestone",
-        MemoryDisciplineAction.UPDATE_COMMITMENT: "update_commitment",
         MemoryDisciplineAction.UPDATE_RULE: "update_personal_rule",
     }.get(action)
 

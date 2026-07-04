@@ -1,27 +1,48 @@
+import pytest
+
 from app.services.goal_context_service import GoalContextService
 
 
-def test_standalone_commitments_remain_when_active_plans_exist():
-    service = GoalContextService()
-    plan_ids = {"plan-1"}
-    standalone = {
-        "id": "commitment-1",
-        "title": "Be a goal/commitment",
-        "status": "open",
-    }
-    linked = {
-        "id": "commitment-2",
-        "title": "Review spending weekly",
-        "status": "open",
-        "plan_id": "plan-1",
-    }
-    unrelated = {
-        "id": "commitment-3",
-        "title": "Other plan task",
-        "status": "open",
-        "plan_id": "plan-99",
-    }
+class FakeGoalMemoryStore:
+    def __init__(self):
+        self.plans = [
+            {
+                "id": "plan-1",
+                "title": "Plan A",
+                "status": "active",
+                "active": True,
+            }
+        ]
+        self.milestones = [
+            {
+                "id": "milestone-1",
+                "plan_id": "plan-1",
+                "title": "Linked step",
+                "active": True,
+            },
+            {
+                "id": "milestone-2",
+                "plan_id": "plan-99",
+                "title": "Unrelated step",
+                "active": True,
+            },
+        ]
 
-    assert service._is_related_commitment(standalone, plan_ids)
-    assert service._is_related_commitment(linked, plan_ids)
-    assert not service._is_related_commitment(unrelated, plan_ids)
+    async def list_plans(self, **kwargs):
+        return self.plans
+
+    async def list_plan_milestones(self, **kwargs):
+        return self.milestones
+
+
+@pytest.mark.asyncio
+async def test_goal_context_filters_milestones_to_active_plans():
+    service = GoalContextService()
+    store = FakeGoalMemoryStore()
+
+    context = await service.fetch_goal_context(store, "How are my goals going?")
+
+    assert [milestone["title"] for milestone in context["plan_milestones"]] == [
+        "Linked step"
+    ]
+    assert context["goal_context"]["related_milestone_count"] == 1

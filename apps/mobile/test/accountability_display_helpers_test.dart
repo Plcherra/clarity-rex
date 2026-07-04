@@ -23,25 +23,6 @@ void main() {
       expect(planSubtitle(plan), isNull);
     });
 
-    test('hides duplicate commitment subtitle when text matches title', () {
-      const commitment = Commitment(
-        id: 'commitment-1',
-        commitmentType: 'task',
-        title: 'Be a goal/commitment',
-        commitmentText: 'be a goal/commitment',
-        planId: null,
-        milestoneId: null,
-        entityId: null,
-        priority: 4,
-        status: 'open',
-        active: true,
-        dueAt: null,
-        completedAt: null,
-      );
-
-      expect(commitmentSubtitle(commitment), isNull);
-    });
-
     test('keeps distinct plan notes visible', () {
       const plan = PlanRecord(
         id: 'plan-2',

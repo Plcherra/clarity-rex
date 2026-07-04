@@ -486,7 +486,7 @@ class ChatController extends Notifier<ChatState> {
           continue;
         }
         final kind = proposal['write_kind']?.toString() ?? '';
-        if ({'plan', 'milestone', 'commitment', 'open_thread', 'update_plan', 'update_milestone', 'update_commitment'}
+        if ({'plan', 'milestone', 'open_thread', 'update_plan', 'update_milestone'}
             .contains(kind)) {
           return proposal['status'] == 'applied';
         }
@@ -709,12 +709,10 @@ class ChatController extends Notifier<ChatState> {
   bool _isChatConfirmedWriteAction(String action) {
     return action == 'save_plan' ||
         action == 'save_plan_milestone' ||
-        action == 'save_commitment' ||
         action == 'save_open_thread' ||
         action == 'save_memory' ||
         action == 'update_plan' ||
         action == 'update_plan_milestone' ||
-        action == 'update_commitment' ||
         action == 'save_entity_event';
   }
 

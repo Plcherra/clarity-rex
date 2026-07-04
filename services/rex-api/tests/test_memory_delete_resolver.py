@@ -1,7 +1,7 @@
 import pytest
 
 from app.services.memory_delete_resolver import (
-    COMMITMENT_DELETE_SCOPE,
+    GOAL_DELETE_SCOPE,
     MemoryDeleteResolver,
     is_vague_delete_reference,
     parse_delete_request,
@@ -12,19 +12,19 @@ class FakeDeleteMemoryStore:
     def __init__(
         self,
         *,
-        commitments: list[dict] | None = None,
         plans: list[dict] | None = None,
+        milestones: list[dict] | None = None,
         memories: list[dict] | None = None,
     ) -> None:
-        self.commitments = commitments or []
         self.plans = plans or []
+        self.milestones = milestones or []
         self.memories = memories or []
-
-    async def list_commitments(self, **kwargs):
-        return self.commitments
 
     async def list_plans(self, **kwargs):
         return self.plans
+
+    async def list_plan_milestones(self, **kwargs):
+        return self.milestones
 
     async def list_long_term_memory(self, **kwargs):
         return self.memories
@@ -38,53 +38,50 @@ class FakeDeleteMemoryStore:
     async def list_personal_rules(self, **kwargs):
         return []
 
-    async def list_plan_milestones(self, **kwargs):
-        return []
-
 
 def test_vague_delete_reference_detects_kind_only_targets():
-    assert is_vague_delete_reference("commitment")
+    assert is_vague_delete_reference("goal")
     assert is_vague_delete_reference("a memory please")
     assert not is_vague_delete_reference("Wake at 5 AM")
 
 
-def test_parse_delete_request_scopes_saved_commitment_without_title():
-    parsed = parse_delete_request("Can you delete the commitment we have saved?")
+def test_parse_delete_request_scopes_saved_goal_without_title():
+    parsed = parse_delete_request("Can you delete the goal we have saved?")
     assert parsed is not None
-    assert parsed.reference == "commitment"
-    assert parsed.scope_tables == COMMITMENT_DELETE_SCOPE
+    assert parsed.reference == "goal"
+    assert parsed.scope_tables == GOAL_DELETE_SCOPE
     assert parsed.is_vague is True
 
 
-def test_parse_delete_request_scopes_named_commitment():
-    parsed = parse_delete_request('Delete the commitment "Wake at 5 AM"')
+def test_parse_delete_request_scopes_named_goal():
+    parsed = parse_delete_request('Delete the goal "Buy RAM"')
     assert parsed is not None
-    assert parsed.reference == "Wake at 5 AM"
-    assert parsed.scope_tables == COMMITMENT_DELETE_SCOPE
+    assert parsed.reference == "Buy RAM"
+    assert parsed.scope_tables == GOAL_DELETE_SCOPE
     assert parsed.is_vague is False
 
 
 @pytest.mark.asyncio
-async def test_resolver_returns_empty_for_vague_commitment_delete():
+async def test_resolver_returns_empty_for_vague_goal_delete():
     store = FakeDeleteMemoryStore(
-        commitments=[
+        plans=[
             {
-                "id": "c-1",
-                "title": "Wake at 5 AM",
-                "commitment_text": "Wake at 5 AM",
+                "id": "p-1",
+                "title": "Buy RAM",
+                "description": "Buy 32GB RAM",
                 "active": True,
             }
         ],
         memories=[
             {
                 "id": "m-1",
-                "content": "commitment reminder",
+                "content": "goal reminder",
                 "active": True,
             }
         ],
     )
     resolver = MemoryDeleteResolver(store)
-    parsed = parse_delete_request("Delete the commitment we have saved")
+    parsed = parse_delete_request("Delete the goal we have saved")
     assert parsed is not None
 
     matches = await resolver.resolve(parsed)
@@ -92,38 +89,37 @@ async def test_resolver_returns_empty_for_vague_commitment_delete():
 
 
 @pytest.mark.asyncio
-async def test_resolver_scoped_commitment_delete_skips_memory_tables():
+async def test_resolver_scoped_goal_delete_skips_memory_tables():
     store = FakeDeleteMemoryStore(
-        commitments=[
+        plans=[
             {
-                "id": "c-1",
-                "title": "Wake at 5 AM",
-                "commitment_text": "Wake at 5 AM",
+                "id": "p-1",
+                "title": "Buy RAM",
+                "description": "Buy 32GB RAM",
                 "active": True,
             }
         ],
         memories=[
             {
                 "id": "m-1",
-                "content": "Wake at 5 AM daily habit",
+                "content": "Buy RAM every month",
                 "active": True,
             }
         ],
     )
     resolver = MemoryDeleteResolver(store)
-    parsed = parse_delete_request('Delete the commitment "Wake at 5 AM"')
+    parsed = parse_delete_request('Delete the goal "Buy RAM"')
     assert parsed is not None
 
     matches = await resolver.resolve(parsed)
     assert len(matches) == 1
-    assert matches[0].table == "commitments"
-    assert matches[0].id == "c-1"
+    assert matches[0].table == "plans"
+    assert matches[0].id == "p-1"
 
 
 @pytest.mark.asyncio
 async def test_resolver_unscoped_delete_can_match_memory():
     store = FakeDeleteMemoryStore(
-        commitments=[],
         memories=[
             {
                 "id": "m-1",
@@ -137,33 +133,3 @@ async def test_resolver_unscoped_delete_can_match_memory():
     assert len(matches) == 1
     assert matches[0].table == "long_term_memory"
     assert matches[0].id == "m-1"
-
-
-@pytest.mark.asyncio
-async def test_resolver_scoped_goal_delete_skips_commitments():
-    store = FakeDeleteMemoryStore(
-        plans=[
-            {
-                "id": "p-1",
-                "title": "Buy RAM",
-                "description": "Buy 32GB RAM",
-                "active": True,
-            }
-        ],
-        commitments=[
-            {
-                "id": "c-1",
-                "title": "Buy RAM every month",
-                "commitment_text": "Buy RAM every month",
-                "active": True,
-            }
-        ],
-    )
-    resolver = MemoryDeleteResolver(store)
-    parsed = parse_delete_request('Delete the goal "Buy RAM"')
-    assert parsed is not None
-
-    matches = await resolver.resolve(parsed)
-    assert len(matches) == 1
-    assert matches[0].table == "plans"
-    assert matches[0].id == "p-1"

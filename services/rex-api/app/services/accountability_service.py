@@ -1,15 +1,14 @@
 from typing import Any, Optional
 
-from app.models.accountability import AccountabilityContext, AccountabilitySignal
 from app.services.accountability_budget_risk import (
     detect_budget_risk_signals,
     financial_budget_performance,
 )
-from app.services.accountability_commitment_detector import detect_commitment_signals
 from app.services.accountability_pattern_detector import detect_repeated_patterns
 from app.services.accountability_plan_drift import detect_plan_signals
 from app.services.accountability_rule_risk import detect_rule_violations
 from app.services.accountability_shared import current_time
+from app.models.accountability import AccountabilityContext, AccountabilitySignal
 
 
 class AccountabilityService:
@@ -19,7 +18,6 @@ class AccountabilityService:
         message: str,
         time_context: Optional[dict[str, Any]] = None,
         personal_rules: Optional[list[dict]] = None,
-        commitments: Optional[list[dict]] = None,
         plans: Optional[list[dict]] = None,
         plan_milestones: Optional[list[dict]] = None,
         entity_events: Optional[list[dict]] = None,
@@ -30,7 +28,6 @@ class AccountabilityService:
             message=message,
             time_context=time_context,
             personal_rules=personal_rules,
-            commitments=commitments,
             plans=plans,
             plan_milestones=plan_milestones,
             entity_events=entity_events,
@@ -45,7 +42,6 @@ class AccountabilityService:
         message: str,
         time_context: Optional[dict[str, Any]] = None,
         personal_rules: Optional[list[dict]] = None,
-        commitments: Optional[list[dict]] = None,
         plans: Optional[list[dict]] = None,
         plan_milestones: Optional[list[dict]] = None,
         entity_events: Optional[list[dict]] = None,
@@ -54,7 +50,6 @@ class AccountabilityService:
     ) -> AccountabilityContext:
         now = current_time(time_context)
         normalized_rules = personal_rules or []
-        normalized_commitments = commitments or []
         normalized_plans = plans or []
         normalized_milestones = plan_milestones or []
         normalized_events = entity_events or []
@@ -62,11 +57,6 @@ class AccountabilityService:
 
         signals = [
             *detect_rule_violations(message, normalized_rules),
-            *detect_commitment_signals(
-                message=message,
-                commitments=normalized_commitments,
-                current_time=now,
-            ),
             *detect_plan_signals(
                 message=message,
                 plans=normalized_plans,
@@ -88,7 +78,6 @@ class AccountabilityService:
                 "message_character_count": len(message),
                 "time_context_present": bool(time_context),
                 "personal_rule_count": len(normalized_rules),
-                "commitment_count": len(normalized_commitments),
                 "plan_count": len(normalized_plans),
                 "plan_milestone_count": len(normalized_milestones),
                 "entity_event_count": len(normalized_events),

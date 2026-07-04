@@ -41,7 +41,7 @@ def test_unexecuted_goal_guard_skips_goals_inventory_questions():
     response = safe_unexecuted_goal_response(
         "I added it as a goal: Be a goal/commitment.",
         user_message="What goals do we have saved?",
-        intent="goal_or_commitment",
+        intent="goal",
     )
 
     assert response == "I added it as a goal: Be a goal/commitment."
@@ -97,12 +97,12 @@ def test_unexecuted_delete_guard_skips_goals_inventory_questions():
         }
     ]
     response = safe_unexecuted_delete_response(
-        "You have one commitment saved: Be a goal/commitment.",
-        user_message="What commitments do we have saved?",
+        "You have one active goal saved: Buy RAM.",
+        user_message="What goals do we have saved?",
         conversation_history=history,
     )
 
-    assert response == "You have one commitment saved: Be a goal/commitment."
+    assert response == "You have one active goal saved: Buy RAM."
 
 
 def test_degraded_recall_uses_canonical_fallback():

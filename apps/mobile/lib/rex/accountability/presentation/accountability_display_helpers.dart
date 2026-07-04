@@ -36,14 +36,6 @@ String? openThreadSubtitle(OpenThread thread) {
   return 'Companion follow-up — not saved memory';
 }
 
-String? commitmentSubtitle(Commitment commitment) {
-  final text = commitment.commitmentText.trim();
-  if (text.isEmpty || accountabilityTextsMatch(text, commitment.title)) {
-    return null;
-  }
-  return text;
-}
-
 String priorityShortLabel(AppLocalizations l10n, int priority) {
   if (priority >= 5) {
     return l10n.commonHigh;

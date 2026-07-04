@@ -117,7 +117,6 @@ SavedMemoryResults filterSavedMemory({
               plan.status.memoryRecordLabel,
             ]),
           ),
-    commitments: const [],
     events: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories

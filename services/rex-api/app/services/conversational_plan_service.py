@@ -14,7 +14,6 @@ from app.services.conversation_pending_action import PendingAction
 from app.services.conversational_plan_candidate import build_plan_candidate_payload
 from app.services.conversational_plan_detection import ConversationalPlanDetector
 from app.services.goal_command_formatting import goal_title
-from app.services.commitment_service import CommitmentService
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.plan_service import PlanService
 
@@ -27,14 +26,12 @@ class ConversationalPlanService:
         discipline: Optional[MemoryDisciplineService] = None,
         detector: Optional[ConversationalPlanDetector] = None,
         plan_service: Optional[PlanService] = None,
-        commitment_service: Optional[CommitmentService] = None,
         durable_write_service=None,
     ) -> None:
         self.memory_service = memory_service
         self.discipline = discipline or MemoryDisciplineService(memory_service)
         self.detector = detector or ConversationalPlanDetector()
         self.plan_service = plan_service or PlanService(memory_service)
-        self.commitment_service = commitment_service or CommitmentService(memory_service)
         self.durable_write_service = durable_write_service
 
     async def handle_turn(
@@ -98,9 +95,7 @@ def _requires_user_confirmation(decision: MemoryDisciplineDecision) -> bool:
         MemoryDisciplineAction.ASK_CONFIRMATION,
         MemoryDisciplineAction.CREATE_PLAN,
         MemoryDisciplineAction.CREATE_MILESTONE,
-        MemoryDisciplineAction.CREATE_COMMITMENT,
         MemoryDisciplineAction.UPDATE_PLAN,
         MemoryDisciplineAction.UPDATE_MILESTONE,
-        MemoryDisciplineAction.UPDATE_COMMITMENT,
         MemoryDisciplineAction.CREATE_ENTITY_EVENT,
     }

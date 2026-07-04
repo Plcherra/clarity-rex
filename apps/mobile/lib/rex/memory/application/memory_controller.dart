@@ -22,7 +22,6 @@ class MemoryState {
     this.otherEntities = const [],
     this.rules = const [],
     this.plans = const [],
-    this.commitments = const [],
     this.entityEventPreviews = const {},
     this.planMilestonePreviews = const {},
     this.overviewPages = const MemoryOverviewPages(),
@@ -38,7 +37,6 @@ class MemoryState {
   final List<EntityMemoryItem> otherEntities;
   final List<RuleMemoryItem> rules;
   final List<PlanMemoryItem> plans;
-  final List<CommitmentMemoryItem> commitments;
   final Map<String, List<EntityEventItem>> entityEventPreviews;
   final Map<String, List<PlanMilestoneMemoryItem>> planMilestonePreviews;
   final MemoryOverviewPages overviewPages;
@@ -64,7 +62,6 @@ class MemoryState {
     List<EntityMemoryItem>? otherEntities,
     List<RuleMemoryItem>? rules,
     List<PlanMemoryItem>? plans,
-    List<CommitmentMemoryItem>? commitments,
     Map<String, List<EntityEventItem>>? entityEventPreviews,
     Map<String, List<PlanMilestoneMemoryItem>>? planMilestonePreviews,
     MemoryOverviewPages? overviewPages,
@@ -81,7 +78,6 @@ class MemoryState {
       otherEntities: otherEntities ?? this.otherEntities,
       rules: rules ?? this.rules,
       plans: plans ?? this.plans,
-      commitments: commitments ?? this.commitments,
       entityEventPreviews: entityEventPreviews ?? this.entityEventPreviews,
       planMilestonePreviews:
           planMilestonePreviews ?? this.planMilestonePreviews,
@@ -99,8 +95,7 @@ class MemoryState {
         placeEntities.isEmpty &&
         otherEntities.isEmpty &&
         rules.isEmpty &&
-        plans.isEmpty &&
-        commitments.isEmpty;
+        plans.isEmpty;
   }
 }
 

@@ -4,7 +4,6 @@ from typing import Any, Optional
 
 from app.services.plan_intelligence_models import PLAN_INTELLIGENCE_VERSION
 from app.services.plan_intelligence_rules import (
-    commitment_type,
     is_dating_logistics,
     milestone_type,
 )
@@ -51,7 +50,7 @@ def build_milestone_from_plan_candidate(
     )
 
 
-def build_commitment_from_small_step(
+def build_milestone_from_small_step(
     candidate: dict[str, Any],
     parent_plan: dict[str, Any],
     milestone: Optional[dict[str, Any]] = None,
@@ -67,24 +66,22 @@ def build_commitment_from_small_step(
         metadata["parent_milestone_title"] = milestone.get("title")
     return drop_none(
         {
-            "commitment_type": commitment_type(candidate, parent_plan),
+            "plan_id": parent_plan.get("id"),
             "title": clean(candidate.get("title")) or "Plan next step",
-            "commitment_text": join_parts(
+            "description": join_parts(
                 candidate.get("description"),
                 candidate.get("desired_outcome"),
             )
             or clean(candidate.get("title"))
             or "Complete the next step.",
-            "plan_id": parent_plan.get("id"),
-            "milestone_id": milestone.get("id") if milestone else None,
-            "entity_id": candidate.get("primary_entity_id"),
+            "milestone_type": milestone_type(candidate),
+            "target_date": candidate.get("target_date"),
             "source_conversation_id": candidate.get("source_conversation_id"),
             "source_message_id": candidate.get("source_message_id"),
             "source_memory_id": candidate.get("source_memory_id"),
             "priority": candidate.get("priority", parent_plan.get("priority", 3)),
             "status": "open",
             "active": True,
-            "due_at": candidate.get("target_date"),
             "metadata": metadata,
         }
     )

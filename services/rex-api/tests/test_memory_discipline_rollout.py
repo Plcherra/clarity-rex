@@ -57,9 +57,6 @@ class FakeRolloutMemoryService:
     async def list_plan_milestones(self, **kwargs):
         return [{"id": "milestone-1", "plan_id": "plan-1"}]
 
-    async def list_commitments(self, **kwargs):
-        return [{"id": "commitment-1", "plan_id": "plan-1"}]
-
 
 @pytest.mark.asyncio
 async def test_rollout_audit_reports_counts_and_duplicate_clusters():
@@ -72,7 +69,7 @@ async def test_rollout_audit_reports_counts_and_duplicate_clusters():
             "rules": 2,
             "entities": 0,
             "milestones": 1,
-            "commitments": 1,
+            "commitments": 0,
     }
     assert report["duplicate_clusters"] == [
         {

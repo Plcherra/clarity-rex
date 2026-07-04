@@ -10,7 +10,7 @@ def test_stream_buffers_tokens_for_memory_save_intent():
 
 
 def test_stream_buffers_tokens_for_goal_intent():
-    decision = RexIntentDecision(intent=RexIntent.GOAL_OR_COMMITMENT, reasons=("goal_terms",))
+    decision = RexIntentDecision(intent=RexIntent.GOAL, reasons=("goal_terms",))
     assert stream_should_buffer_for_action_truth(decision) is True
 
 

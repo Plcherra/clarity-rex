@@ -80,7 +80,6 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
   final peopleActiveFilters = <bool?>[];
   final ruleActiveFilters = <bool?>[];
   final planActiveFilters = <bool?>[];
-  final commitmentActiveFilters = <bool?>[];
   final memoryListLimits = <int>[];
   String? createMemoryContent;
   String? createPersonNameValue;
@@ -396,16 +395,6 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
   }
 
   @override
-  Future<MemoryPagedResult<CommitmentMemoryItem>> getCommitmentsPaged({
-    bool? active,
-    int limit = kMemoryListLimit,
-    String? cursor,
-  }) async {
-    final items = await getCommitments(active: active, limit: limit);
-    return MemoryPagedResult(items: items);
-  }
-
-  @override
   Future<List<PlanMilestoneMemoryItem>> getPlanMilestones(
     String planId, {
     bool? active,
@@ -468,15 +457,6 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
       ),
     ];
     return _filterActive(plans, active, (plan) => plan.active);
-  }
-
-  @override
-  Future<List<CommitmentMemoryItem>> getCommitments({
-    bool? active,
-    int limit = kMemoryListLimit,
-  }) async {
-    commitmentActiveFilters.add(active);
-    return const [];
   }
 
   @override

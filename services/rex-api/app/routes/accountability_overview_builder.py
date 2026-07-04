@@ -8,7 +8,6 @@ from app.routes.accountability_signal_filters import filter_signals
 from app.services.accountability_snapshot import (
     active_plans_for,
     completed_milestones_for,
-    open_commitments_for,
     open_milestones_for,
 )
 from app.services.open_thread_service import active_open_threads_for
@@ -40,14 +39,7 @@ def build_accountability_overview(
     recent_patterns = [
         signal for signal in active_signals if signal.signal_type == "repeated_pattern"
     ]
-    open_commitments = open_commitments_for(context["commitments"])
     open_threads = active_open_threads_for(context.get("open_threads") or [])
-    # Standalone commitments are retired from product UX; keep plan-linked only.
-    product_open_commitments = [
-        commitment
-        for commitment in open_commitments
-        if commitment.get("plan_id") or commitment.get("milestone_id")
-    ]
     open_milestones = open_milestones_for(context["plan_milestones"])
     completed_milestones = completed_milestones_for(context["plan_milestones"])
     active_plans = active_plans_for(context["plans"])
@@ -55,13 +47,11 @@ def build_accountability_overview(
         plans=active_plans,
         milestones=open_milestones,
         completed_milestones=completed_milestones,
-        commitments=open_commitments,
     )
     duplicate_warnings = duplicate_warnings_for(
         plans=active_plans,
         rules=context["personal_rules"],
         milestones=open_milestones,
-        commitments=open_commitments,
         entities=context["entities"],
     )
     duplicate_warnings.extend(
@@ -77,7 +67,6 @@ def build_accountability_overview(
         plan_risks=plan_risks,
         recent_patterns=recent_patterns,
         active_rules=context["personal_rules"],
-        open_commitments=product_open_commitments,
         open_threads=open_threads,
         active_plans=active_plans,
         open_milestones=open_milestones,
@@ -88,12 +77,10 @@ def build_accountability_overview(
             "message": message,
             "signal_count": len(active_signals),
             "active_rule_count": len(context["personal_rules"]),
-            "open_commitment_count": len(product_open_commitments),
             "open_thread_count": len(open_threads),
             "active_plan_count": len(active_plans),
             "open_milestone_count": len(open_milestones),
             "completed_milestone_count": len(completed_milestones),
-            "open_task_count": len(product_open_commitments),
             "duplicate_warning_count": len(duplicate_warnings),
             "loader_diagnostics": context.get("loader_diagnostics", []),
         },
@@ -105,12 +92,9 @@ def plan_hierarchy_for(
     plans: list[dict],
     milestones: list[dict],
     completed_milestones: list[dict],
-    commitments: list[dict],
 ) -> list[dict]:
     milestones_by_plan: dict[str, list[dict]] = {}
     completed_by_plan: dict[str, list[dict]] = {}
-    commitments_by_plan: dict[str, list[dict]] = {}
-    commitments_by_milestone: dict[str, list[dict]] = {}
 
     for milestone in milestones:
         plan_id = str(milestone.get("plan_id") or "")
@@ -122,21 +106,11 @@ def plan_hierarchy_for(
         if plan_id:
             completed_by_plan.setdefault(plan_id, []).append(milestone)
 
-    for commitment in commitments:
-        milestone_id = str(commitment.get("milestone_id") or "")
-        plan_id = str(commitment.get("plan_id") or "")
-        if milestone_id:
-            commitments_by_milestone.setdefault(milestone_id, []).append(commitment)
-        elif plan_id:
-            commitments_by_plan.setdefault(plan_id, []).append(commitment)
-
     return [
         _plan_hierarchy_item(
             plan=plan,
             milestones_by_plan=milestones_by_plan,
             completed_by_plan=completed_by_plan,
-            commitments_by_plan=commitments_by_plan,
-            commitments_by_milestone=commitments_by_milestone,
         )
         for plan in plans
     ]
@@ -147,14 +121,12 @@ def duplicate_warnings_for(
     plans: list[dict],
     rules: list[dict],
     milestones: list[dict],
-    commitments: list[dict],
     entities: list[dict],
 ) -> list[dict]:
     warnings = []
     warnings.extend(_duplicate_warning_group(plans, "plan", "title"))
     warnings.extend(_duplicate_warning_group(rules, "rule", "title"))
     warnings.extend(_duplicate_warning_group(milestones, "milestone", "title"))
-    warnings.extend(_duplicate_warning_group(commitments, "commitment", "title"))
     warnings.extend(entity_conflict_warnings_for(entities))
     return warnings
 
@@ -218,33 +190,16 @@ def _plan_hierarchy_item(
     plan: dict,
     milestones_by_plan: dict[str, list[dict]],
     completed_by_plan: dict[str, list[dict]],
-    commitments_by_plan: dict[str, list[dict]],
-    commitments_by_milestone: dict[str, list[dict]],
 ) -> dict:
     plan_id = str(plan.get("id") or "")
-    plan_milestones = [
-        {
-            **milestone,
-            "open_commitments": commitments_by_milestone.get(
-                str(milestone.get("id") or ""),
-                [],
-            ),
-        }
-        for milestone in milestones_by_plan.get(plan_id, [])
-    ]
+    plan_milestones = milestones_by_plan.get(plan_id, [])
     return {
         "plan": plan,
         "open_milestones": plan_milestones,
         "completed_milestones": completed_by_plan.get(plan_id, []),
-        "open_commitments": commitments_by_plan.get(plan_id, []),
         "counts": {
             "open_milestones": len(plan_milestones),
             "completed_milestones": len(completed_by_plan.get(plan_id, [])),
-            "open_commitments": len(commitments_by_plan.get(plan_id, []))
-            + sum(
-                len(item.get("open_commitments") or [])
-                for item in plan_milestones
-            ),
         },
     }
 
@@ -258,7 +213,6 @@ def _duplicate_warning_group(
         "plan": ("title", "description", "desired_outcome"),
         "rule": ("title", "rule_text"),
         "milestone": ("title", "description"),
-        "commitment": ("title", "commitment_text"),
     }
     groups: dict[str, list[dict]] = {}
     for record in records:

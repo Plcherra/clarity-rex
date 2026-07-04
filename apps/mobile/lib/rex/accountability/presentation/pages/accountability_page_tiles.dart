@@ -59,45 +59,6 @@ class _OpenThreadTile extends StatelessWidget {
   }
 }
 
-class _CommitmentTile extends StatelessWidget {
-  const _CommitmentTile({
-    required this.commitment,
-    required this.onComplete,
-    required this.onMissed,
-    required this.onArchive,
-    required this.onEdit,
-  });
-
-  final Commitment commitment;
-  final VoidCallback onComplete;
-  final VoidCallback onMissed;
-  final VoidCallback onArchive;
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    return _AccountabilityTile(
-      leading: Checkbox(
-        value: false,
-        visualDensity: VisualDensity.compact,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        onChanged: (_) => onComplete(),
-      ),
-      icon: null,
-      title: commitment.title,
-      subtitle: commitmentSubtitle(commitment),
-      deadline: commitment.dueAt,
-      priority: commitment.priority,
-      status: commitment.status,
-      trailing: _CommitmentActions(
-        onEdit: onEdit,
-        onMissed: onMissed,
-        onArchive: onArchive,
-      ),
-    );
-  }
-}
-
 class _AccountabilityTile extends StatelessWidget {
   const _AccountabilityTile({
     required this.leading,

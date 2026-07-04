@@ -1078,15 +1078,15 @@ async def test_vague_delete_memory_asks_for_specific_title():
 
 
 @pytest.mark.asyncio
-async def test_delete_commitment_by_starting_as_reference():
-    ai_service = FakeAIService(response="Deleted the bad commitment.")
+async def test_delete_goal_by_starting_as_reference():
+    ai_service = FakeAIService(response="Deleted the bad goal.")
     memory_service = FakeMemoryService()
-    memory_service.commitments.append(
+    memory_service.plans.append(
         {
-            "id": "commitment-junk",
+            "id": "plan-junk",
             "title": "Be a goal/commitment",
-            "commitment_text": "be a goal/commitment",
-            "commitment_type": "task",
+            "description": "be a goal/commitment",
+            "plan_type": "personal",
             "active": True,
         }
     )
@@ -1107,7 +1107,7 @@ async def test_delete_commitment_by_starting_as_reference():
     assert "exact saved item" in requested["response"].casefold()
     assert "Just to confirm" in clarified["response"]
     assert confirmed["memory_changes"]["archived"] == 1
-    assert memory_service.commitments[0]["active"] is False
+    assert memory_service.plans[0]["active"] is False
     assert ai_service.messages == []
 
 

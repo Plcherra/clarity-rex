@@ -22,7 +22,6 @@ async def analyze_signals(
             message=message,
             time_context=context["time_context"],
             personal_rules=context["personal_rules"],
-            commitments=context["commitments"],
             plans=context["plans"],
             plan_milestones=context["plan_milestones"],
             entity_events=context["entity_events"],

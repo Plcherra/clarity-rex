@@ -31,7 +31,6 @@ List<Map<String, dynamic>> accountabilitySignalsForInsightSync(
 String accountabilitySignalTypeKey(AccountabilitySignalType type) {
   return switch (type) {
     AccountabilitySignalType.ruleViolation => 'rule_violation',
-    AccountabilitySignalType.missedCommitment => 'missed_commitment',
     AccountabilitySignalType.planDrift => 'plan_drift',
     AccountabilitySignalType.repeatedPattern => 'repeated_pattern',
     AccountabilitySignalType.upcomingDeadline => 'upcoming_deadline',

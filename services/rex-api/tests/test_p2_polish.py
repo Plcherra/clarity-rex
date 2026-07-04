@@ -1,6 +1,5 @@
 from app.services.clarity_knowledge_labels import (
     CLARITY_KNOWLEDGE_LANGUAGE_PROMPT,
-    commitment_saved_message,
     goal_saved_message,
 )
 from app.services.goal_repair_helpers import is_malformed_numbered_goal, split_plan_bodies
@@ -8,13 +7,6 @@ from app.services.goal_repair_helpers import is_malformed_numbered_goal, split_p
 
 def test_goal_saved_message_uses_goal_label():
     assert goal_saved_message("Buy RAM") == "Got it, I added this as a goal: Buy RAM."
-
-
-def test_commitment_saved_message_uses_commitment_label():
-    assert (
-        commitment_saved_message("Wake at 5 AM")
-        == "Got it, I saved that commitment: Wake at 5 AM."
-    )
 
 
 def test_clarity_knowledge_language_prompt_distinguishes_memory_and_chat():

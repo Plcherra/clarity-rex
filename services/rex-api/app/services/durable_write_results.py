@@ -23,7 +23,7 @@ def applied_memory_changes(
 ) -> dict[str, Any]:
     is_update = proposal.write_kind.startswith("update_") or str(
         proposal.apply_snapshot.get("type") or ""
-    ) in {"memory_update", "update_plan", "update_milestone", "update_commitment"}
+    ) in {"memory_update", "update_plan", "update_milestone"}
     created = 0 if is_update or merged else 1
     updated = 1 if is_update else 0
     card = proposal.to_client_dict(status="applied")

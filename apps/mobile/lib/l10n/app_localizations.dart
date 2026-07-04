@@ -722,12 +722,6 @@ abstract class AppLocalizations {
   /// **'Plan'**
   String get commonPlan;
 
-  /// No description provided for @commonCommitment.
-  ///
-  /// In en, this message translates to:
-  /// **'Commitment'**
-  String get commonCommitment;
-
   /// No description provided for @commonRule.
   ///
   /// In en, this message translates to:
@@ -2886,12 +2880,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Milestone'**
   String get memoryRecordPlanMilestone;
-
-  /// No description provided for @memoryRecordCommitment.
-  ///
-  /// In en, this message translates to:
-  /// **'Commitment'**
-  String get memoryRecordCommitment;
 
   /// No description provided for @memoryRecordCorrection.
   ///
@@ -5182,12 +5170,6 @@ abstract class AppLocalizations {
   /// **'Plan updated'**
   String get memoryPagePlanUpdated;
 
-  /// No description provided for @memoryPageCommitmentUpdated.
-  ///
-  /// In en, this message translates to:
-  /// **'Commitment updated'**
-  String get memoryPageCommitmentUpdated;
-
   /// No description provided for @memoryCreateAddTooltip.
   ///
   /// In en, this message translates to:
@@ -5224,12 +5206,6 @@ abstract class AppLocalizations {
   /// **'Plan'**
   String get memoryCreatePlan;
 
-  /// No description provided for @memoryCreateCommitment.
-  ///
-  /// In en, this message translates to:
-  /// **'Commitment'**
-  String get memoryCreateCommitment;
-
   /// No description provided for @memoryCreateFactTitle.
   ///
   /// In en, this message translates to:
@@ -5259,12 +5235,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add a plan'**
   String get memoryCreatePlanTitle;
-
-  /// No description provided for @memoryCreateCommitmentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a commitment'**
-  String get memoryCreateCommitmentTitle;
 
   /// No description provided for @memoryCreateCategoryLabel.
   ///
@@ -5332,12 +5302,6 @@ abstract class AppLocalizations {
   /// **'Edit milestone'**
   String get memoryEditEditMilestoneTitle;
 
-  /// No description provided for @memoryPageCommitmentCreated.
-  ///
-  /// In en, this message translates to:
-  /// **'Commitment saved'**
-  String get memoryPageCommitmentCreated;
-
   /// No description provided for @memoryEditEditPersonTitle.
   ///
   /// In en, this message translates to:
@@ -5355,12 +5319,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit plan'**
   String get memoryEditEditPlanTitle;
-
-  /// No description provided for @memoryEditEditCommitmentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit commitment'**
-  String get memoryEditEditCommitmentTitle;
 
   /// No description provided for @memoryEditRuleTextLabel.
   ///

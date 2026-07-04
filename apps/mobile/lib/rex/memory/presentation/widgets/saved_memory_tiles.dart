@@ -184,39 +184,3 @@ class PlanMemoryTile extends StatelessWidget {
     );
   }
 }
-
-class CommitmentMemoryTile extends StatelessWidget {
-  const CommitmentMemoryTile({
-    required this.commitment,
-    required this.onEdit,
-    required this.onDeactivate,
-    super.key,
-  });
-
-  final CommitmentMemoryItem commitment;
-  final VoidCallback onEdit;
-  final VoidCallback? onDeactivate;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final supplementalLabels = <String>[
-      if (commitment.dueAt != null)
-        l10n.commonDueDateValue(shortMemoryDate(commitment.dueAt!)),
-    ];
-
-    return StructuredMemoryTile(
-      icon: Icons.check_circle_outline_rounded,
-      active: commitment.active,
-      title: commitment.title,
-      subtitle: commitmentMemorySubtitle(commitment),
-      typeLabel: localizedMemoryRecordLabel(l10n, commitment.commitmentType),
-      importance: commitment.priority,
-      updatedAt: commitment.updatedAt,
-      createdAt: commitment.createdAt,
-      supplementalLabels: supplementalLabels,
-      onEdit: onEdit,
-      onDeactivate: onDeactivate,
-    );
-  }
-}

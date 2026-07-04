@@ -105,7 +105,6 @@ MemoryGroup memoryGroupForTypeLabel(String value) {
     case 'goals':
     case 'plan':
     case 'plan_milestone':
-    case 'commitment':
       return MemoryGroup.goals;
     case 'personal_rule':
     case 'rule':
@@ -164,13 +163,10 @@ const _memoryActionTypeLabels = {
   'personal_rule': 'Rule',
   'plan': 'Plan',
   'plan_milestone': 'Milestone',
-  'commitment': 'Commitment',
   'save_plan': 'Save plan',
   'save_plan_milestone': 'Save milestone',
-  'save_commitment': 'Save commitment',
   'update_plan': 'Update plan',
   'update_plan_milestone': 'Update milestone',
-  'update_commitment': 'Update commitment',
   'save_entity_event': 'Save related note',
   'save_memory': 'Save memory',
   'memory': 'Memory note',

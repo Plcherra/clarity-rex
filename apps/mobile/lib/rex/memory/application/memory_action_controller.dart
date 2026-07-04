@@ -394,8 +394,6 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
           await api.archivePlan(id);
         case StructuredMemoryKind.planMilestone:
           await api.archivePlanMilestone(id);
-        case StructuredMemoryKind.commitment:
-          await api.archiveCommitment(id);
         case StructuredMemoryKind.flatMemory:
           await api.archiveMemory(id);
       }

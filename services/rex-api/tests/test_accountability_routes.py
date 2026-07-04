@@ -20,10 +20,6 @@ class FakeMemoryService:
         self.error = error
         self.calls = []
         self.rules = [_rule_row()]
-        self.commitments = [
-            _commitment_row(id="commitment-open", status="open"),
-            _commitment_row(id="commitment-done", status="completed"),
-        ]
         self.plans = [_plan_row()]
         self.milestones = [
             _milestone_row(id="milestone-open", status="open"),
@@ -41,11 +37,6 @@ class FakeMemoryService:
         self._raise_if_configured()
         self.calls.append(("rules", kwargs))
         return self.rules
-
-    async def list_commitments(self, **kwargs):
-        self._raise_if_configured()
-        self.calls.append(("commitments", kwargs))
-        return self.commitments
 
     async def list_plans(self, **kwargs):
         self._raise_if_configured()
@@ -76,7 +67,6 @@ class EmptyMemoryService(FakeMemoryService):
     def __init__(self):
         super().__init__()
         self.rules = []
-        self.commitments = []
         self.plans = []
         self.milestones = []
         self.entities = []
@@ -114,10 +104,10 @@ def test_list_accountability_signals_filters_by_severity_status_and_source(clien
                 source_id="rule-2",
             ),
             _signal(
-                "missed_commitment",
+                "plan_drift",
                 severity="high",
-                source_type="commitment",
-                source_id="commitment-1",
+                source_type="plan",
+                source_id="plan-1",
                 status="dismissed",
             ),
         ]
@@ -217,12 +207,6 @@ def test_overview_returns_backing_context_and_filtered_buckets(client):
             _signal("plan_drift", severity="medium", source_type="plan"),
             _signal("upcoming_deadline", severity="medium", source_type="plan_milestone"),
             _signal("repeated_pattern", severity="low", source_type="long_term_memory"),
-            _signal(
-                "missed_commitment",
-                severity="medium",
-                source_type="commitment",
-                status="dismissed",
-            ),
         ]
     )
 
@@ -232,12 +216,9 @@ def test_overview_returns_backing_context_and_filtered_buckets(client):
     payload = response.json()
     assert payload["metadata"]["signal_count"] == 4
     assert payload["metadata"]["active_rule_count"] == 1
-    assert payload["metadata"]["open_commitment_count"] == 1
     assert payload["metadata"]["open_milestone_count"] == 1
     assert payload["metadata"]["completed_milestone_count"] == 1
     assert payload["metadata"]["active_plan_count"] == 1
-    assert payload["metadata"]["open_task_count"] == 1
-    assert [item["id"] for item in payload["open_commitments"]] == ["commitment-open"]
     assert [item["id"] for item in payload["open_milestones"]] == ["milestone-open"]
     assert [item["id"] for item in payload["completed_milestones"]] == [
         "milestone-done"
@@ -246,19 +227,14 @@ def test_overview_returns_backing_context_and_filtered_buckets(client):
         {
             "plan": _plan_row(),
             "open_milestones": [
-                {
-                    **_milestone_row(id="milestone-open", status="open"),
-                    "open_commitments": [],
-                }
+                _milestone_row(id="milestone-open", status="open"),
             ],
             "completed_milestones": [
                 _milestone_row(id="milestone-done", status="completed")
             ],
-            "open_commitments": [],
             "counts": {
                 "open_milestones": 1,
                 "completed_milestones": 1,
-                "open_commitments": 0,
             },
         }
     ]
@@ -284,7 +260,6 @@ def test_empty_overview_returns_empty_lists(client):
     payload = response.json()
     assert payload["signals"] == []
     assert payload["active_rules"] == []
-    assert payload["open_commitments"] == []
     assert payload["active_plans"] == []
     assert payload["open_milestones"] == []
     assert payload["completed_milestones"] == []
@@ -292,11 +267,11 @@ def test_empty_overview_returns_empty_lists(client):
     assert payload["duplicate_warnings"] == []
 
 
-def test_overview_groups_linked_commitments_under_plan_hierarchy(client):
+def test_overview_groups_linked_milestones_under_plan_hierarchy(client):
     memory_service = FakeMemoryService()
-    memory_service.commitments = [
-        _commitment_row(id="commitment-plan", plan_id="plan-1"),
-        _commitment_row(id="commitment-milestone", milestone_id="milestone-open"),
+    memory_service.milestones = [
+        _milestone_row(id="milestone-plan", plan_id="plan-1"),
+        _milestone_row(id="milestone-extra", plan_id="plan-1", title="Extra step"),
     ]
     app.dependency_overrides[get_memory_service] = lambda: memory_service
     app.dependency_overrides[get_accountability_service] = lambda: FakeAccountabilityService()
@@ -306,14 +281,11 @@ def test_overview_groups_linked_commitments_under_plan_hierarchy(client):
     assert response.status_code == 200
     payload = response.json()
     hierarchy = payload["plan_hierarchy"][0]
-    assert [item["id"] for item in hierarchy["open_commitments"]] == [
-        "commitment-plan"
+    assert [item["id"] for item in hierarchy["open_milestones"]] == [
+        "milestone-plan",
+        "milestone-extra",
     ]
-    assert [
-        item["id"]
-        for item in hierarchy["open_milestones"][0]["open_commitments"]
-    ] == ["commitment-milestone"]
-    assert hierarchy["counts"]["open_commitments"] == 2
+    assert hierarchy["counts"]["open_milestones"] == 2
 
 
 def test_overview_reports_duplicate_plan_and_rule_warnings(client):
@@ -340,15 +312,11 @@ def test_overview_reports_duplicate_plan_and_rule_warnings(client):
     }
 
 
-def test_overview_reports_duplicate_milestone_and_commitment_warnings(client):
+def test_overview_reports_duplicate_milestone_warnings(client):
     memory_service = FakeMemoryService()
     memory_service.milestones = [
         _milestone_row(id="milestone-1", title="Date with Melissa next week"),
         _milestone_row(id="milestone-2", title="Next week date with Melissa"),
-    ]
-    memory_service.commitments = [
-        _commitment_row(id="commitment-1", title="No DoorDash"),
-        _commitment_row(id="commitment-2", title="Avoid DoorDash"),
     ]
     app.dependency_overrides[get_memory_service] = lambda: memory_service
     app.dependency_overrides[get_accountability_service] = lambda: FakeAccountabilityService()
@@ -359,7 +327,6 @@ def test_overview_reports_duplicate_milestone_and_commitment_warnings(client):
     payload = response.json()
     warning_types = {item["record_type"] for item in payload["duplicate_warnings"]}
     assert "milestone" in warning_types
-    assert "commitment" in warning_types
 
 
 def test_overview_reports_entity_fact_conflict_warning(client):
@@ -538,25 +505,6 @@ def _rule_row(id="rule-1", title="No delivery") -> dict:
     }
 
 
-def _commitment_row(
-    id="commitment-1",
-    title="Workout",
-    status="open",
-    plan_id=None,
-    milestone_id=None,
-) -> dict:
-    return {
-        "id": id,
-        "commitment_type": "habit",
-        "title": title,
-        "commitment_text": "Work out tomorrow morning.",
-        "plan_id": plan_id,
-        "milestone_id": milestone_id,
-        "status": status,
-        "active": True,
-    }
-
-
 def _plan_row(id="plan-1", title="Ship Rex", description="") -> dict:
     return {
         "id": id,
@@ -572,10 +520,11 @@ def _milestone_row(
     id="milestone-1",
     status="open",
     title="Release accountability page",
+    plan_id="plan-1",
 ) -> dict:
     return {
         "id": id,
-        "plan_id": "plan-1",
+        "plan_id": plan_id,
         "title": title,
         "status": status,
         "active": True,

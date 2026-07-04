@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from app.models.commitment import CommitmentCreateRequest, CommitmentUpdateRequest
 from app.models.memory_discipline import MemoryDisciplineAction, MemoryDisciplineDecision
 from app.models.plan import (
     PlanCreateRequest,
@@ -12,7 +11,6 @@ from app.models.plan import (
     PlanMilestoneUpdateRequest,
     PlanUpdateRequest,
 )
-from app.services.commitment_service import CommitmentService, CommitmentServiceError
 from app.services.conversational_plan_decision_store import confirmed_decision
 from app.services.memory_discipline_confirmed_writes import CONFIRMED_PLAN_SERVICE_CHANNEL
 from app.services.plan_errors import PlanServiceError
@@ -25,11 +23,9 @@ class ConfirmedPlanWriteApplier:
         memory_service: Any,
         *,
         plan_service: Optional[PlanService] = None,
-        commitment_service: Optional[CommitmentService] = None,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service or PlanService(memory_service)
-        self.commitment_service = commitment_service or CommitmentService(memory_service)
 
     async def apply_confirmed_decision(
         self,
@@ -77,26 +73,6 @@ class ConfirmedPlanWriteApplier:
                         metadata=metadata,
                     )
                 )
-            elif action == MemoryDisciplineAction.CREATE_COMMITMENT:
-                record = await self.commitment_service.create_commitment(
-                    CommitmentCreateRequest(
-                        commitment_type=payload.get("commitment_type") or "task",
-                        title=str(payload.get("title") or ""),
-                        commitment_text=str(
-                            payload.get("commitment_text") or payload.get("title") or ""
-                        ),
-                        plan_id=payload.get("plan_id") or confirmed.metadata.get("parent_plan_id"),
-                        milestone_id=payload.get("milestone_id")
-                        or confirmed.metadata.get("target_milestone_id"),
-                        entity_id=payload.get("entity_id"),
-                        source_conversation_id=conversation_id,
-                        source_message_id=source_message_id,
-                        source_memory_id=payload.get("source_memory_id"),
-                        priority=int(payload.get("priority") or 3),
-                        due_at=payload.get("due_at"),
-                        metadata=metadata,
-                    )
-                )
             elif action == MemoryDisciplineAction.UPDATE_PLAN:
                 target_id = str(confirmed.target_id or "")
                 record = await self.plan_service.update_plan(
@@ -139,26 +115,6 @@ class ConfirmedPlanWriteApplier:
                         metadata=metadata,
                     ),
                 )
-            elif action == MemoryDisciplineAction.UPDATE_COMMITMENT:
-                target_id = str(confirmed.target_id or "")
-                record = await self.commitment_service.update_commitment(
-                    target_id,
-                    CommitmentUpdateRequest(
-                        **{
-                            key: payload[key]
-                            for key in (
-                                "commitment_type",
-                                "title",
-                                "commitment_text",
-                                "priority",
-                                "status",
-                                "due_at",
-                            )
-                            if key in payload and payload[key] is not None
-                        },
-                        metadata=metadata,
-                    ),
-                )
             elif action == MemoryDisciplineAction.CREATE_ENTITY_EVENT:
                 write_payload = {
                     **payload,
@@ -174,7 +130,7 @@ class ConfirmedPlanWriteApplier:
                     "applied": False,
                     "reason": f"Unsupported confirmed action: {action.value}",
                 }
-        except (PlanServiceError, CommitmentServiceError):
+        except PlanServiceError:
             return {"action": action.value, "applied": False}
         except Exception:
             return {"action": action.value, "applied": False}

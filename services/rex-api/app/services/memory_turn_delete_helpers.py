@@ -2,19 +2,16 @@ import re
 from typing import Optional
 
 from app.services.clarity_knowledge_labels import (
-    COMMITMENT_SINGULAR,
     GOAL_SINGULAR,
     SAVED_MEMORY_SINGULAR,
 )
 from app.services.memory_delete_confirmation_flow import MemoryDeleteConfirmationFlow
 from app.services.memory_delete_resolver import (
     ACCOUNTABILITY_DELETE_SCOPE,
-    COMMITMENT_DELETE_SCOPE,
     GOAL_DELETE_SCOPE,
 )
 
 _ACCOUNTABILITY_SCOPE = frozenset(ACCOUNTABILITY_DELETE_SCOPE)
-_COMMITMENT_SCOPE = frozenset(COMMITMENT_DELETE_SCOPE)
 _GOAL_SCOPE = frozenset(GOAL_DELETE_SCOPE)
 
 
@@ -238,20 +235,16 @@ class MemoryTurnDeleteHelpers(MemoryDeleteConfirmationFlow):
         return unique_targets[0] if len(unique_targets) == 1 else target
 
     def _delete_item_label(self, table: str) -> str:
-        if table == "commitments":
-            return COMMITMENT_SINGULAR
         if table in {"plans", "plan_milestones"}:
             return GOAL_SINGULAR
         return SAVED_MEMORY_SINGULAR
 
     def _delete_not_found_message(self, scope_tables: tuple[str, ...]) -> str:
         scope = frozenset(scope_tables)
-        if scope and scope <= _COMMITMENT_SCOPE:
-            label = f"active {COMMITMENT_SINGULAR}"
-        elif scope and scope <= _GOAL_SCOPE:
+        if scope and scope <= _GOAL_SCOPE:
             label = f"active {GOAL_SINGULAR}"
         elif scope and scope <= _ACCOUNTABILITY_SCOPE:
-            label = f"active {GOAL_SINGULAR} or {COMMITMENT_SINGULAR}"
+            label = f"active {GOAL_SINGULAR}"
         else:
             label = f"active {SAVED_MEMORY_SINGULAR}"
         return (
@@ -270,10 +263,6 @@ class MemoryTurnDeleteHelpers(MemoryDeleteConfirmationFlow):
             if past_message.get("role") != "assistant":
                 continue
             content = str(past_message.get("content") or "").lower()
-            if "commitment" in content and "goal" not in content:
-                return COMMITMENT_DELETE_SCOPE
-            if "commitment" in content:
-                return ACCOUNTABILITY_DELETE_SCOPE
             if re.search(r"\bgoals?\b", content) and "goals tab" in content:
                 return ACCOUNTABILITY_DELETE_SCOPE
         return ()
@@ -323,7 +312,6 @@ class MemoryTurnDeleteHelpers(MemoryDeleteConfirmationFlow):
                 "saved" not in lowered
                 and "clarity knows" not in lowered
                 and "goals tab" not in lowered
-                and "commitment" not in lowered
                 and "goal" not in lowered
             ):
                 continue
@@ -346,10 +334,8 @@ class MemoryTurnDeleteHelpers(MemoryDeleteConfirmationFlow):
             if not any(
                 marker in lowered
                 for marker in (
-                    "commitment",
                     "goals tab",
                     "active goals",
-                    "open commitments",
                 )
             ):
                 continue

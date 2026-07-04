@@ -48,6 +48,17 @@ jobs:
         run: test -f supabase/migrations/20260702000100_create_user_insights.sql
       - name: Verify user_insights RLS initplan migration exists
         run: test -f supabase/migrations/20260702000200_user_insights_rls_initplan.sql
+      - name: Verify commitments drop migration exists
+        run: test -f supabase/migrations/20260703000100_drop_commitments.sql
+
+  docs-canonical:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Block new non-canon docs under docs/
+        run: bash scripts/verify_docs_canon.sh
 
   predeploy:
     runs-on: ubuntu-latest

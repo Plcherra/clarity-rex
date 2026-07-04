@@ -189,7 +189,7 @@ def test_router_classifies_voice_memory_recall_phrases(message):
 def test_router_classifies_goals_inventory_before_memory_recall():
     decision = RexIntentRouter().classify("What commitments do we have saved?")
 
-    assert decision.intent == RexIntent.GOAL_OR_COMMITMENT
+    assert decision.intent == RexIntent.GOAL
     assert "goals_inventory_query" in decision.reasons
     assert decision.should_load_structured_memory
     assert decision.should_load_goal_context
@@ -199,7 +199,7 @@ def test_router_classifies_goals_inventory_before_memory_recall():
 def test_router_classifies_goals_with_goal_context_only():
     decision = RexIntentRouter().classify("How am I doing on my goals?")
 
-    assert decision.intent == RexIntent.GOAL_OR_COMMITMENT
+    assert decision.intent == RexIntent.GOAL
     assert not decision.should_load_long_term_memory
     assert not decision.should_load_structured_memory
     assert decision.should_load_goal_context
@@ -209,7 +209,7 @@ def test_router_classifies_goals_with_goal_context_only():
 def test_router_loads_structured_memory_for_accountability_patterns():
     decision = RexIntentRouter().classify("I ordered DoorDash again.")
 
-    assert decision.intent == RexIntent.GOAL_OR_COMMITMENT
+    assert decision.intent == RexIntent.GOAL
     assert not decision.should_load_long_term_memory
     assert decision.should_load_structured_memory
     assert decision.should_load_goal_context

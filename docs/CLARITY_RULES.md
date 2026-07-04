@@ -39,7 +39,7 @@ The assistant operates with distinct context layers. It must label each layer ho
 | **Chat history** | Searchable past messages | Chats tab; recall prompts | Read-only; never auto-promoted |
 | **Goals (`plans`)** | Big clear objectives | Goals tab → Goals section | Confirm card or Goals form; backend-confirmed |
 
-**Legacy:** Commitments were retired (July 2026). Open Threads replace companion follow-up UX. Legacy commitment data may exist for migration only — not product surface.
+**Legacy:** Commitments were fully removed (July 2026). Open Threads are the only companion-continuity mechanism. Plan-linked small steps use milestones (`plans` / `plan_milestones`), not commitments.
 
 ## 4. Memory Truth
 

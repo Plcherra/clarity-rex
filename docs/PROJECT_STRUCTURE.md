@@ -203,7 +203,7 @@ When a flat long-term memory is fully covered by a structured person card, archi
 
 ### Legacy
 
-- Commitments table/routes may remain for **data migration only** — not in Goals overview, Knows, prompts, or new UI.
+- **Commitments fully removed** (July 2026). The `commitments` table, routes, and assistant write paths are deleted. Companion continuity uses **Open Threads** only; plan-linked small steps use **milestones**.
 - Early `memory_candidates` / `memory_confirmations` tables are archived. Durable memory uses discipline + backend-confirmed creates only.
 - Disabled bypass paths: `GoalCommandReclassifier` direct memory→goal writes, separate `save_plan` pending, auto merge unless `merge_disclosed_to` is set, auto person materialization on generic LTM REST create.
 
@@ -221,7 +221,7 @@ Run from `services/rex-api` after env is loaded:
 
 ## 8. Open Threads Wiring
 
-Goals tab overview returns `{ plans, open_threads }` — not legacy commitments.
+Goals tab overview returns `{ plans, open_threads }`.
 
 **Backend modules:**
 - `open_thread_service.py`, `open_thread_repository.py`, `open_thread_turn_service.py`
@@ -349,3 +349,12 @@ Native iOS voice bridge is experimental and must not become a second assistant p
 | Memory writes | `memory_write_service.py`, `DurableWriteService` |
 | Open Threads | `open_thread_service.py`, `/open-threads` |
 | Plaid sync | `services/rex-api` Plaid routes and sync services |
+
+## 13. Documentation Policy
+
+**Canon:** only three documents in `docs/` root — `MASTER_PLAN.md`, `CLARITY_RULES.md`, `PROJECT_STRUCTURE.md`.
+
+- Do not add new planning, architecture, or feature docs under `docs/`.
+- Archived non-canon material may live under `docs/archive/` only.
+- `docs/NEXT_STEPS.md` is a temporary execution tracker — delete when alignment work is complete.
+- CI runs `scripts/verify_docs_canon.sh` to block new non-canon files under `docs/`.

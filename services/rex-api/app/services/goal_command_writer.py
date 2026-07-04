@@ -1,10 +1,9 @@
-"""Persist explicit goal and commitment commands."""
+"""Persist explicit goal commands."""
 
 from __future__ import annotations
 
 from typing import Any, Optional
 
-from app.models.commitment import CommitmentCreateRequest
 from app.models.plan import PlanCreateRequest
 from app.services.goal_command_parsing import (
     expand_goal_save_items,
@@ -18,7 +17,6 @@ from app.services.goal_command_results import (
     multi_goal_turn_result,
 )
 from app.services.clarity_knowledge_labels import (
-    commitment_saved_message,
     goal_saved_message,
     goals_saved_message,
 )
@@ -31,11 +29,9 @@ class GoalCommandWriter:
         self,
         memory_service: Any,
         plan_service: Any,
-        commitment_service: Any,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service
-        self.commitment_service = commitment_service
 
     async def save_goal(
         self,
@@ -190,66 +186,5 @@ class GoalCommandWriter:
             response=response,
             commands=commands,
             records=saved_records,
-            extra_records=extra_records,
-        )
-
-    async def save_commitment(
-        self,
-        command: GoalCommand,
-        *,
-        conversation_id: str,
-        user_message: dict,
-        response: Optional[str] = None,
-        extra_records: Optional[list[dict]] = None,
-    ) -> dict:
-        if is_meta_instruction_body(command.body):
-            return await failed_command_turn_result(
-                self.memory_service,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                response=(
-                    "I need the actual commitment details before I can save that. "
-                    "Tell me what you want to stay accountable to."
-                ),
-                kind="commitment",
-                record_type=command.record_type,
-                title=command.title,
-            )
-        try:
-            record = await self.commitment_service.create_commitment(
-                CommitmentCreateRequest(
-                    commitment_type=command.record_type,
-                    title=command.title,
-                    commitment_text=command.body,
-                    source_conversation_id=conversation_id,
-                    source_message_id=str(user_message.get("id") or "") or None,
-                    due_at=command.due_text,
-                    priority=5 if command.record_type == "habit" else 4,
-                    metadata={"source": "explicit_commitment_command"},
-                )
-            )
-        except Exception:
-            return await failed_command_turn_result(
-                self.memory_service,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                response=(
-                    "I understood that commitment, but I couldn't save it just now. "
-                    "Please try again in a moment."
-                ),
-                kind="commitment",
-                record_type=command.record_type,
-                title=command.title,
-            )
-        resolved_response = response or commitment_saved_message(command.title)
-        return await command_turn_result(
-            self.memory_service,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            response=resolved_response,
-            kind="commitment",
-            record_type=command.record_type,
-            record=record,
-            title=command.title,
             extra_records=extra_records,
         )

@@ -9,8 +9,7 @@ from app.models.memory_discipline import (
     MemoryDisciplineDecision,
     MemoryRecordKind,
 )
-from app.models.plan import PlanCreateRequest, PlanMilestoneCreateRequest
-from app.services.commitment_service import CommitmentService
+from app.models.plan import PlanCreateRequest
 from app.services.confirmed_plan_write_applier import ConfirmedPlanWriteApplier
 from app.services.durable_write_proposal import DurableWriteProposal
 from app.services.memory_discipline_confirmed_writes import CONFIRMED_PLAN_SERVICE_CHANNEL
@@ -27,18 +26,15 @@ class DurableWriteApplier:
         memory_service: Any,
         *,
         plan_service: Optional[PlanService] = None,
-        commitment_service: Optional[CommitmentService] = None,
         open_thread_service: Optional[OpenThreadService] = None,
         plan_applier: Optional[ConfirmedPlanWriteApplier] = None,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service or PlanService(memory_service)
-        self.commitment_service = commitment_service or CommitmentService(memory_service)
         self.open_thread_service = open_thread_service or OpenThreadService(memory_service)
         self.plan_applier = plan_applier or ConfirmedPlanWriteApplier(
             memory_service,
             plan_service=self.plan_service,
-            commitment_service=self.commitment_service,
         )
 
     async def apply_proposal(
@@ -74,12 +70,6 @@ class DurableWriteApplier:
                 conversation_id=conversation_id,
                 source_message_id=source_message_id,
                 merge_disclosed=proposal.merge_target_title,
-            )
-        if snapshot_type in {"commitment", "create_commitment"}:
-            return await self._apply_commitment(
-                snapshot,
-                conversation_id=conversation_id,
-                source_message_id=source_message_id,
             )
         if snapshot_type == "open_thread":
             return await self._apply_open_thread(
@@ -174,30 +164,6 @@ class DurableWriteApplier:
             or (record.get("metadata") or {}).get("merged_into_existing_plan_id")
         )
         return {"applied": True, "record": record, "merged": merged}
-
-    async def _apply_commitment(
-        self,
-        snapshot: dict[str, Any],
-        *,
-        conversation_id: str,
-        source_message_id: str | None,
-    ) -> dict[str, Any]:
-        payload = dict(snapshot.get("payload") or {})
-        metadata = dict(payload.get("metadata") or {})
-        metadata.setdefault("source", "durable_write_confirmed")
-        payload["metadata"] = metadata
-        payload.setdefault("source_conversation_id", conversation_id)
-        payload.setdefault("source_message_id", source_message_id)
-        create_commitment = getattr(self.memory_service, "create_commitment", None)
-        if create_commitment is None:
-            return {"applied": False}
-        try:
-            record = await create_commitment(payload)
-        except Exception:
-            return {"applied": False}
-        if not isinstance(record, dict) or not record.get("id"):
-            return {"applied": False}
-        return {"applied": True, "record": record, "merged": False}
 
     async def _apply_open_thread(
         self,

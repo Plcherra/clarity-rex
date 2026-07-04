@@ -133,57 +133,6 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     );
   }
 
-  Future<bool> createCommitment({
-    required String title,
-    required String commitmentText,
-    String commitmentType = 'task',
-  }) {
-    return _runMutation(
-      () => ref
-          .read(accountabilityApiProvider)
-          .createCommitment(
-            title: title,
-            commitmentText: commitmentText,
-            commitmentType: commitmentType,
-          ),
-    );
-  }
-
-  Future<bool> updateCommitment(
-    String commitmentId, {
-    String? title,
-    String? commitmentText,
-    int? priority,
-  }) {
-    return _runMutation(
-      () => ref.read(accountabilityApiProvider).updateCommitment(
-        commitmentId,
-        title: title,
-        commitmentText: commitmentText,
-        priority: priority,
-      ),
-    );
-  }
-
-  Future<bool> completeCommitment(String commitmentId) {
-    return _runMutation(
-      () =>
-          ref.read(accountabilityApiProvider).completeCommitment(commitmentId),
-    );
-  }
-
-  Future<bool> missCommitment(String commitmentId) {
-    return _runMutation(
-      () => ref.read(accountabilityApiProvider).missCommitment(commitmentId),
-    );
-  }
-
-  Future<bool> archiveCommitment(String commitmentId) {
-    return _runMutation(
-      () => ref.read(accountabilityApiProvider).archiveCommitment(commitmentId),
-    );
-  }
-
   Future<bool> _runMutation(Future<Object?> Function() action) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {

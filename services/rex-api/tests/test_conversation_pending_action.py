@@ -47,8 +47,8 @@ def test_should_defer_to_pending_delete_without_history():
     action = pending_action_for_delete(
         target="Be a goal/commitment",
         match=CorrectionAffectedRecord(
-            table="commitments",
-            id="commitment-1",
+            table="plans",
+            id="plan-1",
             action="archive",
             title="Be a goal/commitment",
         ),

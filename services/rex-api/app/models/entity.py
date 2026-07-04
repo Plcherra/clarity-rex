@@ -21,7 +21,6 @@ EntityEventType = Literal[
     "interaction",
     "relationship_update",
     "preference",
-    "commitment",
     "conflict",
     "milestone",
     "other",

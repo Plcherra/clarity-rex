@@ -284,7 +284,6 @@ String _pendingProposalHeadline(ClarityActionCard action) {
       return 'Track in Goals';
     case 'plan':
     case 'milestone':
-    case 'commitment':
       return 'Save to Goals';
     case 'memory':
     default:

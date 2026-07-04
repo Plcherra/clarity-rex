@@ -22,7 +22,6 @@ mixin MemoryReadController on Notifier<MemoryState> {
         otherEntities: overview.otherEntities,
         rules: overview.rules,
         plans: overview.plans,
-        commitments: overview.commitments,
         entityEventPreviews: overview.entityEventPreviews,
         planMilestonePreviews: overview.planMilestonePreviews,
         overviewPages: overview.pages,
@@ -57,7 +56,6 @@ mixin MemoryReadController on Notifier<MemoryState> {
         otherEntities: overview.otherEntities,
         rules: overview.rules,
         plans: overview.plans,
-        commitments: overview.commitments,
         entityEventPreviews: {
           ...state.entityEventPreviews,
           ...overview.entityEventPreviews,
@@ -98,14 +96,12 @@ mixin MemoryReadController on Notifier<MemoryState> {
       _fetchEntitiesPage(api, active: active, pages: pages, append: append),
       _fetchRulesPage(api, active: active, pages: pages, append: append),
       _fetchPlansPage(api, active: active, pages: pages, append: append),
-      _fetchCommitmentsPage(api, active: active, pages: pages, append: append),
     ]);
 
     final memoriesPage = results[0] as MemoryPagedResult<MemoryItem>;
     final entitiesPage = results[1] as MemoryPagedResult<EntityMemoryItem>;
     final rulesPage = results[2] as MemoryPagedResult<RuleMemoryItem>;
     final plansPage = results[3] as MemoryPagedResult<PlanMemoryItem>;
-    final commitmentsPage = results[4] as MemoryPagedResult<CommitmentMemoryItem>;
 
     final memories = append
         ? appendUniqueById(
@@ -164,13 +160,6 @@ mixin MemoryReadController on Notifier<MemoryState> {
             idFor: (item) => item.id,
           )
         : plansPage.items;
-    final commitments = append
-        ? appendUniqueById(
-            existing: state.commitments,
-            incoming: commitmentsPage.items,
-            idFor: (item) => item.id,
-          )
-        : commitmentsPage.items;
 
     final entityEventPreviews = await _loadEntityEventPreviews(
       api: api,
@@ -210,10 +199,6 @@ mixin MemoryReadController on Notifier<MemoryState> {
       plansHasMore: append
           ? (pages.plansHasMore ? plansPage.hasMore : false)
           : plansPage.hasMore,
-      commitmentsCursor: commitmentsPage.nextCursor ?? pages.commitmentsCursor,
-      commitmentsHasMore: append
-          ? (pages.commitmentsHasMore ? commitmentsPage.hasMore : false)
-          : commitmentsPage.hasMore,
     );
 
     return _SavedOverviewSnapshot(
@@ -223,7 +208,6 @@ mixin MemoryReadController on Notifier<MemoryState> {
       otherEntities: otherEntities,
       rules: rules,
       plans: plans,
-      commitments: commitments,
       entityEventPreviews: entityEventPreviews,
       planMilestonePreviews: planMilestonePreviews,
       pages: nextPages,
@@ -257,9 +241,6 @@ mixin MemoryReadController on Notifier<MemoryState> {
     final plans = _parseJsonList(overview['plans'])
         .map(PlanMemoryItem.fromJson)
         .toList(growable: false);
-    final commitments = _parseJsonList(overview['commitments'])
-        .map(CommitmentMemoryItem.fromJson)
-        .toList(growable: false);
 
     final entityEventPreviews = await _loadEntityEventPreviews(
       api: api,
@@ -289,7 +270,6 @@ mixin MemoryReadController on Notifier<MemoryState> {
       otherEntities: otherEntities,
       rules: rules,
       plans: plans,
-      commitments: commitments,
       entityEventPreviews: entityEventPreviews,
       planMilestonePreviews: planMilestonePreviews,
       pages: const MemoryOverviewPages(),
@@ -434,22 +414,6 @@ mixin MemoryReadController on Notifier<MemoryState> {
       cursor: append ? pages.plansCursor : null,
     );
   }
-
-  Future<MemoryPagedResult<CommitmentMemoryItem>> _fetchCommitmentsPage(
-    MemoryApi api, {
-    required bool? active,
-    required MemoryOverviewPages pages,
-    required bool append,
-  }) async {
-    if (append && !pages.commitmentsHasMore) {
-      return const MemoryPagedResult(items: []);
-    }
-    return api.getCommitmentsPaged(
-      active: active,
-      limit: kMemoryListLimit,
-      cursor: append ? pages.commitmentsCursor : null,
-    );
-  }
 }
 
 class _PreviewTarget {
@@ -470,7 +434,6 @@ class _SavedOverviewSnapshot {
     required this.otherEntities,
     required this.rules,
     required this.plans,
-    required this.commitments,
     required this.entityEventPreviews,
     required this.planMilestonePreviews,
     required this.pages,
@@ -482,7 +445,6 @@ class _SavedOverviewSnapshot {
   final List<EntityMemoryItem> otherEntities;
   final List<RuleMemoryItem> rules;
   final List<PlanMemoryItem> plans;
-  final List<CommitmentMemoryItem> commitments;
   final Map<String, List<EntityEventItem>> entityEventPreviews;
   final Map<String, List<PlanMilestoneMemoryItem>> planMilestonePreviews;
   final MemoryOverviewPages pages;

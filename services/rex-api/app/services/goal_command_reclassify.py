@@ -1,4 +1,4 @@
-"""Move misclassified saved memory into goals or commitments."""
+"""Move misclassified saved memory into goals."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ from typing import Any, Optional
 from app.services.goal_command_formatting import (
     archived_memory_record,
     clean_reclassified_body,
-    commitment_type,
     combined_recent_text,
     date_from_text,
     extract_obligation_action,
@@ -35,9 +34,9 @@ _RECLASSIFY_REQUEST_PATTERN = re.compile(
     r"move\s+from\s+memory|"
     r"remove\s+(?:it|this|that)\s+from\s+(?:saved\s+)?memory|"
     r"delete\s+(?:it|this|that)\s+from\s+(?:saved\s+)?memory|"
-    r"(?:this|that)\s+is\s+(?:actually\s+)?(?:a\s+)?(?:goal|commitment)|"
-    r"(?:actually|really)\s+(?:a\s+)?(?:goal|commitment)|"
-    r"(?:goal|commitment)\s+(?:not|instead\s+of)\s+(?:saved\s+)?memory|"
+    r"(?:this|that)\s+is\s+(?:actually\s+)?(?:a\s+)?goal|"
+    r"(?:actually|really)\s+(?:a\s+)?goal|"
+    r"goal\s+(?:not|instead\s+of)\s+(?:saved\s+)?memory|"
     r"(?:you|that)\s+saved|"
     r"this\s+that\s+you\s+saved"
     r")\b",
@@ -73,7 +72,6 @@ def conversation_mentions_saved_memory(conversation_history: list[dict]) -> bool
                 "got it, you have",
                 "got it—you have",
                 "added as a goal",
-                "saved that commitment",
             )
         ):
             return True
@@ -152,31 +150,13 @@ def build_reclassified_commands(
         or relative_date_from_text(combined, time_context=time_context)
         or date_from_text(combined, time_context=time_context)
     )
-    prefer_goal = bool(
-        _PLAN_TIMELINE_PATTERN.search(combined)
-        or _RELATIVE_TIME_PATTERN.search(combined)
-        or re.search(r"\b(?:purchase|checklist|plan)\b", combined, re.I)
-        or len(items) > 1
-        or any(looks_like_equipment_goal(item) for item in items)
-    )
-    if prefer_goal:
-        return [
-            GoalCommand(
-                kind="goal",
-                title=item,
-                body=item,
-                record_type=plan_type(item),
-                target_text=target_text,
-            )
-            for item in items
-        ]
     return [
         GoalCommand(
-            kind="commitment",
+            kind="goal",
             title=item,
             body=item,
-            record_type=commitment_type(item),
-            due_text=target_text,
+            record_type=plan_type(item),
+            target_text=target_text,
         )
         for item in items
     ]
@@ -194,7 +174,6 @@ def reclassification_search_terms(
         "memory",
         "saved",
         "goal",
-        "commitment",
         "actually",
         "please",
         "would",

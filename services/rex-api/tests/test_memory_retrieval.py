@@ -16,7 +16,6 @@ class InMemoryRetrievalService(SupabaseMemoryService):
         personal_rules=None,
         plans=None,
         plan_milestones=None,
-        commitments=None,
     ):
         self.memories = memories
         self.entities = entities or []
@@ -24,7 +23,6 @@ class InMemoryRetrievalService(SupabaseMemoryService):
         self.personal_rules = personal_rules or []
         self.plans = plans or []
         self.plan_milestones = plan_milestones or []
-        self.commitments = commitments or []
 
     async def list_long_term_memory(self, limit=50, memory_type=None, active=None):
         memories = self.memories
@@ -143,32 +141,6 @@ class InMemoryRetrievalService(SupabaseMemoryService):
             records = [record for record in records if record["active"] is active]
         if plan_id is not None:
             records = [record for record in records if record["plan_id"] == plan_id]
-        if status is not None:
-            records = [record for record in records if record["status"] == status]
-        return records[:limit]
-
-    async def list_commitments(
-        self,
-        limit=50,
-        commitment_type=None,
-        plan_id=None,
-        entity_id=None,
-        status=None,
-        active=None,
-    ):
-        records = self.commitments
-        if active is not None:
-            records = [record for record in records if record["active"] is active]
-        if commitment_type is not None:
-            records = [
-                record
-                for record in records
-                if record["commitment_type"] == commitment_type
-            ]
-        if plan_id is not None:
-            records = [record for record in records if record["plan_id"] == plan_id]
-        if entity_id is not None:
-            records = [record for record in records if record["entity_id"] == entity_id]
         if status is not None:
             records = [record for record in records if record["status"] == status]
         return records[:limit]
@@ -691,26 +663,12 @@ async def test_get_structured_memory_context_ranks_records_and_links_children():
                 "id": "milestone-visa-docs",
                 "plan_id": "plan-visa",
                 "milestone_type": "deadline",
-                "title": "Prepare immigration documents",
-                "description": "Collect visa paperwork.",
-                "priority": 3,
-                "status": "open",
-                "active": True,
-                "target_date": "2026-06-01",
-            }
-        ],
-        commitments=[
-            {
-                "id": "commitment-visa-docs",
-                "commitment_type": "deadline",
                 "title": "Review visa paperwork",
-                "commitment_text": "Review the visa documents before June.",
-                "plan_id": "plan-visa",
-                "entity_id": None,
+                "description": "Review the visa documents before June.",
                 "priority": 4,
                 "status": "open",
                 "active": True,
-                "due_at": "2026-05-31T18:00:00Z",
+                "target_date": "2026-06-01",
                 "updated_at": "2026-05-18T08:30:00Z",
             }
         ],
@@ -728,9 +686,6 @@ async def test_get_structured_memory_context_ranks_records_and_links_children():
     assert [plan["id"] for plan in context["plans"]] == ["plan-visa"]
     assert [milestone["id"] for milestone in context["plan_milestones"]] == [
         "milestone-visa-docs"
-    ]
-    assert [commitment["id"] for commitment in context["commitments"]] == [
-        "commitment-visa-docs"
     ]
     assert "clara" in context["entities"][0]["relevance_reason"]
 

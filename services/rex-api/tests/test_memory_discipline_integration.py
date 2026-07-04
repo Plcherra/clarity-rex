@@ -102,15 +102,6 @@ class DisciplineMemoryStore:
     ):
         return []
 
-    async def list_commitments(
-        self,
-        commitment_type=None,
-        status=None,
-        active=True,
-        limit=50,
-    ):
-        return []
-
     async def save_long_term_memory(
         self,
         memory_type,

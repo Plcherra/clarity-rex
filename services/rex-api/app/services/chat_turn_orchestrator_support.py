@@ -15,7 +15,7 @@ from app.services.transcript_normalizer import TranscriptNormalizer
 _ACTION_TRUTH_STREAM_INTENTS = {
     RexIntent.MEMORY_SAVE,
     RexIntent.MEMORY_UPDATE,
-    RexIntent.GOAL_OR_COMMITMENT,
+    RexIntent.GOAL,
 }
 
 

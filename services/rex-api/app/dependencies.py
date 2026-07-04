@@ -6,7 +6,6 @@ from app.services.ai_service import AIService
 from app.services.accountability_service import AccountabilityService
 from app.services.chat_service import ChatService
 from app.services.clarity_control_service import ClarityControlService
-from app.services.commitment_service import CommitmentService
 from app.services.open_thread_service import OpenThreadService
 from app.services.deepgram_service import DeepgramService
 from app.services.deepgram_streaming_service import DeepgramStreamingService
@@ -86,13 +85,6 @@ def get_plan_service(
     discipline: MemoryDisciplineService = Depends(get_memory_discipline_service),
 ) -> PlanService:
     return PlanService(memory_service, discipline=discipline)
-
-
-def get_commitment_service(
-    memory_service: SupabaseMemoryService = Depends(get_memory_service),
-    discipline: MemoryDisciplineService = Depends(get_memory_discipline_service),
-) -> CommitmentService:
-    return CommitmentService(memory_service, discipline=discipline)
 
 
 def get_open_thread_service(

@@ -11,7 +11,6 @@ class SavedMemoryResults {
     required this.goalMemories,
     required this.rules,
     required this.plans,
-    required this.commitments,
     required this.events,
     required this.otherMemories,
     required this.otherEntities,
@@ -26,7 +25,6 @@ class SavedMemoryResults {
   final List<MemoryItem> goalMemories;
   final List<RuleMemoryItem> rules;
   final List<PlanMemoryItem> plans;
-  final List<CommitmentMemoryItem> commitments;
   final List<MemoryItem> events;
   final List<MemoryItem> otherMemories;
   final List<EntityMemoryItem> otherEntities;
@@ -41,7 +39,6 @@ class SavedMemoryResults {
         goalMemories.isEmpty &&
         rules.isEmpty &&
         plans.isEmpty &&
-        commitments.isEmpty &&
         events.isEmpty &&
         otherMemories.isEmpty &&
         otherEntities.isEmpty;

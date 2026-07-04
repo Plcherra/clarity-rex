@@ -1,4 +1,4 @@
-"""Detect explicit goal and commitment commands from user messages."""
+"""Detect explicit goal commands from user messages."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ from typing import Optional
 
 from app.services.goal_command_formatting import (
     clean_goal_text,
-    commitment_type,
     date_from_text,
     extract_obligation_action,
     goal_title,
@@ -44,32 +43,6 @@ _INLINE_GOAL_PATTERNS = (
     ),
     re.compile(
         r"\bmy\s+goal\s+is\s+(?P<goal>.+)",
-        re.IGNORECASE,
-    ),
-)
-_COMMITMENT_PATTERNS = (
-    re.compile(
-        r"\bhold\s+me\s+accountable\s+to\s+(?P<commitment>.+)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:remind|remember)\s+me\s+to\s+(?P<commitment>.+)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:set|create|add)\s+(?:a\s+)?reminder\s+to\s+(?P<commitment>.+)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\bi\s+(?:need|have)\s+to\s+(?P<commitment>.+?\b(?:on|by)\b.+)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\bi\s+gotta\s+(?P<commitment>.+?\b(?:on|by)\b.+)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:track|save|add)\s+(?P<commitment>.+?)\s+as\s+(?:a\s+)?commitment\b",
         re.IGNORECASE,
     ),
 )
@@ -156,16 +129,13 @@ class GoalCommandDetector:
         conversation_history: list[dict],
         time_context: dict,
     ) -> Optional[GoalCommand]:
-        commitment = self.detect_commitment(message, time_context=time_context)
-        if commitment is not None:
-            return commitment
         future_plan = self.detect_future_plan_goal(
             message,
             time_context=time_context,
         )
         if future_plan is not None:
             return future_plan
-        obligation = self.detect_obligation_commitment(
+        obligation = self.detect_obligation_goal(
             message,
             time_context=time_context,
         )
@@ -238,7 +208,7 @@ class GoalCommandDetector:
             target_text=target_text,
         )
 
-    def detect_obligation_commitment(
+    def detect_obligation_goal(
         self,
         message: str,
         *,
@@ -251,41 +221,16 @@ class GoalCommandDetector:
         if not body:
             return None
 
-        due_text = date_from_text(
+        target_text = date_from_text(
             message,
             time_context=time_context,
         ) or relative_date_from_text(message, time_context=time_context)
         return GoalCommand(
-            kind="commitment",
+            kind="goal",
             title=goal_title(body),
             body=body,
-            record_type=commitment_type(body),
-            due_text=due_text,
-        )
-
-    def detect_commitment(
-        self,
-        message: str,
-        *,
-        time_context: dict,
-    ) -> Optional[GoalCommand]:
-        commitment_text = None
-        for pattern in _COMMITMENT_PATTERNS:
-            match = pattern.search(message)
-            if match:
-                commitment_text = match.group("commitment")
-                break
-        commitment_text = clean_goal_text(commitment_text)
-        if not commitment_text:
-            return None
-
-        due_text = date_from_text(commitment_text, time_context=time_context)
-        return GoalCommand(
-            kind="commitment",
-            title=goal_title(commitment_text),
-            body=commitment_text,
-            record_type=commitment_type(commitment_text),
-            due_text=due_text,
+            record_type=plan_type(body),
+            target_text=target_text,
         )
 
     def detect_equipment_goals(

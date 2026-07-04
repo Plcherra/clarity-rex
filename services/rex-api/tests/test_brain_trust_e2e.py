@@ -99,12 +99,12 @@ async def test_yes_delete_uses_stored_pending_action_not_history():
 async def test_inventory_after_failed_delete_via_chat_service():
     ai_service = FakeAIService(response="Rex should not answer")
     memory_service = FakeMemoryService()
-    memory_service.commitments.append(
+    memory_service.plans.append(
         {
-            "id": "commitment-1",
+            "id": "plan-1",
             "title": "Wake at 5 AM",
-            "commitment_text": "Wake at 5 AM",
-            "status": "open",
+            "description": "Wake at 5 AM",
+            "status": "active",
             "active": True,
         }
     )
@@ -115,14 +115,14 @@ async def test_inventory_after_failed_delete_via_chat_service():
         time_context_service=_fixed_time_context_service(),
     )
 
-    failed = await chat_service.send_message('Delete the commitment "Missing title"')
+    failed = await chat_service.send_message('Delete the goal "Missing title"')
     inventory = await chat_service.send_message(
         "What commitments do we have saved?",
         failed["conversation_id"],
     )
 
     assert "didn't delete anything" in failed["response"]
-    assert "Open commitments:" in inventory["response"]
+    assert "Active goals:" in inventory["response"]
     assert "Wake at 5 AM" in inventory["response"]
     assert "Just to confirm" not in inventory["response"]
     assert ai_service.messages == []
@@ -132,12 +132,12 @@ async def test_inventory_after_failed_delete_via_chat_service():
 async def test_stream_inventory_short_circuit_logs_goal_command_handler():
     ai_service = FakeAIService(stream_tokens=["unused"])
     memory_service = FakeMemoryService()
-    memory_service.commitments.append(
+    memory_service.plans.append(
         {
-            "id": "commitment-1",
+            "id": "plan-1",
             "title": "Wake at 5 AM",
-            "commitment_text": "Wake at 5 AM",
-            "status": "open",
+            "description": "Wake at 5 AM",
+            "status": "active",
             "active": True,
         }
     )
@@ -158,22 +158,22 @@ async def test_stream_inventory_short_circuit_logs_goal_command_handler():
     ]
 
     assert events[-1]["event"] == "done"
-    assert "Open commitments:" in events[-1]["response"]
+    assert "Active goals:" in events[-1]["response"]
     assert observer.logged[-1]["handler"] == "goal_command"
     assert ai_service.stream_calls == 0
 
 
 @pytest.mark.asyncio
-async def test_delete_that_after_assistant_names_commitment_on_goals_tab():
+async def test_delete_that_after_assistant_names_goal_on_goals_tab():
     ai_service = FakeAIService(response="Rex should not answer")
     memory_service = FakeMemoryService()
-    memory_service.commitments.append(
+    memory_service.plans.append(
         {
-            "id": "commitment-junk",
+            "id": "plan-junk",
             "title": "Be a goal/commitment",
-            "commitment_text": "be a goal/commitment",
-            "commitment_type": "task",
-            "status": "open",
+            "description": "be a goal/commitment",
+            "plan_type": "personal",
+            "status": "active",
             "active": True,
         }
     )
@@ -188,7 +188,7 @@ async def test_delete_that_after_assistant_names_commitment_on_goals_tab():
         conversation_id,
         "assistant",
         (
-            "There's also a test commitment called 'Be a goal/commitment' "
+            "There's also a test goal called 'Be a goal/commitment' "
             "saved on the goals tab."
         ),
     )
@@ -200,10 +200,10 @@ async def test_delete_that_after_assistant_names_commitment_on_goals_tab():
     confirmed = await chat_service.send_message("Yes", conversation_id)
 
     assert "Just to confirm" in requested["response"]
-    assert "commitment" in requested["response"].lower()
+    assert "goal" in requested["response"].lower()
     assert "Be a goal/commitment" in requested["response"]
     assert confirmed["memory_changes"]["archived"] == 1
-    assert memory_service.commitments[0]["active"] is False
+    assert memory_service.plans[0]["active"] is False
     assert ai_service.messages == []
 
 

@@ -79,8 +79,6 @@ String localizedMemoryRecordLabel(AppLocalizations l10n, String value) {
       return l10n.memoryRecordPlan;
     case 'plan_milestone':
       return l10n.memoryRecordPlanMilestone;
-    case 'commitment':
-      return l10n.memoryRecordCommitment;
     case 'correction':
       return l10n.memoryRecordCorrection;
     case 'archive':

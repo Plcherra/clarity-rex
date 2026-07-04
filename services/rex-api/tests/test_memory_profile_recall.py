@@ -61,9 +61,6 @@ class InMemoryStructuredProfileStore:
     async def list_plan_milestones(self, limit=50, active=True):
         return []
 
-    async def list_commitments(self, limit=50, active=True):
-        return []
-
 
 def _mom_birthday_memory(**overrides):
     return {

@@ -8,7 +8,6 @@ from typing import Any, Awaitable, Callable, Optional
 from app.routes.accountability_context_loader import ACCOUNTABILITY_CONTEXT_LIMIT
 from app.services.accountability_snapshot import (
     active_plans_for,
-    open_commitments_for,
     record_display_title,
 )
 
@@ -16,7 +15,6 @@ from app.services.accountability_snapshot import (
 @dataclass(frozen=True)
 class AccountabilityInventory:
     active_plans: list[dict]
-    open_commitments: list[dict]
 
 
 class AccountabilityQueryService:
@@ -37,55 +35,26 @@ class AccountabilityQueryService:
         )
         return active_plans_for(rows)
 
-    async def list_open_commitments(self) -> list[dict]:
-        rows = await self._call_list("list_commitments", active=True)
-        return open_commitments_for(rows)
-
     async def load_inventory(self, *, scope: str) -> AccountabilityInventory:
         plans: list[dict] = []
-        commitments: list[dict] = []
         if scope in {"goals", "both"}:
             plans = await self.list_active_plans()
-        if scope in {"commitments", "both"}:
-            commitments = await self.list_open_commitments()
-        return AccountabilityInventory(
-            active_plans=plans,
-            open_commitments=commitments,
-        )
+        return AccountabilityInventory(active_plans=plans)
 
     def format_inventory_response(
         self,
         *,
         plans: list[dict],
-        commitments: list[dict],
         scope: str,
     ) -> str:
-        sections: list[str] = []
         if scope in {"goals", "both"}:
             if plans:
                 lines = "\n".join(
                     f"- {record_display_title(plan)}" for plan in plans
                 )
-                sections.append(f"Active goals:\n{lines}")
-            elif scope == "goals":
-                sections.append("You don't have any active goals saved in Clarity.")
-        if scope in {"commitments", "both"}:
-            if commitments:
-                lines = "\n".join(
-                    f"- {record_display_title(commitment)}"
-                    for commitment in commitments
-                )
-                sections.append(f"Open commitments:\n{lines}")
-            elif scope == "commitments":
-                sections.append(
-                    "You don't have any open commitments saved in Clarity."
-                )
-        if not sections:
-            return (
-                "You don't have any active goals or open commitments saved "
-                "in Clarity right now."
-            )
-        return "\n\n".join(sections)
+                return f"Active goals:\n{lines}"
+            return "You don't have any active goals saved in Clarity."
+        return "You don't have any active goals saved in Clarity right now."
 
     async def _call_list(
         self,

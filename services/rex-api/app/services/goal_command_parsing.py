@@ -275,11 +275,4 @@ def is_goals_inventory_query(message: str) -> bool:
 
 
 def goals_inventory_scope(message: str) -> str:
-    lowered = re.sub(r"\s+", " ", str(message or "")).lower()
-    has_goal = bool(re.search(r"\b(?:goals?|plans?)\b", lowered))
-    has_commitment = bool(re.search(r"\bcommitments?\b", lowered))
-    if has_goal and not has_commitment:
-        return "goals"
-    if has_commitment and not has_goal:
-        return "commitments"
-    return "both"
+    return "goals"

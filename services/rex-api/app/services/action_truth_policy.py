@@ -180,7 +180,7 @@ def safe_unexecuted_delete_response(
     )
     if intent == "finance":
         should_guard = should_guard and request_asks_delete(user_message)
-    if intent == "goal_or_commitment" and not request_asks_delete(user_message):
+    if intent == "goal" and not request_asks_delete(user_message):
         should_guard = False
     if not should_guard:
         return cleaned
@@ -203,7 +203,7 @@ def safe_unexecuted_goal_response(
     cleaned = response.strip()
     if is_goals_inventory_query(user_message):
         return cleaned
-    if intent is not None and intent not in {"goal_or_commitment", "unknown"}:
+    if intent is not None and intent not in {"goal", "unknown"}:
         return cleaned
     if not response_claims_goal_success(cleaned):
         return cleaned

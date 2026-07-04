@@ -1,4 +1,4 @@
-"""Turn result builders for direct goal and commitment commands."""
+"""Turn result builders for direct goal commands."""
 
 from __future__ import annotations
 
@@ -15,11 +15,7 @@ def memory_change_summary(
     title: str,
     extra_records: Optional[list[dict]] = None,
 ) -> dict:
-    source = (
-        "explicit_goal_command"
-        if kind == "plan"
-        else "explicit_commitment_command"
-    )
+    source = "explicit_goal_command"
     records = [
         {
             "kind": kind,

@@ -46,15 +46,3 @@ class MemoryDisciplineRepository(Protocol):
         active: Optional[bool] = None,
     ) -> list[dict]:
         pass
-
-    async def list_commitments(
-        self,
-        limit: int = 50,
-        commitment_type: Optional[str] = None,
-        plan_id: Optional[str] = None,
-        milestone_id: Optional[str] = None,
-        entity_id: Optional[str] = None,
-        status: Optional[str] = None,
-        active: Optional[bool] = None,
-    ) -> list[dict]:
-        pass

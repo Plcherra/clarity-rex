@@ -115,7 +115,7 @@ class ChatResponseTruthService:
             turn_trace,
         )
         if intent_decision.intent in {
-            RexIntent.GOAL_OR_COMMITMENT,
+            RexIntent.GOAL,
             RexIntent.UNKNOWN,
         }:
             updated = safe_unexecuted_goal_response(

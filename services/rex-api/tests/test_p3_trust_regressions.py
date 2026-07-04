@@ -20,16 +20,16 @@ def test_inventory_query_never_routes_to_delete_clarification_guard():
         }
     ]
     response = safe_unexecuted_delete_response(
-        "You have one commitment saved: Wake at 5 AM.",
+        "Active goals:\n- Wake at 5 AM",
         user_message=message,
         conversation_history=history,
     )
-    assert response == "You have one commitment saved: Wake at 5 AM."
+    assert response == "Active goals:\n- Wake at 5 AM"
 
 
 def test_stream_turn_trace_records_handler_on_short_circuit():
     observer = ChatTurnObserver()
-    trace = observer.new_trace(conversation_id="conv-stream", intent="goal_or_commitment")
+    trace = observer.new_trace(conversation_id="conv-stream", intent="goal")
     trace.record_handler("goal_command")
     payload = observer.log_turn(trace)
     assert payload["handler"] == "goal_command"

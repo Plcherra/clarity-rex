@@ -13,11 +13,6 @@ def confirmation_prompt(decision: MemoryDisciplineDecision) -> str:
             f"I can save {title} as a milestone under your plan "
             f"{parent_title}. Should I save that?"
         )
-    if decision.action == MemoryDisciplineAction.CREATE_COMMITMENT:
-        return (
-            f"I can save {title} as a commitment under {parent_title}. "
-            "Should I save that?"
-        )
     if decision.action == MemoryDisciplineAction.CREATE_PLAN:
         return (
             f"I can save {title} as a new plan in Clarity. Should I save that?"
@@ -30,11 +25,6 @@ def confirmation_prompt(decision: MemoryDisciplineDecision) -> str:
     if decision.action == MemoryDisciplineAction.UPDATE_MILESTONE:
         return (
             f"I can update the milestone {title} under {parent_title}. "
-            "Should I save that?"
-        )
-    if decision.action == MemoryDisciplineAction.UPDATE_COMMITMENT:
-        return (
-            f"I can update the commitment {title} under {parent_title}. "
             "Should I save that?"
         )
     if decision.action == MemoryDisciplineAction.CREATE_ENTITY_EVENT:
@@ -51,14 +41,10 @@ def saved_prompt(decision: MemoryDisciplineDecision, *, title: str) -> str:
     parent_title = _parent_plan_title(decision)
     if decision.action == MemoryDisciplineAction.CREATE_MILESTONE:
         return f"Saved {title} as a milestone under {parent_title}."
-    if decision.action == MemoryDisciplineAction.CREATE_COMMITMENT:
-        return f"Saved {title} as a commitment under {parent_title}."
     if decision.action == MemoryDisciplineAction.UPDATE_PLAN:
         return f"Updated {parent_title} with that context."
     if decision.action == MemoryDisciplineAction.UPDATE_MILESTONE:
         return f"Updated the milestone {title} under {parent_title}."
-    if decision.action == MemoryDisciplineAction.UPDATE_COMMITMENT:
-        return f"Updated the commitment {title} under {parent_title}."
     if decision.action == MemoryDisciplineAction.CREATE_ENTITY_EVENT:
         return f"Saved {title} as a note on {_entity_title(decision)}."
     return f"Saved {title} as a plan in Clarity."
@@ -77,7 +63,7 @@ def failed_prompt(*, title: str) -> str:
 
 def _title(decision: MemoryDisciplineDecision) -> str:
     payload = decision.payload
-    for key in ("title", "description", "desired_outcome", "commitment_text"):
+    for key in ("title", "description", "desired_outcome"):
         value = str(payload.get(key) or "").strip()
         if value:
             return value

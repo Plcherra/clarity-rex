@@ -887,7 +887,7 @@ async def test_chat_service_reuses_duplicate_explicit_goal():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_saves_explicit_commitment_without_llm_call():
+async def test_chat_service_saves_explicit_money_goal_without_llm_call():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     chat_service = ChatService(
@@ -897,15 +897,17 @@ async def test_chat_service_saves_explicit_commitment_without_llm_call():
         time_context_service=_fixed_time_context_service(),
     )
 
-    proposed = await chat_service.send_message("Remind me to send her $200 on the 10th")
+    proposed = await chat_service.send_message(
+        "Track send her $200 on the 10th as a goal"
+    )
     result = await confirm_durable_write(chat_service, proposed)
 
-    assert "Saved commitment" in result["response"]
+    assert "Saved plan in Goals" in result["response"]
     assert ai_service.generate_calls == 0
-    assert len(memory_service.created_commitments) == 1
-    assert memory_service.created_commitments[0]["commitment_type"] == "money"
-    assert memory_service.created_commitments[0]["due_at"] == "June 10"
-    assert result["memory_changes"]["write_proposals"][0]["write_kind"] == "commitment"
+    assert len(memory_service.created_plans) == 1
+    assert memory_service.created_plans[0]["plan_type"] == "finance"
+    assert memory_service.created_plans[0]["target_date"] == "June 10"
+    assert result["memory_changes"]["write_proposals"][0]["write_kind"] == "plan"
 
 
 @pytest.mark.asyncio
@@ -936,7 +938,7 @@ async def test_chat_service_saves_pc_upgrade_checklist_as_goal_without_llm():
 
 
 @pytest.mark.asyncio
-async def test_chat_service_voice_stream_saves_commitment_without_llm_call():
+async def test_chat_service_voice_stream_saves_goal_without_llm_call():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     chat_service = ChatService(ai_service, FileService(), memory_service)
@@ -944,17 +946,17 @@ async def test_chat_service_voice_stream_saves_commitment_without_llm_call():
     events = [
         event
         async for event in chat_service.stream_message(
-            "Remind me to send her $200 on the 10th",
+            "Track send her $200 on the 10th as a goal",
             channel=RexBrainChannel.VOICE,
         )
     ]
 
     assert events[-1]["event"] == "done"
     assert events[-1]["memory_changes"]["confirmation_required"] == 1
-    assert events[-1]["memory_changes"]["write_proposals"][0]["write_kind"] == "commitment"
+    assert events[-1]["memory_changes"]["write_proposals"][0]["write_kind"] == "plan"
     assert ai_service.stream_calls == 0
     assert ai_service.generate_calls == 0
-    assert len(memory_service.created_commitments) == 0
+    assert len(memory_service.created_plans) == 0
 
 
 @pytest.mark.asyncio

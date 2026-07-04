@@ -51,7 +51,6 @@ class FakeMemoryService:
         self.next_entity_event_id = 1
         self.next_plan_id = 1
         self.next_plan_milestone_id = 1
-        self.next_commitment_id = 1
         self.relevant_memory_queries = []
         self.search_message_queries = []
         self.structured_context_queries = []
@@ -60,12 +59,16 @@ class FakeMemoryService:
         self.entity_events = []
         self.plans = []
         self.plan_milestones = []
-        self.commitments = []
         self.created_plans = []
         self.created_plan_milestones = []
-        self.created_commitments = []
         self.memory_corrections = []
         self.pending_actions: dict[str, dict] = {}
+        self.open_threads = []
+
+    async def _list_records(self, table, **kwargs):
+        if table == "open_threads":
+            return list(self.open_threads)
+        return []
 
     async def get_conversation_pending_action(self, conversation_id: str):
         return self.pending_actions.get(conversation_id)
@@ -417,72 +420,6 @@ class FakeMemoryService:
         self.plan_milestones.append(milestone)
         self.created_plan_milestones.append(milestone)
         return milestone
-
-    async def create_commitment(self, payload):
-        commitment = {
-            "id": f"commitment-{self.next_commitment_id}",
-            "status": "open",
-            "active": True,
-            "created_at": "2026-05-11T00:00:00Z",
-            "updated_at": "2026-05-11T00:00:00Z",
-            **payload,
-        }
-        self.next_commitment_id += 1
-        self.commitments.append(commitment)
-        self.created_commitments.append(commitment)
-        return commitment
-
-    async def list_commitments(
-        self,
-        *,
-        commitment_type=None,
-        milestone_id=None,
-        status=None,
-        active=True,
-        limit=50,
-    ):
-        commitments = self.commitments
-        if commitment_type is not None:
-            commitments = [
-                commitment
-                for commitment in commitments
-                if commitment.get("commitment_type") == commitment_type
-            ]
-        if milestone_id is not None:
-            commitments = [
-                commitment
-                for commitment in commitments
-                if commitment.get("milestone_id") == milestone_id
-            ]
-        if status is not None:
-            commitments = [
-                commitment
-                for commitment in commitments
-                if commitment.get("status") == status
-            ]
-        if active is not None:
-            commitments = [
-                commitment
-                for commitment in commitments
-                if commitment.get("active", True) is active
-            ]
-        return commitments[:limit]
-
-    async def update_commitment(self, commitment_id, **updates):
-        for commitment in self.commitments:
-            if commitment["id"] == commitment_id:
-                commitment.update(updates)
-                commitment["updated_at"] = "2026-05-11T00:00:00Z"
-                return commitment
-        return None
-
-    async def deactivate_commitment(self, commitment_id):
-        for commitment in self.commitments:
-            if commitment["id"] == commitment_id:
-                commitment["active"] = False
-                commitment["updated_at"] = "2026-05-11T00:00:00Z"
-                return commitment
-        return None
 
 
 class FakeAccountabilityService:

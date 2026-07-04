@@ -58,7 +58,6 @@ def applied_memory_changes(
     is_update = decision.action in {
         MemoryDisciplineAction.UPDATE_PLAN,
         MemoryDisciplineAction.UPDATE_MILESTONE,
-        MemoryDisciplineAction.UPDATE_COMMITMENT,
     }
     created = 0 if is_update or merged else 1
     updated = 1 if is_update else 0
@@ -88,10 +87,8 @@ def _proposal_action(action: MemoryDisciplineAction) -> str:
         MemoryDisciplineAction.CREATE_PLAN: "save_plan",
         MemoryDisciplineAction.ASK_CONFIRMATION: "save_plan",
         MemoryDisciplineAction.CREATE_MILESTONE: "save_plan_milestone",
-        MemoryDisciplineAction.CREATE_COMMITMENT: "save_commitment",
         MemoryDisciplineAction.UPDATE_PLAN: "update_plan",
         MemoryDisciplineAction.UPDATE_MILESTONE: "update_plan_milestone",
-        MemoryDisciplineAction.UPDATE_COMMITMENT: "update_commitment",
         MemoryDisciplineAction.CREATE_ENTITY_EVENT: "save_entity_event",
     }.get(action, "save_plan")
 
@@ -105,10 +102,8 @@ def _write_kind(action: MemoryDisciplineAction) -> str:
         MemoryDisciplineAction.CREATE_PLAN: "plan",
         MemoryDisciplineAction.ASK_CONFIRMATION: "plan",
         MemoryDisciplineAction.CREATE_MILESTONE: "milestone",
-        MemoryDisciplineAction.CREATE_COMMITMENT: "commitment",
         MemoryDisciplineAction.UPDATE_PLAN: "update_plan",
         MemoryDisciplineAction.UPDATE_MILESTONE: "update_milestone",
-        MemoryDisciplineAction.UPDATE_COMMITMENT: "update_commitment",
         MemoryDisciplineAction.CREATE_ENTITY_EVENT: "entity_event",
     }.get(action, "plan")
 
@@ -145,18 +140,12 @@ def _plain_confirmation_text(
                 f"Save {title} as a milestone under {parent_title}?"
             )
         return f"Save {title} as a milestone under your existing plan?"
-    if decision.action == MemoryDisciplineAction.CREATE_COMMITMENT:
-        if parent_title:
-            return f"Save {title} as a commitment under {parent_title}?"
-        return f"Save {title} as a commitment under your existing plan?"
     if decision.action == MemoryDisciplineAction.UPDATE_PLAN:
         if parent_title:
             return f"Update {parent_title} with this context: {title}?"
         return f"Update your plan with this context: {title}?"
     if decision.action == MemoryDisciplineAction.UPDATE_MILESTONE:
         return f"Update the milestone {title}?"
-    if decision.action == MemoryDisciplineAction.UPDATE_COMMITMENT:
-        return f"Update the commitment {title}?"
     if decision.action == MemoryDisciplineAction.CREATE_ENTITY_EVENT:
         return f"Save {title} as a related note?"
     return f"Save {title} as a plan in Clarity?"

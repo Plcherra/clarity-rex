@@ -80,7 +80,6 @@ class ChatService(ChatVoiceMetadataMixin):
             memory_service,
             discipline=discipline,
             plan_service=self.goal_command_service.plan_service,
-            commitment_service=self.goal_command_service.commitment_service,
             durable_write_service=self.durable_write_service,
         )
         self.memory_turn_service = memory_turn_service or MemoryTurnService(

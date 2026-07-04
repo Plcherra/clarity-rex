@@ -18,7 +18,7 @@ def test_turn_trace_records_handler_and_guard_rewrites():
 
 def test_turn_observer_logs_metadata_only():
     observer = ChatTurnObserver()
-    trace = observer.new_trace(conversation_id="conv-2", intent="goal_or_commitment")
+    trace = observer.new_trace(conversation_id="conv-2", intent="goal")
     trace.record_handler("goal_command")
     payload = observer.log_turn(trace)
     assert payload["conversation_id"] == "conv-2"

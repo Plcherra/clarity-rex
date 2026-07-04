@@ -11,7 +11,6 @@ class MemoryRecordKind(str, Enum):
     PERSONAL_RULE = "personal_rule"
     PLAN = "plan"
     PLAN_MILESTONE = "plan_milestone"
-    COMMITMENT = "commitment"
 
 
 class MemoryDisciplineAction(str, Enum):
@@ -24,8 +23,6 @@ class MemoryDisciplineAction(str, Enum):
     ARCHIVE_PLAN = "archive_plan"
     CREATE_MILESTONE = "create_milestone"
     UPDATE_MILESTONE = "update_milestone"
-    CREATE_COMMITMENT = "create_commitment"
-    UPDATE_COMMITMENT = "update_commitment"
     CREATE_RULE = "create_rule"
     UPDATE_RULE = "update_rule"
     ARCHIVE_RULE = "archive_rule"
@@ -55,13 +52,11 @@ class MemoryDisciplineContext(BaseModel):
     active_entities: list[dict[str, Any]] = Field(default_factory=list)
     active_plans: list[dict[str, Any]] = Field(default_factory=list)
     active_milestones: list[dict[str, Any]] = Field(default_factory=list)
-    active_commitments: list[dict[str, Any]] = Field(default_factory=list)
     active_rules: list[dict[str, Any]] = Field(default_factory=list)
     active_long_term_memories: list[dict[str, Any]] = Field(default_factory=list)
     related_entities: list[MemoryRelatedRecord] = Field(default_factory=list)
     related_plans: list[MemoryRelatedRecord] = Field(default_factory=list)
     related_milestones: list[MemoryRelatedRecord] = Field(default_factory=list)
-    related_commitments: list[MemoryRelatedRecord] = Field(default_factory=list)
     related_rules: list[MemoryRelatedRecord] = Field(default_factory=list)
     related_long_term_memories: list[MemoryRelatedRecord] = Field(default_factory=list)
 

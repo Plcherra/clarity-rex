@@ -23,7 +23,7 @@ class RexIntent(str, Enum):
     MEMORY_SAVE = "memory_save"
     MEMORY_UPDATE = "memory_update"
     MEMORY_RECALL = "memory_recall"
-    GOAL_OR_COMMITMENT = "goal_or_commitment"
+    GOAL = "goal"
     FINANCE = "finance"
     DEEP_REASONING = "deep_reasoning"
     UNKNOWN = "unknown"
@@ -66,7 +66,7 @@ class RexIntentDecision:
     @property
     def should_load_goal_context(self) -> bool:
         return self.intent in {
-            RexIntent.GOAL_OR_COMMITMENT,
+            RexIntent.GOAL,
             RexIntent.DEEP_REASONING,
             RexIntent.UNKNOWN,
         }
@@ -74,7 +74,7 @@ class RexIntentDecision:
     @property
     def should_load_accountability(self) -> bool:
         return self.intent in {
-            RexIntent.GOAL_OR_COMMITMENT,
+            RexIntent.GOAL,
             RexIntent.DEEP_REASONING,
         }
 
@@ -118,7 +118,7 @@ class RexIntentRouter:
         if is_goals_inventory_query(message):
             reasons.append("goals_inventory_query")
             return self._decision(
-                RexIntent.GOAL_OR_COMMITMENT,
+                RexIntent.GOAL,
                 reasons,
                 has_file,
                 has_financial_context,
@@ -190,10 +190,10 @@ class RexIntentRouter:
                 reasons.append("accountability_structured_language")
                 load_structured_memory_override = True
             else:
-                reasons.append("goal_or_commitment_language")
+                reasons.append("goal_language")
                 load_structured_memory_override = False
             return self._decision(
-                RexIntent.GOAL_OR_COMMITMENT,
+                RexIntent.GOAL,
                 reasons,
                 has_file,
                 has_financial_context,

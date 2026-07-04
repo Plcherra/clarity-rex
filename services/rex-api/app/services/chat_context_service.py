@@ -389,7 +389,6 @@ class ChatContextService:
                 message=message,
                 time_context=time_context,
                 personal_rules=structured_context.get("personal_rules") or [],
-                commitments=structured_context.get("commitments") or [],
                 plans=structured_context.get("plans") or [],
                 plan_milestones=structured_context.get("plan_milestones") or [],
                 entity_events=structured_context.get("entity_events") or [],

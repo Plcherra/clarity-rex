@@ -719,7 +719,7 @@ void main() {
       streamingApi.socket.emit({
         'event': 'assistant.token',
         'token':
-            "I understood that commitment, but I couldn't save it just now.",
+            "I understood that, but I couldn't save it just now.",
       });
       streamingApi.socket.emit({
         'event': 'messages.updated',
@@ -737,7 +737,7 @@ void main() {
             'conversation_id': 'conversation-voice',
             'role': 'assistant',
             'content':
-                "I understood that commitment, but I couldn't save it just now.",
+                "I understood that, but I couldn't save it just now.",
             'timestamp': '2026-06-01T12:00:01Z',
           },
         ],
@@ -746,7 +746,7 @@ void main() {
         'event': 'assistant.done',
         'conversation_id': 'conversation-voice',
         'response_text':
-            "I understood that commitment, but I couldn't save it just now.",
+            "I understood that, but I couldn't save it just now.",
       });
 
       await captureService.readyAt(1).timeout(const Duration(seconds: 1));
@@ -756,10 +756,10 @@ void main() {
       expect(state.errorMessage, isNull);
       expect(
         state.lastAssistantResponse,
-        "I understood that commitment, but I couldn't save it just now.",
+        "I understood that, but I couldn't save it just now.",
       );
       expect(cloudVoiceApi.synthesizedTexts, [
-        "I understood that commitment, but I couldn't save it just now.",
+        "I understood that, but I couldn't save it just now.",
       ]);
       expect(container.read(chatProvider).messages.length, 2);
     },

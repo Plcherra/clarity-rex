@@ -89,8 +89,6 @@ MEMORY_DELETE_TERMS = (
 GOAL_TERMS = (
     "accountability",
     "behind",
-    "commitment",
-    "commitments",
     "deadline",
     "deadlines",
     "goal",
@@ -117,8 +115,6 @@ ACCOUNTABILITY_STRUCTURED_TERMS = (
     "accountability",
     "again",
     "behind",
-    "commitment",
-    "commitments",
     "deadline",
     "deadlines",
     "doordash",

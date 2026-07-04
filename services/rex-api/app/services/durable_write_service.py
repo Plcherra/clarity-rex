@@ -13,7 +13,6 @@ from app.services.conversation_pending_action import (
 )
 from app.services.durable_write_applier import DurableWriteApplier
 from app.services.durable_write_builders import (
-    proposal_from_commitment_command,
     proposal_from_discipline_decision,
     proposal_from_goal_command,
     proposal_from_memory_update,
@@ -98,24 +97,6 @@ class DurableWriteService:
         proposal = await proposal_from_goal_command(
             command,
             plan_service=self.plan_service,
-            conversation_id=conversation_id,
-            source_message_id=str(user_message.get("id") or "") or None,
-        )
-        return await self._propose(
-            proposal,
-            conversation_id=conversation_id,
-            user_message=user_message,
-        )
-
-    async def propose_commitment(
-        self,
-        command: GoalCommand,
-        *,
-        conversation_id: str,
-        user_message: dict,
-    ) -> dict:
-        proposal = await proposal_from_commitment_command(
-            command,
             conversation_id=conversation_id,
             source_message_id=str(user_message.get("id") or "") or None,
         )
@@ -327,9 +308,6 @@ def _saved_response(
         return f"Updated existing plan \"{proposal.merge_target_title}\" with that context."
     if proposal.write_kind == "plan":
         return f"Saved plan in Goals: {proposal.title}"
-    if proposal.write_kind == "commitment":
-        target = proposal.target_label or "your plan"
-        return f"Saved commitment under {target}: {proposal.title}"
     if proposal.write_kind == "open_thread":
         return (
             f"Tracking as an open thread in Goals: {proposal.title}. "

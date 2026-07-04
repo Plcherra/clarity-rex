@@ -1,11 +1,9 @@
-"""Shared Clarity vocabulary for goals, commitments, saved memory, and chat history."""
+"""Shared Clarity vocabulary for goals, saved memory, and chat history."""
 
 from __future__ import annotations
 
 GOAL_SINGULAR = "goal"
 GOAL_PLURAL = "goals"
-COMMITMENT_SINGULAR = "commitment"
-COMMITMENT_PLURAL = "commitments"
 SAVED_MEMORY_SINGULAR = "saved memory"
 SAVED_MEMORY_PLURAL = "saved memories"
 CHAT_HISTORY_LABEL = "chat history"
@@ -13,11 +11,10 @@ CHAT_HISTORY_LABEL = "chat history"
 CLARITY_KNOWLEDGE_LANGUAGE_PROMPT = (
     "Clarity vocabulary (use consistently):\n"
     "- Goal: a longer-term plan tracked in Clarity Goals.\n"
-    "- Commitment: an accountable task or reminder tracked in Clarity Goals.\n"
     "- Saved memory: an explicit fact saved to What Clarity Knows.\n"
     "- Chat history: searchable past messages; not saved memory unless the user "
     "explicitly saved it.\n"
-    "Do not call goals or commitments 'saved memory'. Do not call chat search "
+    "Do not call goals 'saved memory'. Do not call chat search "
     "results 'saved memory'."
 )
 
@@ -33,18 +30,12 @@ def goals_saved_message(*, count: int, titles: str) -> str:
     return f"Got it, I added {count} {label}: {titles}."
 
 
-def commitment_saved_message(title: str) -> str:
-    return f"Got it, I saved that {COMMITMENT_SINGULAR}: {title}."
-
-
 def reclassified_from_memory_message(
     *,
-    kind: str,
     title: str,
     total: int = 1,
     titles: str | None = None,
 ) -> str:
-    kind_label = GOAL_SINGULAR if kind == "goal" else COMMITMENT_SINGULAR
     if total > 1 and titles:
         return (
             f"Got it, I removed that from {SAVED_MEMORY_SINGULAR} and added "
@@ -52,18 +43,16 @@ def reclassified_from_memory_message(
         )
     return (
         f"Got it, I removed that from {SAVED_MEMORY_SINGULAR} and added it as a "
-        f"{kind_label}: {title}."
+        f"{GOAL_SINGULAR}: {title}."
     )
 
 
 def reclassified_without_memory_message(
     *,
-    kind: str,
     title: str,
     total: int = 1,
     titles: str | None = None,
 ) -> str:
-    kind_label = GOAL_SINGULAR if kind == "goal" else COMMITMENT_SINGULAR
     if total > 1 and titles:
         return f"Got it, I added {total} {GOAL_PLURAL}: {titles}."
-    return f"Got it, I added that as a {kind_label}: {title}."
+    return f"Got it, I added that as a {GOAL_SINGULAR}: {title}."

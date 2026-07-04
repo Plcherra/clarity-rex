@@ -14,13 +14,13 @@ from app.services.plan_intelligence_models import (
     PlanIntelligenceDecision,
 )
 from app.services.plan_intelligence_payloads import (
-    build_commitment_from_small_step as build_commitment_payload,
     build_entity_event_from_plan_candidate as build_entity_event_payload,
     build_milestone_from_plan_candidate as build_milestone_payload,
+    build_milestone_from_small_step as build_small_step_milestone_payload,
     build_plan_description_update as build_plan_update_payload,
 )
 from app.services.plan_intelligence_rules import (
-    best_milestone_for_commitment,
+    best_milestone_for_small_step,
     duplicate_milestone,
     has_standalone_anchor,
     has_strategy_signal,
@@ -267,13 +267,13 @@ class PlanIntelligenceService:
             existing_milestone=existing_milestone,
         )
 
-    def build_commitment_from_small_step(
+    def build_milestone_from_small_step(
         self,
         candidate: dict[str, Any],
         parent_plan: dict[str, Any],
         milestone: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
-        return build_commitment_payload(candidate, parent_plan, milestone)
+        return build_small_step_milestone_payload(candidate, parent_plan, milestone)
 
     def build_plan_description_update(
         self,
@@ -394,20 +394,20 @@ class PlanIntelligenceService:
         milestones: list[dict[str, Any]],
         classification: MilestoneClassification,
     ) -> PlanIntelligenceDecision:
-        milestone = best_milestone_for_commitment(candidate, milestones)
+        milestone = best_milestone_for_small_step(candidate, milestones)
         return PlanIntelligenceDecision(
-            action=MemoryDisciplineAction.CREATE_COMMITMENT,
-            payload=self.build_commitment_from_small_step(
+            action=MemoryDisciplineAction.CREATE_MILESTONE,
+            payload=self.build_milestone_from_small_step(
                 candidate,
                 parent_plan,
                 milestone=milestone,
             ),
-            reason="Plan candidate is a concrete next action, so it belongs as a commitment under the active parent plan.",
+            reason="Plan candidate is a concrete next action, so it belongs as a milestone under the active parent plan.",
             confidence=max(parent_score, 0.76),
             parent_plan_id=str(parent_plan.get("id")),
             target_milestone_id=str(milestone.get("id")) if milestone else None,
             metadata={
-                **route_metadata("small_step_to_commitment", parent_score),
+                **route_metadata("small_step_to_milestone", parent_score),
                 "milestone_classification": classification.model_dump(),
             },
         )

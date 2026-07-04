@@ -168,7 +168,7 @@ def test_crowded_active_plan_list_blocks_automatic_top_level_creation():
     assert decision.requires_confirmation is True
 
 
-def test_dating_logistics_route_as_commitment_under_existing_person_plan():
+def test_dating_logistics_route_as_milestone_under_existing_person_plan():
     service = PlanIntelligenceService()
     candidate = {
         "plan_type": "dating",
@@ -203,10 +203,9 @@ def test_dating_logistics_route_as_commitment_under_existing_person_plan():
 
     decision = service.classify_plan_candidate(candidate, context)
 
-    assert decision.action == MemoryDisciplineAction.CREATE_COMMITMENT
+    assert decision.action == MemoryDisciplineAction.CREATE_MILESTONE
     assert decision.payload["plan_id"] == "plan-melissa"
-    assert decision.payload["milestone_id"] == "milestone-details"
-    assert decision.payload["commitment_type"] == "relationship"
+    assert decision.parent_plan_id == "plan-melissa"
 
 
 def test_unrelated_durable_health_goal_can_create_top_level_plan():

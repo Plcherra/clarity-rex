@@ -333,9 +333,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonPlan => 'Plan';
 
   @override
-  String get commonCommitment => 'Commitment';
-
-  @override
   String get commonRule => 'Rule';
 
   @override
@@ -1554,9 +1551,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memoryRecordPlanMilestone => 'Milestone';
-
-  @override
-  String get memoryRecordCommitment => 'Commitment';
 
   @override
   String get memoryRecordCorrection => 'Correction';
@@ -2967,9 +2961,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryPagePlanUpdated => 'Plan updated';
 
   @override
-  String get memoryPageCommitmentUpdated => 'Commitment updated';
-
-  @override
   String get memoryCreateAddTooltip => 'Add saved information';
 
   @override
@@ -2988,9 +2979,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryCreatePlan => 'Plan';
 
   @override
-  String get memoryCreateCommitment => 'Commitment';
-
-  @override
   String get memoryCreateFactTitle => 'Add a fact';
 
   @override
@@ -3004,9 +2992,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memoryCreatePlanTitle => 'Add a plan';
-
-  @override
-  String get memoryCreateCommitmentTitle => 'Add a commitment';
 
   @override
   String get memoryCreateCategoryLabel => 'Category';
@@ -3042,9 +3027,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryEditEditMilestoneTitle => 'Edit milestone';
 
   @override
-  String get memoryPageCommitmentCreated => 'Commitment saved';
-
-  @override
   String get memoryEditEditPersonTitle => 'Edit person';
 
   @override
@@ -3052,9 +3034,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memoryEditEditPlanTitle => 'Edit plan';
-
-  @override
-  String get memoryEditEditCommitmentTitle => 'Edit commitment';
 
   @override
   String get memoryEditRuleTextLabel => 'Rule text';

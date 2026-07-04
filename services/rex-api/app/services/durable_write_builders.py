@@ -137,35 +137,6 @@ def proposal_from_open_thread(
     )
 
 
-async def proposal_from_commitment_command(
-    command: GoalCommand,
-    *,
-    conversation_id: str,
-    source_message_id: str | None,
-) -> DurableWriteProposal:
-    title = goal_title(command.title)
-    body = command.body
-    return DurableWriteProposal(
-        write_kind="commitment",
-        title=title,
-        body=body,
-        editable_fields=("title", "body"),
-        apply_snapshot={
-            "type": "commitment",
-            "payload": {
-                "commitment_type": command.record_type,
-                "title": title,
-                "commitment_text": body,
-                "due_at": command.due_text,
-                "priority": 5 if command.record_type == "habit" else 4,
-                "metadata": {"source": "durable_write_confirmed"},
-            },
-            "conversation_id": conversation_id,
-            "source_message_id": source_message_id,
-        },
-    )
-
-
 def proposal_from_discipline_decision(
     decision: MemoryDisciplineDecision,
     *,
@@ -175,7 +146,6 @@ def proposal_from_discipline_decision(
     body = str(
         payload.get("description")
         or payload.get("desired_outcome")
-        or payload.get("commitment_text")
         or title
     )
     target_label = None

@@ -436,17 +436,9 @@ def test_prompt_service_injects_structured_memory_before_generic_memory():
                 {
                     "plan_id": "plan-visa",
                     "milestone_type": "deadline",
-                    "title": "Prepare immigration documents",
-                    "target_date": "2026-06-01",
-                }
-            ],
-            "commitments": [
-                {
-                    "commitment_type": "deadline",
                     "title": "Review visa paperwork",
-                    "commitment_text": "Review the visa documents before June.",
-                    "plan_id": "plan-visa",
-                    "due_at": "2026-05-31T18:00:00Z",
+                    "description": "Review the visa documents before June.",
+                    "target_date": "2026-06-01",
                     "relevance_reason": "Matched current message terms: visa",
                 }
             ],
@@ -466,7 +458,7 @@ def test_prompt_service_injects_structured_memory_before_generic_memory():
     )
     assert "- rule/finance Avoid DoorDash: Do not order DoorDash" in system_content
     assert "- plan/immigration Visa runway: Leave with enough money" in system_content
-    assert "- milestone/deadline for Visa runway: Prepare immigration documents" in (
+    assert "- milestone/deadline for Visa runway: Review visa paperwork" in (
         system_content
     )
     assert "- commitment/" not in system_content

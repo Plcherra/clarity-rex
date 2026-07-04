@@ -268,14 +268,6 @@ class _FakeMemoryApi extends MemoryApi {
   }
 
   @override
-  Future<List<CommitmentMemoryItem>> getCommitments({
-    bool? active,
-    int limit = kMemoryListLimit,
-  }) async {
-    return const [];
-  }
-
-  @override
   Future<MemoryPagedResult<MemoryItem>> getMemoriesPaged({
     MemoryType? memoryType,
     bool? active,
@@ -306,15 +298,6 @@ class _FakeMemoryApi extends MemoryApi {
 
   @override
   Future<MemoryPagedResult<PlanMemoryItem>> getPlansPaged({
-    bool? active,
-    int limit = kMemoryListLimit,
-    String? cursor,
-  }) async {
-    return const MemoryPagedResult(items: []);
-  }
-
-  @override
-  Future<MemoryPagedResult<CommitmentMemoryItem>> getCommitmentsPaged({
     bool? active,
     int limit = kMemoryListLimit,
     String? cursor,
