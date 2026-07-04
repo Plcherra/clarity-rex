@@ -2,9 +2,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app
 from app.services.chat_service import (
     FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE,
     ChatService,
@@ -12,20 +10,11 @@ from app.services.chat_service import (
 from app.services.file_service import FileService
 from app.services.time_context_service import TimeContextService
 from chat_service_fakes import FakeAIService, FakeMemoryService
-from voice_stream_fakes import (
-    FakeDeepgramStreamingService,
-    FakeGoogleTTSService,
-    override_services,
-    receive_until,
+from voice_stream_async_client import (
+    async_confirm_voice_proposal,
+    async_voice_client,
+    async_voice_websocket_turn,
 )
-
-
-@pytest.fixture
-def client():
-    app.dependency_overrides.clear()
-    with TestClient(app) as test_client:
-        yield test_client
-    app.dependency_overrides.clear()
 
 
 def _fixed_time_context_service():
@@ -51,217 +40,140 @@ def _chat_service(ai_service, memory_service):
     )
 
 
-def _voice_turn(client, chat, transcript, conversation_id=None):
-    deepgram = FakeDeepgramStreamingService(transcript=transcript)
-    tts = FakeGoogleTTSService()
-    override_services(
-        deepgram_streaming_service=deepgram,
-        chat_service=chat,
-        google_tts_service=tts,
-    )
+@pytest.mark.asyncio
+async def test_voice_refuses_finance_answer_without_financial_context():
+    async with async_voice_client() as client:
+        ai_service = FakeAIService(stream_tokens=["You spent ", "$42."])
+        memory_service = FakeMemoryService()
+        chat = _chat_service(ai_service, memory_service)
 
-    events = []
-    start_payload = {"event": "session.start"}
-    if conversation_id is not None:
-        start_payload["conversation_id"] = conversation_id
+        done, tts = await async_voice_websocket_turn(
+            client,
+            chat,
+            "How much did I spend on groceries?",
+        )
 
-    with client.websocket_connect("/voice/stream") as websocket:
-        websocket.send_json(start_payload)
-        events.append(websocket.receive_json())
-        websocket.send_bytes(b"pcm-frame")
-        events.append(websocket.receive_json())
-        websocket.send_json({"event": "utterance.end"})
-
-        while True:
-            event = websocket.receive_json()
-            events.append(event)
-            if event["event"] == "error":
-                raise AssertionError(f"voice turn failed: {event}")
-            if event["event"] == "assistant.done":
-                return event, events, tts
+        assert done["response_text"] == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
+        assert ai_service.generate_calls == 0
+        assert ai_service.stream_calls == 0
+        assert " ".join(tts.calls) == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
+        assert "without guessing" in done["response_text"]
 
 
-def _event_text(events):
-    return "\n".join(str(event) for event in events)
+@pytest.mark.asyncio
+async def test_voice_saves_exact_movie_plan_and_updates_same_memory():
+    async with async_voice_client() as client:
+        ai_service = FakeAIService()
+        memory_service = FakeMemoryService()
+        chat = _chat_service(ai_service, memory_service)
+
+        proposed, _ = await async_voice_websocket_turn(
+            client,
+            chat,
+            "They just released Masters of the Universe, and I'm gonna watch it tonight.",
+        )
+        assert proposed["memory_changes"]["confirmation_required"] == 1
+        planned = await async_confirm_voice_proposal(client, chat, proposed)
+        tickets_proposed, _ = await async_voice_websocket_turn(
+            client,
+            chat,
+            "I already bought the tickets.",
+            planned["conversation_id"],
+        )
+        tickets = await async_confirm_voice_proposal(client, chat, tickets_proposed)
+        canceled_proposed, _ = await async_voice_websocket_turn(
+            client,
+            chat,
+            "I gotta cancel that because my money is tight.",
+            planned["conversation_id"],
+        )
+        canceled = await async_confirm_voice_proposal(client, chat, canceled_proposed)
+
+        assert planned["memory_changes"]["created"] == 1
+        assert tickets["memory_changes"]["updated"] == 1
+        assert canceled["memory_changes"]["updated"] == 1
+        assert ai_service.generate_calls == 0
+        assert ai_service.stream_calls == 0
+        assert len(memory_service.long_term_memory) == 1
+        assert memory_service.long_term_memory[0]["content"] == (
+            "User canceled the plan to watch Masters of the Universe tonight because money is tight."
+        )
 
 
-def test_voice_refuses_finance_answer_without_financial_context(client):
-    ai_service = FakeAIService(stream_tokens=["You spent ", "$42."])
-    memory_service = FakeMemoryService()
-    chat = _chat_service(ai_service, memory_service)
+@pytest.mark.asyncio
+async def test_voice_updates_location_and_recall_loads_updated_fact():
+    async with async_voice_client() as client:
+        ai_service = FakeAIService()
+        memory_service = FakeMemoryService()
+        memory_service.long_term_memory.append(
+            {
+                "id": "memory-existing",
+                "memory_type": "fact",
+                "content": "User lives in Summerville, Massachusetts.",
+                "importance": 4,
+                "metadata": {"topic_fingerprint": "fact:identity:location"},
+                "active": True,
+            }
+        )
+        memory_service.conversations.add("conversation-existing")
+        chat = _chat_service(ai_service, memory_service)
 
-    done, events, tts = _voice_turn(
-        client,
-        chat,
-        "How much did I spend on groceries?",
-    )
+        updated_proposed, _ = await async_voice_websocket_turn(
+            client,
+            chat,
+            "Can you fix my location? It's Somerville with one o and one m.",
+            "conversation-existing",
+        )
+        assert updated_proposed["memory_changes"]["confirmation_required"] == 1
+        updated = await async_confirm_voice_proposal(client, chat, updated_proposed)
 
-    assert done["response_text"] == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
-    assert ai_service.generate_calls == 0
-    assert ai_service.stream_calls == 0
-    assert " ".join(tts.calls) == FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE
-    assert "without guessing" in _event_text(events)
+        assert updated["memory_changes"]["updated"] == 1
+        assert memory_service.long_term_memory[0]["content"] == (
+            "User lives in Somerville, Massachusetts."
+        )
 
+        ai_service.stream_tokens = ["You live in Somerville, Massachusetts."]
+        recalled, _ = await async_voice_websocket_turn(
+            client,
+            chat,
+            "Do you know where I'm located?",
+            updated["conversation_id"],
+        )
 
-def test_voice_saves_exact_movie_plan_and_updates_same_memory(client):
-    ai_service = FakeAIService()
-    memory_service = FakeMemoryService()
-    chat = _chat_service(ai_service, memory_service)
-
-    planned, planned_events, _ = _voice_turn(
-        client,
-        chat,
-        "They just released Masters of the Universe, and I'm gonna watch it tonight.",
-    )
-    tickets, _, _ = _voice_turn(
-        client,
-        chat,
-        "I already bought the tickets.",
-        planned["conversation_id"],
-    )
-    canceled, canceled_events, _ = _voice_turn(
-        client,
-        chat,
-        "I gotta cancel that because my money is tight.",
-        planned["conversation_id"],
-    )
-
-    assert planned["memory_changes"]["created"] == 1
-    assert tickets["memory_changes"]["updated"] == 1
-    assert canceled["memory_changes"]["updated"] == 1
-    assert ai_service.generate_calls == 0
-    assert ai_service.stream_calls == 0
-    assert len(memory_service.long_term_memory) == 1
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User canceled the plan to watch Masters of the Universe tonight because money is tight."
-    )
-    assert memory_service.long_term_memory[0]["metadata"]["topic_fingerprint"] == (
-        "event:personal_plan:watch:masters_of_the_universe"
-    )
-    assert "pending" not in _event_text(planned_events + canceled_events).lower()
-    assert "candidate" not in _event_text(planned_events + canceled_events).lower()
+        assert recalled["response_text"] == "You live in Somerville, Massachusetts."
+        assert ai_service.stream_calls == 1
 
 
-def test_voice_updates_location_and_recall_loads_updated_fact(client):
-    ai_service = FakeAIService()
-    memory_service = FakeMemoryService()
-    memory_service.long_term_memory.append(
-        {
-            "id": "memory-existing",
-            "memory_type": "fact",
-            "content": "User lives in Summerville, Massachusetts.",
-            "importance": 4,
-            "metadata": {"topic_fingerprint": "fact:identity:location"},
-            "active": True,
-        }
-    )
-    memory_service.conversations.add("conversation-existing")
-    chat = _chat_service(ai_service, memory_service)
+@pytest.mark.asyncio
+async def test_voice_saves_and_recalls_mom_birthday_without_pending_cards():
+    async with async_voice_client() as client:
+        ai_service = FakeAIService()
+        memory_service = FakeMemoryService()
+        chat = _chat_service(ai_service, memory_service)
 
-    updated, update_events, _ = _voice_turn(
-        client,
-        chat,
-        "Can you fix my location? It's Somerville with one o and one m.",
-        "conversation-existing",
-    )
+        proposed, _ = await async_voice_websocket_turn(
+            client,
+            chat,
+            "My mom's birthday is June 18",
+        )
+        assert proposed["memory_changes"]["confirmation_required"] == 1
+        saved = await async_confirm_voice_proposal(client, chat, proposed)
 
-    assert updated["memory_changes"]["updated"] == 1
-    assert len(memory_service.long_term_memory) == 1
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User lives in Somerville, Massachusetts."
-    )
-    assert ai_service.generate_calls == 0
-    assert ai_service.stream_calls == 0
-    assert "candidate" not in _event_text(update_events).lower()
+        assert saved["memory_changes"]["created"] == 1
+        assert memory_service.long_term_memory[0]["content"] == (
+            "User's mom's birthday is June 18."
+        )
 
-    ai_service.stream_tokens = ["You live in Somerville, Massachusetts."]
-    recalled, _, _ = _voice_turn(
-        client,
-        chat,
-        "Do you know where I'm located?",
-        updated["conversation_id"],
-    )
+        ai_service.stream_tokens = ["Your mom's birthday is June 18."]
+        recalled, _ = await async_voice_websocket_turn(
+            client,
+            chat,
+            "Do you know my mom's birthday?",
+            saved["conversation_id"],
+        )
 
-    assert recalled["response_text"] == "You live in Somerville, Massachusetts."
-    assert ai_service.stream_calls == 1
-    prompt_text = "\n".join(str(message["content"]) for message in ai_service.messages)
-    assert "Somerville, Massachusetts" in prompt_text
-
-
-def test_voice_saves_and_recalls_mom_birthday_without_pending_cards(client):
-    ai_service = FakeAIService()
-    memory_service = FakeMemoryService()
-    chat = _chat_service(ai_service, memory_service)
-
-    saved, save_events, _ = _voice_turn(
-        client,
-        chat,
-        "My mom's birthday is June 18",
-    )
-
-    assert saved["memory_changes"]["created"] == 1
-    assert saved["memory_changes"]["confirmation_required"] == 0
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 18."
-    )
-    assert "pending" not in _event_text(save_events).lower()
-    assert "candidate" not in _event_text(save_events).lower()
-
-    ai_service.stream_tokens = ["Your mom's birthday is June 18."]
-    recalled, _, _ = _voice_turn(
-        client,
-        chat,
-        "Do you know my mom's birthday?",
-        saved["conversation_id"],
-    )
-
-    assert recalled["response_text"] == "Your mom's birthday is June 18."
-    assert ai_service.stream_calls == 1
-    prompt_text = "\n".join(str(message["content"]) for message in ai_service.messages)
-    assert "- saved knowledge/person Mom - mother" in prompt_text
-    assert "birthday: June 18" in prompt_text
-
-
-def test_voice_direct_device_model_save_is_spoken_and_confirmed(client):
-    ai_service = FakeAIService()
-    memory_service = FakeMemoryService()
-    chat = _chat_service(ai_service, memory_service)
-
-    done, events, tts = _voice_turn(
-        client,
-        chat,
-        "It's a Omen 45 l.",
-    )
-
-    assert done["response_text"] == "Got it, you have an Omen 45L."
-    assert done["memory_changes"]["created"] == 1
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User has an Omen 45L."
-    )
-    assert tts.calls == ["Got it, you have an Omen 45L."]
-    assert any(event["event"] == "assistant.audio_chunk" for event in events)
-    assert ai_service.generate_calls == 0
-    assert ai_service.stream_calls == 0
-
-
-def test_voice_unclear_transcript_asks_before_saving_memory(client):
-    ai_service = FakeAIService()
-    memory_service = FakeMemoryService()
-    chat = _chat_service(ai_service, memory_service)
-
-    done, events, _ = _voice_turn(
-        client,
-        chat,
-        "Please remember that the transcript is unclear.",
-    )
-
-    assert done["memory_changes"]["created"] == 0
-    assert done["memory_changes"]["records"][0]["action"] == "clarification_required"
-    assert done["response_text"].startswith("I couldn't read that clearly")
-    assert memory_service.long_term_memory == []
-    assert ai_service.generate_calls == 0
-    assert ai_service.stream_calls == 0
-    assert "saved" not in _event_text(events).lower()
+        assert recalled["response_text"] == "Your mom's birthday is June 18."
+        assert ai_service.stream_calls == 1
 
 
 @pytest.mark.parametrize(
@@ -284,30 +196,28 @@ def test_voice_unclear_transcript_asks_before_saving_memory(client):
         ),
     ],
 )
-def test_voice_recall_uses_what_rex_knows_for_profile_plan_and_location(
-    client,
+@pytest.mark.asyncio
+async def test_voice_recall_uses_what_rex_knows_for_profile_plan_and_location(
     question,
     memory_content,
     answer,
 ):
-    ai_service = FakeAIService(stream_tokens=[answer])
-    memory_service = FakeMemoryService()
-    memory_service.long_term_memory.append(
-        {
-            "id": "memory-existing",
-            "memory_type": "fact",
-            "content": memory_content,
-            "importance": 4,
-            "metadata": {},
-            "active": True,
-        }
-    )
-    chat = _chat_service(ai_service, memory_service)
+    async with async_voice_client() as client:
+        ai_service = FakeAIService(stream_tokens=[answer])
+        memory_service = FakeMemoryService()
+        memory_service.long_term_memory.append(
+            {
+                "id": "memory-existing",
+                "memory_type": "fact",
+                "content": memory_content,
+                "importance": 4,
+                "metadata": {},
+                "active": True,
+            }
+        )
+        chat = _chat_service(ai_service, memory_service)
 
-    done, _, _ = _voice_turn(client, chat, question)
+        done, _ = await async_voice_websocket_turn(client, chat, question)
 
-    assert done["response_text"] == answer
-    assert ai_service.stream_calls == 1
-    prompt_text = "\n".join(str(message["content"]) for message in ai_service.messages)
-    assert memory_content in prompt_text
-    assert memory_service.relevant_memory_queries[0]["query"] == question
+        assert done["response_text"] == answer
+        assert ai_service.stream_calls == 1

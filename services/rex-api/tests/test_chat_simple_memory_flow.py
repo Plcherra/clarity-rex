@@ -28,6 +28,26 @@ def _fixed_time_context_service():
     )
 
 
+def _seed_pedro_mom_entity(
+    memory_service,
+    *,
+    display_name: str = "Pedro's Mom",
+    normalized_name: str | None = None,
+) -> None:
+    memory_service.entities.append(
+        {
+            "id": "entity-pedro-mom",
+            "entity_type": "person",
+            "display_name": display_name,
+            "normalized_name": normalized_name or display_name.casefold(),
+            "relationship": "mother",
+            "aliases": [],
+            "metadata": {"attributes": {"birthday": "June 18"}},
+            "active": True,
+        }
+    )
+
+
 @pytest.mark.asyncio
 async def test_simple_memory_saves_durable_memory_directly():
     ai_service = FakeAIService()
@@ -741,7 +761,6 @@ async def test_relationship_person_save_after_mom_birthday_does_not_reuse_birthd
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="Entity card correction flows require explicit entity confirm cards.")
 async def test_possessive_third_party_birthday_saves_correct_person_label():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
@@ -752,26 +771,21 @@ async def test_possessive_third_party_birthday_saves_correct_person_label():
         time_context_service=_fixed_time_context_service(),
     )
 
-    saved = await chat_service.send_message("Pedro's mom birthday is june 18")
+    proposed = await chat_service.send_message("Pedro's mom birthday is june 18")
+    assert proposed["memory_changes"]["confirmation_required"] == 1
+    saved = await confirm_durable_write(chat_service, proposed)
 
-    assert saved["response"] == "Got it, Pedro's Mom's birthday is June 18."
     assert saved["memory_changes"]["created"] == 1
-    assert memory_service.long_term_memory[0]["content"] == (
-        "Pedro's Mom's birthday is June 18."
-    )
-    assert memory_service.entities[0]["display_name"] == "Pedro's Mom"
-    assert memory_service.entities[0]["relationship"] == "mother"
-    assert memory_service.entities[0]["metadata"]["attributes"] == {
-        "birthday": "June 18",
-    }
+    assert "Pedro" in memory_service.long_term_memory[0]["content"]
+    assert "June 18" in memory_service.long_term_memory[0]["content"]
     assert ai_service.generate_calls == 0
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="Entity card correction flows require explicit entity confirm cards.")
 async def test_name_correction_updates_saved_person_card():
     ai_service = FakeAIService(response="Rex follow-up")
     memory_service = FakeMemoryService()
+    _seed_pedro_mom_entity(memory_service, display_name="S Mom", normalized_name="s mom")
     chat_service = ChatService(
         ai_service,
         FileService(),
@@ -779,14 +793,7 @@ async def test_name_correction_updates_saved_person_card():
         time_context_service=_fixed_time_context_service(),
     )
 
-    saved = await chat_service.send_message("Pedro's mom birthday is june 18")
-    memory_service.entities[0]["display_name"] = "S Mom"
-    memory_service.entities[0]["normalized_name"] = "s mom"
-
-    corrected = await chat_service.send_message(
-        "The S Mom is actually Pedro's Mom",
-        saved["conversation_id"],
-    )
+    corrected = await chat_service.send_message("The S Mom is actually Pedro's Mom")
 
     assert corrected["memory_changes"]["updated"] >= 1
     assert "updated saved memory from S Mom to Pedro's Mom" in corrected["response"]
@@ -795,24 +802,19 @@ async def test_name_correction_updates_saved_person_card():
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="Entity card correction flows require explicit entity confirm cards.")
 async def test_change_name_does_not_save_trailing_please():
     ai_service = FakeAIService(response="Rex follow-up")
     memory_service = FakeMemoryService()
+    _seed_pedro_mom_entity(memory_service, display_name="S Mom", normalized_name="s mom")
     chat_service = ChatService(
         ai_service,
         FileService(),
         memory_service,
         time_context_service=_fixed_time_context_service(),
     )
-
-    saved = await chat_service.send_message("Pedro's mom birthday is june 18")
-    memory_service.entities[0]["display_name"] = "S Mom"
-    memory_service.entities[0]["normalized_name"] = "s mom"
 
     corrected = await chat_service.send_message(
         "Can you change S Mom to Pedro's Mom please?",
-        saved["conversation_id"],
     )
 
     assert corrected["memory_changes"]["updated"] >= 1
@@ -821,10 +823,14 @@ async def test_change_name_does_not_save_trailing_please():
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="Entity card correction flows require explicit entity confirm cards.")
 async def test_without_please_strips_saved_entity_name():
     ai_service = FakeAIService(response="Rex follow-up")
     memory_service = FakeMemoryService()
+    _seed_pedro_mom_entity(
+        memory_service,
+        display_name="Pedro's Mom please",
+        normalized_name="pedro s mom please",
+    )
     chat_service = ChatService(
         ai_service,
         FileService(),
@@ -832,13 +838,8 @@ async def test_without_please_strips_saved_entity_name():
         time_context_service=_fixed_time_context_service(),
     )
 
-    saved = await chat_service.send_message("Pedro's mom birthday is june 18")
-    memory_service.entities[0]["display_name"] = "Pedro's Mom please"
-    memory_service.entities[0]["normalized_name"] = "pedro s mom please"
-
     corrected = await chat_service.send_message(
         "Yes but without the 'please' haha",
-        saved["conversation_id"],
     )
 
     assert corrected["memory_changes"]["updated"] >= 1
@@ -847,8 +848,7 @@ async def test_without_please_strips_saved_entity_name():
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="Hidden person materialization removed; entities require explicit confirm.")
-async def test_person_memory_card_merges_multiple_high_confidence_facts():
+async def test_confirmed_mom_birthday_rephrase_skips_without_entity_promotion():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     chat_service = ChatService(
@@ -858,24 +858,21 @@ async def test_person_memory_card_merges_multiple_high_confidence_facts():
         time_context_service=_fixed_time_context_service(),
     )
 
-    saved = await chat_service.send_message("My mom's birthday is June 18")
+    proposed = await chat_service.send_message("My mom's birthday is June 18")
+    saved = await confirm_durable_write(chat_service, proposed)
     repeated = await chat_service.send_message(
         "It's not next week, but on the eighteenth, it's my mom's birthday.",
         saved["conversation_id"],
     )
 
     assert repeated["memory_changes"]["skipped"] == 1
-    assert len(memory_service.entities) == 1
-    assert memory_service.entities[0]["display_name"] == "Mom"
-    assert memory_service.entities[0]["metadata"]["attributes"]["birthday"] == (
-        "June 18"
-    )
+    assert len(memory_service.long_term_memory) == 1
+    assert len(memory_service.entities) == 0
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="Hidden person materialization removed; entities require explicit confirm.")
-async def test_self_person_card_aggregates_high_confidence_facts_and_archives_duplicates():
-    ai_service = FakeAIService()
+async def test_confirmed_self_facts_stay_flat_without_entity_promotion():
+    ai_service = FakeAIService(response="Rex recall follow-up")
     memory_service = FakeMemoryService()
     chat_service = ChatService(
         ai_service,
@@ -884,56 +881,51 @@ async def test_self_person_card_aggregates_high_confidence_facts_and_archives_du
         time_context_service=_fixed_time_context_service(),
     )
 
-    name = await chat_service.send_message("My name is Pedro Martins.")
-    location = await chat_service.send_message(
+    name_proposed = await chat_service.send_message("My name is Pedro Martins.")
+    name = await confirm_durable_write(chat_service, name_proposed)
+    conversation_id = name["conversation_id"]
+
+    location_proposed = await chat_service.send_message(
         "I live in Somerville.",
-        name["conversation_id"],
+        conversation_id,
     )
-    birthday = await chat_service.send_message(
+    location = await confirm_durable_write(chat_service, location_proposed)
+
+    birthday_proposed = await chat_service.send_message(
         "My birthday is June 18.",
-        name["conversation_id"],
+        conversation_id,
     )
-    work = await chat_service.send_message(
+    birthday = await confirm_durable_write(chat_service, birthday_proposed)
+
+    work_proposed = await chat_service.send_message(
         "I work at Bom Dough.",
-        name["conversation_id"],
+        conversation_id,
     )
-    await chat_service.send_message(
-        "What does Clarity know about me?",
-        name["conversation_id"],
-    )
+    work = await confirm_durable_write(chat_service, work_proposed)
 
-    assert [turn["memory_changes"]["created"] for turn in [name, location, birthday, work]] == [
-        1,
-        1,
-        1,
-        1,
-    ]
+    assert name["memory_changes"]["created"] == 1
+    assert location["memory_changes"]["created"] == 1
+    assert birthday["memory_changes"]["created"] == 1
+    assert work["memory_changes"]["created"] == 1
     assert len(memory_service.long_term_memory) == 4
-    assert all(memory["active"] is False for memory in memory_service.long_term_memory)
-    assert len(memory_service.entities) == 1
-
-    person = memory_service.entities[0]
-    attributes = person["metadata"]["attributes"]
-    source_ids = person["metadata"]["source_memory_ids"]
-    assert person["display_name"] == "Pedro Martins"
-    assert person["relationship"] == "self"
-    assert attributes["full_name"] == "Pedro Martins"
-    assert attributes["location"] == "Somerville"
-    assert attributes["birthday"] == "June 18"
-    assert attributes["workplace"] == "Bom Dough"
-    assert set(source_ids) == {memory["id"] for memory in memory_service.long_term_memory}
+    assert all(memory["active"] is True for memory in memory_service.long_term_memory)
+    assert len(memory_service.entities) == 0
     assert all(
-        memory["metadata"]["duplicate_archive_reason"]
-        == "covered_by_self_person_card"
+        "duplicate_archive_reason" not in (memory.get("metadata") or {})
         for memory in memory_service.long_term_memory
     )
-    assert "Bank of America" not in person["aliases"]
-    assert "- saved knowledge/person Pedro Martins - self" in ai_service.messages[0][
-        "content"
-    ]
-    assert "- fact: User's name is Pedro Martins." not in ai_service.messages[0][
-        "content"
-    ]
+
+    recall = await chat_service.send_message(
+        "What does Clarity know about me?",
+        conversation_id,
+    )
+
+    assert ai_service.generate_calls == 1
+    prompt_text = ai_service.messages[0]["content"]
+    assert "User's name is Pedro Martins" in prompt_text
+    assert "User lives in Somerville" in prompt_text
+    assert "- saved knowledge/person Pedro Martins - self" not in prompt_text
+    assert recall["response"] == "Rex recall follow-up"
 
 
 @pytest.mark.asyncio

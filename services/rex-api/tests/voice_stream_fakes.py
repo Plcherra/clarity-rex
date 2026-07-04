@@ -1,6 +1,9 @@
 from collections.abc import AsyncIterator
 import asyncio
+import time
 from types import SimpleNamespace
+
+import pytest
 
 from app.dependencies import (
     get_chat_service,
@@ -62,6 +65,10 @@ class FakeDeepgramStreamingService:
 
 
 class SlowDeepgramStreamingService(FakeDeepgramStreamingService):
+    """Simulates slow STT; turn cancellation should interrupt the sleep."""
+
+    slow_delay_seconds = 2.0
+
     async def transcribe_audio_stream(
         self,
         audio_chunks: AsyncIterator[bytes],
@@ -71,7 +78,7 @@ class SlowDeepgramStreamingService(FakeDeepgramStreamingService):
     ):
         async for _ in audio_chunks:
             pass
-        await asyncio.sleep(30)
+        await asyncio.sleep(self.slow_delay_seconds)
         return await super().transcribe_audio_stream(
             self._empty_chunks(),
             content_type=content_type,
@@ -259,8 +266,87 @@ def override_services(
     )
 
 
-def receive_until(websocket, event_name):
-    while True:
+def voice_websocket_turn(
+    client,
+    chat,
+    transcript,
+    conversation_id=None,
+    *,
+    deepgram=None,
+    tts=None,
+    write_confirmation=None,
+    partial_transcript=None,
+    timeout=15.0,
+):
+    """Run one voice WebSocket utterance; return assistant.done event."""
+    deepgram = deepgram or FakeDeepgramStreamingService(
+        transcript=transcript,
+        partial_transcript=partial_transcript,
+    )
+    tts = tts or FakeGoogleTTSService()
+    override_services(
+        deepgram_streaming_service=deepgram,
+        chat_service=chat,
+        google_tts_service=tts,
+    )
+
+    start_payload = {"event": "session.start"}
+    if conversation_id is not None:
+        start_payload["conversation_id"] = conversation_id
+
+    utterance_end_payload: dict = {"event": "utterance.end"}
+    if write_confirmation is not None:
+        utterance_end_payload["write_confirmation"] = write_confirmation
+
+    with client.websocket_connect("/voice/stream") as websocket:
+        websocket.send_json(start_payload)
+        websocket.receive_json()
+        websocket.send_bytes(b"pcm-frame")
+        websocket.receive_json()
+        websocket.send_json(utterance_end_payload)
+        return receive_until(websocket, "assistant.done", timeout=timeout), tts
+
+
+def confirm_voice_proposal(client, chat, proposed_turn, *, transcript="Yes"):
+    proposals = (proposed_turn.get("memory_changes") or {}).get("write_proposals") or []
+    if not proposals:
+        raise AssertionError("Expected a pending write proposal to confirm.")
+    proposal_id = proposals[0]["id"]
+    done, _ = voice_websocket_turn(
+        client,
+        chat,
+        transcript,
+        proposed_turn["conversation_id"],
+        write_confirmation={"proposal_id": proposal_id},
+    )
+    return done
+
+
+def receive_until(
+    websocket,
+    event_name,
+    *,
+    timeout=10.0,
+    max_messages=200,
+):
+    """Receive WebSocket events until *event_name* or fail fast with diagnostics."""
+    deadline = time.monotonic() + timeout
+    seen: list[dict] = []
+    while len(seen) < max_messages:
+        if time.monotonic() >= deadline:
+            pytest.fail(
+                f"Timed out after {timeout}s waiting for {event_name!r}. Saw: {seen}"
+            )
         event = websocket.receive_json()
+        if event.get("event") == "error" and event_name != "error":
+            pytest.fail(
+                f"Unexpected error while waiting for {event_name!r}: {event}. "
+                f"Previously saw: {seen}"
+            )
         if event["event"] == event_name:
             return event
+        seen.append(event)
+    pytest.fail(
+        f"Exceeded max_messages={max_messages} waiting for {event_name!r}. Saw: {seen}"
+    )
+

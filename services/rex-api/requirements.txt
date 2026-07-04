@@ -1,6 +1,7 @@
 fastapi
 google-auth
 httpx
+httpx-ws>=0.9.0
 cryptography
 pydantic-settings
 pypdf
@@ -8,6 +9,7 @@ python-multipart
 requests
 pytest
 pytest-asyncio
+pytest-timeout
 tzdata
 uvicorn[standard]
 websockets
