@@ -3133,11 +3133,11 @@ abstract class AppLocalizations {
   /// **'Add goal'**
   String get accountabilitySharedAddGoal;
 
-  /// No description provided for @accountabilitySharedAddCommitment.
+  /// No description provided for @accountabilitySharedAddOpenThread.
   ///
   /// In en, this message translates to:
   /// **'Add open thread'**
-  String get accountabilitySharedAddCommitment;
+  String get accountabilitySharedAddOpenThread;
 
   /// No description provided for @accountabilitySharedLoading.
   ///
@@ -3175,17 +3175,17 @@ abstract class AppLocalizations {
   /// **'No active goals yet.'**
   String get accountabilitySectionsNoActiveGoals;
 
-  /// No description provided for @accountabilitySectionsOpenCommitments.
+  /// No description provided for @accountabilitySectionsOpenThreads.
   ///
   /// In en, this message translates to:
   /// **'Open Threads'**
-  String get accountabilitySectionsOpenCommitments;
+  String get accountabilitySectionsOpenThreads;
 
-  /// No description provided for @accountabilitySectionsNoOpenCommitments.
+  /// No description provided for @accountabilitySectionsNoOpenThreads.
   ///
   /// In en, this message translates to:
   /// **'No open threads yet.'**
-  String get accountabilitySectionsNoOpenCommitments;
+  String get accountabilitySectionsNoOpenThreads;
 
   /// No description provided for @accountabilitySectionsNeedsAttention.
   ///
@@ -3229,11 +3229,11 @@ abstract class AppLocalizations {
   /// **'Goal actions'**
   String get accountabilityTilesGoalActionsTooltip;
 
-  /// No description provided for @accountabilityTilesCommitmentActionsTooltip.
+  /// No description provided for @accountabilityTilesOpenThreadActionsTooltip.
   ///
   /// In en, this message translates to:
   /// **'Open thread actions'**
-  String get accountabilityTilesCommitmentActionsTooltip;
+  String get accountabilityTilesOpenThreadActionsTooltip;
 
   /// No description provided for @accountabilityTilesMarkMissed.
   ///
@@ -3247,11 +3247,11 @@ abstract class AppLocalizations {
   /// **'Goal details'**
   String get accountabilityDetailGoalDetails;
 
-  /// No description provided for @accountabilityDetailEditCommitment.
+  /// No description provided for @accountabilityDetailEditOpenThread.
   ///
   /// In en, this message translates to:
   /// **'Edit open thread'**
-  String get accountabilityDetailEditCommitment;
+  String get accountabilityDetailEditOpenThread;
 
   /// No description provided for @accountabilityDetailNotesHint.
   ///
@@ -5392,11 +5392,11 @@ abstract class AppLocalizations {
   /// **'Add goal'**
   String get accountabilityAddGoalTitle;
 
-  /// No description provided for @accountabilityAddCommitmentTitle.
+  /// No description provided for @accountabilityAddOpenThreadTitle.
   ///
   /// In en, this message translates to:
   /// **'Add open thread'**
-  String get accountabilityAddCommitmentTitle;
+  String get accountabilityAddOpenThreadTitle;
 
   /// No description provided for @accountabilityAddGoalPrimaryLabel.
   ///
@@ -5404,11 +5404,11 @@ abstract class AppLocalizations {
   /// **'Goal title'**
   String get accountabilityAddGoalPrimaryLabel;
 
-  /// No description provided for @accountabilityAddCommitmentPrimaryLabel.
+  /// No description provided for @accountabilityAddOpenThreadPrimaryLabel.
   ///
   /// In en, this message translates to:
   /// **'Open thread title'**
-  String get accountabilityAddCommitmentPrimaryLabel;
+  String get accountabilityAddOpenThreadPrimaryLabel;
 
   /// No description provided for @accountabilityAddGoalPrimaryHint.
   ///
@@ -5422,17 +5422,17 @@ abstract class AppLocalizations {
   /// **'Wake up at 5 AM and start the day cleanly'**
   String get accountabilityAddGoalDetailHint;
 
-  /// No description provided for @accountabilityAddCommitmentPrimaryHint.
+  /// No description provided for @accountabilityAddOpenThreadPrimaryHint.
   ///
   /// In en, this message translates to:
   /// **'Wake up at 5 AM'**
-  String get accountabilityAddCommitmentPrimaryHint;
+  String get accountabilityAddOpenThreadPrimaryHint;
 
-  /// No description provided for @accountabilityAddCommitmentDetailHint.
+  /// No description provided for @accountabilityAddOpenThreadDetailHint.
   ///
   /// In en, this message translates to:
   /// **'Wake up at 5 AM and start my morning routine'**
-  String get accountabilityAddCommitmentDetailHint;
+  String get accountabilityAddOpenThreadDetailHint;
 
   /// No description provided for @accountabilityGoalSaved.
   ///
@@ -5440,17 +5440,17 @@ abstract class AppLocalizations {
   /// **'Goal saved.'**
   String get accountabilityGoalSaved;
 
-  /// No description provided for @accountabilityCommitmentSaved.
+  /// No description provided for @accountabilityOpenThreadSaved.
   ///
   /// In en, this message translates to:
   /// **'Open thread saved.'**
-  String get accountabilityCommitmentSaved;
+  String get accountabilityOpenThreadSaved;
 
-  /// No description provided for @accountabilityCommitmentCompleted.
+  /// No description provided for @accountabilityOpenThreadCompleted.
   ///
   /// In en, this message translates to:
   /// **'Open thread completed.'**
-  String get accountabilityCommitmentCompleted;
+  String get accountabilityOpenThreadCompleted;
 
   /// No description provided for @accountabilityMarkMissedTitle.
   ///
@@ -5464,17 +5464,17 @@ abstract class AppLocalizations {
   /// **'Mark \"{title}\" as missed? It will leave your active Goals list.'**
   String accountabilityMarkMissedBody(String title);
 
-  /// No description provided for @accountabilityArchiveCommitmentTitle.
+  /// No description provided for @accountabilityArchiveOpenThreadTitle.
   ///
   /// In en, this message translates to:
   /// **'Archive open thread?'**
-  String get accountabilityArchiveCommitmentTitle;
+  String get accountabilityArchiveOpenThreadTitle;
 
-  /// No description provided for @accountabilityArchiveCommitmentBody.
+  /// No description provided for @accountabilityArchiveOpenThreadBody.
   ///
   /// In en, this message translates to:
   /// **'Archive \"{title}\"? It will leave your active Goals list.'**
-  String accountabilityArchiveCommitmentBody(String title);
+  String accountabilityArchiveOpenThreadBody(String title);
 
   /// No description provided for @accountabilityArchiveGoalTitle.
   ///
@@ -5488,17 +5488,17 @@ abstract class AppLocalizations {
   /// **'Archive \"{title}\"? It will leave your active Goals list.'**
   String accountabilityArchiveGoalBody(String title);
 
-  /// No description provided for @accountabilityCommitmentMarkedMissed.
+  /// No description provided for @accountabilityOpenThreadMarkedMissed.
   ///
   /// In en, this message translates to:
   /// **'Open thread marked missed.'**
-  String get accountabilityCommitmentMarkedMissed;
+  String get accountabilityOpenThreadMarkedMissed;
 
-  /// No description provided for @accountabilityCommitmentArchived.
+  /// No description provided for @accountabilityOpenThreadArchived.
   ///
   /// In en, this message translates to:
   /// **'Open thread archived.'**
-  String get accountabilityCommitmentArchived;
+  String get accountabilityOpenThreadArchived;
 
   /// No description provided for @accountabilityGoalArchived.
   ///
@@ -5512,11 +5512,11 @@ abstract class AppLocalizations {
   /// **'Goal updated.'**
   String get accountabilityGoalUpdated;
 
-  /// No description provided for @accountabilityCommitmentUpdated.
+  /// No description provided for @accountabilityOpenThreadUpdated.
   ///
   /// In en, this message translates to:
   /// **'Open thread updated.'**
-  String get accountabilityCommitmentUpdated;
+  String get accountabilityOpenThreadUpdated;
 
   /// No description provided for @accountabilityUpdateFailed.
   ///

@@ -54,12 +54,13 @@ class FakeDeepgramService:
         self.error = error
         self.calls = []
 
-    async def transcribe_audio(self, audio_bytes, content_type, filename=None):
+    async def transcribe_audio(self, audio_bytes, content_type, filename=None, language=None):
         self.calls.append(
             {
                 "audio_bytes": audio_bytes,
                 "content_type": content_type,
                 "filename": filename,
+                "language": language,
             }
         )
         if self.error is not None:
@@ -118,6 +119,8 @@ class FakeChatService:
         channel=None,
         user_requested_deep_thinking=False,
         locale=None,
+        write_confirmation=None,
+        user_enabled_proactive_insights=False,
     ):
         self.calls.append(
             {
@@ -130,6 +133,8 @@ class FakeChatService:
                 "channel": channel,
                 "user_requested_deep_thinking": user_requested_deep_thinking,
                 "locale": locale,
+                "write_confirmation": write_confirmation,
+                "user_enabled_proactive_insights": user_enabled_proactive_insights,
             }
         )
         if self.error is not None:
@@ -221,6 +226,7 @@ def test_transcribe_voice_upload_success(client):
             "audio_bytes": b"audio-bytes",
             "content_type": "audio/mp4",
             "filename": "voice.m4a",
+            "language": "en-US",
         }
     ]
 
@@ -331,7 +337,9 @@ def test_synthesize_voice_success(client):
     assert data["voice_name"] == "en-US-Neural2-J"
     assert data["language_code"] == "en-US"
     assert data["metadata"]["vendor"] == "google_tts"
-    assert fake_google_tts_service.calls == [{"text": "Hey Rex"}]
+    assert fake_google_tts_service.calls == [
+        {"text": "Hey Rex", "language_code": "en-US"}
+    ]
 
 
 @pytest.mark.parametrize(
@@ -422,9 +430,15 @@ def test_voice_turn_completes_full_non_streaming_pipeline(client):
                 "response_instructions": VOICE_RESPONSE_INSTRUCTIONS,
                 "max_response_tokens": VOICE_RESPONSE_MAX_TOKENS,
                 "channel": RexBrainChannel.VOICE,
+                "user_requested_deep_thinking": False,
+                "locale": None,
+                "write_confirmation": None,
+                "user_enabled_proactive_insights": False,
             }
         ]
-    assert fake_google_tts_service.calls == [{"text": "Rex voice response"}]
+    assert fake_google_tts_service.calls == [
+        {"text": "Rex voice response", "language_code": "en-US"}
+    ]
     assert fake_chat_service.voice_metadata_calls[0]["conversation_id"] == (
         "conversation-existing"
     )

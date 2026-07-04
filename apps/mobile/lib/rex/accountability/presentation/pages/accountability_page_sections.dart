@@ -90,8 +90,8 @@ class _OpenThreadsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return _Section(
-      title: l10n.accountabilitySectionsOpenCommitments,
-      emptyText: l10n.accountabilitySectionsNoOpenCommitments,
+      title: l10n.accountabilitySectionsOpenThreads,
+      emptyText: l10n.accountabilitySectionsNoOpenThreads,
       children: threads
           .map(
             (thread) => _OpenThreadTile(

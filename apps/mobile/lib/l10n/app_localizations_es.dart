@@ -1700,7 +1700,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountabilitySharedAddGoal => 'Añadir objetivo';
 
   @override
-  String get accountabilitySharedAddCommitment => 'Agregar compromiso';
+  String get accountabilitySharedAddOpenThread => 'Agregar hilo abierto';
 
   @override
   String get accountabilitySharedLoading => 'Cargando objetivos';
@@ -1723,11 +1723,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Aún no hay objetivos activos.';
 
   @override
-  String get accountabilitySectionsOpenCommitments => 'Compromisos abiertos';
+  String get accountabilitySectionsOpenThreads => 'Hilos abiertos';
 
   @override
-  String get accountabilitySectionsNoOpenCommitments =>
-      'Sin compromisos abiertos.';
+  String get accountabilitySectionsNoOpenThreads =>
+      'Aún no hay hilos abiertos.';
 
   @override
   String get accountabilitySectionsNeedsAttention => 'Necesita atención';
@@ -1754,8 +1754,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountabilityTilesGoalActionsTooltip => 'Acciones de objetivos';
 
   @override
-  String get accountabilityTilesCommitmentActionsTooltip =>
-      'Acciones de compromiso';
+  String get accountabilityTilesOpenThreadActionsTooltip =>
+      'Acciones del hilo abierto';
 
   @override
   String get accountabilityTilesMarkMissed => 'marca perdida';
@@ -1764,7 +1764,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountabilityDetailGoalDetails => 'Detalles del objetivo';
 
   @override
-  String get accountabilityDetailEditCommitment => 'Editar compromiso';
+  String get accountabilityDetailEditOpenThread => 'Editar hilo abierto';
 
   @override
   String get accountabilityDetailNotesHint => 'Por qué esto importa';
@@ -3129,13 +3129,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountabilityAddGoalTitle => 'Añadir objetivo';
 
   @override
-  String get accountabilityAddCommitmentTitle => 'Agregar compromiso';
+  String get accountabilityAddOpenThreadTitle => 'Agregar hilo abierto';
 
   @override
   String get accountabilityAddGoalPrimaryLabel => 'Título del objetivo';
 
   @override
-  String get accountabilityAddCommitmentPrimaryLabel => 'Título del compromiso';
+  String get accountabilityAddOpenThreadPrimaryLabel =>
+      'Título del hilo abierto';
 
   @override
   String get accountabilityAddGoalPrimaryHint =>
@@ -3146,20 +3147,20 @@ class AppLocalizationsEs extends AppLocalizations {
       'Despierta a las 5 a.m. y comienza el día limpiamente';
 
   @override
-  String get accountabilityAddCommitmentPrimaryHint => 'Despierta a las 5 a.m.';
+  String get accountabilityAddOpenThreadPrimaryHint => 'Despierta a las 5 a.m.';
 
   @override
-  String get accountabilityAddCommitmentDetailHint =>
+  String get accountabilityAddOpenThreadDetailHint =>
       'Despierto a las 5 a. m. y comienzo mi rutina matutina.';
 
   @override
   String get accountabilityGoalSaved => 'Gol salvado.';
 
   @override
-  String get accountabilityCommitmentSaved => 'Compromiso guardado.';
+  String get accountabilityOpenThreadSaved => 'Hilo abierto guardado.';
 
   @override
-  String get accountabilityCommitmentCompleted => 'Compromiso cumplido.';
+  String get accountabilityOpenThreadCompleted => 'Hilo abierto completado.';
 
   @override
   String get accountabilityMarkMissedTitle => '¿Mark falló?';
@@ -3170,10 +3171,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get accountabilityArchiveCommitmentTitle => '¿Compromiso de archivo?';
+  String get accountabilityArchiveOpenThreadTitle => '¿Archivar hilo abierto?';
 
   @override
-  String accountabilityArchiveCommitmentBody(String title) {
+  String accountabilityArchiveOpenThreadBody(String title) {
     return '¿Archivo \"$title\"? Saldrá de su lista de objetivos activos.';
   }
 
@@ -3186,11 +3187,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get accountabilityCommitmentMarkedMissed =>
-      'Compromiso marcado incumplido.';
+  String get accountabilityOpenThreadMarkedMissed =>
+      'Hilo abierto marcado como incumplido.';
 
   @override
-  String get accountabilityCommitmentArchived => 'Compromiso archivado.';
+  String get accountabilityOpenThreadArchived => 'Hilo abierto archivado.';
 
   @override
   String get accountabilityGoalArchived => 'Objetivo archivado.';
@@ -3199,7 +3200,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountabilityGoalUpdated => 'Objetivo actualizado.';
 
   @override
-  String get accountabilityCommitmentUpdated => 'Compromiso actualizado.';
+  String get accountabilityOpenThreadUpdated => 'Hilo abierto actualizado.';
 
   @override
   String get accountabilityUpdateFailed => 'Error al actualizar los objetivos.';

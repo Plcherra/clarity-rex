@@ -1680,7 +1680,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilitySharedAddGoal => 'Add goal';
 
   @override
-  String get accountabilitySharedAddCommitment => 'Add open thread';
+  String get accountabilitySharedAddOpenThread => 'Add open thread';
 
   @override
   String get accountabilitySharedLoading => 'Loading goals';
@@ -1702,10 +1702,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilitySectionsNoActiveGoals => 'No active goals yet.';
 
   @override
-  String get accountabilitySectionsOpenCommitments => 'Open Threads';
+  String get accountabilitySectionsOpenThreads => 'Open Threads';
 
   @override
-  String get accountabilitySectionsNoOpenCommitments => 'No open threads yet.';
+  String get accountabilitySectionsNoOpenThreads => 'No open threads yet.';
 
   @override
   String get accountabilitySectionsNeedsAttention => 'Needs attention';
@@ -1731,7 +1731,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilityTilesGoalActionsTooltip => 'Goal actions';
 
   @override
-  String get accountabilityTilesCommitmentActionsTooltip =>
+  String get accountabilityTilesOpenThreadActionsTooltip =>
       'Open thread actions';
 
   @override
@@ -1741,7 +1741,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilityDetailGoalDetails => 'Goal details';
 
   @override
-  String get accountabilityDetailEditCommitment => 'Edit open thread';
+  String get accountabilityDetailEditOpenThread => 'Edit open thread';
 
   @override
   String get accountabilityDetailNotesHint => 'Why this matters';
@@ -3076,13 +3076,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilityAddGoalTitle => 'Add goal';
 
   @override
-  String get accountabilityAddCommitmentTitle => 'Add open thread';
+  String get accountabilityAddOpenThreadTitle => 'Add open thread';
 
   @override
   String get accountabilityAddGoalPrimaryLabel => 'Goal title';
 
   @override
-  String get accountabilityAddCommitmentPrimaryLabel => 'Open thread title';
+  String get accountabilityAddOpenThreadPrimaryLabel => 'Open thread title';
 
   @override
   String get accountabilityAddGoalPrimaryHint =>
@@ -3093,20 +3093,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Wake up at 5 AM and start the day cleanly';
 
   @override
-  String get accountabilityAddCommitmentPrimaryHint => 'Wake up at 5 AM';
+  String get accountabilityAddOpenThreadPrimaryHint => 'Wake up at 5 AM';
 
   @override
-  String get accountabilityAddCommitmentDetailHint =>
+  String get accountabilityAddOpenThreadDetailHint =>
       'Wake up at 5 AM and start my morning routine';
 
   @override
   String get accountabilityGoalSaved => 'Goal saved.';
 
   @override
-  String get accountabilityCommitmentSaved => 'Open thread saved.';
+  String get accountabilityOpenThreadSaved => 'Open thread saved.';
 
   @override
-  String get accountabilityCommitmentCompleted => 'Open thread completed.';
+  String get accountabilityOpenThreadCompleted => 'Open thread completed.';
 
   @override
   String get accountabilityMarkMissedTitle => 'Mark missed?';
@@ -3117,10 +3117,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get accountabilityArchiveCommitmentTitle => 'Archive open thread?';
+  String get accountabilityArchiveOpenThreadTitle => 'Archive open thread?';
 
   @override
-  String accountabilityArchiveCommitmentBody(String title) {
+  String accountabilityArchiveOpenThreadBody(String title) {
     return 'Archive \"$title\"? It will leave your active Goals list.';
   }
 
@@ -3133,11 +3133,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get accountabilityCommitmentMarkedMissed =>
+  String get accountabilityOpenThreadMarkedMissed =>
       'Open thread marked missed.';
 
   @override
-  String get accountabilityCommitmentArchived => 'Open thread archived.';
+  String get accountabilityOpenThreadArchived => 'Open thread archived.';
 
   @override
   String get accountabilityGoalArchived => 'Goal archived.';
@@ -3146,7 +3146,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilityGoalUpdated => 'Goal updated.';
 
   @override
-  String get accountabilityCommitmentUpdated => 'Open thread updated.';
+  String get accountabilityOpenThreadUpdated => 'Open thread updated.';
 
   @override
   String get accountabilityUpdateFailed => 'Goals update failed.';

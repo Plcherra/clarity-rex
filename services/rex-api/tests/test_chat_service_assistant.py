@@ -118,7 +118,8 @@ async def test_streaming_chat_uses_mvp_kwargs_only():
         async for event in chat_service.stream_message("hey", max_response_tokens=123)
     ]
 
-    assert ai_service.kwargs == {"max_tokens": 123}
+    assert ai_service.kwargs.get("max_tokens") == 123
+    assert "usage_holder" in ai_service.kwargs
     assert "routing contract" not in ai_service.messages[0]["content"].lower()
     assert any(
         event.get("event") == "done" and event.get("response") == "AB"

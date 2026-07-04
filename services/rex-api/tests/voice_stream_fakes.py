@@ -103,6 +103,7 @@ class FakeChatService:
         include_turn_trace=False,
         locale=None,
         write_confirmation=None,
+        user_enabled_proactive_insights=False,
     ):
         self.stream_calls.append(
             {
@@ -117,6 +118,7 @@ class FakeChatService:
                 "include_turn_trace": include_turn_trace,
                 "locale": locale,
                 "write_confirmation": write_confirmation,
+                "user_enabled_proactive_insights": user_enabled_proactive_insights,
             }
         )
         if self.error is not None:

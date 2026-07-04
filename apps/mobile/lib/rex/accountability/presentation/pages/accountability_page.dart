@@ -63,11 +63,11 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     final result = await showDialog<_GoalFormResult>(
       context: context,
       builder: (context) => _GoalFormDialog(
-        title: l10n.accountabilityAddCommitmentTitle,
-        primaryLabel: l10n.accountabilityAddCommitmentPrimaryLabel,
+        title: l10n.accountabilityAddOpenThreadTitle,
+        primaryLabel: l10n.accountabilityAddOpenThreadPrimaryLabel,
         detailLabel: l10n.accountabilityDetailNotesHint,
-        primaryHint: l10n.accountabilityAddCommitmentPrimaryHint,
-        detailHint: l10n.accountabilityAddCommitmentDetailHint,
+        primaryHint: l10n.accountabilityAddOpenThreadPrimaryHint,
+        detailHint: l10n.accountabilityAddOpenThreadDetailHint,
       ),
     );
     if (result == null || !mounted) return;
@@ -76,14 +76,14 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
       summary: result.detail.isEmpty ? null : result.detail,
     );
     if (!mounted) return;
-    _showMutationResult(saved ? l10n.accountabilityCommitmentSaved : null);
+    _showMutationResult(saved ? l10n.accountabilityOpenThreadSaved : null);
   }
 
   Future<void> _closeOpenThread(OpenThread thread) async {
     final l10n = context.l10n;
     final confirmed = await _confirmArchive(
-      title: l10n.accountabilityArchiveCommitmentTitle,
-      body: l10n.accountabilityArchiveCommitmentBody(thread.title),
+      title: l10n.accountabilityArchiveOpenThreadTitle,
+      body: l10n.accountabilityArchiveOpenThreadBody(thread.title),
       confirmLabel: l10n.commonArchive,
     );
     if (confirmed != true || !mounted) return;
@@ -91,7 +91,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
         .read(accountabilityProvider.notifier)
         .closeOpenThread(thread.id);
     if (!mounted) return;
-    _showMutationResult(saved ? l10n.accountabilityCommitmentArchived : null);
+    _showMutationResult(saved ? l10n.accountabilityOpenThreadArchived : null);
   }
 
   Future<void> _pauseOpenThread(OpenThread thread) async {
@@ -99,7 +99,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
         .read(accountabilityProvider.notifier)
         .pauseOpenThread(thread.id);
     if (!mounted) return;
-    _showMutationResult(saved ? context.l10n.accountabilityCommitmentUpdated : null);
+    _showMutationResult(saved ? context.l10n.accountabilityOpenThreadUpdated : null);
   }
 
   Future<void> _editOpenThread(OpenThread thread) async {
@@ -107,11 +107,11 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     final result = await showDialog<_GoalFormResult>(
       context: context,
       builder: (context) => _GoalFormDialog(
-        title: l10n.accountabilityDetailEditCommitment,
-        primaryLabel: l10n.accountabilityAddCommitmentPrimaryLabel,
+        title: l10n.accountabilityDetailEditOpenThread,
+        primaryLabel: l10n.accountabilityAddOpenThreadPrimaryLabel,
         detailLabel: l10n.accountabilityDetailNotesHint,
-        primaryHint: l10n.accountabilityAddCommitmentPrimaryHint,
-        detailHint: l10n.accountabilityAddCommitmentDetailHint,
+        primaryHint: l10n.accountabilityAddOpenThreadPrimaryHint,
+        detailHint: l10n.accountabilityAddOpenThreadDetailHint,
         initialPrimary: thread.title,
         initialDetail: thread.summary ?? '',
       ),
@@ -123,7 +123,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
       summary: result.detail.isEmpty ? null : result.detail,
     );
     if (!mounted) return;
-    _showMutationResult(saved ? l10n.accountabilityCommitmentUpdated : null);
+    _showMutationResult(saved ? l10n.accountabilityOpenThreadUpdated : null);
   }
 
   Future<void> _archivePlan(PlanRecord plan) async {

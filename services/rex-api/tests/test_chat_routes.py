@@ -33,6 +33,8 @@ class FakeChatService:
         channel=None,
         user_requested_deep_thinking=False,
         locale=None,
+        write_confirmation=None,
+        user_enabled_proactive_insights=False,
     ):
         self.calls.append(
             {
@@ -45,6 +47,8 @@ class FakeChatService:
                 "channel": channel,
                 "user_requested_deep_thinking": user_requested_deep_thinking,
                 "locale": locale,
+                "write_confirmation": write_confirmation,
+                "user_enabled_proactive_insights": user_enabled_proactive_insights,
                 "stream": False,
             }
         )
@@ -77,6 +81,8 @@ class FakeChatService:
         user_requested_deep_thinking=False,
         include_turn_trace=False,
         locale=None,
+        write_confirmation=None,
+        user_enabled_proactive_insights=False,
     ):
         self.calls.append(
             {
@@ -90,6 +96,8 @@ class FakeChatService:
                 "user_requested_deep_thinking": user_requested_deep_thinking,
                 "include_turn_trace": include_turn_trace,
                 "locale": locale,
+                "write_confirmation": write_confirmation,
+                "user_enabled_proactive_insights": user_enabled_proactive_insights,
                 "stream": True,
             }
         )
@@ -137,6 +145,8 @@ def test_chat_accepts_json(client):
             "channel": None,
             "user_requested_deep_thinking": False,
             "locale": None,
+            "write_confirmation": None,
+            "user_enabled_proactive_insights": False,
             "stream": False,
         }
     ]

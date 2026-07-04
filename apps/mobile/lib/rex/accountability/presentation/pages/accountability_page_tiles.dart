@@ -384,7 +384,7 @@ class _OpenThreadActions extends StatelessWidget {
     final colors = context.clarityColors;
     final l10n = context.l10n;
     return PopupMenuButton<String>(
-      tooltip: l10n.accountabilityTilesCommitmentActionsTooltip,
+      tooltip: l10n.accountabilityTilesOpenThreadActionsTooltip,
       color: colors.surfaceSoft,
       icon: Icon(Icons.more_horiz_rounded, color: colors.textMuted, size: 18),
       itemBuilder: (context) => [

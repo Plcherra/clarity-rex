@@ -80,6 +80,25 @@ class FakeContextMemoryStore:
                 "active": True,
             }
         ]
+        self.open_threads = []
+
+    async def _list_records(
+        self,
+        table,
+        *,
+        select,
+        filters,
+        order,
+        limit,
+        offset=0,
+    ):
+        if table == "open_threads":
+            rows = list(self.open_threads)
+            status = filters.get("status")
+            if status is not None:
+                rows = [row for row in rows if row.get("status") == status]
+            return rows[offset : offset + limit]
+        raise RuntimeError(f"Unsupported table: {table}")
 
     async def get_relevant_memories(self, query, limit=8):
         self.relevant_memory_queries.append({"query": query, "limit": limit})
@@ -298,7 +317,10 @@ async def test_chat_context_skips_memory_and_goals_for_casual_intent():
 
     assert history == store.messages
     assert all(not memory["id"].startswith("chat-") for memory in memories)
-    assert structured_context == {}
+    assert structured_context == {
+        "open_threads": [],
+        "open_threads_status": "empty",
+    }
     assert store.relevant_memory_queries == []
     assert store.structured_context_queries == []
     assert store.plan_calls == []
@@ -2426,7 +2448,10 @@ async def test_chat_context_skips_memory_and_goals_for_finance_intent():
 
     assert history == store.messages
     assert memories == []
-    assert structured_context == {}
+    assert structured_context == {
+        "open_threads": [],
+        "open_threads_status": "empty",
+    }
     assert store.relevant_memory_queries == []
     assert store.search_message_queries == []
     assert store.shared_conversation_search_queries == []

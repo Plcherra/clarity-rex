@@ -111,23 +111,23 @@
     }
   },
   "accountTileViewAccount": "Ver cuenta",
-  "accountabilityAddCommitmentDetailHint": "Despierto a las 5 a. m. y comienzo mi rutina matutina.",
-  "accountabilityAddCommitmentPrimaryHint": "Despierta a las 5 a.m.",
-  "accountabilityAddCommitmentPrimaryLabel": "Título del compromiso",
-  "accountabilityAddCommitmentTitle": "Agregar compromiso",
+  "accountabilityAddOpenThreadDetailHint": "Despierto a las 5 a. m. y comienzo mi rutina matutina.",
+  "accountabilityAddOpenThreadPrimaryHint": "Despierta a las 5 a.m.",
+  "accountabilityAddOpenThreadPrimaryLabel": "Título del hilo abierto",
+  "accountabilityAddOpenThreadTitle": "Agregar hilo abierto",
   "accountabilityAddGoalDetailHint": "Despierta a las 5 a.m. y comienza el día limpiamente",
   "accountabilityAddGoalPrimaryHint": "Construya una rutina matutina confiable",
   "accountabilityAddGoalPrimaryLabel": "Título del objetivo",
   "accountabilityAddGoalTitle": "Añadir objetivo",
-  "accountabilityArchiveCommitmentBody": "¿Archivo \"{title}\"? Saldrá de su lista de objetivos activos.",
-  "@accountabilityArchiveCommitmentBody": {
+  "accountabilityArchiveOpenThreadBody": "¿Archivo \"{title}\"? Saldrá de su lista de objetivos activos.",
+  "@accountabilityArchiveOpenThreadBody": {
     "placeholders": {
       "title": {
         "type": "String"
       }
     }
   },
-  "accountabilityArchiveCommitmentTitle": "¿Compromiso de archivo?",
+  "accountabilityArchiveOpenThreadTitle": "¿Archivar hilo abierto?",
   "accountabilityArchiveGoalBody": "¿Archivo \"{title}\"? Saldrá de su lista de objetivos activos.",
   "@accountabilityArchiveGoalBody": {
     "placeholders": {
@@ -137,12 +137,12 @@
     }
   },
   "accountabilityArchiveGoalTitle": "¿Objetivo del archivo?",
-  "accountabilityCommitmentArchived": "Compromiso archivado.",
-  "accountabilityCommitmentCompleted": "Compromiso cumplido.",
-  "accountabilityCommitmentMarkedMissed": "Compromiso marcado incumplido.",
-  "accountabilityCommitmentSaved": "Compromiso guardado.",
-  "accountabilityCommitmentUpdated": "Compromiso actualizado.",
-  "accountabilityDetailEditCommitment": "Editar compromiso",
+  "accountabilityOpenThreadArchived": "Hilo abierto archivado.",
+  "accountabilityOpenThreadCompleted": "Hilo abierto completado.",
+  "accountabilityOpenThreadMarkedMissed": "Hilo abierto marcado como incumplido.",
+  "accountabilityOpenThreadSaved": "Hilo abierto guardado.",
+  "accountabilityOpenThreadUpdated": "Hilo abierto actualizado.",
+  "accountabilityDetailEditOpenThread": "Editar hilo abierto",
   "accountabilityDetailGoalDetails": "Detalles del objetivo",
   "accountabilityDetailNotesHint": "Por qué esto importa",
   "accountabilityGoalArchived": "Objetivo archivado.",
@@ -161,15 +161,15 @@
   "accountabilityPageTitle": "Objetivos",
   "accountabilitySectionsActiveGoals": "Metas activas",
   "accountabilitySectionsNoActiveGoals": "Aún no hay objetivos activos.",
-  "accountabilitySectionsNoOpenCommitments": "Sin compromisos abiertos.",
+  "accountabilitySectionsNoOpenThreads": "Aún no hay hilos abiertos.",
   "accountabilitySectionsNeedsAttention": "Necesita atención",
   "accountabilitySectionsNoSignals": "Nada requiere atención ahora mismo.",
   "accountabilitySectionsRuleRisks": "Riesgos de reglas",
   "accountabilitySectionsNoRuleRisks": "No se detectaron riesgos de reglas.",
   "accountabilitySectionsRecentPatterns": "Patrones recientes",
   "accountabilitySectionsNoRecentPatterns": "No hay patrones recientes para revisar.",
-  "accountabilitySectionsOpenCommitments": "Compromisos abiertos",
-  "accountabilitySharedAddCommitment": "Agregar compromiso",
+  "accountabilitySectionsOpenThreads": "Hilos abiertos",
+  "accountabilitySharedAddOpenThread": "Agregar hilo abierto",
   "accountabilitySharedAddFirstGoal": "Añade tu primer objetivo",
   "accountabilitySharedAddGoal": "Añadir objetivo",
   "accountabilitySharedEmptyBody": "Comience con un objetivo simple o dígaselo a Rex en el chat.",
@@ -177,7 +177,7 @@
   "accountabilitySharedLoading": "Cargando objetivos",
   "accountabilityStatusInProgress": "En curso",
   "accountabilityStatusOpen": "Abierto",
-  "accountabilityTilesCommitmentActionsTooltip": "Acciones de compromiso",
+  "accountabilityTilesOpenThreadActionsTooltip": "Acciones del hilo abierto",
   "accountabilityTilesGoalActionsTooltip": "Acciones de objetivos",
   "accountabilityTilesMarkMissed": "marca perdida",
   "accountabilityUpdateFailed": "Error al actualizar los objetivos.",

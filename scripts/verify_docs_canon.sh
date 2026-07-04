@@ -13,7 +13,6 @@ ALLOWED_ROOT=(
   "docs/MASTER_PLAN.md"
   "docs/CLARITY_RULES.md"
   "docs/PROJECT_STRUCTURE.md"
-  "docs/NEXT_STEPS.md"
 )
 
 is_allowed_docs_path() {
@@ -50,8 +49,8 @@ if [[ ${#violations[@]} -eq 0 ]]; then
 fi
 
 echo "Docs canon check failed. New files under docs/ must be canon only:" >&2
-echo "  Allowed: docs/MASTER_PLAN.md, docs/CLARITY_RULES.md, docs/PROJECT_STRUCTURE.md," >&2
-echo "           docs/NEXT_STEPS.md (temporary tracker), docs/archive/**" >&2
+  echo "  Allowed: docs/MASTER_PLAN.md, docs/CLARITY_RULES.md, docs/PROJECT_STRUCTURE.md," >&2
+  echo "           docs/archive/**" >&2
 for path in "${violations[@]}"; do
   echo "  - $path" >&2
 done

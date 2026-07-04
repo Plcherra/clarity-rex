@@ -356,5 +356,5 @@ Native iOS voice bridge is experimental and must not become a second assistant p
 
 - Do not add new planning, architecture, or feature docs under `docs/`.
 - Archived non-canon material may live under `docs/archive/` only.
-- `docs/NEXT_STEPS.md` is a temporary execution tracker — delete when alignment work is complete.
+- Historical execution trackers live under `docs/archive/` only — not canon.
 - CI runs `scripts/verify_docs_canon.sh` to block new non-canon files under `docs/`.

@@ -35,7 +35,7 @@ class _GoalActionBar extends StatelessWidget {
           onPressed: isBusy ? null : onAddOpenThread,
           icon: Icon(Icons.add_rounded, size: 16, color: colors.textSecondary),
           label: Text(
-            l10n.accountabilitySharedAddCommitment,
+            l10n.accountabilitySharedAddOpenThread,
             style: TextStyle(color: colors.textSecondary),
           ),
           style: TextButton.styleFrom(
