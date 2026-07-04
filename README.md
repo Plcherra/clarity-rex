@@ -64,7 +64,7 @@ Rex sees your real balances, transactions, and budgets — then remembers the pe
 - Chat with full context of your finances and saved life details
 - Voice mode for hands-free conversations
 - **Knows** — secure, editable memory (People, Events, Preferences, Facts) you control
-- **Goals & commitments** — track progress and discuss it intelligently with Rex
+- **Goals & Open Threads** — track goals and opt-in companion follow-ups with Rex
 
 Rex only saves what you explicitly confirm. Every durable action is backend-verified — no fake memory, no invented balances.
 
@@ -138,7 +138,7 @@ Full mobile setup: [`apps/mobile/README.md`](apps/mobile/README.md)
 | Path | What it is |
 |------|------------|
 | [`apps/mobile/`](apps/mobile/) | Flutter app |
-| [`services/rex-api/`](services/rex-api/) | Python FastAPI — Rex Brain, memory, chat, voice, Plaid |
+| [`services/rex-api/`](services/rex-api/) | Python FastAPI — assistant backend (memory, chat, voice, Plaid) |
 | [`supabase/`](supabase/) | Migrations, Edge Functions, auth |
 | [`docs/`](docs/) | Canonical project documentation (3 files) |
 

@@ -16,8 +16,7 @@ def format_inventory_context(overview: dict[str, Any]) -> str:
             f"organizations={counts.get('other_entities', 0)}, "
             f"facts={counts.get('facts', 0)}, "
             f"rules={counts.get('rules', 0)}, "
-            f"plans={counts.get('plans', 0)}, "
-            f"commitments={counts.get('commitments', 0)})"
+            f"plans={counts.get('plans', 0)})"
         ),
         "List every item below. Person cards may include multiple attributes—",
         "do not collapse them to a single fact count.",
@@ -36,8 +35,6 @@ def format_inventory_context(overview: dict[str, Any]) -> str:
         lines.append(f"- Rule: {_title(rule)} — {_content(rule, key='rule_text')}")
     for plan in overview.get("plans") or []:
         lines.append(f"- Plan: {_title(plan)}")
-    for commitment in overview.get("commitments") or []:
-        lines.append(f"- Commitment: {_title(commitment)}")
 
     if len(lines) <= 6:
         lines.append("- (no saved knowledge yet)")

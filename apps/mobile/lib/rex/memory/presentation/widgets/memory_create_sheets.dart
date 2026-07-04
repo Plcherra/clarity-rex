@@ -11,7 +11,6 @@ enum MemoryCreateKind {
   person,
   rule,
   plan,
-  commitment,
 }
 
 class FlatMemoryCreateResult {
@@ -70,7 +69,6 @@ Future<MemoryCreateKind?> showMemoryCreateTypePicker(BuildContext context) {
         (MemoryCreateKind.person, l10n.commonPerson),
         (MemoryCreateKind.rule, l10n.memoryCreateRule),
         (MemoryCreateKind.plan, l10n.memoryCreatePlan),
-        (MemoryCreateKind.commitment, l10n.memoryCreateCommitment),
       ];
       return SafeArea(
         child: SingleChildScrollView(

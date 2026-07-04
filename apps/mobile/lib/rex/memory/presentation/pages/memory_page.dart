@@ -9,7 +9,6 @@ import 'package:clarity/rex/memory/presentation/widgets/memory_create_sheets.dar
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_sheets.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_filters.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_header_widgets.dart';
-import 'package:clarity/rex/memory/data/memory_constants.dart';
 import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_quick_filter.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_truncation_banner.dart';
@@ -138,22 +137,6 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           priority: result.importance,
         );
         successMessage = l10n.memoryPagePlanCreated;
-      case MemoryCreateKind.commitment:
-        final result = await showStructuredCreateSheet(
-          context,
-          title: l10n.memoryCreateCommitmentTitle,
-          primaryLabel: l10n.commonTitle,
-          detailLabel: l10n.commonCommitment,
-        );
-        if (result == null) {
-          return;
-        }
-        saved = await notifier.createCommitment(
-          title: result.title,
-          commitmentText: result.detail,
-          priority: result.importance,
-        );
-        successMessage = l10n.memoryPageCommitmentCreated;
     }
 
     if (!mounted) {
@@ -408,42 +391,6 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     }
   }
 
-  Future<void> _editCommitment(CommitmentMemoryItem commitment) async {
-    final l10n = context.l10n;
-    final result = await showStructuredEditSheet(
-      context,
-      title: l10n.memoryEditEditCommitmentTitle,
-      typeLabel: localizedMemoryRecordLabel(l10n, commitment.commitmentType),
-      primaryLabel: l10n.commonTitle,
-      primaryValue: commitment.title,
-      detailLabel: l10n.commonCommitment,
-      detailValue: commitment.commitmentText,
-      importanceLabel: l10n.commonPriority,
-      importance: commitment.priority,
-      status: commitment.status,
-      active: commitment.active,
-      updatedAt: commitment.updatedAt,
-      createdAt: commitment.createdAt,
-    );
-    if (result == null) {
-      return;
-    }
-
-    final saved = await ref
-        .read(memoryProvider.notifier)
-        .updateCommitment(
-          commitment.id,
-          title: result.primary,
-          commitmentText: result.detail,
-          priority: result.importance,
-          status: result.status,
-          active: result.active,
-        );
-    if (mounted) {
-      _showSnackBar(saved ? l10n.memoryPageCommitmentUpdated : _currentError());
-    }
-  }
-
   Future<void> _archiveStructuredMemory(
     StructuredMemoryKind kind,
     String id,
@@ -573,7 +520,6 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                 onEditPlan: _editPlan,
                 onAddPlanMilestone: _addPlanMilestone,
                 onEditPlanMilestone: _editPlanMilestone,
-                onEditCommitment: _editCommitment,
                 onArchiveStructuredMemory: _archiveStructuredMemory,
               ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),

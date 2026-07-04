@@ -66,12 +66,6 @@ class PromptStructuredContextMixin:
                 used_characters,
                 self._milestone_line(milestone, plan_titles),
             )
-        for commitment in structured_context.get("commitments") or []:
-            used_characters = self._append_structured_line(
-                lines,
-                used_characters,
-                self._commitment_line(commitment, entity_names, plan_titles),
-            )
 
         if not lines:
             return None
@@ -329,37 +323,6 @@ class PromptStructuredContextMixin:
         if target_date:
             line = f"{line} (target: {target_date})"
         return line
-
-    def _commitment_line(
-        self,
-        commitment: dict,
-        entity_names: dict[str, str],
-        plan_titles: dict[str, str],
-    ) -> Optional[str]:
-        title = commitment.get("title")
-        text = commitment.get("commitment_text")
-        if not title and not text:
-            return None
-
-        line = f"- commitment/{commitment.get('commitment_type') or 'deadline'}"
-        if title:
-            line = f"{line} {title}"
-        if text:
-            line = f"{line}: {text}"
-
-        links = []
-        entity_name = entity_names.get(str(commitment.get("entity_id") or ""))
-        if entity_name:
-            links.append(f"person: {entity_name}")
-        plan_title = plan_titles.get(str(commitment.get("plan_id") or ""))
-        if plan_title:
-            links.append(f"plan: {plan_title}")
-        due_at = commitment.get("due_at")
-        if due_at:
-            links.append(f"due: {due_at}")
-        if links:
-            line = f"{line} ({'; '.join(links)})"
-        return self._with_relevance(line, commitment)
 
     def _with_relevance(self, line: str, record: dict) -> str:
         relevance_reason = record.get("relevance_reason")

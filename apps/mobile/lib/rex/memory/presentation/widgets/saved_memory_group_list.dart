@@ -22,7 +22,6 @@ class SavedMemoryGroupList extends StatelessWidget {
     required this.onEditPlan,
     required this.onAddPlanMilestone,
     required this.onEditPlanMilestone,
-    required this.onEditCommitment,
     required this.onArchiveStructuredMemory,
     super.key,
   });
@@ -40,7 +39,6 @@ class SavedMemoryGroupList extends StatelessWidget {
   final ValueChanged<PlanMemoryItem> onAddPlanMilestone;
   final void Function(PlanMemoryItem plan, PlanMilestoneMemoryItem milestone)
       onEditPlanMilestone;
-  final ValueChanged<CommitmentMemoryItem> onEditCommitment;
   final void Function(StructuredMemoryKind kind, String id, String label)
   onArchiveStructuredMemory;
 
@@ -116,19 +114,6 @@ class SavedMemoryGroupList extends StatelessWidget {
                   StructuredMemoryKind.plan,
                   plan.id,
                   'plan',
-                )
-              : null,
-        ),
-      ),
-      ...saved.commitments.map(
-        (commitment) => CommitmentMemoryTile(
-          commitment: commitment,
-          onEdit: () => onEditCommitment(commitment),
-          onDeactivate: commitment.active
-              ? () => onArchiveStructuredMemory(
-                  StructuredMemoryKind.commitment,
-                  commitment.id,
-                  'commitment',
                 )
               : null,
         ),

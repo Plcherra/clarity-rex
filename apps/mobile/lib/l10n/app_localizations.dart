@@ -3148,7 +3148,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilitySharedAddCommitment.
   ///
   /// In en, this message translates to:
-  /// **'Add commitment'**
+  /// **'Add open thread'**
   String get accountabilitySharedAddCommitment;
 
   /// No description provided for @accountabilitySharedLoading.
@@ -3190,13 +3190,13 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilitySectionsOpenCommitments.
   ///
   /// In en, this message translates to:
-  /// **'Open Commitments'**
+  /// **'Open Threads'**
   String get accountabilitySectionsOpenCommitments;
 
   /// No description provided for @accountabilitySectionsNoOpenCommitments.
   ///
   /// In en, this message translates to:
-  /// **'No open commitments.'**
+  /// **'No open threads yet.'**
   String get accountabilitySectionsNoOpenCommitments;
 
   /// No description provided for @accountabilitySectionsNeedsAttention.
@@ -3244,7 +3244,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilityTilesCommitmentActionsTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Commitment actions'**
+  /// **'Open thread actions'**
   String get accountabilityTilesCommitmentActionsTooltip;
 
   /// No description provided for @accountabilityTilesMarkMissed.
@@ -3262,7 +3262,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilityDetailEditCommitment.
   ///
   /// In en, this message translates to:
-  /// **'Edit commitment'**
+  /// **'Edit open thread'**
   String get accountabilityDetailEditCommitment;
 
   /// No description provided for @accountabilityDetailNotesHint.
@@ -5437,7 +5437,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilityAddCommitmentTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add commitment'**
+  /// **'Add open thread'**
   String get accountabilityAddCommitmentTitle;
 
   /// No description provided for @accountabilityAddGoalPrimaryLabel.
@@ -5449,7 +5449,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilityAddCommitmentPrimaryLabel.
   ///
   /// In en, this message translates to:
-  /// **'Commitment title'**
+  /// **'Open thread title'**
   String get accountabilityAddCommitmentPrimaryLabel;
 
   /// No description provided for @accountabilityAddGoalPrimaryHint.
@@ -5485,13 +5485,13 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilityCommitmentSaved.
   ///
   /// In en, this message translates to:
-  /// **'Commitment saved.'**
+  /// **'Open thread saved.'**
   String get accountabilityCommitmentSaved;
 
   /// No description provided for @accountabilityCommitmentCompleted.
   ///
   /// In en, this message translates to:
-  /// **'Commitment completed.'**
+  /// **'Open thread completed.'**
   String get accountabilityCommitmentCompleted;
 
   /// No description provided for @accountabilityMarkMissedTitle.
@@ -5509,7 +5509,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilityArchiveCommitmentTitle.
   ///
   /// In en, this message translates to:
-  /// **'Archive commitment?'**
+  /// **'Archive open thread?'**
   String get accountabilityArchiveCommitmentTitle;
 
   /// No description provided for @accountabilityArchiveCommitmentBody.
@@ -5533,13 +5533,13 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilityCommitmentMarkedMissed.
   ///
   /// In en, this message translates to:
-  /// **'Commitment marked missed.'**
+  /// **'Open thread marked missed.'**
   String get accountabilityCommitmentMarkedMissed;
 
   /// No description provided for @accountabilityCommitmentArchived.
   ///
   /// In en, this message translates to:
-  /// **'Commitment archived.'**
+  /// **'Open thread archived.'**
   String get accountabilityCommitmentArchived;
 
   /// No description provided for @accountabilityGoalArchived.
@@ -5557,7 +5557,7 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilityCommitmentUpdated.
   ///
   /// In en, this message translates to:
-  /// **'Commitment updated.'**
+  /// **'Open thread updated.'**
   String get accountabilityCommitmentUpdated;
 
   /// No description provided for @accountabilityUpdateFailed.

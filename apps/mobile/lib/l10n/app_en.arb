@@ -876,10 +876,10 @@
   "accountabilitySectionsRecentPatterns": "Recent patterns",
   "accountabilitySectionsNoRecentPatterns": "No recent patterns to review.",
   "accountabilityTilesGoalActionsTooltip": "Goal actions",
-  "accountabilityTilesCommitmentActionsTooltip": "Commitment actions",
+  "accountabilityTilesCommitmentActionsTooltip": "Open thread actions",
   "accountabilityTilesMarkMissed": "Mark missed",
   "accountabilityDetailGoalDetails": "Goal details",
-  "accountabilityDetailEditCommitment": "Edit commitment",
+  "accountabilityDetailEditCommitment": "Edit open thread",
   "accountabilityDetailNotesHint": "Why this matters",
   "budgetsScreenManageCategoriesTooltip": "Manage categories",
   "budgetsScreenSaveChangesTooltip": "Save changes",
@@ -1880,16 +1880,16 @@
   "memoryDisplayWorkplace": "Workplace",
   "memoryDisplayImportantDate": "Important date",
   "accountabilityAddGoalTitle": "Add goal",
-  "accountabilityAddCommitmentTitle": "Add commitment",
+  "accountabilityAddCommitmentTitle": "Add open thread",
   "accountabilityAddGoalPrimaryLabel": "Goal title",
-  "accountabilityAddCommitmentPrimaryLabel": "Commitment title",
+  "accountabilityAddCommitmentPrimaryLabel": "Open thread title",
   "accountabilityAddGoalPrimaryHint": "Build a reliable morning routine",
   "accountabilityAddGoalDetailHint": "Wake up at 5 AM and start the day cleanly",
   "accountabilityAddCommitmentPrimaryHint": "Wake up at 5 AM",
   "accountabilityAddCommitmentDetailHint": "Wake up at 5 AM and start my morning routine",
   "accountabilityGoalSaved": "Goal saved.",
-  "accountabilityCommitmentSaved": "Commitment saved.",
-  "accountabilityCommitmentCompleted": "Commitment completed.",
+  "accountabilityCommitmentSaved": "Open thread saved.",
+  "accountabilityCommitmentCompleted": "Open thread completed.",
   "accountabilityMarkMissedTitle": "Mark missed?",
   "accountabilityMarkMissedBody": "Mark \"{title}\" as missed? It will leave your active Goals list.",
   "@accountabilityMarkMissedBody": {
@@ -1899,7 +1899,7 @@
       }
     }
   },
-  "accountabilityArchiveCommitmentTitle": "Archive commitment?",
+  "accountabilityArchiveCommitmentTitle": "Archive open thread?",
   "accountabilityArchiveCommitmentBody": "Archive \"{title}\"? It will leave your active Goals list.",
   "@accountabilityArchiveCommitmentBody": {
     "placeholders": {
@@ -1917,11 +1917,11 @@
       }
     }
   },
-  "accountabilityCommitmentMarkedMissed": "Commitment marked missed.",
-  "accountabilityCommitmentArchived": "Commitment archived.",
+  "accountabilityCommitmentMarkedMissed": "Open thread marked missed.",
+  "accountabilityCommitmentArchived": "Open thread archived.",
   "accountabilityGoalArchived": "Goal archived.",
   "accountabilityGoalUpdated": "Goal updated.",
-  "accountabilityCommitmentUpdated": "Commitment updated.",
+  "accountabilityCommitmentUpdated": "Open thread updated.",
   "accountabilityUpdateFailed": "Goals update failed.",
   "accountabilityStatusOpen": "Open",
   "accountabilityStatusInProgress": "In progress",

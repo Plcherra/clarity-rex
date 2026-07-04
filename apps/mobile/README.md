@@ -39,7 +39,7 @@ Built as a **production-minded MVP**: dark-first UI, English and Spanish, Plaid 
 | ![Budgets](assets/readme/04-budgets.png) | ![Transactions](assets/readme/09-transactions.png) |
 | **Rex chat** — Ask about money and life context using live app data | **Knows** — Saved memory: People, Events, Places, Goals, Preferences, Facts |
 | ![Rex Chat](assets/readme/05-rex-chat.png) | ![Knows](assets/readme/06-knows.png) |
-| **Goals** — Track goals and commitments alongside Rex | **Voice** — Hands-free Rex with usage tracking in Profile |
+| **Goals** — Track goals and open threads alongside Rex | **Voice** — Hands-free Rex with usage tracking in Profile |
 | ![Goals](assets/readme/07-goals.png) | ![Voice](assets/readme/08-voice.png) |
 
 <p align="center">
@@ -68,7 +68,7 @@ Built as a **production-minded MVP**: dark-first UI, English and Spanish, Plaid 
 - **Chat** — Rex uses the same financial data as Dashboard, Budgets, and Transactions
 - **Voice** — cloud voice sessions with usage visible under Profile
 - **Knows (memory)** — entity-based saved knowledge you control: People, Events, Places, Goals, Preferences, Facts
-- **Goals & commitments** — dedicated Goals tab; Rex can discuss progress using the same records
+- **Goals & Open Threads** — dedicated Goals tab for objectives and opt-in companion follow-ups
 - **Trust by design** — Rex distinguishes saved memory from chat history; durable actions only after backend confirmation
 
 ### Polish clients notice

@@ -1738,7 +1738,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountabilityTilesCommitmentActionsTooltip =>
-      'Commitment actions';
+      'Open thread actions';
 
   @override
   String get accountabilityTilesMarkMissed => 'Mark missed';
@@ -1747,7 +1747,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilityDetailGoalDetails => 'Goal details';
 
   @override
-  String get accountabilityDetailEditCommitment => 'Edit commitment';
+  String get accountabilityDetailEditCommitment => 'Edit open thread';
 
   @override
   String get accountabilityDetailNotesHint => 'Why this matters';
@@ -3097,13 +3097,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilityAddGoalTitle => 'Add goal';
 
   @override
-  String get accountabilityAddCommitmentTitle => 'Add commitment';
+  String get accountabilityAddCommitmentTitle => 'Add open thread';
 
   @override
   String get accountabilityAddGoalPrimaryLabel => 'Goal title';
 
   @override
-  String get accountabilityAddCommitmentPrimaryLabel => 'Commitment title';
+  String get accountabilityAddCommitmentPrimaryLabel => 'Open thread title';
 
   @override
   String get accountabilityAddGoalPrimaryHint =>
@@ -3124,10 +3124,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilityGoalSaved => 'Goal saved.';
 
   @override
-  String get accountabilityCommitmentSaved => 'Commitment saved.';
+  String get accountabilityCommitmentSaved => 'Open thread saved.';
 
   @override
-  String get accountabilityCommitmentCompleted => 'Commitment completed.';
+  String get accountabilityCommitmentCompleted => 'Open thread completed.';
 
   @override
   String get accountabilityMarkMissedTitle => 'Mark missed?';
@@ -3138,7 +3138,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get accountabilityArchiveCommitmentTitle => 'Archive commitment?';
+  String get accountabilityArchiveCommitmentTitle => 'Archive open thread?';
 
   @override
   String accountabilityArchiveCommitmentBody(String title) {
@@ -3155,10 +3155,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountabilityCommitmentMarkedMissed =>
-      'Commitment marked missed.';
+      'Open thread marked missed.';
 
   @override
-  String get accountabilityCommitmentArchived => 'Commitment archived.';
+  String get accountabilityCommitmentArchived => 'Open thread archived.';
 
   @override
   String get accountabilityGoalArchived => 'Goal archived.';
@@ -3167,7 +3167,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilityGoalUpdated => 'Goal updated.';
 
   @override
-  String get accountabilityCommitmentUpdated => 'Commitment updated.';
+  String get accountabilityCommitmentUpdated => 'Open thread updated.';
 
   @override
   String get accountabilityUpdateFailed => 'Goals update failed.';

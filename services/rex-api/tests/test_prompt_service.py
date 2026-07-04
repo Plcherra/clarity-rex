@@ -469,8 +469,8 @@ def test_prompt_service_injects_structured_memory_before_generic_memory():
     assert "- milestone/deadline for Visa runway: Prepare immigration documents" in (
         system_content
     )
-    assert "- commitment/deadline Review visa paperwork" in system_content
-    assert "plan: Visa runway" in system_content
+    assert "- commitment/" not in system_content
+    assert "plan: Visa runway" not in system_content
 
 
 def test_prompt_service_labels_plan_with_linked_person():

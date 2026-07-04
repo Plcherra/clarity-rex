@@ -129,30 +129,6 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     }
   }
 
-  Future<bool> createCommitment({
-    required String title,
-    required String commitmentText,
-    int priority = 3,
-  }) async {
-    state = state.copyWith(isSaving: true, clearError: true);
-    try {
-      await ref.read(memoryApiProvider).createCommitment(
-            title: title,
-            commitmentText: commitmentText,
-            priority: priority,
-          );
-      await loadSavedOverview(activeOnly: state.activeOnly);
-      state = state.copyWith(isSaving: false, clearError: true);
-      return true;
-    } on Object catch (error) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.create),
-      );
-      return false;
-    }
-  }
-
   Future<bool> updateMemory(
     String memoryId, {
     MemoryType? memoryType,
@@ -380,40 +356,6 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
             priority: priority,
             status: status,
             active: active,
-          );
-      await loadSavedOverview(activeOnly: state.activeOnly);
-      state = state.copyWith(isSaving: false, clearError: true);
-      return true;
-    } on Object catch (error) {
-      state = state.copyWith(
-        isSaving: false,
-        errorMessage: _memoryErrorMessage(ref, error, _MemoryOperation.edit),
-      );
-      return false;
-    }
-  }
-
-  Future<bool> updateCommitment(
-    String commitmentId, {
-    String? title,
-    String? commitmentText,
-    int? priority,
-    String? status,
-    bool? active,
-    DateTime? dueAt,
-  }) async {
-    state = state.copyWith(isSaving: true, clearError: true);
-    try {
-      await ref
-          .read(memoryApiProvider)
-          .updateCommitment(
-            commitmentId,
-            title: title,
-            commitmentText: commitmentText,
-            priority: priority,
-            status: status,
-            active: active,
-            dueAt: dueAt,
           );
       await loadSavedOverview(activeOnly: state.activeOnly);
       state = state.copyWith(isSaving: false, clearError: true);

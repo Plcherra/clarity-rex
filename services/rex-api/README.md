@@ -1,12 +1,13 @@
-# Rex API
+# Clarity assistant backend (`services/rex-api`)
 
-Rex API is the FastAPI assistant backend inside the merged Clarity app.
+The Clarity assistant backend — FastAPI service for chat, voice, memory, and recall. Part of Clarity, not a separate product.
 
 Current stack:
 
 - Backend: FastAPI
 - AI: Grok API through the backend only
-- Database: Supabase for conversations, messages, memory, goals, rules, plans, commitments, and voice turns
+- Database: Supabase for conversations, messages, memory, goals (`plans`), rules, open threads, and voice turns
+- Legacy (migration only): commitments table/routes remain for data migration only — not in Goals overview, Knows, prompts, or new UI
 - Memory: short-term transcript memory plus long-term facts, preferences, and events
 - Production voice target: Deepgram speech-to-text and Google Text-to-Speech through the backend
 
@@ -125,13 +126,13 @@ Readiness check:
 curl http://localhost:8000/ready
 ```
 
-## Rex Brain Launch Scope
+## Production assistant pipeline
 
-MVP launch uses Simple Rex Brain as the single production assistant brain:
-intent classification, direct memory/goal handling, long-horizon chat and memory
-retrieval, standard prompt assembly, and post-response truth enforcement.
-Experimental layered routing was removed; production chat and voice always use
-Simple Rex Brain through `ChatService`.
+MVP launch uses one production assistant pipeline:
+`ChatService` → `ChatTurnOrchestrator` → `SimpleRexBrain` for intent classification,
+direct memory/goal handling, long-horizon chat and memory retrieval, standard prompt
+assembly, and post-response truth enforcement. Production chat and voice always use
+this path through `ChatService`.
 
 Production VPS restarts should use the canonical systemd unit:
 

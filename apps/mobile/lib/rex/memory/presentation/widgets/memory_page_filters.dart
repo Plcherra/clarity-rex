@@ -117,21 +117,7 @@ SavedMemoryResults filterSavedMemory({
               plan.status.memoryRecordLabel,
             ]),
           ),
-    commitments: showPeopleOnly || showPreferencesOnly
-        ? const []
-        : filterList(
-            state.commitments,
-            (commitment) => _matchesQuery(
-              normalizedQuery,
-              [
-                commitment.title,
-                commitment.commitmentText,
-                commitment.commitmentType.memoryRecordLabel,
-                'Priority ${commitment.priority}',
-                commitment.status.memoryRecordLabel,
-              ],
-            ),
-          ),
+    commitments: const [],
     events: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories

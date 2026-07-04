@@ -186,7 +186,7 @@ Future<void> _showCommitmentEditSheet(
                   controller: detailController,
                   minLines: 2,
                   maxLines: 4,
-                  decoration: InputDecoration(labelText: l10n.commonCommitment),
+                  decoration: InputDecoration(labelText: l10n.accountabilityDetailNotesHint),
                 ),
                 const SizedBox(height: 12),
                 _PriorityPicker(
