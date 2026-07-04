@@ -48,7 +48,7 @@ dependencies:
   json_annotation: ^4.11.0
   mime: ^2.0.0
   path: ^1.9.0
-  record: ^7.1.0
+  record: ^7.1.1
   shared_preferences: ^2.5.3
   speech_to_text: ^7.3.0
   supabase_flutter: ^2.15.0
