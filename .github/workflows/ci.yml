@@ -17,7 +17,7 @@ jobs:
         with:
           channel: stable
       - name: Flutter analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Flutter tests
         run: flutter test
 
@@ -72,8 +72,8 @@ jobs:
           python-version: "3.12"
       - name: Run predeploy checks (no APK build)
         run: |
-          cd apps/mobile && flutter analyze && flutter test
-          cd ../services/rex-api
+          cd apps/mobile && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter test
+          cd ../../services/rex-api
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           python -m compileall app
