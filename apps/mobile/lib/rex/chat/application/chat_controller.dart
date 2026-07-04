@@ -152,31 +152,42 @@ class ChatController extends Notifier<ChatState> {
     String? fallbackAssistantResponse,
     Map<String, dynamic>? memoryChanges,
   }) {
-    final nextMessages = messages.isNotEmpty
-        ? _messagesFromApiMessages(messages, memoryChanges: memoryChanges)
-        : state.messages;
+    final clarityActions = clarityActionCardsFromMemoryChanges(memoryChanges);
+    if (messages.isNotEmpty) {
+      state = state.copyWith(
+        conversationId: conversationId,
+        messages: _messagesWithAssistantExtras(
+          _messagesFromApiMessages(messages),
+          memoryChanges: memoryChanges,
+        ),
+        isLoading: false,
+        clearError: true,
+      );
+      unawaited(_refreshSavedMemoryOverviewIfNeeded(memoryChanges));
+      unawaited(_refreshGoalsOverviewIfNeeded(memoryChanges));
+      return;
+    }
 
     state = state.copyWith(
       conversationId: conversationId,
-      messages: nextMessages,
       isLoading: false,
       clearError: true,
     );
 
-    if (messages.isEmpty &&
-        fallbackAssistantResponse != null &&
-        fallbackAssistantResponse.trim().isNotEmpty) {
+    final fallbackText = fallbackAssistantResponse?.trim() ?? '';
+    if (fallbackText.isNotEmpty || clarityActions.isNotEmpty) {
       addMessage(
         ChatMessage(
           id: 'local-assistant-${DateTime.now().microsecondsSinceEpoch}',
           role: ChatMessageRole.assistant,
-          content: fallbackAssistantResponse.trim(),
+          content: fallbackText,
           timestamp: DateTime.now(),
-          clarityActions: clarityActionCardsFromMemoryChanges(memoryChanges),
+          clarityActions: clarityActions,
         ),
       );
     }
     unawaited(_refreshSavedMemoryOverviewIfNeeded(memoryChanges));
+    unawaited(_refreshGoalsOverviewIfNeeded(memoryChanges));
   }
 
   Future<void> loadConversation(String conversationId) async {
@@ -196,8 +207,33 @@ class ChatController extends Notifier<ChatState> {
         isLoading: false,
         clearError: true,
       );
+      await _hydratePendingWriteProposal(conversationId);
     } on Object catch (error) {
       state = state.copyWith(isLoading: false, errorMessage: _localizedError(error));
+    }
+  }
+
+  Future<void> _hydratePendingWriteProposal(String conversationId) async {
+    if (pendingClarityActions(state.messages).isNotEmpty) {
+      return;
+    }
+
+    try {
+      final memoryChanges = await ref
+          .read(conversationApiProvider)
+          .getPendingWriteProposal(conversationId);
+      if (memoryChanges == null ||
+          clarityActionCardsFromMemoryChanges(memoryChanges).isEmpty) {
+        return;
+      }
+      state = state.copyWith(
+        messages: _messagesWithAssistantExtras(
+          state.messages,
+          memoryChanges: memoryChanges,
+        ),
+      );
+    } on Object {
+      // Pending write hydration is best-effort when reopening a conversation.
     }
   }
 
@@ -582,7 +618,6 @@ class ChatController extends Notifier<ChatState> {
       _messagesWithAssistantExtras(
         _messagesFromApiMessages(
           response.messages,
-          memoryChanges: response.memoryChanges,
         ),
         memoryChanges: response.memoryChanges,
         dashboardLink: dashboardLink,
@@ -655,9 +690,8 @@ class ChatController extends Notifier<ChatState> {
   }
 
   List<ChatMessage> _messagesFromApiMessages(
-    List<ChatApiMessage> messages, {
-    Map<String, dynamic>? memoryChanges,
-  }) {
+    List<ChatApiMessage> messages,
+  ) {
     return messages.map(_messageFromApi).toList(growable: false);
   }
 

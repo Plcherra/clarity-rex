@@ -73,6 +73,23 @@ class ConversationApi {
         .toList(growable: false);
   }
 
+  Future<Map<String, dynamic>?> getPendingWriteProposal(
+    String conversationId,
+  ) async {
+    final response = await _apiClient.get(
+      '/conversations/$conversationId/pending-write',
+    );
+    final data = _decodeResponse(response);
+    if (data is! Map<String, dynamic>) {
+      throw const ChatApiException('Backend returned an invalid response.');
+    }
+    final proposals = data['write_proposals'];
+    if (proposals is! List || proposals.isEmpty) {
+      return null;
+    }
+    return data;
+  }
+
   Future<List<ConversationSearchResult>> searchConversations(
     String query,
   ) async {

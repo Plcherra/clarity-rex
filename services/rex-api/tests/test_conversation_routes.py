@@ -20,6 +20,7 @@ class FakeConversationMemoryService:
         self.deleted_conversation_ids = []
         self.search_conversation_calls = []
         self.search_message_calls = []
+        self.pending_actions = {}
         self.conversations = [
             {
                 "id": "conversation-1",
@@ -147,6 +148,10 @@ class FakeConversationMemoryService:
         self.deleted_conversation_ids.append(conversation_id)
         return True
 
+    async def get_conversation_pending_action(self, conversation_id):
+        self._raise_if_configured()
+        return self.pending_actions.get(conversation_id)
+
 
 def override_memory_service(fake_memory_service):
     app.dependency_overrides[get_memory_service] = lambda: fake_memory_service
@@ -251,6 +256,48 @@ def test_delete_conversation(client):
 
     assert response.status_code == 204
     assert fake_memory_service.deleted_conversation_ids == ["conversation-1"]
+
+
+def test_get_pending_write_returns_empty_when_no_pending_action(client):
+    override_memory_service(FakeConversationMemoryService())
+
+    response = client.get("/conversations/conversation-1/pending-write")
+
+    assert response.status_code == 200
+    assert response.json()["write_proposals"] == []
+
+
+def test_get_pending_write_returns_open_thread_proposal(client):
+    fake_memory_service = FakeConversationMemoryService()
+    fake_memory_service.pending_actions["conversation-1"] = {
+        "action_type": "durable_write",
+        "context": {
+            "durable_write_proposal": {
+                "write_kind": "open_thread",
+                "title": "Money stress",
+                "body": "Money has been tight lately.",
+                "editable_fields": ["title", "body"],
+                "apply_snapshot": {
+                    "type": "open_thread",
+                    "payload": {
+                        "title": "Money stress",
+                        "summary": "Money has been tight lately.",
+                        "status": "active",
+                    },
+                },
+                "proposal_id": "proposal-1",
+                "risk_level": "medium",
+            }
+        },
+    }
+    override_memory_service(fake_memory_service)
+
+    response = client.get("/conversations/conversation-1/pending-write")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["confirmation_required"] == 1
+    assert payload["write_proposals"][0]["write_kind"] == "open_thread"
 
 
 def test_delete_conversation_returns_404_for_missing_conversation(client):

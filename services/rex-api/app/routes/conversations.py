@@ -6,6 +6,8 @@ from app.models.conversation import (
     ConversationSearchResultResponse,
     MessageResponse,
 )
+from app.services.durable_write_pending import proposal_from_pending_action
+from app.services.durable_write_results import pending_memory_changes
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 
 
@@ -70,6 +72,26 @@ async def get_conversation_messages(
         raise HTTPException(status_code=404, detail="Conversation not found.")
 
     return [MessageResponse(**_public_message(message)) for message in messages]
+
+
+@router.get("/{conversation_id}/pending-write")
+async def get_pending_write_proposal(
+    conversation_id: str,
+    memory_service: SupabaseMemoryService = Depends(get_memory_service),
+) -> dict:
+    try:
+        pending = await memory_service.get_conversation_pending_action(conversation_id)
+    except MemoryServiceError as error:
+        raise _memory_http_error(error) from error
+
+    proposal = proposal_from_pending_action(pending)
+    if proposal is None:
+        return {
+            "confirmation_required": 0,
+            "write_proposals": [],
+            "plan_save_proposals": [],
+        }
+    return pending_memory_changes(proposal=proposal)
 
 
 @router.delete("/{conversation_id}", status_code=204)

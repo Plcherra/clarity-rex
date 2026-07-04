@@ -16,6 +16,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Prepare mobile env asset
+        run: cp .env.example .env
       - name: Flutter analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Flutter tests
@@ -72,7 +74,9 @@ jobs:
           python-version: "3.12"
       - name: Run predeploy checks (no APK build)
         run: |
-          cd apps/mobile && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter test
+          cd apps/mobile
+          cp .env.example .env
+          flutter analyze --no-fatal-infos --no-fatal-warnings && flutter test
           cd ../../services/rex-api
           python -m pip install --upgrade pip
           pip install -r requirements.txt

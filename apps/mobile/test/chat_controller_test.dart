@@ -1,6 +1,8 @@
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/data/chat_api.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
+import 'package:clarity/rex/chat/domain/chat_message.dart';
+import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
 import 'package:clarity/rex/memory/data/memory_api.dart';
 import 'package:cross_file/cross_file.dart';
@@ -10,6 +12,55 @@ import 'package:flutter_test/flutter_test.dart';
 import 'memory_page_test_helpers.dart';
 
 void main() {
+  test(
+    'applyBackendMessages attaches pending write proposals from voice turns',
+    () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(chatProvider.notifier);
+
+      controller.applyBackendMessages(
+        conversationId: 'conversation-1',
+        messages: const [
+          ChatApiMessage(
+            id: 'message-1',
+            conversationId: 'conversation-1',
+            role: 'user',
+            content: 'Money has been really tight lately.',
+          ),
+          ChatApiMessage(
+            id: 'message-2',
+            conversationId: 'conversation-1',
+            role: 'assistant',
+            content:
+                'Want me to keep track of this and check in later? It would show up in your Goals tab as an open thread — not saved memory.',
+          ),
+        ],
+        memoryChanges: {
+          'confirmation_required': 1,
+          'write_proposals': [
+            {
+              'id': 'open-thread-proposal-1',
+              'write_kind': 'open_thread',
+              'action': 'save_open_thread',
+              'title': 'Money has been really tight lately.',
+              'body': 'Money has been really tight lately.',
+              'confirmation_text': 'Track this in Goals as an open thread?',
+              'risk_level': 'medium',
+              'status': 'pending',
+            },
+          ],
+        },
+      );
+
+      final pending = pendingClarityActions(
+        container.read(chatProvider).messages,
+      );
+      expect(pending, hasLength(1));
+      expect(pending.first.writeKind, 'open_thread');
+    },
+  );
+
   test(
     'ChatController refreshes Knows after confirmed memory archive',
     () async {
