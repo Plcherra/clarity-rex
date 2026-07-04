@@ -1,4 +1,4 @@
-"""Shared cleanup for chat and voice user text before Rex Brain processing."""
+"""Shared cleanup for chat and voice user text before assistant pipeline processing."""
 
 from __future__ import annotations
 
@@ -94,7 +94,7 @@ class TranscriptNormalizer:
         )
 
     def normalize(self, message: str) -> str:
-        """Return cleaned text for Rex Brain processing, preserving user casing."""
+        """Return cleaned text for assistant pipeline processing, preserving user casing."""
         text = " ".join(str(message or "").strip().split())
         if not text:
             return ""

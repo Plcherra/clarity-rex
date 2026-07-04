@@ -56,7 +56,6 @@ class ChatService(ChatVoiceMetadataMixin):
         simple_rex_brain: Optional[SimpleRexBrain] = None,
         rex_intent_router: Optional[RexIntentRouter] = None,
         usage_tracking_service: Optional[UsageTrackingService] = None,
-        **experimental_rex_brain_kwargs,
     ) -> None:
         self.ai_service = ai_service
         self.memory_service = memory_service
@@ -102,10 +101,8 @@ class ChatService(ChatVoiceMetadataMixin):
             time_context_service=self.time_context_service,
             accountability_service=self.accountability_service,
         )
-        # Production launch brain: one simple Rex Brain surface owns intent and
-        # context assembly. Experimental routing kwargs are accepted for old
-        # tests/callers but intentionally do not create a second production path.
-        _ = experimental_rex_brain_kwargs
+        # Production assistant pipeline: SimpleRexBrain owns intent and
+        # context assembly.
         self.simple_rex_brain = simple_rex_brain or SimpleRexBrain(
             intent_router=self.rex_intent_router,
             chat_context_service=self.chat_context_service,

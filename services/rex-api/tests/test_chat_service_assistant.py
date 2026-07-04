@@ -1,31 +1,8 @@
 import pytest
 
-from chat_service_fakes import (
-    FailingRexBrain,
-    FakeAIService,
-    FakeMemoryService,
-    FakeRexBrainObserver,
-)
+from chat_service_fakes import FakeAIService, FakeMemoryService
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
-
-
-def _routed_chat_service(
-    ai_service,
-    memory_service,
-    *,
-    rex_brain=None,
-    rex_brain_observer=None,
-    **settings_overrides,
-):
-    _ = settings_overrides
-    return ChatService(
-        ai_service,
-        FileService(),
-        memory_service,
-        rex_brain=rex_brain,
-        rex_brain_observer=rex_brain_observer,
-    )
 
 
 @pytest.mark.asyncio
@@ -41,7 +18,7 @@ async def test_simple_rex_brain_keeps_chat_ai_call_unchanged():
     await chat_service.send_message("hey Rex")
 
     assert ai_service.kwargs == {}
-    assert "Rex Brain routing contract" not in ai_service.messages[0]["content"]
+    assert "routing contract" not in ai_service.messages[0]["content"].lower()
 
 
 @pytest.mark.asyncio
@@ -95,13 +72,13 @@ async def test_attached_financial_context_is_ignored_for_streaming_recall():
 
 
 @pytest.mark.asyncio
-async def test_experimental_rex_brain_settings_do_not_change_mvp_flow():
+async def test_financial_context_included_for_spending_analysis():
     ai_service = FakeAIService(response="Rex response")
     memory_service = FakeMemoryService()
-    chat_service = _routed_chat_service(
+    chat_service = ChatService(
         ai_service,
+        FileService(),
         memory_service,
-        grok_reasoning_model="grok-reasoning",
     )
 
     await chat_service.send_message(
@@ -121,36 +98,19 @@ async def test_experimental_rex_brain_settings_do_not_change_mvp_flow():
     assert ai_service.kwargs == {}
     system_prompt = ai_service.messages[0]["content"]
     assert "Clarity financial summary" in system_prompt
-    assert "Rex Brain routing contract" not in system_prompt
+    assert "routing contract" not in system_prompt.lower()
     assert "Layer 2 Analytical" not in system_prompt
     assert "model_override" not in ai_service.kwargs
 
 
 @pytest.mark.asyncio
-async def test_experimental_rex_brain_planner_is_not_called_by_mvp_flow():
-    ai_service = FakeAIService(response="Rex response")
-    memory_service = FakeMemoryService()
-    chat_service = _routed_chat_service(
-        ai_service,
-        memory_service,
-        rex_brain=FailingRexBrain(),
-    )
-
-    result = await chat_service.send_message("hey Rex")
-
-    assert result["response"] == "Rex response"
-    assert ai_service.kwargs == {}
-    assert "Rex Brain routing contract" not in ai_service.messages[0]["content"]
-
-
-@pytest.mark.asyncio
-async def test_rex_brain_streaming_chat_uses_mvp_kwargs_only():
+async def test_streaming_chat_uses_mvp_kwargs_only():
     ai_service = FakeAIService(stream_tokens=["A", "B"])
     memory_service = FakeMemoryService()
-    chat_service = _routed_chat_service(
+    chat_service = ChatService(
         ai_service,
+        FileService(),
         memory_service,
-        grok_fast_model="grok-fast",
     )
 
     events = [
@@ -159,7 +119,7 @@ async def test_rex_brain_streaming_chat_uses_mvp_kwargs_only():
     ]
 
     assert ai_service.kwargs == {"max_tokens": 123}
-    assert "Rex Brain routing contract" not in ai_service.messages[0]["content"]
+    assert "routing contract" not in ai_service.messages[0]["content"].lower()
     assert any(
         event.get("event") == "done" and event.get("response") == "AB"
         for event in events
@@ -167,31 +127,14 @@ async def test_rex_brain_streaming_chat_uses_mvp_kwargs_only():
 
 
 @pytest.mark.asyncio
-async def test_rex_brain_deep_think_flag_does_not_enable_router_for_mvp():
-    ai_service = FakeAIService(response="Rex response")
-    memory_service = FakeMemoryService()
-    chat_service = _routed_chat_service(
-        ai_service,
-        memory_service,
-        grok_reasoning_model="grok-reasoning",
-    )
-
-    await chat_service.send_message(
-        "hey Rex",
-        user_requested_deep_thinking=True,
-    )
-
-    assert ai_service.kwargs == {}
-    system_prompt = ai_service.messages[0]["content"]
-    assert "Rex Brain routing contract" not in system_prompt
-    assert "Layer 1 Contextual Recall" not in system_prompt
-
-
-@pytest.mark.asyncio
 async def test_base_prompt_contains_launch_safety_guards():
     ai_service = FakeAIService(response="Rex response")
     memory_service = FakeMemoryService()
-    chat_service = _routed_chat_service(ai_service, memory_service)
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+    )
 
     await chat_service.send_message(
         "Simulate my budget and alert me when anything changes",
@@ -216,22 +159,6 @@ async def test_base_prompt_contains_launch_safety_guards():
 
 
 @pytest.mark.asyncio
-async def test_rex_brain_observer_is_not_called_on_mvp_flow():
-    ai_service = FakeAIService(response="Rex response")
-    memory_service = FakeMemoryService()
-    observer = FakeRexBrainObserver()
-    chat_service = _routed_chat_service(
-        ai_service,
-        memory_service,
-        rex_brain_observer=observer,
-    )
-
-    await chat_service.send_message("Analyze my spending")
-
-    assert observer.calls == []
-
-
-@pytest.mark.asyncio
 async def test_mvp_flow_preserves_memory_status_in_prompt_context():
     ai_service = FakeAIService(response="Rex response")
     memory_service = FakeMemoryService()
@@ -247,10 +174,10 @@ async def test_mvp_flow_preserves_memory_status_in_prompt_context():
             ],
         }
     }
-    chat_service = _routed_chat_service(
+    chat_service = ChatService(
         ai_service,
+        FileService(),
         memory_service,
-        grok_fast_model="grok-fast",
     )
 
     await chat_service.send_message("Do you know anything about my mom?")

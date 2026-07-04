@@ -30,26 +30,6 @@ class FakeAIService:
             yield token
 
 
-class FakeRexBrainObserver:
-    def __init__(self):
-        self.calls = []
-
-    def log_turn(self, **kwargs):
-        self.calls.append(kwargs)
-        return {
-            "request_id": kwargs["request_id"],
-            "status": kwargs["status"],
-            "channel": kwargs["channel"].value,
-            "layer": kwargs["decision"].layer.value,
-            "effective_model_profile": kwargs["model_route"].effective_profile.value,
-        }
-
-
-class FailingRexBrain:
-    def plan_turn(self, brain_input):
-        raise RuntimeError("brain planning failed")
-
-
 class FailingAIService:
     async def generate_response(self, messages, **kwargs):
         raise RuntimeError("AI failed")

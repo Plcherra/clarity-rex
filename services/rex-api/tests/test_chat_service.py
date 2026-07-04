@@ -22,7 +22,7 @@ from app.services.chat_service import (
 )
 from app.services.file_service import FileService
 from app.services.memory_service import SupabaseMemoryService, MemoryServiceError
-from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.rex_channel import RexBrainChannel
 from app.services.time_context_service import TimeContextService
 
 

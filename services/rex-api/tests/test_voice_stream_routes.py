@@ -12,7 +12,7 @@ from app.services.deepgram_service import DeepgramServiceError
 from app.services.google_tts_service import GoogleTTSServiceError
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
-from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.rex_channel import RexBrainChannel
 from app.services.time_context_service import TimeContextService
 from chat_service_fakes import FakeAIService, FakeMemoryService
 from app.services.voice_stream_session import (

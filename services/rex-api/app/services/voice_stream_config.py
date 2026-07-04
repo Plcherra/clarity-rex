@@ -2,7 +2,7 @@ VOICE_RESPONSE_INSTRUCTIONS = (
     "Voice mode: reply in 1-2 short spoken sentences. Be warm, direct, and natural. "
     "Start with the answer, avoid filler, and keep wording easy to speak. "
     "If the transcript sounds unclear or garbled, ask one quick clarification before "
-    "saving memory or making a correction. Use the same Rex Brain truth rules as chat. "
+    "saving memory or making a correction. Use the same assistant truth rules as chat. "
     "Do not emit clarity_action blocks."
 )
 VOICE_RESPONSE_MAX_TOKENS = 120

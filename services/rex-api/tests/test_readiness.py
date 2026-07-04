@@ -31,8 +31,8 @@ def test_readiness_reports_missing_cloud_voice_config(monkeypatch):
     assert payload["checks"]["google_tts"]["configured"] is False
     assert payload["checks"]["plaid"]["configured"] is False
     assert payload["checks"]["plaid"]["required_for_ready"] is False
-    assert payload["checks"]["rex_brain"]["configured"] is True
-    assert payload["checks"]["rex_brain"]["mode"] == "simple"
+    assert payload["checks"]["assistant_pipeline"]["configured"] is True
+    assert payload["checks"]["assistant_pipeline"]["mode"] == "simple"
     assert payload["checks"]["time"]["timezone"] == "America/New_York"
     assert "DEEPGRAM_API_KEY" in payload["checks"]["deepgram"]["required"]
 
@@ -69,11 +69,11 @@ def test_readiness_reports_ready_when_all_required_services_are_configured(monke
     assert payload["checks"]["google_tts"]["audio_encoding"] == "MP3"
     assert payload["checks"]["plaid"]["configured"] is False
     assert "PLAID_SECRET" in payload["checks"]["plaid"]["required"]
-    assert payload["checks"]["rex_brain"] == {
+    assert payload["checks"]["assistant_pipeline"] == {
         "configured": True,
         "mode": "simple",
         "description": (
-            "Simple Rex Brain is the production launch brain for chat and voice."
+            "Production assistant pipeline (SimpleRexBrain) for chat and voice."
         ),
         "models": {
             "fallback": "grok-4.3",

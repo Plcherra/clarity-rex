@@ -2,7 +2,7 @@ import pytest
 
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
-from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.rex_channel import RexBrainChannel
 from app.services.time_context_service import TimeContextService
 from chat_service_fakes import FakeAIService, FakeMemoryService
 

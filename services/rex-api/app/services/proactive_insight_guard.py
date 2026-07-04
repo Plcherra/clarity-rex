@@ -1,6 +1,10 @@
 """Production proactive monitoring opt-in guard for SimpleRexBrain."""
 
-from app.services.rex_brain_terms import PROACTIVE_MONITORING_TERMS, contains_any, normalize
+from app.services.assistant_text_utils import (
+    PROACTIVE_MONITORING_TERMS,
+    contains_any,
+    normalize,
+)
 
 
 def requires_proactive_monitoring_opt_in(

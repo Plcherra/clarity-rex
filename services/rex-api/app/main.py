@@ -78,11 +78,11 @@ def readiness_check() -> dict:
             "required": ["GROK_API_KEY", "GROK_MODEL"],
             "model": settings.grok_model,
         },
-        "rex_brain": {
+        "assistant_pipeline": {
             "configured": True,
             "mode": "simple",
             "description": (
-                "Simple Rex Brain is the production launch brain for chat and voice."
+                "Production assistant pipeline (SimpleRexBrain) for chat and voice."
             ),
             "models": {
                 "fallback": settings.grok_model,

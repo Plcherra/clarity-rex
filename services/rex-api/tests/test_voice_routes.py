@@ -10,7 +10,7 @@ from app.dependencies import (
 from app.main import app
 from app.services.ai_service import AIServiceError
 from app.services.chat_service import ConversationNotFoundError
-from app.services.rex_brain_contracts import RexBrainChannel
+from app.services.rex_channel import RexBrainChannel
 from app.services.voice_stream_session import (
     VOICE_RESPONSE_INSTRUCTIONS,
     VOICE_RESPONSE_MAX_TOKENS,
