@@ -5,6 +5,7 @@ import pytest
 from app.models.open_thread import OpenThreadCreateRequest, MAX_ACTIVE_OPEN_THREADS
 from app.services.open_thread_eligibility import (
     infer_thread_title,
+    is_clear_measurable_goal,
     is_explicit_track_consent,
     is_recall_message,
     thread_offer_eligible,
@@ -96,6 +97,34 @@ def test_thread_offer_eligible_uses_generic_signals() -> None:
     )
     assert is_recall_message("Do you remember what I said about training?")
     assert is_explicit_track_consent("Yes, keep track of this please")
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "The citizenship process is overwhelming and has been really stressful lately.",
+        "Money has been really tight lately and it is stressful to keep up.",
+        "We're moving next month and it is stressful figuring out logistics.",
+        "I want to build an app in my evenings and keep working on it.",
+    ],
+)
+def test_thread_offer_eligible_accepts_natural_conversation(message: str) -> None:
+    assert thread_offer_eligible(
+        message,
+        already_offered=False,
+        already_declined=False,
+        active_thread_count=0,
+    )
+
+
+def test_thread_offer_eligible_defers_clear_measurable_goals() -> None:
+    assert not thread_offer_eligible(
+        "I need to save $5000 by December for my emergency fund.",
+        already_offered=False,
+        already_declined=False,
+        active_thread_count=0,
+    )
+    assert is_clear_measurable_goal("My goal is to save enough for a down payment.")
 
 
 def test_prompt_labels_open_threads_as_not_saved_memory() -> None:

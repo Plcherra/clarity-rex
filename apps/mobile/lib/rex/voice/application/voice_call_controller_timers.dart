@@ -55,7 +55,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
         onFinalTranscript: (transcript) {
           if (_isCurrentCall(generation) &&
               state.phase == VoiceCallPhase.listening) {
-            updateTranscript(transcript);
+            updateTranscript(transcript, isFinal: true);
           }
         },
         onError: (_) {},

@@ -28,6 +28,21 @@ ONGOING_SIGNAL_PATTERNS = (
     re.compile(r"\bstill\b.+\b(?:working|figuring|dealing|processing)\b", re.I),
     re.compile(r"\bongoing\b", re.I),
     re.compile(r"\bstruggling with\b", re.I),
+    re.compile(
+        r"\bi(?:'m| am)\s+(?:stressed|stressing|worried|worrying|anxious|overwhelmed)\b",
+        re.I,
+    ),
+    re.compile(r"\b(?:lately|these days|right now)\b", re.I),
+    re.compile(r"\bthe\s+\w+(?:\s+\w+){0,3}\s+process\s+is\b", re.I),
+    re.compile(r"\b(?:sorting out|figuring out|working through)\b", re.I),
+    re.compile(r"\bwe(?:'re| are)\s+(?:moving|relocating|building|working)\b", re.I),
+    re.compile(r"\b(?:a lot to handle|stressful|overwhelming|has been really)\b", re.I),
+)
+
+CLEAR_MEASURABLE_GOAL_PATTERNS = (
+    re.compile(r"\bi (?:want|need) to save\b", re.I),
+    re.compile(r"\bmy (?:goal|focus|priority) is\b", re.I),
+    re.compile(r"\bi (?:want|need) to reach\b", re.I),
 )
 
 EXPLICIT_TRACK_CONSENT_PATTERNS = (
@@ -68,6 +83,10 @@ def has_ongoing_personal_signal(message: str) -> bool:
     return any(pattern.search(message) for pattern in ONGOING_SIGNAL_PATTERNS)
 
 
+def is_clear_measurable_goal(message: str) -> bool:
+    return any(pattern.search(message) for pattern in CLEAR_MEASURABLE_GOAL_PATTERNS)
+
+
 def is_explicit_track_consent(message: str) -> bool:
     return any(pattern.search(message) for pattern in EXPLICIT_TRACK_CONSENT_PATTERNS)
 
@@ -99,6 +118,8 @@ def thread_offer_message_eligible(
     if is_recall_message(message):
         return False
     if is_one_off_factual_question(message):
+        return False
+    if is_clear_measurable_goal(message):
         return False
     if not has_ongoing_personal_signal(message):
         return False

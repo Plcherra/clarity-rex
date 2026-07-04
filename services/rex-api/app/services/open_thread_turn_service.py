@@ -132,8 +132,11 @@ class OpenThreadTurnService:
         ):
             return None
 
-        return await clarification_turn_result(
-            self.memory_service,
+        title = infer_thread_title(message)
+        summary = thread_summary_from_message(message)
+        return await self.durable_write_service.propose_open_thread(
+            title=title,
+            summary=summary,
             conversation_id=conversation_id,
             user_message=user_message,
             response=(

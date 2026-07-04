@@ -3,11 +3,21 @@ class VoiceTranscriptBuffer {
   var _partialText = '';
 
   String get visible {
+    final finalText = _normalize(_finalText);
     final partialText = _normalize(_partialText);
-    if (partialText.isNotEmpty) {
+    if (finalText.isEmpty) {
       return partialText;
     }
-    return _normalize(_finalText);
+    if (partialText.isEmpty) {
+      return finalText;
+    }
+    if (_contains(finalText, partialText)) {
+      return finalText;
+    }
+    if (_contains(partialText, finalText)) {
+      return partialText;
+    }
+    return _collapseRepeatedText('$finalText $partialText');
   }
 
   void clear() {

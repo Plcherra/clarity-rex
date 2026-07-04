@@ -37,6 +37,18 @@ void main() {
       expect(buffer.visible, 'Hello world');
     });
 
+    test('shows finalized and partial text together across phrases', () {
+      final buffer = VoiceTranscriptBuffer();
+      buffer.updatePartial('Hello there');
+      expect(buffer.visible, 'Hello there');
+
+      buffer.appendFinal('Hello there.');
+      expect(buffer.visible, 'Hello there.');
+
+      buffer.updatePartial('how are you');
+      expect(buffer.visible, 'Hello there. how are you');
+    });
+
     test('clear resets partial and final text', () {
       final buffer = VoiceTranscriptBuffer();
       buffer.updatePartial('listening');

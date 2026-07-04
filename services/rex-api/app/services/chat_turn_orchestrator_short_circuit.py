@@ -71,6 +71,23 @@ async def try_short_circuit_turn(
             )
             return durable_turn
 
+    open_thread_turn = await orchestrator.open_thread_turn_service.handle_turn(
+        brain_message,
+        conversation_id=conversation_id,
+        user_message=turn_context.user_message,
+        conversation_history=turn_context.conversation_history,
+        pending_action=pending_action,
+    )
+    if open_thread_turn:
+        finish_short_circuit(
+            orchestrator.turn_observer,
+            orchestrator.usage_recorder,
+            turn_trace,
+            turn_started_at,
+            "open_thread",
+        )
+        return open_thread_turn
+
     conversational_plan_turn = await orchestrator.conversational_plan_service.handle_turn(
         brain_message,
         conversation_id=conversation_id,
@@ -106,23 +123,6 @@ async def try_short_circuit_turn(
             "goal_command",
         )
         return goal_command_turn
-
-    open_thread_turn = await orchestrator.open_thread_turn_service.handle_turn(
-        brain_message,
-        conversation_id=conversation_id,
-        user_message=turn_context.user_message,
-        conversation_history=turn_context.conversation_history,
-        pending_action=pending_action,
-    )
-    if open_thread_turn:
-        finish_short_circuit(
-            orchestrator.turn_observer,
-            orchestrator.usage_recorder,
-            turn_trace,
-            turn_started_at,
-            "open_thread",
-        )
-        return open_thread_turn
 
     simple_memory_turn = await orchestrator.memory_turn_service.handle_turn(
         brain_message,

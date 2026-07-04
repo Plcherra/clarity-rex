@@ -74,8 +74,11 @@ class FakeDurableWriteService:
 
     async def propose_open_thread(self, **kwargs):
         self.proposals.append(kwargs)
+        response = kwargs.get("response") or (
+            "Just to confirm — track this in Goals as an open thread?"
+        )
         return {
-            "response": "Just to confirm — track this in Goals as an open thread?",
+            "response": response,
             "conversation_id": kwargs["conversation_id"],
             "memory_changes": {
                 "confirmation_required": 1,
@@ -112,7 +115,9 @@ async def test_open_thread_turn_service_offers_once_for_eligible_message():
     assert result is not None
     assert THREAD_OFFER_PHRASE in result["response"]
     assert "not saved memory" in result["response"]
-    assert durable.proposals == []
+    assert result["memory_changes"]["confirmation_required"] == 1
+    assert result["memory_changes"]["write_proposals"][0]["write_kind"] == "open_thread"
+    assert durable.proposals[0]["title"]
 
 
 @pytest.mark.asyncio

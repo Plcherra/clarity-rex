@@ -113,6 +113,7 @@ class DurableWriteService:
         summary: str | None,
         conversation_id: str,
         user_message: dict,
+        response: str | None = None,
     ) -> dict:
         proposal = proposal_from_open_thread(
             title=title,
@@ -124,6 +125,7 @@ class DurableWriteService:
             proposal,
             conversation_id=conversation_id,
             user_message=user_message,
+            response=response,
         )
 
     async def propose_discipline_decision(
@@ -218,13 +220,14 @@ class DurableWriteService:
         *,
         conversation_id: str,
         user_message: dict,
+        response: str | None = None,
     ) -> dict:
         supersede_note = await self._pending().set_superseding(
             conversation_id,
             pending_action_for_durable_write(proposal=proposal),
         )
         # The write_proposal card is the confirmation contract; avoid duplicating it in chat text.
-        prompt = supersede_note or ""
+        prompt = response if response is not None else (supersede_note or "")
         return await clarification_turn_result(
             self.memory_service,
             conversation_id=conversation_id,
