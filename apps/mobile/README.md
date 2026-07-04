@@ -194,7 +194,7 @@ flutter test
 <details>
 <summary><strong>Flutter web (PWA at goclarity.app/app/)</strong></summary>
 
-Production web uses the same `apps/mobile` codebase as iOS/Android. See [`docs/flutter-web/00_FLUTTER_WEB_MASTER.md`](../../docs/flutter-web/00_FLUTTER_WEB_MASTER.md).
+Production web uses the same `apps/mobile` codebase as iOS/Android. See [`docs/PROJECT_STRUCTURE.md`](../../docs/PROJECT_STRUCTURE.md).
 
 **Local dev (Chrome):**
 
@@ -231,8 +231,6 @@ Stage only (after separate builds): `./scripts/flutter_web_stage_into_landing.sh
 
 Regenerate PWA icons: `.\scripts\generate_web_pwa_icons.ps1`
 
-Browser smoke checklist: [`docs/flutter-web/WEB_SMOKE_RUNBOOK.md`](../../docs/flutter-web/WEB_SMOKE_RUNBOOK.md)
-
 </details>
 
 <details>
@@ -250,7 +248,7 @@ lib/
 
 Entry: `lib/main.dart` → `lib/app/bootstrap.dart` · Composition: `lib/app/app_composition.dart`
 
-Monorepo map: [`docs/PROJECT_MAP.md`](../../docs/PROJECT_MAP.md)
+Monorepo map: [`docs/PROJECT_STRUCTURE.md`](../../docs/PROJECT_STRUCTURE.md)
 
 </details>
 
@@ -281,10 +279,9 @@ Original device exports (`IMG_*.PNG`) are kept in the same folder for reference.
 <details>
 <summary><strong>Internal documentation</strong></summary>
 
-- Architecture: [`docs/brain/REX_BRAIN_ARCHITECTURE.md`](../../docs/brain/REX_BRAIN_ARCHITECTURE.md)
-- Finance source of truth: [`docs/FINANCE_SOURCE_OF_TRUTH.md`](../../docs/FINANCE_SOURCE_OF_TRUTH.md)
-- CSV import contract: [`docs/csv_import_ai_categorization.md`](../../docs/csv_import_ai_categorization.md)
-- Completion plan: [`docs/project-completion/00_COMPLETION_MASTER_PLAN.md`](../../docs/project-completion/00_COMPLETION_MASTER_PLAN.md)
+- [`docs/MASTER_PLAN.md`](../../docs/MASTER_PLAN.md)
+- [`docs/CLARITY_RULES.md`](../../docs/CLARITY_RULES.md)
+- [`docs/PROJECT_STRUCTURE.md`](../../docs/PROJECT_STRUCTURE.md)
 
 </details>
 

@@ -185,7 +185,7 @@ Main screens currently implemented:
 - Long-term memory list/edit/deactivate screen
 - File upload flow for `.txt`, `.md`, and `.csv`
 
-Current local voice support exists as a development fallback. The production voice plan is documented in [docs/action_plans/voice_pipeline_checklist.md](docs/action_plans/voice_pipeline_checklist.md), with the initial audio contract in [docs/cloud_voice_contract.md](docs/cloud_voice_contract.md) and Google TTS setup in [docs/google_tts_setup.md](docs/google_tts_setup.md).
+Production voice wiring is documented in [`docs/PROJECT_STRUCTURE.md`](../../docs/PROJECT_STRUCTURE.md) (Voice section).
 
 ## Tests
 
@@ -216,8 +216,7 @@ python -m scripts.apply_memory_corrections "My mom's name is Maria" --apply
 ```
 
 Canonical paths live under `scripts/`. See
-[`docs/MEMORY_RECALL_SOURCE_OF_TRUTH.md`](../../docs/MEMORY_RECALL_SOURCE_OF_TRUTH.md)
-for legacy table and facade notes.
+[`docs/PROJECT_STRUCTURE.md`](../../docs/PROJECT_STRUCTURE.md) (Memory and Recall Wiring, Ops scripts).
 
 Current expected status after Phase 8 plus pre-deploy cleanup:
 
@@ -231,4 +230,5 @@ Current expected status after Phase 8 plus pre-deploy cleanup:
 - Use `apps/mobile/.env` or `--dart-define=REX_BACKEND_URL=...` to point Flutter at the correct backend. The dart define wins if both are set.
 - Supabase SQL must be applied before real chat memory can work.
 - Deepgram and Google TTS credentials stay backend-side only.
-- Deployment notes are in [../../docs/BACKEND_DEPLOY_RUNBOOK.md](../../docs/BACKEND_DEPLOY_RUNBOOK.md).
+- Behavioral rules: [`docs/CLARITY_RULES.md`](../../docs/CLARITY_RULES.md).
+- Code layout and wiring: [`docs/PROJECT_STRUCTURE.md`](../../docs/PROJECT_STRUCTURE.md).

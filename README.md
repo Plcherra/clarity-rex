@@ -140,12 +140,11 @@ Full mobile setup: [`apps/mobile/README.md`](apps/mobile/README.md)
 | [`apps/mobile/`](apps/mobile/) | Flutter app |
 | [`services/rex-api/`](services/rex-api/) | Python FastAPI — Rex Brain, memory, chat, voice, Plaid |
 | [`supabase/`](supabase/) | Migrations, Edge Functions, auth |
-| [`docs/`](docs/) | Architecture, finance truth, runbooks |
+| [`docs/`](docs/) | Canonical project documentation (3 files) |
 
-- [`docs/brain/REX_BRAIN_ARCHITECTURE.md`](docs/brain/REX_BRAIN_ARCHITECTURE.md)
-- [`docs/FINANCE_SOURCE_OF_TRUTH.md`](docs/FINANCE_SOURCE_OF_TRUTH.md)
-- [`docs/project-completion/00_COMPLETION_MASTER_PLAN.md`](docs/project-completion/00_COMPLETION_MASTER_PLAN.md)
-- [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md)
+- [`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md) — product vision
+- [`docs/CLARITY_RULES.md`](docs/CLARITY_RULES.md) — behavioral rules (assistant, memory, trust)
+- [`docs/PROJECT_STRUCTURE.md`](docs/PROJECT_STRUCTURE.md) — code layout and production wiring
 
 </details>
 
