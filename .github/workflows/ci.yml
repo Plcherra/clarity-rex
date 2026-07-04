@@ -49,7 +49,7 @@ jobs:
       - name: Verify user_insights RLS initplan migration exists
         run: test -f supabase/migrations/20260702000200_user_insights_rls_initplan.sql
       - name: Verify commitments drop migration exists
-        run: test -f supabase/migrations/20260703000100_drop_commitments.sql
+        run: test -f supabase/migrations/20260703000200_drop_commitments.sql
 
   docs-canonical:
     runs-on: ubuntu-latest
