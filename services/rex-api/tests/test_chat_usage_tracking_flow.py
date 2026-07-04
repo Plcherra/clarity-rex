@@ -4,6 +4,7 @@ from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.rex_channel import RexBrainChannel
 from app.services.time_context_service import TimeContextService
+from durable_write_test_helpers import confirm_durable_write
 from chat_service_fakes import FakeAIService, FakeMemoryService
 
 
@@ -52,12 +53,14 @@ async def test_send_message_does_not_record_llm_usage_for_direct_memory_turn():
     ai = FakeAIService(response="Should not be called.")
     chat = _chat_service(ai_service=ai, usage_service=usage)
 
-    result = await chat.send_message(
+    proposed = await chat.send_message(
         "My mom's birthday is June 18",
         channel=RexBrainChannel.CHAT,
     )
+    assert proposed["memory_changes"]["confirmation_required"] == 1
+    result = await confirm_durable_write(chat, proposed)
 
-    assert result["response"] == "Got it, your mom's birthday is June 18."
+    assert "Saved to Clarity Knows" in result["response"]
     assert ai.generate_calls == 0
     assert usage.llm_turns == []
 

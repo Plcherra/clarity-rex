@@ -1,0 +1,6 @@
+"""Shared excerpt window constants for chat recall excerpt building."""
+
+CHAT_EXCERPT_CONTEXT_BEFORE = 6
+CHAT_EXCERPT_CONTEXT_AFTER = 8
+CHAT_EXCERPT_CONVERSATION_LIMIT = 500
+CHAT_TITLE_MATCH_CONTEXT_LIMIT = 24

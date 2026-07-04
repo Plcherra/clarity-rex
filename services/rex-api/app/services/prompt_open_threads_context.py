@@ -36,6 +36,7 @@ def format_open_threads_context(threads: list[dict[str, Any]]) -> str | None:
     lines.append(
         "You may reference at most one thread naturally when it fits. "
         "Ask a light follow-up only when appropriate. "
-        "Never invent threads not listed here."
+        "Never invent threads not listed here. "
+        "Do not re-offer open thread tracking if the user already declined in this conversation."
     )
     return "\n".join(lines)

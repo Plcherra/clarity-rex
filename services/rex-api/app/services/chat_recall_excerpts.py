@@ -11,10 +11,12 @@ from app.services.chat_recall_filters import (
 )
 
 
-CHAT_EXCERPT_CONTEXT_BEFORE = 6
-CHAT_EXCERPT_CONTEXT_AFTER = 8
-CHAT_EXCERPT_CONVERSATION_LIMIT = 500
-CHAT_TITLE_MATCH_CONTEXT_LIMIT = 24
+from app.services.chat_recall_excerpt_constants import (
+    CHAT_EXCERPT_CONTEXT_AFTER,
+    CHAT_EXCERPT_CONTEXT_BEFORE,
+    CHAT_EXCERPT_CONVERSATION_LIMIT,
+    CHAT_TITLE_MATCH_CONTEXT_LIMIT,
+)
 
 
 class ChatRecallExcerptBuilder(ChatRecallExcerptDetailMixin):

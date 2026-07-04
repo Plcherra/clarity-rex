@@ -157,6 +157,8 @@ def _confirmed_metadata(
         "source": "conversational_plan_confirmed",
         "discipline_write_channel": CONFIRMED_PLAN_SERVICE_CHANNEL,
     }
+    if decision.action == MemoryDisciplineAction.CREATE_PLAN:
+        metadata.setdefault("allow_auto_merge", True)
     metadata.pop("prevent_related_merge", None)
     return metadata
 

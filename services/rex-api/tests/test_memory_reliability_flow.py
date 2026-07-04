@@ -11,6 +11,7 @@ from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.rex_channel import RexBrainChannel
 from app.services.time_context_service import TimeContextService
+from durable_write_test_helpers import confirm_durable_write
 
 
 def _time_context_service() -> TimeContextService:
@@ -69,15 +70,13 @@ async def test_memory_reliability_mom_birthday_saves_and_recalls_directly():
         memory_service=memory_service,
     )
 
-    saved = await chat_service.send_message("My mom's birthday is on the 18th")
+    proposed = await chat_service.send_message("My mom's birthday is on the 18th")
+    assert proposed["memory_changes"]["confirmation_required"] == 1
+    saved = await confirm_durable_write(chat_service, proposed)
 
-    assert saved["response"] == "Got it, your mom's birthday is June 18."
+    assert "Saved to Clarity Knows" in saved["response"]
     assert saved["memory_changes"]["created"] == 1
     assert saved["memory_changes"]["confirmation_required"] == 0
-    assert saved["memory_changes"]["records"][0]["action"] == "direct_saved"
-    assert saved["memory_changes"]["records"][0]["metadata"]["memory_path"] == (
-        "direct_save"
-    )
     assert len(memory_service.long_term_memory) == 1
 
     await chat_service.send_message(
@@ -85,12 +84,7 @@ async def test_memory_reliability_mom_birthday_saves_and_recalls_directly():
         saved["conversation_id"],
     )
 
-    assert "- saved knowledge/person Mom - mother" in ai_service.messages[0]["content"]
-    assert "birthday: June 18" in ai_service.messages[0]["content"]
-    assert (
-        "- fact: User's mom's birthday is June 18."
-        not in ai_service.messages[0]["content"]
-    )
+    assert "- fact: User's mom's birthday is June 18." in ai_service.messages[0]["content"]
 
 
 @pytest.mark.asyncio
@@ -131,7 +125,8 @@ async def test_memory_reliability_duplicate_fact_does_not_create_duplicate_recor
     memory_service = ReliabilityMemoryService()
     chat_service = _chat_service(memory_service=memory_service)
 
-    saved = await chat_service.send_message("My mom's birthday is on the 18th")
+    proposed = await chat_service.send_message("My mom's birthday is on the 18th")
+    saved = await confirm_durable_write(chat_service, proposed)
     repeated = await chat_service.send_message(
         "My mom's birthday is June 18",
         saved["conversation_id"],
@@ -166,14 +161,16 @@ async def test_memory_reliability_simple_correction_updates_directly():
     )
     chat_service = _chat_service(memory_service=memory_service)
 
-    result = await chat_service.send_message(
+    proposed = await chat_service.send_message(
         "My mom's birthday is June 28",
         "conversation-existing",
     )
+    assert proposed["memory_changes"]["confirmation_required"] == 1
+    result = await confirm_durable_write(chat_service, proposed)
 
     assert result["memory_correction"] is None
     assert result["memory_changes"]["updated"] == 1
-    assert result["memory_changes"]["records"][0]["action"] == "direct_updated"
+    assert result["memory_changes"]["confirmation_required"] == 0
     assert len(memory_service.long_term_memory) == 1
     assert memory_service.long_term_memory[0]["content"] == (
         "User's mom's birthday is June 28."
@@ -189,27 +186,38 @@ async def test_memory_reliability_voice_stream_saves_and_recalls_memory():
         memory_service=memory_service,
     )
 
-    saved_events = [
+    proposed_events = [
         event
         async for event in chat_service.stream_message(
             "My mom's birthday is June 18",
             channel=RexBrainChannel.VOICE,
         )
     ]
+    assert proposed_events[-1]["memory_changes"]["confirmation_required"] == 1
+    confirmed_events = [
+        event
+        async for event in chat_service.stream_message(
+            "Yes",
+            conversation_id=proposed_events[-1]["conversation_id"],
+            channel=RexBrainChannel.VOICE,
+            write_confirmation={
+                "proposal_id": proposed_events[-1]["memory_changes"]["write_proposals"][0]["id"]
+            },
+        )
+    ]
     recall_events = [
         event
         async for event in chat_service.stream_message(
             "Do you remember my mom's birthday?",
-            conversation_id="conversation-1",
+            conversation_id=proposed_events[-1]["conversation_id"],
             channel=RexBrainChannel.VOICE,
         )
     ]
 
-    assert saved_events[-1]["response"] == "Got it, your mom's birthday is June 18."
-    assert saved_events[-1]["memory_changes"]["created"] == 1
+    assert "Saved to Clarity Knows" in confirmed_events[-1]["response"]
+    assert confirmed_events[-1]["memory_changes"]["created"] == 1
     assert recall_events[-1]["event"] == "done"
-    assert "- saved knowledge/person Mom - mother" in ai_service.messages[0]["content"]
-    assert "birthday: June 18" in ai_service.messages[0]["content"]
+    assert "- fact: User's mom's birthday is June 18." in ai_service.messages[0]["content"]
 
 
 @pytest.mark.asyncio

@@ -12,6 +12,7 @@ from chat_service_fakes import (
     FakeMemoryService,
 )
 from memory_turn_fakes import FakeMemoryTurnStore
+from durable_write_test_helpers import confirm_durable_write
 from app.services.memory_turn_service import MemoryTurnService
 
 
@@ -141,12 +142,13 @@ async def test_chat_simple_fact_correction_updates_directly():
         time_context_service=_time_context_service(),
     )
 
-    result = await chat_service.send_message("My mom's birthday is June 28")
+    proposed = await chat_service.send_message("My mom's birthday is June 28")
+    assert proposed["memory_changes"]["confirmation_required"] == 1
+    result = await confirm_durable_write(chat_service, proposed)
 
-    assert result["response"] == (
-        "Got it, I updated that: your mom's birthday is June 28."
-    )
-    assert result["memory_changes"]["records"][0]["action"] == "direct_updated"
+    assert "Saved to Clarity Knows" in result["response"] or "updated" in result["response"].lower()
+    assert result["memory_changes"]["updated"] == 1
+    assert result["memory_changes"]["confirmation_required"] == 0
     assert ai_service.messages == []
     assert len(memory_service.long_term_memory) == 1
 
@@ -163,17 +165,27 @@ async def test_voice_simple_fact_correction_updates_directly():
         time_context_service=_time_context_service(),
     )
 
-    events = [
+    proposed_events = [
         event
         async for event in chat_service.stream_message(
             "My mom's birthday is June 28",
             channel=RexBrainChannel.VOICE,
         )
     ]
+    assert proposed_events[-1]["memory_changes"]["confirmation_required"] == 1
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "Yes",
+            conversation_id=proposed_events[-1]["conversation_id"],
+            channel=RexBrainChannel.VOICE,
+            write_confirmation={
+                "proposal_id": proposed_events[-1]["memory_changes"]["write_proposals"][0]["id"]
+            },
+        )
+    ]
 
-    assert events[-1]["response"] == (
-        "Got it, I updated that: your mom's birthday is June 28."
-    )
-    assert events[-1]["memory_changes"]["records"][0]["action"] == "direct_updated"
+    assert events[-1]["memory_changes"]["updated"] == 1
+    assert events[-1]["memory_changes"]["confirmation_required"] == 0
     assert ai_service.messages == []
     assert len(memory_service.long_term_memory) == 1

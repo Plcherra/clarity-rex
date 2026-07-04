@@ -48,6 +48,7 @@ class PlanMergeService:
         allow_merge = bool(
             metadata.get("merge_disclosed_to")
             or metadata.get("allow_auto_merge")
+            or wrong_names
         )
         if not allow_merge:
             plan = await self.repository.create_plan(payload)

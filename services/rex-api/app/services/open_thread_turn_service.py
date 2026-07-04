@@ -9,9 +9,11 @@ from app.services.conversation_pending_action import PendingAction
 from app.services.goal_command_results import clarification_turn_result
 from app.services.open_thread_eligibility import (
     infer_thread_title,
+    is_bare_pending_offer_decline,
     is_explicit_track_consent,
     is_explicit_track_decline,
     thread_offer_eligible,
+    thread_offer_message_eligible,
     thread_summary_from_message,
 )
 
@@ -54,8 +56,13 @@ class OpenThreadTurnService:
 
         offer_state = self._offer_state_from_history(conversation_history)
         active_threads = await self.open_thread_service.list_active_threads()
+        offer_context = await self._load_offer_context()
 
-        if is_explicit_track_decline(message):
+        if is_explicit_track_decline(message) or (
+            offer_state.get("offered")
+            and not offer_state.get("declined")
+            and is_bare_pending_offer_decline(message)
+        ):
             return await clarification_turn_result(
                 self.memory_service,
                 conversation_id=conversation_id,
@@ -83,12 +90,45 @@ class OpenThreadTurnService:
         if offer_state.get("offered") or offer_state.get("declined"):
             return None
 
+        if (
+            len(active_threads) >= MAX_ACTIVE_OPEN_THREADS
+            and thread_offer_message_eligible(
+                message,
+                already_offered=bool(offer_state.get("offered")),
+                already_declined=bool(offer_state.get("declined")),
+                **offer_context,
+            )
+        ):
+            replace_candidate = await self.open_thread_service.least_recently_used_active()
+            candidate_title = (
+                str(replace_candidate.get("title") or "").strip()
+                if replace_candidate
+                else ""
+            )
+            replace_hint = (
+                f' Maybe close or pause "{candidate_title}" first?'
+                if candidate_title
+                else " Close or pause one in Goals first?"
+            )
+            return await clarification_turn_result(
+                self.memory_service,
+                conversation_id=conversation_id,
+                user_message=user_message,
+                response=(
+                    "You already have 5 active open threads, so I can't add another "
+                    "companion follow-up right now."
+                    f"{replace_hint} Open threads live in Goals — not saved memory."
+                ),
+            )
+
         if not thread_offer_eligible(
             message,
             already_offered=bool(offer_state.get("offered")),
             already_declined=bool(offer_state.get("declined")),
             active_thread_count=len(active_threads),
             max_active=MAX_ACTIVE_OPEN_THREADS,
+            active_threads=active_threads,
+            **offer_context,
         ):
             return None
 
@@ -135,7 +175,9 @@ class OpenThreadTurnService:
                 if str(entry.get("role") or "") != "user":
                     continue
                 content = str(entry.get("content") or "")
-                if is_explicit_track_decline(content):
+                if is_explicit_track_decline(content) or is_bare_pending_offer_decline(
+                    content,
+                ):
                     declined = True
                     break
                 if is_explicit_track_consent(content):
@@ -145,6 +187,38 @@ class OpenThreadTurnService:
             "offered": offered,
             "declined": declined,
             "topic_message": topic_message,
+        }
+
+    async def _load_offer_context(self) -> dict[str, list[dict]]:
+        active_plans: list[dict] = []
+        saved_memories: list[dict] = []
+        active_entities: list[dict] = []
+
+        list_plans = getattr(self.memory_service, "list_plans", None)
+        if list_plans is not None:
+            try:
+                active_plans = await list_plans(active=True, limit=20)
+            except TypeError:
+                active_plans = await list_plans(limit=20)
+
+        list_memory = getattr(self.memory_service, "list_long_term_memory", None)
+        if list_memory is not None:
+            try:
+                saved_memories = await list_memory(active=True, limit=30)
+            except TypeError:
+                saved_memories = await list_memory(limit=30)
+
+        list_entities = getattr(self.memory_service, "list_entities", None)
+        if list_entities is not None:
+            try:
+                active_entities = await list_entities(active=True, limit=30)
+            except TypeError:
+                active_entities = await list_entities(limit=30)
+
+        return {
+            "active_plans": active_plans,
+            "saved_memories": saved_memories,
+            "active_entities": active_entities,
         }
 
 

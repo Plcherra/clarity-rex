@@ -74,3 +74,47 @@ def test_recall_helper_keeps_clear_recall_and_chat_search_intent(
         message,
         conversation_history=[],
     ) == expected_query
+
+
+def test_recall_helper_reuses_prior_recall_subject_for_short_follow_up():
+    helper = RecallIntentHelper()
+    history = [
+        {"role": "user", "content": "Do you remember anything about my mom's birthday?"},
+        {"role": "assistant", "content": "I found this in chat history, not saved memory."},
+    ]
+
+    assert helper.is_recall_request("What else?", conversation_history=history) is True
+    assert (
+        helper.recall_search_query("What else?", conversation_history=history)
+        == "mom's birthday"
+    )
+
+
+@pytest.mark.parametrize(
+    ("follow_up", "prior_question", "expected_subject"),
+    [
+        (
+            "Anything else?",
+            "What did I say about the Aurora 9000 laptop?",
+            "aurora 9000 laptop",
+        ),
+        (
+            "What else?",
+            "Do you remember my sister's wedding date?",
+            "sister wedding date",
+        ),
+    ],
+)
+def test_recall_helper_reuses_prior_subject_for_generic_follow_ups(
+    follow_up,
+    prior_question,
+    expected_subject,
+):
+    helper = RecallIntentHelper()
+    history = [
+        {"role": "user", "content": prior_question},
+        {"role": "assistant", "content": "I found this in chat history, not saved memory."},
+    ]
+
+    assert helper.is_recall_request(follow_up, conversation_history=history) is True
+    assert helper.recall_search_query(follow_up, conversation_history=history) == expected_subject

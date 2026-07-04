@@ -230,7 +230,7 @@ async def test_entity_service_deduplicates_by_alias_and_descriptive_name():
             aliases=["Clara from work"],
             summary="Clara is part of the current dating story.",
             importance=5,
-            metadata={"extracted": True},
+            metadata={"extracted": True, "allow_auto_merge": True},
         )
     )
 
@@ -339,6 +339,7 @@ async def test_entity_service_reuses_canonical_entity_for_obsolete_project_name(
             aliases=["Echotask"],
             summary="Misstated project name.",
             importance=5,
+            metadata={"allow_auto_merge": True},
         )
     )
 

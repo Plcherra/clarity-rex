@@ -378,6 +378,34 @@ class FakeMemoryService:
                 return plan
         return None
 
+    async def deactivate_plan(self, plan_id):
+        return await self.update_plan(
+            plan_id,
+            active=False,
+            status="archived",
+        )
+
+    async def deactivate_entity(self, entity_id):
+        for entity in self.entities:
+            if entity["id"] == entity_id:
+                entity.update({"active": False, "status": "inactive"})
+                return entity
+        return None
+
+    async def deactivate_personal_rule(self, rule_id):
+        for rule in getattr(self, "personal_rules", []):
+            if rule["id"] == rule_id:
+                rule.update({"active": False, "status": "inactive"})
+                return rule
+        return None
+
+    async def deactivate_plan_milestone(self, milestone_id):
+        for milestone in self.plan_milestones:
+            if milestone["id"] == milestone_id:
+                milestone.update({"active": False, "status": "archived"})
+                return milestone
+        return None
+
     async def list_plan_milestones(
         self,
         *,

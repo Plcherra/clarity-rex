@@ -8,6 +8,7 @@ from app.services.open_thread_eligibility import (
     is_explicit_track_consent,
     is_recall_message,
     thread_offer_eligible,
+    thread_offer_message_eligible,
 )
 from app.services.open_thread_service import OpenThreadService, OpenThreadServiceError
 from app.services.prompt_open_threads_context import format_open_threads_context
@@ -116,3 +117,18 @@ def test_infer_thread_title_truncates_long_messages() -> None:
     message = " ".join(["word"] * 30)
     title = infer_thread_title(message, max_length=40)
     assert len(title) <= 40
+
+
+def test_thread_offer_message_eligible_ignores_cap_signal():
+    message = "I've been trying to figure out a better morning routine lately."
+    assert thread_offer_message_eligible(
+        message,
+        already_offered=False,
+        already_declined=False,
+    )
+    assert not thread_offer_eligible(
+        message,
+        already_offered=False,
+        already_declined=False,
+        active_thread_count=MAX_ACTIVE_OPEN_THREADS,
+    )

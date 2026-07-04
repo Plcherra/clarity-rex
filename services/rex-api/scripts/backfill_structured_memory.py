@@ -390,6 +390,7 @@ def _source_metadata(memory: dict[str, Any]) -> dict[str, Any]:
         "backfill_version": BACKFILL_VERSION,
         "source_memory_id": memory.get("id"),
         "source_content": memory.get("content"),
+        "allow_auto_merge": True,
     }
 
 

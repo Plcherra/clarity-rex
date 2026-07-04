@@ -49,8 +49,9 @@ class MissingPlaidItemService(FakePlaidSyncService):
 class FakePlaidManualSyncService(FakePlaidSyncService):
     sync_item_id = None
 
-    async def sync_item(self, item_id):
+    async def sync_item(self, item_id, *, request_bank_refresh=False):
         self.sync_item_id = item_id
+        self.request_bank_refresh = request_bank_refresh
         return PlaidSyncResult(
             plaid_item_record_id=item_id,
             accounts_synced=2,
@@ -62,7 +63,7 @@ class FakePlaidManualSyncService(FakePlaidSyncService):
 
 
 class FailingPlaidManualSyncService(FakePlaidSyncService):
-    async def sync_item(self, item_id):
+    async def sync_item(self, item_id, *, request_bank_refresh=False):
         raise PlaidSyncServiceError("Plaid item was not found.", status_code=404)
 
 
@@ -234,6 +235,8 @@ def test_manual_sync_route_returns_safe_counts_for_current_user_item():
         "transactions_modified": 1,
         "transactions_removed": 1,
         "next_cursor": "cursor-next",
+        "balances_refreshed": False,
+        "transactions_refresh_status": "skipped",
     }
     assert service.status_call == {"user_id": "user-1", "item_id": "item-record-1"}
     assert service.sync_item_id == "item-record-1"

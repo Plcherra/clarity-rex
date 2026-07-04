@@ -150,6 +150,7 @@ async def test_duplicate_person_create_merges_instead_of_duplicating():
             display_name="Clara",
             normalized_name="clara",
             summary="Works downtown.",
+            metadata={"allow_auto_merge": True},
         )
     )
 

@@ -224,7 +224,7 @@ async def test_plan_service_deduplicates_active_plan_by_title_and_type():
             desired_outcome="Leave with enough financial runway.",
             primary_entity_id="entity-1",
             priority=5,
-            metadata={"extracted": True},
+            metadata={"extracted": True, "allow_auto_merge": True},
         )
     )
 
@@ -232,7 +232,11 @@ async def test_plan_service_deduplicates_active_plan_by_title_and_type():
     assert row["desired_outcome"] == "Leave with enough financial runway."
     assert row["primary_entity_id"] == "entity-1"
     assert row["priority"] == 5
-    assert row["metadata"] == {"source": "manual", "extracted": True}
+    assert row["metadata"] == {
+        "source": "manual",
+        "extracted": True,
+        "allow_auto_merge": True,
+    }
     assert len(memory.plans) == 1
 
 
@@ -361,7 +365,7 @@ async def test_plan_service_merges_related_same_person_dating_plan():
             desired_outcome="Clear confirmation for the date.",
             primary_entity_id="entity-melissa",
             priority=5,
-            metadata={"source": "update"},
+            metadata={"source": "update", "allow_auto_merge": True},
         )
     )
 

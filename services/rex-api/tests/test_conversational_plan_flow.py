@@ -321,18 +321,33 @@ async def test_conversational_plan_update_requires_confirmation_and_applies():
     )
 
     assert requested["memory_changes"]["confirmation_required"] == 1
-    proposal_action = requested["memory_changes"]["plan_save_proposals"][0]["action"]
+    proposal = requested["memory_changes"]["plan_save_proposals"][0]
+    proposal_action = proposal["action"]
     assert proposal_action in {"update_plan", "save_plan", "save_plan_milestone"}
 
-    if proposal_action != "update_plan":
-        pytest.skip("Discipline routed to a different confirmed write for this message.")
+    confirmed = await confirm_durable_write(chat_service, requested)
 
-    confirmed = await chat_service.send_message(
-        "Yes",
-        requested["conversation_id"],
-    )
+    if proposal_action == "update_plan":
+        assert confirmed["memory_changes"]["updated"] == 1
+        plan_text = " ".join(
+            str(memory_service.plans[0].get(key) or "")
+            for key in ("title", "description", "desired_outcome")
+        )
+    elif proposal_action == "save_plan_milestone":
+        assert confirmed["memory_changes"]["created"] == 1
+        milestone_title = str(
+            (confirmed.get("memory_changes") or {}).get("applied_record", {}).get("title")
+            or proposal.get("title")
+            or ""
+        )
+        plan_text = milestone_title
+    else:
+        assert confirmed["memory_changes"]["created"] == 1
+        target_plan = memory_service.plans[-1]
+        plan_text = " ".join(
+            str(target_plan.get(key) or "")
+            for key in ("title", "description", "desired_outcome")
+        )
 
-    assert confirmed["memory_changes"]["updated"] == 1
-    assert memory_service.plans[0]["description"]
-    assert "Italian citizenship" in memory_service.plans[0]["description"]
+    assert "Italian citizenship" in plan_text
     assert not memory_service.pending_actions
