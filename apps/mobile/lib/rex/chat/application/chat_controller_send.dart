@@ -8,7 +8,7 @@ extension ChatControllerSend on ChatController {
     XFile? attachment,
     bool stream = true,
   }) async {
-    final response = await sendMessageForAssistantResponse(
+    final response = await _runSendMessageForAssistantResponse(
       content,
       attachment: attachment,
       stream: stream,
@@ -16,7 +16,7 @@ extension ChatControllerSend on ChatController {
     return response != null;
   }
 
-  Future<String?> sendMessageForAssistantResponse(
+  Future<String?> _runSendMessageForAssistantResponse(
     String content, {
     XFile? attachment,
     bool stream = true,

@@ -182,4 +182,26 @@ class ChatController extends Notifier<ChatState> {
       messages: _messagesWithStreamingStopped(state.messages),
     );
   }
+
+  Future<void> executeClarityAction(ClarityActionCard action) =>
+      _runExecuteClarityAction(action);
+
+  void dismissClarityAction(ClarityActionCard action) =>
+      _runDismissClarityAction(action);
+
+  Future<String?> sendMessageForAssistantResponse(
+    String content, {
+    XFile? attachment,
+    bool stream = true,
+    Map<String, dynamic>? writeConfirmation,
+  }) =>
+      _runSendMessageForAssistantResponse(
+        content,
+        attachment: attachment,
+        stream: stream,
+        writeConfirmation: writeConfirmation,
+      );
+
+  Map<String, dynamic>? writeConfirmationForAffirmation(String message) =>
+      _writeConfirmationForTypedAffirmation(message);
 }

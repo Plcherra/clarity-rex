@@ -3,7 +3,7 @@
 part of 'chat_controller.dart';
 
 extension ChatControllerActions on ChatController {
-  Future<void> executeClarityAction(ClarityActionCard action) async {
+  Future<void> _runExecuteClarityAction(ClarityActionCard action) async {
     if (_isChatConfirmedWriteAction(action.action)) {
       await _confirmPlanSave(action);
       return;
@@ -57,7 +57,7 @@ extension ChatControllerActions on ChatController {
     }
   }
 
-  void dismissClarityAction(ClarityActionCard action) {
+  void _runDismissClarityAction(ClarityActionCard action) {
     if (_isChatConfirmedWriteAction(action.action)) {
       unawaited(_rejectPlanSave(action));
       return;
@@ -98,58 +98,12 @@ extension ChatControllerActions on ChatController {
         action == 'save_entity_event';
   }
 
-  Map<String, dynamic>? writeConfirmationForAffirmation(String message) {
-    return _writeConfirmationForTypedAffirmation(message);
-  }
-
-  Map<String, dynamic>? _writeConfirmationForTypedAffirmation(String message) {
-    final normalized = message.trim().toLowerCase();
-    const affirmations = {
-      'yes',
-      'yes please',
-      'yep',
-      'yeah',
-      'sure',
-      'please',
-      'please do',
-      'do it',
-      'save it',
-      'save that',
-      'save this',
-    };
-    if (!affirmations.contains(normalized)) {
-      return null;
-    }
-    final pending = pendingClarityActions(state.messages);
-    if (pending.length != 1 || !pending.first.canConfirm) {
-      return null;
-    }
-    return _writeConfirmationPayload(pending.first);
-  }
-
-  Map<String, dynamic> _writeConfirmationPayload(ClarityActionCard action) {
-    final payload = <String, dynamic>{'proposal_id': action.id};
-    if (action.hasEditableFields) {
-      final edits = <String, dynamic>{};
-      if (action.editableFields.contains('title') && action.title != null) {
-        edits['title'] = action.title;
-      }
-      if (action.editableFields.contains('body') && action.body != null) {
-        edits['body'] = action.body;
-      }
-      if (edits.isNotEmpty) {
-        payload['edits'] = edits;
-      }
-    }
-    return payload;
-  }
-
   Future<void> _confirmPlanSave(ClarityActionCard action) async {
     _updateClarityAction(
       action.id,
       (current) => current.copyWith(status: 'applying', clearError: true),
     );
-    final response = await sendMessageForAssistantResponse(
+    final response = await _runSendMessageForAssistantResponse(
       'Yes',
       stream: false,
       writeConfirmation: _writeConfirmationPayload(action),
@@ -188,7 +142,7 @@ extension ChatControllerActions on ChatController {
       action.id,
       (current) => current.copyWith(status: 'applying', clearError: true),
     );
-    final response = await sendMessageForAssistantResponse('No', stream: false);
+    final response = await _runSendMessageForAssistantResponse('No', stream: false);
     _updateClarityAction(
       action.id,
       (current) => current.copyWith(
