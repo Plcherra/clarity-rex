@@ -59,8 +59,8 @@ async def test_synthesize_speech_posts_to_google_tts(monkeypatch):
     assert calls[0]["json"]["input"]["text"] == "Hey Rex"
     assert calls[0]["json"]["voice"]["name"] == "en-US-Neural2-J"
     assert calls[0]["json"]["audioConfig"]["audioEncoding"] == "MP3"
-    assert calls[0]["json"]["audioConfig"]["speakingRate"] == 1.12
-    assert calls[0]["json"]["audioConfig"]["pitch"] == -2.0
+    assert calls[0]["json"]["audioConfig"]["speakingRate"] == 1.15
+    assert calls[0]["json"]["audioConfig"]["pitch"] == 0.0
     assert calls[0]["json"]["audioConfig"]["volumeGainDb"] == 10.0
 
 

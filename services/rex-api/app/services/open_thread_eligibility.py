@@ -20,36 +20,72 @@ RECALL_PATTERNS = (
 
 ONGOING_SIGNAL_PATTERNS = (
     re.compile(r"\bi(?:'m| am)\s+(?:trying|working|figuring|dealing|going)\b", re.I),
-    re.compile(r"\bi(?:'ve| have)\s+been\b", re.I),
     re.compile(r"\bi want to\b", re.I),
     re.compile(r"\bi need to\b", re.I),
     re.compile(r"\bi plan to\b", re.I),
+    re.compile(r"\bmy plan is\b", re.I),
+    re.compile(r"\bi(?:'m| am)\s+going to\b", re.I),
     re.compile(r"\bkeep(?:ing)?\s+(?:working|going|at it)\b", re.I),
     re.compile(r"\bstill\b.+\b(?:working|figuring|dealing|processing)\b", re.I),
     re.compile(r"\bongoing\b", re.I),
     re.compile(r"\bstruggling with\b", re.I),
-    re.compile(
-        r"\bi(?:'m| am)\s+(?:stressed|stressing|worried|worrying|anxious|overwhelmed)\b",
-        re.I,
-    ),
-    re.compile(r"\b(?:lately|these days|right now)\b", re.I),
-    re.compile(r"\bthe\s+\w+(?:\s+\w+){0,3}\s+process\s+is\b", re.I),
     re.compile(r"\b(?:sorting out|figuring out|working through)\b", re.I),
     re.compile(r"\bwe(?:'re| are)\s+(?:moving|relocating|building|working)\b", re.I),
-    re.compile(r"\b(?:a lot to handle|stressful|overwhelming|has been really)\b", re.I),
+)
+
+ACTIONABLE_PLAN_PATTERNS = (
+    re.compile(r"\bmy plan is\b", re.I),
+    re.compile(r"\bi(?:'m| am)\s+going to\b", re.I),
+    re.compile(r"\b(?:every|each)\s+(?:day|night|morning|week)\b", re.I),
+    re.compile(r"\b(?:no|without)\s+\w+.+\b(?:after|before|by)\s+\d", re.I),
+    re.compile(r"\b(?:step|steps)\s+(?:one|1|two|2)\b", re.I),
+    re.compile(r"\bgot (?:a|the) plan\b", re.I),
+    re.compile(r"\b(?:because|so (?:i|we) can|to fix)\b", re.I),
+    re.compile(
+        r"\bi(?:'m| am)\s+(?:working on|trying to|planning to|looking to|hoping to|focused on|making progress on)\s+(?:my\s+)?[\w-]+",
+        re.I,
+    ),
+    re.compile(
+        r"\bi\s+want\s+to\s+(?:build|launch|reach|start|save|move|relocate|get|achieve|create|fix|change|improve)\b",
+        re.I,
+    ),
+    re.compile(
+        r"\bi\s+need\s+to\s+(?:finish|complete|build|save|reach|start|launch|move|get|achieve|create|fix|change)\b",
+        re.I,
+    ),
+    re.compile(
+        r"\b(?:trying to|working on)\s+(?:figure out|rebuild|build|fix|change|improve)\b",
+        re.I,
+    ),
+    re.compile(r"\bfigure out a better\b", re.I),
+    re.compile(r"\brebuild my\b", re.I),
+)
+
+TOPIC_CONTINUITY_PATTERNS = (
+    re.compile(r"\b(?:night|morning|evening|bedtime|daily|weekly)\s+(?:routine|habits?)\b", re.I),
+    re.compile(r"\b(?:routine|habit|schedule)\b", re.I),
+    re.compile(r"\b(?:citizenship|immigration|relocation|moving)\s+(?:application|process|plan)?\b", re.I),
+    re.compile(r"\b(?:workout|fitness|training|study|sleep)\b", re.I),
+)
+
+VAGUE_TOPIC_PATTERNS = (
+    re.compile(r"^\s*about\s+(?:changing|change|fixing|fix|improving|improve)\b", re.I),
+    re.compile(r"^\s*i just got an? idea\b", re.I),
+    re.compile(r"^\s*(?:hey|hi|hello)[\s,.!?-]*i just got an? idea\b", re.I),
+)
+
+TEMPORAL_ONLY_PATTERNS = (
+    re.compile(r"^\s*(?:about\s+)?[\w\s'-]{0,40}\b(?:right now|lately|these days)\s*[.!?]*\s*$", re.I),
+)
+
+STRESS_ONLY_VENT_PATTERNS = (
+    re.compile(r"\b(?:stressful|overwhelming|a lot to handle|really stressful)\b", re.I),
 )
 
 COMPANION_FOLLOW_UP_SIGNAL_PATTERNS = (
-    re.compile(
-        r"\bi(?:'m| am)\s+(?:stressed|stressing|worried|worrying|anxious|overwhelmed)\b",
-        re.I,
-    ),
-    re.compile(r"\b(?:lately|these days|right now)\b", re.I),
     re.compile(r"\bthe\s+\w+(?:\s+\w+){0,3}\s+process\s+is\b", re.I),
     re.compile(r"\b(?:sorting out|figuring out|working through)\b", re.I),
     re.compile(r"\bwe(?:'re| are)\s+(?:moving|relocating|building|working)\b", re.I),
-    re.compile(r"\b(?:a lot to handle|stressful|overwhelming|has been really)\b", re.I),
-    re.compile(r"\bstruggling with\b", re.I),
     re.compile(r"\bkeep(?:ing)?\s+working on\b", re.I),
 )
 
@@ -76,6 +112,8 @@ ONE_OFF_QUESTION_PATTERNS = (
     re.compile(r"^\s*(?:what|when|where|who|how much|how many)\b.+\?\s*$", re.I),
 )
 
+_MIN_SINGLE_TURN_LENGTH = 40
+
 
 def is_casual_only_message(message: str) -> bool:
     return any(pattern.match(message) for pattern in CASUAL_ONLY_PATTERNS)
@@ -97,6 +135,62 @@ def has_ongoing_personal_signal(message: str) -> bool:
     return any(pattern.search(message) for pattern in ONGOING_SIGNAL_PATTERNS)
 
 
+def has_actionable_plan_signal(text: str) -> bool:
+    cleaned = re.sub(r"\s+", " ", text.strip())
+    if len(cleaned) < 20:
+        return False
+    has_concrete = any(pattern.search(cleaned) for pattern in ACTIONABLE_PLAN_PATTERNS)
+    has_topic = any(pattern.search(cleaned) for pattern in TOPIC_CONTINUITY_PATTERNS)
+    if has_concrete and has_topic:
+        return True
+    if has_concrete and _has_topic_noun(cleaned):
+        return True
+    return False
+
+
+def is_stress_only_vent(message: str) -> bool:
+    cleaned = re.sub(r"\s+", " ", message.strip())
+    if not any(pattern.search(cleaned) for pattern in STRESS_ONLY_VENT_PATTERNS):
+        return False
+    return not re.search(
+        r"\bi(?:'m| am)\s+(?:working on|trying to|planning to|going to)\b",
+        cleaned,
+        flags=re.I,
+    )
+
+
+def is_vague_thread_topic(message: str, *, conversation_history: Optional[list[dict]] = None) -> bool:
+    cleaned = re.sub(r"\s+", " ", message.strip())
+    if not cleaned:
+        return True
+    if any(pattern.search(cleaned) for pattern in VAGUE_TOPIC_PATTERNS):
+        return not has_actionable_plan_signal(_combined_user_context(message, conversation_history))
+    if any(pattern.match(cleaned) for pattern in TEMPORAL_ONLY_PATTERNS):
+        return not has_actionable_plan_signal(_combined_user_context(message, conversation_history))
+    if len(cleaned) < _MIN_SINGLE_TURN_LENGTH:
+        return not _multi_turn_context_is_actionable(message, conversation_history)
+    return False
+
+
+def has_specific_actionable_continuity(
+    message: str,
+    *,
+    conversation_history: Optional[list[dict]] = None,
+) -> bool:
+    context = _combined_user_context(message, conversation_history)
+    if is_vague_thread_topic(message, conversation_history=conversation_history):
+        return False
+    if has_actionable_plan_signal(context):
+        return True
+    if _multi_turn_context_is_actionable(message, conversation_history):
+        return True
+    from app.services.conversational_plan_detection import ConversationalPlanDetector
+
+    if ConversationalPlanDetector().looks_like_conversational_plan(context):
+        return _has_topic_noun(context)
+    return False
+
+
 def is_clear_measurable_goal(message: str) -> bool:
     return any(pattern.search(message) for pattern in CLEAR_MEASURABLE_GOAL_PATTERNS)
 
@@ -111,6 +205,8 @@ def should_defer_open_thread_to_plan(message: str) -> bool:
     from app.services.conversational_plan_detection import ConversationalPlanDetector
 
     if not ConversationalPlanDetector().looks_like_conversational_plan(message):
+        return False
+    if re.search(r"\bi(?:'m| am)\s+working on\b", message, re.I):
         return False
     return not has_companion_follow_up_signal(message)
 
@@ -134,6 +230,7 @@ def thread_offer_message_eligible(
     *,
     already_offered: bool,
     already_declined: bool,
+    conversation_history: Optional[list[dict]] = None,
     active_threads: Optional[list[dict[str, Any]]] = None,
     active_plans: Optional[list[dict[str, Any]]] = None,
     saved_memories: Optional[list[dict[str, Any]]] = None,
@@ -147,11 +244,16 @@ def thread_offer_message_eligible(
         return False
     if is_one_off_factual_question(message):
         return False
+    if is_stress_only_vent(message):
+        return False
     if is_clear_measurable_goal(message):
         return False
     if should_defer_open_thread_to_plan(message):
         return False
-    if not has_ongoing_personal_signal(message):
+    if not has_specific_actionable_continuity(
+        message,
+        conversation_history=conversation_history,
+    ):
         return False
     if active_threads is not None and topic_overlaps_existing_context(
         message,
@@ -171,6 +273,7 @@ def thread_offer_eligible(
     already_declined: bool,
     active_thread_count: int,
     max_active: int = 5,
+    conversation_history: Optional[list[dict]] = None,
     active_threads: Optional[list[dict[str, Any]]] = None,
     active_plans: Optional[list[dict[str, Any]]] = None,
     saved_memories: Optional[list[dict[str, Any]]] = None,
@@ -182,6 +285,7 @@ def thread_offer_eligible(
         message,
         already_offered=already_offered,
         already_declined=already_declined,
+        conversation_history=conversation_history,
         active_threads=active_threads,
         active_plans=active_plans,
         saved_memories=saved_memories,
@@ -189,24 +293,103 @@ def thread_offer_eligible(
     )
 
 
-def infer_thread_title(message: str, *, max_length: int = 80) -> str:
-    cleaned = re.sub(r"\s+", " ", message.strip())
-    if len(cleaned) <= max_length:
-        return cleaned
-    truncated = cleaned[: max_length - 3].rstrip()
-    last_space = truncated.rfind(" ")
-    if last_space > 40:
-        truncated = truncated[:last_space]
-    return f"{truncated}..."
+def infer_thread_title(
+    message: str,
+    *,
+    conversation_history: Optional[list[dict]] = None,
+    max_length: int = 60,
+) -> str:
+    from app.services.open_thread_title import infer_thread_title as build_title
+
+    return build_title(
+        message,
+        conversation_history=conversation_history,
+        max_length=max_length,
+    )
 
 
-def thread_summary_from_message(message: str, *, max_length: int = 200) -> Optional[str]:
-    cleaned = re.sub(r"\s+", " ", message.strip())
-    if not cleaned:
-        return None
-    if len(cleaned) <= max_length:
-        return cleaned
-    return f"{cleaned[: max_length - 3].rstrip()}..."
+def thread_summary_from_message(
+    message: str,
+    *,
+    conversation_history: Optional[list[dict]] = None,
+    max_length: int = 200,
+) -> Optional[str]:
+    from app.services.open_thread_title import thread_summary_from_message as build_summary
+
+    return build_summary(
+        message,
+        conversation_history=conversation_history,
+        max_length=max_length,
+    )
+
+
+def _combined_user_context(
+    message: str,
+    conversation_history: Optional[list[dict]],
+) -> str:
+    parts: list[str] = []
+    if conversation_history:
+        for entry in conversation_history[-6:]:
+            if str(entry.get("role") or "") != "user":
+                continue
+            content = str(entry.get("content") or "").strip()
+            if _is_substantive_user_content(content):
+                parts.append(content)
+    current = str(message or "").strip()
+    if current and (not parts or parts[-1] != current):
+        parts.append(current)
+    return " ".join(parts).strip()
+
+
+def _is_substantive_user_content(content: str) -> bool:
+    cleaned = content.strip()
+    if len(cleaned) < 8:
+        return False
+    normalized = re.sub(r"[^a-z0-9']+", " ", cleaned.casefold()).strip()
+    return normalized not in {"yes", "no", "ok", "okay", "thanks", "thank you", "nope", "nah"}
+
+
+def _multi_turn_context_is_actionable(
+    message: str,
+    conversation_history: Optional[list[dict]],
+) -> bool:
+    if not conversation_history:
+        return False
+    substantive = [
+        str(entry.get("content") or "").strip()
+        for entry in conversation_history[-6:]
+        if str(entry.get("role") or "") == "user"
+        and _is_substantive_user_content(str(entry.get("content") or ""))
+    ]
+    current = str(message or "").strip()
+    if current and (not substantive or substantive[-1] != current):
+        substantive.append(current)
+    if len(substantive) < 2:
+        return False
+    combined = " ".join(substantive)
+    return has_actionable_plan_signal(combined) or (
+        has_ongoing_personal_signal(combined) and _has_topic_noun(combined)
+    )
+
+
+def _has_topic_noun(text: str) -> bool:
+    cleaned = re.sub(r"\s+", " ", text.strip())
+    if len(cleaned) < 20:
+        return False
+    generic_only = re.fullmatch(
+        r"(?:i(?:'m| am)\s+(?:stressed|worried|anxious|overwhelmed)[\s,.!?-]*)+",
+        cleaned,
+        flags=re.I,
+    )
+    if generic_only:
+        return False
+    return bool(
+        re.search(
+            r"\b(?:routine|habit|plan|project|process|move|moving|sleep|job|work|app|business|health|budget|training|study|citizenship)\b",
+            cleaned,
+            flags=re.I,
+        )
+    )
 
 
 def _context_text_fields(record: dict[str, Any]) -> list[str]:

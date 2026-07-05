@@ -44,6 +44,12 @@ async def lifespan(app: FastAPI):
         raise RuntimeError(message)
 
     await startup_http_client()
+    logger.info(
+        "Google TTS configured: voice=%s rate=%s pitch=%s",
+        settings.google_tts_voice_name,
+        settings.google_tts_speaking_rate,
+        settings.google_tts_pitch,
+    )
     try:
         yield
     finally:
@@ -113,6 +119,9 @@ def readiness_check() -> dict:
             "voice_name": settings.google_tts_voice_name,
             "language_code": settings.google_tts_language_code,
             "audio_encoding": settings.google_tts_audio_encoding,
+            "speaking_rate": settings.google_tts_speaking_rate,
+            "pitch": settings.google_tts_pitch,
+            "volume_gain_db": settings.google_tts_volume_gain_db,
         },
         "plaid": plaid_status.to_readiness(),
         "time": {

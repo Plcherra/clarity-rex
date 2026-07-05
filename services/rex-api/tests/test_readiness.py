@@ -67,6 +67,9 @@ def test_readiness_reports_ready_when_all_required_services_are_configured(monke
     assert payload["checks"]["deepgram"]["model"] == "nova-3"
     assert payload["checks"]["google_tts"]["configured"] is True
     assert payload["checks"]["google_tts"]["audio_encoding"] == "MP3"
+    assert payload["checks"]["google_tts"]["voice_name"] == "en-US-Neural2-J"
+    assert payload["checks"]["google_tts"]["speaking_rate"] == 1.15
+    assert payload["checks"]["google_tts"]["pitch"] == 0.0
     assert payload["checks"]["plaid"]["configured"] is False
     assert "PLAID_SECRET" in payload["checks"]["plaid"]["required"]
     assert payload["checks"]["assistant_pipeline"] == {

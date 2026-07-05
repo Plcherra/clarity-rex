@@ -95,8 +95,37 @@ def test_thread_offer_eligible_uses_generic_signals() -> None:
         already_declined=False,
         active_thread_count=0,
     )
+    assert not thread_offer_eligible(
+        "About changing my night routine right now.",
+        already_offered=False,
+        already_declined=False,
+        active_thread_count=0,
+    )
+    assert not thread_offer_eligible(
+        "Hey. I just got an idea.",
+        already_offered=False,
+        already_declined=False,
+        active_thread_count=0,
+    )
     assert is_recall_message("Do you remember what I said about training?")
     assert is_explicit_track_consent("Yes, keep track of this please")
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "I'm changing my night routine — no screens after 9, reading before bed to fix sleep.",
+        "I want to build an app in my evenings and keep working on it.",
+        "I'm working on my citizenship application and it has been really stressful lately.",
+    ],
+)
+def test_thread_offer_eligible_accepts_actionable_continuity(message: str) -> None:
+    assert thread_offer_eligible(
+        message,
+        already_offered=False,
+        already_declined=False,
+        active_thread_count=0,
+    )
 
 
 @pytest.mark.parametrize(
@@ -105,15 +134,36 @@ def test_thread_offer_eligible_uses_generic_signals() -> None:
         "The citizenship process is overwhelming and has been really stressful lately.",
         "Money has been really tight lately and it is stressful to keep up.",
         "We're moving next month and it is stressful figuring out logistics.",
-        "I want to build an app in my evenings and keep working on it.",
     ],
 )
-def test_thread_offer_eligible_accepts_natural_conversation(message: str) -> None:
-    assert thread_offer_eligible(
+def test_thread_offer_eligible_rejects_vague_or_stress_only_messages(message: str) -> None:
+    assert not thread_offer_eligible(
         message,
         already_offered=False,
         already_declined=False,
         active_thread_count=0,
+    )
+
+
+def test_thread_offer_eligible_accepts_multi_turn_elaboration() -> None:
+    history = [
+        {"role": "user", "content": "Hey. I just got an idea."},
+        {"role": "assistant", "content": "What's the idea?"},
+        {"role": "user", "content": "About changing my night routine right now."},
+        {
+            "role": "user",
+            "content": (
+                "Yeah. It's just because I'm having some problem to sleep, "
+                "so now I got a plan."
+            ),
+        },
+    ]
+    assert thread_offer_eligible(
+        history[-1]["content"],
+        already_offered=False,
+        already_declined=False,
+        active_thread_count=0,
+        conversation_history=history,
     )
 
 
@@ -146,6 +196,7 @@ def test_infer_thread_title_truncates_long_messages() -> None:
     message = " ".join(["word"] * 30)
     title = infer_thread_title(message, max_length=40)
     assert len(title) <= 40
+    assert title != message
 
 
 def test_thread_offer_message_eligible_ignores_cap_signal():

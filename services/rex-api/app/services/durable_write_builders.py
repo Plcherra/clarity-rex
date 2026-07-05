@@ -11,6 +11,7 @@ from app.services.conversational_plan_results import write_kind_for_action
 from app.services.durable_write_applier import preview_plan_merge_title
 from app.services.durable_write_proposal import DurableWriteProposal
 from app.services.goal_command_formatting import goal_title, plan_type
+from app.services.open_thread_title import clamp_thread_title
 from app.services.goal_command_types import GoalCommand
 from app.services.memory_intent_service import SimpleMemoryIntent
 from app.services.memory_path_policy import direct_save_metadata
@@ -116,16 +117,17 @@ def proposal_from_open_thread(
     conversation_id: str,
     source_message_id: str | None,
 ) -> DurableWriteProposal:
-    body = summary or title
+    safe_title = clamp_thread_title(title)
+    body = summary or safe_title
     return DurableWriteProposal(
         write_kind="open_thread",
-        title=title,
+        title=safe_title,
         body=body,
         editable_fields=("title", "body"),
         apply_snapshot={
             "type": "open_thread",
             "payload": {
-                "title": title,
+                "title": safe_title,
                 "summary": summary or body,
                 "status": "active",
                 "source": "user_confirmed",

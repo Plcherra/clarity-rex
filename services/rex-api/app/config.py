@@ -66,8 +66,8 @@ class Settings(BaseSettings):
     google_tts_voice_name: str = "en-US-Neural2-J"
     google_tts_language_code: str = "en-US"
     google_tts_audio_encoding: str = "MP3"
-    google_tts_speaking_rate: float = 1.12
-    google_tts_pitch: float = -2.0
+    google_tts_speaking_rate: float = 1.15
+    google_tts_pitch: float = 0.0
     google_tts_volume_gain_db: float = 10.0
     google_tts_timeout_seconds: int = 60
 

@@ -19,6 +19,9 @@ from app.services.open_thread_eligibility import (
 
 
 THREAD_OFFER_PHRASE = "Want me to keep track of this and check in later?"
+THREAD_OFFER_DETAIL = (
+    "It would show up in your Goals tab as an open thread — not saved memory."
+)
 
 
 class OpenThreadTurnService:
@@ -74,11 +77,14 @@ class OpenThreadTurnService:
             offer_state,
             message,
         ):
+            topic_message = offer_state.get("topic_message") or message
             title = infer_thread_title(
-                offer_state.get("topic_message") or message,
+                topic_message,
+                conversation_history=conversation_history,
             )
             summary = thread_summary_from_message(
-                offer_state.get("topic_message") or message,
+                topic_message,
+                conversation_history=conversation_history,
             )
             return await self.durable_write_service.propose_open_thread(
                 title=title,
@@ -96,6 +102,7 @@ class OpenThreadTurnService:
                 message,
                 already_offered=bool(offer_state.get("offered")),
                 already_declined=bool(offer_state.get("declined")),
+                conversation_history=conversation_history,
                 **offer_context,
             )
         ):
@@ -127,23 +134,17 @@ class OpenThreadTurnService:
             already_declined=bool(offer_state.get("declined")),
             active_thread_count=len(active_threads),
             max_active=MAX_ACTIVE_OPEN_THREADS,
+            conversation_history=conversation_history,
             active_threads=active_threads,
             **offer_context,
         ):
             return None
 
-        title = infer_thread_title(message)
-        summary = thread_summary_from_message(message)
-        return await self.durable_write_service.propose_open_thread(
-            title=title,
-            summary=summary,
+        return await clarification_turn_result(
+            self.memory_service,
             conversation_id=conversation_id,
             user_message=user_message,
-            response=(
-                f"{THREAD_OFFER_PHRASE} "
-                "It would show up in your Goals tab as an open thread — "
-                "not saved memory."
-            ),
+            response=f"{THREAD_OFFER_PHRASE} {THREAD_OFFER_DETAIL}",
         )
 
     def _recent_offer_pending(self, offer_state: dict, message: str) -> bool:

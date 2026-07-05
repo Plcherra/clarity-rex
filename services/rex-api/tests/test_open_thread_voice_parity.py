@@ -45,8 +45,8 @@ async def test_open_thread_offer_works_on_voice_channel():
 
     assert THREAD_OFFER_PHRASE in result["response"]
     assert "not saved memory" in result["response"]
-    assert result["memory_changes"]["confirmation_required"] == 1
-    assert result["memory_changes"]["write_proposals"][0]["write_kind"] == "open_thread"
+    assert result["memory_changes"]["confirmation_required"] == 0
+    assert not result["memory_changes"].get("write_proposals")
     assert ai_service.generate_calls == 0
 
 
@@ -67,7 +67,8 @@ async def test_open_thread_wins_over_conversational_plan_for_companion_vents():
     )
 
     assert THREAD_OFFER_PHRASE in result["response"]
-    assert result["memory_changes"]["write_proposals"][0]["write_kind"] == "open_thread"
+    assert result["memory_changes"]["confirmation_required"] == 0
+    assert not result["memory_changes"].get("write_proposals")
     assert ai_service.generate_calls == 0
 
 
