@@ -39,6 +39,14 @@ class VoiceTranscriptBuffer {
     _appendSegment(next);
   }
 
+  static String preferFullest(Iterable<String> parts) {
+    final buffer = VoiceTranscriptBuffer();
+    for (final part in parts) {
+      buffer.appendFinal(part);
+    }
+    return buffer.visible;
+  }
+
   void _appendSegment(String transcript) {
     final next = _collapseRepeatedText(_normalize(transcript));
     if (next.isEmpty) {

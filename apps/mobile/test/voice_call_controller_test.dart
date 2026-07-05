@@ -1710,6 +1710,83 @@ void main() {
   );
 
   test(
+    'speech_final with last segment only keeps full interim transcript in chat',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      const fullTranscript =
+          'Everything good? I also want some weights so I can exercise at home.';
+
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'Everything good?',
+      });
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'I also want some weights',
+      });
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'so I can exercise at home.',
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      final interim = container.read(chatProvider).messages;
+      expect(interim, hasLength(1));
+      expect(interim.first.content, fullTranscript);
+      expect(interim.first.isVoiceInterim, isTrue);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'so I can exercise at home.',
+        'speech_final': true,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      final messages = container.read(chatProvider).messages;
+      expect(messages, hasLength(1));
+      expect(messages.first.content, fullTranscript);
+      expect(messages.first.isVoiceInterim, isFalse);
+      expect(streamingApi.socket.sentEvents, contains('utterance.end'));
+    },
+  );
+
+  test(
     'inactive lifecycle keeps audio route stable and suppresses no-speech fail',
     () async {
       final captureService = _ReusableSilentStreamingAudioCaptureService();

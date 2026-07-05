@@ -57,5 +57,18 @@ void main() {
 
       expect(buffer.visible, isEmpty);
     });
+
+    test('preferFullest merges last segment with earlier segments', () {
+      final merged = VoiceTranscriptBuffer.preferFullest([
+        'so I can exercise at home.',
+        'Everything good? I also want some weights so I can exercise at home.',
+        'Everything good? I also want some weights',
+      ]);
+
+      expect(
+        merged,
+        'Everything good? I also want some weights so I can exercise at home.',
+      );
+    });
   });
 }

@@ -39,8 +39,25 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     );
   }
 
+  String? _activeVoiceMessageContent() {
+    final localId = _activeVoiceMessageLocalId;
+    if (localId == null) {
+      return null;
+    }
+    for (final message in ref.read(chatProvider).messages) {
+      if (message.id == localId) {
+        return message.content;
+      }
+    }
+    return null;
+  }
+
   void _finalizeVoiceTranscriptInChat({String? finalTranscript}) {
-    final text = (finalTranscript ?? _transcriptBuffer.visible).trim();
+    final text = VoiceTranscriptBuffer.preferFullest([
+      if (finalTranscript != null) finalTranscript,
+      _transcriptBuffer.visible,
+      _activeVoiceMessageContent() ?? '',
+    ]).trim();
     if (text.isEmpty) {
       _removeActiveVoiceUserMessage();
       return;
