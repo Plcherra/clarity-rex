@@ -68,14 +68,30 @@ Presentation depends on application/domain, never the reverse.
 - Focused modules by responsibility — parsing, queries, writes, formatting.
 - Move tests with extracted code; keep public behavior unchanged.
 
-**Known violators** (`services/rex-api/app/services/`) — re-audit when touched:
+**Known violators and watch list** — re-audit when touched:
 
-| File | Notes |
+| File | Lines (approx.) | Notes |
+| --- | ---: | --- |
+| `plan_intelligence_service.py` | 471 | watch — split before adding features |
+| `memory_intent_facts.py` | 461 | watch |
+| `plaid_sync_service.py` | 455 | watch |
+| `memory_turn_service.py` | 455 | watch |
+| `chat_turn_orchestrator.py` | 454 | split complete — do not re-grow |
+| `plan_merge_service.py` | 448 | watch |
+| `memory_retrieval_ranker.py` | 444 | watch |
+| `memory_intent_service.py` | 443 | watch |
+
+**Recently split (under 500 — keep them there):**
+
+| Area | Modules |
 | --- | --- |
-| `chat_turn_orchestrator.py` | support + short-circuit helpers extracted |
-| `chat_recall_search.py` | runners extracted |
-| `memory_correction_service.py` | apply module extracted |
-| `recall_intent_helper.py` | constants, detection, query modules |
+| Backend usage tracking | `usage_tracking_service.py` (orchestrator), `usage_tracking_transport.py`, `usage_tracking_owner_queries.py` |
+| Backend assistant turn | `chat_turn_orchestrator.py`, `chat_turn_orchestrator_support.py`, `chat_turn_orchestrator_short_circuit.py` |
+| Backend recall | `chat_recall_search.py`, `chat_recall_search_runners.py`, `recall_intent_helper.py`, `recall_intent_detection.py`, `recall_intent_query.py` |
+| Backend memory corrections | `memory_correction_service.py`, `memory_correction_apply.py` |
+| Mobile chat | `chat_controller.dart`, `chat_controller_send.dart`, `chat_controller_actions.dart`, `chat_controller_context.dart` |
+| Mobile voice | `voice_call_controller.dart` + `voice_call_controller_streaming*.dart` parts |
+| Mobile finance context | `assistant_financial_context_service.dart`, `assistant_financial_context_intent.dart`, `assistant_financial_context_builder.dart` |
 
 `chat_context_service.py` was split and is under the limit — do not re-grow it. Same limits apply under `apps/mobile/lib/`.
 
@@ -123,8 +139,9 @@ User message (chat or voice)
 
 | Role | File |
 | --- | --- |
-| Chat | `apps/mobile/lib/rex/chat/application/chat_controller.dart` |
+| Chat | `apps/mobile/lib/rex/chat/application/chat_controller*.dart` |
 | Voice | `apps/mobile/lib/rex/voice/application/voice_call_controller*.dart` |
+| Finance context (assistant) | `apps/mobile/lib/features/finance/application/assistant_financial_context_*.dart` |
 | Knows | `apps/mobile/lib/rex/memory/application/memory_controller.dart` |
 | HTTP client | `apps/mobile/lib/core/rex/rex_api_client.dart` |
 | Confirm cards | `apps/mobile/lib/rex/chat/presentation/widgets/clarity_action_cards_strip.dart` |

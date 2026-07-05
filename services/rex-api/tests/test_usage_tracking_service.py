@@ -1,6 +1,7 @@
 import pytest
 
 import app.services.usage_tracking_service as usage_module
+import app.services.usage_tracking_transport as usage_transport_module
 from app.config import Settings
 from app.models.usage_tracking import (
     UsageTrackingEvent,
@@ -52,7 +53,7 @@ async def test_record_event_uses_service_role_insert(monkeypatch):
         )
         return FakeResponse()
 
-    monkeypatch.setattr(usage_module, "request_with_retries", fake_request)
+    monkeypatch.setattr(usage_transport_module, "request_with_retries", fake_request)
     settings = _settings()
     settings.usage_grok_cents_per_1k_tokens = 50
     settings.usage_grok_input_cents_per_1k_tokens = 0
@@ -88,7 +89,7 @@ async def test_record_event_fails_quietly_on_rejected_event_type(monkeypatch):
         calls.append(json)
         return FakeResponse()
 
-    monkeypatch.setattr(usage_module, "request_with_retries", fake_request)
+    monkeypatch.setattr(usage_transport_module, "request_with_retries", fake_request)
     service = UsageTrackingService(settings=_settings())
 
     ok = await service.record_event(
@@ -131,7 +132,7 @@ async def test_user_voice_usage_summarizes_today_week_and_month(monkeypatch):
         ]
         return response
 
-    monkeypatch.setattr(usage_module, "request_with_retries", fake_request)
+    monkeypatch.setattr(usage_transport_module, "request_with_retries", fake_request)
     service = UsageTrackingService(settings=_settings())
 
     totals = await service.get_user_voice_usage(
@@ -175,7 +176,7 @@ async def test_owner_usage_allows_configured_owner_without_client_secret(monkeyp
         ]
         return response
 
-    monkeypatch.setattr(usage_module, "request_with_retries", fake_request)
+    monkeypatch.setattr(usage_transport_module, "request_with_retries", fake_request)
     settings = _settings()
     settings.usage_owner_user_id = "owner-1"
     service = UsageTrackingService(settings=settings)
@@ -200,7 +201,7 @@ async def test_owner_usage_allowlist_requires_owner_or_admin_role(monkeypatch):
         response.json = lambda: []
         return response
 
-    monkeypatch.setattr(usage_module, "request_with_retries", fake_request)
+    monkeypatch.setattr(usage_transport_module, "request_with_retries", fake_request)
     service = UsageTrackingService(settings=_settings())
 
     result = await service.get_owner_usage(
@@ -231,7 +232,7 @@ async def test_owner_user_daily_uses_postgrest_and_date_filter(monkeypatch):
         ]
         return response
 
-    monkeypatch.setattr(usage_module, "request_with_retries", fake_request)
+    monkeypatch.setattr(usage_transport_module, "request_with_retries", fake_request)
     settings = _settings()
     settings.usage_owner_user_id = "owner-1"
     service = UsageTrackingService(settings=settings)
@@ -255,7 +256,7 @@ async def test_tracking_failure_does_not_raise(monkeypatch):
     async def fake_request(method, url, headers=None, json=None):
         raise TimeoutError("network down")
 
-    monkeypatch.setattr(usage_module, "request_with_retries", fake_request)
+    monkeypatch.setattr(usage_transport_module, "request_with_retries", fake_request)
     service = UsageTrackingService(settings=_settings())
 
     ok = await service.record_voice_session(
