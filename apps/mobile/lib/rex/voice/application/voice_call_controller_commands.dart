@@ -9,6 +9,9 @@ extension VoiceCallControllerCommands on VoiceCallController {
     }
 
     _isAwaitingFollowUpSpeech = false;
+    if (transcript.trim().isEmpty) {
+      _resetActiveVoiceMessageLocalId();
+    }
     if (transcript.trim().isNotEmpty) {
       _emptyVoiceTurnRecoveryCount = 0;
     }
@@ -22,6 +25,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
       isCapturingSpeech: true,
       clearError: true,
     );
+    _syncInterimVoiceTranscriptToChat(_transcriptBuffer.visible);
     _armSpeechStartedEndpointTimeout(_callGeneration);
   }
 
@@ -44,6 +48,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
       isCapturingSpeech: true,
       clearError: true,
     );
+    _syncInterimVoiceTranscriptToChat(_transcriptBuffer.visible);
     _armTranscriptIdleEndpointTimeout(_callGeneration);
     _prefetchFinancialContextIfNeeded(_transcriptBuffer.visible);
   }
@@ -55,8 +60,11 @@ extension VoiceCallControllerCommands on VoiceCallController {
 
     _cancelNoSpeechTimeout();
     _isAwaitingFollowUpSpeech = false;
+    _finalizeVoiceTranscriptInChat();
+    _clearVisibleTranscript();
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
+      clearCurrentTranscript: true,
       isCapturingSpeech: false,
       clearError: true,
     );
@@ -90,6 +98,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     if (finalTranscript != null && finalTranscript.trim().isNotEmpty) {
       _emptyVoiceTurnRecoveryCount = 0;
     }
+    _finalizeVoiceTranscriptInChat(finalTranscript: finalTranscript);
     _clearVisibleTranscript();
 
     state = state.copyWith(
@@ -128,6 +137,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
       unawaited(_playbackService.stop());
     }
     _clearVisibleTranscript();
+    _removeActiveVoiceUserMessage();
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
       currentTranscript: transcript,
@@ -227,6 +237,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
       return;
     }
 
+    _resetActiveVoiceMessageLocalId();
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       isCapturingSpeech: false,
@@ -267,6 +278,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     unawaited(_backgroundVoiceService.stop());
     unawaited(_audioSessionService.setActive(false));
     _clearVisibleTranscript();
+    _resetActiveVoiceMessageLocalId();
     state = const VoiceCallState();
   }
 }

@@ -105,6 +105,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
         clearError: true,
       );
       _clearVisibleTranscript();
+      _removeActiveVoiceUserMessage();
       _startListeningCycle(generation);
       return;
     }
@@ -126,6 +127,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
       clearError: true,
     );
     _clearVisibleTranscript();
+    _removeActiveVoiceUserMessage();
     _startListeningCycle(generation);
   }
 

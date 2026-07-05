@@ -30,12 +30,14 @@ class ChatMessageBubble extends StatelessWidget {
     this.suppressClarityActions = false,
     this.dashboardLinkAnchor,
     this.onDashboardLinkTap,
+    this.isVoiceInterim = false,
   });
 
   final String text;
   final bool isUser;
   final bool isLoading;
   final bool isStreaming;
+  final bool isVoiceInterim;
   final List<ClarityActionCard> clarityActions;
   final String? attachmentLocalPath;
   final List<int>? attachmentPreviewBytes;
@@ -53,11 +55,16 @@ class ChatMessageBubble extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final width = MediaQuery.sizeOf(context).width;
     final maxWidth = width >= 700 ? 600.0 : width * 0.86;
+    final interimUserBubble = isUser && isVoiceInterim;
 
-    final background = isUser
+    final background = interimUserBubble
+        ? Colors.transparent
+        : isUser
         ? colors.accent
         : colors.surfaceElevated.withValues(alpha: isDark ? 0.82 : 0.92);
-    final foreground = isUser
+    final foreground = interimUserBubble
+        ? colors.textSecondary
+        : isUser
         ? (isDark ? Colors.black : Colors.white)
         : colors.textPrimary;
     final codeBackground = isUser
@@ -83,7 +90,26 @@ class ChatMessageBubble extends StatelessWidget {
           Flexible(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
-              child: DecoratedBox(
+              child: interimUserBubble
+                  ? Align(
+                      alignment: Alignment.centerRight,
+                      child: SelectableText.rich(
+                        TextSpan(
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: foreground,
+                            height: 1.45,
+                            letterSpacing: 0,
+                          ),
+                          children: _inlineMarkdownSpans(
+                            text,
+                            theme,
+                            foreground,
+                            codeBackground,
+                          ),
+                        ),
+                      ),
+                    )
+                  : DecoratedBox(
                 decoration: BoxDecoration(
                   color: background,
                   borderRadius: BorderRadius.only(

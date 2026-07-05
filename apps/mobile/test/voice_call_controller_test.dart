@@ -482,7 +482,7 @@ void main() {
     );
   });
 
-  testWidgets('voice live transcript hides user text while thinking', (
+  testWidgets('voice live transcript hides processing while thinking', (
     tester,
   ) async {
     const userText = 'Twitter account for Clarity';
@@ -502,10 +502,10 @@ void main() {
     );
 
     expect(find.text(userText), findsNothing);
-    expect(find.text(l10n.voicePanelProcessing), findsOneWidget);
+    expect(find.text(l10n.voicePanelProcessing), findsNothing);
   });
 
-  testWidgets('voice live transcript shows user text while listening', (
+  testWidgets('voice live transcript does not show transcript while listening', (
     tester,
   ) async {
     const userText = 'Twitter account for Clarity';
@@ -523,7 +523,7 @@ void main() {
       ),
     );
 
-    expect(find.text(userText), findsOneWidget);
+    expect(find.text(userText), findsNothing);
   });
 
   testWidgets('inline voice panel has no manual interrupt button', (
@@ -1133,6 +1133,62 @@ void main() {
     expect(streamingApi.connectCount, 1);
     expect(streamingApi.socket.closeCount, 0);
     expect(bargeInService.stopCount, 0);
+
+    final chatMessages = container.read(chatProvider).messages;
+    expect(chatMessages, hasLength(1));
+    expect(chatMessages.first.content, 'Tell me about my day.');
+    expect(chatMessages.first.isVoiceInterim, isFalse);
+  });
+
+  test('updateTranscript adds interim voice message to chat', () async {
+    final captureService = _ScriptedStreamingAudioCaptureService();
+    final bargeInService = _ControlledBargeInDetectionService();
+    final streamingApi = _FakeStreamingVoiceApi();
+    final container = ProviderContainer(
+      overrides: [
+        microphonePermissionProvider.overrideWithValue(
+          const _GrantedMicrophonePermissionService(),
+        ),
+        voiceAudioSessionServiceProvider.overrideWithValue(
+          const _NoopVoiceAudioSessionService(),
+        ),
+        backgroundVoiceServiceProvider.overrideWithValue(
+          const _NoopBackgroundVoiceService(),
+        ),
+        audioCaptureServiceProvider.overrideWithValue(
+          const _NoopAudioCaptureService(),
+        ),
+        audioPlaybackServiceProvider.overrideWithValue(
+          const _NoopAudioPlaybackService(),
+        ),
+        streamingVoiceEnabledProvider.overrideWithValue(true),
+        nativeIosVoiceEnabledProvider.overrideWithValue(false),
+        streamingVoiceApiProvider.overrideWithValue(streamingApi),
+        streamingAudioCaptureServiceProvider.overrideWithValue(captureService),
+        bargeInDetectionServiceProvider.overrideWithValue(bargeInService),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(voiceCallProvider.notifier);
+    expect(await controller.startCall(), isTrue);
+    await captureService.readyAt(0);
+
+    controller.updateTranscript('How are my budgets');
+    await Future<void>.delayed(Duration.zero);
+
+    final interim = container.read(chatProvider).messages;
+    expect(interim, hasLength(1));
+    expect(interim.first.content, 'How are my budgets');
+    expect(interim.first.isVoiceInterim, isTrue);
+
+    controller.startThinking(finalTranscript: 'How are my budgets looking?');
+    await Future<void>.delayed(Duration.zero);
+
+    final finalized = container.read(chatProvider).messages;
+    expect(finalized, hasLength(1));
+    expect(finalized.first.content, 'How are my budgets looking?');
+    expect(finalized.first.isVoiceInterim, isFalse);
   });
 
   test(

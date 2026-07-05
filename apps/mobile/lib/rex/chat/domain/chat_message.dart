@@ -16,6 +16,7 @@ class ChatMessage {
     this.attachmentPreviewBytes,
     this.attachmentName,
     this.dashboardLinkAnchor,
+    this.isVoiceInterim = false,
   });
 
   final String id;
@@ -23,6 +24,7 @@ class ChatMessage {
   final String content;
   final DateTime? timestamp;
   final bool isStreaming;
+  final bool isVoiceInterim;
   final List<ClarityActionCard> clarityActions;
   final String? attachmentLocalPath;
   final List<int>? attachmentPreviewBytes;
@@ -55,6 +57,7 @@ class ChatMessage {
     List<int>? attachmentPreviewBytes,
     String? attachmentName,
     DashboardInsightAnchor? dashboardLinkAnchor,
+    bool? isVoiceInterim,
     bool clearAttachmentLocalPath = false,
     bool clearAttachmentPreviewBytes = false,
     bool clearAttachmentName = false,
@@ -66,6 +69,7 @@ class ChatMessage {
       content: content ?? this.content,
       timestamp: timestamp ?? this.timestamp,
       isStreaming: isStreaming ?? this.isStreaming,
+      isVoiceInterim: isVoiceInterim ?? this.isVoiceInterim,
       clarityActions: clarityActions ?? this.clarityActions,
       attachmentLocalPath: clearAttachmentLocalPath
           ? null

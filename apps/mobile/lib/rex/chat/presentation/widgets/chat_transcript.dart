@@ -41,6 +41,11 @@ class ChatTranscript extends StatelessWidget {
     final hasMessages = messages.isNotEmpty;
     final showVoiceTranscript =
         voiceState != null && !voiceState!.isIdle;
+    final showVoiceProcessing =
+        voiceState?.phase == VoiceCallPhase.thinking &&
+        messages.isNotEmpty &&
+        messages.last.isUser &&
+        !messages.last.isVoiceInterim;
     final baseBottomPadding = MediaQuery.viewInsetsOf(context).bottom > 0
         ? RexUiTokens.space12
         : RexUiTokens.space24;
@@ -69,30 +74,45 @@ class ChatTranscript extends StatelessWidget {
                     onPromptSelected: onPromptSelected,
                   )
                 else
-                  ...messages.map(
-                    (message) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: ChatMessageBubble(
-                        text: message.content,
-                        isUser: message.role == ChatMessageRole.user,
-                        isStreaming: message.isStreaming,
-                        attachmentLocalPath: message.attachmentLocalPath,
-                        attachmentPreviewBytes: message.attachmentPreviewBytes,
-                        attachmentName: message.attachmentName,
-                        clarityActions: message.clarityActions,
-                        onConfirmClarityAction: onConfirmClarityAction,
-                        onDismissClarityAction: onDismissClarityAction,
-                        suppressClarityActions: true,
-                        dashboardLinkAnchor: message.dashboardLinkAnchor,
-                        onDashboardLinkTap:
-                            message.dashboardLinkAnchor == null ||
-                                onDashboardLinkTap == null
-                            ? null
-                            : () => onDashboardLinkTap!(
-                                message.dashboardLinkAnchor!,
+                  ...messages.asMap().entries.map(
+                    (entry) {
+                      final message = entry.value;
+                      final isLastMessage = entry.key == messages.length - 1;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ChatMessageBubble(
+                              text: message.content,
+                              isUser: message.role == ChatMessageRole.user,
+                              isStreaming: message.isStreaming,
+                              isVoiceInterim: message.isVoiceInterim,
+                              attachmentLocalPath: message.attachmentLocalPath,
+                              attachmentPreviewBytes:
+                                  message.attachmentPreviewBytes,
+                              attachmentName: message.attachmentName,
+                              clarityActions: message.clarityActions,
+                              onConfirmClarityAction: onConfirmClarityAction,
+                              onDismissClarityAction: onDismissClarityAction,
+                              suppressClarityActions: true,
+                              dashboardLinkAnchor: message.dashboardLinkAnchor,
+                              onDashboardLinkTap:
+                                  message.dashboardLinkAnchor == null ||
+                                      onDashboardLinkTap == null
+                                  ? null
+                                  : () => onDashboardLinkTap!(
+                                      message.dashboardLinkAnchor!,
+                                    ),
+                            ),
+                            if (showVoiceProcessing && isLastMessage)
+                              _VoiceProcessingIndicator(
+                                label: l10n.voicePanelProcessing,
                               ),
-                      ),
-                    ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 if (showVoiceTranscript)
                   VoiceLiveTranscript(state: voiceState!),
@@ -109,6 +129,28 @@ class ChatTranscript extends StatelessWidget {
             child: SizedBox.shrink(),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _VoiceProcessingIndicator extends StatelessWidget {
+  const _VoiceProcessingIndicator({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.clarityColors;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, left: 42),
+      child: Text(
+        label,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: colors.textMuted,
+        ),
       ),
     );
   }

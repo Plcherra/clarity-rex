@@ -47,6 +47,7 @@ part 'voice_call_controller_streaming_playback.dart';
 part 'voice_call_controller_timers.dart';
 part 'voice_call_controller_l10n.dart';
 part 'voice_call_controller_dependencies.dart';
+part 'voice_call_controller_chat_sync.dart';
 
 final voiceCallProvider = NotifierProvider<VoiceCallController, VoiceCallState>(
   VoiceCallController.new,
@@ -85,6 +86,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   Timer? _thinkingTimeoutTimer;
   Timer? _listeningEndpointTimer;
   Timer? _noSpeechTimeoutTimer;
+  String? _activeVoiceMessageLocalId;
 
   @override
   VoiceCallState build() {

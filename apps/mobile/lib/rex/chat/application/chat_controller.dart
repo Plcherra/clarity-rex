@@ -29,6 +29,7 @@ export 'package:clarity/rex/chat/application/chat_state.dart';
 part 'chat_controller_actions.dart';
 part 'chat_controller_send.dart';
 part 'chat_controller_context.dart';
+part 'chat_controller_voice.dart';
 
 final chatApiProvider = Provider<ChatApi>((ref) => ChatApi());
 
