@@ -173,7 +173,7 @@ void main() {
   });
 
   test(
-    'streaming voice force-endpoints after speech starts but no final event',
+    'streaming voice waits for speech_final instead of local speech timer',
     () async {
       final captureService = _HangingStreamingAudioCaptureService();
       final streamingApi = _FakeStreamingVoiceApi();
@@ -216,14 +216,14 @@ void main() {
       await captureService.started.future;
       await Future<void>.delayed(const Duration(milliseconds: 30));
 
-      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
       expect(
         streamingApi.socket.sentEvents.where(
           (event) => event == 'utterance.end',
         ),
-        hasLength(1),
+        isEmpty,
       );
-      expect(captureService.cancelled, isTrue);
+      expect(captureService.cancelled, isFalse);
     },
   );
 
@@ -1428,13 +1428,16 @@ void main() {
 
       captureService.finishCurrentWithSpeech();
       await Future<void>.delayed(Duration.zero);
-      expect(streamingApi.socket.sentEvents, contains('utterance.end'));
+      expect(streamingApi.socket.sentEvents, isNot(contains('utterance.end')));
 
       streamingApi.socket.emit({
         'event': 'transcript.final',
         'transcript': 'Hello again',
         'speech_final': true,
       });
+      await Future<void>.delayed(Duration.zero);
+      expect(streamingApi.socket.sentEvents, contains('utterance.end'));
+
       streamingApi.socket.emit({'event': 'assistant.started'});
       streamingApi.socket.emit({
         'event': 'assistant.token',
@@ -1583,6 +1586,126 @@ void main() {
       final state = container.read(voiceCallProvider);
       expect(state.phase, VoiceCallPhase.thinking);
       expect(state.currentTranscript, isEmpty);
+    },
+  );
+
+  test(
+    'startCapturingSpeech during same utterance keeps one chat message',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      controller.updateTranscript('Everything good? I want some weights');
+      controller.startCapturingSpeech();
+      controller.updateTranscript(
+        'Everything good? I want some weights so I can exercise at home.',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final messages = container.read(chatProvider).messages;
+      expect(messages, hasLength(1));
+      expect(
+        messages.first.content,
+        'Everything good? I want some weights so I can exercise at home.',
+      );
+      expect(messages.first.isVoiceInterim, isTrue);
+    },
+  );
+
+  test(
+    'speech_final keeps one finalized user message in chat',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'so I can exercise at home.',
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript':
+            'Everything good? I also want some weights so I can exercise at home.',
+        'speech_final': true,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      final messages = container.read(chatProvider).messages;
+      expect(messages, hasLength(1));
+      expect(
+        messages.first.content,
+        'Everything good? I also want some weights so I can exercise at home.',
+      );
+      expect(messages.first.isVoiceInterim, isFalse);
+      expect(streamingApi.socket.sentEvents, contains('utterance.end'));
     },
   );
 

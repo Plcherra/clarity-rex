@@ -384,8 +384,32 @@ async def test_voice_memory_recall_speaks_final_truth_checked_response():
         event for event in writer.sent_events if event["event"] == "assistant.audio_chunk"
     ]
     assert response == "From saved memory, Jessica works with you."
-    assert len(audio_events) >= 1
-    assert audio_events[-1]["text"] == response
+    assert len(audio_events) == 1
+    assert audio_events[0]["text"] == response
+
+
+@pytest.mark.asyncio
+async def test_voice_truth_check_replaces_pending_streamed_tts_chunks():
+    writer = _StreamingWriterProbe(
+        tts_delay=0.01,
+        chat_service=_MemoryRecallStreamingChatService(),
+    )
+    timings = {}
+
+    await writer._stream_chat_and_audio(
+        "What do you know about Jessica?",
+        {"confidence": 0.95, "duration_seconds": 1.2},
+        timings,
+        turn_generation=1,
+    )
+
+    audio_events = [
+        event for event in writer.sent_events if event["event"] == "assistant.audio_chunk"
+    ]
+    spoken_text = " ".join(event["text"] for event in audio_events)
+    assert "I could not find anything about Jessica." not in spoken_text
+    assert spoken_text == "From saved memory, Jessica works with you."
+    assert timings["tts_chunk_count"] == 1
 
 
 @pytest.mark.asyncio

@@ -7,9 +7,24 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     _activeVoiceMessageLocalId = null;
   }
 
+  void _resetPendingUtteranceTranscript() {
+    _pendingUtteranceTranscript = null;
+  }
+
   String _ensureActiveVoiceMessageLocalId() {
     return _activeVoiceMessageLocalId ??=
         'local-voice-${DateTime.now().microsecondsSinceEpoch}';
+  }
+
+  bool _hasActiveVoiceMessageInChat() {
+    final localId = _activeVoiceMessageLocalId;
+    if (localId == null) {
+      return false;
+    }
+    return ref
+        .read(chatProvider)
+        .messages
+        .any((message) => message.id == localId);
   }
 
   void _syncInterimVoiceTranscriptToChat(String content) {
@@ -31,9 +46,14 @@ extension VoiceCallControllerChatSync on VoiceCallController {
       return;
     }
 
+    final localId = _ensureActiveVoiceMessageLocalId();
     ref.read(chatProvider.notifier).finalizeVoiceUserMessage(
-      localId: _ensureActiveVoiceMessageLocalId(),
+      localId: localId,
       content: text,
+    );
+    ref.read(chatProvider.notifier).removeStaleLocalVoiceUserMessages(
+      keepLocalId: localId,
+      finalContent: text,
     );
   }
 
@@ -45,5 +65,24 @@ extension VoiceCallControllerChatSync on VoiceCallController {
 
     ref.read(chatProvider.notifier).removeVoiceUserMessage(localId);
     _resetActiveVoiceMessageLocalId();
+  }
+
+  void _finalizeStreamingTurn({
+    required String transcript,
+    required StreamingVoiceSession session,
+    required int turnSequence,
+  }) {
+    final text = transcript.trim();
+    if (text.isEmpty || !state.isCallActive) {
+      return;
+    }
+
+    _pendingUtteranceTranscript = text;
+    startThinking(finalTranscript: text);
+    _sendStreamingUtteranceEndIfNeeded(
+      session,
+      turnSequence,
+      transcript: text,
+    );
   }
 }

@@ -136,6 +136,67 @@ void main() {
   });
 
   test(
+    'mergeBackendMessagesPreservingLocalVoice drops local partial covered by backend user',
+    () {
+      const fullMessage =
+          'Everything good? I also want some weights so I can exercise at home.';
+      const partialMessage = 'so I can exercise at home.';
+
+      final merged = mergeBackendMessagesPreservingLocalVoice(
+        local: const [
+          ChatMessage(
+            id: 'local-voice-1',
+            role: ChatMessageRole.user,
+            content: partialMessage,
+            isVoiceInterim: false,
+          ),
+        ],
+        backend: const [
+          ChatMessage(
+            id: 'user-message-1',
+            role: ChatMessageRole.user,
+            content: fullMessage,
+          ),
+          ChatMessage(
+            id: 'assistant-message-1',
+            role: ChatMessageRole.assistant,
+            content: 'You mean a door-mounted bar and some weights?',
+          ),
+        ],
+      );
+
+      expect(merged, hasLength(2));
+      expect(merged.first.id, 'user-message-1');
+      expect(merged.last.id, 'assistant-message-1');
+    },
+  );
+
+  test('removeStaleLocalVoiceUserMessages drops orphaned local voice rows', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final controller = container.read(chatProvider.notifier);
+
+    controller.upsertVoiceUserMessage(
+      localId: 'local-voice-old',
+      content: 'so I can exercise at home.',
+    );
+    controller.finalizeVoiceUserMessage(
+      localId: 'local-voice-new',
+      content:
+          'Everything good? I also want some weights so I can exercise at home.',
+    );
+    controller.removeStaleLocalVoiceUserMessages(
+      keepLocalId: 'local-voice-new',
+      finalContent:
+          'Everything good? I also want some weights so I can exercise at home.',
+    );
+
+    final messages = container.read(chatProvider).messages;
+    expect(messages, hasLength(1));
+    expect(messages.first.id, 'local-voice-new');
+  });
+
+  test(
     'mergeBackendMessagesPreservingLocalVoice keeps interim when backend empty',
     () {
       final merged = mergeBackendMessagesPreservingLocalVoice(

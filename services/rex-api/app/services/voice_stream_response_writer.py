@@ -88,9 +88,17 @@ class VoiceStreamResponseWriterMixin:
             except asyncio.CancelledError:
                 return
             except Exception:
-                # The main streaming path awaits pending chunks too, where errors
-                # are surfaced through the normal turn error handling.
+                LOGGER.warning(
+                    "voice_tts_nonblocking_flush_failed session_id=%s",
+                    self._session_id,
+                    exc_info=True,
+                )
                 return
+
+        def cancel_pending_audio_chunks() -> None:
+            while pending_audio_chunks:
+                pending = pending_audio_chunks.pop(0)
+                pending.task.cancel()
 
         async def send_ready_audio_chunks(*, block: bool) -> None:
             nonlocal first_audio_at, last_audio_sent_at
@@ -172,12 +180,12 @@ class VoiceStreamResponseWriterMixin:
         streamed_text = "".join(response_parts).strip()
         response_text = final_response_text or streamed_text
         speakable_text = voice_speakable_text(response_text, memory_changes)
-        if (
-            final_response_text
-            and final_response_text != streamed_text
-            and first_audio_at is None
-        ):
-            queue_audio_chunk(final_response_text)
+        if final_response_text and final_response_text != streamed_text:
+            if pending_audio_chunks:
+                cancel_pending_audio_chunks()
+                queue_audio_chunk(final_response_text)
+            elif first_audio_at is None:
+                queue_audio_chunk(final_response_text)
         elif speech_buffer.strip():
             queue_audio_chunk(speech_buffer.strip())
         elif speakable_text and first_audio_at is None:

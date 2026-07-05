@@ -87,6 +87,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   Timer? _listeningEndpointTimer;
   Timer? _noSpeechTimeoutTimer;
   String? _activeVoiceMessageLocalId;
+  String? _pendingUtteranceTranscript;
 
   @override
   VoiceCallState build() {
@@ -300,6 +301,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
       clearError: true,
     );
     _clearVisibleTranscript();
+    _resetActiveVoiceMessageLocalId();
+    _resetPendingUtteranceTranscript();
     _isAwaitingFollowUpSpeech = true;
     _startListeningCycle(_callGeneration);
   }

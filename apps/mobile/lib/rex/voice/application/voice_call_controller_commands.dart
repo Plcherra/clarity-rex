@@ -9,7 +9,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     }
 
     _isAwaitingFollowUpSpeech = false;
-    if (transcript.trim().isEmpty) {
+    if (transcript.trim().isEmpty && !_hasActiveVoiceMessageInChat()) {
       _resetActiveVoiceMessageLocalId();
     }
     if (transcript.trim().isNotEmpty) {
@@ -238,6 +238,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     }
 
     _resetActiveVoiceMessageLocalId();
+    _resetPendingUtteranceTranscript();
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       isCapturingSpeech: false,
@@ -279,6 +280,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     unawaited(_audioSessionService.setActive(false));
     _clearVisibleTranscript();
     _resetActiveVoiceMessageLocalId();
+    _resetPendingUtteranceTranscript();
     state = const VoiceCallState();
   }
 }

@@ -7,14 +7,41 @@ bool _isLocalVoiceMessageId(String id) => id.startsWith('local-voice-');
 String _normalizeVoiceMessageContent(String content) =>
     content.trim().replaceAll(RegExp(r'\s+'), ' ');
 
+bool _localVoiceIsCoveredByBackendUser({
+  required String localContent,
+  required Set<String> backendUserContents,
+  required Iterable<String> backendUserMessages,
+}) {
+  final normalized = _normalizeVoiceMessageContent(localContent);
+  if (normalized.isEmpty) {
+    return true;
+  }
+  if (backendUserContents.contains(normalized)) {
+    return true;
+  }
+  for (final backendMessage in backendUserMessages) {
+    final normalizedBackend = _normalizeVoiceMessageContent(backendMessage);
+    if (normalizedBackend.isEmpty) {
+      continue;
+    }
+    if (normalizedBackend.contains(normalized)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 List<ChatMessage> mergeBackendMessagesPreservingLocalVoice({
   required List<ChatMessage> local,
   required List<ChatMessage> backend,
 }) {
+  final backendUserMessages = backend
+      .where((message) => message.role == ChatMessageRole.user)
+      .map((message) => message.content)
+      .toList(growable: false);
   final backendUserContents = {
-    for (final message in backend)
-      if (message.role == ChatMessageRole.user)
-        _normalizeVoiceMessageContent(message.content),
+    for (final content in backendUserMessages)
+      _normalizeVoiceMessageContent(content),
   };
 
   final localVoiceToKeep = <ChatMessage>[];
@@ -26,8 +53,11 @@ List<ChatMessage> mergeBackendMessagesPreservingLocalVoice({
       continue;
     }
 
-    final normalized = _normalizeVoiceMessageContent(message.content);
-    if (!message.isVoiceInterim && backendUserContents.contains(normalized)) {
+    if (_localVoiceIsCoveredByBackendUser(
+      localContent: message.content,
+      backendUserContents: backendUserContents,
+      backendUserMessages: backendUserMessages,
+    )) {
       continue;
     }
     localVoiceToKeep.add(message);
@@ -148,6 +178,43 @@ extension ChatControllerVoice on ChatController {
     final filtered = state.messages
         .where((message) => message.id != localId)
         .toList(growable: false);
+    state = state.copyWith(
+      messages: List.unmodifiable(filtered),
+      clearError: true,
+    );
+  }
+
+  void removeStaleLocalVoiceUserMessages({
+    required String keepLocalId,
+    required String finalContent,
+  }) {
+    final normalizedFinal = _normalizeVoiceMessageContent(finalContent);
+    if (normalizedFinal.isEmpty) {
+      return;
+    }
+
+    final filtered = state.messages.where((message) {
+      if (!_isLocalVoiceMessageId(message.id)) {
+        return true;
+      }
+      if (message.id == keepLocalId) {
+        return true;
+      }
+      if (message.role != ChatMessageRole.user) {
+        return true;
+      }
+      final normalized = _normalizeVoiceMessageContent(message.content);
+      if (normalized.isEmpty) {
+        return false;
+      }
+      return !normalizedFinal.contains(normalized) &&
+          !normalized.contains(normalizedFinal);
+    }).toList(growable: false);
+
+    if (filtered.length == state.messages.length) {
+      return;
+    }
+
     state = state.copyWith(
       messages: List.unmodifiable(filtered),
       clearError: true,

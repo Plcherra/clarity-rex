@@ -94,8 +94,11 @@ extension VoiceCallControllerLifecycle on VoiceCallController {
     }
 
     unawaited(_streamingCaptureService.cancel());
-    endpointUtterance();
-    streamingSession.endUtterance();
+    _finalizeStreamingTurn(
+      transcript: _transcriptBuffer.visible,
+      session: streamingSession,
+      turnSequence: _streamingTurnSequence,
+    );
     return true;
   }
 

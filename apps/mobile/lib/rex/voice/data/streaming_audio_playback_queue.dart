@@ -41,11 +41,17 @@ class StreamingAudioPlaybackQueue {
   var _isPlaying = false;
   var _acceptingChunks = false;
   var _hasStartedPlaybackSession = false;
+  var _acceptedChunkCount = 0;
+  var _playedChunkCount = 0;
   Completer<void>? _idleCompleter;
 
   bool get isPlaying => _isPlaying;
 
   bool get isIdle => !_isPlaying && _chunks.isEmpty;
+
+  bool get hasAcceptedChunks => _acceptedChunkCount > 0;
+
+  bool get hasPlayedChunks => _playedChunkCount > 0;
 
   void beginResponse() {
     _generation++;
@@ -53,6 +59,8 @@ class StreamingAudioPlaybackQueue {
     _isPlaying = false;
     _acceptingChunks = true;
     _hasStartedPlaybackSession = false;
+    _acceptedChunkCount = 0;
+    _playedChunkCount = 0;
     _idleCompleter = Completer<void>();
   }
 
@@ -63,6 +71,7 @@ class StreamingAudioPlaybackQueue {
     if (!_acceptingChunks || chunk.audioBase64.isEmpty) {
       return;
     }
+    _acceptedChunkCount++;
     _chunks.add(chunk);
     _playNextIfNeeded(_generation, callbacks);
   }
@@ -89,6 +98,8 @@ class StreamingAudioPlaybackQueue {
     _isPlaying = false;
     _acceptingChunks = false;
     _hasStartedPlaybackSession = false;
+    _acceptedChunkCount = 0;
+    _playedChunkCount = 0;
     _completeIdle();
     await _playbackService.stop();
   }
@@ -118,6 +129,7 @@ class StreamingAudioPlaybackQueue {
 
     final chunk = _chunks.removeFirst();
     _isPlaying = true;
+    _playedChunkCount++;
     callbacks.onChunkStarted(chunk);
     final continueSession = _hasStartedPlaybackSession;
     _hasStartedPlaybackSession = true;

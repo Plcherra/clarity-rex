@@ -73,11 +73,15 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             if (event.speechFinal) {
               assistantText = '';
               responseAudioStarted = false;
-              startThinking(finalTranscript: event.transcript);
-              _sendStreamingUtteranceEndIfNeeded(
-                session,
-                _streamingTurnSequence,
-              );
+              final transcript =
+                  (event.transcript ?? _transcriptBuffer.visible).trim();
+              if (transcript.isNotEmpty) {
+                _finalizeStreamingTurn(
+                  transcript: transcript,
+                  session: session,
+                  turnSequence: _streamingTurnSequence,
+                );
+              }
               unawaited(_activeStreamingCaptureService?.cancel());
               unawaited(_preparePlaybackAudioSession());
             } else if (state.phase == VoiceCallPhase.thinking) {
@@ -142,7 +146,10 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
           case 'assistant.done':
             _cancelThinkingTimeout();
             final completedText = (event.responseText ?? assistantText).trim();
-            beginStreamingAudioIfNeeded();
+            if (!responseAudioStarted &&
+                !_streamingPlaybackQueue.hasAcceptedChunks) {
+              beginStreamingAudioIfNeeded();
+            }
             debugPrint(
               'rex_voice_playback assistant_done timings=${event.data['timings']}',
             );
@@ -173,7 +180,10 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
                 completedText: completedText,
                 memoryChanges: event.memoryChanges,
               );
-              if (firstAudioChunkAt == null &&
+              final playbackStarted =
+                  firstAudioChunkAt != null ||
+                  _streamingPlaybackQueue.hasPlayedChunks;
+              if (!playbackStarted &&
                   speakText.isNotEmpty &&
                   !state.isMuted) {
                 final fallbackStarted = await _playSynthesizedStreamingFallback(

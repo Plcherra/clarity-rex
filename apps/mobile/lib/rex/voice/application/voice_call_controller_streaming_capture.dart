@@ -67,11 +67,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
           }
         },
         onSpeechEnded: () {
-          if (_isCurrentCall(generation) &&
-              state.phase == VoiceCallPhase.listening) {
-            endpointUtterance();
-            _sendStreamingUtteranceEndIfNeeded(session, turnSequence);
-          }
+          // Deepgram speech_final is the turn boundary for streaming clients.
         },
         onAudioChunk: (chunk) async {
           if (_isCurrentCall(generation)) {
@@ -108,8 +104,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       return;
     }
 
-    endpointUtterance();
-    _sendStreamingUtteranceEndIfNeeded(session, turnSequence);
+    // Wait for Deepgram speech_final to finalize the turn and send utterance.end.
   }
 
   Future<void> _streamNextUtteranceWeb(
@@ -165,14 +160,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         }
       },
       onSpeechEnded: () {
-        if (_isCurrentCall(generation) &&
-            state.phase == VoiceCallPhase.listening) {
-          endpointUtterance();
-          final activeSession = session ?? _activeStreamingSession;
-          if (activeSession != null) {
-            _sendStreamingUtteranceEndIfNeeded(activeSession, turnSequence);
-          }
-        }
+        // Deepgram speech_final is the turn boundary for streaming clients.
       },
       onAudioChunk: (chunk) async {
         if (!_isCurrentCall(generation)) {
@@ -252,11 +240,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       return;
     }
 
-    endpointUtterance();
-    final activeSession = session ?? _activeStreamingSession;
-    if (activeSession != null) {
-      _sendStreamingUtteranceEndIfNeeded(activeSession, turnSequence);
-    }
+    // Wait for Deepgram speech_final to finalize the turn and send utterance.end.
   }
 
   Future<void> _fallbackToCloudVoiceCapture(

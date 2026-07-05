@@ -89,14 +89,18 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
 
   void _sendStreamingUtteranceEndIfNeeded(
     StreamingVoiceSession session,
-    int turnSequence,
-  ) {
+    int turnSequence, {
+    String? transcript,
+  }) {
     if (_streamingUtteranceEndSent) {
       return;
     }
     _streamingUtteranceEndSent = true;
+    final utteranceTranscript =
+        (transcript ?? _pendingUtteranceTranscript ?? _transcriptBuffer.visible)
+            .trim();
     unawaited(
-      _financialContextForUtterance(state.currentTranscript).then((
+      _financialContextForUtterance(utteranceTranscript).then((
         financialContext,
       ) {
         if (turnSequence != _streamingTurnSequence ||
@@ -108,7 +112,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
           financialContext: financialContext,
           writeConfirmation: ref
               .read(chatProvider.notifier)
-              .writeConfirmationForAffirmation(state.currentTranscript),
+              .writeConfirmationForAffirmation(utteranceTranscript),
         );
       }),
     );
