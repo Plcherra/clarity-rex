@@ -1192,6 +1192,125 @@ void main() {
   });
 
   test(
+    'messages.updated with assistant-only keeps finalized local voice message',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final bargeInService = _ControlledBargeInDetectionService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(captureService),
+          bargeInDetectionServiceProvider.overrideWithValue(bargeInService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      controller.updateTranscript('to the door frame.');
+      controller.startThinking(finalTranscript: 'to the door frame.');
+      await Future<void>.delayed(Duration.zero);
+
+      streamingApi.socket.emit({
+        'event': 'messages.updated',
+        'conversation_id': 'conversation-voice',
+        'messages': [
+          {
+            'id': 'assistant-message-1',
+            'conversation_id': 'conversation-voice',
+            'role': 'assistant',
+            'content': 'It is a doorway pull-up bar.',
+            'timestamp': '2026-06-01T12:00:01Z',
+          },
+        ],
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final messages = container.read(chatProvider).messages;
+      expect(messages, hasLength(2));
+      expect(messages.first.role, ChatMessageRole.user);
+      expect(messages.first.content, 'to the door frame.');
+      expect(messages.first.isVoiceInterim, isFalse);
+      expect(messages.last.role, ChatMessageRole.assistant);
+    },
+  );
+
+  test(
+    'REST fallback keeps user transcript after backend sync',
+    () async {
+      final captureService = _RecordingAudioCaptureService();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final playbackService = _ControlledAudioPlaybackService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(captureService),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          cloudVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(
+            _FailingStreamingVoiceApi(),
+          ),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            const _NoopStreamingAudioCaptureService(),
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await playbackService.playStarted.future;
+      await Future<void>.delayed(Duration.zero);
+
+      final messages = container.read(chatProvider).messages;
+      expect(messages.any((message) => message.role == ChatMessageRole.user), isTrue);
+      expect(
+        messages.any(
+          (message) =>
+              message.role == ChatMessageRole.user &&
+              message.content.contains('Hello from REST fallback'),
+        ),
+        isTrue,
+      );
+      expect(messages.any((message) => message.role == ChatMessageRole.assistant), isTrue);
+    },
+  );
+
+  test(
     'barge-in monitoring stays off by default during Rex playback',
     () async {
       final captureService = _ScriptedStreamingAudioCaptureService();

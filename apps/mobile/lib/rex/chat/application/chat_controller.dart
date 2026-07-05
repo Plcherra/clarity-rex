@@ -96,7 +96,10 @@ class ChatController extends Notifier<ChatState> {
       state = state.copyWith(
         conversationId: conversationId,
         messages: _messagesWithAssistantExtras(
-          _messagesFromApiMessages(messages),
+          mergeBackendMessagesPreservingLocalVoice(
+            local: state.messages,
+            backend: _messagesFromApiMessages(messages),
+          ),
           memoryChanges: memoryChanges,
         ),
         isLoading: false,

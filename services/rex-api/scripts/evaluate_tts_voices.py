@@ -22,6 +22,14 @@ SAMPLE_TEXT = (
     "Your spending is on track. Here is what I would focus on next."
 )
 
+REX_SAMPLE_LINES: tuple[str, ...] = (
+    "Try breakfast around 7 AM, lunch at noon, and dinner by 6 PM once you're home.",
+    (
+        "It's a doorway pull-up bar. Solid pick for home if it fits your "
+        "34-inch space and is rated for your weight."
+    ),
+)
+
 
 @dataclass(frozen=True)
 class VoiceCandidate:
@@ -46,6 +54,11 @@ CANDIDATES: tuple[VoiceCandidate, ...] = (
     VoiceCandidate("en-US-Neural2-J", speaking_rate=1.10, pitch=-1.5),
     VoiceCandidate("en-US-Neural2-D", speaking_rate=1.10, pitch=-1.5),
     VoiceCandidate("en-US-Neural2-J", speaking_rate=1.08, pitch=-2.0),
+    VoiceCandidate("en-US-Neural2-J", speaking_rate=1.12, pitch=-2.0),
+    VoiceCandidate("en-US-Neural2-J", speaking_rate=1.15, pitch=-2.0),
+    VoiceCandidate("en-US-Neural2-D", speaking_rate=1.12, pitch=-2.0),
+    VoiceCandidate("en-US-Neural2-D", speaking_rate=1.15, pitch=-1.5),
+    VoiceCandidate("en-US-Studio-M", speaking_rate=1.10, pitch=-1.0),
 )
 
 
@@ -130,8 +143,21 @@ def main() -> None:
         default=SAMPLE_TEXT,
         help="Sample line to synthesize",
     )
+    parser.add_argument(
+        "--rex-samples",
+        action="store_true",
+        help="Also synthesize the built-in Rex conversation sample lines",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.output_dir, args.text.strip()))
+
+    async def run_all() -> None:
+        await run(args.output_dir, args.text.strip())
+        if args.rex_samples:
+            for index, line in enumerate(REX_SAMPLE_LINES, start=1):
+                line_dir = args.output_dir / f"rex_sample_{index}"
+                await run(line_dir, line)
+
+    asyncio.run(run_all())
 
 
 if __name__ == "__main__":

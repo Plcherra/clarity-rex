@@ -63,7 +63,7 @@ class ChatMessageBubble extends StatelessWidget {
         ? colors.accent
         : colors.surfaceElevated.withValues(alpha: isDark ? 0.82 : 0.92);
     final foreground = interimUserBubble
-        ? colors.textSecondary
+        ? colors.textMuted
         : isUser
         ? (isDark ? Colors.black : Colors.white)
         : colors.textPrimary;

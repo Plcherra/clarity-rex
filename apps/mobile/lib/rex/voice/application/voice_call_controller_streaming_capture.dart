@@ -356,7 +356,6 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     }
 
     try {
-      startThinking();
       final response = await ref
           .read(cloudVoiceApiProvider)
           .sendVoiceTurn(
@@ -373,17 +372,23 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         conversationId: response.conversationId,
         clearError: true,
       );
-      ref
-          .read(chatProvider.notifier)
-          .applyBackendMessages(
-            conversationId: response.conversationId,
-            messages: response.messages,
-            fallbackAssistantResponse: response.responseText,
-            memoryChanges: response.memoryChanges,
-          );
+      final chatNotifier = ref.read(chatProvider.notifier);
+      chatNotifier.applyBackendMessages(
+        conversationId: response.conversationId,
+        messages: response.messages,
+        fallbackAssistantResponse: response.responseText,
+        memoryChanges: response.memoryChanges,
+      );
 
       _clearVisibleTranscript();
-      startThinking(finalTranscript: response.transcript);
+      final transcript = response.transcript.trim();
+      if (transcript.isNotEmpty &&
+          !chatNotifier.hasUserMessageWithContent(transcript)) {
+        chatNotifier.finalizeVoiceUserMessage(
+          localId: _ensureActiveVoiceMessageLocalId(),
+          content: transcript,
+        );
+      }
       startSpeaking(response.responseText);
       _startBargeInMonitoring(generation);
       await _audioSessionService.preferLoudSpeaker();
