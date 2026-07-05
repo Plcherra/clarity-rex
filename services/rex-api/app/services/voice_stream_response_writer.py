@@ -16,7 +16,6 @@ from app.services.voice_stream_orchestrator_support import voice_delay_audio_unt
 _MIN_SPEAKABLE_CHUNK_CHARS = 12
 _MIN_SINGLE_SENTENCE_CHUNK_CHARS = 20
 _MAX_SPEAKABLE_CHUNK_CHARS = 140
-_MIN_WORD_BOUNDARY_CHUNK_CHARS = 12
 
 
 LOGGER = logging.getLogger("rex.voice_stream")
@@ -338,17 +337,10 @@ class VoiceStreamResponseWriterMixin:
         if not stripped:
             return None, ""
 
-        sentence_end_count = 0
         for index, character in enumerate(text):
-            if character in ".!?":
-                sentence_end_count += 1
             if character in ".!?;\n" and index >= _MIN_SPEAKABLE_CHUNK_CHARS:
                 chunk = text[: index + 1].strip()
-                if (
-                    character in ".!?"
-                    and sentence_end_count < 2
-                    and len(chunk) < _MIN_SINGLE_SENTENCE_CHUNK_CHARS
-                ):
+                if character in ".!?" and len(chunk) < _MIN_SINGLE_SENTENCE_CHUNK_CHARS:
                     continue
                 rest = text[index + 1 :]
                 return chunk, rest
@@ -358,11 +350,6 @@ class VoiceStreamResponseWriterMixin:
             if split_at < _MIN_SPEAKABLE_CHUNK_CHARS:
                 split_at = _MAX_SPEAKABLE_CHUNK_CHARS
             return text[:split_at].strip(), text[split_at:]
-
-        if len(stripped) >= _MIN_WORD_BOUNDARY_CHUNK_CHARS:
-            split_at = text.find(" ", _MIN_WORD_BOUNDARY_CHUNK_CHARS - 1)
-            if split_at >= _MIN_WORD_BOUNDARY_CHUNK_CHARS - 1:
-                return text[:split_at].strip(), text[split_at:].lstrip()
 
         return None, text
 

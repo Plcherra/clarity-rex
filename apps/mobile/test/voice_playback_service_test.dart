@@ -113,6 +113,7 @@ class _ControlledPlaybackService implements AudioPlaybackService {
     required String contentType,
     required AudioPlaybackCompleteCallback onComplete,
     required AudioPlaybackErrorCallback onError,
+    bool continueSession = false,
   }) async {
     playedAudio.add(audioBase64);
     _onComplete = onComplete;

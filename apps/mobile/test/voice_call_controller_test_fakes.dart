@@ -128,6 +128,7 @@ class _NoopAudioPlaybackService implements AudioPlaybackService {
     required String contentType,
     required AudioPlaybackCompleteCallback onComplete,
     required AudioPlaybackErrorCallback onError,
+    bool continueSession = false,
   }) async {
     onComplete();
   }
@@ -295,6 +296,7 @@ class _ControlledAudioPlaybackService implements AudioPlaybackService {
     required String contentType,
     required AudioPlaybackCompleteCallback onComplete,
     required AudioPlaybackErrorCallback onError,
+    bool continueSession = false,
   }) async {
     _onComplete = onComplete;
     if (!playStarted.isCompleted) {

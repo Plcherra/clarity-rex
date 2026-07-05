@@ -40,6 +40,7 @@ class StreamingAudioPlaybackQueue {
   var _generation = 0;
   var _isPlaying = false;
   var _acceptingChunks = false;
+  var _hasStartedPlaybackSession = false;
   Completer<void>? _idleCompleter;
 
   bool get isPlaying => _isPlaying;
@@ -51,6 +52,7 @@ class StreamingAudioPlaybackQueue {
     _chunks.clear();
     _isPlaying = false;
     _acceptingChunks = true;
+    _hasStartedPlaybackSession = false;
     _idleCompleter = Completer<void>();
   }
 
@@ -86,6 +88,7 @@ class StreamingAudioPlaybackQueue {
     _chunks.clear();
     _isPlaying = false;
     _acceptingChunks = false;
+    _hasStartedPlaybackSession = false;
     _completeIdle();
     await _playbackService.stop();
   }
@@ -116,11 +119,14 @@ class StreamingAudioPlaybackQueue {
     final chunk = _chunks.removeFirst();
     _isPlaying = true;
     callbacks.onChunkStarted(chunk);
+    final continueSession = _hasStartedPlaybackSession;
+    _hasStartedPlaybackSession = true;
     unawaited(
       _playbackService
           .playBase64Audio(
             chunk.audioBase64,
             contentType: chunk.contentType,
+            continueSession: continueSession,
             onComplete: () {
               if (generation != _generation) {
                 return;

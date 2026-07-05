@@ -19,6 +19,7 @@ import 'package:clarity/rex/chat/presentation/widgets/chat_input_bar.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_transcript.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
+import 'package:clarity/rex/presentation/assistant_chat_visible_provider.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
@@ -94,6 +95,12 @@ class _ChatPageState extends ConsumerState<ChatPage>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref.read(assistantChatVisibleProvider.notifier).setVisible(true);
+    });
     ref.listenManual<ChatState>(chatProvider, (previous, next) {
       final previousLength = previous?.messages.length ?? 0;
       final shouldScroll =

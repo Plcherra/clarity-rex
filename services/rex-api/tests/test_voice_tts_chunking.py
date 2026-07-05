@@ -196,8 +196,18 @@ def test_voice_chunker_emits_early_word_chunk_for_longer_reply():
 
     chunk, rest = probe._next_speakable_chunk(text)
 
-    assert chunk == "Sure thing I"
-    assert rest.strip().startswith("need help")
+    assert chunk is None
+    assert rest == text
+
+
+def test_voice_chunker_waits_for_sentence_boundary_on_short_casual_reply():
+    probe = _ChunkProbe()
+    text = "Hey. Not much. What's up with you?"
+
+    chunk, rest = probe._next_speakable_chunk(text)
+
+    assert chunk == text
+    assert rest == ""
 
 
 def test_voice_chunker_starts_audio_after_short_voice_sentence():
@@ -227,7 +237,9 @@ def test_voice_chunker_can_start_audio_on_short_two_sentence_reply():
     if buffer.strip():
         chunks.append(buffer.strip())
 
-    assert chunks[0] == "Capital One"
+    assert chunks[0] == (
+        "Capital One savings has monthly interest as the last May activity."
+    )
     assert "No other recent transactions are showing in the data." in " ".join(chunks)
     assert len(chunks) >= 2
 

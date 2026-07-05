@@ -140,7 +140,7 @@ final voiceCallThinkingTimeoutProvider = Provider<Duration>(
 );
 
 final voiceCallTranscriptIdleTimeoutProvider = Provider<Duration>(
-  (ref) => const Duration(seconds: 5),
+  (ref) => const Duration(milliseconds: 1200),
 );
 
 final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(

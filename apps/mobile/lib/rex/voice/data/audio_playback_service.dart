@@ -16,6 +16,7 @@ abstract class AudioPlaybackService {
     required String contentType,
     required AudioPlaybackCompleteCallback onComplete,
     required AudioPlaybackErrorCallback onError,
+    bool continueSession = false,
   });
 
   Future<void> stop();
@@ -35,6 +36,7 @@ class PackageAudioPlaybackService implements AudioPlaybackService {
     required String contentType,
     required AudioPlaybackCompleteCallback onComplete,
     required AudioPlaybackErrorCallback onError,
+    bool continueSession = false,
   }) async {
     final Uint8List audioBytes;
     try {
@@ -51,13 +53,15 @@ class PackageAudioPlaybackService implements AudioPlaybackService {
     final mimeType = normalizeVoicePlaybackMimeType(contentType);
 
     try {
-      await _audioPlayer.stop();
-      if (!kIsWeb) {
-        await _configureNativeAudioContext();
+      if (!continueSession) {
+        await _audioPlayer.stop();
+        if (!kIsWeb) {
+          await _configureNativeAudioContext();
+        }
+        await _audioPlayer.setPlayerMode(PlayerMode.mediaPlayer);
+        await _audioPlayer.setReleaseMode(ReleaseMode.stop);
+        await _audioPlayer.setVolume(1.0);
       }
-      await _audioPlayer.setPlayerMode(PlayerMode.mediaPlayer);
-      await _audioPlayer.setReleaseMode(ReleaseMode.stop);
-      await _audioPlayer.setVolume(1.0);
       final playbackComplete = _audioPlayer.onPlayerComplete.first;
       await _audioPlayer.play(BytesSource(audioBytes, mimeType: mimeType));
       if (kIsWeb) {

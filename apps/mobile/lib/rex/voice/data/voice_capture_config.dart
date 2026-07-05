@@ -52,14 +52,14 @@ class VoiceEndpointDetector {
     required DateTime now,
   }) {
     var speechStartedNow = false;
+    // Only loud-enough samples count as speech. Avoid treating ambient noise
+    // in the hysteresis band as ongoing speech, which delays endpoint detection.
     if (currentDb >= config.speechStartThresholdDb) {
       if (!_hasSpeech) {
         speechStartedNow = true;
         _speechStartedAt = now;
       }
       _hasSpeech = true;
-      _lastSpeechAt = now;
-    } else if (_hasSpeech && currentDb >= config.silenceThresholdDb) {
       _lastSpeechAt = now;
     }
 

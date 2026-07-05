@@ -465,7 +465,7 @@ void main() {
     expect(container.read(voiceCallBargeInEnabledProvider), isFalse);
     expect(
       container.read(voiceCallTranscriptIdleTimeoutProvider),
-      const Duration(seconds: 5),
+      const Duration(milliseconds: 1200),
     );
     expect(
       container.read(voiceCallNoSpeechTimeoutProvider),
