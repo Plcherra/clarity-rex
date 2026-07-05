@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/rex/chat/application/chat_controller.dart';
+import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 
 /// Shows pending Clarity confirmation dialogs during active voice sessions.
