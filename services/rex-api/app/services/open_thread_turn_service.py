@@ -14,6 +14,7 @@ from app.services.open_thread_eligibility import (
     is_explicit_track_consent,
     is_explicit_track_decline,
     message_might_need_open_thread_offer,
+    should_propose_open_thread_confirm_card,
     thread_offer_eligible,
     thread_offer_message_eligible,
 )
@@ -151,6 +152,25 @@ class OpenThreadTurnService:
             **offer_context,
         ):
             return None
+
+        if should_propose_open_thread_confirm_card(
+            message,
+            conversation_history=conversation_history,
+        ):
+            title = infer_thread_title(
+                message,
+                conversation_history=conversation_history,
+            )
+            summary = build_thread_description(
+                message,
+                conversation_history=conversation_history,
+            )
+            return await self.durable_write_service.propose_open_thread(
+                title=title,
+                summary=summary,
+                conversation_id=conversation_id,
+                user_message=user_message,
+            )
 
         return await clarification_turn_result(
             self.memory_service,

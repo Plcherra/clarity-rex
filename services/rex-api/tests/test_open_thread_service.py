@@ -8,6 +8,7 @@ from app.services.open_thread_eligibility import (
     is_clear_measurable_goal,
     is_explicit_track_consent,
     is_recall_message,
+    should_propose_open_thread_confirm_card,
     thread_offer_eligible,
     thread_offer_message_eligible,
 )
@@ -197,6 +198,18 @@ def test_infer_thread_title_truncates_long_messages() -> None:
     title = infer_thread_title(message, max_length=40)
     assert len(title) <= 40
     assert title != message
+
+
+def test_should_propose_open_thread_confirm_card_for_clear_plans_only() -> None:
+    assert should_propose_open_thread_confirm_card(
+        "I've been trying to figure out a better morning routine lately.",
+    )
+    assert should_propose_open_thread_confirm_card(
+        "I'm changing my night routine — no screens after 9, reading before bed to fix sleep.",
+    )
+    assert not should_propose_open_thread_confirm_card(
+        "I'm working on my citizenship application and it has been really stressful lately.",
+    )
 
 
 def test_thread_offer_message_eligible_ignores_cap_signal():

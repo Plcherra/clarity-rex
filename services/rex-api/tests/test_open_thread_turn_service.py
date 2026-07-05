@@ -94,7 +94,7 @@ class FakeDurableWriteService:
 
 
 @pytest.mark.asyncio
-async def test_open_thread_turn_service_offers_once_for_eligible_message():
+async def test_open_thread_turn_service_proposes_card_for_clear_plan():
     memory = FakeTurnMemoryService()
     store = FakeOpenThreadStore()
     threads = OpenThreadService(store)
@@ -109,6 +109,38 @@ async def test_open_thread_turn_service_offers_once_for_eligible_message():
         "I've been trying to figure out a better morning routine lately.",
         conversation_id="conversation-1",
         user_message={"id": "user-1", "content": "I've been trying to figure out a better morning routine lately."},
+        conversation_history=[],
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["confirmation_required"] == 1
+    assert result["memory_changes"]["write_proposals"][0]["write_kind"] == "open_thread"
+    assert durable.proposals[0]["title"] == "Better Morning Routine"
+    summary = durable.proposals[0]["summary"]
+    assert summary is not None
+    assert summary.startswith("Follow up on")
+    assert THREAD_OFFER_PHRASE not in result["response"]
+
+
+@pytest.mark.asyncio
+async def test_open_thread_turn_service_offers_once_for_eligible_companion_topic():
+    memory = FakeTurnMemoryService()
+    store = FakeOpenThreadStore()
+    threads = OpenThreadService(store)
+    durable = FakeDurableWriteService()
+    service = OpenThreadTurnService(
+        memory,
+        open_thread_service=threads,
+        durable_write_service=durable,
+    )
+
+    result = await service.handle_turn(
+        "I'm working on my citizenship application and it has been really stressful lately.",
+        conversation_id="conversation-1",
+        user_message={
+            "id": "user-1",
+            "content": "I'm working on my citizenship application and it has been really stressful lately.",
+        },
         conversation_history=[],
     )
 

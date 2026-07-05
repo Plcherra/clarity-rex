@@ -172,6 +172,18 @@ def has_weak_actionable_plan_signal(text: str) -> bool:
     return _has_topic_noun(cleaned)
 
 
+def should_propose_open_thread_confirm_card(
+    message: str,
+    *,
+    conversation_history: Optional[list[dict]] = None,
+) -> bool:
+    """Clear plans and routines get a confirm card; vaguer topics keep the text offer."""
+    if is_vague_thread_topic(message, conversation_history=conversation_history):
+        return False
+    context = _combined_user_context(message, conversation_history)
+    return has_strong_actionable_plan_signal(context)
+
+
 def is_stress_only_vent(message: str) -> bool:
     cleaned = re.sub(r"\s+", " ", message.strip())
     if not any(pattern.search(cleaned) for pattern in STRESS_ONLY_VENT_PATTERNS):
