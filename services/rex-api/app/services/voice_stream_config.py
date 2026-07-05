@@ -1,3 +1,5 @@
+VOICE_LOW_TRANSCRIPT_CONFIDENCE_THRESHOLD = 0.75
+
 VOICE_RESPONSE_INSTRUCTIONS = (
     "Voice mode: reply in 1-2 short spoken sentences. Be warm, direct, and natural. "
     "Start with the answer, avoid filler, and keep wording easy to speak. "
@@ -18,13 +20,27 @@ VOICE_DEEP_THINKING_PHRASES = (
 )
 
 
-def voice_response_instructions(locale: str | None = None) -> str:
+def voice_response_instructions(
+    locale: str | None = None,
+    transcript_confidence: float | None = None,
+) -> str:
     from app.services.locale_utils import locale_response_rule
 
+    instructions = VOICE_RESPONSE_INSTRUCTIONS
+    if (
+        transcript_confidence is not None
+        and transcript_confidence < VOICE_LOW_TRANSCRIPT_CONFIDENCE_THRESHOLD
+    ):
+        instructions = (
+            "The latest voice transcript may be unreliable (low speech recognition "
+            "confidence). Ask the user to repeat once before acting on unclear words "
+            "or saving memory. "
+            f"{instructions}"
+        )
     rule = locale_response_rule(locale)
     if rule:
-        return f"{VOICE_RESPONSE_INSTRUCTIONS}\n{rule}"
-    return VOICE_RESPONSE_INSTRUCTIONS
+        return f"{instructions}\n{rule}"
+    return instructions
 
 
 def voice_response_max_tokens(transcript: str) -> int:

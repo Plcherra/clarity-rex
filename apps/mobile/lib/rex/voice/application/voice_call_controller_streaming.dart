@@ -488,7 +488,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         return;
       }
       responseAudioStarted = true;
-      unawaited(_audioSessionService.preferLoudSpeaker());
+      unawaited(_preparePlaybackAudioSession());
       _streamingPlaybackQueue.beginResponse();
     }
 
@@ -549,6 +549,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
                 _streamingTurnSequence,
               );
               unawaited(_activeStreamingCaptureService?.cancel());
+              unawaited(_preparePlaybackAudioSession());
             } else if (state.phase == VoiceCallPhase.thinking) {
               startThinking(finalTranscript: event.transcript);
             } else if (state.phase == VoiceCallPhase.listening) {
@@ -603,6 +604,10 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
                     fallbackAssistantResponse: assistantText,
                     memoryChanges: event.memoryChanges,
                   );
+              _clearVisibleTranscript();
+              if (state.currentTranscript.isNotEmpty) {
+                state = state.copyWith(clearCurrentTranscript: true);
+              }
             }
           case 'assistant.done':
             _cancelThinkingTimeout();
@@ -648,8 +653,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
               if (state.phase == VoiceCallPhase.speaking) {
                 completeSpeaking();
                 debugPrint('rex_voice_playback listening_resumed');
-              } else if (state.phase != VoiceCallPhase.listening &&
-                  !state.isMuted) {
+              } else if (state.phase != VoiceCallPhase.listening) {
                 resumeListening();
                 debugPrint('rex_voice_playback listening_resumed');
               }
@@ -701,6 +705,11 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     }
   }
 
+  Future<void> _preparePlaybackAudioSession() async {
+    await _audioSessionService.configureForVoiceTurn();
+    await _audioSessionService.preferLoudSpeaker();
+  }
+
   Future<bool> _playSynthesizedStreamingFallback(
     String responseText,
     int generation,
@@ -717,16 +726,15 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
           .read(cloudVoiceApiProvider)
           .synthesize(responseText);
       if (!_isCurrentCall(generation) || !state.isCallActive) {
-        return true;
+        return false;
       }
       if (response.audioBase64.isEmpty) {
-        failL10n((l10n) => l10n.voiceErrorPlayRexVoiceFailed);
-        return true;
+        return false;
       }
 
+      await _preparePlaybackAudioSession();
       startSpeaking(responseText);
       _startBargeInMonitoring(generation);
-      await _audioSessionService.preferLoudSpeaker();
       await _playbackService.playBase64Audio(
         response.audioBase64,
         contentType: response.audioContentType,
@@ -739,21 +747,13 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         onError: (message) {
           if (_isCurrentCall(generation)) {
             _stopBargeInMonitoring();
-            failVoiceApi(CloudVoiceApiException(message));
+            resumeListening();
           }
         },
       );
       return true;
-    } on CloudVoiceApiException catch (error) {
-      if (_isCurrentCall(generation)) {
-        failVoiceApi(error);
-      }
-      return true;
     } on Object {
-      if (_isCurrentCall(generation)) {
-        failL10n((l10n) => l10n.voiceErrorPlayRexVoiceFailed);
-      }
-      return true;
+      return false;
     }
   }
 

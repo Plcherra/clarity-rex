@@ -220,6 +220,16 @@ def test_voice_chunker_starts_audio_after_short_voice_sentence():
     assert rest.strip() == "Tell me what changed."
 
 
+def test_voice_chunker_emits_audio_for_short_rex_intro():
+    probe = _ChunkProbe()
+    text = "I'm Rex, Clarity's private AI companion."
+
+    chunk, rest = probe._next_speakable_chunk(text)
+
+    assert chunk == text
+    assert rest == ""
+
+
 def test_voice_chunker_can_start_audio_on_short_two_sentence_reply():
     probe = _ChunkProbe()
     text = (

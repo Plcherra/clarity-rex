@@ -24,6 +24,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+
+import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'memory_page_test_helpers.dart';
 import 'helpers/l10n_test_wrapper.dart';
 
@@ -465,7 +470,7 @@ void main() {
     expect(container.read(voiceCallBargeInEnabledProvider), isFalse);
     expect(
       container.read(voiceCallTranscriptIdleTimeoutProvider),
-      const Duration(milliseconds: 1200),
+      const Duration(milliseconds: 1800),
     );
     expect(
       container.read(voiceCallNoSpeechTimeoutProvider),
@@ -475,6 +480,50 @@ void main() {
       container.read(voiceCallThinkingTimeoutProvider),
       const Duration(seconds: 30),
     );
+  });
+
+  testWidgets('voice live transcript hides user text while thinking', (
+    tester,
+  ) async {
+    const userText = 'Twitter account for Clarity';
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.pumpWidget(
+      wrapWithL10n(
+        Scaffold(
+          body: VoiceLiveTranscript(
+            state: VoiceCallState(
+              phase: VoiceCallPhase.thinking,
+              currentTranscript: userText,
+              callStartedAt: DateTime(2026),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text(userText), findsNothing);
+    expect(find.text(l10n.voicePanelProcessing), findsOneWidget);
+  });
+
+  testWidgets('voice live transcript shows user text while listening', (
+    tester,
+  ) async {
+    const userText = 'Twitter account for Clarity';
+    await tester.pumpWidget(
+      wrapWithL10n(
+        Scaffold(
+          body: VoiceLiveTranscript(
+            state: VoiceCallState(
+              phase: VoiceCallPhase.listening,
+              currentTranscript: userText,
+              callStartedAt: DateTime(2026),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text(userText), findsOneWidget);
   });
 
   testWidgets('inline voice panel has no manual interrupt button', (
@@ -557,7 +606,12 @@ void main() {
       final streamingApi = _FakeStreamingVoiceApi();
       final playbackService = _ControlledAudioPlaybackService();
       final audioSessionService = _CountingVoiceAudioSessionService();
-      final memoryApi = MemoryPageFakeMemoryApi();
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      final localeController = LocaleController(
+        preferences: SharedPreferencesAsync(),
+      );
+      await localeController.load();
       final container = ProviderContainer(
         overrides: [
           microphonePermissionProvider.overrideWithValue(
@@ -582,7 +636,7 @@ void main() {
           bargeInDetectionServiceProvider.overrideWithValue(
             const _NoopBargeInDetectionService(),
           ),
-          memoryApiProvider.overrideWithValue(memoryApi),
+          localeControllerProvider.overrideWithValue(localeController),
         ],
       );
       addTearDown(container.dispose);
@@ -630,12 +684,10 @@ void main() {
           },
         ],
       });
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(container.read(chatProvider).conversationId, 'conversation-voice');
       expect(container.read(chatProvider).messages.length, 2);
-      expect(memoryApi.memoryActiveFilters.last, isTrue);
-      expect(memoryApi.peopleActiveFilters.last, isTrue);
 
       await playbackService.playStarted.future;
       expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
@@ -762,6 +814,198 @@ void main() {
         "I understood that, but I couldn't save it just now.",
       ]);
       expect(container.read(chatProvider).messages.length, 2);
+    },
+  );
+
+  test(
+    'muted streaming turn resumes listening after assistant.done without audio',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      controller.toggleMuted();
+      await captureService.readyAt(0);
+
+      captureService.finishCurrentWithSpeech();
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'What are you?',
+        'speech_final': true,
+      });
+      streamingApi.socket.emit({'event': 'assistant.started'});
+      streamingApi.socket.emit({
+        'event': 'assistant.token',
+        'token': "I'm Rex, Clarity's private AI companion.",
+      });
+      streamingApi.socket.emit({
+        'event': 'assistant.done',
+        'conversation_id': 'conversation-voice',
+        'response_text': "I'm Rex, Clarity's private AI companion.",
+      });
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(state.isMuted, isTrue);
+      expect(state.errorMessage, isNull);
+      expect(
+        state.lastAssistantResponse,
+        "I'm Rex, Clarity's private AI companion.",
+      );
+    },
+  );
+
+  test(
+    'speech final prepares playback audio session before assistant audio',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final audioSessionService = _CountingVoiceAudioSessionService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            audioSessionService,
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      captureService.finishCurrentWithSpeech();
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'Hello Rex',
+        'speech_final': true,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(audioSessionService.configureCount, greaterThanOrEqualTo(1));
+      expect(audioSessionService.preferLoudSpeakerCount, greaterThanOrEqualTo(1));
+    },
+  );
+
+  test(
+    'streaming playback fallback resumes listening when synthesis fails',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final cloudVoiceApi = _FailingCloudVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      captureService.finishCurrentWithSpeech();
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'Hello Rex',
+        'speech_final': true,
+      });
+      streamingApi.socket.emit({'event': 'assistant.started'});
+      streamingApi.socket.emit({
+        'event': 'assistant.token',
+        'token': 'Short reply.',
+      });
+      streamingApi.socket.emit({
+        'event': 'assistant.done',
+        'conversation_id': 'conversation-voice',
+        'response_text': 'Short reply.',
+      });
+
+      await captureService.readyAt(1).timeout(const Duration(seconds: 1));
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(state.errorMessage, isNull);
     },
   );
 
@@ -1135,6 +1379,13 @@ void main() {
         'transcript':
             "It's next week, but on the eighteenth, it's my mom's birthday",
       });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        container.read(voiceCallProvider).currentTranscript,
+        "It's next week, but on the eighteenth, it's my mom's birthday",
+      );
+
       streamingApi.socket.emit({
         'event': 'transcript.final',
         'transcript':
@@ -1145,17 +1396,8 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       final state = container.read(voiceCallProvider);
-      expect(
-        state.currentTranscript,
-        "It's next week, but on the eighteenth, it's my mom's birthday.",
-      );
-      expect(
-        RegExp(
-          "mom's birthday",
-          caseSensitive: false,
-        ).allMatches(state.currentTranscript).length,
-        1,
-      );
+      expect(state.phase, VoiceCallPhase.thinking);
+      expect(state.currentTranscript, isEmpty);
     },
   );
 

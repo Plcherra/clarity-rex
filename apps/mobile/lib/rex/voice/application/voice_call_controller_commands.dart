@@ -87,16 +87,14 @@ extension VoiceCallControllerCommands on VoiceCallController {
 
     _cancelNoSpeechTimeout();
     _isAwaitingFollowUpSpeech = false;
-    if (finalTranscript != null) {
-      if (finalTranscript.trim().isNotEmpty) {
-        _emptyVoiceTurnRecoveryCount = 0;
-      }
-      _transcriptBuffer.appendFinal(finalTranscript);
+    if (finalTranscript != null && finalTranscript.trim().isNotEmpty) {
+      _emptyVoiceTurnRecoveryCount = 0;
     }
+    _clearVisibleTranscript();
 
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
-      currentTranscript: _transcriptBuffer.visible,
+      clearCurrentTranscript: true,
       isCapturingSpeech: false,
       clearError: true,
     );

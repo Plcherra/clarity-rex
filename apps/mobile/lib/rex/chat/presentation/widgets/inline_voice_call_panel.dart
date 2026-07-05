@@ -37,6 +37,40 @@ class VoiceLiveTranscript extends StatelessWidget {
       );
     }
 
+    if (state.phase == VoiceCallPhase.thinking) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 12),
+        child: Text(
+          l10n.voicePanelProcessing,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colors.textMuted,
+          ),
+        ),
+      );
+    }
+
+    if (state.phase == VoiceCallPhase.speaking) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 12),
+        child: Row(
+          children: [
+            _VoiceWaveIndicator(
+              phase: state.phase,
+              color: colors.textMuted,
+              compact: true,
+            ),
+            const SizedBox(width: RexUiTokens.space8),
+            Text(
+              l10n.voicePanelSpeaking,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.textMuted,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (visibleText.isNotEmpty) {
       return Padding(
         padding: const EdgeInsets.only(top: 4, bottom: 12),
@@ -68,18 +102,6 @@ class VoiceLiveTranscript extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      );
-    }
-
-    if (state.phase == VoiceCallPhase.thinking) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 4, bottom: 12),
-        child: Text(
-          l10n.voicePanelProcessing,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colors.textMuted,
-          ),
         ),
       );
     }

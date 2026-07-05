@@ -402,6 +402,15 @@ class _FakeCloudVoiceApi extends CloudVoiceApi {
   }
 }
 
+class _FailingCloudVoiceApi extends CloudVoiceApi {
+  _FailingCloudVoiceApi() : super(baseUrl: 'http://localhost');
+
+  @override
+  Future<CloudVoiceSynthesisResponse> synthesize(String text) async {
+    throw CloudVoiceApiException('Synthesis unavailable.');
+  }
+}
+
 class _RecordingAudioCaptureService implements AudioCaptureService {
   var captureCount = 0;
 

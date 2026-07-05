@@ -33,3 +33,22 @@ def test_voice_response_instructions_include_locale_rule():
     instructions = voice_response_instructions("es")
 
     assert "Respond in Spanish" in instructions
+
+
+def test_voice_response_instructions_warn_on_low_transcript_confidence():
+    instructions = voice_response_instructions(
+        "en",
+        transcript_confidence=0.42,
+    )
+
+    assert "low speech recognition confidence" in instructions
+    assert "Ask the user to repeat once" in instructions
+
+
+def test_voice_response_instructions_skip_confidence_warning_when_high():
+    instructions = voice_response_instructions(
+        "en",
+        transcript_confidence=0.91,
+    )
+
+    assert "low speech recognition confidence" not in instructions

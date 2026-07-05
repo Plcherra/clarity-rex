@@ -131,6 +131,7 @@ class VoiceStreamResponseWriterMixin:
             conversation_id=self.conversation_id,
             response_instructions=voice_response_instructions(
                 getattr(self, "locale", None),
+                transcript_confidence=transcription.get("confidence"),
             ),
             max_response_tokens=voice_response_max_tokens(transcript),
             financial_context=self.financial_context,
@@ -232,6 +233,14 @@ class VoiceStreamResponseWriterMixin:
             "memory_action": self._memory_action(memory_changes),
             "tts_chunk_count": timings.get("tts_chunk_count", 0),
         }
+        if timings.get("tts_chunk_count", 0) == 0 and response_text:
+            LOGGER.warning(
+                "voice_tts_no_chunks session_id=%s conversation_id=%s "
+                "response_chars=%s",
+                self._session_id,
+                self.conversation_id,
+                len(response_text),
+            )
         return response_text
 
     async def _synthesize_audio_chunk(
