@@ -6,6 +6,7 @@ import re
 from typing import Optional
 
 _MAX_TITLE_LENGTH = 60
+_MAX_DESCRIPTION_LENGTH = 200
 
 _FILLER_PREFIX = re.compile(
     r"^(?:"
@@ -18,7 +19,7 @@ _FILLER_PREFIX = re.compile(
     re.IGNORECASE,
 )
 _TRAILING_FILLER = re.compile(
-    r"\b(?:right now|lately|these days|for now|at the moment)\b[\s,.!?-]*$",
+    r"\b(?:right now|lately|these days|for now|at the moment|this month)\b[\s,.!?-]*$",
     re.IGNORECASE,
 )
 _TOPIC_PATTERNS = (
@@ -45,6 +46,14 @@ _TOPIC_PATTERNS = (
         re.I,
     ),
     re.compile(
+        r"\b(?:rebuild(?:ing)?|rebuilding)\s+(?:my\s+)?(?P<topic>[\w\s-]{3,40}?)(?:\s+habit)?\b",
+        re.I,
+    ),
+    re.compile(
+        r"\b(?P<topic>(?:workout|fitness|training)\s+habits?)\b",
+        re.I,
+    ),
+    re.compile(
         r"\b(?:figure out|figuring out)\s+(?:a\s+)?(?P<topic>[\w\s-]{3,40}?)(?:[,.!?]|$)",
         re.I,
     ),
@@ -67,6 +76,22 @@ _PURPOSE_PATTERNS = (
     (re.compile(r"\bbecause\s+(?:i(?:'m| am)\s+)?(?P<purpose>[\w\s-]{3,40})", re.I), None),
     (re.compile(r"\bso (?:i|we) can\s+(?P<purpose>[\w\s-]{3,40})", re.I), None),
 )
+_FOLLOW_UP_PHRASE_PATTERNS = (
+    re.compile(
+        r"\b(?:trying to|working on|figure out|figuring out|rebuild(?:ing)?|rebuilding)\s+"
+        r"(?:a\s+)?(?:better\s+)?(?P<phrase>[\w\s-]{3,50}?)(?:[,.!?]|$)",
+        re.I,
+    ),
+    re.compile(
+        r"\b(?:changing|change(?:ing)?|fix(?:ing)?|improve(?:ing)?)\s+my\s+"
+        r"(?P<phrase>[\w\s-]{3,50}?)(?:[,.!?]|$)",
+        re.I,
+    ),
+    re.compile(
+        r"\b(?:sorting out|working through)\s+(?P<phrase>[\w\s-]{3,50}?)(?:[,.!?]|$)",
+        re.I,
+    ),
+)
 
 
 def infer_thread_title(
@@ -86,19 +111,46 @@ def infer_thread_title(
     return _truncate_title(title, max_length)
 
 
-def thread_summary_from_message(
+def build_thread_description(
     message: str,
     *,
     conversation_history: Optional[list[dict]] = None,
-    max_length: int = 200,
+    max_length: int = _MAX_DESCRIPTION_LENGTH,
 ) -> Optional[str]:
     context = _combined_user_context(message, conversation_history)
     cleaned = _clean_context(context)
     if not cleaned:
         return None
-    if len(cleaned) <= max_length:
-        return cleaned
-    return f"{cleaned[: max_length - 3].rstrip()}..."
+
+    topic = _extract_topic(cleaned)
+    purpose = _extract_purpose(cleaned)
+    phrase = _extract_follow_up_phrase(cleaned)
+
+    if topic and purpose:
+        description = (
+            f"Follow up on {_description_phrase(topic)} to {purpose.lower()}."
+        )
+    elif topic:
+        description = f"Follow up on {_description_phrase(topic)}."
+    elif phrase:
+        description = f"Follow up on {_description_phrase(phrase)}."
+    else:
+        description = f"Follow up on {_description_phrase(cleaned)}."
+
+    return _truncate_description(description, max_length)
+
+
+def thread_summary_from_message(
+    message: str,
+    *,
+    conversation_history: Optional[list[dict]] = None,
+    max_length: int = _MAX_DESCRIPTION_LENGTH,
+) -> Optional[str]:
+    return build_thread_description(
+        message,
+        conversation_history=conversation_history,
+        max_length=max_length,
+    )
 
 
 def clamp_thread_title(title: str, *, max_length: int = _MAX_TITLE_LENGTH) -> str:
@@ -150,6 +202,30 @@ def _extract_topic(text: str) -> Optional[str]:
     return None
 
 
+def _extract_follow_up_phrase(text: str) -> Optional[str]:
+    for pattern in _FOLLOW_UP_PHRASE_PATTERNS:
+        match = pattern.search(text)
+        if match is None:
+            continue
+        phrase = re.sub(r"\s+", " ", match.group("phrase").strip(" .,!?:;-"))
+        if len(phrase) >= 3 and not _is_generic_topic(phrase):
+            return phrase
+    words = text.split()
+    if len(words) >= 3:
+        return " ".join(words[:6])
+    return text or None
+
+
+def _description_phrase(text: str) -> str:
+    cleaned = re.sub(r"\s+", " ", text.strip()).strip(" .,!?:;-")
+    if not cleaned:
+        return "this topic"
+    normalized = cleaned.casefold()
+    if normalized.startswith(("your ", "my ", "the ", "a ", "an ")):
+        return cleaned.lower()
+    return f"your {cleaned.lower()}"
+
+
 def _is_generic_topic(topic: str) -> bool:
     normalized = topic.casefold().strip()
     return normalized in {
@@ -187,8 +263,13 @@ def _format_title(
         if normalized_topic.startswith("better "):
             base = _title_case_words(topic)
         elif "routine" in normalized_topic or "habit" in normalized_topic:
-            if re.search(r"\b(?:chang(?:e|ing)|fix(?:ing)?|new)\b", fallback, flags=re.I):
-                base = f"New {_title_case_words(topic)} Change"
+            if re.search(r"\b(?:rebuild(?:ing)?|chang(?:e|ing)|fix(?:ing)?|new)\b", fallback, flags=re.I):
+                if re.search(r"\brebuild", fallback, flags=re.I):
+                    base = _title_case_words(topic)
+                    if "rebuild" not in base.casefold():
+                        base = f"{base} Rebuild"
+                else:
+                    base = f"New {_title_case_words(topic)} Change"
             else:
                 base = f"New {_title_case_words(topic)}"
         elif normalized_topic.startswith(("moving", "relocation", "relocating")):
@@ -203,9 +284,9 @@ def _format_title(
     if purpose:
         return purpose if purpose.startswith("Fix ") else f"Plan to {purpose}"
 
-    words = fallback.split()
-    if len(words) >= 3:
-        return _title_case_words(" ".join(words[:8]))
+    phrase = _extract_follow_up_phrase(fallback)
+    if phrase:
+        return _title_case_words(phrase)
     return _title_case_words(fallback) or "Open Thread"
 
 
@@ -226,6 +307,17 @@ def _title_case_words(text: str) -> str:
 
 def _truncate_title(title: str, max_length: int) -> str:
     cleaned = re.sub(r"\s+", " ", title.strip())
+    if len(cleaned) <= max_length:
+        return cleaned
+    truncated = cleaned[: max_length - 3].rstrip()
+    last_space = truncated.rfind(" ")
+    if last_space > max_length // 2:
+        truncated = truncated[:last_space]
+    return f"{truncated}..."
+
+
+def _truncate_description(description: str, max_length: int) -> str:
+    cleaned = re.sub(r"\s+", " ", description.strip())
     if len(cleaned) <= max_length:
         return cleaned
     truncated = cleaned[: max_length - 3].rstrip()

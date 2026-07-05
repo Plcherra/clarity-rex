@@ -118,7 +118,7 @@ def proposal_from_open_thread(
     source_message_id: str | None,
 ) -> DurableWriteProposal:
     safe_title = clamp_thread_title(title)
-    body = summary or safe_title
+    body = (summary or "").strip() or safe_title
     return DurableWriteProposal(
         write_kind="open_thread",
         title=safe_title,

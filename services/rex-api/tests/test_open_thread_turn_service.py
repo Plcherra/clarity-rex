@@ -155,6 +155,10 @@ async def test_open_thread_turn_service_proposes_after_yes():
     assert result is not None
     assert result["memory_changes"]["confirmation_required"] == 1
     assert durable.proposals[0]["title"] == "Better Morning Routine"
+    summary = durable.proposals[0]["summary"]
+    assert summary is not None
+    assert summary.startswith("Follow up on")
+    assert summary != durable.proposals[0]["title"]
 
 
 @pytest.mark.asyncio
@@ -203,11 +207,11 @@ async def test_open_thread_turn_service_offers_close_or_replace_at_cap():
     )
 
     result = await service.handle_turn(
-        "I've been trying to rebuild my workout habit this month.",
+        "I've been trying to figure out a better morning routine lately.",
         conversation_id="conversation-1",
         user_message={
             "id": "user-1",
-            "content": "I've been trying to rebuild my workout habit this month.",
+            "content": "I've been trying to figure out a better morning routine lately.",
         },
         conversation_history=[],
     )

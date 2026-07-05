@@ -32,6 +32,7 @@ from app.services.voice_stream_config import (
     voice_response_instructions,
     voice_response_max_tokens,
 )
+from app.services.voice_stream_orchestrator_support import voice_speakable_text
 from app.services.locale_utils import locale_to_stt_code, locale_to_tts_code
 
 
@@ -132,16 +133,20 @@ async def voice_turn(
             locale=locale,
         )
         tts_started_at = time.perf_counter()
+        text_to_speak = voice_speakable_text(
+            chat_result.get("response") or "",
+            chat_result.get("memory_changes"),
+        )
         synthesis = await google_tts_service.synthesize_speech(
-            chat_result["response"],
+            text_to_speak,
             language_code=locale_to_tts_code(locale),
         )
         await usage_tracking_service.record_tts_turn(
             user_id=current_user.id,
-            duration_ms=estimate_tts_duration_ms(chat_result["response"]),
+            duration_ms=estimate_tts_duration_ms(text_to_speak),
             latency_ms=_elapsed_ms(tts_started_at),
             model=synthesis.get("voice_name") or _google_tts_model(google_tts_service),
-            character_count=len(chat_result["response"].strip()),
+            character_count=len(text_to_speak.strip()),
         )
     except DeepgramServiceError as error:
         await usage_tracking_service.record_stt_turn(

@@ -5,6 +5,7 @@ import 'package:clarity/features/dashboard/domain/dashboard_insight_anchor.dart'
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_message_bubble.dart';
+import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
@@ -41,6 +42,9 @@ class ChatTranscript extends StatelessWidget {
     final hasMessages = messages.isNotEmpty;
     final showVoiceTranscript =
         voiceState != null && !voiceState!.isIdle;
+    final pendingVoiceActions = showVoiceTranscript
+        ? pendingClarityActions(messages)
+        : const <ClarityActionCard>[];
     final showVoiceProcessing =
         voiceState?.phase == VoiceCallPhase.thinking &&
         messages.isNotEmpty &&
@@ -114,6 +118,14 @@ class ChatTranscript extends StatelessWidget {
                       );
                     },
                   ),
+                if (pendingVoiceActions.isNotEmpty) ...[
+                  ClarityActionCardsStrip(
+                    actions: pendingVoiceActions,
+                    onConfirm: onConfirmClarityAction,
+                    onDismiss: onDismissClarityAction,
+                  ),
+                  const SizedBox(height: RexUiTokens.space12),
+                ],
                 if (showVoiceTranscript)
                   VoiceLiveTranscript(state: voiceState!),
                 if (errorMessage != null) ...[

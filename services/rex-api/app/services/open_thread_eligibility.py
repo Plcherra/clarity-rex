@@ -41,6 +41,12 @@ ACTIONABLE_PLAN_PATTERNS = (
     re.compile(r"\b(?:step|steps)\s+(?:one|1|two|2)\b", re.I),
     re.compile(r"\bgot (?:a|the) plan\b", re.I),
     re.compile(r"\b(?:because|so (?:i|we) can|to fix)\b", re.I),
+    re.compile(r"\bfigure out a better\b", re.I),
+)
+
+STRONG_ACTIONABLE_PLAN_PATTERNS = ACTIONABLE_PLAN_PATTERNS
+
+WEAK_ACTIONABLE_PLAN_PATTERNS = (
     re.compile(
         r"\bi(?:'m| am)\s+(?:working on|trying to|planning to|looking to|hoping to|focused on|making progress on)\s+(?:my\s+)?[\w-]+",
         re.I,
@@ -57,7 +63,6 @@ ACTIONABLE_PLAN_PATTERNS = (
         r"\b(?:trying to|working on)\s+(?:figure out|rebuild|build|fix|change|improve)\b",
         re.I,
     ),
-    re.compile(r"\bfigure out a better\b", re.I),
     re.compile(r"\brebuild my\b", re.I),
 )
 
@@ -87,6 +92,8 @@ COMPANION_FOLLOW_UP_SIGNAL_PATTERNS = (
     re.compile(r"\b(?:sorting out|figuring out|working through)\b", re.I),
     re.compile(r"\bwe(?:'re| are)\s+(?:moving|relocating|building|working)\b", re.I),
     re.compile(r"\bkeep(?:ing)?\s+working on\b", re.I),
+    re.compile(r"\b(?:citizenship|immigration)\s+(?:application|process)\b", re.I),
+    re.compile(r"\bworking on my\s+(?:citizenship|immigration)\b", re.I),
 )
 
 CLEAR_MEASURABLE_GOAL_PATTERNS = (
@@ -136,16 +143,33 @@ def has_ongoing_personal_signal(message: str) -> bool:
 
 
 def has_actionable_plan_signal(text: str) -> bool:
+    return has_strong_actionable_plan_signal(text) or has_weak_actionable_plan_signal(text)
+
+
+def has_strong_actionable_plan_signal(text: str) -> bool:
     cleaned = re.sub(r"\s+", " ", text.strip())
     if len(cleaned) < 20:
         return False
-    has_concrete = any(pattern.search(cleaned) for pattern in ACTIONABLE_PLAN_PATTERNS)
+    has_strong = any(pattern.search(cleaned) for pattern in STRONG_ACTIONABLE_PLAN_PATTERNS)
+    if not has_strong:
+        return False
     has_topic = any(pattern.search(cleaned) for pattern in TOPIC_CONTINUITY_PATTERNS)
-    if has_concrete and has_topic:
+    if has_topic:
         return True
-    if has_concrete and _has_topic_noun(cleaned):
+    return _has_topic_noun(cleaned)
+
+
+def has_weak_actionable_plan_signal(text: str) -> bool:
+    cleaned = re.sub(r"\s+", " ", text.strip())
+    if len(cleaned) < 20:
+        return False
+    has_weak = any(pattern.search(cleaned) for pattern in WEAK_ACTIONABLE_PLAN_PATTERNS)
+    if not has_weak:
+        return False
+    has_topic = any(pattern.search(cleaned) for pattern in TOPIC_CONTINUITY_PATTERNS)
+    if has_topic:
         return True
-    return False
+    return _has_topic_noun(cleaned)
 
 
 def is_stress_only_vent(message: str) -> bool:
@@ -164,9 +188,13 @@ def is_vague_thread_topic(message: str, *, conversation_history: Optional[list[d
     if not cleaned:
         return True
     if any(pattern.search(cleaned) for pattern in VAGUE_TOPIC_PATTERNS):
-        return not has_actionable_plan_signal(_combined_user_context(message, conversation_history))
+        return not has_strong_actionable_plan_signal(
+            _combined_user_context(message, conversation_history)
+        )
     if any(pattern.match(cleaned) for pattern in TEMPORAL_ONLY_PATTERNS):
-        return not has_actionable_plan_signal(_combined_user_context(message, conversation_history))
+        return not has_strong_actionable_plan_signal(
+            _combined_user_context(message, conversation_history)
+        )
     if len(cleaned) < _MIN_SINGLE_TURN_LENGTH:
         return not _multi_turn_context_is_actionable(message, conversation_history)
     return False
@@ -180,15 +208,46 @@ def has_specific_actionable_continuity(
     context = _combined_user_context(message, conversation_history)
     if is_vague_thread_topic(message, conversation_history=conversation_history):
         return False
-    if has_actionable_plan_signal(context):
+    if has_companion_follow_up_signal(message):
+        return True
+    if has_strong_actionable_plan_signal(context):
         return True
     if _multi_turn_context_is_actionable(message, conversation_history):
         return True
     from app.services.conversational_plan_detection import ConversationalPlanDetector
 
     if ConversationalPlanDetector().looks_like_conversational_plan(context):
-        return _has_topic_noun(context)
+        return has_strong_actionable_plan_signal(context) or has_companion_follow_up_signal(
+            context
+        )
     return False
+
+
+def message_might_need_open_thread_offer(
+    message: str,
+    *,
+    already_offered: bool,
+    already_declined: bool,
+    conversation_history: Optional[list[dict]] = None,
+) -> bool:
+    if already_offered or already_declined:
+        return False
+    if is_casual_only_message(message):
+        return False
+    if is_recall_message(message):
+        return False
+    if is_one_off_factual_question(message):
+        return False
+    if is_stress_only_vent(message):
+        return False
+    if is_clear_measurable_goal(message):
+        return False
+    if should_defer_open_thread_to_plan(message):
+        return False
+    return has_specific_actionable_continuity(
+        message,
+        conversation_history=conversation_history,
+    )
 
 
 def is_clear_measurable_goal(message: str) -> bool:
@@ -323,6 +382,21 @@ def thread_summary_from_message(
     )
 
 
+def build_thread_description(
+    message: str,
+    *,
+    conversation_history: Optional[list[dict]] = None,
+    max_length: int = 200,
+) -> Optional[str]:
+    from app.services.open_thread_title import build_thread_description as build_description
+
+    return build_description(
+        message,
+        conversation_history=conversation_history,
+        max_length=max_length,
+    )
+
+
 def _combined_user_context(
     message: str,
     conversation_history: Optional[list[dict]],
@@ -367,8 +441,8 @@ def _multi_turn_context_is_actionable(
     if len(substantive) < 2:
         return False
     combined = " ".join(substantive)
-    return has_actionable_plan_signal(combined) or (
-        has_ongoing_personal_signal(combined) and _has_topic_noun(combined)
+    return has_strong_actionable_plan_signal(combined) or has_companion_follow_up_signal(
+        combined
     )
 
 

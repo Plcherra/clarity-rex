@@ -41,7 +41,7 @@ void main() {
     'voice endpoint detector keeps short pauses inside long speech open',
     () {
       const config = VoiceCaptureConfig();
-      expect(config.silenceAfterSpeech, const Duration(milliseconds: 3200));
+      expect(config.silenceAfterSpeech, const Duration(milliseconds: 2000));
       expect(config.maxUtteranceDuration, const Duration(seconds: 120));
 
       final startedAt = DateTime(2026);
@@ -56,31 +56,31 @@ void main() {
 
       final shortPause = detector.addAmplitude(
         currentDb: -80,
-        now: startedAt.add(const Duration(milliseconds: 2500)),
+        now: startedAt.add(const Duration(milliseconds: 1500)),
       );
       expect(shortPause.endpointReached, isFalse);
 
       final resumedSpeech = detector.addAmplitude(
         currentDb: -43,
-        now: startedAt.add(const Duration(milliseconds: 2600)),
+        now: startedAt.add(const Duration(milliseconds: 1600)),
       );
       expect(resumedSpeech.endpointReached, isFalse);
 
       final secondShortPause = detector.addAmplitude(
         currentDb: -80,
-        now: startedAt.add(const Duration(milliseconds: 5100)),
+        now: startedAt.add(const Duration(milliseconds: 3500)),
       );
       expect(secondShortPause.endpointReached, isFalse);
 
       final realEndpoint = detector.addAmplitude(
-        currentDb: -80,
-        now: startedAt.add(const Duration(milliseconds: 5700)),
+        currentDb: -43,
+        now: startedAt.add(const Duration(milliseconds: 3600)),
       );
       expect(realEndpoint.endpointReached, isFalse);
 
       final longerPauseEndpoint = detector.addAmplitude(
         currentDb: -80,
-        now: startedAt.add(const Duration(milliseconds: 5900)),
+        now: startedAt.add(const Duration(milliseconds: 5600)),
       );
       expect(longerPauseEndpoint.endpointReached, isTrue);
     },
@@ -99,7 +99,16 @@ void main() {
       isFalse,
     );
 
-    for (var second = 2; second <= 36; second += 4) {
+    for (var second = 2; second <= 34; second += 4) {
+      expect(
+        detector
+            .addAmplitude(
+              currentDb: -43,
+              now: startedAt.add(Duration(seconds: second - 1)),
+            )
+            .endpointReached,
+        isFalse,
+      );
       expect(
         detector
             .addAmplitude(
@@ -113,7 +122,7 @@ void main() {
         detector
             .addAmplitude(
               currentDb: -43,
-              now: startedAt.add(Duration(seconds: second, milliseconds: 2500)),
+              now: startedAt.add(Duration(seconds: second, milliseconds: 1500)),
             )
             .endpointReached,
         isFalse,
@@ -943,7 +952,7 @@ void main() {
   );
 
   test(
-    'streaming playback fallback resumes listening when synthesis fails',
+    'streaming playback fallback surfaces error when synthesis fails',
     () async {
       final captureService = _ScriptedStreamingAudioCaptureService();
       final streamingApi = _FakeStreamingVoiceApi();
@@ -1001,11 +1010,12 @@ void main() {
         'response_text': 'Short reply.',
       });
 
-      await captureService.readyAt(1).timeout(const Duration(seconds: 1));
+      await Future<void>.delayed(Duration.zero);
 
       final state = container.read(voiceCallProvider);
-      expect(state.phase, VoiceCallPhase.listening);
-      expect(state.errorMessage, isNull);
+      expect(state.phase, VoiceCallPhase.failed);
+      expect(state.errorMessage, isNotNull);
+      expect(state.errorMessage, isNotEmpty);
     },
   );
 

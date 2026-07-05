@@ -169,16 +169,24 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             }
             _stopBargeInMonitoring();
             if (isActiveSession()) {
+              final speakText = _streamingSpeakableText(
+                completedText: completedText,
+                memoryChanges: event.memoryChanges,
+              );
               if (firstAudioChunkAt == null &&
-                  completedText.isNotEmpty &&
+                  speakText.isNotEmpty &&
                   !state.isMuted) {
                 final fallbackStarted = await _playSynthesizedStreamingFallback(
-                  completedText,
+                  speakText,
                   _callGeneration,
                 );
                 if (fallbackStarted) {
                   break;
                 }
+                failVoiceApi(
+                  const CloudVoiceApiException('playback_failed'),
+                );
+                break;
               }
               if (state.phase == VoiceCallPhase.speaking) {
                 completeSpeaking();

@@ -39,7 +39,7 @@ async def test_open_thread_offer_works_on_voice_channel():
     )
 
     result = await chat_service.send_message(
-        "I've been trying to rebuild my workout habit this month.",
+        "I've been trying to figure out a better morning routine lately.",
         channel=RexBrainChannel.VOICE,
     )
 
@@ -48,6 +48,26 @@ async def test_open_thread_offer_works_on_voice_channel():
     assert result["memory_changes"]["confirmation_required"] == 0
     assert not result["memory_changes"].get("write_proposals")
     assert ai_service.generate_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_weak_workout_habit_message_does_not_offer_open_thread():
+    ai_service = FakeAIService(response="Voice follow-up")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    result = await chat_service.send_message(
+        "I've been trying to rebuild my workout habit this month.",
+        channel=RexBrainChannel.VOICE,
+    )
+
+    assert THREAD_OFFER_PHRASE not in result["response"]
+    assert ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio

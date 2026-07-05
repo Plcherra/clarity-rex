@@ -3,6 +3,38 @@
 part of 'voice_call_controller.dart';
 
 extension VoiceCallControllerStreamingPlayback on VoiceCallController {
+  String _streamingSpeakableText({
+    required String completedText,
+    Map<String, dynamic>? memoryChanges,
+  }) {
+    final text = completedText.trim();
+    if (text.isNotEmpty) {
+      return text;
+    }
+    final proposals = memoryChanges?['write_proposals'];
+    if (proposals is! List) {
+      return '';
+    }
+    for (final entry in proposals) {
+      if (entry is! Map<String, dynamic>) {
+        continue;
+      }
+      final status = (entry['status'] as String? ?? 'pending').toLowerCase();
+      if (status != 'pending') {
+        continue;
+      }
+      final confirmation = (entry['confirmation_text'] as String? ?? '').trim();
+      if (confirmation.isNotEmpty) {
+        return confirmation;
+      }
+      final title = (entry['title'] as String? ?? '').trim();
+      if (title.isNotEmpty) {
+        return title;
+      }
+    }
+    return '';
+  }
+
   Future<void> _preparePlaybackAudioSession() async {
     await _audioSessionService.configureForVoiceTurn();
     await _audioSessionService.preferLoudSpeaker();

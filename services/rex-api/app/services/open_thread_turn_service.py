@@ -8,13 +8,14 @@ from app.models.open_thread import MAX_ACTIVE_OPEN_THREADS
 from app.services.conversation_pending_action import PendingAction
 from app.services.goal_command_results import clarification_turn_result
 from app.services.open_thread_eligibility import (
+    build_thread_description,
     infer_thread_title,
     is_bare_pending_offer_decline,
     is_explicit_track_consent,
     is_explicit_track_decline,
+    message_might_need_open_thread_offer,
     thread_offer_eligible,
     thread_offer_message_eligible,
-    thread_summary_from_message,
 )
 
 
@@ -58,8 +59,6 @@ class OpenThreadTurnService:
             return None
 
         offer_state = self._offer_state_from_history(conversation_history)
-        active_threads = await self.open_thread_service.list_active_threads()
-        offer_context = await self._load_offer_context()
 
         if is_explicit_track_decline(message) or (
             offer_state.get("offered")
@@ -77,12 +76,14 @@ class OpenThreadTurnService:
             offer_state,
             message,
         ):
-            topic_message = offer_state.get("topic_message") or message
+            topic_message = str(offer_state.get("topic_message") or "").strip()
+            if not topic_message:
+                topic_message = message
             title = infer_thread_title(
                 topic_message,
                 conversation_history=conversation_history,
             )
-            summary = thread_summary_from_message(
+            summary = build_thread_description(
                 topic_message,
                 conversation_history=conversation_history,
             )
@@ -95,6 +96,17 @@ class OpenThreadTurnService:
 
         if offer_state.get("offered") or offer_state.get("declined"):
             return None
+
+        if not message_might_need_open_thread_offer(
+            message,
+            already_offered=bool(offer_state.get("offered")),
+            already_declined=bool(offer_state.get("declined")),
+            conversation_history=conversation_history,
+        ):
+            return None
+
+        active_threads = await self.open_thread_service.list_active_threads()
+        offer_context = await self._load_offer_context()
 
         if (
             len(active_threads) >= MAX_ACTIVE_OPEN_THREADS

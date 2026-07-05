@@ -11,9 +11,9 @@ from app.services.voice_stream_config import (
     voice_response_instructions,
     voice_response_max_tokens,
 )
-from app.services.voice_stream_orchestrator_support import voice_delay_audio_until_done
+from app.services.voice_stream_orchestrator_support import voice_speakable_text
 
-_MIN_SPEAKABLE_CHUNK_CHARS = 12
+_MIN_SPEAKABLE_CHUNK_CHARS = 8
 _MIN_SINGLE_SENTENCE_CHUNK_CHARS = 20
 _MAX_SPEAKABLE_CHUNK_CHARS = 140
 
@@ -39,7 +39,6 @@ class VoiceStreamResponseWriterMixin:
         response_parts: list[str] = []
         speech_buffer = ""
         final_response_text = ""
-        delay_audio_until_done = False
         first_token_at: Optional[float] = None
         first_audio_at: Optional[float] = None
         user_message_id: Optional[str] = None
@@ -149,9 +148,6 @@ class VoiceStreamResponseWriterMixin:
                 )
             elif event_name == "turn.trace":
                 self._last_turn_trace = self._safe_turn_trace(event)
-                delay_audio_until_done = voice_delay_audio_until_done(
-                    str(event.get("intent") or "")
-                )
             elif event_name == "token":
                 token = str(event.get("token") or "")
                 if not token:
@@ -161,12 +157,11 @@ class VoiceStreamResponseWriterMixin:
                     timings["grok_first_token_ms"] = self._elapsed_ms(chat_started_at)
                 response_parts.append(token)
                 await self._send_event("assistant.token", token=token)
-                if not delay_audio_until_done:
-                    speech_buffer += token
-                    chunk, speech_buffer = self._next_speakable_chunk(speech_buffer)
-                    if chunk:
-                        queue_audio_chunk(chunk)
-                    await send_ready_audio_chunks(block=False)
+                speech_buffer += token
+                chunk, speech_buffer = self._next_speakable_chunk(speech_buffer)
+                if chunk:
+                    queue_audio_chunk(chunk)
+                await send_ready_audio_chunks(block=False)
             elif event_name == "done":
                 self.conversation_id = event.get("conversation_id") or self.conversation_id
                 final_response_text = str(event.get("response") or "").strip()
@@ -176,9 +171,8 @@ class VoiceStreamResponseWriterMixin:
 
         streamed_text = "".join(response_parts).strip()
         response_text = final_response_text or streamed_text
-        if delay_audio_until_done and response_text:
-            queue_audio_chunk(response_text)
-        elif (
+        speakable_text = voice_speakable_text(response_text, memory_changes)
+        if (
             final_response_text
             and final_response_text != streamed_text
             and first_audio_at is None
@@ -186,6 +180,8 @@ class VoiceStreamResponseWriterMixin:
             queue_audio_chunk(final_response_text)
         elif speech_buffer.strip():
             queue_audio_chunk(speech_buffer.strip())
+        elif speakable_text and first_audio_at is None:
+            queue_audio_chunk(speakable_text)
         await send_ready_audio_chunks(block=True)
         if audio_flush_tasks:
             await asyncio.gather(*audio_flush_tasks, return_exceptions=True)
@@ -233,14 +229,16 @@ class VoiceStreamResponseWriterMixin:
             "memory_action": self._memory_action(memory_changes),
             "tts_chunk_count": timings.get("tts_chunk_count", 0),
         }
-        if timings.get("tts_chunk_count", 0) == 0 and response_text:
+        if timings.get("tts_chunk_count", 0) == 0 and speakable_text:
             LOGGER.warning(
                 "voice_tts_no_chunks session_id=%s conversation_id=%s "
                 "response_chars=%s",
                 self._session_id,
                 self.conversation_id,
-                len(response_text),
+                len(speakable_text),
             )
+            queue_audio_chunk(speakable_text)
+            await send_ready_audio_chunks(block=True)
         return response_text
 
     async def _synthesize_audio_chunk(
