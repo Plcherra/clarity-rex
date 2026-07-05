@@ -30,3 +30,16 @@ class AssistantChatTabRequestNotifier extends Notifier<int> {
 
   void request() => state++;
 }
+
+/// Increment when the shell re-selects Assistant so sub-tab visibility resyncs.
+final assistantChatVisibilityResyncProvider =
+    NotifierProvider<AssistantChatVisibilityResyncNotifier, int>(
+      AssistantChatVisibilityResyncNotifier.new,
+    );
+
+class AssistantChatVisibilityResyncNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void request() => state++;
+}

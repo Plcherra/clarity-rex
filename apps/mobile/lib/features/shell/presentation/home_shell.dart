@@ -274,7 +274,9 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
     _lastSelectedIndex = index;
     if (index != VoiceSessionShellBar.assistantShellIndex) {
       ref.read(assistantChatVisibleProvider.notifier).setVisible(false);
+      return;
     }
+    ref.read(assistantChatVisibilityResyncProvider.notifier).request();
   }
 
   void _openAssistantChat() {

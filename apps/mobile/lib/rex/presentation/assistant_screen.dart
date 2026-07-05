@@ -73,6 +73,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       }
       _tabController.animateTo(AssistantTab.chat.index);
     });
+    ref.listen<int>(assistantChatVisibilityResyncProvider, (previous, next) {
+      _updateAssistantChatVisibility();
+    });
 
     final isCompactWidth =
         MediaQuery.sizeOf(context).width < _assistantCompactWidth;
