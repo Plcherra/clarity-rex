@@ -94,6 +94,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
 
     final turnSequence = ++_streamingTurnSequence;
     _streamingUtteranceEndSent = false;
+    _resetPrefetchedFinancialContext();
     for (final chunk in initialAudioChunks) {
       session.sendAudioChunk(chunk);
     }
@@ -172,6 +173,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     final pendingChunks = <Uint8List>[...initialAudioChunks];
     final turnSequence = ++_streamingTurnSequence;
     _streamingUtteranceEndSent = false;
+    _resetPrefetchedFinancialContext();
 
     if (initialAudioChunks.isNotEmpty) {
       startCapturingSpeech();
@@ -764,7 +766,9 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     }
     _streamingUtteranceEndSent = true;
     unawaited(
-      _financialContext(state.currentTranscript).then((financialContext) {
+      _financialContextForUtterance(state.currentTranscript).then((
+        financialContext,
+      ) {
         if (turnSequence != _streamingTurnSequence ||
             !identical(_activeStreamingSession, session) ||
             !state.isCallActive) {
@@ -778,6 +782,50 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
         );
       }),
     );
+  }
+
+  void _prefetchFinancialContextIfNeeded(String transcript) {
+    final normalized = transcript.trim();
+    if (normalized.isEmpty ||
+        !shouldAttachAssistantFinancialContext(normalized)) {
+      return;
+    }
+    if (_prefetchedFinancialContextTranscript == normalized &&
+        (_prefetchedFinancialContext != null ||
+            _prefetchedFinancialContextTask != null)) {
+      return;
+    }
+    _prefetchedFinancialContextTranscript = normalized;
+    _prefetchedFinancialContext = null;
+    _prefetchedFinancialContextTask = _financialContext(normalized).then((
+      value,
+    ) {
+      _prefetchedFinancialContext = value;
+      return value;
+    });
+  }
+
+  void _resetPrefetchedFinancialContext() {
+    _prefetchedFinancialContext = null;
+    _prefetchedFinancialContextTask = null;
+    _prefetchedFinancialContextTranscript = null;
+  }
+
+  Future<Map<String, dynamic>?> _financialContextForUtterance(
+    String transcript,
+  ) async {
+    final normalized = transcript.trim();
+    if (_prefetchedFinancialContextTranscript == normalized) {
+      final cached = _prefetchedFinancialContext;
+      if (cached != null) {
+        return cached;
+      }
+      final task = _prefetchedFinancialContextTask;
+      if (task != null) {
+        return task;
+      }
+    }
+    return _financialContext(normalized);
   }
 
   Future<Map<String, dynamic>?> _financialContext([String? transcript]) async {

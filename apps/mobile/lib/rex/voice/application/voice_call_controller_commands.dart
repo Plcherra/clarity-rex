@@ -45,6 +45,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
       clearError: true,
     );
     _armTranscriptIdleEndpointTimeout(_callGeneration);
+    _prefetchFinancialContextIfNeeded(_transcriptBuffer.visible);
   }
 
   void endpointUtterance() {

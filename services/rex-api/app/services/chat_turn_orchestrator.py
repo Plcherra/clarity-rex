@@ -111,6 +111,7 @@ class ChatTurnOrchestrator:
             conversation_id=conversation_id,
             file=file,
             intent_decision=intent_decision,
+            channel=channel,
         )
         conversation_id = turn_context.conversation_id
         turn_trace = self.turn_observer.new_trace(
@@ -222,6 +223,7 @@ class ChatTurnOrchestrator:
             conversation_id=conversation_id,
             file=file,
             intent_decision=intent_decision,
+            channel=channel,
         )
         conversation_id = turn_context.conversation_id
         turn_trace = self.turn_observer.new_trace(
@@ -275,7 +277,8 @@ class ChatTurnOrchestrator:
         response_parts = []
         stream_filter = ClarityActionStreamFilter()
         buffer_tokens_for_truth = stream_should_buffer_for_action_truth(
-            intent_decision
+            intent_decision,
+            channel=channel,
         )
         ai_kwargs = {}
         if max_response_tokens is not None:

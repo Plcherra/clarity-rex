@@ -25,6 +25,7 @@ from app.services.recall_intent_helper import (
     PROFILE_MEMORY_LIMIT,
     PROFILE_MEMORY_QUERY,
 )
+from app.services.rex_channel import RexBrainChannel
 from app.services.rex_intent_router import RexIntentDecision
 from app.services.time_context_service import TimeContextService
 
@@ -68,12 +69,14 @@ class ChatContextService:
         message: str,
         conversation_id: Optional[str],
         intent_decision: Optional[RexIntentDecision] = None,
+        channel: RexBrainChannel = RexBrainChannel.CHAT,
     ) -> tuple[list[dict], list[dict], dict]:
         fetch_started = time.perf_counter()
         timings_ms: dict[str, int] = {}
         initial_plan = self.load_planner.initial_plan(
             message=message,
             intent_decision=intent_decision,
+            channel=channel,
         )
         load_plan = initial_plan
 
@@ -170,6 +173,7 @@ class ChatContextService:
             conversation_history=conversation_history,
             intent_decision=intent_decision,
             initial_plan=initial_plan,
+            channel=channel,
         )
 
         long_term_memory_task = (

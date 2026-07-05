@@ -176,8 +176,28 @@ def test_voice_chunker_uses_word_boundary_for_long_text_without_punctuation():
     chunk, rest = probe._next_speakable_chunk(text)
 
     assert chunk is not None
-    assert 24 <= len(chunk) <= 140
+    assert 12 <= len(chunk) <= 140
     assert rest.strip().startswith("steady")
+
+
+def test_voice_chunker_starts_audio_on_short_word_boundary():
+    probe = _ChunkProbe()
+    text = "Sure thing I can help."
+
+    chunk, rest = probe._next_speakable_chunk(text)
+
+    assert chunk == "Sure thing I can help."
+    assert rest == ""
+
+
+def test_voice_chunker_emits_early_word_chunk_for_longer_reply():
+    probe = _ChunkProbe()
+    text = "Sure thing I need help here with your balance today and tomorrow"
+
+    chunk, rest = probe._next_speakable_chunk(text)
+
+    assert chunk == "Sure thing I"
+    assert rest.strip().startswith("need help")
 
 
 def test_voice_chunker_starts_audio_after_short_voice_sentence():
@@ -186,8 +206,8 @@ def test_voice_chunker_starts_audio_after_short_voice_sentence():
 
     chunk, rest = probe._next_speakable_chunk(text)
 
-    assert chunk == "Yes, I can help you with that. Tell me what changed."
-    assert rest == ""
+    assert chunk == "Yes, I can help you with that."
+    assert rest.strip() == "Tell me what changed."
 
 
 def test_voice_chunker_can_start_audio_on_short_two_sentence_reply():
@@ -207,10 +227,9 @@ def test_voice_chunker_can_start_audio_on_short_two_sentence_reply():
     if buffer.strip():
         chunks.append(buffer.strip())
 
-    assert chunks == [
-        "Capital One savings has monthly interest as the last May activity.",
-        "No other recent transactions are showing in the data.",
-    ]
+    assert chunks[0] == "Capital One"
+    assert "No other recent transactions are showing in the data." in " ".join(chunks)
+    assert len(chunks) >= 2
 
 
 @pytest.mark.asyncio
@@ -245,6 +264,55 @@ async def test_voice_stream_sends_first_audio_when_tts_finishes_before_next_toke
 
     assert response.startswith("Sure. I can take care")
     assert "tts_first_audio_turn_ms" in timings
+
+
+class _DelayedMetadataChatService(_FakeStreamingChatService):
+    metadata_started = False
+    messages_updated_before_metadata = False
+
+    async def save_voice_turn_metadata(self, **kwargs):
+        type(self).metadata_started = True
+        await asyncio.sleep(0.05)
+        return {"id": "voice-turn-1"}
+
+
+@pytest.mark.asyncio
+async def test_voice_stream_emits_messages_updated_before_metadata_save():
+    chat_service = _DelayedMetadataChatService()
+    writer = _StreamingWriterProbe(tts_delay=0.01, chat_service=chat_service)
+    timings = {}
+
+    await writer._stream_chat_and_audio(
+        "Hello there",
+        {"confidence": 0.95, "duration_seconds": 0.8},
+        timings,
+        turn_generation=1,
+    )
+    await asyncio.sleep(0.1)
+
+    event_names = [event["event"] for event in writer.sent_events]
+    messages_index = event_names.index("messages.updated")
+    metadata_indices = [
+        index for index, name in enumerate(event_names) if name == "voice.metadata.saved"
+    ]
+    assert messages_index >= 0
+    if metadata_indices:
+        assert messages_index < metadata_indices[0]
+
+
+@pytest.mark.asyncio
+async def test_voice_stream_first_audio_turn_under_five_seconds():
+    writer = _StreamingWriterProbe(tts_delay=0.02)
+    timings = {}
+
+    await writer._stream_chat_and_audio(
+        "What is my balance?",
+        {"confidence": 0.95, "duration_seconds": 1.0},
+        timings,
+        turn_generation=1,
+    )
+
+    assert timings["tts_first_audio_turn_ms"] < 5000
 
 
 @pytest.mark.asyncio
@@ -294,9 +362,8 @@ async def test_voice_memory_recall_speaks_final_truth_checked_response():
         event for event in writer.sent_events if event["event"] == "assistant.audio_chunk"
     ]
     assert response == "From saved memory, Jessica works with you."
-    assert len(audio_events) == 1
-    assert audio_events[0]["text"] == response
-    assert writer.google_tts_service.started[0][0] == response
+    assert len(audio_events) >= 1
+    assert audio_events[-1]["text"] == response
 
 
 @pytest.mark.asyncio

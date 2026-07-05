@@ -5,6 +5,7 @@ from fastapi import UploadFile
 
 from app.services.chat_context_service import ChatContextService
 from app.services.file_service import AttachmentContext, FileService
+from app.services.rex_channel import RexBrainChannel
 from app.services.rex_intent_router import RexIntentDecision
 
 
@@ -118,6 +119,7 @@ class ChatTurnContextService:
         file: Optional[UploadFile],
         intent_decision: Optional[RexIntentDecision] = None,
         stored_message: Optional[str] = None,
+        channel: RexBrainChannel = RexBrainChannel.CHAT,
     ) -> ChatTurnContext:
         conversation_id = await self.existing_conversation_id(conversation_id)
         attachment_context = (
@@ -134,6 +136,7 @@ class ChatTurnContextService:
             message=message,
             conversation_id=conversation_id,
             intent_decision=intent_decision,
+            channel=channel,
         )
 
         if conversation_id is None:

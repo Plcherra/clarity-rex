@@ -57,6 +57,11 @@ class DeepgramLiveTranscriptionSession:
             self._close_stream_sent = True
             await self.websocket.send(json.dumps({"type": "CloseStream"}))
 
+        if self._final_segments and self._receive_task.done():
+            final_transcript = " ".join(self._final_segments).strip()
+            if final_transcript:
+                return self._build_transcription_result(final_transcript)
+
         try:
             await asyncio.wait_for(self._receive_task, timeout=1.2)
         except asyncio.TimeoutError:
@@ -66,6 +71,9 @@ class DeepgramLiveTranscriptionSession:
         if not final_transcript:
             raise DeepgramServiceError("I did not catch any audio.", status_code=422)
 
+        return self._build_transcription_result(final_transcript)
+
+    def _build_transcription_result(self, final_transcript: str) -> dict[str, Any]:
         return {
             "transcript": final_transcript,
             "confidence": self._confidence,

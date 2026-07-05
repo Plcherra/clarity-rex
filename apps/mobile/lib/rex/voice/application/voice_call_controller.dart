@@ -76,6 +76,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _emptyVoiceTurnRecoveryCount = 0;
   var _streamingUtteranceEndSent = false;
   var _streamingTurnSequence = 0;
+  Map<String, dynamic>? _prefetchedFinancialContext;
+  Future<Map<String, dynamic>?>? _prefetchedFinancialContextTask;
+  String? _prefetchedFinancialContextTranscript;
   Timer? _thinkingTimeoutTimer;
   Timer? _listeningEndpointTimer;
   Timer? _noSpeechTimeoutTimer;

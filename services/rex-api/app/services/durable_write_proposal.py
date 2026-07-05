@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional
 
@@ -29,6 +30,10 @@ _LEGACY_ACTION_BY_KIND: dict[str, str] = {
 }
 
 
+def new_durable_write_proposal_id() -> str:
+    return f"write-{uuid.uuid4().hex[:12]}"
+
+
 @dataclass(frozen=True)
 class DurableWriteProposal:
     write_kind: str
@@ -37,7 +42,7 @@ class DurableWriteProposal:
     target_label: Optional[str] = None
     editable_fields: tuple[str, ...] = ("title", "body")
     apply_snapshot: dict[str, Any] = field(default_factory=dict)
-    proposal_id: str = "write-1"
+    proposal_id: str = field(default_factory=new_durable_write_proposal_id)
     merge_target_title: Optional[str] = None
     risk_level: str = "medium"
     custom_assistant_prompt: Optional[str] = None
@@ -141,7 +146,7 @@ class DurableWriteProposal:
             target_label=str(raw.get("target_label") or "").strip() or None,
             editable_fields=editable_fields,
             apply_snapshot=dict(snapshot) if isinstance(snapshot, dict) else {},
-            proposal_id=str(raw.get("proposal_id") or "write-1"),
+            proposal_id=str(raw.get("proposal_id") or raw.get("id") or new_durable_write_proposal_id()),
             merge_target_title=str(raw.get("merge_target_title") or "").strip() or None,
             risk_level=str(raw.get("risk_level") or "medium"),
             custom_assistant_prompt=str(raw.get("custom_assistant_prompt") or "").strip()

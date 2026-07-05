@@ -19,8 +19,16 @@ _ACTION_TRUTH_STREAM_INTENTS = {
 }
 
 
-def stream_should_buffer_for_action_truth(intent_decision) -> bool:
-    return intent_decision.intent in _ACTION_TRUTH_STREAM_INTENTS
+def stream_should_buffer_for_action_truth(
+    intent_decision,
+    *,
+    channel: RexBrainChannel = RexBrainChannel.CHAT,
+) -> bool:
+    from app.services.voice_stream_orchestrator_support import (
+        stream_should_buffer_for_action_truth as voice_aware_buffer,
+    )
+
+    return voice_aware_buffer(intent_decision, channel=channel)
 
 
 def brain_messages(

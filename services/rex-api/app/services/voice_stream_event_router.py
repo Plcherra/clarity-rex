@@ -127,6 +127,7 @@ class VoiceStreamEventRouterMixin:
                 input_mime_type=self.input_mime_type,
                 sample_rate=self.sample_rate,
             )
+            await self._prewarm_voice_services()
             return True
 
         if event == "utterance.end":

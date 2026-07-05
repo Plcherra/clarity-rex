@@ -6,7 +6,9 @@ from app.services.recall_intent_helper import (
     MEMORY_INVENTORY_QUERY,
     PROFILE_MEMORY_QUERY,
 )
+from app.services.rex_channel import RexBrainChannel
 from app.services.rex_intent_router import RexIntent, RexIntentDecision
+from app.services.voice_stream_orchestrator_support import voice_context_slim_intent
 
 
 @dataclass(frozen=True)
@@ -53,11 +55,13 @@ class ChatContextLoadPlanner:
         *,
         message: str,
         intent_decision: Optional[RexIntentDecision],
+        channel: RexBrainChannel = RexBrainChannel.CHAT,
     ) -> ChatContextLoadPlan:
         return self._plan(
             message=message,
             conversation_history=[],
             intent_decision=intent_decision,
+            channel=channel,
         )
 
     def after_history_plan(
@@ -67,6 +71,7 @@ class ChatContextLoadPlanner:
         conversation_history: list[dict],
         intent_decision: Optional[RexIntentDecision],
         initial_plan: ChatContextLoadPlan,
+        channel: RexBrainChannel = RexBrainChannel.CHAT,
     ) -> ChatContextLoadPlan:
         recall_query = self.recall_policy.recall_query(
             message,
@@ -96,20 +101,24 @@ class ChatContextLoadPlanner:
                 load_goal_context=False,
                 load_inventory_overview=True,
             )
-        return ChatContextLoadPlan(
-            recall_query=recall_query,
-            recall_request=recall_request,
-            memory_query=memory_query,
-            load_long_term_memory=(
-                initial_plan.load_long_term_memory or recall_request
+        return self._slim_voice_plan(
+            ChatContextLoadPlan(
+                recall_query=recall_query,
+                recall_request=recall_request,
+                memory_query=memory_query,
+                load_long_term_memory=(
+                    initial_plan.load_long_term_memory or recall_request
+                ),
+                load_profile_memory=initial_plan.load_profile_memory,
+                load_chat_search=recall_request,
+                load_structured_memory=(
+                    initial_plan.load_structured_memory or recall_request
+                ),
+                load_goal_context=initial_plan.load_goal_context,
+                load_inventory_overview=False,
             ),
-            load_profile_memory=initial_plan.load_profile_memory,
-            load_chat_search=recall_request,
-            load_structured_memory=(
-                initial_plan.load_structured_memory or recall_request
-            ),
-            load_goal_context=initial_plan.load_goal_context,
-            load_inventory_overview=False,
+            intent_decision=intent_decision,
+            channel=channel,
         )
 
     def _plan(
@@ -118,6 +127,7 @@ class ChatContextLoadPlanner:
         message: str,
         conversation_history: list[dict],
         intent_decision: Optional[RexIntentDecision],
+        channel: RexBrainChannel = RexBrainChannel.CHAT,
     ) -> ChatContextLoadPlan:
         recall_query = self.recall_policy.recall_query(
             message,
@@ -152,20 +162,49 @@ class ChatContextLoadPlanner:
             PROFILE_MEMORY_QUERY,
             MEMORY_INVENTORY_QUERY,
         }
+        return self._slim_voice_plan(
+            ChatContextLoadPlan(
+                recall_query=recall_query,
+                recall_request=recall_request,
+                memory_query=memory_query,
+                load_long_term_memory=(
+                    self._load_long_term_memory(intent_decision) or recall_request
+                ),
+                load_profile_memory=load_profile_memory,
+                load_chat_search=recall_request,
+                load_structured_memory=(
+                    self._load_structured_memory(intent_decision) or recall_request
+                ),
+                load_goal_context=self._load_goal_context(intent_decision),
+                load_inventory_overview=False,
+            ),
+            intent_decision=intent_decision,
+            channel=channel,
+        )
+
+    def _slim_voice_plan(
+        self,
+        plan: ChatContextLoadPlan,
+        *,
+        intent_decision: Optional[RexIntentDecision],
+        channel: RexBrainChannel,
+    ) -> ChatContextLoadPlan:
+        if channel != RexBrainChannel.VOICE:
+            return plan
+        if plan.recall_request or self._force_recall(intent_decision):
+            return plan
+        if intent_decision is None or not voice_context_slim_intent(intent_decision):
+            return plan
         return ChatContextLoadPlan(
-            recall_query=recall_query,
-            recall_request=recall_request,
-            memory_query=memory_query,
-            load_long_term_memory=(
-                self._load_long_term_memory(intent_decision) or recall_request
-            ),
-            load_profile_memory=load_profile_memory,
-            load_chat_search=recall_request,
-            load_structured_memory=(
-                self._load_structured_memory(intent_decision) or recall_request
-            ),
-            load_goal_context=self._load_goal_context(intent_decision),
-            load_inventory_overview=False,
+            recall_query=plan.recall_query,
+            recall_request=False,
+            memory_query=plan.memory_query,
+            load_long_term_memory=False,
+            load_profile_memory=False,
+            load_chat_search=False,
+            load_structured_memory=False,
+            load_goal_context=False,
+            load_inventory_overview=plan.load_inventory_overview,
         )
 
     def _load_long_term_memory(

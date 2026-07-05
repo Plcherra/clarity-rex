@@ -198,6 +198,16 @@ class VoiceStreamSession(
     def _elapsed_ms(self, start_time: float) -> int:
         return max(0, round((time.perf_counter() - start_time) * 1000))
 
+    async def _prewarm_voice_services(self) -> None:
+        try:
+            await self.google_tts_service._access_token()
+        except Exception:
+            LOGGER.debug(
+                "voice_tts_prewarm_failed session_id=%s",
+                self._session_id,
+                exc_info=True,
+            )
+
     def websocket_json_loads(self, text: str) -> dict[str, Any]:
         import json
 

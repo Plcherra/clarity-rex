@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -10,10 +11,15 @@ from app.services.voice_stream_config import (
     voice_response_instructions,
     voice_response_max_tokens,
 )
+from app.services.voice_stream_orchestrator_support import voice_delay_audio_until_done
 
-_MIN_SPEAKABLE_CHUNK_CHARS = 24
-_MIN_SINGLE_SENTENCE_CHUNK_CHARS = 44
+_MIN_SPEAKABLE_CHUNK_CHARS = 12
+_MIN_SINGLE_SENTENCE_CHUNK_CHARS = 20
 _MAX_SPEAKABLE_CHUNK_CHARS = 140
+_MIN_WORD_BOUNDARY_CHUNK_CHARS = 12
+
+
+LOGGER = logging.getLogger("rex.voice_stream")
 
 
 @dataclass
@@ -143,14 +149,9 @@ class VoiceStreamResponseWriterMixin:
                 )
             elif event_name == "turn.trace":
                 self._last_turn_trace = self._safe_turn_trace(event)
-                delay_audio_until_done = str(
-                    event.get("intent") or ""
-                ).strip().lower() in {
-                    "memory_recall",
-                    "memory_save",
-                    "memory_update",
-                    "goal",
-                }
+                delay_audio_until_done = voice_delay_audio_until_done(
+                    str(event.get("intent") or "")
+                )
             elif event_name == "token":
                 token = str(event.get("token") or "")
                 if not token:
@@ -173,36 +174,60 @@ class VoiceStreamResponseWriterMixin:
                 memory_changes = event.get("memory_changes")
                 user_message_id, assistant_message_id = self._message_ids(messages)
 
-        response_text = final_response_text or "".join(response_parts).strip()
+        streamed_text = "".join(response_parts).strip()
+        response_text = final_response_text or streamed_text
         if delay_audio_until_done and response_text:
             queue_audio_chunk(response_text)
+        elif (
+            final_response_text
+            and final_response_text != streamed_text
+            and first_audio_at is None
+        ):
+            queue_audio_chunk(final_response_text)
         elif speech_buffer.strip():
             queue_audio_chunk(speech_buffer.strip())
         await send_ready_audio_chunks(block=True)
         if audio_flush_tasks:
             await asyncio.gather(*audio_flush_tasks, return_exceptions=True)
 
-        metadata_record = await self.chat_service.save_voice_turn_metadata(
-            conversation_id=self.conversation_id or "",
-            user_message_id=user_message_id,
-            assistant_message_id=assistant_message_id,
-            transcript_confidence=transcription.get("confidence"),
-            audio_duration_seconds=transcription.get("duration_seconds"),
-            input_mime_type=self.input_mime_type,
-            output_audio_encoding=None,
-            metadata={
-                "stt": transcription.get("metadata") or {},
-                "stream": {"session_id": self._session_id, "timings": timings},
-            },
-        )
         await self._send_event(
             "messages.updated",
             conversation_id=self.conversation_id,
             messages=messages,
             memory_changes=memory_changes,
-            voice_metadata={"record": metadata_record} if metadata_record else {},
         )
         self._last_memory_changes = memory_changes
+
+        async def persist_voice_metadata() -> None:
+            try:
+                record = await self.chat_service.save_voice_turn_metadata(
+                    conversation_id=self.conversation_id or "",
+                    user_message_id=user_message_id,
+                    assistant_message_id=assistant_message_id,
+                    transcript_confidence=transcription.get("confidence"),
+                    audio_duration_seconds=transcription.get("duration_seconds"),
+                    input_mime_type=self.input_mime_type,
+                    output_audio_encoding=None,
+                    metadata={
+                        "stt": transcription.get("metadata") or {},
+                        "stream": {"session_id": self._session_id, "timings": timings},
+                    },
+                )
+            except Exception:
+                LOGGER.exception(
+                    "voice_metadata_save_failed session_id=%s conversation_id=%s",
+                    self._session_id,
+                    self.conversation_id,
+                )
+                return
+            if record and self._is_current_voice_turn(turn_generation):
+                await self._send_event(
+                    "voice.metadata.saved",
+                    conversation_id=self.conversation_id,
+                    voice_metadata={"record": record},
+                )
+
+        asyncio.create_task(persist_voice_metadata())
         self._last_turn_trace = {
             **self._last_turn_trace,
             "memory_action": self._memory_action(memory_changes),
@@ -333,6 +358,11 @@ class VoiceStreamResponseWriterMixin:
             if split_at < _MIN_SPEAKABLE_CHUNK_CHARS:
                 split_at = _MAX_SPEAKABLE_CHUNK_CHARS
             return text[:split_at].strip(), text[split_at:]
+
+        if len(stripped) >= _MIN_WORD_BOUNDARY_CHUNK_CHARS:
+            split_at = text.find(" ", _MIN_WORD_BOUNDARY_CHUNK_CHARS - 1)
+            if split_at >= _MIN_WORD_BOUNDARY_CHUNK_CHARS - 1:
+                return text[:split_at].strip(), text[split_at:].lstrip()
 
         return None, text
 

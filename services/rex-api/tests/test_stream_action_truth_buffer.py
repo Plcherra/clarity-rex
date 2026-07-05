@@ -1,6 +1,7 @@
 import pytest
 
 from app.services.chat_turn_orchestrator_support import stream_should_buffer_for_action_truth
+from app.services.rex_channel import RexBrainChannel
 from app.services.rex_intent_router import RexIntent, RexIntentDecision
 
 
@@ -17,6 +18,17 @@ def test_stream_buffers_tokens_for_goal_intent():
 def test_stream_does_not_buffer_casual_intent():
     decision = RexIntentDecision(intent=RexIntent.CASUAL, reasons=("casual_greeting",))
     assert stream_should_buffer_for_action_truth(decision) is False
+
+
+def test_stream_does_not_buffer_memory_save_on_voice_channel():
+    decision = RexIntentDecision(intent=RexIntent.MEMORY_SAVE, reasons=("memory_save_language",))
+    assert (
+        stream_should_buffer_for_action_truth(
+            decision,
+            channel=RexBrainChannel.VOICE,
+        )
+        is False
+    )
 
 
 @pytest.mark.asyncio
