@@ -1,8 +1,34 @@
 # PROJECT_STRUCTURE.md
 
-**Canon:** tech stack, repository layout, coding conventions, file-size policy, and production wiring for finance and the assistant.
+**Canon:** technical architecture, engineering standards, and development rules.
 
 Product vision: [`MASTER_PLAN.md`](MASTER_PLAN.md). Behavioral rules: [`CLARITY_RULES.md`](CLARITY_RULES.md).
+
+## 0. Engineering Standards — Shipping Phase (Highest Priority)
+
+We are in the Shipping Phase. Code quality, simplicity, and long-term maintainability take absolute priority over speed.
+
+**Always:**
+
+- Solve the root cause of problems, never apply temporary patches
+- Implement general, scalable solutions that work for all users
+- Keep files under 400 lines (extract before adding new code)
+- Follow the existing architecture and module boundaries strictly
+- Use current best practices and modern patterns appropriate for the tech stack
+
+**Never:**
+
+- Add artificial timeouts or fallback timers to fix race conditions (especially in voice)
+- Add hardcoded triggers, examples, or special cases based on one user's data
+- Create patches, workarounds, or "quick fixes"
+- Mix concerns between `features/` and `rex/` directories
+- Grow any file beyond 500 lines
+
+**When fixing bugs:**
+
+- First identify the generic class of the problem
+- Then implement a proper, reusable solution for that class
+- Never add code that only works for one specific situation
 
 ## 1. Tech Stack
 
