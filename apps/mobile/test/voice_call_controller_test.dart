@@ -2093,6 +2093,138 @@ void main() {
   );
 
   test(
+    'local endpoint before speech_final upgrades one chat bubble to full transcript',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      const partialTranscript =
+          'Great. So my next goal should buy this bar and what do you recommend for, like, some weights because I got I gotta gotta lift';
+      const fullTranscript =
+          '$partialTranscript something. You know?';
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': partialTranscript,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      final partialMessages = container.read(chatProvider).messages;
+      expect(partialMessages, hasLength(1));
+      expect(partialMessages.first.content, partialTranscript);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': fullTranscript,
+        'speech_final': true,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      final messages = container.read(chatProvider).messages;
+      expect(messages, hasLength(1));
+      expect(messages.first.content, fullTranscript);
+      expect(messages.first.isVoiceInterim, isFalse);
+      expect(
+        streamingApi.socket.sentEvents.where((event) => event == 'utterance.end'),
+        hasLength(1),
+      );
+    },
+  );
+
+  test(
+    'startCapturingSpeech after breath pause keeps turn-scoped local voice id',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      const firstSegment =
+          'Great. So my next goal should buy this bar and what do you recommend for, like, some weights because I got I gotta gotta lift';
+      const fullTranscript = '$firstSegment something. You know?';
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      controller.updateTranscript(firstSegment);
+      controller.startCapturingSpeech();
+      controller.updateTranscript(fullTranscript, isFinal: true);
+      controller.startThinking(finalTranscript: fullTranscript);
+      await Future<void>.delayed(Duration.zero);
+
+      final messages = container.read(chatProvider).messages;
+      expect(messages, hasLength(1));
+      expect(messages.first.content, fullTranscript);
+      expect(messages.first.id, startsWith('local-voice-'));
+    },
+  );
+
+  test(
     'inactive lifecycle keeps audio route stable and suppresses no-speech fail',
     () async {
       final captureService = _ReusableSilentStreamingAudioCaptureService();

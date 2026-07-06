@@ -3,6 +3,12 @@
 part of 'voice_call_controller.dart';
 
 extension VoiceCallControllerChatSync on VoiceCallController {
+  void _beginVoiceTurn(int turnSequence) {
+    _transcriptBuffer.clear();
+    _activeVoiceMessageLocalId = 'local-voice-$turnSequence';
+    _beginVoiceTurnTiming(turnSequence);
+  }
+
   void _resetActiveVoiceMessageLocalId() {
     _activeVoiceMessageLocalId = null;
   }
@@ -13,18 +19,7 @@ extension VoiceCallControllerChatSync on VoiceCallController {
 
   String _ensureActiveVoiceMessageLocalId() {
     return _activeVoiceMessageLocalId ??=
-        'local-voice-${DateTime.now().microsecondsSinceEpoch}';
-  }
-
-  bool _hasActiveVoiceMessageInChat() {
-    final localId = _activeVoiceMessageLocalId;
-    if (localId == null) {
-      return false;
-    }
-    return ref
-        .read(chatProvider)
-        .messages
-        .any((message) => message.id == localId);
+        'local-voice-$_streamingTurnSequence';
   }
 
   void _syncInterimVoiceTranscriptToChat(String content) {
@@ -39,24 +34,10 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     );
   }
 
-  String? _activeVoiceMessageContent() {
-    final localId = _activeVoiceMessageLocalId;
-    if (localId == null) {
-      return null;
-    }
-    for (final message in ref.read(chatProvider).messages) {
-      if (message.id == localId) {
-        return message.content;
-      }
-    }
-    return null;
-  }
-
   void _finalizeVoiceTranscriptInChat({String? finalTranscript}) {
     final text = VoiceTranscriptBuffer.preferFullest([
       if (finalTranscript != null) finalTranscript,
       _transcriptBuffer.visible,
-      _activeVoiceMessageContent() ?? '',
     ]).trim();
     if (text.isEmpty) {
       _removeActiveVoiceUserMessage();

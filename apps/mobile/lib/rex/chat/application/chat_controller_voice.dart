@@ -188,27 +188,11 @@ extension ChatControllerVoice on ChatController {
     required String keepLocalId,
     required String finalContent,
   }) {
-    final normalizedFinal = _normalizeVoiceMessageContent(finalContent);
-    if (normalizedFinal.isEmpty) {
-      return;
-    }
-
     final filtered = state.messages.where((message) {
       if (!_isLocalVoiceMessageId(message.id)) {
         return true;
       }
-      if (message.id == keepLocalId) {
-        return true;
-      }
-      if (message.role != ChatMessageRole.user) {
-        return true;
-      }
-      final normalized = _normalizeVoiceMessageContent(message.content);
-      if (normalized.isEmpty) {
-        return false;
-      }
-      return !normalizedFinal.contains(normalized) &&
-          !normalized.contains(normalizedFinal);
+      return message.id == keepLocalId;
     }).toList(growable: false);
 
     if (filtered.length == state.messages.length) {

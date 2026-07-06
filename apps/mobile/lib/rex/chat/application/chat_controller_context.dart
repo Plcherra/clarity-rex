@@ -247,6 +247,19 @@ extension ChatControllerContext on ChatController {
         return List.unmodifiable(updated);
       }
     }
+
+    if (clarityActions.isNotEmpty) {
+      updated.add(
+        ChatMessage(
+          id: 'local-assistant-proposal-${DateTime.now().microsecondsSinceEpoch}',
+          role: ChatMessageRole.assistant,
+          content: '',
+          timestamp: DateTime.now(),
+          clarityActions: clarityActions,
+          dashboardLinkAnchor: dashboardLink,
+        ),
+      );
+    }
     return List.unmodifiable(updated);
   }
 }

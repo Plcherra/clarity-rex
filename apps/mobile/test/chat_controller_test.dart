@@ -62,6 +62,53 @@ void main() {
   );
 
   test(
+    'applyBackendMessages synthesizes assistant row for pending proposals',
+    () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final controller = container.read(chatProvider.notifier);
+
+      controller.finalizeVoiceUserMessage(
+        localId: 'local-voice-1',
+        content: 'My next goal should buy this bar.',
+      );
+      controller.applyBackendMessages(
+        conversationId: 'conversation-1',
+        messages: const [
+          ChatApiMessage(
+            id: 'message-1',
+            conversationId: 'conversation-1',
+            role: 'user',
+            content: 'My next goal should buy this bar.',
+          ),
+        ],
+        memoryChanges: {
+          'confirmation_required': 1,
+          'write_proposals': [
+            {
+              'id': 'plan-proposal-1',
+              'write_kind': 'plan',
+              'action': 'save_plan',
+              'title': 'Buy pull-up bar',
+              'body': 'Buy pull-up bar',
+              'confirmation_text': 'Save this as a goal in Clarity?',
+              'risk_level': 'medium',
+              'status': 'pending',
+            },
+          ],
+        },
+      );
+
+      final messages = container.read(chatProvider).messages;
+      expect(messages, hasLength(2));
+      expect(messages.last.role, ChatMessageRole.assistant);
+      final pending = pendingClarityActions(messages);
+      expect(pending, hasLength(1));
+      expect(pending.first.writeKind, 'plan');
+    },
+  );
+
+  test(
     'ChatController refreshes Knows after confirmed memory archive',
     () async {
       final chatApi = _FakeChatApi(

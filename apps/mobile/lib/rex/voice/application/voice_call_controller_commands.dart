@@ -9,9 +9,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
     }
 
     _isAwaitingFollowUpSpeech = false;
-    if (transcript.trim().isEmpty && !_hasActiveVoiceMessageInChat()) {
-      _resetActiveVoiceMessageLocalId();
-    }
     if (transcript.trim().isNotEmpty) {
       _emptyVoiceTurnRecoveryCount = 0;
     }

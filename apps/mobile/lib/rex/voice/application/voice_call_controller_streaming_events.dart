@@ -118,13 +118,19 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             if (event.speechFinal) {
               assistantText = '';
               responseAudioStarted = false;
-              if (_streamingTurnFinalizedSequence != _streamingTurnSequence) {
-                final eventTranscript = (event.transcript ?? '').trim();
-                final bufferTranscript = _transcriptBuffer.visible.trim();
-                final preferredTranscript = VoiceTranscriptBuffer.preferFullest([
-                  eventTranscript,
-                  bufferTranscript,
-                ]).trim();
+              final eventTranscript = (event.transcript ?? '').trim();
+              final bufferTranscript = _transcriptBuffer.visible.trim();
+              final preferredTranscript = VoiceTranscriptBuffer.preferFullest([
+                eventTranscript,
+                bufferTranscript,
+              ]).trim();
+              if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
+                if (preferredTranscript.isNotEmpty) {
+                  _finalizeVoiceTranscriptInChat(
+                    finalTranscript: preferredTranscript,
+                  );
+                }
+              } else {
                 if (preferredTranscript.isNotEmpty &&
                     preferredTranscript != bufferTranscript &&
                     state.phase == VoiceCallPhase.listening) {

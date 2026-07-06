@@ -51,7 +51,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
 
       final turnSequence = ++_streamingTurnSequence;
       _streamingUtteranceEndSent = false;
-      _beginVoiceTurnTiming(turnSequence);
+      _beginVoiceTurn(turnSequence);
       _resetPrefetchedFinancialContext();
       for (final chunk in initialAudioChunks) {
         session.sendAudioChunk(chunk);
@@ -152,7 +152,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     final pendingChunks = <Uint8List>[...initialAudioChunks];
     final turnSequence = ++_streamingTurnSequence;
     _streamingUtteranceEndSent = false;
-    _beginVoiceTurnTiming(turnSequence);
+    _beginVoiceTurn(turnSequence);
     _resetPrefetchedFinancialContext();
 
     if (initialAudioChunks.isNotEmpty) {
