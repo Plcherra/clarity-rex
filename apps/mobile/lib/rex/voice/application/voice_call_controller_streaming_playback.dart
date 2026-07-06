@@ -49,7 +49,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     required String speakText,
     required int generation,
   }) async {
-    if (!_isCurrentCall(generation) || !state.isCallActive) {
+    if (!state.isCallActive) {
       return;
     }
 
@@ -66,7 +66,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
         speakText,
         generation,
       );
-      if (!_isCurrentCall(generation) || !state.isCallActive) {
+      if (!state.isCallActive) {
         return;
       }
       if (!fallbackStarted) {

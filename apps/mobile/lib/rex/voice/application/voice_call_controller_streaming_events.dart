@@ -206,7 +206,6 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
               }
             }
           case 'assistant.done':
-            _cancelThinkingTimeout();
             final completedText = (event.responseText ?? assistantText).trim();
             if (!responseAudioStarted &&
                 !_streamingPlaybackQueue.hasAcceptedChunks) {
@@ -241,6 +240,12 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
               ]);
             } on TimeoutException {
               await _streamingPlaybackQueue.cancel();
+              if (isActiveSession()) {
+                await _handleStreamingQueueDrained(
+                  speakText: streamingDrainSpeakText,
+                  generation: streamingDrainGeneration,
+                );
+              }
               if (!drainCompleter.isCompleted) {
                 drainCompleter.complete();
               }
@@ -248,6 +253,11 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
               streamingDrainCompleter = null;
               streamingDrainSpeakText = '';
             }
+            if (isActiveSession() && state.phase == VoiceCallPhase.thinking) {
+              debugPrint('rex_voice_playback safety_resume_after_done');
+              _completeStreamingResponseAfterPlayback();
+            }
+            _cancelThinkingTimeout();
           case 'session.ended':
             streamEndedCleanly = true;
             return;
