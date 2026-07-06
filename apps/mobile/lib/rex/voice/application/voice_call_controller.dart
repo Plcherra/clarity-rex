@@ -284,13 +284,30 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _emptyVoiceTurnRecoveryCount = 0;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();
+    final thoughtDuration = state.phase == VoiceCallPhase.thinking
+        ? state.thinkingElapsed()
+        : state.lastThoughtDuration;
     state = state.copyWith(
       phase: VoiceCallPhase.speaking,
       isCapturingSpeech: false,
       lastAssistantResponse: responseText,
+      lastThoughtDuration: thoughtDuration,
       clearError: true,
       clearThinkingStartedAt: true,
     );
+  }
+
+  Future<void> speakFollowUp(String responseText) async {
+    final text = responseText.trim();
+    if (!state.isCallActive || text.isEmpty || state.isMuted) {
+      return;
+    }
+    await _cancelInFlightPlayback();
+    final generation = _callGeneration;
+    final started = await _playSynthesizedStreamingFallback(text, generation);
+    if (!state.isCallActive || !started) {
+      return;
+    }
   }
 
   void completeSpeaking() {

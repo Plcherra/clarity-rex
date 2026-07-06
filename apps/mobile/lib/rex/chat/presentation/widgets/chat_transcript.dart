@@ -50,10 +50,13 @@ class ChatTranscript extends StatelessWidget {
         ? pendingClarityActions(messages)
         : const <ClarityActionCard>[];
     final showVoiceProcessing =
-        voiceState?.phase == VoiceCallPhase.thinking &&
+        voiceState != null &&
         messages.isNotEmpty &&
         messages.last.isUser &&
-        !messages.last.isVoiceInterim;
+        !messages.last.isVoiceInterim &&
+        (voiceState!.phase == VoiceCallPhase.thinking ||
+            (voiceState!.lastThoughtDuration != null &&
+                voiceState!.lastThoughtDuration! > Duration.zero));
     final baseBottomPadding = MediaQuery.viewInsetsOf(context).bottom > 0
         ? RexUiTokens.space12
         : RexUiTokens.space24;
@@ -184,16 +187,24 @@ class _VoiceProcessingIndicatorState extends State<_VoiceProcessingIndicator> {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
     final l10n = context.l10n;
-    final elapsed = formatVoiceElapsed(widget.voiceState.thinkingElapsed());
+    final isThinking = widget.voiceState.phase == VoiceCallPhase.thinking;
+    final elapsed = isThinking
+        ? formatVoiceElapsed(widget.voiceState.thinkingElapsed())
+        : formatVoiceElapsed(widget.voiceState.lastThoughtDuration ?? Duration.zero);
+    final label = isThinking
+        ? l10n.voicePanelThinkingElapsed(elapsed)
+        : l10n.voicePanelThoughtFor(elapsed);
 
     return Padding(
       padding: const EdgeInsets.only(top: 6, left: 42),
       child: Row(
         children: [
-          ClarityDiamondLoader(size: 16),
-          const SizedBox(width: RexUiTokens.space8),
+          if (isThinking) ...[
+            ClarityDiamondLoader(size: 16),
+            const SizedBox(width: RexUiTokens.space8),
+          ],
           Text(
-            l10n.voicePanelThinkingElapsed(elapsed),
+            label,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colors.textMuted,
             ),

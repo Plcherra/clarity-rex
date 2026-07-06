@@ -23,6 +23,7 @@ import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip
 import 'package:clarity/rex/data/financial_context_service.dart';
 import 'package:clarity/rex/memory/application/memory_controller.dart';
 import 'package:clarity/rex/accountability/application/accountability_controller.dart';
+import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 
 export 'package:clarity/rex/chat/application/chat_state.dart';
 

@@ -5,8 +5,10 @@ import re
 from datetime import date, datetime
 from typing import Optional
 
+from app.services.save_intent_guards import is_advice_seeking_turn, purchase_clause_from_message
+
 _EQUIPMENT_HINT = re.compile(
-    r"\b(?:ram|storage|ssd|nvme|disk|drive|memory|tb|terabyte|gb)\b",
+    r"\b(?:ram|storage|ssd|nvme|disk|drive|memory|tb|terabyte|gb|dumbbell|dumbbells|kettlebell)\b",
     re.IGNORECASE,
 )
 _PURCHASE_VERB = re.compile(
@@ -159,6 +161,10 @@ def split_compound_goal_bodies(text: str) -> list[str]:
     cleaned = re.sub(r"\s+", " ", str(text or "")).strip(" .")
     if not cleaned:
         return []
+    if is_advice_seeking_turn(cleaned):
+        return []
+
+    cleaned = purchase_clause_from_message(cleaned)
 
     numbered = split_numbered_goal_bodies(cleaned)
     if numbered:

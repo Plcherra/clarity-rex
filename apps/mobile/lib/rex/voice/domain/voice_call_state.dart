@@ -13,6 +13,7 @@ class VoiceCallState {
     this.listeningReadySignal = 0,
     this.isCapturingSpeech = false,
     this.thinkingStartedAt,
+    this.lastThoughtDuration,
   });
 
   final VoiceCallPhase phase;
@@ -26,6 +27,7 @@ class VoiceCallState {
   final int listeningReadySignal;
   final bool isCapturingSpeech;
   final DateTime? thinkingStartedAt;
+  final Duration? lastThoughtDuration;
 
   bool get isIdle => phase == VoiceCallPhase.idle;
 
@@ -93,6 +95,7 @@ class VoiceCallState {
     int? listeningReadySignal,
     bool? isCapturingSpeech,
     DateTime? thinkingStartedAt,
+    Duration? lastThoughtDuration,
     bool clearCurrentTranscript = false,
     bool clearLastAssistantResponse = false,
     bool clearConversationId = false,
@@ -100,6 +103,7 @@ class VoiceCallState {
     bool clearCallStartedAt = false,
     bool clearCallEndedAt = false,
     bool clearThinkingStartedAt = false,
+    bool clearLastThoughtDuration = false,
   }) {
     return VoiceCallState(
       phase: phase ?? this.phase,
@@ -123,6 +127,9 @@ class VoiceCallState {
       thinkingStartedAt: clearThinkingStartedAt
           ? null
           : thinkingStartedAt ?? this.thinkingStartedAt,
+      lastThoughtDuration: clearLastThoughtDuration
+          ? null
+          : lastThoughtDuration ?? this.lastThoughtDuration,
     );
   }
 }

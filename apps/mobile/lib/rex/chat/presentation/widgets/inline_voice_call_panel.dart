@@ -162,11 +162,6 @@ class _InlineVoiceCallPanelState extends State<InlineVoiceCallPanel> {
               isMuted: state.isMuted,
               color: isFailed ? colors.danger : colors.accent,
               isFailed: isFailed,
-              thinkingLabel: state.phase == VoiceCallPhase.thinking
-                  ? l10n.voicePanelThinkingElapsed(
-                      formatVoiceElapsed(state.thinkingElapsed()),
-                    )
-                  : null,
             ),
           ),
           const SizedBox(width: RexUiTokens.space8),

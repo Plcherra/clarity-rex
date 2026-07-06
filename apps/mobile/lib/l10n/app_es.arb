@@ -2162,6 +2162,14 @@
       }
     }
   },
+  "voicePanelThoughtFor": "Pensó durante {elapsed}",
+  "@voicePanelThoughtFor": {
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
   "voicePanelSettingsTooltip": "Ajustes",
   "voicePanelSpeaking": "Discurso",
   "voicePanelStartTalking": "empezar a hablar",

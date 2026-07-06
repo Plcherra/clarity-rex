@@ -765,6 +765,14 @@
       }
     }
   },
+  "voicePanelThoughtFor": "Thought for {elapsed}",
+  "@voicePanelThoughtFor": {
+    "placeholders": {
+      "elapsed": {
+        "type": "String"
+      }
+    }
+  },
   "voicePanelMuted": "Muted",
   "voicePanelSettingsTooltip": "Settings",
   "voicePanelTryAgainTooltip": "Try again",

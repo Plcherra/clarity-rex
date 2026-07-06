@@ -25,6 +25,15 @@ def needs_proposal_copy_refinement(proposal: DurableWriteProposal) -> bool:
     body = str(proposal.body or "").strip()
     if not body:
         return False
+    if proposal.write_kind in {"plan", "open_thread"} and (
+        len(body.split()) >= 12
+        or len(title) > 48
+        or title == body
+        or _DISFLUENCY_PATTERN.search(body) is not None
+        or _REPEAT_WORD_PATTERN.search(body) is not None
+        or _STT_ARTIFACT_PATTERN.search(body) is not None
+    ):
+        return True
     if len(body.split()) >= 18:
         return True
     if title and body and title == body:

@@ -36,6 +36,8 @@ def test_detects_generic_conversational_plan_phrases(
         "What did I say about work?",
         "short",
         "Tonight I'm going to watch the new episode",
+        "How much weight should I buy for dumbbells?",
+        "Should I get 50 or 60 pound dumbbells?",
     ],
 )
 def test_skips_non_conversational_plan_messages(

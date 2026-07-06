@@ -1394,6 +1394,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String voicePanelThoughtFor(String elapsed) {
+    return 'Pensó durante $elapsed';
+  }
+
+  @override
   String get voicePanelMuted => 'Apagado';
 
   @override

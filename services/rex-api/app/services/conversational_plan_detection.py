@@ -6,6 +6,7 @@ import re
 
 from app.services.goal_command_detection import GoalCommandDetector
 from app.services.personal_plan_intent_parser import PersonalPlanIntentParser
+from app.services.save_intent_guards import is_advice_seeking_turn
 
 _CONVERSATIONAL_PLAN_PATTERN = re.compile(
     r"\b(?:"
@@ -41,6 +42,8 @@ class ConversationalPlanDetector:
     def looks_like_conversational_plan(self, message: str) -> bool:
         text = str(message or "").strip()
         if len(text) < 12:
+            return False
+        if is_advice_seeking_turn(text):
             return False
         if _QUESTION_PATTERN.search(text):
             return False

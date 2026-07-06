@@ -60,6 +60,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
       thinkingStartedAt: DateTime.now(),
+      clearLastThoughtDuration: true,
       clearCurrentTranscript: true,
       isCapturingSpeech: false,
       clearError: true,
@@ -77,6 +78,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
       thinkingStartedAt: DateTime.now(),
+      clearLastThoughtDuration: true,
       isCapturingSpeech: false,
       clearError: true,
     );
@@ -99,6 +101,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
       thinkingStartedAt: DateTime.now(),
+      clearLastThoughtDuration: true,
       clearCurrentTranscript: true,
       isCapturingSpeech: false,
       clearError: true,
@@ -135,6 +138,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
       thinkingStartedAt: DateTime.now(),
+      clearLastThoughtDuration: true,
       currentTranscript: transcript,
       isCapturingSpeech: false,
       clearError: true,

@@ -249,8 +249,11 @@ class DurableWriteService:
             conversation_id,
             pending_action_for_durable_write(proposal=proposal),
         )
-        # The write_proposal card is the confirmation contract; avoid duplicating it in chat text.
-        prompt = response if response is not None else (supersede_note or "")
+        prompt = response if response is not None else (
+            f"{supersede_note}\n\n{proposal.assistant_prompt()}".strip()
+            if supersede_note
+            else proposal.assistant_prompt()
+        )
         return await clarification_turn_result(
             self.memory_service,
             conversation_id=conversation_id,

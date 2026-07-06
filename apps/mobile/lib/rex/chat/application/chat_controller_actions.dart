@@ -119,6 +119,9 @@ extension ChatControllerActions on ChatController {
       return;
     }
     _syncClarityActionFromMessages(action.id);
+    if (response.trim().isNotEmpty) {
+      unawaited(ref.read(voiceCallProvider.notifier).speakFollowUp(response));
+    }
   }
 
   void _syncClarityActionFromMessages(String actionId) {
@@ -150,5 +153,8 @@ extension ChatControllerActions on ChatController {
         clearError: true,
       ),
     );
+    if (response != null && response.trim().isNotEmpty) {
+      unawaited(ref.read(voiceCallProvider.notifier).speakFollowUp(response));
+    }
   }
 }

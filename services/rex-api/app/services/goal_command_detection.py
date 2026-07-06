@@ -31,6 +31,7 @@ from app.services.goal_command_reclassify import (
 from app.services.goal_command_types import GoalCommand
 from app.services.memory_delete_reference import should_defer_to_delete_confirmation
 from app.services.conversation_pending_action import should_defer_to_pending_plan
+from app.services.save_intent_guards import is_advice_seeking_turn
 
 _CONTEXTUAL_GOAL_PATTERN = re.compile(
     r"\b(?:track|save|add)\s+this\s+as\s+(?:a\s+)?goal\b",
@@ -70,6 +71,9 @@ class GoalCommandDetector:
         time_context: dict,
         pending_action=None,
     ) -> list[GoalCommand]:
+        if is_advice_seeking_turn(message):
+            return []
+
         equipment_goals = self.detect_equipment_goals(
             message,
             conversation_history=conversation_history,
