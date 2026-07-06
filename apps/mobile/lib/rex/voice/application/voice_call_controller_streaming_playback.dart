@@ -82,11 +82,15 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     if (!state.isCallActive) {
       return;
     }
-    if (state.phase == VoiceCallPhase.speaking) {
-      completeSpeaking();
+    if (state.phase == VoiceCallPhase.speaking ||
+        state.phase == VoiceCallPhase.thinking) {
+      _finishAssistantResponseAndListen();
       debugPrint('rex_voice_playback listening_resumed');
-    } else if (state.phase != VoiceCallPhase.listening) {
-      resumeListening();
+      return;
+    }
+    if (state.phase == VoiceCallPhase.listening &&
+        !_hasActiveStreamingListenCycle()) {
+      _startListeningCycle(_callGeneration);
       debugPrint('rex_voice_playback listening_resumed');
     }
   }

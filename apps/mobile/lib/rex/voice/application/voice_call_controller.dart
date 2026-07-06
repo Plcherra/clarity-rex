@@ -82,6 +82,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _streamingUtteranceEndSent = false;
   var _streamingTurnSequence = 0;
   int? _streamingTurnFinalizedSequence;
+  var _streamingListenEpoch = 0;
+  var _streamingListenEpochInFlight = false;
   Map<String, dynamic>? _prefetchedFinancialContext;
   Future<Map<String, dynamic>?>? _prefetchedFinancialContextTask;
   String? _prefetchedFinancialContextTranscript;
@@ -295,6 +297,18 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
+    _finishAssistantResponseAndListen();
+  }
+
+  void _finishAssistantResponseAndListen() {
+    if (!state.isCallActive) {
+      return;
+    }
+
+    _isAwaitingFollowUpSpeech = true;
+    _emptyVoiceTurnRecoveryCount = 0;
+    _cancelThinkingTimeout();
+    _cancelNoSpeechTimeout();
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       isCapturingSpeech: false,
@@ -304,9 +318,11 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _clearVisibleTranscript();
     _resetActiveVoiceMessageLocalId();
     _resetPendingUtteranceTranscript();
-    _isAwaitingFollowUpSpeech = true;
     _startListeningCycle(_callGeneration);
   }
+
+  bool _hasActiveStreamingListenCycle() =>
+      _streamingListenEpochInFlight && _streamingListenEpoch > 0;
 
   void interruptAndListen({
     String? reason,

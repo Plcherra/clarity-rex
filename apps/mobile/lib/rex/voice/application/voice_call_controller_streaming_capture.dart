@@ -5,57 +5,68 @@ part of 'voice_call_controller.dart';
 extension VoiceCallControllerStreamingCapture on VoiceCallController {
   Future<void> _streamNextUtteranceConnected(
     int generation, {
+    required int listenEpoch,
     List<Uint8List> initialAudioChunks = const [],
   }) async {
-    late final StreamingVoiceSession session;
-    final existingSession = _activeStreamingSession;
-    if (existingSession == null) {
-      try {
-        final connectedSession = await ref
-            .read(streamingVoiceApiProvider)
-            .connect(
-              conversationId: state.conversationId,
-              client: ref.read(streamingVoiceClientProvider),
+    if (listenEpoch != _streamingListenEpoch) {
+      return;
+    }
+    _streamingListenEpochInFlight = true;
+    try {
+      late final StreamingVoiceSession session;
+      final existingSession = _activeStreamingSession;
+      if (existingSession == null) {
+        try {
+          final connectedSession = await ref
+              .read(streamingVoiceApiProvider)
+              .connect(
+                conversationId: state.conversationId,
+                client: ref.read(streamingVoiceClientProvider),
+              );
+          session = connectedSession;
+          _activeStreamingSession = connectedSession;
+          _activeStreamingEventsTask = _handleStreamingEvents(connectedSession);
+          unawaited(_activeStreamingEventsTask);
+        } on StreamingVoiceApiException catch (error) {
+          if (_isCurrentCall(generation)) {
+            await _fallbackToCloudVoiceCapture(generation, error.message);
+          }
+          return;
+        } on Object {
+          if (_isCurrentCall(generation)) {
+            await _fallbackToCloudVoiceCapture(
+              generation,
+              voiceL10n.voiceErrorOpenAssistantStreamFailed,
             );
-        session = connectedSession;
-        _activeStreamingSession = connectedSession;
-        _activeStreamingEventsTask = _handleStreamingEvents(connectedSession);
-        unawaited(_activeStreamingEventsTask);
-      } on StreamingVoiceApiException catch (error) {
-        if (_isCurrentCall(generation)) {
-          await _fallbackToCloudVoiceCapture(generation, error.message);
+          }
+          return;
         }
-        return;
-      } on Object {
-        if (_isCurrentCall(generation)) {
-          await _fallbackToCloudVoiceCapture(
-            generation,
-            voiceL10n.voiceErrorOpenAssistantStreamFailed,
-          );
-        }
+      } else {
+        session = existingSession;
+      }
+
+      if (listenEpoch != _streamingListenEpoch) {
         return;
       }
-    } else {
-      session = existingSession;
-    }
 
-    final turnSequence = ++_streamingTurnSequence;
-    _streamingUtteranceEndSent = false;
-    _beginVoiceTurnTiming(turnSequence);
-    _resetPrefetchedFinancialContext();
-    for (final chunk in initialAudioChunks) {
-      session.sendAudioChunk(chunk);
-    }
-    if (initialAudioChunks.isNotEmpty) {
-      startCapturingSpeech();
-    }
+      final turnSequence = ++_streamingTurnSequence;
+      _streamingUtteranceEndSent = false;
+      _beginVoiceTurnTiming(turnSequence);
+      _resetPrefetchedFinancialContext();
+      for (final chunk in initialAudioChunks) {
+        session.sendAudioChunk(chunk);
+      }
+      if (initialAudioChunks.isNotEmpty) {
+        startCapturingSpeech();
+      }
 
-    final bool capturedAudio;
-    try {
-      capturedAudio = await _streamingCaptureService.streamUtterance(
+      final bool capturedAudio;
+      try {
+        capturedAudio = await _streamingCaptureService.streamUtterance(
         config: ref.read(voiceCaptureConfigProvider),
         onReady: () {
           if (_isCurrentCall(generation) &&
+              listenEpoch == _streamingListenEpoch &&
               state.phase == VoiceCallPhase.listening) {
             _markListeningReady();
             _armNoSpeechTimeout(generation);
@@ -63,19 +74,21 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         },
         onSpeechStart: () {
           if (_isCurrentCall(generation) &&
+              listenEpoch == _streamingListenEpoch &&
               state.phase == VoiceCallPhase.listening) {
             startCapturingSpeech();
           }
         },
         onSpeechEnded: () {
           if (_isCurrentCall(generation) &&
+              listenEpoch == _streamingListenEpoch &&
               state.phase == VoiceCallPhase.listening) {
             _markVoiceTurnCaptureEnd(_streamingTurnSequence);
             _endTurnFromLocalEndpoint(generation);
           }
         },
         onAudioChunk: (chunk) async {
-          if (_isCurrentCall(generation)) {
+          if (_isCurrentCall(generation) && listenEpoch == _streamingListenEpoch) {
             session.sendAudioChunk(chunk);
           }
         },
@@ -94,7 +107,9 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       return;
     }
 
-    if (!_isCurrentCall(generation) || !state.isCallActive) {
+    if (!_isCurrentCall(generation) ||
+        listenEpoch != _streamingListenEpoch ||
+        !state.isCallActive) {
       if (!identical(_activeStreamingSession, session)) {
         unawaited(session.endSession());
       }
@@ -105,19 +120,34 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
           state.phase == VoiceCallPhase.speaking) {
         return;
       }
+      if (listenEpoch != _streamingListenEpoch) {
+        return;
+      }
       _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
       return;
     }
 
-    if (state.phase == VoiceCallPhase.listening) {
+    if (state.phase == VoiceCallPhase.listening &&
+        listenEpoch == _streamingListenEpoch) {
       _endTurnFromLocalEndpoint(generation, recoverIfEmpty: true);
+    }
+    } finally {
+      if (listenEpoch == _streamingListenEpoch) {
+        _streamingListenEpochInFlight = false;
+      }
     }
   }
 
   Future<void> _streamNextUtteranceWeb(
     int generation, {
+    required int listenEpoch,
     List<Uint8List> initialAudioChunks = const [],
   }) async {
+    if (listenEpoch != _streamingListenEpoch) {
+      return;
+    }
+    _streamingListenEpochInFlight = true;
+    try {
     StreamingVoiceSession? session;
     final pendingChunks = <Uint8List>[...initialAudioChunks];
     final turnSequence = ++_streamingTurnSequence;
@@ -141,6 +171,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
 
     void notifyListeningReady() {
       if (!_isCurrentCall(generation) ||
+          listenEpoch != _streamingListenEpoch ||
           state.phase != VoiceCallPhase.listening) {
         return;
       }
@@ -159,19 +190,21 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       onReady: notifyListeningReady,
       onSpeechStart: () {
         if (_isCurrentCall(generation) &&
+            listenEpoch == _streamingListenEpoch &&
             state.phase == VoiceCallPhase.listening) {
           startCapturingSpeech();
         }
       },
       onSpeechEnded: () {
         if (_isCurrentCall(generation) &&
+            listenEpoch == _streamingListenEpoch &&
             state.phase == VoiceCallPhase.listening) {
           _markVoiceTurnCaptureEnd(_streamingTurnSequence);
           _endTurnFromLocalEndpoint(generation);
         }
       },
       onAudioChunk: (chunk) async {
-        if (!_isCurrentCall(generation)) {
+        if (!_isCurrentCall(generation) || listenEpoch != _streamingListenEpoch) {
           return;
         }
         final activeSession = session ?? _activeStreamingSession;
@@ -233,7 +266,9 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       return;
     }
 
-    if (!_isCurrentCall(generation) || !state.isCallActive) {
+    if (!_isCurrentCall(generation) ||
+        listenEpoch != _streamingListenEpoch ||
+        !state.isCallActive) {
       if (session != null && !identical(_activeStreamingSession, session)) {
         unawaited(session.endSession());
       }
@@ -244,12 +279,21 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
           state.phase == VoiceCallPhase.speaking) {
         return;
       }
+      if (listenEpoch != _streamingListenEpoch) {
+        return;
+      }
       _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
       return;
     }
 
-    if (state.phase == VoiceCallPhase.listening) {
+    if (state.phase == VoiceCallPhase.listening &&
+        listenEpoch == _streamingListenEpoch) {
       _endTurnFromLocalEndpoint(generation, recoverIfEmpty: true);
+    }
+    } finally {
+      if (listenEpoch == _streamingListenEpoch) {
+        _streamingListenEpochInFlight = false;
+      }
     }
   }
 

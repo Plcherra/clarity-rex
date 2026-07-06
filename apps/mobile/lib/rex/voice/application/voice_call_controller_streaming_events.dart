@@ -253,9 +253,16 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
               streamingDrainCompleter = null;
               streamingDrainSpeakText = '';
             }
-            if (isActiveSession() && state.phase == VoiceCallPhase.thinking) {
-              debugPrint('rex_voice_playback safety_resume_after_done');
-              _completeStreamingResponseAfterPlayback();
+            if (isActiveSession()) {
+              if (state.phase == VoiceCallPhase.thinking ||
+                  state.phase == VoiceCallPhase.speaking) {
+                debugPrint('rex_voice_playback safety_resume_after_done');
+                _finishAssistantResponseAndListen();
+              } else if (state.phase == VoiceCallPhase.listening &&
+                  !_hasActiveStreamingListenCycle()) {
+                debugPrint('rex_voice_playback safety_restart_listen_cycle');
+                _startListeningCycle(_callGeneration);
+              }
             }
             _cancelThinkingTimeout();
           case 'session.ended':

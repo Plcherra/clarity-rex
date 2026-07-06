@@ -19,10 +19,12 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
       return;
     }
 
+    final listenEpoch = ++_streamingListenEpoch;
     if (ref.read(streamingVoiceEnabledProvider)) {
       unawaited(
         _streamNextUtterance(
           generation,
+          listenEpoch: listenEpoch,
           initialAudioChunks: initialAudioChunks,
         ),
       );
@@ -33,9 +35,11 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
 
   Future<void> _streamNextUtterance(
     int generation, {
+    required int listenEpoch,
     List<Uint8List> initialAudioChunks = const [],
   }) async {
     if (!_isCurrentCall(generation) ||
+        listenEpoch != _streamingListenEpoch ||
         state.phase != VoiceCallPhase.listening ||
         state.isMuted) {
       return;
@@ -44,6 +48,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     if (kIsWeb && _activeStreamingSession == null) {
       await _streamNextUtteranceWeb(
         generation,
+        listenEpoch: listenEpoch,
         initialAudioChunks: initialAudioChunks,
       );
       return;
@@ -51,6 +56,7 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
 
     await _streamNextUtteranceConnected(
       generation,
+      listenEpoch: listenEpoch,
       initialAudioChunks: initialAudioChunks,
     );
   }
