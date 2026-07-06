@@ -48,6 +48,7 @@ part 'voice_call_controller_timers.dart';
 part 'voice_call_controller_l10n.dart';
 part 'voice_call_controller_dependencies.dart';
 part 'voice_call_controller_chat_sync.dart';
+part 'voice_call_controller_turn_timing.dart';
 
 final voiceCallProvider = NotifierProvider<VoiceCallController, VoiceCallState>(
   VoiceCallController.new,
@@ -85,8 +86,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
   Future<Map<String, dynamic>?>? _prefetchedFinancialContextTask;
   String? _prefetchedFinancialContextTranscript;
   Timer? _thinkingTimeoutTimer;
-  Timer? _listeningEndpointTimer;
   Timer? _noSpeechTimeoutTimer;
+  _VoiceTurnTiming? _activeVoiceTurnTiming;
   String? _activeVoiceMessageLocalId;
   String? _pendingUtteranceTranscript;
 
@@ -104,7 +105,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
       }
       _callGeneration++;
       _cancelThinkingTimeout();
-      _cancelListeningEndpointTimeout();
       _cancelNoSpeechTimeout();
       final captureService = _activeCaptureService;
       final playbackService = _activePlaybackService;
@@ -318,7 +318,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
     final generation = ++_callGeneration;
     _cancelThinkingTimeout();
-    _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     if (_isUsingNativeVoice) {
@@ -363,7 +362,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
     if (isMuted) {
       _callGeneration++;
       _cancelThinkingTimeout();
-      _cancelListeningEndpointTimeout();
       _cancelNoSpeechTimeout();
       unawaited(_stopInterimTranscription());
       unawaited(_captureService.cancel());
@@ -389,7 +387,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _isAwaitingFollowUpSpeech = false;
     _emptyVoiceTurnRecoveryCount = 0;
     _cancelThinkingTimeout();
-    _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     _stopNativeVoiceSession();
@@ -424,7 +421,6 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _isAwaitingFollowUpSpeech = false;
     _emptyVoiceTurnRecoveryCount = 0;
     _cancelThinkingTimeout();
-    _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
     await _releaseVoiceHardware();
     state = state.copyWith(

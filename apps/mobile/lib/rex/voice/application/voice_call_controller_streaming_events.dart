@@ -28,6 +28,7 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
           if (isActiveSession()) {
             final now = DateTime.now();
             firstAudioChunkAt ??= now;
+            _markVoiceTurnFirstAudio(_streamingTurnSequence);
             final previousChunkAt = lastAudioChunkStartedAt;
             lastAudioChunkStartedAt = now;
             debugPrint(
@@ -85,22 +86,7 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
                     state.phase == VoiceCallPhase.listening) {
                   updateTranscript(preferredTranscript, isFinal: true);
                 }
-                if (_transcriptBuffer.visible.trim().isNotEmpty) {
-                  _endTurnFromLocalEndpoint(_callGeneration);
-                }
-                if (_streamingTurnFinalizedSequence != _streamingTurnSequence) {
-                  final transcript = VoiceTranscriptBuffer.preferFullest([
-                    eventTranscript,
-                    _transcriptBuffer.visible,
-                  ]).trim();
-                  if (transcript.isNotEmpty) {
-                    _finalizeStreamingTurn(
-                      transcript: transcript,
-                      session: session,
-                      turnSequence: _streamingTurnSequence,
-                    );
-                  }
-                }
+                _endTurnFromLocalEndpoint(_callGeneration);
               }
               unawaited(_activeStreamingCaptureService?.cancel());
               unawaited(_preparePlaybackAudioSession());
@@ -117,6 +103,7 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             );
           case 'assistant.started':
             assistantStartedAt = DateTime.now();
+            _markVoiceTurnAssistantStarted(_streamingTurnSequence);
             unawaited(_activeStreamingCaptureService?.cancel());
             if (state.phase != VoiceCallPhase.thinking) {
               startThinking(finalTranscript: state.currentTranscript);
@@ -194,6 +181,7 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             }
             _stopBargeInMonitoring();
             if (isActiveSession()) {
+              _logVoiceTurnTimingIfNeeded(_streamingTurnSequence);
               final speakText = _streamingSpeakableText(
                 completedText: completedText,
                 memoryChanges: event.memoryChanges,

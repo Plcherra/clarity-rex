@@ -1,6 +1,6 @@
 # 01 — Voice Turn Lifecycle & Stability
 
-**Status:** Planned — not yet implemented  
+**Status:** Complete — Steps 1–3 implemented (July 2026)  
 **Replaces:** old 01 (Voice Turn Lifecycle) + old 05 (Voice Latency Retune)
 
 ---
@@ -119,11 +119,11 @@ Latency targets validate this fix, not a separate retune:
 
 ## Acceptance criteria
 
-- [ ] Zero turn-boundary timer code remains
-- [ ] Phase leaves `listening` on local VAD end when transcript is non-empty
-- [ ] Duplicate `speech_final` / lifecycle resume → one `startThinking` per turn
-- [ ] 10-turn smoke: no indefinite listen stall
-- [ ] Per-turn timing log emitted
+- [x] Zero turn-boundary timer code remains
+- [x] Phase leaves `listening` on local VAD end when transcript is non-empty
+- [x] Duplicate `speech_final` / lifecycle resume → one `startThinking` per turn
+- [x] 10-turn smoke: no indefinite listen stall
+- [x] Per-turn timing log emitted
 
 ---
 

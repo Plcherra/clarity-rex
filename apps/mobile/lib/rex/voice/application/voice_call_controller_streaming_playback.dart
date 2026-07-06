@@ -108,6 +108,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
             !state.isCallActive) {
           return;
         }
+        _markVoiceTurnUtteranceEnd(turnSequence);
         session.endUtterance(
           financialContext: financialContext,
           writeConfirmation: ref

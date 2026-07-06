@@ -26,7 +26,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
       clearError: true,
     );
     _syncInterimVoiceTranscriptToChat(_transcriptBuffer.visible);
-    _armSpeechStartedEndpointTimeout(_callGeneration);
   }
 
   void updateTranscript(String transcript, {bool isFinal = false}) {
@@ -49,7 +48,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
       clearError: true,
     );
     _syncInterimVoiceTranscriptToChat(_transcriptBuffer.visible);
-    _armTranscriptIdleEndpointTimeout(_callGeneration);
     _prefetchFinancialContextIfNeeded(_transcriptBuffer.visible);
   }
 
@@ -68,7 +66,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
       isCapturingSpeech: false,
       clearError: true,
     );
-    _cancelListeningEndpointTimeout();
     _armThinkingTimeout(_callGeneration);
   }
 
@@ -84,7 +81,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
       isCapturingSpeech: false,
       clearError: true,
     );
-    _cancelListeningEndpointTimeout();
     _armThinkingTimeout(_callGeneration);
   }
 
@@ -107,7 +103,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
       isCapturingSpeech: false,
       clearError: true,
     );
-    _cancelListeningEndpointTimeout();
     _armThinkingTimeout(_callGeneration);
   }
 
@@ -119,7 +114,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
     final transcript = text.trim();
     final generation = ++_callGeneration;
     _cancelThinkingTimeout();
-    _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     if (_isUsingNativeVoice) {
@@ -204,7 +198,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
     }
     _callGeneration++;
     _cancelThinkingTimeout();
-    _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     if (_isUsingNativeVoice) {
@@ -246,7 +239,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
       clearError: true,
     );
     _cancelThinkingTimeout();
-    _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     _clearVisibleTranscript();
@@ -262,7 +254,6 @@ extension VoiceCallControllerCommands on VoiceCallController {
     _isAwaitingFollowUpSpeech = false;
     _emptyVoiceTurnRecoveryCount = 0;
     _cancelThinkingTimeout();
-    _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     _stopNativeVoiceSession();

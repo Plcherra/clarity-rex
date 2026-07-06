@@ -41,6 +41,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
 
     final turnSequence = ++_streamingTurnSequence;
     _streamingUtteranceEndSent = false;
+    _beginVoiceTurnTiming(turnSequence);
     _resetPrefetchedFinancialContext();
     for (final chunk in initialAudioChunks) {
       session.sendAudioChunk(chunk);
@@ -69,8 +70,8 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         onSpeechEnded: () {
           if (_isCurrentCall(generation) &&
               state.phase == VoiceCallPhase.listening) {
+            _markVoiceTurnCaptureEnd(_streamingTurnSequence);
             _endTurnFromLocalEndpoint(generation);
-            _armSpeechFinalFallbackAfterCapture(generation);
           }
         },
         onAudioChunk: (chunk) async {
@@ -110,10 +111,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
 
     if (state.phase == VoiceCallPhase.listening) {
       _endTurnFromLocalEndpoint(generation);
-      _armSpeechFinalFallbackAfterCapture(generation);
     }
-
-    // Wait for Deepgram speech_final to finalize the turn and send utterance.end.
   }
 
   Future<void> _streamNextUtteranceWeb(
@@ -124,6 +122,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     final pendingChunks = <Uint8List>[...initialAudioChunks];
     final turnSequence = ++_streamingTurnSequence;
     _streamingUtteranceEndSent = false;
+    _beginVoiceTurnTiming(turnSequence);
     _resetPrefetchedFinancialContext();
 
     if (initialAudioChunks.isNotEmpty) {
@@ -151,9 +150,6 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       }
       _markListeningReady();
       _armNoSpeechTimeout(generation);
-      if (state.isCapturingSpeech) {
-        _armSpeechStartedEndpointTimeout(generation);
-      }
     }
 
     // Open the mic before any network I/O so browser user activation is still
@@ -165,14 +161,13 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         if (_isCurrentCall(generation) &&
             state.phase == VoiceCallPhase.listening) {
           startCapturingSpeech();
-          _armSpeechStartedEndpointTimeout(generation);
         }
       },
       onSpeechEnded: () {
         if (_isCurrentCall(generation) &&
             state.phase == VoiceCallPhase.listening) {
+          _markVoiceTurnCaptureEnd(_streamingTurnSequence);
           _endTurnFromLocalEndpoint(generation);
-          _armSpeechFinalFallbackAfterCapture(generation);
         }
       },
       onAudioChunk: (chunk) async {
@@ -255,10 +250,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
 
     if (state.phase == VoiceCallPhase.listening) {
       _endTurnFromLocalEndpoint(generation);
-      _armSpeechFinalFallbackAfterCapture(generation);
     }
-
-    // Wait for Deepgram speech_final to finalize the turn and send utterance.end.
   }
 
   Future<void> _fallbackToCloudVoiceCapture(

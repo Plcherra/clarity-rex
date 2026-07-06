@@ -90,7 +90,6 @@ extension VoiceCallControllerTimers on VoiceCallController {
     if (_isAwaitingFollowUpSpeech) {
       final generation = ++_callGeneration;
       _cancelThinkingTimeout();
-      _cancelListeningEndpointTimeout();
       _cancelNoSpeechTimeout();
       unawaited(_stopInterimTranscription());
       unawaited(_captureService.cancel());
@@ -111,7 +110,6 @@ extension VoiceCallControllerTimers on VoiceCallController {
     }
     final generation = ++_callGeneration;
     _cancelThinkingTimeout();
-    _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     unawaited(_captureService.cancel());
@@ -141,42 +139,6 @@ extension VoiceCallControllerTimers on VoiceCallController {
     );
   }
 
-  void _armSpeechFinalFallbackAfterCapture(int generation) {
-    if (!_isCurrentCall(generation) ||
-        !state.isCallActive ||
-        state.phase != VoiceCallPhase.listening ||
-        state.isMuted) {
-      return;
-    }
-    _armListeningEndpointTimeout(
-      generation,
-      ref.read(voiceCallSpeechFinalFallbackTimeoutProvider),
-    );
-  }
-
-  void _armTranscriptIdleEndpointTimeout(int generation) {
-    // Streaming turns end on Deepgram speech_final, not local idle timers.
-  }
-
-  void _armSpeechStartedEndpointTimeout(int generation) {
-    // Streaming turns end on Deepgram speech_final, not local speech timers.
-  }
-
-  void _armListeningEndpointTimeout(int generation, Duration timeout) {
-    _listeningEndpointTimer?.cancel();
-    if (timeout <= Duration.zero) {
-      return;
-    }
-    _listeningEndpointTimer = Timer(timeout, () {
-      _forceEndStreamingUtterance(generation);
-    });
-  }
-
-  void _cancelListeningEndpointTimeout() {
-    _listeningEndpointTimer?.cancel();
-    _listeningEndpointTimer = null;
-  }
-
   void _armNoSpeechTimeout(int generation) {
     _noSpeechTimeoutTimer?.cancel();
     final timeout = ref.read(voiceCallNoSpeechTimeoutProvider);
@@ -202,33 +164,6 @@ extension VoiceCallControllerTimers on VoiceCallController {
   void _cancelNoSpeechTimeout() {
     _noSpeechTimeoutTimer?.cancel();
     _noSpeechTimeoutTimer = null;
-  }
-
-  void _forceEndStreamingUtterance(int generation) {
-    if (!_isCurrentCall(generation) ||
-        !state.isCallActive ||
-        state.phase != VoiceCallPhase.listening ||
-        state.isMuted) {
-      return;
-    }
-    if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
-      return;
-    }
-    final session = _activeStreamingSession;
-    if (session == null) {
-      return;
-    }
-    final visible = _transcriptBuffer.visible.trim();
-    final transcript =
-        visible.isNotEmpty ? visible : state.currentTranscript.trim();
-    if (transcript.isEmpty) {
-      return;
-    }
-    _finalizeStreamingTurn(
-      transcript: transcript,
-      session: session,
-      turnSequence: _streamingTurnSequence,
-    );
   }
 
   void _recoverFromStuckThinking(int generation) {
@@ -313,7 +248,6 @@ extension VoiceCallControllerTimers on VoiceCallController {
     if (!state.isCallActive) {
       return;
     }
-    _cancelListeningEndpointTimeout();
     _cancelNoSpeechTimeout();
     unawaited(_stopInterimTranscription());
     if (state.phase == VoiceCallPhase.thinking ||

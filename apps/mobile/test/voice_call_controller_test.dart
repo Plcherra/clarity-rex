@@ -173,7 +173,7 @@ void main() {
   });
 
   test(
-    'streaming voice waits for speech_final instead of local speech timer',
+    'streaming voice keeps listening while capture hangs without local endpoint',
     () async {
       final captureService = _HangingStreamingAudioCaptureService();
       final streamingApi = _FakeStreamingVoiceApi();
@@ -489,14 +489,10 @@ void main() {
       container.read(voiceCallThinkingTimeoutProvider),
       const Duration(seconds: 30),
     );
-    expect(
-      container.read(voiceCallSpeechFinalFallbackTimeoutProvider),
-      const Duration(seconds: 4),
-    );
   });
 
   test(
-    'streaming voice forces finalize when capture ends without speech_final',
+    'streaming voice finalizes on local capture end without speech_final',
     () async {
       final captureService = _ScriptedStreamingAudioCaptureService();
       final streamingApi = _FakeStreamingVoiceApi();
@@ -525,9 +521,6 @@ void main() {
           ),
           bargeInDetectionServiceProvider.overrideWithValue(
             const _NoopBargeInDetectionService(),
-          ),
-          voiceCallSpeechFinalFallbackTimeoutProvider.overrideWithValue(
-            const Duration(milliseconds: 10),
           ),
         ],
       );

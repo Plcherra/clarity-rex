@@ -13,7 +13,6 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     if (state.phase == VoiceCallPhase.listening) {
       _cancelThinkingTimeout();
     }
-    _cancelListeningEndpointTimeout();
     if (!_isCurrentCall(generation) ||
         state.phase != VoiceCallPhase.listening ||
         state.isMuted) {
