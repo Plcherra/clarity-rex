@@ -12,6 +12,7 @@ class VoiceCallState {
     this.isMuted = false,
     this.listeningReadySignal = 0,
     this.isCapturingSpeech = false,
+    this.thinkingStartedAt,
   });
 
   final VoiceCallPhase phase;
@@ -24,6 +25,7 @@ class VoiceCallState {
   final bool isMuted;
   final int listeningReadySignal;
   final bool isCapturingSpeech;
+  final DateTime? thinkingStartedAt;
 
   bool get isIdle => phase == VoiceCallPhase.idle;
 
@@ -65,6 +67,20 @@ class VoiceCallState {
     return endedAt.difference(startedAt);
   }
 
+  Duration thinkingElapsed({DateTime? now}) {
+    final startedAt = thinkingStartedAt;
+    if (startedAt == null || phase != VoiceCallPhase.thinking) {
+      return Duration.zero;
+    }
+
+    final current = now ?? DateTime.now();
+    if (current.isBefore(startedAt)) {
+      return Duration.zero;
+    }
+
+    return current.difference(startedAt);
+  }
+
   VoiceCallState copyWith({
     VoiceCallPhase? phase,
     String? currentTranscript,
@@ -76,12 +92,14 @@ class VoiceCallState {
     bool? isMuted,
     int? listeningReadySignal,
     bool? isCapturingSpeech,
+    DateTime? thinkingStartedAt,
     bool clearCurrentTranscript = false,
     bool clearLastAssistantResponse = false,
     bool clearConversationId = false,
     bool clearError = false,
     bool clearCallStartedAt = false,
     bool clearCallEndedAt = false,
+    bool clearThinkingStartedAt = false,
   }) {
     return VoiceCallState(
       phase: phase ?? this.phase,
@@ -102,6 +120,9 @@ class VoiceCallState {
       isMuted: isMuted ?? this.isMuted,
       listeningReadySignal: listeningReadySignal ?? this.listeningReadySignal,
       isCapturingSpeech: isCapturingSpeech ?? this.isCapturingSpeech,
+      thinkingStartedAt: clearThinkingStartedAt
+          ? null
+          : thinkingStartedAt ?? this.thinkingStartedAt,
     );
   }
 }

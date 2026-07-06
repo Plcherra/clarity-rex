@@ -87,7 +87,7 @@ mixin _SavedMemoryApi on _MemoryApiTransport {
 
   Future<Map<String, dynamic>> getSavedKnowledgeOverview({
     bool activeOnly = true,
-    int limit = 100,
+    int limit = kMemoryListLimit,
   }) async {
     final response = await _apiClient.get(
       '/saved-knowledge/overview',

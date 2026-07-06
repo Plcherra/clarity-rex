@@ -1,7 +1,10 @@
 import 'package:clarity/core/layout/finance_content_constraints.dart';
 import 'package:clarity/features/shell/presentation/home_shell_layout.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers/l10n_test_wrapper.dart';
 
 void main() {
   test('isHomeShellCompactWidth respects 800px breakpoint', () {
@@ -21,8 +24,8 @@ void main() {
     });
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: HomeShellAdaptiveScaffold(
+      wrapWithTestProviders(
+        HomeShellAdaptiveScaffold(
           selectedIndex: 0,
           onDestinationSelected: (_) {},
           destinations: const [
@@ -59,8 +62,8 @@ void main() {
     });
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: HomeShellAdaptiveScaffold(
+      wrapWithTestProviders(
+        HomeShellAdaptiveScaffold(
           selectedIndex: 0,
           onDestinationSelected: (_) {},
           destinations: const [

@@ -134,7 +134,7 @@ void main() {
 
       expect(response, 'Done.');
       expect(memoryApi.memoryActiveFilters.last, isTrue);
-      expect(memoryApi.peopleActiveFilters.last, isTrue);
+      expect(memoryApi.entityActiveFilters.last, isTrue);
     },
   );
 

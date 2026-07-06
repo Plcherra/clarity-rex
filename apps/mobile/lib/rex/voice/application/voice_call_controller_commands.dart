@@ -59,6 +59,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     _clearVisibleTranscript();
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
+      thinkingStartedAt: DateTime.now(),
       clearCurrentTranscript: true,
       isCapturingSpeech: false,
       clearError: true,
@@ -75,6 +76,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     _isAwaitingFollowUpSpeech = false;
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
+      thinkingStartedAt: DateTime.now(),
       isCapturingSpeech: false,
       clearError: true,
     );
@@ -96,6 +98,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
 
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
+      thinkingStartedAt: DateTime.now(),
       clearCurrentTranscript: true,
       isCapturingSpeech: false,
       clearError: true,
@@ -131,6 +134,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     _removeActiveVoiceUserMessage();
     state = state.copyWith(
       phase: VoiceCallPhase.thinking,
+      thinkingStartedAt: DateTime.now(),
       currentTranscript: transcript,
       isCapturingSpeech: false,
       clearError: true,
@@ -236,6 +240,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
       isCapturingSpeech: false,
       clearCurrentTranscript: true,
       clearError: true,
+      clearThinkingStartedAt: true,
     );
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();

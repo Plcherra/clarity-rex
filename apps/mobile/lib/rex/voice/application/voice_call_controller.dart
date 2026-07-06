@@ -289,6 +289,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       isCapturingSpeech: false,
       lastAssistantResponse: responseText,
       clearError: true,
+      clearThinkingStartedAt: true,
     );
   }
 
@@ -314,6 +315,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       isCapturingSpeech: false,
       clearCurrentTranscript: true,
       clearError: true,
+      clearThinkingStartedAt: true,
     );
     _clearVisibleTranscript();
     _resetActiveVoiceMessageLocalId();

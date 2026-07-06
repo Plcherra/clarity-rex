@@ -98,6 +98,7 @@ class GoalCommandService:
             commands[0],
             conversation_id=conversation_id,
             user_message=user_message,
+            conversation_messages=conversation_history,
         )
 
     def detect_commands(

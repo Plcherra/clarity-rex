@@ -137,11 +137,13 @@ class MemoryTurnHandleMixin:
                             conversation_id=conversation_id,
                             user_message=user_message,
                             record=existing_topic_memory,
+                            conversation_history=conversation_history,
                         )
                     return await self._propose_simple_memory(
                         intent,
                         conversation_id=conversation_id,
                         user_message=user_message,
+                        conversation_history=conversation_history,
                     )
             elif self.memory_intent_service.needs_contextual_location_clarification(
                 message,
@@ -170,12 +172,14 @@ class MemoryTurnHandleMixin:
                 conversation_id=conversation_id,
                 user_message=user_message,
                 record=existing_topic_memory,
+                conversation_history=conversation_history,
             )
 
         return await self._propose_simple_memory(
             intent,
             conversation_id=conversation_id,
             user_message=user_message,
+            conversation_history=conversation_history,
         )
 
     def _should_defer_duplicate_contextual_confirmation(self, message: str) -> bool:

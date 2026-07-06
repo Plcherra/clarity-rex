@@ -69,6 +69,7 @@ class ChatService(ChatVoiceMetadataMixin):
         self.durable_write_service = DurableWriteService(
             memory_service,
             plan_service=self.goal_command_service.plan_service,
+            ai_service=ai_service,
         )
         self.open_thread_service = OpenThreadService(memory_service)
         self.open_thread_turn_service = OpenThreadTurnService(

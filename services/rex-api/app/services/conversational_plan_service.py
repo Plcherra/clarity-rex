@@ -82,6 +82,7 @@ class ConversationalPlanService:
             decision,
             conversation_id=conversation_id,
             user_message=user_message,
+            conversation_messages=conversation_history,
         )
 
     def _pending_action(self, pending_action) -> Optional[PendingAction]:

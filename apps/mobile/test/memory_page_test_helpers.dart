@@ -130,6 +130,42 @@ class MemoryPageFakeMemoryApi extends MemoryApi {
   }
 
   @override
+  Future<Map<String, dynamic>> getSavedKnowledgeOverview({
+    bool activeOnly = true,
+    int limit = kMemoryListLimit,
+  }) async {
+    final active = activeOnly ? true : null;
+    final entities = await getEntities(active: active, limit: limit);
+    final memories = await getMemories(active: active, limit: limit);
+    final rules = await getRules(active: active, limit: limit);
+    final plans = await getPlans(active: active, limit: limit);
+
+    final people = <Map<String, dynamic>>[];
+    final places = <Map<String, dynamic>>[];
+    final otherEntities = <Map<String, dynamic>>[];
+    for (final entity in entities) {
+      final json = _entityMemoryToJson(entity);
+      switch (entity.entityType) {
+        case 'person':
+          people.add(json);
+        case 'place':
+          places.add(json);
+        default:
+          otherEntities.add(json);
+      }
+    }
+
+    return {
+      'people': people,
+      'places': places,
+      'other_entities': otherEntities,
+      'facts': memories.map((memory) => memory.toJson()).toList(growable: false),
+      'rules': rules.map(_ruleMemoryToJson).toList(growable: false),
+      'plans': plans.map(_planMemoryToJson).toList(growable: false),
+    };
+  }
+
+  @override
   Future<List<MemoryItem>> getMemories({
     MemoryType? memoryType,
     bool? active,
@@ -577,4 +613,53 @@ List<T> _filterActive<T>(
   return items
       .where((item) => isActive(item) == active)
       .toList(growable: false);
+}
+
+Map<String, dynamic> _entityMemoryToJson(EntityMemoryItem entity) {
+  return {
+    'id': entity.id,
+    'entity_type': entity.entityType,
+    'display_name': entity.displayName,
+    if (entity.relationship != null) 'relationship': entity.relationship,
+    if (entity.summary != null) 'summary': entity.summary,
+    'aliases': entity.aliases,
+    'importance': entity.importance,
+    'status': entity.status,
+    'active': entity.active,
+    'metadata': entity.metadata,
+    if (entity.createdAt != null) 'created_at': entity.createdAt!.toIso8601String(),
+    if (entity.updatedAt != null) 'updated_at': entity.updatedAt!.toIso8601String(),
+  };
+}
+
+Map<String, dynamic> _ruleMemoryToJson(RuleMemoryItem rule) {
+  return {
+    'id': rule.id,
+    'rule_type': rule.ruleType,
+    'title': rule.title,
+    'rule_text': rule.ruleText,
+    'trigger_keywords': rule.triggerKeywords,
+    'priority': rule.priority,
+    'status': rule.status,
+    'active': rule.active,
+    if (rule.createdAt != null) 'created_at': rule.createdAt!.toIso8601String(),
+    if (rule.updatedAt != null) 'updated_at': rule.updatedAt!.toIso8601String(),
+  };
+}
+
+Map<String, dynamic> _planMemoryToJson(PlanMemoryItem plan) {
+  return {
+    'id': plan.id,
+    'plan_type': plan.planType,
+    'title': plan.title,
+    if (plan.description != null) 'description': plan.description,
+    if (plan.desiredOutcome != null) 'desired_outcome': plan.desiredOutcome,
+    'priority': plan.priority,
+    'status': plan.status,
+    'active': plan.active,
+    if (plan.targetDate != null) 'target_date': plan.targetDate!.toIso8601String(),
+    if (plan.primaryEntityId != null) 'primary_entity_id': plan.primaryEntityId,
+    if (plan.createdAt != null) 'created_at': plan.createdAt!.toIso8601String(),
+    if (plan.updatedAt != null) 'updated_at': plan.updatedAt!.toIso8601String(),
+  };
 }

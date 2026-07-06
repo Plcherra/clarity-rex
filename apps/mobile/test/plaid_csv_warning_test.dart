@@ -3,6 +3,8 @@ import 'package:clarity/features/accounts/presentation/csv_plaid_duplicate_warni
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/l10n_test_wrapper.dart';
+
 void main() {
   testWidgets('connected account CSV warning explains duplicate risk', (
     tester,
@@ -17,8 +19,8 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Builder(
+      wrapWithL10n(
+        Builder(
           builder: (context) => FilledButton(
             onPressed: () async {
               result = await confirmCsvImportForPlaidAccount(context, account);

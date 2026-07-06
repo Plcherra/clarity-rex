@@ -5,14 +5,22 @@ import 'package:clarity/features/accounts/presentation/widgets/plaid_account_til
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/l10n_test_wrapper.dart';
+
+Future<void> _pumpPlaidAccountTile(
+  WidgetTester tester,
+  PlaidAccountTile tile,
+) async {
+  await tester.pumpWidget(wrapWithL10nScaffold(tile));
+}
+
 void main() {
   testWidgets(
     'PlaidAccountTile shows synced account overview without transaction previews',
     (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PlaidAccountTile(
+      await _pumpPlaidAccountTile(
+        tester,
+        PlaidAccountTile(
               item: AccountOverviewItem(
                 account: Account(
                   id: 'account-1',
@@ -36,8 +44,6 @@ void main() {
               onResync: () {},
               onDisconnect: () {},
               onTap: () {},
-            ),
-          ),
         ),
       );
 
@@ -54,10 +60,9 @@ void main() {
   testWidgets(
     'PlaidAccountTile composes clear names for generic Plaid account labels',
     (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PlaidAccountTile(
+      await _pumpPlaidAccountTile(
+        tester,
+        PlaidAccountTile(
               item: const AccountOverviewItem(
                 account: Account(
                   id: 'account-1',
@@ -82,8 +87,6 @@ void main() {
               onResync: () {},
               onDisconnect: () {},
               onTap: () {},
-            ),
-          ),
         ),
       );
 
@@ -95,10 +98,9 @@ void main() {
   testWidgets(
     'PlaidAccountTile moves Plaid product names into supporting detail',
     (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PlaidAccountTile(
+      await _pumpPlaidAccountTile(
+        tester,
+        PlaidAccountTile(
               item: const AccountOverviewItem(
                 account: Account(
                   id: 'account-1',
@@ -121,8 +123,6 @@ void main() {
               onResync: () {},
               onDisconnect: () {},
               onTap: () {},
-            ),
-          ),
         ),
       );
 
@@ -134,10 +134,9 @@ void main() {
   testWidgets(
     'PlaidAccountTile keeps mixed-source transactions out of the account overview',
     (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PlaidAccountTile(
+      await _pumpPlaidAccountTile(
+        tester,
+        PlaidAccountTile(
               item: AccountOverviewItem(
                 account: const Account(
                   id: 'account-1',
@@ -157,8 +156,6 @@ void main() {
               onResync: () {},
               onDisconnect: () {},
               onTap: () {},
-            ),
-          ),
         ),
       );
 
@@ -174,10 +171,9 @@ void main() {
   testWidgets('PlaidAccountTile handles empty synced transactions', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: PlaidAccountTile(
+    await _pumpPlaidAccountTile(
+      tester,
+      PlaidAccountTile(
             item: const AccountOverviewItem(
               account: Account(
                 id: 'account-1',
@@ -197,8 +193,6 @@ void main() {
             onResync: () {},
             onDisconnect: () {},
             onTap: () {},
-          ),
-        ),
       ),
     );
 
@@ -210,10 +204,9 @@ void main() {
     tester,
   ) async {
     var disconnected = false;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: PlaidAccountTile(
+    await _pumpPlaidAccountTile(
+      tester,
+      PlaidAccountTile(
             item: const AccountOverviewItem(
               account: Account(
                 id: 'account-1',
@@ -233,8 +226,6 @@ void main() {
             onResync: () {},
             onDisconnect: () => disconnected = true,
             onTap: () {},
-          ),
-        ),
       ),
     );
 
@@ -246,10 +237,9 @@ void main() {
   testWidgets('PlaidAccountTile hides disconnect for disconnected accounts', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: PlaidAccountTile(
+    await _pumpPlaidAccountTile(
+      tester,
+      PlaidAccountTile(
             item: const AccountOverviewItem(
               account: Account(
                 id: 'account-1',
@@ -269,8 +259,6 @@ void main() {
             onResync: () {},
             onDisconnect: () {},
             onTap: () {},
-          ),
-        ),
       ),
     );
 
@@ -282,10 +270,9 @@ void main() {
   testWidgets('PlaidAccountTile explains login-required recovery', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: PlaidAccountTile(
+    await _pumpPlaidAccountTile(
+      tester,
+      PlaidAccountTile(
             item: const AccountOverviewItem(
               account: Account(
                 id: 'account-1',
@@ -305,8 +292,6 @@ void main() {
             onResync: () {},
             onDisconnect: () {},
             onTap: () {},
-          ),
-        ),
       ),
     );
 
@@ -321,10 +306,9 @@ void main() {
   testWidgets('PlaidAccountTile explains pending-expiration recovery', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: PlaidAccountTile(
+    await _pumpPlaidAccountTile(
+      tester,
+      PlaidAccountTile(
             item: const AccountOverviewItem(
               account: Account(
                 id: 'account-1',
@@ -344,8 +328,6 @@ void main() {
             onResync: () {},
             onDisconnect: () {},
             onTap: () {},
-          ),
-        ),
       ),
     );
 
@@ -358,10 +340,9 @@ void main() {
   });
 
   testWidgets('PlaidAccountTile explains stale webhook delay', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: PlaidAccountTile(
+    await _pumpPlaidAccountTile(
+      tester,
+      PlaidAccountTile(
             item: const AccountOverviewItem(
               account: Account(
                 id: 'account-1',
@@ -384,8 +365,6 @@ void main() {
             onResync: () {},
             onDisconnect: () {},
             onTap: () {},
-          ),
-        ),
       ),
     );
 

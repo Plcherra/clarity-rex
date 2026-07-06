@@ -93,6 +93,7 @@ class OpenThreadTurnService:
                 summary=summary,
                 conversation_id=conversation_id,
                 user_message=user_message,
+                conversation_messages=conversation_history,
             )
 
         if offer_state.get("offered") or offer_state.get("declined"):
@@ -170,6 +171,7 @@ class OpenThreadTurnService:
                 summary=summary,
                 conversation_id=conversation_id,
                 user_message=user_message,
+                conversation_messages=conversation_history,
             )
 
         return await clarification_turn_result(

@@ -87,7 +87,7 @@ mixin MemoryReadController on Notifier<MemoryState> {
     if (!append) {
       return _fetchSavedOverviewFromBackend(
         api: api,
-        active: active,
+        activeOnly: activeOnly,
       );
     }
 
@@ -216,10 +216,12 @@ mixin MemoryReadController on Notifier<MemoryState> {
 
   Future<_SavedOverviewSnapshot> _fetchSavedOverviewFromBackend({
     required MemoryApi api,
-    required bool? active,
+    required bool activeOnly,
   }) async {
+    final active = activeOnly ? true : null;
     final overview = await api.getSavedKnowledgeOverview(
-      activeOnly: active ?? true,
+      activeOnly: activeOnly,
+      limit: kMemoryListLimit,
     );
     final people = _parseJsonList(overview['people'])
         .map(
@@ -263,6 +265,13 @@ mixin MemoryReadController on Notifier<MemoryState> {
       active: active,
     );
 
+    final entityCount =
+        people.length + placeEntities.length + otherEntities.length;
+    final memoriesHasMore = memories.length >= kMemoryListLimit;
+    final entitiesHasMore = entityCount >= kMemoryListLimit;
+    final rulesHasMore = rules.length >= kMemoryListLimit;
+    final plansHasMore = plans.length >= kMemoryListLimit;
+
     return _SavedOverviewSnapshot(
       memories: memories,
       people: people,
@@ -272,7 +281,24 @@ mixin MemoryReadController on Notifier<MemoryState> {
       plans: plans,
       entityEventPreviews: entityEventPreviews,
       planMilestonePreviews: planMilestonePreviews,
-      pages: const MemoryOverviewPages(),
+      pages: MemoryOverviewPages(
+        memoriesCursor: memoriesHasMore
+            ? encodeMemoryListOffsetCursor(kMemoryListLimit)
+            : null,
+        memoriesHasMore: memoriesHasMore,
+        entitiesCursor: entitiesHasMore
+            ? encodeMemoryListOffsetCursor(kMemoryListLimit)
+            : null,
+        entitiesHasMore: entitiesHasMore,
+        rulesCursor: rulesHasMore
+            ? encodeMemoryListOffsetCursor(kMemoryListLimit)
+            : null,
+        rulesHasMore: rulesHasMore,
+        plansCursor: plansHasMore
+            ? encodeMemoryListOffsetCursor(kMemoryListLimit)
+            : null,
+        plansHasMore: plansHasMore,
+      ),
     );
   }
 

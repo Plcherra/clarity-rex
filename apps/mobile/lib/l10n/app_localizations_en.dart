@@ -1372,6 +1372,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voicePanelProcessing => 'Processing…';
 
   @override
+  String voicePanelThinkingElapsed(String elapsed) {
+    return 'Thinking · $elapsed';
+  }
+
+  @override
   String get voicePanelMuted => 'Muted';
 
   @override

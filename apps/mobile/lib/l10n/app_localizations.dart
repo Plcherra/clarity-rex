@@ -2527,6 +2527,12 @@ abstract class AppLocalizations {
   /// **'Processing…'**
   String get voicePanelProcessing;
 
+  /// No description provided for @voicePanelThinkingElapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking · {elapsed}'**
+  String voicePanelThinkingElapsed(String elapsed);
+
   /// No description provided for @voicePanelMuted.
   ///
   /// In en, this message translates to:

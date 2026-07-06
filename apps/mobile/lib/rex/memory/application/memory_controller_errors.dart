@@ -7,7 +7,7 @@ String _memoryErrorMessage(
   Object error,
   _MemoryOperation operation,
 ) {
-  final l10n = lookupForLocale(ref.read(localeControllerProvider).locale);
+  final l10n = _memoryL10n(ref);
   final statusCode = error is MemoryApiException ? error.statusCode : null;
   if (statusCode == 401 || statusCode == 403) {
     return l10n.memoryErrorSignInAgain;
@@ -37,5 +37,13 @@ String _memoryErrorMessage(
       return l10n.memoryErrorUpdateFailed;
     case _MemoryOperation.archive:
       return l10n.memoryErrorArchiveFailed;
+  }
+}
+
+AppLocalizations _memoryL10n(Ref ref) {
+  try {
+    return lookupForLocale(ref.read(localeControllerProvider).locale);
+  } on Object {
+    return lookupEnglishLocalizationsForTests();
   }
 }

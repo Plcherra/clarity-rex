@@ -2,6 +2,8 @@ import 'package:clarity/rex/chat/presentation/widgets/attachment_source_sheet.da
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/l10n_test_wrapper.dart';
+
 void main() {
   testWidgets('attachment source sheet exposes gallery camera and files', (
     tester,
@@ -9,8 +11,8 @@ void main() {
     ChatAttachmentSource? selected;
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Builder(
+      wrapWithL10n(
+        Builder(
           builder: (context) {
             return Scaffold(
               body: ElevatedButton(

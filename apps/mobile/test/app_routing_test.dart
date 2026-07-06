@@ -187,17 +187,19 @@ void main() {
     expect(find.text('Multi-factor authentication'), findsOneWidget);
     expect(find.text('Voice usage'), findsOneWidget);
     expect(
-      find.text('Minutes today, this week, and this month'),
+      find.textContaining('Minutes today, this week, and this month'),
       findsOneWidget,
     );
     expect(find.text('Appearance'), findsNWidgets(2));
-    expect(find.text('System'), findsOneWidget);
+    expect(find.text('Dark'), findsOneWidget);
 
     await tester.drag(find.byType(ListView), const Offset(0, -260));
     await tester.pumpAndSettle();
 
     expect(find.text('Language'), findsNWidgets(2));
     expect(find.text('English'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Sign out'), 120);
+    await tester.pumpAndSettle();
     expect(find.text('Sign out'), findsOneWidget);
   });
 

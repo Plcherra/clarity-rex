@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class MemoryPagedResult<T> {
   const MemoryPagedResult({
     required this.items,
@@ -94,4 +96,10 @@ List<T> appendUniqueById<T>({
     }
   }
   return merged;
+}
+
+String encodeMemoryListOffsetCursor(int offset) {
+  final normalized = offset < 0 ? 0 : offset;
+  final token = base64Url.encode(utf8.encode('{"offset":$normalized}'));
+  return token.replaceAll('=', '');
 }

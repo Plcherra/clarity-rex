@@ -25,6 +25,7 @@ from app.services.durable_write_pending import (
     write_confirmation_edits,
 )
 from app.services.durable_write_proposal import DurableWriteProposal
+from app.services.durable_write_proposal_refiner import DurableWriteProposalRefiner
 from app.services.durable_write_results import (
     applied_memory_changes,
     failed_memory_changes,
@@ -45,12 +46,17 @@ class DurableWriteService:
         *,
         plan_service: Optional[PlanService] = None,
         applier: Optional[DurableWriteApplier] = None,
+        ai_service: Any = None,
+        proposal_refiner: Optional[DurableWriteProposalRefiner] = None,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service or PlanService(memory_service)
         self.applier = applier or DurableWriteApplier(
             memory_service,
             plan_service=self.plan_service,
+        )
+        self._proposal_refiner = proposal_refiner or (
+            DurableWriteProposalRefiner(ai_service) if ai_service is not None else None
         )
 
     async def propose_simple_memory(
@@ -59,12 +65,14 @@ class DurableWriteService:
         *,
         conversation_id: str,
         user_message: dict,
+        conversation_messages: Optional[list[dict]] = None,
     ) -> dict:
         proposal = proposal_from_simple_memory(intent)
         return await self._propose(
             proposal,
             conversation_id=conversation_id,
             user_message=user_message,
+            conversation_messages=conversation_messages,
         )
 
     async def propose_memory_update(
@@ -75,6 +83,7 @@ class DurableWriteService:
         previous_content: str | None,
         conversation_id: str,
         user_message: dict,
+        conversation_messages: Optional[list[dict]] = None,
     ) -> dict:
         proposal = proposal_from_memory_update(
             intent,
@@ -85,6 +94,7 @@ class DurableWriteService:
             proposal,
             conversation_id=conversation_id,
             user_message=user_message,
+            conversation_messages=conversation_messages,
         )
 
     async def propose_goal(
@@ -93,6 +103,7 @@ class DurableWriteService:
         *,
         conversation_id: str,
         user_message: dict,
+        conversation_messages: Optional[list[dict]] = None,
     ) -> dict:
         proposal = await proposal_from_goal_command(
             command,
@@ -104,6 +115,7 @@ class DurableWriteService:
             proposal,
             conversation_id=conversation_id,
             user_message=user_message,
+            conversation_messages=conversation_messages,
         )
 
     async def propose_open_thread(
@@ -114,6 +126,7 @@ class DurableWriteService:
         conversation_id: str,
         user_message: dict,
         response: str | None = None,
+        conversation_messages: Optional[list[dict]] = None,
     ) -> dict:
         proposal = proposal_from_open_thread(
             title=title,
@@ -126,6 +139,7 @@ class DurableWriteService:
             conversation_id=conversation_id,
             user_message=user_message,
             response=response,
+            conversation_messages=conversation_messages,
         )
 
     async def propose_discipline_decision(
@@ -134,6 +148,7 @@ class DurableWriteService:
         *,
         conversation_id: str,
         user_message: dict,
+        conversation_messages: Optional[list[dict]] = None,
     ) -> dict:
         title = goal_title(
             str(
@@ -148,6 +163,7 @@ class DurableWriteService:
             proposal,
             conversation_id=conversation_id,
             user_message=user_message,
+            conversation_messages=conversation_messages,
         )
 
     async def try_handle_pending(
@@ -221,7 +237,14 @@ class DurableWriteService:
         conversation_id: str,
         user_message: dict,
         response: str | None = None,
+        conversation_messages: Optional[list[dict]] = None,
     ) -> dict:
+        if self._proposal_refiner is not None:
+            proposal = await self._proposal_refiner.refine(
+                proposal,
+                conversation_messages=list(conversation_messages or []),
+                user_message=str(user_message.get("content") or ""),
+            )
         supersede_note = await self._pending().set_superseding(
             conversation_id,
             pending_action_for_durable_write(proposal=proposal),

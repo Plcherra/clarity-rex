@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
+import 'package:clarity/rex/voice/presentation/voice_elapsed_format.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_diamond_loader.dart';
 
@@ -86,7 +89,7 @@ class VoiceLiveTranscript extends StatelessWidget {
 }
 
 /// Compact voice controls above the composer — flat icons, no overlay box.
-class InlineVoiceCallPanel extends StatelessWidget {
+class InlineVoiceCallPanel extends StatefulWidget {
   const InlineVoiceCallPanel({
     super.key,
     required this.state,
@@ -103,7 +106,46 @@ class InlineVoiceCallPanel extends StatelessWidget {
   final VoidCallback onOpenSettings;
 
   @override
+  State<InlineVoiceCallPanel> createState() => _InlineVoiceCallPanelState();
+}
+
+class _InlineVoiceCallPanelState extends State<InlineVoiceCallPanel> {
+  Timer? _thinkingTimer;
+
+  @override
+  void didUpdateWidget(covariant InlineVoiceCallPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncThinkingTimer();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _syncThinkingTimer();
+  }
+
+  @override
+  void dispose() {
+    _thinkingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _syncThinkingTimer() {
+    if (widget.state.phase == VoiceCallPhase.thinking) {
+      _thinkingTimer ??= Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+      return;
+    }
+    _thinkingTimer?.cancel();
+    _thinkingTimer = null;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = widget.state;
     final colors = context.clarityColors;
     final l10n = context.l10n;
     final isFailed = state.phase == VoiceCallPhase.failed;
@@ -120,6 +162,11 @@ class InlineVoiceCallPanel extends StatelessWidget {
               isMuted: state.isMuted,
               color: isFailed ? colors.danger : colors.accent,
               isFailed: isFailed,
+              thinkingLabel: state.phase == VoiceCallPhase.thinking
+                  ? l10n.voicePanelThinkingElapsed(
+                      formatVoiceElapsed(state.thinkingElapsed()),
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: RexUiTokens.space8),
@@ -136,13 +183,13 @@ class InlineVoiceCallPanel extends StatelessWidget {
             _VoiceFlatIconButton(
               icon: Icons.settings_outlined,
               tooltip: l10n.voicePanelSettingsTooltip,
-              onPressed: onOpenSettings,
+              onPressed: widget.onOpenSettings,
             ),
             const SizedBox(width: RexUiTokens.space4),
             _VoiceFlatIconButton(
               icon: Icons.refresh_rounded,
               tooltip: l10n.voicePanelTryAgainTooltip,
-              onPressed: onRetry,
+              onPressed: widget.onRetry,
             ),
             const SizedBox(width: RexUiTokens.space4),
           ] else ...[
@@ -151,14 +198,14 @@ class InlineVoiceCallPanel extends StatelessWidget {
               tooltip: state.isMuted
                   ? l10n.voicePanelUnmuteMicTooltip
                   : l10n.voicePanelMuteMicTooltip,
-              onPressed: onToggleMute,
+              onPressed: widget.onToggleMute,
             ),
             const SizedBox(width: RexUiTokens.space4),
           ],
           _VoiceFlatIconButton(
             icon: Icons.stop_rounded,
             tooltip: l10n.voicePanelEndVoiceTooltip,
-            onPressed: onEnd,
+            onPressed: widget.onEnd,
             foregroundColor: colors.danger,
           ),
         ],
@@ -169,6 +216,11 @@ class InlineVoiceCallPanel extends StatelessWidget {
   String _voiceSemanticLabel(AppLocalizations l10n, VoiceCallState state) {
     if (state.isMuted && state.phase == VoiceCallPhase.listening) {
       return l10n.voicePanelVoiceMuted;
+    }
+    if (state.phase == VoiceCallPhase.thinking) {
+      return l10n.voicePanelThinkingElapsed(
+        formatVoiceElapsed(state.thinkingElapsed()),
+      );
     }
     return switch (state.phase) {
       VoiceCallPhase.idle => l10n.voicePanelVoiceReady,
@@ -222,6 +274,7 @@ class _VoiceWaveIndicator extends StatefulWidget {
     this.isMuted = false,
     this.isFailed = false,
     this.compact = false,
+    this.thinkingLabel,
   });
 
   final VoiceCallPhase phase;
@@ -229,6 +282,7 @@ class _VoiceWaveIndicator extends StatefulWidget {
   final bool isMuted;
   final bool isFailed;
   final bool compact;
+  final String? thinkingLabel;
 
   @override
   State<_VoiceWaveIndicator> createState() => _VoiceWaveIndicatorState();
@@ -262,6 +316,16 @@ class _VoiceWaveIndicatorState extends State<_VoiceWaveIndicator>
       return Icon(Icons.mic_off_outlined, color: widget.color, size: 20);
     }
     if (widget.phase == VoiceCallPhase.thinking) {
+      final label = widget.thinkingLabel;
+      if (label != null && label.isNotEmpty) {
+        return Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: widget.color,
+            fontWeight: FontWeight.w600,
+          ),
+        );
+      }
       return ClarityDiamondLoader(size: widget.compact ? 16 : 20);
     }
     if (widget.phase == VoiceCallPhase.speaking) {

@@ -50,7 +50,7 @@ void main() {
     });
 
     expect(record.userId, 'user-1');
-    expect(record.usageDate, DateTime(2026, 6, 6));
+    expect(record.usageDate, DateTime(2026, 6, 6, 12));
     expect(record.voiceSeconds, 90.5);
     expect(record.llmCalls, 4);
     expect(record.sttSeconds, 80);

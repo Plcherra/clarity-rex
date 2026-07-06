@@ -10,6 +10,7 @@ library;
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 Widget wrapWithL10n(
   Widget child, {
@@ -25,6 +26,18 @@ Widget wrapWithL10n(
     ],
     supportedLocales: AppLocalizations.supportedLocales,
     home: child,
+  );
+}
+
+/// Scaffold + gen-l10n for widget tests that render localized copy.
+Widget wrapWithL10nScaffold(Widget body) {
+  return wrapWithL10n(Scaffold(body: body));
+}
+
+/// Riverpod + gen-l10n for widget tests that read providers.
+Widget wrapWithTestProviders(Widget child) {
+  return ProviderScope(
+    child: wrapWithL10n(child),
   );
 }
 

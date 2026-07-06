@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
@@ -9,7 +11,9 @@ import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
+import 'package:clarity/rex/voice/presentation/voice_elapsed_format.dart';
 import 'package:clarity/theme/clarity_colors.dart';
+import 'package:clarity/widgets/clarity_diamond_loader.dart';
 
 class ChatTranscript extends StatelessWidget {
   const ChatTranscript({
@@ -111,7 +115,7 @@ class ChatTranscript extends StatelessWidget {
                             ),
                             if (showVoiceProcessing && isLastMessage)
                               _VoiceProcessingIndicator(
-                                label: l10n.voicePanelProcessing,
+                                voiceState: voiceState!,
                               ),
                           ],
                         ),
@@ -146,23 +150,55 @@ class ChatTranscript extends StatelessWidget {
   }
 }
 
-class _VoiceProcessingIndicator extends StatelessWidget {
-  const _VoiceProcessingIndicator({required this.label});
+class _VoiceProcessingIndicator extends StatefulWidget {
+  const _VoiceProcessingIndicator({required this.voiceState});
 
-  final String label;
+  final VoiceCallState voiceState;
+
+  @override
+  State<_VoiceProcessingIndicator> createState() =>
+      _VoiceProcessingIndicatorState();
+}
+
+class _VoiceProcessingIndicatorState extends State<_VoiceProcessingIndicator> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final l10n = context.l10n;
+    final elapsed = formatVoiceElapsed(widget.voiceState.thinkingElapsed());
 
     return Padding(
-      padding: const EdgeInsets.only(top: 4, left: 42),
-      child: Text(
-        label,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: colors.textMuted,
-        ),
+      padding: const EdgeInsets.only(top: 6, left: 42),
+      child: Row(
+        children: [
+          ClarityDiamondLoader(size: 16),
+          const SizedBox(width: RexUiTokens.space8),
+          Text(
+            l10n.voicePanelThinkingElapsed(elapsed),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.textMuted,
+            ),
+          ),
+        ],
       ),
     );
   }
