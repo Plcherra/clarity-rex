@@ -25,30 +25,30 @@ def needs_proposal_copy_refinement(proposal: DurableWriteProposal) -> bool:
     body = str(proposal.body or "").strip()
     if not body:
         return False
-    if proposal.write_kind in {"plan", "open_thread"} and (
-        len(body.split()) >= 12
-        or len(title) > 48
-        or title == body
-        or _DISFLUENCY_PATTERN.search(body) is not None
-        or _REPEAT_WORD_PATTERN.search(body) is not None
+
+    messy = (
+        _DISFLUENCY_PATTERN.search(body) is not None
         or _STT_ARTIFACT_PATTERN.search(body) is not None
-    ):
-        return True
+        or _REPEAT_WORD_PATTERN.search(body) is not None
+    )
+    if proposal.write_kind in {"plan", "open_thread"}:
+        if title and body and title == body:
+            return messy or len(body) > 160
+        if messy:
+            return True
+        if title and body.startswith(title) and len(body) - len(title) > 40:
+            return True
+        return False
+
     if len(body.split()) >= 18:
         return True
     if title and body and title == body:
         return (
             len(body.split()) >= 10
             or len(body) > 96
-            or _DISFLUENCY_PATTERN.search(body) is not None
-            or _REPEAT_WORD_PATTERN.search(body) is not None
-            or _STT_ARTIFACT_PATTERN.search(body) is not None
+            or messy
         )
-    if _DISFLUENCY_PATTERN.search(body):
-        return True
-    if _STT_ARTIFACT_PATTERN.search(body):
-        return True
-    if _REPEAT_WORD_PATTERN.search(body):
+    if messy:
         return True
     return len(body) > 96
 
