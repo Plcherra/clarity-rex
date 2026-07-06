@@ -40,6 +40,57 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     await _audioSessionService.preferLoudSpeaker();
   }
 
+  Future<void> _cancelInFlightPlayback() async {
+    await _playbackService.stop();
+    await _streamingPlaybackQueue.cancel();
+  }
+
+  Future<void> _handleStreamingQueueDrained({
+    required String speakText,
+    required int generation,
+  }) async {
+    if (!_isCurrentCall(generation) || !state.isCallActive) {
+      return;
+    }
+
+    _stopBargeInMonitoring();
+    _logVoiceTurnTimingIfNeeded(_streamingTurnSequence);
+
+    if (_streamingPlaybackQueue.hasAcceptedChunks) {
+      _completeStreamingResponseAfterPlayback();
+      return;
+    }
+
+    if (speakText.isNotEmpty && !state.isMuted) {
+      final fallbackStarted = await _playSynthesizedStreamingFallback(
+        speakText,
+        generation,
+      );
+      if (!_isCurrentCall(generation) || !state.isCallActive) {
+        return;
+      }
+      if (!fallbackStarted) {
+        failVoiceApi(const CloudVoiceApiException('playback_failed'));
+      }
+      return;
+    }
+
+    _completeStreamingResponseAfterPlayback();
+  }
+
+  void _completeStreamingResponseAfterPlayback() {
+    if (!state.isCallActive) {
+      return;
+    }
+    if (state.phase == VoiceCallPhase.speaking) {
+      completeSpeaking();
+      debugPrint('rex_voice_playback listening_resumed');
+    } else if (state.phase != VoiceCallPhase.listening) {
+      resumeListening();
+      debugPrint('rex_voice_playback listening_resumed');
+    }
+  }
+
   Future<bool> _playSynthesizedStreamingFallback(
     String responseText,
     int generation,

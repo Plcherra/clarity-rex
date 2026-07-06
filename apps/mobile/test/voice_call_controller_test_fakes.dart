@@ -292,6 +292,7 @@ class _ControlledAudioPlaybackService implements AudioPlaybackService {
   final playStarted = Completer<void>();
   AudioPlaybackCompleteCallback? _onComplete;
   var stopCount = 0;
+  var playCount = 0;
 
   @override
   Future<void> pause() async {}
@@ -304,6 +305,7 @@ class _ControlledAudioPlaybackService implements AudioPlaybackService {
     required AudioPlaybackErrorCallback onError,
     bool continueSession = false,
   }) async {
+    playCount++;
     _onComplete = onComplete;
     if (!playStarted.isCompleted) {
       playStarted.complete();

@@ -4,6 +4,41 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
+    'streaming playback queue uses accepted chunks as playback authority',
+    () async {
+      final playback = _ControlledPlaybackService();
+      final queue = StreamingAudioPlaybackQueue(playback);
+      var drainCount = 0;
+
+      final callbacks = StreamingAudioPlaybackCallbacks(
+        onChunkStarted: (_) {},
+        onQueueDrained: () => drainCount++,
+        onError: (_) {},
+      );
+
+      queue.beginResponse();
+      queue.enqueue(
+        const StreamingAudioChunk(
+          audioBase64: 'accepted-audio',
+          contentType: 'audio/mpeg',
+          text: 'chunk',
+        ),
+        callbacks: callbacks,
+      );
+      expect(queue.hasAcceptedChunks, isTrue);
+
+      queue.finishResponse(callbacks: callbacks);
+      expect(drainCount, 0);
+
+      playback.completeCurrent();
+      await queue.waitUntilIdle();
+
+      expect(drainCount, 1);
+      expect(playback.playedAudio, ['accepted-audio']);
+    },
+  );
+
+  test(
     'streaming playback queue plays chunks sequentially and drains',
     () async {
       final playback = _ControlledPlaybackService();

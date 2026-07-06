@@ -156,6 +156,8 @@ extension VoiceCallControllerCommands on VoiceCallController {
       return;
     }
 
+    await _cancelInFlightPlayback();
+
     try {
       final response = await ref.read(cloudVoiceApiProvider).synthesize(text);
       if (!_isCurrentCall(generation) || !state.isCallActive) {

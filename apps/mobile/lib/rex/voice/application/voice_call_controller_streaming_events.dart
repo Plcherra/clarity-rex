@@ -10,6 +10,9 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
     DateTime? firstAudioChunkAt;
     DateTime? lastAudioChunkStartedAt;
     var streamEndedCleanly = false;
+    Completer<void>? streamingDrainCompleter;
+    var streamingDrainSpeakText = '';
+    var streamingDrainGeneration = 0;
     bool isActiveSession() =>
         identical(_activeStreamingSession, session) && state.isCallActive;
 
@@ -20,6 +23,23 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
       responseAudioStarted = true;
       unawaited(_preparePlaybackAudioSession());
       _streamingPlaybackQueue.beginResponse();
+    }
+
+    Future<void> handleStreamingQueueDrained() async {
+      final drainCompleter = streamingDrainCompleter;
+      if (drainCompleter == null) {
+        return;
+      }
+      try {
+        await _handleStreamingQueueDrained(
+          speakText: streamingDrainSpeakText,
+          generation: streamingDrainGeneration,
+        );
+      } finally {
+        if (!drainCompleter.isCompleted) {
+          drainCompleter.complete();
+        }
+      }
     }
 
     StreamingAudioPlaybackCallbacks playbackCallbacks() {
@@ -46,13 +66,37 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             'rex_voice_playback queue_drained '
             'speaking_ms=${_elapsedSince(firstAudioChunkAt, DateTime.now())}',
           );
-          _stopBargeInMonitoring();
+          unawaited(handleStreamingQueueDrained());
         },
         onError: (message) {
           _stopBargeInMonitoring();
-          if (isActiveSession()) {
-            failVoiceApi(CloudVoiceApiException(message));
+          if (!isActiveSession()) {
+            streamingDrainCompleter?.complete();
+            return;
           }
+          if (streamingDrainCompleter != null &&
+              !_streamingPlaybackQueue.hasPlayedChunks &&
+              streamingDrainSpeakText.isNotEmpty &&
+              !state.isMuted) {
+            unawaited(
+              _playSynthesizedStreamingFallback(
+                streamingDrainSpeakText,
+                streamingDrainGeneration,
+              ).then((started) {
+                if (!isActiveSession()) {
+                  return;
+                }
+                if (!started) {
+                  failVoiceApi(const CloudVoiceApiException('playback_failed'));
+                }
+              }).whenComplete(() {
+                streamingDrainCompleter?.complete();
+              }),
+            );
+            return;
+          }
+          failVoiceApi(CloudVoiceApiException(message));
+          streamingDrainCompleter?.complete();
         },
       );
     }
@@ -116,6 +160,8 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             assistantStartedAt = DateTime.now();
             _markVoiceTurnAssistantStarted(_streamingTurnSequence);
             unawaited(_activeStreamingCaptureService?.cancel());
+            await _cancelInFlightPlayback();
+            responseAudioStarted = false;
             if (state.phase != VoiceCallPhase.thinking) {
               startThinking(finalTranscript: state.currentTranscript);
             }
@@ -176,52 +222,31 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
                 clearError: true,
               );
             }
+            streamingDrainSpeakText = _streamingSpeakableText(
+              completedText: completedText,
+              memoryChanges: event.memoryChanges,
+            );
+            streamingDrainGeneration = _callGeneration;
+            final drainCompleter = Completer<void>();
+            streamingDrainCompleter = drainCompleter;
             _streamingPlaybackQueue.finishResponse(
               callbacks: playbackCallbacks(),
             );
-            if (kIsWeb && !_isAppInForeground) {
-              await _streamingPlaybackQueue.cancel();
-            } else {
-              try {
-                await _streamingPlaybackQueue.waitUntilIdle().timeout(
+            try {
+              await Future.wait([
+                _streamingPlaybackQueue.waitUntilIdle().timeout(
                   const Duration(seconds: 30),
-                );
-              } on TimeoutException {
-                await _streamingPlaybackQueue.cancel();
+                ),
+                drainCompleter.future,
+              ]);
+            } on TimeoutException {
+              await _streamingPlaybackQueue.cancel();
+              if (!drainCompleter.isCompleted) {
+                drainCompleter.complete();
               }
-            }
-            _stopBargeInMonitoring();
-            if (isActiveSession()) {
-              _logVoiceTurnTimingIfNeeded(_streamingTurnSequence);
-              final speakText = _streamingSpeakableText(
-                completedText: completedText,
-                memoryChanges: event.memoryChanges,
-              );
-              final playbackStarted =
-                  firstAudioChunkAt != null ||
-                  _streamingPlaybackQueue.hasPlayedChunks;
-              if (!playbackStarted &&
-                  speakText.isNotEmpty &&
-                  !state.isMuted) {
-                final fallbackStarted = await _playSynthesizedStreamingFallback(
-                  speakText,
-                  _callGeneration,
-                );
-                if (fallbackStarted) {
-                  break;
-                }
-                failVoiceApi(
-                  const CloudVoiceApiException('playback_failed'),
-                );
-                break;
-              }
-              if (state.phase == VoiceCallPhase.speaking) {
-                completeSpeaking();
-                debugPrint('rex_voice_playback listening_resumed');
-              } else if (state.phase != VoiceCallPhase.listening) {
-                resumeListening();
-                debugPrint('rex_voice_playback listening_resumed');
-              }
+            } finally {
+              streamingDrainCompleter = null;
+              streamingDrainSpeakText = '';
             }
           case 'session.ended':
             streamEndedCleanly = true;

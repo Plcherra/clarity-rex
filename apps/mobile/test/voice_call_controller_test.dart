@@ -906,6 +906,7 @@ void main() {
         audioSessionService.preferLoudSpeakerCount,
         greaterThanOrEqualTo(1),
       );
+      final stopCountAfterPlaybackStarted = playbackService.stopCount;
 
       streamingApi.socket.emit({
         'event': 'assistant.done',
@@ -923,10 +924,90 @@ void main() {
       expect(state.phase, VoiceCallPhase.listening);
       expect(state.errorMessage, isNull);
       expect(state.lastAssistantResponse, 'Use weekly launch plans.');
-      expect(playbackService.stopCount, 0);
+      expect(playbackService.stopCount, stopCountAfterPlaybackStarted);
       expect(streamingApi.connectCount, 1);
       expect(streamingApi.socket.sentEvents, isNot(contains('session.end')));
       expect(streamingApi.socket.closeCount, 0);
+    },
+  );
+
+  test(
+    'streaming voice does not fallback when audio chunks are accepted but still playing',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final playbackService = _ControlledAudioPlaybackService();
+      final cloudVoiceApi = _FakeCloudVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(playbackService),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          cloudVoiceApiProvider.overrideWithValue(cloudVoiceApi),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      captureService.finishCurrentWithSpeech();
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': 'Tell me about push ups',
+        'speech_final': true,
+      });
+      streamingApi.socket.emit({'event': 'assistant.started'});
+      streamingApi.socket.emit({
+        'event': 'assistant.token',
+        'token': 'Wide-grip push-ups work chest and back.',
+      });
+      streamingApi.socket.emit({
+        'event': 'assistant.audio_chunk',
+        'audio_base64': base64Encode([1, 2, 3]),
+        'audio_content_type': 'audio/mpeg',
+        'text': 'Wide-grip push-ups work chest and back.',
+      });
+      await playbackService.playStarted.future;
+
+      streamingApi.socket.emit({
+        'event': 'assistant.done',
+        'conversation_id': 'conversation-voice',
+        'response_text': 'Wide-grip push-ups work chest and back.',
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cloudVoiceApi.synthesizedTexts, isEmpty);
+      expect(playbackService.playCount, 1);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.speaking);
+
+      playbackService.complete();
+      await captureService.readyAt(1);
+
+      expect(cloudVoiceApi.synthesizedTexts, isEmpty);
+      expect(playbackService.playCount, 1);
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
     },
   );
 
