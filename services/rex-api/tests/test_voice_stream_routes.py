@@ -204,7 +204,7 @@ def test_voice_stream_completes_streaming_turn(client, caplog):
         assert token["token"] == "Rex "
 
         audio_chunk = receive_until(websocket, "assistant.audio_chunk")
-        assert audio_chunk["text"] == "Rex streaming"
+        assert audio_chunk["text"] == "Rex streaming response."
         assert audio_chunk["audio_base64"] == "bXAzLWJ5dGVz"
 
         messages = receive_until(websocket, "messages.updated")
@@ -256,20 +256,18 @@ def test_voice_stream_completes_streaming_turn(client, caplog):
     assert chat.stream_calls[0]["max_response_tokens"] == VOICE_RESPONSE_MAX_TOKENS
     assert chat.stream_calls[0]["channel"] == RexBrainChannel.VOICE
     assert chat.stream_calls[0]["include_turn_trace"] is True
-    assert tts.calls == ["Rex streaming", "response."]
+    assert tts.calls == ["Rex streaming response."]
     assert chat.metadata_calls[0]["conversation_id"] == "conversation-existing"
     assert chat.metadata_calls[0]["user_message_id"] == "user-message-1"
     assert chat.metadata_calls[0]["assistant_message_id"] == "assistant-message-1"
     assert [event["event_type"] for event in usage.events] == [
         "stt",
         "tts",
-        "tts",
         "voice_session",
     ]
     assert usage.events[0]["duration_ms"] == 1400
     assert usage.events[1]["status"] == "success"
-    assert usage.events[2]["status"] == "success"
-    assert usage.events[3]["status"] == "completed"
+    assert usage.events[2]["status"] == "completed"
 
 
 @pytest.mark.parametrize(

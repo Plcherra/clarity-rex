@@ -188,7 +188,11 @@ class VoiceStreamResponseWriterMixin:
                 queue_audio_chunk(final_response_text)
         elif speech_buffer.strip():
             queue_audio_chunk(speech_buffer.strip())
-        elif speakable_text and first_audio_at is None:
+        elif (
+            speakable_text
+            and first_audio_at is None
+            and not pending_audio_chunks
+        ):
             queue_audio_chunk(speakable_text)
         await send_ready_audio_chunks(block=True)
         if audio_flush_tasks:
