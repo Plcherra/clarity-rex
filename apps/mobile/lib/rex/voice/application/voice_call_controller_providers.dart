@@ -150,3 +150,7 @@ final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(
 final voiceCallNoSpeechTimeoutProvider = Provider<Duration>(
   (ref) => const Duration(seconds: 24),
 );
+
+final voiceCallSpeechFinalFallbackTimeoutProvider = Provider<Duration>(
+  (ref) => const Duration(seconds: 4),
+);

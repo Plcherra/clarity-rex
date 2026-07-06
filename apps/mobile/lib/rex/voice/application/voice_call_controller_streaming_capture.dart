@@ -67,7 +67,11 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
           }
         },
         onSpeechEnded: () {
-          // Deepgram speech_final is the turn boundary for streaming clients.
+          if (_isCurrentCall(generation) &&
+              state.phase == VoiceCallPhase.listening) {
+            _endTurnFromLocalEndpoint(generation);
+            _armSpeechFinalFallbackAfterCapture(generation);
+          }
         },
         onAudioChunk: (chunk) async {
           if (_isCurrentCall(generation)) {
@@ -102,6 +106,11 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       }
       _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
       return;
+    }
+
+    if (state.phase == VoiceCallPhase.listening) {
+      _endTurnFromLocalEndpoint(generation);
+      _armSpeechFinalFallbackAfterCapture(generation);
     }
 
     // Wait for Deepgram speech_final to finalize the turn and send utterance.end.
@@ -160,7 +169,11 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
         }
       },
       onSpeechEnded: () {
-        // Deepgram speech_final is the turn boundary for streaming clients.
+        if (_isCurrentCall(generation) &&
+            state.phase == VoiceCallPhase.listening) {
+          _endTurnFromLocalEndpoint(generation);
+          _armSpeechFinalFallbackAfterCapture(generation);
+        }
       },
       onAudioChunk: (chunk) async {
         if (!_isCurrentCall(generation)) {
@@ -238,6 +251,11 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       }
       _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
       return;
+    }
+
+    if (state.phase == VoiceCallPhase.listening) {
+      _endTurnFromLocalEndpoint(generation);
+      _armSpeechFinalFallbackAfterCapture(generation);
     }
 
     // Wait for Deepgram speech_final to finalize the turn and send utterance.end.

@@ -489,7 +489,146 @@ void main() {
       container.read(voiceCallThinkingTimeoutProvider),
       const Duration(seconds: 30),
     );
+    expect(
+      container.read(voiceCallSpeechFinalFallbackTimeoutProvider),
+      const Duration(seconds: 4),
+    );
   });
+
+  test(
+    'streaming voice forces finalize when capture ends without speech_final',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          voiceCallSpeechFinalFallbackTimeoutProvider.overrideWithValue(
+            const Duration(milliseconds: 10),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Tell me about my budgets',
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      expect(
+        streamingApi.socket.sentEvents.where((event) => event == 'utterance.end'),
+        hasLength(1),
+      );
+      final messages = container.read(chatProvider).messages;
+      expect(messages, hasLength(1));
+      expect(messages.first.content, 'Tell me about my budgets');
+      expect(messages.first.isVoiceInterim, isFalse);
+    },
+  );
+
+  test(
+    'streaming voice finalizes once when speech_final arrives twice same turn',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Plan my launch week',
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      const transcript = 'Plan my launch week';
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': transcript,
+        'speech_final': true,
+      });
+      streamingApi.socket.emit({
+        'event': 'transcript.final',
+        'transcript': transcript,
+        'speech_final': true,
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      expect(
+        streamingApi.socket.sentEvents.where((event) => event == 'utterance.end'),
+        hasLength(1),
+      );
+      final messages = container.read(chatProvider).messages;
+      expect(messages, hasLength(1));
+      expect(messages.first.content, transcript);
+      expect(messages.first.isVoiceInterim, isFalse);
+    },
+  );
 
   testWidgets('voice live transcript hides processing while thinking', (
     tester,
@@ -655,6 +794,12 @@ void main() {
       expect(await controller.startCall(), isTrue);
       await captureService.readyAt(0);
 
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Plan my launch week',
+      });
+      await Future<void>.delayed(Duration.zero);
+
       captureService.finishCurrentWithSpeech();
       streamingApi.socket.emit({
         'event': 'transcript.final',
@@ -769,6 +914,12 @@ void main() {
 
       expect(await controller.startCall(), isTrue);
       await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'I finished my plan tonight',
+      });
+      await Future<void>.delayed(Duration.zero);
 
       captureService.finishCurrentWithSpeech();
       streamingApi.socket.emit({
@@ -938,6 +1089,12 @@ void main() {
       expect(await controller.startCall(), isTrue);
       await captureService.readyAt(0);
 
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Hello Rex',
+      });
+      await Future<void>.delayed(Duration.zero);
+
       captureService.finishCurrentWithSpeech();
       streamingApi.socket.emit({
         'event': 'transcript.final',
@@ -992,6 +1149,12 @@ void main() {
 
       expect(await controller.startCall(), isTrue);
       await captureService.readyAt(0);
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Hello Rex',
+      });
+      await Future<void>.delayed(Duration.zero);
 
       captureService.finishCurrentWithSpeech();
       streamingApi.socket.emit({
@@ -1426,9 +1589,15 @@ void main() {
       expect(streamingApi.socket.sentEvents, isNot(contains('session.end')));
       expect(streamingApi.socket.closeCount, 0);
 
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Hello again',
+      });
+      await Future<void>.delayed(Duration.zero);
+
       captureService.finishCurrentWithSpeech();
       await Future<void>.delayed(Duration.zero);
-      expect(streamingApi.socket.sentEvents, isNot(contains('utterance.end')));
+      expect(streamingApi.socket.sentEvents, contains('utterance.end'));
 
       streamingApi.socket.emit({
         'event': 'transcript.final',
@@ -1436,7 +1605,6 @@ void main() {
         'speech_final': true,
       });
       await Future<void>.delayed(Duration.zero);
-      expect(streamingApi.socket.sentEvents, contains('utterance.end'));
 
       streamingApi.socket.emit({'event': 'assistant.started'});
       streamingApi.socket.emit({
@@ -2060,6 +2228,12 @@ void main() {
         final nextCaptureIndex = captureIndex + 1;
         appendApiMessage('user', userText);
         appendApiMessage('assistant', assistantText);
+
+        streamingApi.socket.emit({
+          'event': 'transcript.partial',
+          'transcript': userText,
+        });
+        await Future<void>.delayed(Duration.zero);
 
         captureService.finishCurrentWithSpeech();
         final socket = streamingApi.socket;

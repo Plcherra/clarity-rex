@@ -73,19 +73,37 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             if (event.speechFinal) {
               assistantText = '';
               responseAudioStarted = false;
-              final transcript =
-                  (event.transcript ?? _transcriptBuffer.visible).trim();
-              if (transcript.isNotEmpty) {
-                _finalizeStreamingTurn(
-                  transcript: transcript,
-                  session: session,
-                  turnSequence: _streamingTurnSequence,
-                );
+              if (_streamingTurnFinalizedSequence != _streamingTurnSequence) {
+                final eventTranscript = (event.transcript ?? '').trim();
+                final bufferTranscript = _transcriptBuffer.visible.trim();
+                final preferredTranscript = VoiceTranscriptBuffer.preferFullest([
+                  eventTranscript,
+                  bufferTranscript,
+                ]).trim();
+                if (preferredTranscript.isNotEmpty &&
+                    preferredTranscript != bufferTranscript &&
+                    state.phase == VoiceCallPhase.listening) {
+                  updateTranscript(preferredTranscript, isFinal: true);
+                }
+                if (_transcriptBuffer.visible.trim().isNotEmpty) {
+                  _endTurnFromLocalEndpoint(_callGeneration);
+                }
+                if (_streamingTurnFinalizedSequence != _streamingTurnSequence) {
+                  final transcript = VoiceTranscriptBuffer.preferFullest([
+                    eventTranscript,
+                    _transcriptBuffer.visible,
+                  ]).trim();
+                  if (transcript.isNotEmpty) {
+                    _finalizeStreamingTurn(
+                      transcript: transcript,
+                      session: session,
+                      turnSequence: _streamingTurnSequence,
+                    );
+                  }
+                }
               }
               unawaited(_activeStreamingCaptureService?.cancel());
               unawaited(_preparePlaybackAudioSession());
-            } else if (state.phase == VoiceCallPhase.thinking) {
-              startThinking(finalTranscript: event.transcript);
             } else if (state.phase == VoiceCallPhase.listening) {
               updateTranscript(
                 event.transcript ?? state.currentTranscript,

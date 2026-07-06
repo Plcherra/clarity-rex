@@ -233,6 +233,7 @@ class _ScriptedStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
   final _ready = <Completer<void>>[];
   final _captures = <Completer<bool>>[];
+  SpeechEndCallback? _lastOnSpeechEnded;
 
   Future<void> readyAt(int index) {
     while (_ready.length <= index) {
@@ -246,6 +247,10 @@ class _ScriptedStreamingAudioCaptureService
       return;
     }
     final capture = _captures.last;
+    if (capture.isCompleted) {
+      return;
+    }
+    _lastOnSpeechEnded?.call();
     if (!capture.isCompleted) {
       capture.complete(true);
     }
@@ -275,6 +280,7 @@ class _ScriptedStreamingAudioCaptureService
     final capture = Completer<bool>();
     _captures.add(capture);
     onReady();
+    _lastOnSpeechEnded = onSpeechEnded;
     if (!_ready[index].isCompleted) {
       _ready[index].complete();
     }

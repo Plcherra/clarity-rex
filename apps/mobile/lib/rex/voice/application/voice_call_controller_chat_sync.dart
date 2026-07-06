@@ -84,16 +84,50 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     _resetActiveVoiceMessageLocalId();
   }
 
+  void _endTurnFromLocalEndpoint(int generation) {
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.listening ||
+        state.isMuted) {
+      return;
+    }
+    if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
+      return;
+    }
+    final session = _activeStreamingSession;
+    if (session == null) {
+      return;
+    }
+
+    final transcript = _transcriptBuffer.visible.trim();
+    if (transcript.isEmpty) {
+      _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
+      return;
+    }
+
+    _finalizeStreamingTurn(
+      transcript: transcript,
+      session: session,
+      turnSequence: _streamingTurnSequence,
+    );
+  }
+
   void _finalizeStreamingTurn({
     required String transcript,
     required StreamingVoiceSession session,
     required int turnSequence,
   }) {
+    if (_streamingTurnFinalizedSequence == turnSequence) {
+      return;
+    }
+
     final text = transcript.trim();
     if (text.isEmpty || !state.isCallActive) {
       return;
     }
 
+    _streamingTurnFinalizedSequence = turnSequence;
+    _cancelListeningEndpointTimeout();
     _pendingUtteranceTranscript = text;
     startThinking(finalTranscript: text);
     _sendStreamingUtteranceEndIfNeeded(

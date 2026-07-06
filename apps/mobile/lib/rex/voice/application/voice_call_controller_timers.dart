@@ -141,6 +141,19 @@ extension VoiceCallControllerTimers on VoiceCallController {
     );
   }
 
+  void _armSpeechFinalFallbackAfterCapture(int generation) {
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.listening ||
+        state.isMuted) {
+      return;
+    }
+    _armListeningEndpointTimeout(
+      generation,
+      ref.read(voiceCallSpeechFinalFallbackTimeoutProvider),
+    );
+  }
+
   void _armTranscriptIdleEndpointTimeout(int generation) {
     // Streaming turns end on Deepgram speech_final, not local idle timers.
   }
@@ -192,7 +205,30 @@ extension VoiceCallControllerTimers on VoiceCallController {
   }
 
   void _forceEndStreamingUtterance(int generation) {
-    // Streaming turns end on Deepgram speech_final, not local idle timers.
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.listening ||
+        state.isMuted) {
+      return;
+    }
+    if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
+      return;
+    }
+    final session = _activeStreamingSession;
+    if (session == null) {
+      return;
+    }
+    final visible = _transcriptBuffer.visible.trim();
+    final transcript =
+        visible.isNotEmpty ? visible : state.currentTranscript.trim();
+    if (transcript.isEmpty) {
+      return;
+    }
+    _finalizeStreamingTurn(
+      transcript: transcript,
+      session: session,
+      turnSequence: _streamingTurnSequence,
+    );
   }
 
   void _recoverFromStuckThinking(int generation) {
