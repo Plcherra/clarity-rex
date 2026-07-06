@@ -14,6 +14,7 @@ import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
+import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
 import 'package:clarity/rex/voice/data/audio_capture_service.dart';
 import 'package:clarity/rex/voice/data/audio_playback_service.dart';
@@ -78,6 +79,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _isUsingNativeVoice = false;
   var _warnedLegacyNativeVoiceFlag = false;
   var _isAwaitingFollowUpSpeech = false;
+  var _pausedForSaveConfirmation = false;
   var _emptyVoiceTurnRecoveryCount = 0;
   var _streamingUtteranceEndSent = false;
   var _streamingTurnSequence = 0;
@@ -308,6 +310,52 @@ class VoiceCallController extends Notifier<VoiceCallState>
     if (!state.isCallActive || !started) {
       return;
     }
+    if (!_hasPendingSaveConfirmation()) {
+      _pausedForSaveConfirmation = false;
+    }
+  }
+
+  bool _hasPendingSaveConfirmation() {
+    final pending = pendingClarityActions(ref.read(chatProvider).messages);
+    return pending.any((action) => action.canConfirm);
+  }
+
+  void pauseForSaveConfirmation() {
+    if (!state.isCallActive) {
+      return;
+    }
+
+    _pausedForSaveConfirmation = true;
+    _callGeneration++;
+    _cancelThinkingTimeout();
+    _cancelNoSpeechTimeout();
+    unawaited(_stopInterimTranscription());
+    if (_isUsingNativeVoice) {
+      unawaited(_nativeVoiceSessionService.interrupt());
+    } else {
+      unawaited(_captureService.cancel());
+      unawaited(_streamingCaptureService.cancel());
+      _stopBargeInMonitoring();
+      final streamingSession = _activeStreamingSession;
+      streamingSession?.interrupt();
+      unawaited(_streamingPlaybackQueue.cancel());
+    }
+    _clearVisibleTranscript();
+    state = state.copyWith(
+      phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
+      clearCurrentTranscript: true,
+      clearError: true,
+      clearThinkingStartedAt: true,
+    );
+  }
+
+  void resumeAfterSaveConfirmation() {
+    if (!state.isCallActive || !_pausedForSaveConfirmation) {
+      return;
+    }
+    _pausedForSaveConfirmation = false;
+    resumeListening();
   }
 
   void completeSpeaking() {
@@ -320,6 +368,11 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
   void _finishAssistantResponseAndListen() {
     if (!state.isCallActive) {
+      return;
+    }
+
+    if (_hasPendingSaveConfirmation()) {
+      pauseForSaveConfirmation();
       return;
     }
 

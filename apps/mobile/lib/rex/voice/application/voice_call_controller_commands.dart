@@ -237,6 +237,13 @@ extension VoiceCallControllerCommands on VoiceCallController {
       return;
     }
 
+    if (_hasPendingSaveConfirmation()) {
+      pauseForSaveConfirmation();
+      return;
+    }
+
+    _pausedForSaveConfirmation = false;
+
     _resetActiveVoiceMessageLocalId();
     _resetPendingUtteranceTranscript();
     state = state.copyWith(
@@ -260,6 +267,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
   void reset() {
     _callGeneration++;
     _isAwaitingFollowUpSpeech = false;
+    _pausedForSaveConfirmation = false;
     _emptyVoiceTurnRecoveryCount = 0;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();

@@ -197,6 +197,34 @@ def clean_optional(value: Any) -> str | None:
     return cleaned or None
 
 
+def sanitize_plan_target_date(value: Any) -> str | None:
+    """Drop casual phrases that are not valid Postgres date inputs."""
+    cleaned = clean_optional(value)
+    if not cleaned:
+        return None
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", cleaned):
+        return cleaned
+    if re.fullmatch(
+        r"(?i)(?:next|this)\s+(?:month|week|quarter|year)",
+        cleaned,
+    ):
+        return cleaned[:1].upper() + cleaned[1:].lower()
+    month = (
+        r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|"
+        r"jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|"
+        r"dec(?:ember)?)"
+    )
+    if re.fullmatch(rf"(?i){month}", cleaned):
+        return cleaned[:1].upper() + cleaned[1:].lower()
+    if re.fullmatch(
+        rf"(?i){month}\s+\d{{1,2}}(?:st|nd|rd|th)?",
+        cleaned,
+    ):
+        parts = cleaned.split()
+        return f"{parts[0][:1].upper()}{parts[0][1:].lower()} {parts[1]}"
+    return None
+
+
 def normalize_text(value: Any) -> str:
     cleaned = clean_optional(value)
     if not cleaned:

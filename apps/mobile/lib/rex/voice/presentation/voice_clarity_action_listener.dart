@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
+import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 
 /// Shows pending Clarity confirmation dialogs during active voice sessions.
 class VoiceClarityActionListener extends ConsumerStatefulWidget {
@@ -28,6 +29,12 @@ class _VoiceClarityActionListenerState
       final previousPending = previous == null
           ? const <ClarityActionCard>[]
           : pendingClarityActions(previous.messages);
+      final voice = ref.read(voiceCallProvider.notifier);
+      if (pending.any((action) => action.canConfirm)) {
+        voice.pauseForSaveConfirmation();
+      } else if (previousPending.any((action) => action.canConfirm)) {
+        voice.resumeAfterSaveConfirmation();
+      }
       if (pending.isEmpty) {
         return;
       }

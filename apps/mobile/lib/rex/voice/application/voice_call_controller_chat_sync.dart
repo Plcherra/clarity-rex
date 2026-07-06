@@ -73,7 +73,9 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     if (!_isCurrentCall(generation) ||
         !state.isCallActive ||
         state.phase != VoiceCallPhase.listening ||
-        state.isMuted) {
+        state.isMuted ||
+        _pausedForSaveConfirmation ||
+        _hasPendingSaveConfirmation()) {
       return;
     }
     if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {

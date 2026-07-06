@@ -48,7 +48,10 @@ class MemoryDateNormalizer:
         if day_match is None:
             day = self._day_from_words(cleaned)
             if day is None:
-                return cleaned
+                month = self.month_from_text(cleaned)
+                if month:
+                    return month
+                return None
         else:
             day = int(day_match.group("day"))
 

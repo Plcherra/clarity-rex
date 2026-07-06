@@ -33,6 +33,7 @@ from app.services.plan_merge_service import (
     correction_wrong_names,
     is_active_plan,
     is_open_milestone,
+    sanitize_plan_target_date,
 )
 from app.services.plan_repository import PlanRepository
 
@@ -89,6 +90,8 @@ class PlanService:
             payload["description"] = clean_optional(payload["description"])
         if "desired_outcome" in payload:
             payload["desired_outcome"] = clean_optional(payload["desired_outcome"])
+        if "target_date" in payload:
+            payload["target_date"] = sanitize_plan_target_date(payload.get("target_date"))
         payload = await self.entity_linker.normalize_entity_references(
             payload,
             text_fields=("title", "description", "desired_outcome"),
@@ -103,6 +106,8 @@ class PlanService:
         *,
         wrong_names: set[str],
     ) -> dict[str, Any]:
+        if "target_date" in payload:
+            payload["target_date"] = sanitize_plan_target_date(payload.get("target_date"))
         metadata = dict(payload.get("metadata") or {})
         metadata.setdefault("discipline_write_channel", CONFIRMED_PLAN_SERVICE_CHANNEL)
         payload = {**payload, "metadata": metadata}

@@ -10,6 +10,10 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     if (_isUsingNativeVoice) {
       return;
     }
+    if (_pausedForSaveConfirmation || _hasPendingSaveConfirmation()) {
+      _pausedForSaveConfirmation = true;
+      return;
+    }
     if (state.phase == VoiceCallPhase.listening) {
       _cancelThinkingTimeout();
     }

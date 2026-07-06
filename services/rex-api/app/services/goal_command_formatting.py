@@ -15,13 +15,32 @@ from app.services.memory_date_normalizer import MemoryDateNormalizer
 
 _DATE_NORMALIZER = MemoryDateNormalizer()
 
+_MONTH_TOKEN = (
+    r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|"
+    r"jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|"
+    r"dec(?:ember)?)"
+)
+_DAY_TOKEN = r"\d{1,2}(?:st|nd|rd|th)?"
+_ORDINAL_DAY_TOKEN = (
+    r"(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|"
+    r"eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|"
+    r"eighteenth|nineteenth|twentieth|twenty[\s-]?first|twenty[\s-]?second|"
+    r"twenty[\s-]?third|twenty[\s-]?fourth|twenty[\s-]?fifth|twenty[\s-]?sixth|"
+    r"twenty[\s-]?seventh|twenty[\s-]?eighth|twenty[\s-]?ninth|thirtieth|"
+    r"thirty[\s-]?first)"
+)
+_DUE_DATE_TOKEN = (
+    rf"(?:{_MONTH_TOKEN}(?:\s+(?:{_DAY_TOKEN}|{_ORDINAL_DAY_TOKEN}))?|"
+    rf"{_DAY_TOKEN}|{_ORDINAL_DAY_TOKEN})"
+)
+
 _OBLIGATION_ACTION_PATTERN = re.compile(
     r"\bi\s+(?:need|have)\s+to\s+"
     r"(?P<action>(?:upgrade|install|buy|get|replace|purchase|add|pick\s+up)\b.+)",
     re.IGNORECASE,
 )
 _DUE_PATTERN = re.compile(
-    r"\b(?:on|by)\s+(?:the\s+)?(?P<date>[A-Za-z]+(?:\s+\d{1,2}(?:st|nd|rd|th)?)?|\d{1,2}(?:st|nd|rd|th)?)\b",
+    rf"\b(?:on|by)\s+(?:the\s+)?(?P<date>{_DUE_DATE_TOKEN})\b",
     re.IGNORECASE,
 )
 _RELATIVE_TIME_PATTERN = re.compile(
