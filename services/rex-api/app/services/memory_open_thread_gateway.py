@@ -24,3 +24,6 @@ class MemoryOpenThreadGateway:
 
     async def update_open_thread(self, thread_id: str, **updates: object) -> dict | None:
         return await self.open_thread_repository.update_thread(thread_id, **updates)
+
+    async def delete_open_thread(self, thread_id: str) -> bool:
+        return await self.open_thread_repository.delete_thread(thread_id)

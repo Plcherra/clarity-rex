@@ -8,8 +8,12 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from chat_service_fakes import FakeAIService, FakeMemoryService
+from durable_write_test_helpers import confirm_durable_write
 from app.services.chat_service import ChatService
 from app.services.chat_turn_observability import ChatTurnObserver
+from app.services.durable_write_builders import proposal_from_record_delete
+from app.services.durable_write_pending import pending_action_for_durable_write
+from app.services.memory_correction_types import CorrectionAffectedRecord
 from app.services.file_service import FileService
 from app.services.time_context_service import TimeContextService
 
@@ -68,29 +72,42 @@ async def test_yes_delete_uses_stored_pending_action_not_history():
         time_context_service=_fixed_time_context_service(),
     )
     conversation_id = await memory_service.create_conversation()
-    memory_service.pending_actions[conversation_id] = {
-        "action_type": "delete",
-        "target_type": "long_term_memory",
-        "target_id": "memory-game-note",
-        "target_label": "Legacy of Kain",
-        "resolver_target": "Legacy of Kain",
-        "scope_tables": ["long_term_memory"],
-    }
+    delete_proposal = proposal_from_record_delete(
+        CorrectionAffectedRecord(
+            table="long_term_memory",
+            id="memory-game-note",
+            action="would_delete",
+            title="Legacy of Kain",
+        ),
+        resolver_target="Legacy of Kain",
+    )
+    memory_service.pending_actions[conversation_id] = pending_action_for_durable_write(
+        proposal=delete_proposal,
+    ).to_dict()
     await memory_service.save_message(
         conversation_id,
         "assistant",
         (
-            "Got it--you want to delete this saved memory: User mom birthday is June 18.\n\n"
-            "Just to confirm before I do that: yes or no?"
+            "Got it—you want to delete this saved memory: User mom birthday is June 18.\n\n"
+            "Permanently delete this memory note?\nLegacy of Kain\n\n"
+            "This action cannot be undone."
         ),
     )
 
-    confirmed = await chat_service.send_message("Yes delete it", conversation_id)
+    confirmed = await confirm_durable_write(
+        chat_service,
+        {
+            "conversation_id": conversation_id,
+            "memory_changes": {
+                "write_proposals": [delete_proposal.to_client_dict()],
+            },
+        },
+        message="Yes delete it",
+    )
 
     assert confirmed["memory_changes"]["archived"] == 1
-    assert memory_service.long_term_memory[0]["active"] is False
-    assert memory_service.long_term_memory[1]["active"] is True
-    assert memory_service.memory_corrections[0]["target_id"] == "memory-game-note"
+    remaining_ids = {row["id"] for row in memory_service.long_term_memory}
+    assert remaining_ids == {"memory-birthday-note"}
     assert conversation_id not in memory_service.pending_actions
     assert ai_service.messages == []
 
@@ -197,13 +214,13 @@ async def test_delete_that_after_assistant_names_goal_on_goals_tab():
         "You delete that, please?",
         conversation_id,
     )
-    confirmed = await chat_service.send_message("Yes", conversation_id)
+    confirmed = await confirm_durable_write(chat_service, requested)
 
-    assert "Just to confirm" in requested["response"]
-    assert "goal" in requested["response"].lower()
-    assert "Be a goal/commitment" in requested["response"]
+    assert requested["memory_changes"]["confirmation_required"] == 1
+    assert "goal" in requested["memory_changes"]["write_proposals"][0]["confirmation_text"].lower()
+    assert "Be a goal/commitment" in requested["memory_changes"]["write_proposals"][0]["confirmation_text"]
     assert confirmed["memory_changes"]["archived"] == 1
-    assert memory_service.plans[0]["active"] is False
+    assert memory_service.plans == []
     assert ai_service.messages == []
 
 

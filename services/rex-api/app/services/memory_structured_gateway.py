@@ -220,3 +220,24 @@ class MemoryStructuredGateway:
         return await self._get_structured_memory_repository().deactivate_plan_milestone(
             milestone_id,
         )
+
+    async def delete_entity(self, entity_id: str) -> bool:
+        return await self._get_structured_memory_repository().delete_entity(entity_id)
+
+    async def delete_entity_event(self, event_id: str) -> bool:
+        return await self._get_structured_memory_repository().delete_entity_event(
+            event_id,
+        )
+
+    async def delete_personal_rule(self, rule_id: str) -> bool:
+        return await self._get_structured_memory_repository().delete_personal_rule(
+            rule_id,
+        )
+
+    async def delete_plan(self, plan_id: str) -> bool:
+        return await self._get_structured_memory_repository().delete_plan(plan_id)
+
+    async def delete_plan_milestone(self, milestone_id: str) -> bool:
+        return await self._get_structured_memory_repository().delete_plan_milestone(
+            milestone_id,
+        )

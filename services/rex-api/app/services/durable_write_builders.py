@@ -15,7 +15,7 @@ from app.services.open_thread_title import clamp_thread_title
 from app.services.goal_command_types import GoalCommand
 from app.services.memory_intent_service import SimpleMemoryIntent
 from app.services.memory_path_policy import direct_save_metadata
-from app.services.plan_service import PlanService
+from app.services.plan_target_date_parsing import format_plan_target_date_label
 
 
 def proposal_from_memory_update(
@@ -176,6 +176,86 @@ def proposal_from_discipline_decision(
         },
         custom_assistant_prompt=confirmation_prompt(decision),
     )
+
+
+def proposal_from_bulk_plan_target_date(
+    plans: list[dict[str, Any]],
+    *,
+    target_date: str,
+    time_context: dict | None = None,
+) -> DurableWriteProposal:
+    titles = [str(plan.get("title") or "Untitled") for plan in plans if plan.get("id")]
+    date_label = format_plan_target_date_label(target_date)
+    body_lines = [f"- {title}" for title in titles]
+    body = f"Set target date to {date_label} for:\n" + "\n".join(body_lines)
+    joined_titles = ", ".join(titles[:3])
+    if len(titles) > 3:
+        joined_titles = f"{joined_titles}, and {len(titles) - 3} more"
+    return DurableWriteProposal(
+        write_kind="update_plan",
+        title=f"Set dates for {len(titles)} goals",
+        body=body,
+        editable_fields=(),
+        apply_snapshot={
+            "type": "bulk_plan_target_date",
+            "payload": {
+                "target_date": target_date,
+                "plans": [
+                    {"id": plan.get("id"), "title": plan.get("title")}
+                    for plan in plans
+                    if plan.get("id")
+                ],
+            },
+        },
+        custom_assistant_prompt=(
+            f"I can set the target date to {date_label} for "
+            f"{len(titles)} goals: {joined_titles}. Should I save that?"
+        ),
+    )
+
+
+def proposal_from_record_delete(
+    match,
+    *,
+    resolver_target: str,
+    scope_tables: tuple[str, ...] = (),
+) -> DurableWriteProposal:
+    title = str(match.title or resolver_target).strip() or resolver_target
+    kind = _table_delete_label(str(match.table or ""))
+    return DurableWriteProposal(
+        write_kind="delete",
+        title=title,
+        body=title,
+        editable_fields=(),
+        risk_level="high",
+        apply_snapshot={
+            "type": "record_delete",
+            "payload": {
+                "table": match.table,
+                "id": match.id,
+                "title": title,
+                "resolver_target": resolver_target,
+                "scope_tables": list(scope_tables),
+            },
+        },
+        custom_assistant_prompt=(
+            f"I can permanently delete this {kind}: {title}. "
+            "This action cannot be undone. Should I delete it?"
+        ),
+    )
+
+
+def _table_delete_label(table: str) -> str:
+    labels = {
+        "long_term_memory": "memory note",
+        "entities": "person or place card",
+        "entity_events": "related note",
+        "personal_rules": "rule",
+        "plans": "goal",
+        "plan_milestones": "milestone",
+        "open_threads": "open thread",
+    }
+    return labels.get(table, "saved item")
 
 
 def _memory_title(content: str) -> str:

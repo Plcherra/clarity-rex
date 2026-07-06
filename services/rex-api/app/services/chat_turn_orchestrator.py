@@ -28,6 +28,8 @@ from app.services.clarity_action_parser import (
 )
 from app.services.goal_command_service import GoalCommandService
 from app.services.conversational_plan_service import ConversationalPlanService
+from app.services.plan_target_date_update_service import PlanTargetDateUpdateService
+from app.services.memory_delete_turn_service import MemoryDeleteTurnService
 from app.services.durable_write_service import DurableWriteService
 from app.services.memory_turn_service import MemoryTurnService
 from app.services.rex_channel import RexBrainChannel
@@ -49,6 +51,8 @@ class ChatTurnOrchestrator:
         memory_turn_service: MemoryTurnService,
         goal_command_service: GoalCommandService,
         conversational_plan_service: ConversationalPlanService,
+        plan_target_date_update_service: PlanTargetDateUpdateService,
+        memory_delete_turn_service: MemoryDeleteTurnService,
         open_thread_turn_service,
         durable_write_service: DurableWriteService,
         clarity_action_parser: ClarityActionParser,
@@ -65,6 +69,8 @@ class ChatTurnOrchestrator:
         self.memory_turn_service = memory_turn_service
         self.goal_command_service = goal_command_service
         self.conversational_plan_service = conversational_plan_service
+        self.plan_target_date_update_service = plan_target_date_update_service
+        self.memory_delete_turn_service = memory_delete_turn_service
         self.open_thread_turn_service = open_thread_turn_service
         self.durable_write_service = durable_write_service
         self.clarity_action_parser = clarity_action_parser

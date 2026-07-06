@@ -9,9 +9,12 @@ from app.models.memory_discipline import (
     MemoryDisciplineDecision,
     MemoryRecordKind,
 )
-from app.models.plan import PlanCreateRequest
+from app.models.plan import PlanCreateRequest, PlanUpdateRequest
 from app.services.confirmed_plan_write_applier import ConfirmedPlanWriteApplier
 from app.services.durable_write_proposal import DurableWriteProposal
+from app.services.memory_correction_types import CorrectionAffectedRecord
+from app.services.memory_correction_delete_applier import MemoryCorrectionDeleteApplier
+from app.services.memory_correction_repository_ops import MemoryCorrectionRepositoryOps
 from app.services.memory_discipline_confirmed_writes import CONFIRMED_PLAN_SERVICE_CHANNEL
 from app.services.open_thread_service import OpenThreadService
 from app.models.open_thread import OpenThreadCreateRequest
@@ -77,6 +80,10 @@ class DurableWriteApplier:
                 conversation_id=conversation_id,
                 source_message_id=source_message_id,
             )
+        if snapshot_type == "bulk_plan_target_date":
+            return await self._apply_bulk_plan_target_date(snapshot)
+        if snapshot_type == "record_delete":
+            return await self._apply_record_delete(snapshot)
         return {"applied": False, "reason": f"unsupported snapshot type: {snapshot_type}"}
 
     async def _apply_memory(
@@ -192,6 +199,75 @@ class DurableWriteApplier:
         if not isinstance(record, dict) or not record.get("id"):
             return {"applied": False}
         return {"applied": True, "record": record, "merged": False}
+
+    async def _apply_bulk_plan_target_date(
+        self,
+        snapshot: dict[str, Any],
+    ) -> dict[str, Any]:
+        payload = dict(snapshot.get("payload") or {})
+        target_date = str(payload.get("target_date") or "").strip()
+        raw_plans = payload.get("plans") or []
+        if not target_date or not isinstance(raw_plans, list):
+            return {"applied": False}
+
+        updated_records: list[dict[str, Any]] = []
+        for item in raw_plans:
+            if not isinstance(item, dict):
+                continue
+            plan_id = str(item.get("id") or "").strip()
+            if not plan_id:
+                continue
+            try:
+                record = await self.plan_service.update_plan(
+                    plan_id,
+                    PlanUpdateRequest(target_date=target_date),
+                )
+            except PlanServiceError:
+                return {"applied": False, "records": updated_records}
+            updated_records.append(record)
+
+        if not updated_records:
+            return {"applied": False}
+        return {
+            "applied": True,
+            "record": updated_records[-1],
+            "records": updated_records,
+            "merged": False,
+            "updated_count": len(updated_records),
+        }
+
+    async def _apply_record_delete(
+        self,
+        snapshot: dict[str, Any],
+    ) -> dict[str, Any]:
+        payload = dict(snapshot.get("payload") or {})
+        table = str(payload.get("table") or "").strip()
+        record_id = str(payload.get("id") or "").strip()
+        if not table or not record_id:
+            return {"applied": False}
+
+        ops = MemoryCorrectionRepositoryOps(self.memory_service)
+        delete_applier = MemoryCorrectionDeleteApplier(ops)
+        match = CorrectionAffectedRecord(
+            table=table,
+            id=record_id,
+            action="would_delete",
+            title=str(payload.get("title") or ""),
+            previous={},
+        )
+        affected = await delete_applier.apply_single_delete_match(match)
+        if affected is None:
+            return {"applied": False}
+        return {
+            "applied": True,
+            "record": {
+                "id": affected.id,
+                "title": affected.title,
+                "table": affected.table,
+            },
+            "merged": False,
+            "deleted": True,
+        }
 
 
 async def preview_plan_merge_title(

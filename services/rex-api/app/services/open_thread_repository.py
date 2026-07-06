@@ -57,3 +57,9 @@ class OpenThreadRepository:
             limit=1,
         )
         return rows[0] if rows else None
+
+    async def delete_thread(self, thread_id: str) -> bool:
+        try:
+            return await self.store._delete_record(OPEN_THREADS_TABLE, thread_id)
+        except Exception:
+            return False

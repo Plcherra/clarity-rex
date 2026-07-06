@@ -140,6 +140,11 @@ class MemoryLongTermGateway:
             )
         )
 
+    async def delete_long_term_memory(self, memory_id: str) -> bool:
+        return await self._get_long_term_memory_repository().delete_long_term_memory(
+            memory_id,
+        )
+
     async def create_memory_correction(self, correction: dict) -> dict:
         return await self._get_memory_correction_repository().create_memory_correction(
             correction,

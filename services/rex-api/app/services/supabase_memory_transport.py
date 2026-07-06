@@ -72,6 +72,14 @@ class SupabaseMemoryTransport:
         )
         return rows[0] if rows else None
 
+    async def _delete_record(self, table: str, record_id: str) -> bool:
+        await self._request(
+            "DELETE",
+            table,
+            query={"id": f"eq.{record_id}"},
+        )
+        return True
+
     def _eq_filter(self, value: object) -> str:
         if isinstance(value, bool):
             return f"eq.{str(value).lower()}"

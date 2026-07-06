@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,10 +19,12 @@ import '../../profile/application/theme_mode_controller.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../../rex/presentation/assistant_chat_visible_provider.dart';
 import '../../../rex/presentation/assistant_screen.dart';
-import '../../../rex/voice/application/voice_call_controller.dart';
-import '../../../rex/voice/presentation/voice_session_shell_bar.dart';
+import '../../../rex/voice/presentation/voice_clarity_action_listener.dart';
 import '../../../app/ui_dependencies.dart';
 import 'home_shell_layout.dart';
+
+/// Shell tab index for the Assistant destination (Dashboard=0 … Assistant=3).
+const assistantShellTabIndex = 3;
 
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({
@@ -253,17 +253,17 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
 
     return HeroMode(
       enabled: false,
-      child: HomeShellAdaptiveScaffold(
-        selectedIndex: _idx,
-        onDestinationSelected: (i) => setState(() => _selectIndex(i)),
-        destinations: navDestinations,
-        railDestinations: railDestinations,
-        onOpenAssistantChat: _openAssistantChat,
-        onRetryVoice: () => unawaited(_retryVoiceCall()),
-        body: ImportJobStatusHost(
-          controller: widget.ui.importJobStatus,
-          onManageCategories: _openCategoryManagement,
-          child: IndexedStack(index: _idx, children: pages),
+      child: VoiceClarityActionListener(
+        child: HomeShellAdaptiveScaffold(
+          selectedIndex: _idx,
+          onDestinationSelected: (i) => setState(() => _selectIndex(i)),
+          destinations: navDestinations,
+          railDestinations: railDestinations,
+          body: ImportJobStatusHost(
+            controller: widget.ui.importJobStatus,
+            onManageCategories: _openCategoryManagement,
+            child: IndexedStack(index: _idx, children: pages),
+          ),
         ),
       ),
     );
@@ -272,27 +272,10 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
   void _selectIndex(int index) {
     _idx = index;
     _lastSelectedIndex = index;
-    if (index != VoiceSessionShellBar.assistantShellIndex) {
+    if (index != assistantShellTabIndex) {
       ref.read(assistantChatVisibleProvider.notifier).setVisible(false);
       return;
     }
     ref.read(assistantChatVisibilityResyncProvider.notifier).request();
-  }
-
-  void _openAssistantChat() {
-    setState(() => _selectIndex(VoiceSessionShellBar.assistantShellIndex));
-    ref.read(assistantChatTabRequestProvider.notifier).request();
-  }
-
-  Future<void> _retryVoiceCall() async {
-    final started = await ref.read(voiceCallProvider.notifier).startCall();
-    if (!started && mounted) {
-      final error = ref.read(voiceCallProvider).errorMessage;
-      if (error != null && error.trim().isNotEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error)));
-      }
-    }
   }
 }

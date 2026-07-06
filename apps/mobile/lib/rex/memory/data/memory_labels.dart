@@ -170,6 +170,8 @@ const _memoryActionTypeLabels = {
   'save_entity_event': 'Save related note',
   'save_memory': 'Save memory',
   'memory': 'Memory note',
+  'delete': 'Delete permanently',
+  'delete_record': 'Delete permanently',
   'correction': 'Correction',
   'archive': 'Archive',
   'merge': 'Merge',

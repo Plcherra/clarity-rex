@@ -169,6 +169,15 @@ class LongTermMemoryRepository:
     async def deactivate_long_term_memory(self, memory_id: str) -> Optional[dict]:
         return await self.update_long_term_memory(memory_id, active=False)
 
+    async def delete_long_term_memory(self, memory_id: str) -> bool:
+        try:
+            return await self.store._delete_record(
+                self.store.settings.supabase_long_term_memory_table,
+                memory_id,
+            )
+        except MemoryServiceError:
+            return False
+
     def memory_from_message_text(self, message: str) -> Optional[dict]:
         text = " ".join(message.strip().split())
         if not text:

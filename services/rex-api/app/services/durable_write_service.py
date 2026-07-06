@@ -17,6 +17,7 @@ from app.services.durable_write_builders import (
     proposal_from_goal_command,
     proposal_from_memory_update,
     proposal_from_open_thread,
+    proposal_from_record_delete,
     proposal_from_simple_memory,
 )
 from app.services.durable_write_pending import (
@@ -26,13 +27,14 @@ from app.services.durable_write_pending import (
 )
 from app.services.durable_write_proposal import DurableWriteProposal
 from app.services.durable_write_proposal_refiner import DurableWriteProposalRefiner
+from app.services.goal_command_formatting import goal_title
 from app.services.durable_write_results import (
     applied_memory_changes,
     failed_memory_changes,
     pending_memory_changes,
     rejected_memory_changes,
 )
-from app.services.goal_command_formatting import goal_title
+from app.services.plan_target_date_parsing import format_plan_target_date_label
 from app.services.goal_command_results import clarification_turn_result
 from app.services.goal_command_types import GoalCommand
 from app.services.memory_intent_service import SimpleMemoryIntent
@@ -166,6 +168,28 @@ class DurableWriteService:
             conversation_messages=conversation_messages,
         )
 
+    async def propose_delete(
+        self,
+        match,
+        *,
+        resolver_target: str,
+        scope_tables: tuple[str, ...] = (),
+        conversation_id: str,
+        user_message: dict,
+        conversation_messages: Optional[list[dict]] = None,
+    ) -> dict:
+        proposal = proposal_from_record_delete(
+            match,
+            resolver_target=resolver_target,
+            scope_tables=scope_tables,
+        )
+        return await self._propose(
+            proposal,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            conversation_messages=conversation_messages,
+        )
+
     async def try_handle_pending(
         self,
         message: str,
@@ -276,20 +300,34 @@ class DurableWriteService:
             source_message_id=str(user_message.get("id") or "") or None,
         )
         if not result.get("applied"):
+            if proposal.write_kind == "delete":
+                failure = (
+                    f"I understood you wanted to delete {proposal.title}, "
+                    "but I couldn't delete it just now. Please try again in a moment."
+                )
+            else:
+                failure = (
+                    f"I understood what you wanted to save about {proposal.title}, "
+                    "but I couldn't save it just now. Please try again in a moment."
+                )
             return await clarification_turn_result(
                 self.memory_service,
                 conversation_id=conversation_id,
                 user_message=user_message,
-                response=(
-                    f"I understood what you wanted to save about {proposal.title}, "
-                    "but I couldn't save it just now. Please try again in a moment."
-                ),
+                response=failure,
                 memory_changes=failed_memory_changes(proposal=proposal),
             )
 
         await self._pending().clear(conversation_id)
         record = result.get("record") or {}
-        saved = _saved_response(proposal, record=record, merged=bool(result.get("merged")))
+        records = result.get("records") or ([record] if record else [])
+        updated_count = result.get("updated_count")
+        saved = _saved_response(
+            proposal,
+            record=record,
+            merged=bool(result.get("merged")),
+            updated_count=updated_count,
+        )
         return await clarification_turn_result(
             self.memory_service,
             conversation_id=conversation_id,
@@ -299,6 +337,8 @@ class DurableWriteService:
                 proposal=proposal,
                 record=record,
                 merged=bool(result.get("merged")),
+                records=records,
+                updated_count=updated_count,
             ),
         )
 
@@ -310,11 +350,12 @@ class DurableWriteService:
         user_message: dict,
     ) -> dict:
         await self._pending().clear(conversation_id)
+        verb = "delete" if proposal.write_kind == "delete" else "save"
         return await clarification_turn_result(
             self.memory_service,
             conversation_id=conversation_id,
             user_message=user_message,
-            response=f"Okay, I won't save {proposal.title}.",
+            response=f"Okay, I won't {verb} {proposal.title}.",
             memory_changes=rejected_memory_changes(proposal=proposal),
         )
 
@@ -327,6 +368,7 @@ def _saved_response(
     *,
     record: dict[str, Any],
     merged: bool,
+    updated_count: int | None = None,
 ) -> str:
     if proposal.write_kind == "memory":
         snapshot_type = str(proposal.apply_snapshot.get("type") or "")
@@ -335,6 +377,14 @@ def _saved_response(
         return f"Saved to Clarity Knows: {proposal.title}"
     if merged and proposal.merge_target_title:
         return f"Updated existing plan \"{proposal.merge_target_title}\" with that context."
+    if proposal.write_kind == "update_plan":
+        snapshot_type = str(proposal.apply_snapshot.get("type") or "")
+        if snapshot_type == "bulk_plan_target_date":
+            payload = dict(proposal.apply_snapshot.get("payload") or {})
+            target_date = str(payload.get("target_date") or "")
+            count = updated_count or len(payload.get("plans") or [])
+            date_label = format_plan_target_date_label(target_date)
+            return f"Updated target dates for {count} goals to {date_label}."
     if proposal.write_kind == "plan":
         return f"Saved plan in Goals: {proposal.title}"
     if proposal.write_kind == "open_thread":
@@ -345,4 +395,6 @@ def _saved_response(
     if proposal.write_kind == "milestone":
         target = proposal.target_label or "your plan"
         return f"Saved milestone under {target}: {proposal.title}"
+    if proposal.write_kind == "delete":
+        return f"Permanently deleted: {proposal.title}."
     return f"Saved {proposal.title}."

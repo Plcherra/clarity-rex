@@ -177,4 +177,12 @@ TABLE_SPECS = (
         text_fields=("title", "description"),
         correction_type="plan_detail",
     ),
+    TableSpec(
+        table="open_threads",
+        list_method="list_open_threads",
+        update_method="update_open_thread",
+        deactivate_method="delete_open_thread",
+        text_fields=("title", "summary"),
+        correction_type="other",
+    ),
 )

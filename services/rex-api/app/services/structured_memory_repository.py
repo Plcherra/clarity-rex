@@ -316,3 +316,24 @@ class StructuredMemoryRepository:
             active=False,
             status="canceled",
         )
+
+    async def delete_entity(self, entity_id: str) -> bool:
+        return await self._delete_row(ENTITIES_TABLE, entity_id)
+
+    async def delete_entity_event(self, event_id: str) -> bool:
+        return await self._delete_row(ENTITY_EVENTS_TABLE, event_id)
+
+    async def delete_personal_rule(self, rule_id: str) -> bool:
+        return await self._delete_row(PERSONAL_RULES_TABLE, rule_id)
+
+    async def delete_plan(self, plan_id: str) -> bool:
+        return await self._delete_row(PLANS_TABLE, plan_id)
+
+    async def delete_plan_milestone(self, milestone_id: str) -> bool:
+        return await self._delete_row(PLAN_MILESTONES_TABLE, milestone_id)
+
+    async def _delete_row(self, table: str, record_id: str) -> bool:
+        try:
+            return await self.store._delete_record(table, record_id)
+        except Exception:
+            return False

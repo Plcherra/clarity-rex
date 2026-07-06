@@ -113,8 +113,14 @@ extension ChatControllerContext on ChatController {
           continue;
         }
         final kind = proposal['write_kind']?.toString() ?? '';
-        if ({'plan', 'milestone', 'open_thread', 'update_plan', 'update_milestone'}
+        if ({'plan', 'milestone', 'open_thread', 'update_plan', 'update_milestone', 'delete'}
             .contains(kind)) {
+          if (kind == 'delete') {
+            final table = proposal['delete_table']?.toString() ?? '';
+            if (!{'plans', 'plan_milestones', 'open_threads'}.contains(table)) {
+              continue;
+            }
+          }
           return proposal['status'] == 'applied';
         }
       }

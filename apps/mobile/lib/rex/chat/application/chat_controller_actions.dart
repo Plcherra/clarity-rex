@@ -95,7 +95,8 @@ extension ChatControllerActions on ChatController {
         action == 'save_memory' ||
         action == 'update_plan' ||
         action == 'update_plan_milestone' ||
-        action == 'save_entity_event';
+        action == 'save_entity_event' ||
+        action == 'delete_record';
   }
 
   Future<void> _confirmPlanSave(ClarityActionCard action) async {

@@ -391,21 +391,19 @@ async def test_delete_saved_tonight_plan_requires_confirmation_and_archives_memo
 
     requested = await chat_service.send_message("Can you delete that tonight plan?")
 
-    assert "Just to confirm" in requested["response"]
     assert requested["memory_changes"]["confirmation_required"] == 1
+    assert requested["memory_changes"]["write_proposals"][0]["write_kind"] == "delete"
+    assert "cannot be undone" in (
+        requested["memory_changes"]["write_proposals"][0]["confirmation_text"].lower()
+    )
     assert memory_service.long_term_memory[0]["active"] is True
     assert ai_service.messages == []
 
-    confirmed = await chat_service.send_message("Yes", requested["conversation_id"])
+    confirmed = await confirm_durable_write(chat_service, requested)
 
-    assert "removed from active saved memory" in confirmed["response"]
+    assert "Permanently deleted" in confirmed["response"]
     assert confirmed["memory_changes"]["archived"] == 1
-    assert confirmed["memory_changes"]["records"][0]["action"] == "direct_archived"
-    assert confirmed["memory_changes"]["records"][0]["metadata"][
-        "backend_confirmed"
-    ] is True
-    assert memory_service.long_term_memory[0]["active"] is False
-    assert memory_service.memory_corrections[0]["target_id"] == "memory-tonight-plan"
+    assert memory_service.long_term_memory == []
     assert ai_service.messages == []
 
     await chat_service.send_message(
@@ -442,13 +440,12 @@ async def test_delete_that_event_resolves_visible_knows_event_memory():
     )
 
     requested = await chat_service.send_message("Can you delete that event?")
-    confirmed = await chat_service.send_message("Yes", requested["conversation_id"])
+    confirmed = await confirm_durable_write(chat_service, requested)
 
-    assert "Just to confirm" in requested["response"]
-    assert "User plans to watch it tonight." in requested["response"]
+    assert requested["memory_changes"]["confirmation_required"] == 1
+    assert "User plans to watch it tonight." in requested["memory_changes"]["write_proposals"][0]["confirmation_text"]
     assert confirmed["memory_changes"]["archived"] == 1
-    assert memory_service.long_term_memory[0]["active"] is False
-    assert memory_service.memory_corrections[0]["target_id"] == "memory-visible-event"
+    assert memory_service.long_term_memory == []
     assert ai_service.messages == []
 
 
@@ -490,13 +487,12 @@ async def test_delete_it_resolves_recently_listed_saved_memory():
         "Is it a note or a memory? I see it as a event memory, can you delete it?",
         conversation_id,
     )
-    confirmed = await chat_service.send_message("Yes", conversation_id)
+    confirmed = await confirm_durable_write(chat_service, requested)
 
-    assert "Just to confirm" in requested["response"]
-    assert "User plans to watch it tonight" in requested["response"]
+    assert requested["memory_changes"]["confirmation_required"] == 1
+    assert "User plans to watch it tonight" in requested["memory_changes"]["write_proposals"][0]["confirmation_text"]
     assert confirmed["memory_changes"]["archived"] == 1
-    assert memory_service.long_term_memory[0]["active"] is False
-    assert memory_service.memory_corrections[0]["target_id"] == "memory-tonight-plan"
+    assert memory_service.long_term_memory == []
     assert ai_service.messages == []
 
 
@@ -522,11 +518,11 @@ async def test_delete_saved_memory_accepts_get_rid_of_wording():
     )
 
     requested = await chat_service.send_message("Can you get rid of that event note?")
-    confirmed = await chat_service.send_message("Yes", requested["conversation_id"])
+    confirmed = await confirm_durable_write(chat_service, requested)
 
-    assert "Just to confirm" in requested["response"]
+    assert requested["memory_changes"]["confirmation_required"] == 1
     assert confirmed["memory_changes"]["archived"] == 1
-    assert memory_service.long_term_memory[0]["active"] is False
+    assert memory_service.long_term_memory == []
     assert ai_service.messages == []
 
 
@@ -552,19 +548,18 @@ async def test_delete_entity_event_requires_confirmation_and_archives_event():
     )
 
     requested = await chat_service.send_message("Delete the Mom birthday note")
-    confirmed = await chat_service.send_message("Yes", requested["conversation_id"])
+    confirmed = await confirm_durable_write(chat_service, requested)
 
-    assert "Just to confirm" in requested["response"]
+    assert requested["memory_changes"]["confirmation_required"] == 1
     assert confirmed["memory_changes"]["archived"] == 1
-    assert confirmed["memory_changes"]["records"][0]["kind"] == "entity_events"
-    assert memory_service.entity_events[0]["active"] is False
+    assert memory_service.entity_events == []
     assert ai_service.messages == []
 
 
 @pytest.mark.asyncio
 async def test_delete_saved_memory_does_not_claim_success_without_backend_confirmation():
     class UnconfirmedDeleteMemoryService(FakeMemoryService):
-        async def deactivate_long_term_memory(self, memory_id):
+        async def delete_long_term_memory(self, memory_id):
             return True
 
     ai_service = FakeAIService(response="Rex normal recall")
@@ -587,25 +582,20 @@ async def test_delete_saved_memory_does_not_claim_success_without_backend_confir
     )
 
     requested = await chat_service.send_message("Can you delete that tonight plan?")
-    confirmed = await chat_service.send_message("Yes", requested["conversation_id"])
+    confirmed = await confirm_durable_write(chat_service, requested)
 
-    assert "couldn't confirm" in confirmed["response"]
-    assert "removed from active saved memory" not in confirmed["response"]
+    assert "couldn't delete" in confirmed["response"].lower()
+    assert "Permanently deleted" not in confirmed["response"]
     assert confirmed["memory_changes"]["archived"] == 0
-    assert confirmed["memory_changes"]["records"][0]["action"] == "delete_failed"
-    assert confirmed["memory_changes"]["records"][0]["metadata"][
-        "backend_confirmed"
-    ] is False
     assert memory_service.long_term_memory[0]["active"] is True
-    assert memory_service.memory_corrections == []
     assert ai_service.messages == []
 
 
 @pytest.mark.asyncio
 async def test_delete_saved_memory_rechecks_active_listing_before_success():
     class StaleActiveDeleteMemoryService(FakeMemoryService):
-        async def deactivate_long_term_memory(self, memory_id):
-            return {"id": memory_id, "active": False}
+        async def delete_long_term_memory(self, memory_id):
+            return True
 
     ai_service = FakeAIService(response="Rex normal recall")
     memory_service = StaleActiveDeleteMemoryService()
@@ -627,14 +617,12 @@ async def test_delete_saved_memory_rechecks_active_listing_before_success():
     )
 
     requested = await chat_service.send_message("Can you delete that tonight plan?")
-    confirmed = await chat_service.send_message("Yes", requested["conversation_id"])
+    confirmed = await confirm_durable_write(chat_service, requested)
 
-    assert "couldn't confirm" in confirmed["response"]
-    assert "removed from active saved memory" not in confirmed["response"]
+    assert "couldn't delete" in confirmed["response"].lower()
+    assert "Permanently deleted" not in confirmed["response"]
     assert confirmed["memory_changes"]["archived"] == 0
-    assert confirmed["memory_changes"]["records"][0]["action"] == "delete_failed"
     assert memory_service.long_term_memory[0]["active"] is True
-    assert memory_service.memory_corrections == []
     assert ai_service.messages == []
 
 
@@ -1094,12 +1082,12 @@ async def test_delete_goal_by_starting_as_reference():
         "The one starting as 'be a goal...'",
         requested["conversation_id"],
     )
-    confirmed = await chat_service.send_message("Yes", clarified["conversation_id"])
+    confirmed = await confirm_durable_write(chat_service, clarified)
 
     assert "exact saved item" in requested["response"].casefold()
-    assert "Just to confirm" in clarified["response"]
+    assert clarified["memory_changes"]["confirmation_required"] == 1
     assert confirmed["memory_changes"]["archived"] == 1
-    assert memory_service.plans[0]["active"] is False
+    assert memory_service.plans == []
     assert ai_service.messages == []
 
 

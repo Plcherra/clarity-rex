@@ -201,6 +201,13 @@ class FakeMemoryService:
         memory = await self.update_long_term_memory(memory_id, active=False)
         return memory is not None
 
+    async def delete_long_term_memory(self, memory_id):
+        before = len(self.long_term_memory)
+        self.long_term_memory = [
+            memory for memory in self.long_term_memory if memory.get("id") != memory_id
+        ]
+        return len(self.long_term_memory) < before
+
     async def create_memory_correction(self, correction):
         row = {
             "id": f"correction-{len(self.memory_corrections) + 1}",
@@ -404,6 +411,59 @@ class FakeMemoryService:
             if milestone["id"] == milestone_id:
                 milestone.update({"active": False, "status": "archived"})
                 return milestone
+        return None
+
+    async def delete_entity(self, entity_id):
+        before = len(self.entities)
+        self.entities = [item for item in self.entities if item.get("id") != entity_id]
+        return len(self.entities) < before
+
+    async def delete_entity_event(self, event_id):
+        before = len(self.entity_events)
+        self.entity_events = [
+            item for item in self.entity_events if item.get("id") != event_id
+        ]
+        return len(self.entity_events) < before
+
+    async def delete_personal_rule(self, rule_id):
+        rules = getattr(self, "personal_rules", [])
+        before = len(rules)
+        self.personal_rules = [item for item in rules if item.get("id") != rule_id]
+        return len(self.personal_rules) < before
+
+    async def delete_plan(self, plan_id):
+        before = len(self.plans)
+        self.plans = [item for item in self.plans if item.get("id") != plan_id]
+        return len(self.plans) < before
+
+    async def delete_plan_milestone(self, milestone_id):
+        before = len(self.plan_milestones)
+        self.plan_milestones = [
+            item for item in self.plan_milestones if item.get("id") != milestone_id
+        ]
+        return len(self.plan_milestones) < before
+
+    async def list_open_threads(self, *, status=None, limit=50):
+        threads = self.open_threads
+        if status is not None:
+            threads = [thread for thread in threads if thread.get("status") == status]
+        return threads[:limit]
+
+    async def delete_open_thread(self, thread_id):
+        before = len(self.open_threads)
+        self.open_threads = [
+            thread for thread in self.open_threads if thread.get("id") != thread_id
+        ]
+        return len(self.open_threads) < before
+
+    @property
+    def open_thread_repository(self):
+        return self
+
+    async def get_thread(self, thread_id):
+        for thread in self.open_threads:
+            if thread.get("id") == thread_id:
+                return thread
         return None
 
     async def list_plan_milestones(

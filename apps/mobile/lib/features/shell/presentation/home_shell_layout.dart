@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/layout/finance_content_constraints.dart';
-import '../../../rex/presentation/assistant_chat_visible_provider.dart';
-import '../../../rex/voice/application/voice_call_controller.dart';
-import '../../../rex/voice/presentation/voice_session_shell_bar.dart';
 
 export '../../../core/layout/finance_content_constraints.dart';
 
 /// Adaptive shell navigation: bottom bar below [homeShellCompactBreakpoint],
 /// [NavigationRail] at wider widths.
-class HomeShellAdaptiveScaffold extends ConsumerWidget {
+class HomeShellAdaptiveScaffold extends StatelessWidget {
   const HomeShellAdaptiveScaffold({
     super.key,
     required this.selectedIndex,
@@ -18,8 +14,6 @@ class HomeShellAdaptiveScaffold extends ConsumerWidget {
     required this.destinations,
     required this.railDestinations,
     required this.body,
-    this.onOpenAssistantChat,
-    this.onRetryVoice,
   });
 
   final int selectedIndex;
@@ -27,42 +21,18 @@ class HomeShellAdaptiveScaffold extends ConsumerWidget {
   final List<NavigationDestination> destinations;
   final List<NavigationRailDestination> railDestinations;
   final Widget body;
-  final VoidCallback? onOpenAssistantChat;
-  final VoidCallback? onRetryVoice;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final compact = isHomeShellCompactWidth(context);
-    final voice = ref.watch(voiceCallProvider);
-    final assistantChatVisible = ref.watch(assistantChatVisibleProvider);
-    final showVoiceBar =
-        onOpenAssistantChat != null &&
-        onRetryVoice != null &&
-        VoiceSessionShellBar.shouldShow(
-          voice: voice,
-          selectedShellIndex: selectedIndex,
-          assistantChatVisible: assistantChatVisible,
-        );
-    final voiceFooter = showVoiceBar
-        ? VoiceSessionShellBar(
-            onOpenAssistantChat: onOpenAssistantChat!,
-            onRetryVoice: onRetryVoice!,
-          )
-        : null;
 
     if (compact) {
       return Scaffold(
         body: body,
-        bottomNavigationBar: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ?voiceFooter,
-            NavigationBar(
-              selectedIndex: selectedIndex,
-              onDestinationSelected: onDestinationSelected,
-              destinations: destinations,
-            ),
-          ],
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onDestinationSelected,
+          destinations: destinations,
         ),
       );
     }
@@ -78,15 +48,7 @@ class HomeShellAdaptiveScaffold extends ConsumerWidget {
             destinations: railDestinations,
           ),
           const VerticalDivider(width: 1),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: body),
-                ?voiceFooter,
-              ],
-            ),
-          ),
+          Expanded(child: body),
         ],
       ),
     );

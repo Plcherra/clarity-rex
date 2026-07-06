@@ -175,7 +175,26 @@ class ConversationPendingActionService:
             and existing.action_type == "durable_write"
             and action.action_type == "durable_write"
         ):
-            note = "I replaced your earlier pending save with this new one."
+            from app.services.durable_write_pending import proposal_from_pending_action
+
+            existing_proposal = proposal_from_pending_action(existing)
+            new_proposal = proposal_from_pending_action(action)
+            if (
+                existing_proposal
+                and existing_proposal.write_kind == "delete"
+                and new_proposal
+                and new_proposal.write_kind != "delete"
+            ):
+                note = SUPERSEDE_MESSAGES.get(("delete", "durable_write"))
+            elif (
+                new_proposal
+                and new_proposal.write_kind == "delete"
+                and existing_proposal
+                and existing_proposal.write_kind != "delete"
+            ):
+                note = SUPERSEDE_MESSAGES.get(("durable_write", "delete"))
+            else:
+                note = "I replaced your earlier pending save with this new one."
         await self.set(conversation_id, action)
         return note
 

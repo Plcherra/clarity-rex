@@ -31,7 +31,7 @@ class MemoryCorrectionDeleteApplier:
                 updated=updated,
             )
 
-        archived = await self.repository_ops.safe_archive(
+        archived = await self.repository_ops.safe_delete(
             spec_for_table(match.table),
             match.id,
         )
@@ -40,7 +40,7 @@ class MemoryCorrectionDeleteApplier:
         return CorrectionAffectedRecord(
             table=match.table,
             id=match.id,
-            action="archived",
+            action="deleted",
             title=match.title,
             previous=match.previous,
         )
@@ -142,7 +142,7 @@ def _entity_attribute_still_present(
     attributes = metadata.get("attributes")
     if not isinstance(attributes, dict):
         return False
-    if attribute_key in attributes:
-        return True
+        if attribute_key in attributes:
+            return True
     value_key = normalize_key(attribute_value)
     return bool(value_key and value_key in normalize_key(attributes))

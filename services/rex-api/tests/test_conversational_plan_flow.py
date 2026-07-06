@@ -262,8 +262,11 @@ async def test_delete_supersedes_pending_plan_save_with_message():
     )
 
     assert "cleared your pending plan save" in delete_request["response"].lower()
-    assert "just to confirm" in delete_request["response"].lower()
-    assert memory_service.pending_actions[requested["conversation_id"]]["action_type"] == "delete"
+    assert delete_request["memory_changes"]["confirmation_required"] == 1
+    assert (
+        delete_request["memory_changes"]["write_proposals"][0]["write_kind"] == "delete"
+    )
+    assert memory_service.pending_actions[requested["conversation_id"]]["action_type"] == "durable_write"
 
 
 @pytest.mark.asyncio
@@ -287,7 +290,7 @@ async def test_plan_save_supersedes_pending_delete_with_message():
     delete_request = await chat_service.send_message(
         "Can you delete that tonight plan?"
     )
-    assert "just to confirm" in delete_request["response"].lower()
+    assert delete_request["memory_changes"]["confirmation_required"] == 1
 
     plan_request = await chat_service.send_message(
         "I'm trying to build a consistent strength training routine three times per week.",

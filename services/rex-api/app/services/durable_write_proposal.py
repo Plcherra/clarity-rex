@@ -27,6 +27,7 @@ _LEGACY_ACTION_BY_KIND: dict[str, str] = {
     "entity_event": "save_entity_event",
     "update_plan": "update_plan",
     "update_milestone": "update_plan_milestone",
+    "delete": "delete_record",
 }
 
 
@@ -76,6 +77,11 @@ class DurableWriteProposal:
         if self.write_kind == "entity_event":
             target = self.target_label or "that person"
             return f"Save as a note on {target}?\n{self.body or self.title}"
+        if self.write_kind == "delete":
+            return (
+                f"Permanently delete this {self._delete_kind_label()}?\n"
+                f"{self.title}\n\nThis action cannot be undone."
+            )
         return f"Save this {self._kind_label()}?\n{self.title}"
 
     def assistant_prompt(self) -> str:
@@ -92,11 +98,26 @@ class DurableWriteProposal:
             "open_thread": "an open thread",
             "entity_event": "a related note",
             "update_plan": "a plan update",
+            "delete": "saved item",
         }
         return labels.get(self.write_kind, "saved item")
 
+    def _delete_kind_label(self) -> str:
+        table = str((self.apply_snapshot.get("payload") or {}).get("table") or "")
+        labels = {
+            "long_term_memory": "memory note",
+            "entities": "person or place card",
+            "entity_events": "related note",
+            "personal_rules": "rule",
+            "plans": "goal",
+            "plan_milestones": "milestone",
+            "open_threads": "open thread",
+        }
+        return labels.get(table, "saved item")
+
     def to_client_dict(self, *, status: str = "pending") -> dict[str, Any]:
-        return {
+        payload = dict((self.apply_snapshot.get("payload") or {}))
+        client = {
             "id": self.proposal_id,
             "write_kind": self.write_kind,
             "action": self.legacy_action,
@@ -110,6 +131,9 @@ class DurableWriteProposal:
             "risk_level": self.risk_level,
             "status": status,
         }
+        if self.write_kind == "delete":
+            client["delete_table"] = payload.get("table")
+        return client
 
     def to_dict(self) -> dict[str, Any]:
         return {

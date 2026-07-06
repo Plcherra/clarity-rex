@@ -175,6 +175,8 @@ class PlanService:
             payload["description"] = clean_optional(payload["description"])
         if "desired_outcome" in payload:
             payload["desired_outcome"] = clean_optional(payload["desired_outcome"])
+        if "target_date" in payload:
+            payload["target_date"] = sanitize_plan_target_date(payload.get("target_date"))
         payload = await self.entity_linker.normalize_entity_references(
             payload,
             text_fields=("title", "description", "desired_outcome"),

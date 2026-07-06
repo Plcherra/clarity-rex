@@ -34,3 +34,15 @@ def test_sanitize_plan_target_date_drops_garbage():
     assert sanitize_plan_target_date("locked") is None
     assert sanitize_plan_target_date("June 18") == "June 18"
     assert sanitize_plan_target_date("2026-07-01") == "2026-07-01"
+
+
+def test_resolve_end_of_july_for_bulk_goal_update():
+    from app.services.plan_target_date_parsing import (
+        looks_like_plan_target_date_update,
+        resolve_plan_target_date_iso,
+    )
+
+    message = "Set end of July for all three goals."
+    time_context = {"date": "2026-06-01"}
+    assert looks_like_plan_target_date_update(message)
+    assert resolve_plan_target_date_iso(message, time_context=time_context) == "2026-07-31"

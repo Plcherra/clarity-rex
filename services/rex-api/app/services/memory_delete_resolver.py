@@ -28,6 +28,7 @@ from app.services.memory_reference_resolver import (
 
 GOAL_DELETE_SCOPE = ("plans", "plan_milestones")
 ACCOUNTABILITY_DELETE_SCOPE = ("plans", "plan_milestones")
+OPEN_THREAD_DELETE_SCOPE = ("open_threads",)
 MEMORY_DELETE_SCOPE = (
     "long_term_memory",
     "entities",
@@ -74,12 +75,14 @@ def parse_delete_request(text: str) -> Optional[ParsedDeleteRequest]:
     goal_delete = re.search(
         r"\b(?:delete|remove|archive)\s+(?:the\s+)?(?P<kind>goal)s?\b"
         r"(?:\s+(?:we\s+have(?:\s+saved)?|(?:that\s+)?(?:i\s+)?saved))?"
-        r"(?:\s+['\"](?P<quoted>.+?)['\"])?",
+        r"(?:\s+['\"](?P<quoted>.+?)['\"])?"
+        r"(?:\s+(?P<title>.+))?$",
         cleaned,
         flags=re.IGNORECASE,
     )
     if goal_delete:
         quoted = goal_delete.group("quoted")
+        title = goal_delete.group("title")
         kind = str(goal_delete.group("kind") or "goal").strip().lower()
         scope = GOAL_DELETE_SCOPE
         if quoted:
@@ -89,9 +92,37 @@ def parse_delete_request(text: str) -> Optional[ParsedDeleteRequest]:
                 scope_tables=scope,
                 is_vague=is_vague_delete_reference(reference),
             )
+        if title:
+            reference = trim_removal_target(title)
+            return ParsedDeleteRequest(
+                reference=reference,
+                scope_tables=scope,
+                is_vague=is_vague_delete_reference(reference),
+            )
         return ParsedDeleteRequest(
             reference=kind,
             scope_tables=scope,
+            is_vague=True,
+        )
+
+    thread_delete = re.search(
+        r"\b(?:delete|remove|close)\s+(?:the\s+)?(?P<kind>open\s+thread)s?\b"
+        r"(?:\s+['\"](?P<quoted>.+?)['\"])?",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    if thread_delete:
+        quoted = thread_delete.group("quoted")
+        if quoted:
+            reference = trim_removal_target(quoted)
+            return ParsedDeleteRequest(
+                reference=reference,
+                scope_tables=OPEN_THREAD_DELETE_SCOPE,
+                is_vague=is_vague_delete_reference(reference),
+            )
+        return ParsedDeleteRequest(
+            reference="open thread",
+            scope_tables=OPEN_THREAD_DELETE_SCOPE,
             is_vague=True,
         )
 

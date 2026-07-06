@@ -111,6 +111,8 @@ class _ClarityActionCardState extends State<_ClarityActionCard> {
         : scheme.primary.withValues(alpha: 0.42);
     final canEditTitle = action.editableFields.contains('title');
     final canEditBody = action.editableFields.contains('body');
+    final isDeleteAction =
+        action.writeKind == 'delete' || action.action == 'delete_record';
     final isPendingProposal =
         action.isPending && action.hasEditableFields && !action.isApplying;
 
@@ -136,9 +138,11 @@ class _ClarityActionCardState extends State<_ClarityActionCard> {
               Row(
                 children: [
                   Icon(
-                    Icons.save_outlined,
+                    isDeleteAction
+                        ? Icons.delete_outline_rounded
+                        : Icons.save_outlined,
                     size: 22,
-                    color: scheme.primary,
+                    color: isDeleteAction ? scheme.error : scheme.primary,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -246,9 +250,11 @@ class _ClarityActionCardState extends State<_ClarityActionCard> {
                   icon: action.isApplying
                       ? const ClarityInlineLoader(size: 18, strokeWidth: 2)
                       : const Icon(Icons.check_rounded, size: 20),
-                  label: Text(l10n.commonConfirm),
+                  label: Text(isDeleteAction ? 'Delete' : l10n.commonConfirm),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
+                    backgroundColor: isDeleteAction ? scheme.error : null,
+                    foregroundColor: isDeleteAction ? scheme.onError : null,
                     textStyle: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -261,7 +267,7 @@ class _ClarityActionCardState extends State<_ClarityActionCard> {
                       ? null
                       : () => widget.onDismiss!(action),
                   icon: const Icon(Icons.close_rounded, size: 20),
-                  label: Text(l10n.commonDismiss),
+                  label: Text(isDeleteAction ? 'Keep it' : l10n.commonDismiss),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                     textStyle: theme.textTheme.titleSmall?.copyWith(
@@ -279,6 +285,17 @@ class _ClarityActionCardState extends State<_ClarityActionCard> {
 }
 
 String _pendingProposalHeadline(ClarityActionCard action) {
+  if (action.writeKind == 'delete' || action.action == 'delete_record') {
+    switch (action.deleteTable) {
+      case 'plans':
+      case 'plan_milestones':
+        return 'Delete from Goals';
+      case 'open_threads':
+        return 'Delete open thread';
+      default:
+        return 'Delete permanently';
+    }
+  }
   switch (action.writeKind) {
     case 'open_thread':
       return 'Track in Goals';

@@ -106,6 +106,40 @@ async def try_short_circuit_turn(
         )
         return conversational_plan_turn
 
+    plan_date_turn = await orchestrator.plan_target_date_update_service.handle_turn(
+        brain_message,
+        conversation_id=conversation_id,
+        user_message=turn_context.user_message,
+        time_context=turn_context.time_context,
+        pending_action=pending_action,
+    )
+    if plan_date_turn:
+        finish_short_circuit(
+            orchestrator.turn_observer,
+            orchestrator.usage_recorder,
+            turn_trace,
+            turn_started_at,
+            "plan_target_date",
+        )
+        return plan_date_turn
+
+    delete_turn = await orchestrator.memory_delete_turn_service.handle_turn(
+        brain_message,
+        conversation_id=conversation_id,
+        user_message=turn_context.user_message,
+        conversation_history=turn_context.conversation_history,
+        pending_action=pending_action,
+    )
+    if delete_turn:
+        finish_short_circuit(
+            orchestrator.turn_observer,
+            orchestrator.usage_recorder,
+            turn_trace,
+            turn_started_at,
+            "memory_delete",
+        )
+        return delete_turn
+
     goal_command_turn = await orchestrator.goal_command_service.handle_turn(
         brain_message,
         conversation_id=conversation_id,
@@ -222,6 +256,8 @@ async def _try_remind_pending_durable_write(
 
     proposal = proposal_from_pending_action(pending)
     if proposal is None:
+        return None
+    if proposal.write_kind == "delete":
         return None
 
     return await clarification_turn_result(

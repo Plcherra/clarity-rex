@@ -13,6 +13,7 @@ from app.models.memory_discipline import (
 from app.services.conversation_pending_action import PendingAction
 from app.services.conversational_plan_candidate import build_plan_candidate_payload
 from app.services.conversational_plan_detection import ConversationalPlanDetector
+from app.services.durable_write_pending import proposal_from_pending_action
 from app.services.goal_command_formatting import goal_title
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.plan_service import PlanService
@@ -45,7 +46,7 @@ class ConversationalPlanService:
         pending_action=None,
     ) -> Optional[dict]:
         pending = self._pending_action(pending_action)
-        if pending is not None and pending.action_type != "delete":
+        if pending is not None and not _allows_plan_proposal_while_pending(pending):
             return None
 
         if self.durable_write_service is None:
@@ -100,3 +101,12 @@ def _requires_user_confirmation(decision: MemoryDisciplineDecision) -> bool:
         MemoryDisciplineAction.UPDATE_MILESTONE,
         MemoryDisciplineAction.CREATE_ENTITY_EVENT,
     }
+
+
+def _allows_plan_proposal_while_pending(pending: PendingAction) -> bool:
+    if pending.action_type == "delete":
+        return True
+    if pending.action_type != "durable_write":
+        return False
+    proposal = proposal_from_pending_action(pending)
+    return proposal is not None and proposal.write_kind == "delete"

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from app.services.memory_correction_types import TableSpec
+from app.services.durable_record_delete import HARD_DELETE_METHODS
 
 
 class MemoryCorrectionRepositoryOps:
@@ -60,6 +61,36 @@ class MemoryCorrectionRepositoryOps:
             return False
         if isinstance(archived, dict) and archived.get("active") is not False:
             return False
+        active_records = await self.verified_active_list(spec)
+        if active_records is None:
+            return False
+        return all(str(record.get("id") or "") != record_id for record in active_records)
+
+    async def safe_delete(self, spec: TableSpec, record_id: str) -> bool:
+        method_name = HARD_DELETE_METHODS.get(spec.table)
+        if not method_name:
+            return False
+        method = getattr(self.memory_service, method_name, None)
+        if method is None:
+            return False
+        try:
+            deleted = await method(record_id)
+        except Exception:
+            return False
+        if deleted is False:
+            return False
+        return await self.delete_was_confirmed(spec, record_id)
+
+    async def delete_was_confirmed(self, spec: TableSpec, record_id: str) -> bool:
+        if spec.table == "open_threads":
+            repo = getattr(self.memory_service, "open_thread_repository", None)
+            get_thread = getattr(repo, "get_thread", None) if repo is not None else None
+            if get_thread is not None:
+                try:
+                    row = await get_thread(record_id)
+                except Exception:
+                    return False
+                return row is None
         active_records = await self.verified_active_list(spec)
         if active_records is None:
             return False

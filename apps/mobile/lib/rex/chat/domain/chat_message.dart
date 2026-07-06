@@ -102,6 +102,7 @@ class ClarityActionCard {
     this.body,
     this.targetLabel,
     this.editableFields = const [],
+    this.deleteTable,
   });
 
   final String id;
@@ -117,6 +118,7 @@ class ClarityActionCard {
   final String? body;
   final String? targetLabel;
   final List<String> editableFields;
+  final String? deleteTable;
 
   factory ClarityActionCard.fromJson(Map<String, dynamic> json) {
     final payload = json['payload'];
@@ -153,6 +155,9 @@ class ClarityActionCard {
                 if (item != null) item.toString(),
             ]
           : const [],
+      deleteTable: json['delete_table'] is String
+          ? json['delete_table'] as String
+          : null,
     );
   }
 
@@ -183,6 +188,7 @@ class ClarityActionCard {
     String? body,
     String? targetLabel,
     List<String>? editableFields,
+    String? deleteTable,
     bool clearError = false,
   }) {
     return ClarityActionCard(
@@ -199,6 +205,7 @@ class ClarityActionCard {
       body: body ?? this.body,
       targetLabel: targetLabel ?? this.targetLabel,
       editableFields: editableFields ?? this.editableFields,
+      deleteTable: deleteTable ?? this.deleteTable,
     );
   }
 }

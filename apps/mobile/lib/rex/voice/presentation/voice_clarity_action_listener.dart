@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
+import 'package:clarity/rex/presentation/assistant_chat_visible_provider.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 
 /// Shows pending Clarity confirmation dialogs during active voice sessions.
@@ -48,6 +49,9 @@ class _VoiceClarityActionListenerState
 
   void _maybeShowClarityActionDialog(List<ClarityActionCard> pending) {
     if (!mounted || pending.isEmpty) {
+      return;
+    }
+    if (ref.read(assistantChatVisibleProvider)) {
       return;
     }
     final action = pending.first;
