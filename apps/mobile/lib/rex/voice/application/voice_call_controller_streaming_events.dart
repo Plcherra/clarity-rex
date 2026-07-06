@@ -86,7 +86,18 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
                     state.phase == VoiceCallPhase.listening) {
                   updateTranscript(preferredTranscript, isFinal: true);
                 }
-                _endTurnFromLocalEndpoint(_callGeneration);
+                _endTurnFromLocalEndpoint(
+                  _callGeneration,
+                  preferredTranscript: preferredTranscript,
+                );
+                if (_streamingTurnFinalizedSequence != _streamingTurnSequence &&
+                    preferredTranscript.isNotEmpty) {
+                  _finalizeStreamingTurn(
+                    transcript: preferredTranscript,
+                    session: session,
+                    turnSequence: _streamingTurnSequence,
+                  );
+                }
               }
               unawaited(_activeStreamingCaptureService?.cancel());
               unawaited(_preparePlaybackAudioSession());

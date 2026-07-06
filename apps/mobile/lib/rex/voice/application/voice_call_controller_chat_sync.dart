@@ -84,7 +84,11 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     _resetActiveVoiceMessageLocalId();
   }
 
-  void _endTurnFromLocalEndpoint(int generation) {
+  void _endTurnFromLocalEndpoint(
+    int generation, {
+    String? preferredTranscript,
+    bool recoverIfEmpty = false,
+  }) {
     if (!_isCurrentCall(generation) ||
         !state.isCallActive ||
         state.phase != VoiceCallPhase.listening ||
@@ -99,9 +103,14 @@ extension VoiceCallControllerChatSync on VoiceCallController {
       return;
     }
 
-    final transcript = _transcriptBuffer.visible.trim();
+    final transcript = VoiceTranscriptBuffer.preferFullest([
+      if (preferredTranscript != null) preferredTranscript,
+      _transcriptBuffer.visible,
+    ]).trim();
     if (transcript.isEmpty) {
-      _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
+      if (recoverIfEmpty) {
+        _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
+      }
       return;
     }
 

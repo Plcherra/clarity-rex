@@ -110,7 +110,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     }
 
     if (state.phase == VoiceCallPhase.listening) {
-      _endTurnFromLocalEndpoint(generation);
+      _endTurnFromLocalEndpoint(generation, recoverIfEmpty: true);
     }
   }
 
@@ -249,7 +249,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     }
 
     if (state.phase == VoiceCallPhase.listening) {
-      _endTurnFromLocalEndpoint(generation);
+      _endTurnFromLocalEndpoint(generation, recoverIfEmpty: true);
     }
   }
 
