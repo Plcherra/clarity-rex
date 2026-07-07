@@ -8,7 +8,7 @@ from app.services.goal_command_parsing import is_goals_inventory_query
 
 
 def test_inventory_query_never_routes_to_delete_clarification_guard():
-    message = "What commitments do we have saved?"
+    message = "What goals do we have saved?"
     assert is_goals_inventory_query(message) is True
     history = [
         {

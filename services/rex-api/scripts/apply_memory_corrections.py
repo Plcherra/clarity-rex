@@ -44,12 +44,11 @@ async def run_audit(
     limit: int = 500,
     apply: bool = False,
 ) -> dict:
-    plans, rules, entities, milestones, commitments = await asyncio.gather(
+    plans, rules, entities, milestones = await asyncio.gather(
         _safe_list(memory_service, "list_plans", active=True, limit=limit),
         _safe_list(memory_service, "list_personal_rules", active=True, limit=limit),
         _safe_list(memory_service, "list_entities", active=True, limit=limit),
         _safe_list(memory_service, "list_plan_milestones", active=True, limit=limit),
-        _safe_list(memory_service, "list_commitments", active=True, limit=limit),
     )
     duplicate_clusters = [
         *_duplicate_clusters(plans, "plan", ("title", "description", "desired_outcome")),
@@ -79,7 +78,6 @@ async def run_audit(
             "rules": len(rules),
             "entities": len(entities),
             "milestones": len(milestones),
-            "commitments": len(commitments),
         },
         "duplicate_clusters": duplicate_clusters,
         "updates": [],

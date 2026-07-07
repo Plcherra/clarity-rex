@@ -64,13 +64,11 @@ async def test_rollout_audit_reports_counts_and_duplicate_clusters():
 
     assert report["dry_run"] is True
     assert report["applied"] is False
-    assert report["records_scanned"] == {
-            "plans": 2,
-            "rules": 2,
-            "entities": 0,
-            "milestones": 1,
-            "commitments": 0,
-    }
+    scanned = report["records_scanned"]
+    assert scanned["plans"] == 2
+    assert scanned["rules"] == 2
+    assert scanned["entities"] == 0
+    assert scanned["milestones"] == 1
     assert report["duplicate_clusters"] == [
         {
             "record_type": "plan",

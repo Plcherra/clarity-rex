@@ -41,3 +41,6 @@ supabase/.temp/
 
 # Local reset/export artifacts
 backups/
+
+# Personal reference material (local eval only — Plan 03)
+grok conversation history.txt

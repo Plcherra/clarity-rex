@@ -64,7 +64,8 @@ Replace or remove references to **removed product concepts**, not historical mig
 | --- | --- |
 | `docs/PROJECT_STRUCTURE.md` | Remove or update line claiming `rex_brain*.py` exist as experiments (they are deleted) |
 | `docs/PROJECT_STRUCTURE.md` | Clarify: candidates/confirmations are **DB-archived only**, production uses durable write + confirm cards |
-| `docs/archive/NEXT_STEPS.md` | Mark rex_brain deletion items done if not already |
+| `.cursor/rules/PROJECT-STRUCTURE-md.mdc` | Sync same canon edits if drifted (optional but recommended) |
+| `docs/archive/NEXT_STEPS.md` | **Delete** — archived execution tracker, no longer used (do not edit or extend) |
 
 **Do not:** Edit old Supabase migrations or drop `legacy_*_archive` tables.
 
@@ -78,6 +79,8 @@ Replace or remove references to **removed product concepts**, not historical mig
 | `services/rex-api/pytest_summary.txt` | Delete or regenerate; note in PR if obsolete |
 | Tests with `@pytest.mark.skip` / permanent skip for deleted features | Delete test or fix — no eternal skips for removed systems |
 | `services/rex-api/tests/test_dumbbell_confirm_debug.py` | Review: debug-only? Remove if not asserting production behavior |
+| `docs/archive/NEXT_STEPS.md` | **Delete** — archived tracker, no longer used |
+| `docs/fixes/` | **Delete entire folder** when fixes are shipped — do not keep finished execution docs (prevents plan debt) |
 
 Audit skips:
 
@@ -91,15 +94,14 @@ rg -n "skip|xfail" services/rex-api/tests apps/mobile/test --glob '*.{py,dart}'
 
 ```bash
 cd services/rex-api
-python -m pytest tests/ \
-  test_brain_trust_e2e.py \
-  test_chat_simple_memory_flow.py \
-  test_save_intent_guards.py \
-  test_action_truth_policy.py \
-  test_voice_memory_parity.py \
-  test_voice_stream_reliability.py \
-  test_durable_write_proposal_flow.py \
-  test_durable_delete_flow.py \
+python -m pytest tests/test_brain_trust_e2e.py \
+  tests/test_chat_simple_memory_flow.py \
+  tests/test_save_intent_guards.py \
+  tests/test_action_truth_policy.py \
+  tests/test_voice_memory_parity.py \
+  tests/test_voice_stream_reliability.py \
+  tests/test_durable_write_proposal_flow.py \
+  tests/test_durable_delete_flow.py \
   -q
 
 cd apps/mobile

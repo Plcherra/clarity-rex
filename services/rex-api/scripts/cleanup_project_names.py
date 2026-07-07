@@ -107,16 +107,6 @@ async def cleanup_project_names(
         apply=apply,
         limit=limit,
     )
-    await _cleanup_records(
-        memory_service,
-        report,
-        table="commitments",
-        list_method="list_commitments",
-        update_method="update_commitment",
-        fields=("title", "commitment_text", "metadata"),
-        apply=apply,
-        limit=limit,
-    )
     return report
 
 

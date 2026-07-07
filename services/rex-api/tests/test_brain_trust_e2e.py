@@ -134,7 +134,7 @@ async def test_inventory_after_failed_delete_via_chat_service():
 
     failed = await chat_service.send_message('Delete the goal "Missing title"')
     inventory = await chat_service.send_message(
-        "What commitments do we have saved?",
+        "What goals do we have saved?",
         failed["conversation_id"],
     )
 
@@ -170,7 +170,7 @@ async def test_stream_inventory_short_circuit_logs_goal_command_handler():
     events = [
         event
         async for event in chat_service.stream_message(
-            "What commitments do we have saved?"
+            "What goals do we have saved?"
         )
     ]
 
@@ -187,8 +187,8 @@ async def test_delete_that_after_assistant_names_goal_on_goals_tab():
     memory_service.plans.append(
         {
             "id": "plan-junk",
-            "title": "Be a goal/commitment",
-            "description": "be a goal/commitment",
+            "title": "Be a goal",
+            "description": "be a goal",
             "plan_type": "personal",
             "status": "active",
             "active": True,
@@ -205,7 +205,7 @@ async def test_delete_that_after_assistant_names_goal_on_goals_tab():
         conversation_id,
         "assistant",
         (
-            "There's also a test goal called 'Be a goal/commitment' "
+            "There's also a test goal called 'Be a goal' "
             "saved on the goals tab."
         ),
     )
@@ -218,7 +218,7 @@ async def test_delete_that_after_assistant_names_goal_on_goals_tab():
 
     assert requested["memory_changes"]["confirmation_required"] == 1
     assert "goal" in requested["memory_changes"]["write_proposals"][0]["confirmation_text"].lower()
-    assert "Be a goal/commitment" in requested["memory_changes"]["write_proposals"][0]["confirmation_text"]
+    assert "Be a goal" in requested["memory_changes"]["write_proposals"][0]["confirmation_text"]
     assert confirmed["memory_changes"]["archived"] == 1
     assert memory_service.plans == []
     assert ai_service.messages == []

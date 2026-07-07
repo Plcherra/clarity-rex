@@ -187,7 +187,7 @@ def test_router_classifies_voice_memory_recall_phrases(message):
 
 
 def test_router_classifies_goals_inventory_before_memory_recall():
-    decision = RexIntentRouter().classify("What commitments do we have saved?")
+    decision = RexIntentRouter().classify("What goals do we have saved?")
 
     assert decision.intent == RexIntent.GOAL
     assert "goals_inventory_query" in decision.reasons

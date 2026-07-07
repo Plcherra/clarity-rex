@@ -10,7 +10,6 @@ class FakeProjectNameMemoryService:
         self.plans = []
         self.milestones = []
         self.rules = []
-        self.commitments = []
 
     async def list_entities(
         self,
@@ -74,20 +73,6 @@ class FakeProjectNameMemoryService:
 
     async def update_personal_rule(self, rule_id, **updates):
         return _update(self.rules, rule_id, updates)
-
-    async def list_commitments(
-        self,
-        limit=500,
-        commitment_type=None,
-        plan_id=None,
-        entity_id=None,
-        status=None,
-        active=None,
-    ):
-        return _list(self.commitments, limit, active)
-
-    async def update_commitment(self, commitment_id, **updates):
-        return _update(self.commitments, commitment_id, updates)
 
 
 def _list(rows, limit, active):

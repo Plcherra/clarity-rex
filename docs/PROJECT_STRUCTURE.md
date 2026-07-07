@@ -172,7 +172,7 @@ User message (chat or voice)
 | HTTP client | `apps/mobile/lib/core/rex/rex_api_client.dart` |
 | Confirm cards | `apps/mobile/lib/rex/chat/presentation/widgets/clarity_action_cards_strip.dart` |
 
-**Non-production:** `services/rex-api/app/services/rex_brain*.py` are experiments. Do not debug production assistant behavior there unless explicitly working on experiments.
+**Legacy brain modules deleted (July 2026):** `rex_brain*.py` experiment modules and their tests were removed. Debug production assistant behavior only in `SimpleRexBrain`, `ChatTurnOrchestrator`, and `ChatService`.
 
 ## 7. Memory and Recall Wiring
 
@@ -247,7 +247,7 @@ When a flat long-term memory is fully covered by a structured person card, archi
 ### Legacy
 
 - **Commitments fully removed** (July 2026). The `commitments` table, routes, and assistant write paths are deleted. Companion continuity uses **Open Threads** only; plan-linked small steps use **milestones**.
-- Early `memory_candidates` / `memory_confirmations` tables are archived. Durable memory uses discipline + backend-confirmed creates only.
+- Early `memory_candidates` / `memory_confirmations` tables are **DB-archived only** (migration `20260604120456_archive_legacy_rex_memory_review_tables.sql`). No production code reads or writes them. Chat and voice saves use `DurableWriteProposal` → confirm cards → `DurableWriteApplier` with `MemoryDisciplineService` on the write path.
 - Disabled bypass paths: `GoalCommandReclassifier` direct memory→goal writes, separate `save_plan` pending, auto merge unless `merge_disclosed_to` is set, auto person materialization on generic LTM REST create.
 
 ### Ops scripts
