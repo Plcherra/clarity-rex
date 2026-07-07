@@ -52,6 +52,7 @@ class OwnerUserUsage {
 class OwnerPlatformSummary {
   const OwnerPlatformSummary({
     required this.activeUserCount,
+    required this.registeredUserCount,
     required this.monthVoiceSeconds,
     required this.monthLlmCalls,
     required this.monthChatLlmCalls,
@@ -62,6 +63,7 @@ class OwnerPlatformSummary {
   factory OwnerPlatformSummary.fromJson(Map<String, dynamic> json) {
     return OwnerPlatformSummary(
       activeUserCount: _int(json['active_user_count']),
+      registeredUserCount: _int(json['registered_user_count']),
       monthVoiceSeconds: _double(json['month_voice_seconds']),
       monthLlmCalls: _int(json['month_llm_calls']),
       monthChatLlmCalls: _int(json['month_chat_llm_calls']),
@@ -71,6 +73,7 @@ class OwnerPlatformSummary {
   }
 
   final int activeUserCount;
+  final int registeredUserCount;
   final double monthVoiceSeconds;
   final int monthLlmCalls;
   final int monthChatLlmCalls;

@@ -2011,6 +2011,67 @@
   "usageAdminSubtitle": "All users · voice, chat, estimated cost",
   "usageAdminOwnerSection": "Owner",
   "usageAdminPlatformThisMonth": "Platform this month",
+  "usageAdminPlatformAllTime": "Platform all time",
+  "usageAdminPlatformYear": "Platform {year}",
+  "@usageAdminPlatformYear": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "usageAdminPlatformMonth": "Platform {monthLabel}",
+  "@usageAdminPlatformMonth": {
+    "placeholders": {
+      "monthLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminPlatformDay": "Platform {dayLabel}",
+  "@usageAdminPlatformDay": {
+    "placeholders": {
+      "dayLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminFilterTitle": "Period",
+  "usageAdminFilterAll": "All",
+  "usageAdminFilterYear": "Year",
+  "usageAdminFilterMonth": "Month",
+  "usageAdminFilterDay": "Day",
+  "usageAdminFilterRangeLabel": "{periodLabel} · {startDate} – {endDate}",
+  "@usageAdminFilterRangeLabel": {
+    "placeholders": {
+      "periodLabel": {
+        "type": "String"
+      },
+      "startDate": {
+        "type": "String"
+      },
+      "endDate": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminAccountsSummary": "{registeredCount} accounts · {activeCount} with usage · {voiceMinutes} voice · {aiCalls} AI calls",
+  "@usageAdminAccountsSummary": {
+    "placeholders": {
+      "registeredCount": {
+        "type": "int"
+      },
+      "activeCount": {
+        "type": "int"
+      },
+      "voiceMinutes": {
+        "type": "String"
+      },
+      "aiCalls": {
+        "type": "int"
+      }
+    }
+  },
   "usageAdminActiveUsersSummary": "{activeUserCount} active users · {voiceMinutes} voice · {aiCalls} AI calls",
   "@usageAdminActiveUsersSummary": {
     "placeholders": {
@@ -2026,6 +2087,8 @@
     }
   },
   "usageAdminUsersSection": "Users",
+  "usageAdminNoRegisteredUsers": "No registered users yet.",
+  "usageAdminNoUsageInPeriod": "No usage recorded in this period.",
   "usageAdminNoUsageThisMonth": "No usage recorded this month yet.",
   "usageAdminUserTileSummary": "{voiceMinutes} voice · {chatCalls} chat · {voiceCalls} voice calls",
   "@usageAdminUserTileSummary": {
@@ -2043,6 +2106,7 @@
   },
   "usageAdminLoadingUserUsage": "Loading user usage",
   "usageAdminEstimatedCostThisMonth": "Estimated cost this month",
+  "usageAdminEstimatedCostPeriod": "Estimated cost in period",
   "usageAdminUsageShape": "Usage shape",
   "usageAdminDailyChartsCaption": "Daily totals for the loaded date range",
   "usageAdminRadarChartCaption": "Month-to-date totals (not daily)",

@@ -5680,6 +5680,81 @@ abstract class AppLocalizations {
   /// **'Platform this month'**
   String get usageAdminPlatformThisMonth;
 
+  /// No description provided for @usageAdminPlatformAllTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform all time'**
+  String get usageAdminPlatformAllTime;
+
+  /// No description provided for @usageAdminPlatformYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform {year}'**
+  String usageAdminPlatformYear(int year);
+
+  /// No description provided for @usageAdminPlatformMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform {monthLabel}'**
+  String usageAdminPlatformMonth(String monthLabel);
+
+  /// No description provided for @usageAdminPlatformDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform {dayLabel}'**
+  String usageAdminPlatformDay(String dayLabel);
+
+  /// No description provided for @usageAdminFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get usageAdminFilterTitle;
+
+  /// No description provided for @usageAdminFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get usageAdminFilterAll;
+
+  /// No description provided for @usageAdminFilterYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get usageAdminFilterYear;
+
+  /// No description provided for @usageAdminFilterMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get usageAdminFilterMonth;
+
+  /// No description provided for @usageAdminFilterDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get usageAdminFilterDay;
+
+  /// No description provided for @usageAdminFilterRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{periodLabel} · {startDate} – {endDate}'**
+  String usageAdminFilterRangeLabel(
+    String periodLabel,
+    String startDate,
+    String endDate,
+  );
+
+  /// No description provided for @usageAdminAccountsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{registeredCount} accounts · {activeCount} with usage · {voiceMinutes} voice · {aiCalls} AI calls'**
+  String usageAdminAccountsSummary(
+    int registeredCount,
+    int activeCount,
+    String voiceMinutes,
+    int aiCalls,
+  );
+
   /// No description provided for @usageAdminActiveUsersSummary.
   ///
   /// In en, this message translates to:
@@ -5695,6 +5770,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Users'**
   String get usageAdminUsersSection;
+
+  /// No description provided for @usageAdminNoRegisteredUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'No registered users yet.'**
+  String get usageAdminNoRegisteredUsers;
+
+  /// No description provided for @usageAdminNoUsageInPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'No usage recorded in this period.'**
+  String get usageAdminNoUsageInPeriod;
 
   /// No description provided for @usageAdminNoUsageThisMonth.
   ///
@@ -5723,6 +5810,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Estimated cost this month'**
   String get usageAdminEstimatedCostThisMonth;
+
+  /// No description provided for @usageAdminEstimatedCostPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated cost in period'**
+  String get usageAdminEstimatedCostPeriod;
 
   /// No description provided for @usageAdminUsageShape.
   ///

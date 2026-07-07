@@ -3308,6 +3308,58 @@ class AppLocalizationsEs extends AppLocalizations {
   String get usageAdminPlatformThisMonth => 'Plataforma este mes';
 
   @override
+  String get usageAdminPlatformAllTime => 'Plataforma todo el tiempo';
+
+  @override
+  String usageAdminPlatformYear(int year) {
+    return 'Plataforma $year';
+  }
+
+  @override
+  String usageAdminPlatformMonth(String monthLabel) {
+    return 'Plataforma $monthLabel';
+  }
+
+  @override
+  String usageAdminPlatformDay(String dayLabel) {
+    return 'Plataforma $dayLabel';
+  }
+
+  @override
+  String get usageAdminFilterTitle => 'Periodo';
+
+  @override
+  String get usageAdminFilterAll => 'Todo';
+
+  @override
+  String get usageAdminFilterYear => 'Año';
+
+  @override
+  String get usageAdminFilterMonth => 'Mes';
+
+  @override
+  String get usageAdminFilterDay => 'Día';
+
+  @override
+  String usageAdminFilterRangeLabel(
+    String periodLabel,
+    String startDate,
+    String endDate,
+  ) {
+    return '$periodLabel · $startDate – $endDate';
+  }
+
+  @override
+  String usageAdminAccountsSummary(
+    int registeredCount,
+    int activeCount,
+    String voiceMinutes,
+    int aiCalls,
+  ) {
+    return '$registeredCount cuentas · $activeCount con uso · $voiceMinutes voz · $aiCalls llamadas AI';
+  }
+
+  @override
   String usageAdminActiveUsersSummary(
     int activeUserCount,
     String voiceMinutes,
@@ -3318,6 +3370,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get usageAdminUsersSection => 'Usuarios';
+
+  @override
+  String get usageAdminNoRegisteredUsers => 'Aún no hay usuarios registrados.';
+
+  @override
+  String get usageAdminNoUsageInPeriod => 'No se registró uso en este periodo.';
 
   @override
   String get usageAdminNoUsageThisMonth =>
@@ -3337,6 +3395,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get usageAdminEstimatedCostThisMonth => 'Costo estimado este mes';
+
+  @override
+  String get usageAdminEstimatedCostPeriod => 'Costo estimado en el periodo';
 
   @override
   String get usageAdminUsageShape => 'Forma de uso';

@@ -3251,6 +3251,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get usageAdminPlatformThisMonth => 'Platform this month';
 
   @override
+  String get usageAdminPlatformAllTime => 'Platform all time';
+
+  @override
+  String usageAdminPlatformYear(int year) {
+    return 'Platform $year';
+  }
+
+  @override
+  String usageAdminPlatformMonth(String monthLabel) {
+    return 'Platform $monthLabel';
+  }
+
+  @override
+  String usageAdminPlatformDay(String dayLabel) {
+    return 'Platform $dayLabel';
+  }
+
+  @override
+  String get usageAdminFilterTitle => 'Period';
+
+  @override
+  String get usageAdminFilterAll => 'All';
+
+  @override
+  String get usageAdminFilterYear => 'Year';
+
+  @override
+  String get usageAdminFilterMonth => 'Month';
+
+  @override
+  String get usageAdminFilterDay => 'Day';
+
+  @override
+  String usageAdminFilterRangeLabel(
+    String periodLabel,
+    String startDate,
+    String endDate,
+  ) {
+    return '$periodLabel · $startDate – $endDate';
+  }
+
+  @override
+  String usageAdminAccountsSummary(
+    int registeredCount,
+    int activeCount,
+    String voiceMinutes,
+    int aiCalls,
+  ) {
+    return '$registeredCount accounts · $activeCount with usage · $voiceMinutes voice · $aiCalls AI calls';
+  }
+
+  @override
   String usageAdminActiveUsersSummary(
     int activeUserCount,
     String voiceMinutes,
@@ -3261,6 +3313,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usageAdminUsersSection => 'Users';
+
+  @override
+  String get usageAdminNoRegisteredUsers => 'No registered users yet.';
+
+  @override
+  String get usageAdminNoUsageInPeriod => 'No usage recorded in this period.';
 
   @override
   String get usageAdminNoUsageThisMonth => 'No usage recorded this month yet.';
@@ -3279,6 +3337,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usageAdminEstimatedCostThisMonth => 'Estimated cost this month';
+
+  @override
+  String get usageAdminEstimatedCostPeriod => 'Estimated cost in period';
 
   @override
   String get usageAdminUsageShape => 'Usage shape';

@@ -2063,6 +2063,70 @@
   "usageAdminNoUsageThisMonth": "Aún no se ha registrado ningún uso este mes.",
   "usageAdminOwnerSection": "Dueño",
   "usageAdminPlatformThisMonth": "Plataforma este mes",
+  "usageAdminPlatformAllTime": "Plataforma todo el tiempo",
+  "usageAdminPlatformYear": "Plataforma {year}",
+  "@usageAdminPlatformYear": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "usageAdminPlatformMonth": "Plataforma {monthLabel}",
+  "@usageAdminPlatformMonth": {
+    "placeholders": {
+      "monthLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminPlatformDay": "Plataforma {dayLabel}",
+  "@usageAdminPlatformDay": {
+    "placeholders": {
+      "dayLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminFilterTitle": "Periodo",
+  "usageAdminFilterAll": "Todo",
+  "usageAdminFilterYear": "Año",
+  "usageAdminFilterMonth": "Mes",
+  "usageAdminFilterDay": "Día",
+  "usageAdminFilterRangeLabel": "{periodLabel} · {startDate} – {endDate}",
+  "@usageAdminFilterRangeLabel": {
+    "placeholders": {
+      "periodLabel": {
+        "type": "String"
+      },
+      "startDate": {
+        "type": "String"
+      },
+      "endDate": {
+        "type": "String"
+      }
+    }
+  },
+  "usageAdminAccountsSummary": "{registeredCount} cuentas · {activeCount} con uso · {voiceMinutes} voz · {aiCalls} llamadas AI",
+  "@usageAdminAccountsSummary": {
+    "placeholders": {
+      "registeredCount": {
+        "type": "int"
+      },
+      "activeCount": {
+        "type": "int"
+      },
+      "voiceMinutes": {
+        "type": "String"
+      },
+      "aiCalls": {
+        "type": "int"
+      }
+    }
+  },
+  "usageAdminNoRegisteredUsers": "Aún no hay usuarios registrados.",
+  "usageAdminNoUsageInPeriod": "No se registró uso en este periodo.",
+  "usageAdminEstimatedCostPeriod": "Costo estimado en el periodo",
   "usageAdminRadarChatLlm": "Chat LLM",
   "usageAdminRadarSttMin": "STT min",
   "usageAdminRadarTtsMin": "TTS min",

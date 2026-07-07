@@ -191,6 +191,9 @@ async def test_owner_usage_allows_configured_owner_without_client_secret(monkeyp
     result = await service.get_owner_usage(
         requester_user_id="owner-1",
         today=usage_module.date(2026, 6, 6),
+        period="month",
+        year=2026,
+        month=6,
     )
 
     assert result["authorized"] is True

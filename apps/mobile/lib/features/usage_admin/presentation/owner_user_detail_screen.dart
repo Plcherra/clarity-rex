@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/features/usage_admin/application/owner_usage_controller.dart';
+import 'package:clarity/features/usage_admin/data/usage_admin_filter.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_models.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_card.dart';
@@ -11,11 +12,13 @@ import 'package:clarity/widgets/clarity_usage_charts.dart';
 final class OwnerUserDetailScreen extends StatefulWidget {
   const OwnerUserDetailScreen({
     required this.user,
+    required this.filter,
     super.key,
     OwnerUserDetailController? controller,
   }) : _controller = controller;
 
   final OwnerUserUsage user;
+  final UsageAdminFilter filter;
   final OwnerUserDetailController? _controller;
 
   @override
@@ -24,7 +27,8 @@ final class OwnerUserDetailScreen extends StatefulWidget {
 
 class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
   late final OwnerUserDetailController _controller =
-      widget._controller ?? OwnerUserDetailController(user: widget.user);
+      widget._controller ??
+      OwnerUserDetailController(user: widget.user, filter: widget.filter);
   late final bool _ownsController = widget._controller == null;
 
   @override
@@ -87,7 +91,7 @@ class _OwnerUserDetailScreenState extends State<OwnerUserDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      l10n.usageAdminEstimatedCostThisMonth,
+                      l10n.usageAdminEstimatedCostPeriod,
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: colors.textSecondary,
                       ),

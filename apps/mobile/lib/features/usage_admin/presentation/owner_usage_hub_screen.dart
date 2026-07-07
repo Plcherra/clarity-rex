@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/features/usage_admin/application/owner_usage_controller.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_models.dart';
+import 'package:clarity/features/usage_admin/presentation/owner_usage_period_filter.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_user_detail_screen.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_card.dart';
@@ -90,6 +91,11 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
               children: [
+                OwnerUsagePeriodFilter(
+                  filter: _controller.filter,
+                  onChanged: _controller.setFilter,
+                ),
+                const SizedBox(height: 16),
                 if (summary != null) ...[
                   ClarityCard(
                     padding: const EdgeInsets.all(18),
@@ -98,7 +104,7 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          l10n.usageAdminPlatformThisMonth,
+                          usageAdminPeriodHeading(l10n, _controller.filter),
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: colors.textSecondary,
                             fontWeight: FontWeight.w700,
@@ -118,7 +124,8 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          l10n.usageAdminActiveUsersSummary(
+                          l10n.usageAdminAccountsSummary(
+                            summary.registeredUserCount,
                             summary.activeUserCount,
                             formatUsageMinutes(l10n, summary.monthVoiceSeconds),
                             summary.monthLlmCalls,
@@ -143,7 +150,7 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                 const SizedBox(height: 8),
                 if (_controller.users.isEmpty)
                   Text(
-                    l10n.usageAdminNoUsageThisMonth,
+                    l10n.usageAdminNoRegisteredUsers,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.textMuted,
                     ),
@@ -154,7 +161,10 @@ class _OwnerUsageHubScreenState extends State<OwnerUsageHubScreen> {
                       user: user,
                       onTap: () => Navigator.of(context).push<void>(
                         MaterialPageRoute<void>(
-                          builder: (_) => OwnerUserDetailScreen(user: user),
+                          builder: (_) => OwnerUserDetailScreen(
+                            user: user,
+                            filter: _controller.filter,
+                          ),
                         ),
                       ),
                     ),

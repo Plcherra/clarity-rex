@@ -17,9 +17,11 @@ from app.services.usage_cost_estimator import (
     estimate_usage_cost_cents,
     llm_unit_count,
 )
+from app.services.usage_admin_period import UsageAdminPeriod, resolve_usage_admin_period
 from app.services.usage_tracking_owner_queries import (
     UsageOwnerQueries,
     aggregate_owner_users,
+    build_period_platform_summary,
     build_usage_totals,
     empty_owner_totals,
     add_owner_row,
@@ -231,43 +233,67 @@ class UsageTrackingService:
         self,
         *,
         requester_user_id: str,
+        period: str = "all",
+        year: int | None = None,
+        month: int | None = None,
+        day: date | None = None,
         today: date | None = None,
     ) -> dict[str, Any]:
         if not await self.is_usage_owner(requester_user_id):
             return {"authorized": False, "users": []}
 
-        current_day = today or datetime.now().date()
-        rows = await self._owner_queries.select_owner_daily(
-            start_date=current_day.replace(day=1),
+        resolved = resolve_usage_admin_period(
+            period=period,
+            year=year,
+            month=month,
+            day=day,
+            today=today,
         )
+        rows = await self._load_owner_period_rows(resolved)
         usage_users = aggregate_owner_users(rows)
         profiles = await self._owner_queries.list_profiles()
         users = merge_owner_users_with_profiles(usage_users, profiles)
-        return {"authorized": True, "users": users}
+        payload = {"authorized": True, "users": users}
+        payload.update(resolved.to_response())
+        payload["registered_user_count"] = len(profiles)
+        return payload
 
     async def get_owner_platform_summary(
         self,
         *,
         requester_user_id: str,
+        period: str = "all",
+        year: int | None = None,
+        month: int | None = None,
+        day: date | None = None,
         today: date | None = None,
     ) -> dict[str, Any]:
         if not await self.is_usage_owner(requester_user_id):
             return {"authorized": False}
 
-        current_day = today or datetime.now().date()
-        rows = await self._owner_queries.select_owner_daily(
-            start_date=current_day.replace(day=1),
+        resolved = resolve_usage_admin_period(
+            period=period,
+            year=year,
+            month=month,
+            day=day,
+            today=today,
         )
-        summary = empty_owner_totals()
-        user_ids: set[str] = set()
-        for row in rows:
-            user_id = str(row.get("user_id") or "")
-            if user_id:
-                user_ids.add(user_id)
-            add_owner_row(summary, row)
-        summary["active_user_count"] = len(user_ids)
+        rows = await self._load_owner_period_rows(resolved)
+        profiles = await self._owner_queries.list_profiles()
+        summary = build_period_platform_summary(rows)
+        summary["registered_user_count"] = len(profiles)
         summary["authorized"] = True
+        summary.update(resolved.to_response())
         return summary
+
+    async def _load_owner_period_rows(
+        self,
+        resolved: UsageAdminPeriod,
+    ) -> list[dict[str, Any]]:
+        return await self._owner_queries.select_owner_daily(
+            start_date=resolved.start_date,
+            end_date=resolved.end_date,
+        )
 
     async def get_owner_user_daily(
         self,

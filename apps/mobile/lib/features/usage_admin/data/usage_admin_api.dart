@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:clarity/core/rex/rex_api_client.dart';
 import 'package:clarity/core/rex/rex_auth_headers.dart';
+import 'package:clarity/features/usage_admin/data/usage_admin_filter.dart';
 import 'package:clarity/features/usage_admin/data/usage_admin_models.dart';
 import 'package:http/http.dart' as http;
 
@@ -35,14 +36,22 @@ class UsageAdminApi {
     return data['authorized'] == true;
   }
 
-  Future<OwnerPlatformSummary> fetchPlatformSummary() async {
-    final response = await _apiClient.get('/usage/admin/summary');
+  Future<OwnerPlatformSummary> fetchPlatformSummary(
+    UsageAdminFilter filter,
+  ) async {
+    final response = await _apiClient.get(
+      '/usage/admin/summary',
+      query: filter.toQuery(),
+    );
     _ensureOwnerOk(response);
     return OwnerPlatformSummary.fromJson(_decodeMap(response));
   }
 
-  Future<List<OwnerUserUsage>> fetchAllUsers() async {
-    final response = await _apiClient.get('/usage/admin/users');
+  Future<List<OwnerUserUsage>> fetchAllUsers(UsageAdminFilter filter) async {
+    final response = await _apiClient.get(
+      '/usage/admin/users',
+      query: filter.toQuery(),
+    );
     _ensureOwnerOk(response);
     final data = _decodeMap(response);
     final users = data['users'];
@@ -57,10 +66,11 @@ class UsageAdminApi {
 
   Future<OwnerUserDailyUsage> fetchUserDaily(
     String userId, {
+    UsageAdminFilter? filter,
     DateTime? start,
     DateTime? end,
   }) async {
-    final query = <String, String>{};
+    final query = filter?.toQuery() ?? <String, String>{};
     if (start != null) {
       query['start'] = _dateString(start);
     }

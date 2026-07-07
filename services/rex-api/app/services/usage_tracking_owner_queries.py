@@ -159,6 +159,27 @@ def sort_owner_user_rows(row: dict[str, Any]) -> tuple[int, float, str, str]:
     )
 
 
+def build_period_platform_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    summary = {
+        "month_voice_seconds": 0.0,
+        "month_llm_calls": 0,
+        "month_chat_llm_calls": 0,
+        "month_voice_llm_calls": 0,
+        "month_stt_seconds": 0.0,
+        "month_tts_seconds": 0.0,
+        "month_estimated_cost_cents": 0.0,
+        "active_user_count": 0,
+    }
+    user_ids: set[str] = set()
+    for row in rows:
+        user_id = str(row.get("user_id") or "")
+        if user_id:
+            user_ids.add(user_id)
+        add_owner_row(summary, row)
+    summary["active_user_count"] = len(user_ids)
+    return summary
+
+
 def merge_owner_users_with_profiles(
     usage_users: list[dict[str, Any]],
     profiles: list[dict[str, Any]],

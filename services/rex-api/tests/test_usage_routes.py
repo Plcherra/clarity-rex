@@ -21,7 +21,7 @@ class FakeUsageTrackingService:
     async def is_usage_owner(self, user_id):
         return False
 
-    async def get_owner_usage(self, *, requester_user_id):
+    async def get_owner_usage(self, *, requester_user_id, **kwargs):
         assert requester_user_id == "00000000-0000-0000-0000-000000000001"
         return {"authorized": False, "users": []}
 
@@ -30,7 +30,7 @@ class FakeOwnerUsageTrackingService(FakeUsageTrackingService):
     async def is_usage_owner(self, user_id):
         return True
 
-    async def get_owner_usage(self, *, requester_user_id):
+    async def get_owner_usage(self, *, requester_user_id, **kwargs):
         return {
             "authorized": True,
             "users": [
@@ -42,6 +42,10 @@ class FakeOwnerUsageTrackingService(FakeUsageTrackingService):
                     "month_tts_seconds": 90,
                 }
             ],
+            "period": "all",
+            "start_date": "2026-01-01",
+            "end_date": "2026-07-06",
+            "registered_user_count": 2,
         }
 
 
