@@ -5,6 +5,7 @@ from app.services.assistant_proposal_settings import (
     PROPOSAL_KIND_GOALS,
     PROPOSAL_KIND_MEMORY,
     PROPOSAL_KIND_THREADS,
+    RESPONSE_STYLE_BALANCED,
     AssistantProposalSettings,
     parse_assistant_settings,
     resolve_assistant_proposal_settings,
@@ -17,6 +18,13 @@ def test_parse_assistant_settings_defaults_to_text_mode() -> None:
     assert settings.threads is True
     assert settings.goals is True
     assert settings.memory is True
+    assert settings.response_style == RESPONSE_STYLE_BALANCED
+    assert settings.finance_edits_enabled is True
+
+
+def test_parse_assistant_settings_finance_edits_disabled() -> None:
+    settings = parse_assistant_settings({"finance_edits_enabled": False})
+    assert settings.finance_edits_enabled is False
 
 
 def test_parse_assistant_settings_off_mode() -> None:

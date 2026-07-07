@@ -1665,6 +1665,54 @@ abstract class AppLocalizations {
   /// **'Memory (facts & preferences)'**
   String get assistantAutoProposalsTypeMemory;
 
+  /// No description provided for @assistantResponseStyleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply length'**
+  String get assistantResponseStyleLabel;
+
+  /// No description provided for @assistantResponseStyleConcise.
+  ///
+  /// In en, this message translates to:
+  /// **'Concise'**
+  String get assistantResponseStyleConcise;
+
+  /// No description provided for @assistantResponseStyleBalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Balanced'**
+  String get assistantResponseStyleBalanced;
+
+  /// No description provided for @assistantResponseStyleDetailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed'**
+  String get assistantResponseStyleDetailed;
+
+  /// No description provided for @assistantFinanceEditsEnabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Rex to edit finances'**
+  String get assistantFinanceEditsEnabledLabel;
+
+  /// No description provided for @assistantFinanceEditsEnabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, Rex can advise but won't propose transaction or budget changes.'**
+  String get assistantFinanceEditsEnabledSubtitle;
+
+  /// No description provided for @chatShowMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get chatShowMore;
+
+  /// No description provided for @chatShowLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get chatShowLess;
+
   /// No description provided for @dashboardChartCategorySpendSubtitle.
   ///
   /// In en, this message translates to:
@@ -2544,6 +2592,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View on Dashboard'**
   String get rexViewOnDashboard;
+
+  /// No description provided for @rexRefreshAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh accounts'**
+  String get rexRefreshAccounts;
 
   /// No description provided for @chatTranscriptReadyTitle.
   ///

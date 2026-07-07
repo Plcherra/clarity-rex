@@ -232,7 +232,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
       );
     }
     try {
-      return await service.buildSummary();
+      return await service.buildSummary(userMessage: transcript);
     } on Object catch (error) {
       return AssistantFinancialContextService.degradedSummary(
         source: 'mobile_financial_context_service',

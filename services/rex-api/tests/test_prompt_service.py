@@ -17,6 +17,19 @@ def test_prompt_service_casual_turn_has_no_system_message():
     assert messages == [{"role": "user", "content": "Hello Rex"}]
 
 
+def test_prompt_service_includes_response_style_section():
+    service = PromptService()
+
+    messages = service.build_messages(
+        user_message="What should I do with my paycheck?",
+        response_style="concise",
+    )
+
+    assert messages[0]["role"] == "system"
+    assert "Response style: concise" in messages[0]["content"]
+    assert "Saved memory" in messages[0]["content"]
+
+
 def test_prompt_service_sanitizes_recent_message_history():
     service = PromptService()
 
@@ -352,6 +365,128 @@ def test_prompt_service_warns_when_financial_context_is_degraded_or_stale():
         in system_content
     )
     assert "Could not fetch transactions" in system_content
+
+
+def test_prompt_service_prioritizes_matched_transactions_and_category_spend():
+    service = PromptService()
+
+    messages = service.build_messages(
+        user_message="What did I spend on Cursor this month?",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "generated_at": "2026-06-09T20:00:00Z",
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "freshness": {
+                "state": "stale",
+                "guidance": "Quote exact current_balance values only.",
+            },
+            "period": {
+                "reference_month": "2026-06",
+                "transaction_count": 200,
+                "included_transaction_count": 120,
+                "included_matched_transaction_count": 3,
+            },
+            "matched_transactions": [
+                {
+                    "id": "cursor-1",
+                    "description": "CURSOR USAGE",
+                    "amount": 20,
+                    "category_name": "Code Ai Tools",
+                }
+            ],
+            "category_spend_this_month": [
+                {
+                    "category": "Code Ai Tools",
+                    "spent": 42.82,
+                    "transaction_count": 2,
+                    "top_merchants": [
+                        {"merchant": "CURSOR USAGE", "spent": 20},
+                    ],
+                }
+            ],
+            "transactions": [
+                {
+                    "id": f"tx-{index}",
+                    "description": f"Other purchase {index}",
+                    "amount": 10,
+                }
+                for index in range(40)
+            ],
+            "accounts": [
+                {
+                    "id": "acct-1",
+                    "name": "Checking",
+                    "current_balance": 511,
+                }
+            ],
+            "integration": {
+                "transaction_detail_mode": "matched_rows_plus_recent_transactions"
+            },
+        },
+    )
+
+    system_content = messages[0]["content"]
+    matched_index = system_content.index("Matched transactions")
+    category_index = system_content.index("Category spend this month")
+    accounts_index = system_content.index("Accounts (1)")
+    assert matched_index < category_index < accounts_index
+    assert "CURSOR USAGE" in system_content
+    assert "Code Ai Tools" in system_content
+    assert "Quote exact current_balance values only." in system_content
+    assert "exact current_balance values from account rows only" in system_content
+
+
+def test_prompt_service_includes_financial_write_playbook():
+    service = PromptService()
+
+    messages = service.build_messages(
+        user_message="Move yesterday's OpenAI charge to Code AI Tools",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "available_controls": {
+                "transactions": ["update_transaction"],
+                "budgets": ["create_budget", "update_budget"],
+            },
+        },
+    )
+
+    system_content = messages[0]["content"]
+    assert "Financial write playbook:" in system_content
+    assert "fenced ```clarity_action``` JSON block" in system_content
+    assert "create_budget" in system_content
+    assert "update_transaction" in system_content
+
+
+def test_prompt_service_omits_financial_write_playbook_when_edits_disabled():
+    service = PromptService()
+
+    messages = service.build_messages(
+        user_message="Move yesterday's OpenAI charge to Code AI Tools",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "companion_settings": {"finance_edits_enabled": False},
+            "available_controls": {"transactions": ["update_transaction"]},
+        },
+    )
+
+    system_content = messages[0]["content"]
+    assert "Financial write playbook:" not in system_content
+    assert "Financial edits are disabled in companion settings" in system_content
+    assert "do not emit clarity_action blocks" in system_content
 
 
 def test_prompt_service_injects_structured_memory_before_generic_memory():

@@ -9,6 +9,7 @@ import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_attachment_image.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_bubble_effects.dart'
     show ChatStreamingCursor, ChatTypingDots;
+import 'package:clarity/rex/chat/presentation/widgets/chat_message_expandable_body.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
@@ -100,7 +101,7 @@ class ChatMessageBubble extends StatelessWidget {
                             height: 1.45,
                             letterSpacing: 0,
                           ),
-                          children: _inlineMarkdownSpans(
+                          children: chatMessageInlineMarkdownSpans(
                             text,
                             theme,
                             foreground,
@@ -148,30 +149,37 @@ class ChatMessageBubble extends StatelessWidget {
                                 const SizedBox(height: RexUiTokens.space8),
                             ],
                             if (text.trim().isNotEmpty)
-                              SelectableText.rich(
-                                TextSpan(
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: foreground,
-                                    height: 1.45,
-                                    letterSpacing: 0,
-                                  ),
-                                  children: [
-                                    ..._inlineMarkdownSpans(
-                                      text,
-                                      theme,
-                                      foreground,
-                                      codeBackground,
-                                    ),
-                                    if (isStreaming)
-                                      WidgetSpan(
-                                        alignment: PlaceholderAlignment.middle,
-                                        child: ChatStreamingCursor(
+                              isUser
+                                  ? SelectableText.rich(
+                                      TextSpan(
+                                        style: theme.textTheme.bodyLarge?.copyWith(
                                           color: foreground,
+                                          height: 1.45,
+                                          letterSpacing: 0,
+                                        ),
+                                        children: chatMessageInlineMarkdownSpans(
+                                          text,
+                                          theme,
+                                          foreground,
+                                          codeBackground,
                                         ),
                                       ),
-                                  ],
-                                ),
-                              ),
+                                    )
+                                  : ChatMessageExpandableBody(
+                                      text: text,
+                                      textStyle: theme.textTheme.bodyLarge!.copyWith(
+                                        color: foreground,
+                                        height: 1.45,
+                                        letterSpacing: 0,
+                                      ),
+                                      foreground: foreground,
+                                      codeBackground: codeBackground,
+                                      theme: theme,
+                                      isStreaming: isStreaming,
+                                      streamingCursor: isStreaming
+                                          ? ChatStreamingCursor(color: foreground)
+                                          : null,
+                                    ),
                             if (!isUser &&
                                 clarityActions.isNotEmpty &&
                                 !suppressClarityActions) ...[
@@ -191,9 +199,19 @@ class ChatMessageBubble extends StatelessWidget {
                                   clarityActions.isNotEmpty)
                                 const SizedBox(height: RexUiTokens.space8),
                               ActionChip(
-                                label: Text(context.l10n.rexViewOnDashboard),
+                                label: Text(
+                                  dashboardLinkAnchor ==
+                                          DashboardInsightAnchor
+                                              .connectedAccounts
+                                      ? context.l10n.rexRefreshAccounts
+                                      : context.l10n.rexViewOnDashboard,
+                                ),
                                 avatar: Icon(
-                                  Icons.dashboard_outlined,
+                                  dashboardLinkAnchor ==
+                                          DashboardInsightAnchor
+                                              .connectedAccounts
+                                      ? Icons.sync_rounded
+                                      : Icons.dashboard_outlined,
                                   size: 18,
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
@@ -291,51 +309,6 @@ class ChatMessageBubble extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  List<InlineSpan> _inlineMarkdownSpans(
-    String value,
-    ThemeData theme,
-    Color foreground,
-    Color codeBackground,
-  ) {
-    final spans = <InlineSpan>[];
-    final pattern = RegExp(r'(\*\*[^*]+\*\*|`[^`]+`)');
-    var cursor = 0;
-
-    for (final match in pattern.allMatches(value)) {
-      if (match.start > cursor) {
-        spans.add(TextSpan(text: value.substring(cursor, match.start)));
-      }
-
-      final token = match.group(0)!;
-      if (token.startsWith('**')) {
-        spans.add(
-          TextSpan(
-            text: token.substring(2, token.length - 2),
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-        );
-      } else {
-        spans.add(
-          TextSpan(
-            text: token.substring(1, token.length - 1),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: foreground,
-              fontFamily: 'monospace',
-              backgroundColor: codeBackground,
-            ),
-          ),
-        );
-      }
-      cursor = match.end;
-    }
-
-    if (cursor < value.length) {
-      spans.add(TextSpan(text: value.substring(cursor)));
-    }
-
-    return spans.isEmpty ? [TextSpan(text: value)] : spans;
   }
 }
 

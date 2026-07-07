@@ -18,8 +18,25 @@ void main() {
       threads: true,
       goals: false,
       memory: true,
+      responseStyle: AssistantProposalSettings.detailed,
     );
     final restored = AssistantProposalSettings.fromJson(original.toJson());
     expect(restored, original);
+  });
+
+  test('defaults response style to balanced', () {
+    final settings = AssistantProposalSettings.fromJson({});
+    expect(settings.responseStyle, AssistantProposalSettings.balanced);
+  });
+
+  test('defaults finance edits to enabled', () {
+    final settings = AssistantProposalSettings.fromJson({});
+    expect(settings.financeEditsEnabled, isTrue);
+  });
+
+  test('round-trips finance edits toggle', () {
+    const original = AssistantProposalSettings(financeEditsEnabled: false);
+    final restored = AssistantProposalSettings.fromJson(original.toJson());
+    expect(restored.financeEditsEnabled, isFalse);
   });
 }

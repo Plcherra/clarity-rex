@@ -5,6 +5,12 @@ from app.services.prompt_constants import (
     FINANCIAL_CONTEXT_PREFIX,
     MAX_FINANCIAL_CONTEXT_CHARACTERS,
 )
+from app.services.prompt_financial_write_playbook import (
+    FINANCIAL_WRITE_PLAYBOOK,
+    FINANCIAL_WRITES_DISABLED_NOTE,
+)
+
+_TRANSACTION_CHAR_BUDGET_RATIO = 0.4
 
 
 class PromptFinancialContextMixin:
@@ -14,63 +20,151 @@ class PromptFinancialContextMixin:
         if not financial_context:
             return None
 
-        lines = [
-            "Rex is inside Clarity. Use this as first-party Clarity financial context. It may include specific accounts, account names, budgets, categories, merchants, descriptions, and transaction rows. You may reference specific records when they are present. Do not offer to pull, check, fetch, or list transaction details later unless the details are already present in this context or an execution result provides them. If this context says data is unavailable, degraded, stale, partial, or incomplete, say that clearly before answering and do not guess missing accounts, balances, budgets, categories, or transactions. For create/update/delete requests, ask for confirmation and append a fenced ```clarity_action``` JSON object with action, payload, confirmation_text, and risk_level. Use only actions listed in available_controls. Never claim a financial record was changed unless an execution result says it succeeded."
-        ]
-        used_characters = len(lines[0]) + 1
+        companion_settings = self._dict_value(financial_context, "companion_settings")
+        finance_edits_enabled = companion_settings.get("finance_edits_enabled")
+        if finance_edits_enabled is False:
+            write_playbook = FINANCIAL_WRITES_DISABLED_NOTE
+            write_rule = (
+                "For create/update/delete requests, advise only and do not emit "
+                "clarity_action blocks for transactions, categories, or budgets."
+            )
+        else:
+            write_playbook = FINANCIAL_WRITE_PLAYBOOK
+            write_rule = (
+                "For create/update/delete requests, ask for confirmation and append a "
+                "fenced ```clarity_action``` JSON object with action, payload, "
+                "confirmation_text, and risk_level. Use only actions listed in "
+                "available_controls."
+            )
 
-        for line in self._financial_context_lines(financial_context):
-            if not line:
-                continue
-            remaining_characters = MAX_FINANCIAL_CONTEXT_CHARACTERS - used_characters
-            if remaining_characters <= 0:
+        header = (
+            "Rex is inside Clarity. Use this as first-party Clarity financial context. "
+            "It may include specific accounts, account names, budgets, categories, merchants, "
+            "descriptions, matched_transactions, and transaction rows. You may reference "
+            "specific records when they are present. Prefer matched_transactions and "
+            "category_spend_this_month when answering merchant/category/budget questions. "
+            "Do not offer to pull, check, fetch, or list transaction details later unless "
+            "the details are already present in this context or an execution result provides "
+            "them. If this context says data is unavailable, degraded, stale, partial, or "
+            "incomplete, say that clearly before answering and do not guess missing accounts, "
+            "balances, budgets, categories, or transactions. When freshness is stale, quote "
+            "exact current_balance values from account rows only; do not estimate payoff "
+            "amounts, interest, or fees. "
+            f"{write_rule} "
+            "Never claim a financial record was changed unless an "
+            "execution result says it succeeded."
+            f"\n{write_playbook}"
+        )
+        priority_lines, transaction_lines, metadata_lines = (
+            self._financial_context_line_groups(financial_context)
+        )
+
+        lines = [header]
+        used_characters = len(header) + 1
+        tx_budget = int(MAX_FINANCIAL_CONTEXT_CHARACTERS * _TRANSACTION_CHAR_BUDGET_RATIO)
+        tx_used = 0
+
+        for line in priority_lines:
+            used_characters, appended = self._append_financial_line(
+                lines,
+                line,
+                used_characters=used_characters,
+                max_characters=MAX_FINANCIAL_CONTEXT_CHARACTERS,
+            )
+            if not appended:
                 break
-            if len(line) > remaining_characters:
-                if remaining_characters < 40:
-                    break
-                line = f"{line[: remaining_characters - 22].rstrip()} [truncated]"
-            lines.append(line)
-            used_characters += len(line) + 1
+
+        for line in transaction_lines:
+            if tx_used >= tx_budget:
+                break
+            remaining_total = MAX_FINANCIAL_CONTEXT_CHARACTERS - used_characters
+            remaining_tx = tx_budget - tx_used
+            if remaining_total <= 0 or remaining_tx <= 0:
+                break
+            line_budget = min(remaining_total, remaining_tx)
+            clipped = self._clip_financial_line(line, line_budget)
+            if not clipped:
+                break
+            lines.append(clipped)
+            used_characters += len(clipped) + 1
+            tx_used += len(clipped) + 1
+
+        for line in metadata_lines:
+            used_characters, appended = self._append_financial_line(
+                lines,
+                line,
+                used_characters=used_characters,
+                max_characters=MAX_FINANCIAL_CONTEXT_CHARACTERS,
+            )
+            if not appended:
+                break
 
         if len(lines) == 1:
             return None
         return f"{FINANCIAL_CONTEXT_PREFIX}{chr(10).join(lines)}"
 
-    def _financial_context_lines(self, financial_context: dict) -> list[str]:
-        lines: list[str] = []
+    def _financial_context_line_groups(
+        self, financial_context: dict
+    ) -> tuple[list[str], list[str], list[str]]:
+        priority: list[str] = []
+        transactions: list[str] = []
+        metadata: list[str] = []
+
         schema = financial_context.get("schema")
         generated_at = financial_context.get("generated_at")
         if schema or generated_at:
-            lines.append(f"- Context: schema={schema}; generated_at={generated_at}")
+            priority.append(
+                f"- Context: schema={schema}; generated_at={generated_at}"
+            )
 
         status = self._financial_status_summary(financial_context)
         if status:
-            lines.append(status)
+            priority.append(status)
 
-        integration = self._dict_value(financial_context, "integration")
-        if integration:
-            lines.append("- Integration: " + self._compact_json(integration))
+        freshness = self._dict_value(financial_context, "freshness")
+        guidance = freshness.get("guidance")
+        if isinstance(guidance, str) and guidance.strip():
+            priority.append(f"- Freshness guidance: {guidance.strip()}")
 
-        retrieval = self._dict_value(financial_context, "retrieval")
-        if retrieval:
-            lines.append("- Retrieval: " + self._compact_json(retrieval))
+        matched = self._list_value(financial_context, "matched_transactions")
+        if matched:
+            priority.append(
+                f"- Matched transactions ({len(matched)} for this question):"
+            )
+            transactions.extend(
+                f"  - {self._compact_json(transaction)}"
+                for transaction in matched
+                if isinstance(transaction, dict)
+            )
 
-        controls = self._dict_value(financial_context, "available_controls")
-        if controls:
-            lines.append("- Available controls: " + self._compact_json(controls))
+        category_spend = self._list_value(
+            financial_context,
+            "category_spend_this_month",
+        )
+        if category_spend:
+            priority.append(
+                "- Category spend this month: "
+                + "; ".join(
+                    self._category_spend_summary(item)
+                    for item in category_spend[:8]
+                    if isinstance(item, dict)
+                )
+            )
 
         period = self._dict_value(financial_context, "period")
         if period:
-            lines.append(
+            priority.append(
                 "- Period: "
                 f"reference_month={period.get('reference_month')}; "
                 f"transaction_count={period.get('transaction_count')}; "
+                f"included={period.get('included_transaction_count')}; "
+                f"matched={period.get('included_matched_transaction_count')}; "
                 f"range={period.get('first_transaction_date')} to {period.get('last_transaction_date')}"
             )
 
         cash_flow = self._dict_value(financial_context, "cash_flow")
         if cash_flow:
-            lines.append(
+            priority.append(
                 "- Cash flow: "
                 f"balance={cash_flow.get('total_balance')}; "
                 f"income_this_month={cash_flow.get('income_this_month')}; "
@@ -81,7 +175,7 @@ class PromptFinancialContextMixin:
 
         budget = self._dict_value(financial_context, "budget")
         if budget:
-            lines.append(
+            priority.append(
                 "- Budget: "
                 f"period={budget.get('period_type')}:{budget.get('period_key')}; "
                 f"budgeted={budget.get('total_budgeted')}; "
@@ -91,36 +185,9 @@ class PromptFinancialContextMixin:
                 f"categories={budget.get('budgeted_category_count')}"
             )
 
-        accounts = self._list_value(financial_context, "accounts")
-        if accounts:
-            lines.append(f"- Accounts ({len(accounts)}):")
-            lines.extend(
-                f"  - {self._compact_json(account)}"
-                for account in accounts
-                if isinstance(account, dict)
-            )
-
-        categories = self._list_value(financial_context, "categories")
-        if categories:
-            lines.append(f"- Categories ({len(categories)}):")
-            lines.extend(
-                f"  - {self._compact_json(category)}"
-                for category in categories
-                if isinstance(category, dict)
-            )
-
-        budgets = self._list_value(financial_context, "budgets")
-        if budgets:
-            lines.append(f"- Budget records ({len(budgets)}):")
-            lines.extend(
-                f"  - {self._compact_json(budget_record)}"
-                for budget_record in budgets
-                if isinstance(budget_record, dict)
-            )
-
         top_categories = self._list_value(financial_context, "top_spending_categories")
         if top_categories:
-            lines.append(
+            priority.append(
                 "- Top spending categories: "
                 + "; ".join(
                     f"{item.get('category')}={item.get('spent')}"
@@ -134,7 +201,7 @@ class PromptFinancialContextMixin:
             "biggest_month_over_month_increases",
         )
         if increases:
-            lines.append(
+            priority.append(
                 "- Biggest month-over-month increases: "
                 + "; ".join(
                     self._financial_increase_summary(item)
@@ -145,7 +212,7 @@ class PromptFinancialContextMixin:
 
         overspending = self._list_value(budget or {}, "top_overspending_categories")
         if overspending:
-            lines.append(
+            priority.append(
                 "- Top overspending categories: "
                 + "; ".join(
                     f"{item.get('category')} overspent={item.get('overspent')}"
@@ -154,20 +221,115 @@ class PromptFinancialContextMixin:
                 )
             )
 
-        slices = self._dict_value(financial_context, "transaction_slices")
-        if slices:
-            lines.extend(self._financial_slice_lines(slices))
+        retrieval = self._dict_value(financial_context, "retrieval")
+        if retrieval:
+            metadata.append("- Retrieval: " + self._compact_json(retrieval))
 
-        transactions = self._list_value(financial_context, "transactions")
-        if transactions:
-            lines.append(f"- Transactions ({len(transactions)}, newest first):")
-            lines.extend(
+        controls = self._dict_value(financial_context, "available_controls")
+        if controls:
+            metadata.append("- Available controls: " + self._compact_json(controls))
+
+        rows = self._list_value(financial_context, "transactions")
+        if rows:
+            transactions.append(f"- Transactions ({len(rows)}, newest first):")
+            transactions.extend(
                 f"  - {self._compact_json(transaction)}"
-                for transaction in transactions
+                for transaction in rows
                 if isinstance(transaction, dict)
             )
 
-        return lines
+        slices = self._dict_value(financial_context, "transaction_slices")
+        if slices:
+            metadata.extend(self._financial_slice_lines(slices))
+
+        accounts = self._list_value(financial_context, "accounts")
+        if accounts:
+            metadata.append(f"- Accounts ({len(accounts)}):")
+            metadata.extend(
+                f"  - {self._compact_account(account)}"
+                for account in accounts
+                if isinstance(account, dict)
+            )
+
+        categories = self._list_value(financial_context, "categories")
+        if categories:
+            metadata.append(f"- Categories ({len(categories)}):")
+            metadata.extend(
+                f"  - {self._compact_json(category)}"
+                for category in categories[:12]
+                if isinstance(category, dict)
+            )
+
+        budgets = self._list_value(financial_context, "budgets")
+        if budgets:
+            metadata.append(f"- Budget records ({len(budgets)}):")
+            metadata.extend(
+                f"  - {self._compact_json(budget_record)}"
+                for budget_record in budgets[:12]
+                if isinstance(budget_record, dict)
+            )
+
+        integration = self._dict_value(financial_context, "integration")
+        if integration:
+            metadata.append("- Integration: " + self._compact_json(integration))
+
+        return priority, transactions, metadata
+
+    def _append_financial_line(
+        self,
+        lines: list[str],
+        line: str,
+        *,
+        used_characters: int,
+        max_characters: int,
+    ) -> tuple[int, bool]:
+        if not line:
+            return used_characters, False
+        clipped = self._clip_financial_line(line, max_characters - used_characters)
+        if not clipped:
+            return used_characters, False
+        lines.append(clipped)
+        return used_characters + len(clipped) + 1, True
+
+    def _clip_financial_line(self, line: str, remaining_characters: int) -> str:
+        if remaining_characters <= 0:
+            return ""
+        if len(line) <= remaining_characters:
+            return line
+        if remaining_characters < 40:
+            return ""
+        return f"{line[: remaining_characters - 22].rstrip()} [truncated]"
+
+    def _compact_account(self, account: dict) -> str:
+        compact = {
+            key: account.get(key)
+            for key in (
+                "id",
+                "name",
+                "display_name",
+                "type",
+                "current_balance",
+                "available_balance",
+                "institution",
+                "mask",
+                "last_synced_at",
+                "sync_status",
+            )
+            if account.get(key) is not None
+        }
+        return self._compact_json(compact)
+
+    def _category_spend_summary(self, item: dict) -> str:
+        summary = (
+            f"{item.get('category')} spent={item.get('spent')} "
+            f"count={item.get('transaction_count')}"
+        )
+        merchants = self._list_value(item, "top_merchants")
+        if merchants:
+            summary = (
+                f"{summary} merchants={self._compact_json(merchants[:3])}"
+            )
+        return summary
 
     def _financial_status_summary(self, financial_context: dict) -> str:
         data_status = self._dict_value(financial_context, "data_status")
@@ -206,9 +368,16 @@ class PromptFinancialContextMixin:
 
         warning = ""
         if str(state).lower() in {"unavailable", "degraded", "partial"}:
-            warning = " Rex must explicitly tell the user this financial data is not fully reliable."
+            warning = (
+                " Rex must explicitly tell the user this financial data is not fully "
+                "reliable."
+            )
         elif str(freshness_state).lower() in {"stale", "unknown"}:
-            warning = " Rex must explicitly tell the user the financial sync freshness is stale or unknown."
+            warning = (
+                " Rex must explicitly tell the user the financial sync freshness is stale "
+                "or unknown and must quote exact current_balance values from account rows "
+                "only."
+            )
         return "- Data status: " + "; ".join(parts) + f".{warning}"
 
     def _financial_slice_lines(self, slices: dict) -> list[str]:

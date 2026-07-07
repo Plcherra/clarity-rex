@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clarity/rex/memory/data/memory_labels.dart';
 
 typedef ActionResultMessageFormatter =
     String Function(String action, List<Map<String, dynamic>> result);
@@ -17,7 +18,7 @@ String actionResultMessage(
   String action,
   List<Map<String, dynamic>> result,
 ) {
-  final label = action.replaceAll('_', ' ');
+  final label = action.memoryRecordLabel;
   if (result.isEmpty) {
     return l10n.chatActionDoneSingle(label);
   }

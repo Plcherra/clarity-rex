@@ -24,6 +24,21 @@ void main() {
         DashboardInsightAnchor.monthlyCashFlow,
       );
     });
+
+    test('connected accounts anchor opens accounts tab', () {
+      expect(
+        dashboardDeepLinkOpensAccounts(
+          DashboardInsightAnchor.connectedAccounts,
+        ),
+        isTrue,
+      );
+      expect(
+        dashboardDeepLinkOpensAccounts(
+          DashboardInsightAnchor.monthlyCashFlow,
+        ),
+        isFalse,
+      );
+    });
   });
 
   group('dashboardInsightAnchor route values', () {

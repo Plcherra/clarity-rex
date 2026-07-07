@@ -158,6 +158,16 @@ class _ClarityActionCardState extends State<_ClarityActionCard> {
               ),
               const SizedBox(height: 16),
             ] else ...[
+              if (_financeActionHeadline(action) case final headline?) ...[
+                Text(
+                  headline,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
@@ -305,6 +315,32 @@ String _pendingProposalHeadline(ClarityActionCard action) {
     case 'memory':
     default:
       return 'Save to Clarity Knows';
+  }
+}
+
+String? _financeActionHeadline(ClarityActionCard action) {
+  switch (action.action) {
+    case 'update_transaction':
+    case 'bulk_update_transaction_category':
+    case 'create_transaction':
+    case 'delete_transaction':
+      return 'Change in Transactions';
+    case 'create_budget':
+    case 'update_budget':
+    case 'delete_budget':
+      return 'Change in Budgets';
+    case 'create_category':
+    case 'update_category':
+    case 'delete_category':
+      return 'Change in Categories';
+    case 'create_account':
+    case 'update_account':
+    case 'delete_account':
+      return 'Change in Accounts';
+    case 'delete_import_batch':
+      return 'Change in Imports';
+    default:
+      return null;
   }
 }
 

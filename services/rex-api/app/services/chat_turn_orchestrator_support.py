@@ -135,6 +135,23 @@ def messages_with_attachment(
     return updated_messages
 
 
+def financial_context_for_prompt(
+    financial_context: Optional[dict],
+    proposal_settings,
+) -> Optional[dict]:
+    if not financial_context:
+        return None
+    merged = dict(financial_context)
+    merged["companion_settings"] = {
+        "finance_edits_enabled": getattr(
+            proposal_settings,
+            "finance_edits_enabled",
+            True,
+        ),
+    }
+    return merged
+
+
 async def load_pending_action(memory_service, conversation_id: str):
     if not conversation_id:
         return None

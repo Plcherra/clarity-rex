@@ -1,6 +1,7 @@
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
+import 'package:clarity/rex/data/rex_financial_context_query.dart';
 import 'package:clarity/rex/data/rex_financial_transaction_policy.dart';
 import 'package:clarity/features/categories/domain/category_normalization.dart';
 import 'package:clarity/features/finance/application/financial_read_model_service.dart';
@@ -419,6 +420,95 @@ void main() {
       expect(coffee['on_track'], isTrue);
     },
   );
+
+  test('finance query prioritizes matching transactions and category spend', () async {
+    final model = FinancialReadModel.fromRecords(
+      accounts: [
+        const Account(
+          id: 'checking',
+          name: 'Checking',
+          type: AccountType.checking,
+        ),
+      ],
+      categories: [
+        _category(id: 'cat-code', name: 'Code Ai Tools'),
+        _category(id: 'cat-food', name: 'Food & Drink'),
+      ],
+      transactionRecords: [
+        _record(
+          id: 'cursor-1',
+          date: DateTime(2026, 6, 4),
+          categoryId: 'cat-code',
+          amount: 20,
+          description: 'CURSOR USAGE MID',
+          source: 'plaid',
+          importedFromCsv: false,
+        ),
+        _record(
+          id: 'cursor-2',
+          date: DateTime(2026, 6, 3),
+          categoryId: 'cat-code',
+          amount: 22.82,
+          description: 'OPENAI CHATGPT',
+          source: 'plaid',
+          importedFromCsv: false,
+        ),
+        for (var i = 0; i < 130; i += 1)
+          _record(
+            id: 'food-$i',
+            date: DateTime(2026, 6, 1).add(Duration(days: i % 5)),
+            categoryId: 'cat-food',
+            amount: 5,
+            description: 'Coffee $i',
+            source: 'plaid',
+            importedFromCsv: false,
+          ),
+      ],
+      budgets: [
+        BudgetRecord(
+          id: 'budget-code',
+          userId: 'user',
+          name: 'Code Ai Tools',
+          categoryId: 'cat-code',
+          categoryKey: normalizedCategoryKey('Code Ai Tools'),
+          amount: 450,
+          period: 'monthly',
+          startDate: DateTime(2026, 6),
+          createdAt: DateTime(2026, 6),
+          updatedAt: DateTime(2026, 6),
+        ),
+      ],
+    );
+    final service = AssistantFinancialContextService(
+      loadFinancialReadModel: () async => model,
+      spendReference: () => DateTime(2026, 6, 9),
+      notifyDataChanged: () {},
+    );
+
+    final summary = await service.buildSummary(
+      userMessage: 'What did I spend on Cursor and Code Ai Tools this month?',
+    );
+
+    final matched = summary['matched_transactions'] as List<dynamic>;
+    final categorySpend =
+        summary['category_spend_this_month'] as List<dynamic>;
+    final transactions = summary['transactions'] as List<dynamic>;
+    final retrieval = summary['retrieval'] as Map<String, dynamic>;
+
+    expect(matched, isNotEmpty);
+    expect(
+      matched.map((row) => (row as Map<String, dynamic>)['description']),
+      contains('CURSOR USAGE MID'),
+    );
+    expect(categorySpend, isNotEmpty);
+    final codeSpend = categorySpend
+        .cast<Map<String, dynamic>>()
+        .singleWhere((row) => row['category'] == 'Code Ai Tools');
+    expect(codeSpend['spent'], 42.82);
+    expect(codeSpend['transaction_count'], 2);
+    expect(retrieval['matched_transaction_count'], greaterThan(0));
+    expect(transactions.first, matched.first);
+  });
 }
 
 Future<Map<String, dynamic>> _buildPlaidTruthSummary() {

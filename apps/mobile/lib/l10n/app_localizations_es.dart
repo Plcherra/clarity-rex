@@ -904,6 +904,32 @@ class AppLocalizationsEs extends AppLocalizations {
       'Memoria (hechos y preferencias)';
 
   @override
+  String get assistantResponseStyleLabel => 'Longitud de respuesta';
+
+  @override
+  String get assistantResponseStyleConcise => 'Concisa';
+
+  @override
+  String get assistantResponseStyleBalanced => 'Equilibrada';
+
+  @override
+  String get assistantResponseStyleDetailed => 'Detallada';
+
+  @override
+  String get assistantFinanceEditsEnabledLabel =>
+      'Permitir que Rex edite finanzas';
+
+  @override
+  String get assistantFinanceEditsEnabledSubtitle =>
+      'Si está desactivado, Rex puede asesorar pero no propondrá cambios en transacciones o presupuestos.';
+
+  @override
+  String get chatShowMore => 'Ver más';
+
+  @override
+  String get chatShowLess => 'Ver menos';
+
+  @override
   String get dashboardChartCategorySpendSubtitle => 'Total de este mes';
 
   @override
@@ -1400,6 +1426,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get rexViewOnDashboard => 'Ver en el Panel';
+
+  @override
+  String get rexRefreshAccounts => 'Actualizar cuentas';
 
   @override
   String get chatTranscriptReadyTitle => 'Rex está listo';

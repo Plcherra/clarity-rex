@@ -5,6 +5,7 @@ import 'package:clarity/features/budgets/domain/budget_models.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_snapshot.dart';
 import 'package:clarity/features/finance/application/financial_read_model_service.dart';
 import 'package:clarity/features/transactions/domain/spend_categories.dart';
+import 'package:clarity/rex/data/rex_financial_context_query.dart';
 import 'package:clarity/rex/data/rex_financial_transaction_policy.dart';
 
 final class AssistantFinancialContextBuilder {
@@ -69,13 +70,14 @@ final class AssistantFinancialContextBuilder {
     };
   }
 
-  Future<Map<String, dynamic>> buildSummary() async {
+  Future<Map<String, dynamic>> buildSummary({String? userMessage}) async {
     const scope = GlobalDashboardScope();
     final model = await _safeFinancialReadModel();
     final reference = model.dashboardReferenceForScope(
       scope,
       requested: spendReference(),
     );
+    final referenceMonth = monthKey(reference);
     final snapshot = model.dashboardSnapshot(
       scope: scope,
       reference: reference,
@@ -83,7 +85,7 @@ final class AssistantFinancialContextBuilder {
     final budgetPerformance = model.budgetPerformanceForScope(
       scope,
       periodType: BudgetPeriodType.monthly,
-      periodKey: monthKey(reference),
+      periodKey: referenceMonth,
     );
     final accounts = model.accounts;
     final categories = model.categories;
@@ -93,10 +95,25 @@ final class AssistantFinancialContextBuilder {
         .toList(growable: false);
     final resolvedTransactions = model.transactions;
     final resolvedViews = model.resolvedTransactionsForScope(scope);
+    final query = extractRexFinancialContextQuery(
+      userMessage ?? '',
+      budgets: budgets,
+      categories: categories,
+    );
+    final matchedTransactions = selectRexMatchedTransactionRows(
+      transactions: transactions,
+      resolvedTransactions: resolvedViews,
+      query: query,
+    );
     final selectedTransactions = selectRexTransactionContextRows(
       transactions: transactions,
       resolvedTransactions: resolvedViews,
+      query: query.hasFilters ? query : null,
       maxRows: kMaxRexTransactionContextRows,
+    );
+    final categorySpendThisMonth = buildCategorySpendThisMonth(
+      resolvedTransactions: resolvedViews,
+      referenceMonth: referenceMonth,
     );
     final dates = transactions.map((transaction) => transaction.date).toList()
       ..sort();
@@ -129,33 +146,50 @@ final class AssistantFinancialContextBuilder {
         'transaction_detail_mode':
             selectedTransactions.length == transactions.length
             ? 'full'
+            : query.hasFilters
+            ? 'matched_rows_plus_recent_transactions'
             : 'recent_and_review_rows',
         'account_names_included': true,
         'merchant_names_included': true,
         'assistant_can_reference_specific_records': true,
-        'default_context_is_summary_first': true,
+        'default_context_is_summary_first': !query.hasFilters,
         'drilldown_indexes_included': true,
+        'matched_transaction_selection_enabled': query.hasFilters,
       },
       'retrieval': {
         'default_transaction_limit': kMaxRexTransactionContextRows,
         'default_selection': selectedTransactions.length == transactions.length
             ? 'all_transactions'
+            : query.hasFilters
+            ? 'matched_rows_plus_recent_transactions'
             : 'review_rows_plus_recent_transactions',
+        if (query.hasFilters) 'matched_query': query.toContextJson(),
+        if (query.hasFilters) 'matched_transaction_count': matchedTransactions.length,
         'drilldown_policy':
-            'Use included transactions and transaction_slices only. If a requested slice has sample_transactions, list those names/descriptions. If details are not included, say Clarity only sent an aggregate summary for this turn; do not claim you can pull/check/fetch more details unless an execution result provides them.',
+            'Use included transactions, matched_transactions, and category_spend_this_month first. If a requested slice has sample_transactions, list those names/descriptions. If details are not included, say Clarity only sent an aggregate summary for this turn; do not claim you can pull/check/fetch more details unless an execution result provides them.',
         'supported_drilldown_filters': [
           'account_id',
           'account_name',
           'month',
           'category',
+          'merchant',
+          'budget_name',
           'review_reason',
         ],
       },
       'available_controls': availableControls(),
       'period': {
-        'reference_month': monthKey(reference),
+        'reference_month': referenceMonth,
         'transaction_count': transactions.length,
         'included_transaction_count': selectedTransactions.length,
+        if (query.hasFilters)
+          'included_matched_transaction_count': matchedTransactions
+              .where(
+                (transaction) => selectedTransactions.any(
+                  (selected) => selected.id == transaction.id,
+                ),
+              )
+              .length,
         if (dates.isNotEmpty) 'first_transaction_date': dateOnly(dates.first),
         if (dates.isNotEmpty) 'last_transaction_date': dateOnly(dates.last),
       },
@@ -208,6 +242,18 @@ final class AssistantFinancialContextBuilder {
           },
       ],
       'budget': budgetSummary(budgetPerformance),
+      if (categorySpendThisMonth.isNotEmpty)
+        'category_spend_this_month': categorySpendThisMonth,
+      if (query.hasFilters && matchedTransactions.isNotEmpty)
+        'matched_transactions': [
+          for (final transaction in matchedTransactions)
+            transactionContext(
+              transaction,
+              accountById: accountById,
+              categoryById: categoryById,
+              resolvedByRecordId: resolvedByRecordId,
+            ),
+        ],
       'transactions': [
         for (final transaction in selectedTransactions)
           transactionContext(
@@ -454,6 +500,9 @@ final class AssistantFinancialContextBuilder {
       if (newestSync != null) 'newest_sync_at': newestSync.toIso8601String(),
       'stale_plaid_accounts': staleAccounts,
       'unknown_sync_accounts': unknownAccounts,
+      if (staleAccounts.isNotEmpty)
+        'guidance':
+            'Financial sync is stale. Quote exact current_balance values from account rows only; do not estimate payoff amounts, interest, or fees that may have changed since last sync.',
     };
   }
 

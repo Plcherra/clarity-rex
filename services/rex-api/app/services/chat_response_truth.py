@@ -9,6 +9,7 @@ from app.services.action_truth_policy import (
     safe_old_chat_search_response,
     safe_pending_action_response,
     safe_unexecuted_delete_response,
+    safe_unexecuted_finance_response,
     safe_unexecuted_goal_response,
     safe_unexecuted_memory_response,
     safe_unsupported_action_response,
@@ -155,7 +156,17 @@ class ChatResponseTruthService:
                 updated,
                 turn_trace,
             )
-        return response
+        updated = safe_unexecuted_finance_response(
+            response,
+            user_message=user_message,
+            intent=intent_decision.intent.value,
+        )
+        return _apply_truth_guard(
+            "unexecuted_finance",
+            response,
+            updated,
+            turn_trace,
+        )
 
     def _message_confirms_save(self, user_message: str) -> bool:
         from app.services.conversation_pending_action import is_delete_confirmation_message

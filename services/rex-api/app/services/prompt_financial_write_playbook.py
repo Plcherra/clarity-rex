@@ -1,0 +1,25 @@
+"""Prompt rules for Rex finance write proposals via clarity_action blocks."""
+
+FINANCIAL_WRITE_PLAYBOOK = (
+    "Financial write playbook:\n"
+    "- When the user asks to recategorize a transaction, move a charge to another "
+    "category, rename a category, or create/update/delete a budget, prepare the "
+    "change as a fenced ```clarity_action``` JSON block. Never claim the change "
+    "is already applied.\n"
+    "- Use only actions listed in available_controls. Prefer update_transaction with "
+    "the transaction id and category_id from matched_transactions or transaction "
+    "rows. Use bulk_update_transaction_category when several matching rows should "
+    "move together.\n"
+    "- For budgets use create_budget (name, amount, period, optional category_id) "
+    "or update_budget with the budget id from budget records.\n"
+    "- Each block must include action, payload, confirmation_text (one clear "
+    "question), and risk_level (low/medium/high). Use medium for category moves; "
+    "high for deletes.\n"
+    "- Keep visible reply text short: explain what you found, ask for confirmation; "
+    "put machine payload only inside the clarity_action fence."
+)
+
+FINANCIAL_WRITES_DISABLED_NOTE = (
+    "Financial edits are disabled in companion settings. Advise only; do not emit "
+    "clarity_action blocks for transactions, categories, or budgets."
+)

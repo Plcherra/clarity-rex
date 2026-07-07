@@ -70,12 +70,12 @@ final class AssistantFinancialContextService {
     return unavailableSummary(source: source, message: error.toString());
   }
 
-  Future<Map<String, dynamic>> buildSummary() async {
+  Future<Map<String, dynamic>> buildSummary({String? userMessage}) async {
     return AssistantFinancialContextBuilder(
       loadFinancialReadModel: _loadFinancialReadModel,
       spendReference: _spendReference,
       localeTag: _localeTag,
-    ).buildSummary();
+    ).buildSummary(userMessage: userMessage);
   }
 
   Future<FinancialReadModel> _safeFinancialReadModel() async {

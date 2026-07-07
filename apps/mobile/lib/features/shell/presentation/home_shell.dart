@@ -158,8 +158,10 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
         return;
       }
       setState(() {
-        _selectIndex(0);
-        _pendingDashboardAnchor = next.anchor;
+        _selectIndex(dashboardDeepLinkOpensAccounts(next.anchor) ? 1 : 0);
+        _pendingDashboardAnchor = dashboardDeepLinkOpensAccounts(next.anchor)
+            ? null
+            : next.anchor;
       });
     });
 

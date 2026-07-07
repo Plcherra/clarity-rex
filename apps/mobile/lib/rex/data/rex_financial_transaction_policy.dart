@@ -1,27 +1,144 @@
+import 'package:clarity/core/models/transaction.dart';
 import 'package:clarity/core/models/account.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/transactions/domain/spend_categories.dart';
 import 'package:clarity/features/transactions/domain/transaction_resolution.dart';
+import 'package:clarity/rex/data/rex_financial_context_query.dart';
 
 const int kMaxRexTransactionContextRows = 120;
 const int kMaxRexDrilldownGroups = 18;
 const int kMaxRexDrilldownSampleIds = 8;
+const int kMaxCategorySpendRows = 12;
+const int kMaxMerchantsPerCategorySpend = 3;
 
 List<TransactionRecord> selectRexTransactionContextRows({
   required List<TransactionRecord> transactions,
   required List<ResolvedTransaction> resolvedTransactions,
+  RexFinancialContextQuery? query,
   int maxRows = kMaxRexTransactionContextRows,
 }) {
-  if (transactions.length <= maxRows) {
+  if (transactions.length <= maxRows && !(query?.hasFilters ?? false)) {
     return transactions;
   }
-  final newest = [...transactions]
-    ..sort((a, b) {
-      final byDate = b.date.compareTo(a.date);
-      if (byDate != 0) return byDate;
-      return b.id.compareTo(a.id);
-    });
-  return newest.take(maxRows).toList(growable: false);
+
+  final resolvedByRecordId = {
+    for (final resolved in resolvedTransactions)
+      if (resolved.transaction.fingerprint != null)
+        resolved.transaction.fingerprint!: resolved,
+  };
+
+  int compareNewest(TransactionRecord a, TransactionRecord b) {
+    final byDate = b.date.compareTo(a.date);
+    if (byDate != 0) return byDate;
+    return b.id.compareTo(a.id);
+  }
+
+  if (!(query?.hasFilters ?? false)) {
+    final newest = [...transactions]..sort(compareNewest);
+    return newest.take(maxRows).toList(growable: false);
+  }
+
+  final matched = <TransactionRecord>[];
+  final remainder = <TransactionRecord>[];
+  for (final transaction in transactions) {
+    final resolved = resolvedByRecordId[transaction.id];
+    if (resolved != null &&
+        rexTransactionMatchesQuery(
+          transaction: transaction,
+          resolved: resolved,
+          query: query!,
+        )) {
+      matched.add(transaction);
+    } else {
+      remainder.add(transaction);
+    }
+  }
+
+  matched.sort(compareNewest);
+  remainder.sort(compareNewest);
+
+  final selected = <TransactionRecord>[...matched];
+  for (final transaction in remainder) {
+    if (selected.length >= maxRows) {
+      break;
+    }
+    selected.add(transaction);
+  }
+  return selected;
+}
+
+List<TransactionRecord> selectRexMatchedTransactionRows({
+  required List<TransactionRecord> transactions,
+  required List<ResolvedTransaction> resolvedTransactions,
+  required RexFinancialContextQuery query,
+  int maxRows = kMaxRexTransactionContextRows,
+}) {
+  if (!query.hasFilters) {
+    return const [];
+  }
+
+  final resolvedByRecordId = {
+    for (final resolved in resolvedTransactions)
+      if (resolved.transaction.fingerprint != null)
+        resolved.transaction.fingerprint!: resolved,
+  };
+
+  final matched = <TransactionRecord>[];
+  for (final transaction in transactions) {
+    final resolved = resolvedByRecordId[transaction.id];
+    if (resolved == null) {
+      continue;
+    }
+    if (!rexTransactionMatchesQuery(
+      transaction: transaction,
+      resolved: resolved,
+      query: query,
+    )) {
+      continue;
+    }
+    matched.add(transaction);
+  }
+
+  matched.sort((a, b) {
+    final byDate = b.date.compareTo(a.date);
+    if (byDate != 0) return byDate;
+    return b.id.compareTo(a.id);
+  });
+  return matched.take(maxRows).toList(growable: false);
+}
+
+List<Map<String, dynamic>> buildCategorySpendThisMonth({
+  required List<ResolvedTransaction> resolvedTransactions,
+  required String referenceMonth,
+  int maxCategories = kMaxCategorySpendRows,
+  int maxMerchantsPerCategory = kMaxMerchantsPerCategorySpend,
+}) {
+  final accumulators = <String, _CategorySpendAccumulator>{};
+
+  for (final resolved in resolvedTransactions) {
+    if (!_isVisibleFinancialCategorySlice(resolved)) {
+      continue;
+    }
+    final month = _monthKeyForDate(resolved.transaction.date);
+    if (month != referenceMonth) {
+      continue;
+    }
+
+    final category = resolved.displayCategory.trim();
+    final accumulator = accumulators.putIfAbsent(
+      category,
+      () => _CategorySpendAccumulator(category: category),
+    );
+    accumulator.add(resolved);
+  }
+
+  final sorted = accumulators.values.toList()
+    ..sort((a, b) => b.spent.compareTo(a.spent));
+
+  return [
+    for (final group in sorted.take(maxCategories))
+      group.toContext(maxMerchants: maxMerchantsPerCategory),
+  ];
 }
 
 Map<String, dynamic> buildRexDrilldownIndex({
@@ -201,4 +318,46 @@ String _dateOnlyValue(DateTime value) {
   return '${value.year.toString().padLeft(4, '0')}-'
       '${value.month.toString().padLeft(2, '0')}-'
       '${value.day.toString().padLeft(2, '0')}';
+}
+
+class _CategorySpendAccumulator {
+  _CategorySpendAccumulator({required this.category});
+
+  final String category;
+  int transactionCount = 0;
+  double spent = 0;
+  final _merchantSpend = <String, double>{};
+
+  void add(ResolvedTransaction resolved) {
+    transactionCount += 1;
+    spent += resolved.transaction.amount.abs();
+    final merchant = _merchantLabel(resolved.transaction);
+    _merchantSpend[merchant] =
+        (_merchantSpend[merchant] ?? 0) + resolved.transaction.amount.abs();
+  }
+
+  Map<String, dynamic> toContext({required int maxMerchants}) {
+    final merchants = _merchantSpend.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return {
+      'category': category,
+      'spent': _moneyValue(spent),
+      'transaction_count': transactionCount,
+      'top_merchants': [
+        for (final merchant in merchants.take(maxMerchants))
+          {
+            'merchant': merchant.key,
+            'spent': _moneyValue(merchant.value),
+          },
+      ],
+    };
+  }
+}
+
+String _merchantLabel(Transaction transaction) {
+  final description = transaction.description.trim();
+  if (description.isNotEmpty) {
+    return description;
+  }
+  return 'Unknown merchant';
 }

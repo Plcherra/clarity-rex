@@ -95,6 +95,59 @@ class _AssistantProposalSettingsSheetState
                 ),
                 const SizedBox(height: 18),
                 Text(
+                  l10n.assistantResponseStyleLabel,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SegmentedButton<AssistantResponseStyle>(
+                  segments: [
+                    ButtonSegment(
+                      value: AssistantResponseStyle.concise,
+                      label: Text(l10n.assistantResponseStyleConcise),
+                    ),
+                    ButtonSegment(
+                      value: AssistantResponseStyle.balanced,
+                      label: Text(l10n.assistantResponseStyleBalanced),
+                    ),
+                    ButtonSegment(
+                      value: AssistantResponseStyle.detailed,
+                      label: Text(l10n.assistantResponseStyleDetailed),
+                    ),
+                  ],
+                  selected: {
+                    AssistantResponseStyleValue.fromStorage(settings.responseStyle),
+                  },
+                  onSelectionChanged: loading
+                      ? null
+                      : (selection) {
+                          final style = selection.first;
+                          unawaited(
+                            _save(
+                              settings.copyWith(
+                                responseStyle: style.storageValue,
+                              ),
+                            ),
+                          );
+                        },
+                ),
+                const SizedBox(height: 20),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.assistantFinanceEditsEnabledLabel),
+                  subtitle: Text(l10n.assistantFinanceEditsEnabledSubtitle),
+                  value: settings.financeEditsEnabled,
+                  onChanged: loading
+                      ? null
+                      : (enabled) => unawaited(
+                          _save(
+                            settings.copyWith(financeEditsEnabled: enabled),
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 20),
+                Text(
                   l10n.assistantAutoProposalsModeLabel,
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w600,

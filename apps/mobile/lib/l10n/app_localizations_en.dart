@@ -894,6 +894,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantAutoProposalsTypeMemory => 'Memory (facts & preferences)';
 
   @override
+  String get assistantResponseStyleLabel => 'Reply length';
+
+  @override
+  String get assistantResponseStyleConcise => 'Concise';
+
+  @override
+  String get assistantResponseStyleBalanced => 'Balanced';
+
+  @override
+  String get assistantResponseStyleDetailed => 'Detailed';
+
+  @override
+  String get assistantFinanceEditsEnabledLabel =>
+      'Allow Rex to edit finances';
+
+  @override
+  String get assistantFinanceEditsEnabledSubtitle =>
+      'When off, Rex can advise but won\'t propose transaction or budget changes.';
+
+  @override
+  String get chatShowMore => 'Show more';
+
+  @override
+  String get chatShowLess => 'Show less';
+
+  @override
   String get dashboardChartCategorySpendSubtitle => 'This month total';
 
   @override
@@ -1380,6 +1406,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rexViewOnDashboard => 'View on Dashboard';
+
+  @override
+  String get rexRefreshAccounts => 'Refresh accounts';
 
   @override
   String get chatTranscriptReadyTitle => 'Rex is ready';

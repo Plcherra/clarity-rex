@@ -1,3 +1,5 @@
+import re
+
 ACTION_TRUTH_POLICY_PROMPT = "\n".join([
     "Action truth policy:",
     "- Never claim durable changes without backend success metadata.",
@@ -37,6 +39,34 @@ UNEXECUTED_DELETE_FALLBACK = (
 UNEXECUTED_GOAL_FALLBACK = (
     "I can help save that as a goal, but I don't have a confirmed backend save "
     "from this turn. Tell me the exact goal again and I'll save it directly."
+)
+UNEXECUTED_FINANCE_FALLBACK = (
+    "I can help change transactions or budgets, but I don't have a confirmed "
+    "change from this turn. Tell me exactly what to change and I'll ask for "
+    "confirmation before applying it."
+)
+_FINANCE_WRITE_TERMS = (
+    "recategor",
+    "re-categor",
+    "recategorize",
+    "re categorize",
+    "change category",
+    "move to",
+    "move it to",
+    "move that to",
+    "put it in",
+    "put that in",
+    "switch to",
+    "set category",
+    "update category",
+    "rename category",
+    "create budget",
+    "set budget",
+    "update budget",
+    "change budget",
+    "delete budget",
+    "new budget",
+    "budget to",
 )
 
 _SUCCESS_TERMS = tuple(
@@ -90,6 +120,33 @@ def response_claims_old_chat_search_result(response: str) -> bool:
     return response_claims_no_memory_result(response) and _contains_any(text, _CHAT_HISTORY_TERMS)
 def response_claims_limited_chat_search_capability(response: str) -> bool: return _contains_any(_normalized(response), _LIMITATION_TERMS)
 def request_asks_delete(message: str) -> bool: return _contains_any(_normalized(message), _DELETE_REQUEST_TERMS)
+def request_asks_finance_write(message: str) -> bool:
+    text = _normalized(message)
+    if _contains_any(text, _FINANCE_WRITE_TERMS):
+        return True
+    if "budget" in text and _contains_any(
+        text,
+        (
+            " create ",
+            " set ",
+            " update ",
+            " change ",
+            " delete ",
+            " raise ",
+            " lower ",
+            " increase ",
+            " decrease ",
+        ),
+    ):
+        return True
+    if "categor" in text and _contains_any(
+        text,
+        (" move ", " change ", " update ", " set ", " put "),
+    ):
+        return True
+    if re.search(r"\bmove\b.+\bto\b", text):
+        return True
+    return False
 def memory_status_is_degraded(memory_status: object) -> bool:
     if not isinstance(memory_status, dict):
         return False
@@ -189,6 +246,22 @@ def safe_unexecuted_delete_response(
     ):
         return UNEXECUTED_DELETE_FALLBACK
     return cleaned
+
+
+def safe_unexecuted_finance_response(
+    response: str,
+    *,
+    user_message: str = "",
+    intent: str | None = None,
+) -> str:
+    cleaned = response.strip()
+    if intent is not None and intent not in {"finance", "unknown"}:
+        return cleaned
+    if not request_asks_finance_write(user_message):
+        return cleaned
+    if not response_claims_unconfirmed_success(cleaned):
+        return cleaned
+    return UNEXECUTED_FINANCE_FALLBACK
 
 
 def safe_unexecuted_goal_response(

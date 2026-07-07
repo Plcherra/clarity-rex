@@ -15,6 +15,7 @@ from app.services.prompt_financial_context import PromptFinancialContextMixin
 from app.services.prompt_memory_context import PromptMemoryContextMixin
 from app.services.prompt_structured_context import PromptStructuredContextMixin
 from app.services.locale_utils import locale_response_rule
+from app.services.prompt_response_style import response_style_prompt
 from app.services.time_context_service import TimeContextService
 
 
@@ -43,6 +44,7 @@ class PromptService(
         financial_context: Optional[dict] = None,
         max_context_characters: Optional[int] = None,
         locale: Optional[str] = None,
+        response_style: Optional[str] = None,
     ) -> list[dict]:
         messages = [
             *self._message_history(recent_messages or []),
@@ -58,6 +60,7 @@ class PromptService(
             time_context=time_context,
             financial_context=financial_context,
             locale=locale,
+            response_style=response_style,
         )
         if not system_sections:
             return messages
@@ -91,12 +94,16 @@ class PromptService(
         time_context: Optional[dict],
         financial_context: Optional[dict],
         locale: Optional[str] = None,
+        response_style: Optional[str] = None,
     ) -> list[str]:
         sections: list[str] = []
 
         locale_rule = locale_response_rule(locale)
         if locale_rule:
             sections.append(locale_rule)
+
+        if response_style:
+            sections.append(response_style_prompt(response_style))
 
         time_section = self._time_context_section(time_context)
         if time_section:

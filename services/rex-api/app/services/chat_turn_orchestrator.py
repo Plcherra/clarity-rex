@@ -15,6 +15,7 @@ from app.services.chat_turn_orchestrator_short_circuit import try_short_circuit_
 from app.services.chat_turn_orchestrator_support import (
     annotate_pending_action,
     brain_messages,
+    financial_context_for_prompt,
     finish_short_circuit,
     load_pending_action,
     messages_with_attachment,
@@ -22,6 +23,11 @@ from app.services.chat_turn_orchestrator_support import (
     turn_trace_event,
 )
 from app.services.chat_usage_recorder import ChatUsageRecorder
+from app.services.assistant_response_style import (
+    effective_response_style,
+    max_response_tokens_for_style,
+)
+from app.services.clarity_action_proposal_filter import filter_clarity_action_proposals
 from app.services.grok_usage import GrokUsageHolder
 from app.services.clarity_action_parser import (
     ClarityActionParser,
@@ -120,6 +126,10 @@ class ChatTurnOrchestrator:
             intent_decision=intent_decision,
             channel=channel,
         )
+        financial_context = financial_context_for_prompt(
+            financial_context,
+            turn_context.proposal_settings,
+        )
         conversation_id = turn_context.conversation_id
         turn_trace = self.turn_observer.new_trace(
             conversation_id=conversation_id,
@@ -143,6 +153,12 @@ class ChatTurnOrchestrator:
         if short_circuit is not None:
             return short_circuit
 
+        response_style, resolved_max_tokens = self._resolve_response_limits(
+            brain_message=brain_message,
+            turn_context=turn_context,
+            channel=channel,
+            max_response_tokens=max_response_tokens,
+        )
         conversation_history = self.memory_turn_service.public_messages(
             turn_context.conversation_history
         )
@@ -158,17 +174,19 @@ class ChatTurnOrchestrator:
             response_instructions=response_instructions,
             locale=locale,
             user_enabled_proactive_insights=user_enabled_proactive_insights,
+            response_style=response_style,
         )
         assistant_response, clarity_action_proposals = await self._generate_truthful_response(
             ai_messages=ai_messages,
             channel=channel,
-            max_response_tokens=max_response_tokens,
+            max_response_tokens=resolved_max_tokens,
             intent_decision=intent_decision,
             brain_message=brain_message,
             structured_context=turn_context.structured_context,
             conversation_history=conversation_history,
             turn_trace=turn_trace,
             conversation_id=conversation_id,
+            proposal_settings=turn_context.proposal_settings,
         )
         finish_short_circuit(
             self.turn_observer,
@@ -235,6 +253,10 @@ class ChatTurnOrchestrator:
             intent_decision=intent_decision,
             channel=channel,
         )
+        financial_context = financial_context_for_prompt(
+            financial_context,
+            turn_context.proposal_settings,
+        )
         conversation_id = turn_context.conversation_id
         turn_trace = self.turn_observer.new_trace(
             conversation_id=conversation_id,
@@ -270,6 +292,12 @@ class ChatTurnOrchestrator:
             }
             return
 
+        response_style, resolved_max_tokens = self._resolve_response_limits(
+            brain_message=brain_message,
+            turn_context=turn_context,
+            channel=channel,
+            max_response_tokens=max_response_tokens,
+        )
         conversation_history = self.memory_turn_service.public_messages(
             turn_context.conversation_history
         )
@@ -285,6 +313,7 @@ class ChatTurnOrchestrator:
             response_instructions=response_instructions,
             locale=locale,
             user_enabled_proactive_insights=user_enabled_proactive_insights,
+            response_style=response_style,
         )
         response_parts = []
         stream_filter = ClarityActionStreamFilter()
@@ -293,8 +322,8 @@ class ChatTurnOrchestrator:
             channel=channel,
         )
         ai_kwargs = {}
-        if max_response_tokens is not None:
-            ai_kwargs["max_tokens"] = max_response_tokens
+        if resolved_max_tokens is not None:
+            ai_kwargs["max_tokens"] = resolved_max_tokens
         llm_started_at = time.perf_counter()
         usage_holder = GrokUsageHolder()
         log_grok_prompt_messages(
@@ -342,6 +371,10 @@ class ChatTurnOrchestrator:
         )
         assistant_response, clarity_action_proposals = (
             self.clarity_action_parser.extract_proposals(rex_response)
+        )
+        clarity_action_proposals = filter_clarity_action_proposals(
+            clarity_action_proposals,
+            finance_edits_enabled=turn_context.proposal_settings.finance_edits_enabled,
         )
         assistant_response = self.truth_service.truthful_generated_response(
             assistant_response,
@@ -403,6 +436,7 @@ class ChatTurnOrchestrator:
         response_instructions: Optional[str],
         locale: Optional[str] = None,
         user_enabled_proactive_insights: bool = False,
+        response_style: Optional[str] = None,
     ) -> list[dict]:
         ai_messages = self.simple_rex_brain.build_prompt_messages(
             message=brain_message,
@@ -417,10 +451,29 @@ class ChatTurnOrchestrator:
             channel=channel,
             locale=locale,
             user_enabled_proactive_insights=user_enabled_proactive_insights,
+            response_style=response_style,
         )
         if response_instructions:
             ai_messages.append({"role": "system", "content": response_instructions})
         return messages_with_attachment(ai_messages, attachment_context)
+
+    def _resolve_response_limits(
+        self,
+        *,
+        brain_message: str,
+        turn_context,
+        channel: RexBrainChannel,
+        max_response_tokens: Optional[int],
+    ) -> tuple[str, Optional[int]]:
+        response_style = effective_response_style(
+            brain_message,
+            proposal_settings=turn_context.proposal_settings,
+            channel=channel,
+        )
+        resolved_max_tokens = max_response_tokens
+        if resolved_max_tokens is None:
+            resolved_max_tokens = max_response_tokens_for_style(response_style)
+        return response_style, resolved_max_tokens
 
     async def _generate_truthful_response(
         self,
@@ -434,6 +487,7 @@ class ChatTurnOrchestrator:
         conversation_history: list[dict],
         turn_trace: ChatTurnTrace,
         conversation_id: Optional[str] = None,
+        proposal_settings=None,
     ) -> tuple[str, list]:
         ai_kwargs = {}
         if max_response_tokens is not None:
@@ -471,6 +525,11 @@ class ChatTurnOrchestrator:
         assistant_response, clarity_action_proposals = (
             self.clarity_action_parser.extract_proposals(rex_response)
         )
+        if proposal_settings is not None:
+            clarity_action_proposals = filter_clarity_action_proposals(
+                clarity_action_proposals,
+                finance_edits_enabled=proposal_settings.finance_edits_enabled,
+            )
         return (
             self.truth_service.truthful_generated_response(
                 assistant_response,

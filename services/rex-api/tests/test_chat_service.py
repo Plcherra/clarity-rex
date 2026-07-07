@@ -262,6 +262,85 @@ async def test_chat_service_allows_finance_answer_with_ready_context():
 
 
 @pytest.mark.asyncio
+async def test_chat_service_blocks_finance_success_claim_without_clarity_action():
+    ai_service = FakeAIService(
+        response="Done. I set your Code AI Tools budget to $250 per month."
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message(
+        "Set Code AI Tools budget to $250 per month",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "integration": {"full_financial_context_included": True},
+            "budgets": [
+                {
+                    "id": "budget-1",
+                    "name": "Code AI Tools",
+                    "amount": 100,
+                    "period": "monthly",
+                }
+            ],
+        },
+    )
+
+    assert "don't have a confirmed change" in result["response"]
+    assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
+async def test_chat_service_extracts_create_budget_clarity_action_proposal():
+    ai_service = FakeAIService(
+        response=(
+            "Updated. I set Code AI Tools to $250/month.\n\n"
+            "```clarity_action\n"
+            '{"action":"create_budget",'
+            '"payload":{"name":"Code AI Tools","amount":250,"period":"monthly"},'
+            '"confirmation_text":"Set Code AI Tools budget to $250/month?",'
+            '"risk_level":"medium"}'
+            "\n```"
+        )
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message(
+        "Set Code AI Tools budget to $250 per month",
+        financial_context={
+            "schema": "clarity_unified_financial_context_v1",
+            "data_status": {
+                "state": "ready",
+                "financial_context_complete": True,
+                "load_errors": [],
+            },
+            "integration": {"full_financial_context_included": True},
+        },
+    )
+
+    assert result["response"] == "Set Code AI Tools budget to $250/month?"
+    assert result["memory_changes"]["clarity_action_proposals"] == [
+        {
+            "id": "clarity-action-1",
+            "action": "create_budget",
+            "payload": {
+                "name": "Code AI Tools",
+                "amount": 250,
+                "period": "monthly",
+            },
+            "confirmation_text": "Set Code AI Tools budget to $250/month?",
+            "risk_level": "medium",
+            "status": "pending",
+        }
+    ]
+
+
+@pytest.mark.asyncio
 async def test_chat_service_extracts_clarity_action_proposal():
     ai_service = FakeAIService(
         response=(
@@ -961,6 +1040,61 @@ async def test_chat_service_voice_stream_saves_goal_without_llm_call():
     assert ai_service.stream_calls == 0
     assert ai_service.generate_calls == 0
     assert len(memory_service.created_plans) == 0
+
+
+@pytest.mark.asyncio
+async def test_chat_service_strips_finance_clarity_actions_when_edits_disabled(
+    monkeypatch,
+):
+    from app.services.assistant_proposal_settings import AssistantProposalSettings
+    from app.services.chat_turn_context import ChatTurnContextService
+
+    async def disabled_settings(self):
+        return AssistantProposalSettings(finance_edits_enabled=False)
+
+    monkeypatch.setattr(
+        ChatTurnContextService,
+        "_load_proposal_settings",
+        disabled_settings,
+    )
+    ai_service = FakeAIService(
+        response=(
+            "Updated. I moved Starbucks to Coffee.\n\n"
+            "```clarity_action\n"
+            '{"action":"update_transaction",'
+            '"payload":{"id":"transaction-1","category_id":"category-coffee"},'
+            '"confirmation_text":"Move Starbucks to Coffee?",'
+            '"risk_level":"medium"}'
+            "\n```"
+        )
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Move Starbucks to Coffee")
+
+    assert result["memory_changes"] is None
+    assert "don't have a confirmed change" in result["response"]
+
+
+@pytest.mark.asyncio
+async def test_chat_service_voice_stream_uses_concise_style_for_balanced_profile():
+    ai_service = FakeAIService()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    events = [
+        event
+        async for event in chat_service.stream_message(
+            "Tell me about my day",
+            channel=RexBrainChannel.VOICE,
+        )
+    ]
+
+    assert events[-1]["event"] == "done"
+    assert ai_service.stream_calls == 1
+    system_content = ai_service.messages[0]["content"]
+    assert "Response style: concise." in system_content
 
 
 @pytest.mark.asyncio

@@ -129,6 +129,12 @@ async def append_companion_continuation(
         conversation_history,
         current_message=brain_message,
     )
+    response_style, resolved_max_tokens = orchestrator._resolve_response_limits(
+        brain_message=topic_message,
+        turn_context=turn_context,
+        channel=channel,
+        max_response_tokens=None,
+    )
     ai_messages = orchestrator._build_llm_messages(
         brain_message=topic_message,
         conversation_id=conversation_id,
@@ -140,11 +146,12 @@ async def append_companion_continuation(
         attachment_context=turn_context.attachment_context,
         response_instructions=_COMPANION_CONTINUATION_INSTRUCTIONS,
         locale=locale,
+        response_style=response_style,
     )
     continuation, _ = await orchestrator._generate_truthful_response(
         ai_messages=ai_messages,
         channel=channel,
-        max_response_tokens=None,
+        max_response_tokens=resolved_max_tokens,
         intent_decision=intent_decision,
         brain_message=topic_message,
         structured_context=turn_context.structured_context,

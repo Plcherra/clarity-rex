@@ -10,6 +10,7 @@ from app.services.action_truth_policy import (
     safe_old_chat_search_response,
     safe_pending_action_response,
     safe_unexecuted_delete_response,
+    safe_unexecuted_finance_response,
     safe_unexecuted_goal_response,
     safe_unexecuted_memory_response,
     safe_unsupported_action_response,
@@ -253,6 +254,36 @@ def test_filtered_only_old_chat_no_result_uses_unusable_evidence_fallback():
     )
 
     assert response == FILTERED_RECALL_FALLBACK
+
+
+def test_unexecuted_finance_success_claim_is_blocked():
+    response = safe_unexecuted_finance_response(
+        "Done. I updated your Code AI Tools budget to $250.",
+        user_message="Set Code AI Tools budget to $250 per month",
+        intent="finance",
+    )
+
+    assert "don't have a confirmed change" in response
+
+
+def test_unexecuted_finance_guard_skips_read_only_finance_questions():
+    response = safe_unexecuted_finance_response(
+        "You spent $42 on Code AI Tools this month.",
+        user_message="How much did I spend on Code AI Tools?",
+        intent="finance",
+    )
+
+    assert response == "You spent $42 on Code AI Tools this month."
+
+
+def test_unexecuted_finance_guard_skips_non_finance_intents():
+    response = safe_unexecuted_finance_response(
+        "Updated your budget.",
+        user_message="Set Code AI Tools budget to $250 per month",
+        intent="memory_save",
+    )
+
+    assert response == "Updated your budget."
 
 
 def test_fake_current_chat_only_limitation_is_blocked():

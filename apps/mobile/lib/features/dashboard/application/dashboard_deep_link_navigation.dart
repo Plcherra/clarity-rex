@@ -29,6 +29,10 @@ class DashboardDeepLinkRequestNotifier extends Notifier<DashboardDeepLinkRequest
   }
 }
 
+bool dashboardDeepLinkOpensAccounts(DashboardInsightAnchor anchor) {
+  return anchor == DashboardInsightAnchor.connectedAccounts;
+}
+
 /// Maps a finance-related user message to the closest dashboard section.
 DashboardInsightAnchor? resolveDashboardInsightAnchor(String message) {
   final normalized = message.trim().toLowerCase();

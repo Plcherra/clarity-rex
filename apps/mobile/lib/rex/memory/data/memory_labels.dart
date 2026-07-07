@@ -175,6 +175,20 @@ const _memoryActionTypeLabels = {
   'correction': 'Correction',
   'archive': 'Archive',
   'merge': 'Merge',
+  'update_transaction': 'Recategorize transaction',
+  'bulk_update_transaction_category': 'Recategorize transactions',
+  'create_transaction': 'Add transaction',
+  'delete_transaction': 'Delete transaction',
+  'create_budget': 'Create budget',
+  'update_budget': 'Update budget',
+  'delete_budget': 'Delete budget',
+  'create_category': 'Create category',
+  'update_category': 'Update category',
+  'delete_category': 'Delete category',
+  'create_account': 'Create account',
+  'update_account': 'Update account',
+  'delete_account': 'Delete account',
+  'delete_import_batch': 'Delete import batch',
 };
 
 const _recordTypeLabels = {

@@ -58,7 +58,7 @@ extension ChatControllerContext on ChatController {
       );
     }
     try {
-      return await service.buildSummary();
+      return await service.buildSummary(userMessage: message);
     } on Object catch (error) {
       return AssistantFinancialContextService.degradedSummary(
         source: 'mobile_financial_context_service',
@@ -75,7 +75,19 @@ extension ChatControllerContext on ChatController {
         !shouldAttachAssistantFinancialContext(message)) {
       return null;
     }
+    if (_financialSyncNeedsRefresh(financialContext)) {
+      return DashboardInsightAnchor.connectedAccounts;
+    }
     return resolveDashboardInsightAnchor(message);
+  }
+
+  bool _financialSyncNeedsRefresh(Map<String, dynamic> financialContext) {
+    final freshness = financialContext['freshness'];
+    if (freshness is! Map<String, dynamic>) {
+      return false;
+    }
+    final state = freshness['state']?.toString().toLowerCase();
+    return state == 'stale' || state == 'unknown';
   }
 
   Future<void> _refreshSavedMemoryOverviewIfNeeded(

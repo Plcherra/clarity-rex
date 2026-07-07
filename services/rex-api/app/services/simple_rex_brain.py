@@ -52,6 +52,7 @@ class SimpleRexBrain:
         channel: RexBrainChannel,
         locale: Optional[str] = None,
         user_enabled_proactive_insights: bool = False,
+        response_style: Optional[str] = None,
     ) -> list[dict]:
         _ = channel
         _ = user_enabled_proactive_insights
@@ -66,4 +67,5 @@ class SimpleRexBrain:
             time_context=time_context,
             financial_context=financial_context,
             locale=locale,
+            response_style=response_style,
         )
