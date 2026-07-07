@@ -76,10 +76,14 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
 
   void _scrollToInsightAnchor(DashboardInsightAnchor anchor) {
     final key = switch (anchor) {
+      DashboardInsightAnchor.connectedAccounts => null,
       DashboardInsightAnchor.monthlyCashFlow => _monthlyCashFlowKey,
       DashboardInsightAnchor.spendingPressure => _spendingPressureKey,
       DashboardInsightAnchor.budgetPerformance => _budgetPerformanceKey,
     };
+    if (key == null) {
+      return;
+    }
 
     if (anchor == DashboardInsightAnchor.monthlyCashFlow &&
         !_coreChartsController.isExpanded) {
