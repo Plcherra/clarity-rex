@@ -14,6 +14,7 @@ from app.services.goal_command_writer import GoalCommandWriter
 from app.services.memory_delete_reference import should_defer_to_delete_confirmation
 from app.services.memory_intent_service import MemoryIntentService
 from app.services.plan_service import PlanService
+from app.services.save_intent_guards import user_declined_plan_save_recently
 
 
 class GoalCommandService:
@@ -73,6 +74,9 @@ class GoalCommandService:
             conversation_history,
             pending_action_payload(pending_action),
         ):
+            return None
+
+        if user_declined_plan_save_recently(conversation_history):
             return None
 
         if self._should_defer_to_contextual_memory_save(

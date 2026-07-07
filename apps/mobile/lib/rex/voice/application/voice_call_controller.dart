@@ -332,6 +332,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
         state.isCapturingSpeech;
     if (midUtterance) {
       _blockListenForSaveConfirmation = true;
+      _pausedForSaveConfirmation = true;
       return;
     }
     if (_pausedForSaveConfirmation) {
@@ -368,11 +369,30 @@ class VoiceCallController extends Notifier<VoiceCallState>
     if (!state.isCallActive) {
       return;
     }
+
+    final shouldResume =
+        _pausedForSaveConfirmation || _blockListenForSaveConfirmation;
     _blockListenForSaveConfirmation = false;
-    if (!_pausedForSaveConfirmation) {
+    _pausedForSaveConfirmation = false;
+
+    if (!shouldResume) {
       return;
     }
-    _pausedForSaveConfirmation = false;
+
+    if (state.phase == VoiceCallPhase.speaking) {
+      completeSpeaking();
+      return;
+    }
+
+    if (state.phase == VoiceCallPhase.thinking) {
+      _recoverFromStuckThinking(_callGeneration);
+      return;
+    }
+
+    if (state.phase == VoiceCallPhase.listening && state.isCapturingSpeech) {
+      return;
+    }
+
     resumeListening();
   }
 

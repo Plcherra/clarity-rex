@@ -2693,6 +2693,52 @@ void main() {
   });
 
   test(
+    'resumeAfterSaveConfirmation restarts listening after mid-utterance card pause',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+          streamingAudioCaptureServiceProvider.overrideWithValue(captureService),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      controller.startCapturingSpeech(transcript: 'After the card I can talk again.');
+      controller.pauseForSaveConfirmation();
+      controller.resumeAfterSaveConfirmation();
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.listening);
+      expect(state.isCallActive, isTrue);
+    },
+  );
+
+  test(
     'streaming voice completes turn while pending save card exists in history',
     () async {
       final captureService = _ScriptedStreamingAudioCaptureService();

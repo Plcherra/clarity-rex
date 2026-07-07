@@ -17,6 +17,7 @@ from app.services.durable_write_pending import proposal_from_pending_action
 from app.services.goal_command_formatting import goal_title
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.plan_service import PlanService
+from app.services.save_intent_guards import user_declined_plan_save_recently
 
 
 class ConversationalPlanService:
@@ -50,6 +51,9 @@ class ConversationalPlanService:
             return None
 
         if self.durable_write_service is None:
+            return None
+
+        if user_declined_plan_save_recently(conversation_history):
             return None
 
         if not self.detector.looks_like_conversational_plan(message):
