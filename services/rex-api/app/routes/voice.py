@@ -28,10 +28,6 @@ from app.services.google_tts_service import (
 from app.services.memory_service import MemoryServiceError
 from app.services.rex_channel import RexBrainChannel
 from app.services.usage_tracking_service import UsageTrackingService
-from app.services.voice_stream_config import (
-    voice_response_instructions,
-    voice_response_max_tokens,
-)
 from app.services.voice_stream_orchestrator_support import voice_speakable_text
 from app.services.locale_utils import locale_to_stt_code, locale_to_tts_code
 
@@ -51,9 +47,6 @@ SUPPORTED_AUDIO_TYPES = {
     "audio/webm",
     "application/octet-stream",
 }
-VOICE_TURN_RESPONSE_INSTRUCTIONS = voice_response_instructions()
-
-
 @router.post("/transcribe", response_model=VoiceTranscriptionResponse)
 async def transcribe_voice(
     audio: UploadFile = File(...),
@@ -127,8 +120,6 @@ async def voice_turn(
             message=transcription["transcript"],
             conversation_id=conversation_id,
             financial_context=_json_dict(financial_context),
-            response_instructions=voice_response_instructions(locale),
-            max_response_tokens=voice_response_max_tokens(transcription["transcript"]),
             channel=RexBrainChannel.VOICE,
             locale=locale,
         )

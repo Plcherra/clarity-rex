@@ -23,6 +23,7 @@ from app.services.usage_tracking_owner_queries import (
     build_usage_totals,
     empty_owner_totals,
     add_owner_row,
+    merge_owner_users_with_profiles,
 )
 from app.services.usage_tracking_transport import UsageTrackingTransport
 
@@ -239,12 +240,9 @@ class UsageTrackingService:
         rows = await self._owner_queries.select_owner_daily(
             start_date=current_day.replace(day=1),
         )
-        users = aggregate_owner_users(rows)
-        emails = await self._owner_queries.profile_emails(
-            [user["user_id"] for user in users]
-        )
-        for user in users:
-            user["email"] = emails.get(user["user_id"])
+        usage_users = aggregate_owner_users(rows)
+        profiles = await self._owner_queries.list_profiles()
+        users = merge_owner_users_with_profiles(usage_users, profiles)
         return {"authorized": True, "users": users}
 
     async def get_owner_platform_summary(

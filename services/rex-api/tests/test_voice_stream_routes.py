@@ -15,12 +15,7 @@ from app.services.file_service import FileService
 from app.services.rex_channel import RexBrainChannel
 from app.services.time_context_service import TimeContextService
 from chat_service_fakes import FakeAIService, FakeMemoryService
-from app.services.voice_stream_session import (
-    VOICE_DEEP_RESPONSE_MAX_TOKENS,
-    VOICE_RESPONSE_MAX_TOKENS,
-    VoiceStreamSession,
-    voice_response_max_tokens,
-)
+from app.services.voice_stream_session import VoiceStreamSession
 from voice_stream_async_client import (
     async_confirm_voice_proposal,
     async_voice_client,
@@ -251,8 +246,8 @@ def test_voice_stream_completes_streaming_turn(client, caplog):
     ]
     assert chat.stream_calls[0]["message"] == "Hey Rex"
     assert chat.stream_calls[0]["conversation_id"] == "conversation-existing"
-    assert chat.stream_calls[0]["response_instructions"] == ""
-    assert chat.stream_calls[0]["max_response_tokens"] == VOICE_RESPONSE_MAX_TOKENS
+    assert chat.stream_calls[0]["response_instructions"] is None
+    assert chat.stream_calls[0]["max_response_tokens"] is None
     assert chat.stream_calls[0]["channel"] == RexBrainChannel.VOICE
     assert chat.stream_calls[0]["include_turn_trace"] is True
     assert tts.calls == ["Rex streaming response."]
@@ -877,13 +872,3 @@ def test_voice_stream_audio_barge_in_cancels_active_turn_and_starts_next(client)
         "Fresh response.",
     ]
 
-
-def test_voice_response_max_tokens_keeps_normal_turns_short_and_deep_turns_larger():
-    assert (
-        voice_response_max_tokens("How much did I spend today?")
-        == VOICE_RESPONSE_MAX_TOKENS
-    )
-    assert (
-        voice_response_max_tokens("Deep think and analyze thoroughly my budget")
-        == VOICE_DEEP_RESPONSE_MAX_TOKENS
-    )

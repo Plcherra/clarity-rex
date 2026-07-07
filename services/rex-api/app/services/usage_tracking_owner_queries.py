@@ -144,6 +144,39 @@ def sort_usage(row: dict[str, Any]) -> tuple[float, str]:
     return (-float(row["month_estimated_cost_cents"]), row["user_id"])
 
 
+def sort_owner_user_rows(row: dict[str, Any]) -> tuple[int, float, str, str]:
+    has_usage = (
+        float(row.get("month_estimated_cost_cents") or 0) > 0
+        or int(row.get("month_llm_calls") or 0) > 0
+        or float(row.get("month_voice_seconds") or 0) > 0
+    )
+    email = str(row.get("email") or "").strip().lower()
+    return (
+        0 if has_usage else 1,
+        -float(row.get("month_estimated_cost_cents") or 0),
+        email,
+        str(row.get("user_id") or ""),
+    )
+
+
+def merge_owner_users_with_profiles(
+    usage_users: list[dict[str, Any]],
+    profiles: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    users: dict[str, dict[str, Any]] = {
+        str(row["user_id"]): dict(row) for row in usage_users if row.get("user_id")
+    }
+    for profile in profiles:
+        user_id = str(profile.get("id") or "")
+        if not user_id:
+            continue
+        row = users.setdefault(user_id, user_monthly_shell(user_id))
+        email = profile.get("email")
+        if isinstance(email, str) and email.strip():
+            row["email"] = email.strip()
+    return sorted(users.values(), key=sort_owner_user_rows)
+
+
 class UsageOwnerQueries:
     def __init__(self, transport: UsageTrackingTransport) -> None:
         self._transport = transport
@@ -169,6 +202,15 @@ class UsageOwnerQueries:
         if user_id is not None:
             params["user_id"] = f"eq.{user_id}"
         return await self._transport.select_rows(OWNER_USAGE_DAILY_VIEW, params)
+
+    async def list_profiles(self) -> list[dict[str, Any]]:
+        return await self._transport.select_rows(
+            PROFILES_TABLE,
+            {
+                "select": "id,email,created_at",
+                "order": "created_at.desc",
+            },
+        )
 
     async def profile_emails(self, user_ids: list[str]) -> dict[str, str | None]:
         if not user_ids:

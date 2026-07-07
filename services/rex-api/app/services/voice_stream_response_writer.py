@@ -7,10 +7,6 @@ from typing import Any, Optional
 
 from app.services.google_tts_service import estimate_tts_duration_ms
 from app.services.rex_channel import RexBrainChannel
-from app.services.voice_stream_config import (
-    voice_response_instructions,
-    voice_response_max_tokens,
-)
 from app.services.voice_stream_orchestrator_support import voice_speakable_text
 
 _MIN_SPEAKABLE_CHUNK_CHARS = 8
@@ -136,11 +132,6 @@ class VoiceStreamResponseWriterMixin:
         async for event in self.chat_service.stream_message(
             transcript,
             conversation_id=self.conversation_id,
-            response_instructions=voice_response_instructions(
-                getattr(self, "locale", None),
-                transcript_confidence=transcription.get("confidence"),
-            ),
-            max_response_tokens=voice_response_max_tokens(transcript),
             financial_context=self.financial_context,
             channel=RexBrainChannel.VOICE,
             include_turn_trace=True,

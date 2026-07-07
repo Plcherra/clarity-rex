@@ -18,13 +18,6 @@ from app.services.voice_stream_live_transcription import (
 from app.services.voice_stream_response_writer import VoiceStreamResponseWriterMixin
 from app.services.voice_stream_turn_processing import VoiceStreamTurnProcessingMixin
 from app.services.voice_stream_usage_tracking import VoiceStreamUsageTrackingMixin
-from app.services.voice_stream_config import (
-    VOICE_DEEP_RESPONSE_MAX_TOKENS,
-    VOICE_RESPONSE_MAX_TOKENS,
-    voice_response_max_tokens,
-)
-
-
 LOGGER = logging.getLogger("rex.voice_stream")
 
 

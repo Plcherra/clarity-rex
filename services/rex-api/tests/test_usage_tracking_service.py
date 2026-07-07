@@ -8,6 +8,7 @@ from app.models.usage_tracking import (
     UsageTrackingValidationError,
 )
 from app.services.usage_tracking_service import UsageTrackingService
+from app.services.usage_tracking_owner_queries import merge_owner_users_with_profiles
 
 
 class FakeResponse:
@@ -161,19 +162,25 @@ async def test_owner_usage_allows_configured_owner_without_client_secret(monkeyp
     async def fake_request(method, url, headers=None, json=None):
         calls.append(url)
         response = FakeResponse()
-        response.json = lambda: [
-            {
-                "user_id": "user-1",
-                "usage_date": "2026-06-06",
-                "voice_seconds": 60,
-                "llm_calls": 2,
-                "chat_llm_calls": 1,
-                "voice_llm_calls": 1,
-                "stt_seconds": 55,
-                "tts_seconds": 20,
-                "estimated_cost_cents": 12.5,
-            }
-        ]
+        if "profiles" in url:
+            response.json = lambda: [
+                {"id": "user-1", "email": "owner@example.com"},
+                {"id": "user-2", "email": "second@example.com"},
+            ]
+        else:
+            response.json = lambda: [
+                {
+                    "user_id": "user-1",
+                    "usage_date": "2026-06-06",
+                    "voice_seconds": 60,
+                    "llm_calls": 2,
+                    "chat_llm_calls": 1,
+                    "voice_llm_calls": 1,
+                    "stt_seconds": 55,
+                    "tts_seconds": 20,
+                    "estimated_cost_cents": 12.5,
+                }
+            ]
         return response
 
     monkeypatch.setattr(usage_transport_module, "request_with_retries", fake_request)
@@ -187,8 +194,38 @@ async def test_owner_usage_allows_configured_owner_without_client_secret(monkeyp
     )
 
     assert result["authorized"] is True
+    assert len(result["users"]) == 2
     assert result["users"][0]["user_id"] == "user-1"
+    assert result["users"][0]["email"] == "owner@example.com"
+    assert result["users"][1]["user_id"] == "user-2"
+    assert result["users"][1]["email"] == "second@example.com"
+    assert result["users"][1]["month_llm_calls"] == 0
     assert "admin_users" not in "".join(calls)
+
+
+def test_merge_owner_users_with_profiles_includes_zero_usage_accounts():
+    users = merge_owner_users_with_profiles(
+        [
+            {
+                "user_id": "user-1",
+                "month_voice_seconds": 60,
+                "month_llm_calls": 2,
+                "month_chat_llm_calls": 1,
+                "month_voice_llm_calls": 1,
+                "month_stt_seconds": 0,
+                "month_tts_seconds": 0,
+                "month_estimated_cost_cents": 12.5,
+            }
+        ],
+        [
+            {"id": "user-1", "email": "owner@example.com"},
+            {"id": "user-2", "email": "second@example.com"},
+        ],
+    )
+
+    assert [row["user_id"] for row in users] == ["user-1", "user-2"]
+    assert users[1]["month_llm_calls"] == 0
+    assert users[1]["email"] == "second@example.com"
 
 
 @pytest.mark.asyncio
