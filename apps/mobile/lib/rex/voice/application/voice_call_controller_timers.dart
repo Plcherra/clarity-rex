@@ -166,6 +166,39 @@ extension VoiceCallControllerTimers on VoiceCallController {
     _noSpeechTimeoutTimer = null;
   }
 
+  void _recoverFromStreamingDisconnect() {
+    if (!state.isCallActive) {
+      return;
+    }
+
+    final generation = ++_callGeneration;
+    _cancelThinkingTimeout();
+    _cancelNoSpeechTimeout();
+    unawaited(_stopInterimTranscription());
+    unawaited(_captureService.cancel());
+    unawaited(_streamingCaptureService.cancel());
+    _stopBargeInMonitoring();
+    final streamingSession = _activeStreamingSession;
+    _activeStreamingSession = null;
+    _activeStreamingEventsTask = null;
+    streamingSession?.interrupt();
+    unawaited(_streamingPlaybackQueue.cancel());
+    unawaited(streamingSession?.endSession());
+    unawaited(_playbackService.stop());
+    unawaited(_audioSessionService.configureForVoiceTurn());
+    unawaited(_backgroundVoiceService.start());
+
+    state = state.copyWith(
+      phase: VoiceCallPhase.listening,
+      isCapturingSpeech: false,
+      clearCurrentTranscript: true,
+      errorMessage: voiceL10n.voiceErrorAssistantStreamDisconnected,
+    );
+    _clearVisibleTranscript();
+    _removeActiveVoiceUserMessage();
+    _startListeningCycle(generation);
+  }
+
   void _recoverFromStuckThinking(int generation) {
     if (!_isCurrentCall(generation) ||
         !state.isCallActive ||

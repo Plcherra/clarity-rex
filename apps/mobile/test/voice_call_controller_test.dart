@@ -227,7 +227,7 @@ void main() {
     },
   );
 
-  test('unexpected streaming socket close fails instead of hanging', () async {
+  test('unexpected streaming socket close recovers to listening', () async {
     final captureService = _ScriptedStreamingAudioCaptureService();
     final streamingApi = _FakeStreamingVoiceApi();
     final container = ProviderContainer(
@@ -267,8 +267,9 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     final state = container.read(voiceCallProvider);
-    expect(state.phase, VoiceCallPhase.failed);
+    expect(state.phase, VoiceCallPhase.listening);
     expect(state.errorMessage, contains('disconnected'));
+    expect(state.isCallActive, isTrue);
   });
 
   test(

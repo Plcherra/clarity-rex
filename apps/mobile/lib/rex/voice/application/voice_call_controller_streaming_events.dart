@@ -312,7 +312,7 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
         _activeStreamingSession = null;
         _activeStreamingEventsTask = null;
         if (!streamEndedCleanly && state.isCallActive) {
-          failL10n((l10n) => l10n.voiceErrorAssistantStreamDisconnected);
+          _recoverFromStreamingDisconnect();
         }
       }
     }

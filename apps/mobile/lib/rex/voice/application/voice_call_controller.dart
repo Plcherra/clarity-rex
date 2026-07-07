@@ -400,9 +400,13 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _emptyVoiceTurnRecoveryCount = 0;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();
+    final thoughtDuration = state.phase == VoiceCallPhase.thinking
+        ? state.thinkingElapsed()
+        : state.lastThoughtDuration;
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
       isCapturingSpeech: false,
+      lastThoughtDuration: thoughtDuration,
       clearCurrentTranscript: true,
       clearError: true,
       clearThinkingStartedAt: true,
@@ -415,6 +419,10 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
   bool _hasActiveStreamingListenCycle() =>
       _streamingListenEpochInFlight && _streamingListenEpoch > 0;
+
+  bool _streamingSessionIsConnected() {
+    return _activeStreamingSession != null && _activeStreamingEventsTask != null;
+  }
 
   void interruptAndListen({
     String? reason,

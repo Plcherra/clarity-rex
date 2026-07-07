@@ -14,8 +14,13 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     _streamingListenEpochInFlight = true;
     try {
       late final StreamingVoiceSession session;
-      final existingSession = _activeStreamingSession;
-      if (existingSession == null) {
+      if (!_streamingSessionIsConnected()) {
+        final staleSession = _activeStreamingSession;
+        if (staleSession != null) {
+          _activeStreamingSession = null;
+          _activeStreamingEventsTask = null;
+          unawaited(staleSession.endSession());
+        }
         try {
           final connectedSession = await ref
               .read(streamingVoiceApiProvider)
@@ -42,7 +47,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
           return;
         }
       } else {
-        session = existingSession;
+        session = _activeStreamingSession!;
       }
 
       if (listenEpoch != _streamingListenEpoch) {

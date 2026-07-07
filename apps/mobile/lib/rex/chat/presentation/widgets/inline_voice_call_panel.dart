@@ -321,7 +321,6 @@ class _VoiceWaveIndicatorState extends State<_VoiceWaveIndicator>
           ),
         );
       }
-      return ClarityDiamondLoader(size: widget.compact ? 16 : 20);
     }
     if (widget.phase == VoiceCallPhase.speaking) {
       return Icon(Icons.volume_up_outlined, color: widget.color, size: 20);

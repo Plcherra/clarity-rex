@@ -20,6 +20,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
       phase: VoiceCallPhase.listening,
       currentTranscript: _transcriptBuffer.visible,
       isCapturingSpeech: true,
+      clearLastThoughtDuration: true,
       clearError: true,
     );
     _syncInterimVoiceTranscriptToChat(_transcriptBuffer.visible);

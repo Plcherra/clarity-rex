@@ -49,14 +49,6 @@ class ChatTranscript extends StatelessWidget {
     final pendingVoiceActions = showVoiceTranscript
         ? pendingClarityActions(messages)
         : const <ClarityActionCard>[];
-    final showVoiceProcessing =
-        voiceState != null &&
-        messages.isNotEmpty &&
-        messages.last.isUser &&
-        !messages.last.isVoiceInterim &&
-        (voiceState!.phase == VoiceCallPhase.thinking ||
-            (voiceState!.lastThoughtDuration != null &&
-                voiceState!.lastThoughtDuration! > Duration.zero));
     final baseBottomPadding = MediaQuery.viewInsetsOf(context).bottom > 0
         ? RexUiTokens.space12
         : RexUiTokens.space24;
@@ -88,7 +80,13 @@ class ChatTranscript extends StatelessWidget {
                   ...messages.asMap().entries.map(
                     (entry) {
                       final message = entry.value;
-                      final isLastMessage = entry.key == messages.length - 1;
+                      final showVoiceProcessing =
+                          voiceState != null &&
+                          _shouldShowVoiceProcessingIndicator(
+                            voiceState: voiceState!,
+                            messages: messages,
+                            messageIndex: entry.key,
+                          );
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Column(
@@ -116,7 +114,7 @@ class ChatTranscript extends StatelessWidget {
                                       message.dashboardLinkAnchor!,
                                     ),
                             ),
-                            if (showVoiceProcessing && isLastMessage)
+                            if (showVoiceProcessing)
                               _VoiceProcessingIndicator(
                                 voiceState: voiceState!,
                               ),
@@ -151,6 +149,45 @@ class ChatTranscript extends StatelessWidget {
       ),
     );
   }
+}
+
+int? _lastFinalizedVoiceUserIndex(List<ChatMessage> messages) {
+  for (var index = messages.length - 1; index >= 0; index--) {
+    final message = messages[index];
+    if (message.role == ChatMessageRole.user && !message.isVoiceInterim) {
+      return index;
+    }
+  }
+  return null;
+}
+
+bool _shouldShowVoiceProcessingIndicator({
+  required VoiceCallState voiceState,
+  required List<ChatMessage> messages,
+  required int messageIndex,
+}) {
+  final userIndex = _lastFinalizedVoiceUserIndex(messages);
+  if (userIndex == null || messageIndex != userIndex) {
+    return false;
+  }
+
+  if (voiceState.phase == VoiceCallPhase.thinking) {
+    return true;
+  }
+
+  final thoughtDuration = voiceState.lastThoughtDuration;
+  if (thoughtDuration == null || thoughtDuration <= Duration.zero) {
+    return false;
+  }
+
+  if (voiceState.phase == VoiceCallPhase.speaking) {
+    return true;
+  }
+
+  return voiceState.phase == VoiceCallPhase.listening &&
+      messages.isNotEmpty &&
+      messages.last.role == ChatMessageRole.assistant &&
+      !voiceState.isCapturingSpeech;
 }
 
 class _VoiceProcessingIndicator extends StatefulWidget {
