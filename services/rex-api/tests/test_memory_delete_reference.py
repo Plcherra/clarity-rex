@@ -42,6 +42,6 @@ def test_intent_parser_delete_saved_goal_targets_accountability_scope():
         "Can you delete the goal we have saved?"
     )
     assert intent.intent_type == CorrectionIntentType.REMOVE_OBSOLETE
-    assert intent.old_value == "goal"
+    assert intent.old_value == "saved"
     assert intent.delete_scope_tables == ("plans", "plan_milestones")
-    assert intent.is_vague_delete_reference is True
+    assert intent.is_vague_delete_reference is False

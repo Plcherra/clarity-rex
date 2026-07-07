@@ -1,40 +1,20 @@
-from app.services.action_truth_policy import ACTION_TRUTH_POLICY_PROMPT
 from app.services.prompt_service import (
     ACCOUNTABILITY_CONTEXT_PREFIX,
     FILE_CONTEXT_PREFIX,
     FINANCIAL_CONTEXT_PREFIX,
     LONG_TERM_MEMORY_PREFIX,
-    MAX_DEFAULT_REX_PROMPT_CHARACTERS,
-    PERSONALITY_CONTEXT_PREFIX,
     PromptService,
-    REX_PERSONALITY_PROMPT,
     STRUCTURED_MEMORY_PREFIX,
 )
 from app.services.time_context_service import TimeContextService
 
-BASE_SYSTEM_PROMPT = (
-    f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}\n\n"
-    f"{ACTION_TRUTH_POLICY_PROMPT}"
-)
 
-
-def test_prompt_service_always_includes_rex_personality():
+def test_prompt_service_casual_turn_has_no_system_message():
     service = PromptService()
 
     messages = service.build_messages(user_message="Hello Rex")
 
-    assert messages == [
-        {
-            "role": "system",
-            "content": BASE_SYSTEM_PROMPT,
-        },
-        {"role": "user", "content": "Hello Rex"},
-    ]
-    assert len(messages[0]["content"]) <= MAX_DEFAULT_REX_PROMPT_CHARACTERS
-    assert "private, voice-first AI companion" in messages[0]["content"]
-    assert "Answer casual turns fast and briefly" in messages[0]["content"]
-    assert "Memory/action rules:" not in messages[0]["content"]
-    assert "execution metadata confirms success" not in messages[0]["content"]
+    assert messages == [{"role": "user", "content": "Hello Rex"}]
 
 
 def test_prompt_service_sanitizes_recent_message_history():
@@ -61,10 +41,6 @@ def test_prompt_service_sanitizes_recent_message_history():
     )
 
     assert messages == [
-        {
-            "role": "system",
-            "content": BASE_SYSTEM_PROMPT,
-        },
         {"role": "user", "content": "Earlier user message"},
         {"role": "assistant", "content": "Earlier assistant response"},
         {"role": "user", "content": "What now?"},
@@ -107,11 +83,6 @@ def test_prompt_service_injects_time_conversation_memory_and_file_context():
 
     assert messages[0]["role"] == "system"
     system_content = messages[0]["content"]
-    assert system_content.startswith(PERSONALITY_CONTEXT_PREFIX)
-    assert "warm, direct, honest, practical, and natural" in system_content
-    assert "Memory/action rules:" in system_content
-    assert "backend-confirmed saves, updates, or deletes" in system_content
-    assert "Saved memory is not chat history" in system_content
     assert "Current time context:" in system_content
     assert "- Clock: Tuesday afternoon" in system_content
     assert "- Previous message delta: earlier today" in system_content
@@ -707,10 +678,7 @@ def test_prompt_service_phase3_prompt_shapes_are_labeled_and_compact():
     service = PromptService()
 
     normal_messages = service.build_messages(user_message="Hey Rex")
-    assert normal_messages[0]["content"] == BASE_SYSTEM_PROMPT
-    assert "recall_status" not in normal_messages[0]["content"]
-    assert "Chat history, not saved memory:" not in normal_messages[0]["content"]
-    assert FINANCIAL_CONTEXT_PREFIX not in normal_messages[0]["content"]
+    assert normal_messages == [{"role": "user", "content": "Hey Rex"}]
 
     recall_messages = service.build_messages(
         user_message="What did I say about Legacy of Kain?",
@@ -769,6 +737,3 @@ def test_prompt_service_phase3_prompt_shapes_are_labeled_and_compact():
     assert "Cash flow: balance=100" in finance_prompt
     assert "recall_status" not in finance_prompt
     assert "Chat history, not saved memory:" not in finance_prompt
-
-    voice_messages = service.build_messages(user_message="Voice hello")
-    assert voice_messages[0]["content"] == BASE_SYSTEM_PROMPT

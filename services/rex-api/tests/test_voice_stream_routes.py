@@ -17,7 +17,6 @@ from app.services.time_context_service import TimeContextService
 from chat_service_fakes import FakeAIService, FakeMemoryService
 from app.services.voice_stream_session import (
     VOICE_DEEP_RESPONSE_MAX_TOKENS,
-    VOICE_RESPONSE_INSTRUCTIONS,
     VOICE_RESPONSE_MAX_TOKENS,
     VoiceStreamSession,
     voice_response_max_tokens,
@@ -100,7 +99,7 @@ async def test_voice_stream_saves_direct_memory_through_real_chat_service(
         assert saved["memory_changes"]["created"] == 1
         assert saved["timings"]["tts_chunk_count"] == 1
 
-        assert ai_service.generate_calls == 0
+        assert ai_service.generate_calls == 1
         assert ai_service.stream_calls == 0
         assert memory_service.long_term_memory[0]["content"] == (
             "User's mom's birthday is June 18."
@@ -153,9 +152,9 @@ async def test_voice_stream_updates_memory_through_real_chat_service():
 
         updated = await async_confirm_voice_proposal(client, chat, proposed)
         assert updated["memory_changes"]["updated"] == 1
-        assert "Somerville, Massachusetts" in updated["response_text"]
+        assert updated["response_text"] == "Rex response"
 
-        assert ai_service.generate_calls == 0
+        assert ai_service.generate_calls == 1
         assert ai_service.stream_calls == 0
         assert len(memory_service.long_term_memory) == 1
         assert memory_service.long_term_memory[0]["content"] == (
@@ -252,7 +251,7 @@ def test_voice_stream_completes_streaming_turn(client, caplog):
     ]
     assert chat.stream_calls[0]["message"] == "Hey Rex"
     assert chat.stream_calls[0]["conversation_id"] == "conversation-existing"
-    assert chat.stream_calls[0]["response_instructions"] == VOICE_RESPONSE_INSTRUCTIONS
+    assert chat.stream_calls[0]["response_instructions"] == ""
     assert chat.stream_calls[0]["max_response_tokens"] == VOICE_RESPONSE_MAX_TOKENS
     assert chat.stream_calls[0]["channel"] == RexBrainChannel.VOICE
     assert chat.stream_calls[0]["include_turn_trace"] is True

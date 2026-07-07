@@ -95,6 +95,27 @@ class FakeMemoryCorrectionRepository:
     async def deactivate_plan_milestone(self, milestone_id):
         return _deactivate(self.milestones, milestone_id, status="canceled")
 
+    async def delete_long_term_memory(self, memory_id):
+        before = len(self.memories)
+        self.memories = [
+            memory for memory in self.memories if memory.get("id") != memory_id
+        ]
+        return len(self.memories) < before
+
+    async def delete_entity(self, entity_id):
+        before = len(self.entities)
+        self.entities = [
+            entity for entity in self.entities if entity.get("id") != entity_id
+        ]
+        return len(self.entities) < before
+
+    async def delete_entity_event(self, event_id):
+        before = len(self.entity_events)
+        self.entity_events = [
+            event for event in self.entity_events if event.get("id") != event_id
+        ]
+        return len(self.entity_events) < before
+
     async def create_memory_correction(self, correction):
         row = {"id": f"correction-{len(self.corrections) + 1}", **correction}
         self.corrections.append(row)
@@ -207,8 +228,8 @@ async def test_apply_remove_correction_archives_matching_active_records():
     )
 
     assert report.applied is True
-    assert repo.entities[0]["active"] is False
-    assert repo.memories[0]["active"] is False
+    assert repo.entities == []
+    assert repo.memories == []
     assert len(repo.corrections) == 2
     assert {item["target_table"] for item in repo.corrections} == {
         "entities",
@@ -235,7 +256,7 @@ async def test_apply_confirmed_remove_resolves_single_visible_event_category():
     assert len(preview) == 1
     assert preview[0].id == "memory-tonight-plan"
     assert report.applied is True
-    assert repo.memories[0]["active"] is False
+    assert repo.memories == []
     assert repo.corrections[0]["target_id"] == "memory-tonight-plan"
 
 
@@ -256,7 +277,7 @@ async def test_apply_confirmed_remove_resolves_single_visible_entity_event_categ
     report = await MemoryCorrectionService(repo).apply_confirmed_remove_obsolete("event")
 
     assert report.applied is True
-    assert repo.entity_events[0]["active"] is False
+    assert repo.entity_events == []
     assert repo.corrections[0]["target_table"] == "entity_events"
 
 

@@ -3,11 +3,6 @@ from typing import Optional
 from app.services.chat_context_service import ChatContextService
 from app.services.rex_channel import RexBrainChannel
 from app.services.rex_intent_router import RexIntentDecision, RexIntentRouter
-from app.services.brain_prompt_policy import include_proactive_monitoring_guard
-from app.services.proactive_insight_guard import (
-    proactive_monitoring_guard_text,
-    requires_proactive_monitoring_opt_in,
-)
 
 
 class SimpleRexBrain:
@@ -58,11 +53,9 @@ class SimpleRexBrain:
         locale: Optional[str] = None,
         user_enabled_proactive_insights: bool = False,
     ) -> list[dict]:
-        # Channel is intentionally accepted at the brain boundary. The launch
-        # brain uses the same prompt path for chat and voice, while leaving room
-        # for channel-specific context policy later without adding a second brain.
         _ = channel
-        messages = self.chat_context_service.build_prompt_messages(
+        _ = user_enabled_proactive_insights
+        return self.chat_context_service.build_prompt_messages(
             message=message,
             conversation_id=conversation_id,
             conversation_history=conversation_history,
@@ -74,12 +67,3 @@ class SimpleRexBrain:
             financial_context=financial_context,
             locale=locale,
         )
-        requires_opt_in = requires_proactive_monitoring_opt_in(
-            message,
-            user_enabled_proactive_insights=user_enabled_proactive_insights,
-        )
-        if include_proactive_monitoring_guard():
-            guard = proactive_monitoring_guard_text(requires_opt_in=requires_opt_in)
-            if guard:
-                messages.append({"role": "system", "content": guard})
-        return messages

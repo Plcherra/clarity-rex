@@ -8,21 +8,12 @@ from app.services.prompt_constants import (
     FINANCIAL_CONTEXT_PREFIX,
     LONG_TERM_MEMORY_PREFIX,
     MAX_DEFAULT_REX_PROMPT_CHARACTERS,
-    MEMORY_DISCIPLINE_PROMPT,
-    PERSONALITY_CONTEXT_PREFIX,
-    REX_PERSONALITY_PROMPT,
     STRUCTURED_MEMORY_PREFIX,
     TIME_CONTEXT_PREFIX,
 )
 from app.services.prompt_financial_context import PromptFinancialContextMixin
 from app.services.prompt_memory_context import PromptMemoryContextMixin
 from app.services.prompt_structured_context import PromptStructuredContextMixin
-from app.services.action_truth_policy import ACTION_TRUTH_POLICY_PROMPT
-from app.services.brain_prompt_policy import (
-    include_action_truth_prompt,
-    include_memory_discipline_prompt,
-    include_personality_prompt,
-)
 from app.services.locale_utils import locale_response_rule
 from app.services.time_context_service import TimeContextService
 
@@ -102,22 +93,10 @@ class PromptService(
         locale: Optional[str] = None,
     ) -> list[str]:
         sections: list[str] = []
-        if include_personality_prompt():
-            sections.append(f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}")
-        if include_action_truth_prompt():
-            sections.append(ACTION_TRUTH_POLICY_PROMPT)
 
         locale_rule = locale_response_rule(locale)
         if locale_rule:
             sections.append(locale_rule)
-
-        if include_memory_discipline_prompt() and (
-            relevant_memories
-            or structured_context
-            or accountability_signals
-            or financial_context
-        ):
-            sections.append(MEMORY_DISCIPLINE_PROMPT)
 
         time_section = self._time_context_section(time_context)
         if time_section:

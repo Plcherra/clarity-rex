@@ -11,7 +11,7 @@ from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.rex_channel import RexBrainChannel
 from app.services.time_context_service import TimeContextService
-from durable_write_test_helpers import confirm_durable_write
+from durable_write_test_helpers import assert_companion_continuation_response, confirm_durable_write
 
 
 def _time_context_service() -> TimeContextService:
@@ -74,7 +74,7 @@ async def test_memory_reliability_mom_birthday_saves_and_recalls_directly():
     assert proposed["memory_changes"]["confirmation_required"] == 1
     saved = await confirm_durable_write(chat_service, proposed)
 
-    assert "Saved to Clarity Knows" in saved["response"]
+    assert_companion_continuation_response(saved)
     assert saved["memory_changes"]["created"] == 1
     assert saved["memory_changes"]["confirmation_required"] == 0
     assert len(memory_service.long_term_memory) == 1
@@ -215,7 +215,7 @@ async def test_memory_reliability_voice_stream_saves_and_recalls_memory():
         )
     ]
 
-    assert "Saved to Clarity Knows" in confirmed_events[-1]["response"]
+    assert_companion_continuation_response(confirmed_events[-1])
     assert confirmed_events[-1]["memory_changes"]["created"] == 1
     assert recall_events[-1]["event"] == "done"
     assert "- fact: User's mom's birthday is June 18." in ai_service.messages[0]["content"]

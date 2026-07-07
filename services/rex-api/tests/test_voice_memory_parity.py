@@ -92,7 +92,7 @@ async def test_voice_saves_exact_movie_plan_and_updates_same_memory():
         assert planned["memory_changes"]["created"] == 1
         assert tickets["memory_changes"]["updated"] == 1
         assert canceled["memory_changes"]["updated"] == 1
-        assert ai_service.generate_calls == 0
+        assert ai_service.generate_calls == 3
         assert ai_service.stream_calls == 0
         assert len(memory_service.long_term_memory) == 1
         assert memory_service.long_term_memory[0]["content"] == (

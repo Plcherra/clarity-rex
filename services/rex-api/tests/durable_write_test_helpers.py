@@ -45,3 +45,12 @@ async def save_message_with_confirmation(chat_service, message: str) -> dict[str
     if (proposed.get("memory_changes") or {}).get("confirmation_required"):
         return await confirm_durable_write(chat_service, proposed)
     return proposed
+
+
+def assert_companion_continuation_response(
+    result: dict[str, Any],
+    *,
+    expected_response: str = "Rex response",
+) -> None:
+    """Confirmed durable writes return Grok companion continuation, not save ack text."""
+    assert result["response"] == expected_response

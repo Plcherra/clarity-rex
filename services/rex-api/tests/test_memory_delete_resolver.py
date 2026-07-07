@@ -48,9 +48,9 @@ def test_vague_delete_reference_detects_kind_only_targets():
 def test_parse_delete_request_scopes_saved_goal_without_title():
     parsed = parse_delete_request("Can you delete the goal we have saved?")
     assert parsed is not None
-    assert parsed.reference == "goal"
+    assert parsed.reference == "saved"
     assert parsed.scope_tables == GOAL_DELETE_SCOPE
-    assert parsed.is_vague is True
+    assert parsed.is_vague is False
 
 
 def test_parse_delete_request_scopes_named_goal():

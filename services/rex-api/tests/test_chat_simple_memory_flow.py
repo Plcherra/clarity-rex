@@ -7,7 +7,11 @@ from chat_service_fakes import (
     FakeAIService,
     FakeMemoryService,
 )
-from durable_write_test_helpers import confirm_durable_write, save_message_with_confirmation
+from durable_write_test_helpers import (
+    assert_companion_continuation_response,
+    confirm_durable_write,
+    save_message_with_confirmation,
+)
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.rex_channel import RexBrainChannel
@@ -63,11 +67,11 @@ async def test_simple_memory_saves_durable_memory_directly():
     assert proposed["memory_changes"]["confirmation_required"] == 1
     saved = await confirm_durable_write(chat_service, proposed)
 
-    assert "Saved to Clarity Knows" in saved["response"]
+    assert_companion_continuation_response(saved)
     assert saved["memory_changes"]["created"] == 1
     assert saved["memory_changes"]["confirmation_required"] == 0
     assert saved["messages"][-1]["content"] == saved["response"]
-    assert ai_service.messages == []
+    assert ai_service.generate_calls == 1
     assert memory_service.long_term_memory[0]["memory_type"] == "fact"
     assert memory_service.long_term_memory[0]["content"] == (
         "User's mom's birthday is June 18."
@@ -98,13 +102,13 @@ async def test_inverted_birthday_phrase_saves_durable_memory_directly():
         "It's not next week, but on the eighteenth, it's my mom's birthday.",
     )
 
-    assert "Saved to Clarity Knows" in saved["response"]
+    assert_companion_continuation_response(saved)
     assert saved["memory_changes"]["created"] == 1
     assert saved["memory_changes"]["confirmation_required"] == 0
     assert memory_service.long_term_memory[0]["content"] == (
         "User's mom's birthday is June 18."
     )
-    assert ai_service.messages == []
+    assert ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio
@@ -124,15 +128,15 @@ async def test_identity_and_location_facts_save_without_confirmation():
         "I live in Somerville",
     )
 
-    assert "Saved to Clarity Knows" in name_turn["response"]
+    assert_companion_continuation_response(name_turn)
     assert name_turn["memory_changes"]["created"] == 1
-    assert "Saved to Clarity Knows" in location_turn["response"]
+    assert_companion_continuation_response(location_turn)
     assert location_turn["memory_changes"]["created"] == 1
     assert [memory["content"] for memory in memory_service.long_term_memory] == [
         "User's name is Pedro.",
         "User lives in Somerville.",
     ]
-    assert ai_service.messages == []
+    assert ai_service.generate_calls == 2
 
 
 @pytest.mark.asyncio
@@ -155,7 +159,10 @@ async def test_contextual_birthday_answer_saves_directly():
     )
     confirmation = await confirm_durable_write(chat_service, proposed)
 
-    assert "Saved to Clarity Knows" in confirmation["response"]
+    assert_companion_continuation_response(
+        confirmation,
+        expected_response="Nice, when's her birthday exactly?",
+    )
     assert confirmation["memory_changes"]["created"] == 1
     assert confirmation["memory_changes"]["confirmation_required"] == 0
     assert memory_service.long_term_memory[0]["content"] == (
@@ -194,7 +201,10 @@ async def test_contextual_birthday_month_day_answer_saves_directly():
     proposed = await chat_service.send_message("June 18", conversation_id)
     confirmation = await confirm_durable_write(chat_service, proposed)
 
-    assert "Saved to Clarity Knows" in confirmation["response"]
+    assert_companion_continuation_response(
+        confirmation,
+        expected_response="Sure, what's the date? I'll add it.",
+    )
     assert confirmation["memory_changes"]["created"] == 1
     assert confirmation["memory_changes"]["confirmation_required"] == 0
     assert memory_service.long_term_memory[0]["content"] == (
@@ -295,7 +305,7 @@ async def test_voice_stream_directly_updates_location_memory():
         },
     )
     assert confirmed["memory_changes"]["updated"] == 1
-    assert ai_service.messages == []
+    assert ai_service.generate_calls == 1
     assert len(memory_service.long_term_memory) == 1
     assert memory_service.long_term_memory[0]["content"] == (
         "User lives in Somerville, Massachusetts."
@@ -355,7 +365,7 @@ async def test_personal_plan_updates_keep_exact_title_and_single_memory():
     assert planned["memory_changes"]["created"] == 1
     assert tickets["memory_changes"]["updated"] == 1
     assert canceled["memory_changes"]["updated"] == 1
-    assert ai_service.messages == []
+    assert ai_service.generate_calls == 3
     assert len(memory_service.long_term_memory) == 1
     assert memory_service.long_term_memory[0]["content"] == (
         "User canceled the plan to watch Masters of the Universe tonight because money is tight."
@@ -742,7 +752,7 @@ async def test_relationship_person_save_after_mom_birthday_does_not_reuse_birthd
     )
     confirmed = await confirm_durable_write(chat_service, friend_proposed)
 
-    assert "Saved to Clarity Knows" in confirmed["response"]
+    assert_companion_continuation_response(confirmed, expected_response="Rex follow-up")
     assert confirmed["memory_changes"]["created"] == 1
     assert len(memory_service.long_term_memory) == 2
     assert len(memory_service.entities) == 0
@@ -767,7 +777,7 @@ async def test_possessive_third_party_birthday_saves_correct_person_label():
     assert saved["memory_changes"]["created"] == 1
     assert "Pedro" in memory_service.long_term_memory[0]["content"]
     assert "June 18" in memory_service.long_term_memory[0]["content"]
-    assert ai_service.generate_calls == 0
+    assert ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio
@@ -909,7 +919,7 @@ async def test_confirmed_self_facts_stay_flat_without_entity_promotion():
         conversation_id,
     )
 
-    assert ai_service.generate_calls == 1
+    assert ai_service.generate_calls == 5
     prompt_text = ai_service.messages[0]["content"]
     assert "User's name is Pedro Martins" in prompt_text
     assert "User lives in Somerville" in prompt_text
@@ -948,7 +958,7 @@ async def test_contextual_memory_save_request_saves_recent_birthday_without_card
     proposed = await chat_service.send_message("yes keep that in memory", conversation_id)
     saved = await confirm_durable_write(chat_service, proposed)
 
-    assert "Saved to Clarity Knows" in saved["response"]
+    assert_companion_continuation_response(saved, expected_response="Rex normal follow-up")
     assert saved["memory_changes"]["created"] == 1
     assert memory_service.long_term_memory[0]["content"] == (
         "User's mom's birthday is June 18."
@@ -980,7 +990,7 @@ async def test_contextual_memory_save_extracts_birthday_date_from_rex_previous_t
     proposed = await chat_service.send_message("yes keep that in memory", conversation_id)
     saved = await confirm_durable_write(chat_service, proposed)
 
-    assert "Saved to Clarity Knows" in saved["response"]
+    assert_companion_continuation_response(saved, expected_response="Rex normal follow-up")
     assert saved["memory_changes"]["created"] == 1
     assert memory_service.long_term_memory[0]["content"] == (
         "User's mom's birthday is June 18."

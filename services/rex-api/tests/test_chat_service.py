@@ -9,7 +9,11 @@ from chat_service_fakes import (
     FakeMemoryService,
     FakeUpload,
 )
-from durable_write_test_helpers import confirm_durable_write, save_message_with_confirmation
+from durable_write_test_helpers import (
+    assert_companion_continuation_response,
+    confirm_durable_write,
+    save_message_with_confirmation,
+)
 from app.config import Settings
 from app.services.action_truth_policy import (
     DEGRADED_RECALL_FALLBACK,
@@ -858,8 +862,8 @@ async def test_chat_service_saves_explicit_goal_without_llm_call():
     proposed = await chat_service.send_message("Track save $5000 by August as a goal")
     result = await confirm_durable_write(chat_service, proposed)
 
-    assert "Saved plan in Goals" in result["response"]
-    assert ai_service.generate_calls == 0
+    assert_companion_continuation_response(result)
+    assert ai_service.generate_calls == 1
     assert len(memory_service.created_plans) == 1
     assert memory_service.created_plans[0]["plan_type"] == "finance"
     assert memory_service.created_plans[0]["target_date"] == "August"
@@ -881,7 +885,7 @@ async def test_chat_service_reuses_duplicate_explicit_goal():
         first["conversation_id"],
     )
 
-    assert ai_service.generate_calls == 0
+    assert ai_service.generate_calls == 1
     assert len(memory_service.created_plans) == 1
     assert len(memory_service.plans) == 1
 
@@ -902,8 +906,8 @@ async def test_chat_service_saves_explicit_money_goal_without_llm_call():
     )
     result = await confirm_durable_write(chat_service, proposed)
 
-    assert "Saved plan in Goals" in result["response"]
-    assert ai_service.generate_calls == 0
+    assert_companion_continuation_response(result)
+    assert ai_service.generate_calls == 1
     assert len(memory_service.created_plans) == 1
     assert memory_service.created_plans[0]["plan_type"] == "finance"
     assert memory_service.created_plans[0]["target_date"] == "June 10"
@@ -929,8 +933,8 @@ async def test_chat_service_saves_pc_upgrade_checklist_as_goal_without_llm():
     proposed = await chat_service.send_message(message)
     result = await confirm_durable_write(chat_service, proposed)
 
-    assert ai_service.generate_calls == 0
-    assert "Saved plan in Goals" in result["response"]
+    assert ai_service.generate_calls == 1
+    assert_companion_continuation_response(result)
     assert len(memory_service.created_plans) == 1
     assert memory_service.created_plans[0]["target_date"] == "July 31"
     assert result["memory_changes"]["write_proposals"][0]["write_kind"] == "plan"

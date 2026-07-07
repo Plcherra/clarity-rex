@@ -1,12 +1,5 @@
 VOICE_LOW_TRANSCRIPT_CONFIDENCE_THRESHOLD = 0.75
 
-VOICE_RESPONSE_INSTRUCTIONS = (
-    "Voice mode: reply in 1-2 short spoken sentences. Be warm, direct, and natural. "
-    "Start with the answer, avoid filler, and keep wording easy to speak. "
-    "If the transcript sounds unclear or garbled, ask one quick clarification before "
-    "saving memory or making a correction. Use the same assistant truth rules as chat. "
-    "Do not emit clarity_action blocks."
-)
 VOICE_RESPONSE_MAX_TOKENS = 120
 VOICE_DEEP_RESPONSE_MAX_TOKENS = 320
 VOICE_DEEP_THINKING_PHRASES = (
@@ -19,32 +12,29 @@ VOICE_DEEP_THINKING_PHRASES = (
     "deeper thinking",
 )
 
+_LOW_CONFIDENCE_INSTRUCTION = (
+    "The latest voice transcript may be unreliable (low speech recognition "
+    "confidence). Ask the user to repeat once before acting on unclear words "
+    "or saving memory."
+)
+
 
 def voice_response_instructions(
     locale: str | None = None,
     transcript_confidence: float | None = None,
 ) -> str:
-    from app.services.brain_prompt_policy import should_append_voice_instructions
     from app.services.locale_utils import locale_response_rule
 
-    if not should_append_voice_instructions():
-        return ""
-
-    instructions = VOICE_RESPONSE_INSTRUCTIONS
+    parts: list[str] = []
     if (
         transcript_confidence is not None
         and transcript_confidence < VOICE_LOW_TRANSCRIPT_CONFIDENCE_THRESHOLD
     ):
-        instructions = (
-            "The latest voice transcript may be unreliable (low speech recognition "
-            "confidence). Ask the user to repeat once before acting on unclear words "
-            "or saving memory. "
-            f"{instructions}"
-        )
+        parts.append(_LOW_CONFIDENCE_INSTRUCTION)
     rule = locale_response_rule(locale)
     if rule:
-        return f"{instructions}\n{rule}"
-    return instructions
+        parts.append(rule)
+    return "\n".join(parts)
 
 
 def voice_response_max_tokens(transcript: str) -> int:

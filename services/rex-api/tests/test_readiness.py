@@ -17,6 +17,10 @@ def test_readiness_reports_missing_cloud_voice_config(monkeypatch):
             supabase_service_role_key="service-key",
             deepgram_api_key=None,
             google_tts_project_id=None,
+            plaid_client_id="",
+            plaid_secret="",
+            google_tts_voice_name="en-US-Neural2-J",
+            google_tts_speaking_rate=1.15,
         ),
     )
 
@@ -53,6 +57,10 @@ def test_readiness_reports_ready_when_all_required_services_are_configured(monke
             deepgram_api_key="deepgram-key",
             google_tts_project_id="rex-project",
             google_tts_credentials_json='{"type":"service_account"}',
+            plaid_client_id="",
+            plaid_secret="",
+            google_tts_voice_name="en-US-Neural2-J",
+            google_tts_speaking_rate=1.15,
         ),
     )
 

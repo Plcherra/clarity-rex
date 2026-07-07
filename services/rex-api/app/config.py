@@ -18,10 +18,6 @@ class Settings(BaseSettings):
     grok_embedding_model: Optional[str] = None
     grok_embedding_dimensions: int = 1536
     grok_timeout_seconds: int = 120
-
-    # Brain prompt experiment: production | raw | raw_truth
-    rex_brain_prompt_mode: str = "production"
-    rex_voice_instructions_enabled: bool = True
     rex_log_grok_prompt: bool = False
 
     # Auto save/track proposals (dev override only): off | text | card

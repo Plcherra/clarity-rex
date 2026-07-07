@@ -1,21 +1,12 @@
-from app.services.action_truth_policy import ACTION_TRUTH_POLICY_PROMPT
 from app.services.prompt_service import (
     CONVERSATION_CONTEXT_PREFIX,
     FILE_CONTEXT_PREFIX,
     LONG_TERM_MEMORY_PREFIX,
-    MAX_DEFAULT_REX_PROMPT_CHARACTERS,
-    PERSONALITY_CONTEXT_PREFIX,
     PromptService,
-    REX_PERSONALITY_PROMPT,
     STRUCTURED_MEMORY_PREFIX,
     TIME_CONTEXT_PREFIX,
 )
 from app.services.time_context_service import TimeContextService
-
-BASE_SYSTEM_PROMPT = (
-    f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}\n\n"
-    f"{ACTION_TRUTH_POLICY_PROMPT}"
-)
 
 
 def test_prompt_service_casual_voice_prompt_is_tiny_by_default():
@@ -23,16 +14,10 @@ def test_prompt_service_casual_voice_prompt_is_tiny_by_default():
 
     messages = service.build_messages(user_message="Hey Rex")
 
-    assert messages == [
-        {
-            "role": "system",
-            "content": BASE_SYSTEM_PROMPT,
-        },
-        {"role": "user", "content": "Hey Rex"},
-    ]
-    assert len(messages[0]["content"]) <= MAX_DEFAULT_REX_PROMPT_CHARACTERS
-    assert LONG_TERM_MEMORY_PREFIX not in messages[0]["content"]
-    assert STRUCTURED_MEMORY_PREFIX not in messages[0]["content"]
+    assert messages == [{"role": "user", "content": "Hey Rex"}]
+    prompt_text = "\n".join(message["content"] for message in messages)
+    assert LONG_TERM_MEMORY_PREFIX not in prompt_text
+    assert STRUCTURED_MEMORY_PREFIX not in prompt_text
 
 
 def test_prompt_service_memory_recall_context_stays_bounded():
@@ -141,20 +126,12 @@ def test_prompt_shape_contains_required_time_aware_founder_context():
     ]
 
     system_content = messages[0]["content"]
-    assert system_content.index(PERSONALITY_CONTEXT_PREFIX) < system_content.index(
-        TIME_CONTEXT_PREFIX
-    )
     assert system_content.index(TIME_CONTEXT_PREFIX) < system_content.index(
         CONVERSATION_CONTEXT_PREFIX
     )
     assert system_content.index(CONVERSATION_CONTEXT_PREFIX) < system_content.index(
         LONG_TERM_MEMORY_PREFIX
     )
-
-    assert "private, voice-first AI companion" in system_content
-    assert "Answer casual turns fast and briefly" in system_content
-    assert "Memory/action rules:" in system_content
-    assert "Saved memory is not chat history" in system_content
     assert "- Clock: Tuesday afternoon (15:30 America/New_York (EDT))" in (
         system_content
     )
@@ -267,13 +244,12 @@ def test_prompt_service_trims_large_context_to_recent_messages():
             {"role": "user", "content": "old " * 10000},
             {"role": "assistant", "content": "recent answer"},
         ],
+        time_context={"iso_timestamp": "2026-05-12T15:30:00-04:00"},
     )
 
-    assert messages == [
-        {
-            "role": "system",
-            "content": BASE_SYSTEM_PROMPT,
-        },
+    assert messages[0]["role"] == "system"
+    assert "Current time context:" in messages[0]["content"]
+    assert messages[1:] == [
         {"role": "assistant", "content": "recent answer"},
         {"role": "user", "content": "latest question"},
     ]
@@ -285,10 +261,12 @@ def test_prompt_service_trims_large_file_context_before_latest_user_message():
     messages = service.build_messages(
         user_message="summarize",
         file_context="file " * 10000,
+        time_context={"iso_timestamp": "2026-05-12T15:30:00-04:00"},
     )
 
     assert len(messages) == 3
-    assert messages[0]["content"].startswith(PERSONALITY_CONTEXT_PREFIX)
+    assert messages[0]["role"] == "system"
+    assert "Current time context:" in messages[0]["content"]
     assert messages[1]["content"].startswith(FILE_CONTEXT_PREFIX)
     assert messages[1]["content"].endswith("[File truncated]")
     assert messages[2] == {"role": "user", "content": "summarize"}

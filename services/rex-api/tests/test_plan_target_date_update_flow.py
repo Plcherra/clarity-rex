@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from chat_service_fakes import FakeAIService, FakeMemoryService
-from durable_write_test_helpers import confirm_durable_write
+from durable_write_test_helpers import assert_companion_continuation_response, confirm_durable_write
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.plan_target_date_parsing import (
@@ -79,7 +79,10 @@ async def test_bulk_plan_target_date_proposes_and_applies_on_confirm():
 
     confirmed = await confirm_durable_write(chat_service, proposed)
 
-    assert "Updated target dates for 3 goals" in confirmed["response"]
+    assert_companion_continuation_response(
+        confirmed,
+        expected_response="Rex normal response",
+    )
     assert confirmed["memory_changes"]["updated"] == 3
     for plan in memory_service.plans:
         assert plan.get("target_date") == "2026-07-31"

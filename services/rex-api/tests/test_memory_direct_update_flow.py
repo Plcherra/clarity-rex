@@ -12,7 +12,7 @@ from chat_service_fakes import (
     FakeMemoryService,
 )
 from memory_turn_fakes import FakeMemoryTurnStore
-from durable_write_test_helpers import confirm_durable_write
+from durable_write_test_helpers import assert_companion_continuation_response, confirm_durable_write
 from app.services.memory_turn_service import MemoryTurnService
 
 
@@ -146,10 +146,10 @@ async def test_chat_simple_fact_correction_updates_directly():
     assert proposed["memory_changes"]["confirmation_required"] == 1
     result = await confirm_durable_write(chat_service, proposed)
 
-    assert "Saved to Clarity Knows" in result["response"] or "updated" in result["response"].lower()
+    assert_companion_continuation_response(result)
     assert result["memory_changes"]["updated"] == 1
     assert result["memory_changes"]["confirmation_required"] == 0
-    assert ai_service.messages == []
+    assert ai_service.generate_calls == 1
     assert len(memory_service.long_term_memory) == 1
 
 
@@ -187,5 +187,5 @@ async def test_voice_simple_fact_correction_updates_directly():
 
     assert events[-1]["memory_changes"]["updated"] == 1
     assert events[-1]["memory_changes"]["confirmation_required"] == 0
-    assert ai_service.messages == []
+    assert ai_service.generate_calls == 1
     assert len(memory_service.long_term_memory) == 1

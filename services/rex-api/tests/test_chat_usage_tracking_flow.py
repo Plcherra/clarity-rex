@@ -4,7 +4,7 @@ from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.rex_channel import RexBrainChannel
 from app.services.time_context_service import TimeContextService
-from durable_write_test_helpers import confirm_durable_write
+from durable_write_test_helpers import assert_companion_continuation_response, confirm_durable_write
 from chat_service_fakes import FakeAIService, FakeMemoryService
 
 
@@ -48,9 +48,9 @@ async def test_send_message_records_one_llm_usage_event_for_normal_chat_turn():
 
 
 @pytest.mark.asyncio
-async def test_send_message_does_not_record_llm_usage_for_direct_memory_turn():
+async def test_send_message_records_llm_usage_after_confirmed_memory_save():
     usage = FakeUsageTrackingService()
-    ai = FakeAIService(response="Should not be called.")
+    ai = FakeAIService(response="Companion follow-up.")
     chat = _chat_service(ai_service=ai, usage_service=usage)
 
     proposed = await chat.send_message(
@@ -58,11 +58,12 @@ async def test_send_message_does_not_record_llm_usage_for_direct_memory_turn():
         channel=RexBrainChannel.CHAT,
     )
     assert proposed["memory_changes"]["confirmation_required"] == 1
+    assert usage.llm_turns == []
     result = await confirm_durable_write(chat, proposed)
 
-    assert "Saved to Clarity Knows" in result["response"]
-    assert ai.generate_calls == 0
-    assert usage.llm_turns == []
+    assert_companion_continuation_response(result, expected_response="Companion follow-up.")
+    assert ai.generate_calls == 1
+    assert len(usage.llm_turns) == 1
 
 
 @pytest.mark.asyncio

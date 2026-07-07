@@ -128,7 +128,7 @@ async def test_streaming_chat_uses_mvp_kwargs_only():
 
 
 @pytest.mark.asyncio
-async def test_base_prompt_contains_launch_safety_guards():
+async def test_base_prompt_uses_raw_context_without_brain_safety_guards():
     ai_service = FakeAIService(response="Rex response")
     memory_service = FakeMemoryService()
     chat_service = ChatService(
@@ -152,11 +152,11 @@ async def test_base_prompt_contains_launch_safety_guards():
     )
 
     system_prompt = ai_service.messages[0]["content"]
-    assert "verify with an available source" in system_prompt
-    assert "state assumptions" in system_prompt
-    assert "avoid guaranteed outcomes" in system_prompt
-    assert "Do not imply background monitoring" in system_prompt
-    assert "Ask for confirmation" in system_prompt
+    assert "spent_this_month=100" in system_prompt
+    assert "verify with an available source" not in system_prompt
+    assert "state assumptions" not in system_prompt
+    assert "avoid guaranteed outcomes" not in system_prompt
+    assert "Do not imply background monitoring" not in system_prompt
 
 
 @pytest.mark.asyncio

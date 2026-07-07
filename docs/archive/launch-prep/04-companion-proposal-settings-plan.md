@@ -162,7 +162,7 @@ SharedPreferences cache optional for instant UI before profile hydrate.
 
 For uninterrupted companion feel:
 
-1. `REX_BRAIN_PROMPT_MODE=raw` in `services/rex-api/.env`
+1. Pull latest backend — raw Grok is the only prompt path (no env flag)
 2. Assistant tab → gear icon → **Companion saves** (Off / Text only / Confirm card)
 3. Flutter web + local backend — chat only; voice needs streaming enabled
 
