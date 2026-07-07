@@ -3,6 +3,7 @@ from typing import Optional
 from app.services.chat_context_service import ChatContextService
 from app.services.rex_channel import RexBrainChannel
 from app.services.rex_intent_router import RexIntentDecision, RexIntentRouter
+from app.services.brain_prompt_policy import include_proactive_monitoring_guard
 from app.services.proactive_insight_guard import (
     proactive_monitoring_guard_text,
     requires_proactive_monitoring_opt_in,
@@ -77,7 +78,8 @@ class SimpleRexBrain:
             message,
             user_enabled_proactive_insights=user_enabled_proactive_insights,
         )
-        guard = proactive_monitoring_guard_text(requires_opt_in=requires_opt_in)
-        if guard:
-            messages.append({"role": "system", "content": guard})
+        if include_proactive_monitoring_guard():
+            guard = proactive_monitoring_guard_text(requires_opt_in=requires_opt_in)
+            if guard:
+                messages.append({"role": "system", "content": guard})
         return messages

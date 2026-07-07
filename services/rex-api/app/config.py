@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     grok_embedding_dimensions: int = 1536
     grok_timeout_seconds: int = 120
 
+    # Brain prompt experiment: production | raw | raw_truth
+    rex_brain_prompt_mode: str = "production"
+    rex_voice_instructions_enabled: bool = True
+    rex_log_grok_prompt: bool = False
+
     supabase_url: Optional[str] = None
     supabase_anon_key: Optional[str] = None
     supabase_service_role_key: Optional[str] = None

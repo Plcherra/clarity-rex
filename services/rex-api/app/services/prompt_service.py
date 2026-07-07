@@ -18,6 +18,11 @@ from app.services.prompt_financial_context import PromptFinancialContextMixin
 from app.services.prompt_memory_context import PromptMemoryContextMixin
 from app.services.prompt_structured_context import PromptStructuredContextMixin
 from app.services.action_truth_policy import ACTION_TRUTH_POLICY_PROMPT
+from app.services.brain_prompt_policy import (
+    include_action_truth_prompt,
+    include_memory_discipline_prompt,
+    include_personality_prompt,
+)
 from app.services.locale_utils import locale_response_rule
 from app.services.time_context_service import TimeContextService
 
@@ -63,11 +68,13 @@ class PromptService(
             financial_context=financial_context,
             locale=locale,
         )
-        if system_sections:
-            messages = [
-                {"role": "system", "content": "\n\n".join(system_sections)},
-                *messages,
-            ]
+        if not system_sections:
+            return messages
+
+        messages = [
+            {"role": "system", "content": "\n\n".join(system_sections)},
+            *messages,
+        ]
 
         return self._trim_context(
             messages,
@@ -94,14 +101,17 @@ class PromptService(
         financial_context: Optional[dict],
         locale: Optional[str] = None,
     ) -> list[str]:
-        sections = [f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}"]
-        sections.append(ACTION_TRUTH_POLICY_PROMPT)
+        sections: list[str] = []
+        if include_personality_prompt():
+            sections.append(f"{PERSONALITY_CONTEXT_PREFIX}{REX_PERSONALITY_PROMPT}")
+        if include_action_truth_prompt():
+            sections.append(ACTION_TRUTH_POLICY_PROMPT)
 
         locale_rule = locale_response_rule(locale)
         if locale_rule:
             sections.append(locale_rule)
 
-        if (
+        if include_memory_discipline_prompt() and (
             relevant_memories
             or structured_context
             or accountability_signals

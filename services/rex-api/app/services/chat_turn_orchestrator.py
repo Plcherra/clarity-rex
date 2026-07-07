@@ -10,6 +10,7 @@ from app.services.chat_financial_guard import ChatFinancialGuard
 from app.services.chat_response_truth import ChatResponseTruthService
 from app.services.chat_turn_context import ChatTurnContextService, MemoryService
 from app.services.chat_turn_observability import ChatTurnObserver, ChatTurnTrace
+from app.services.grok_prompt_logging import log_grok_prompt_messages
 from app.services.chat_turn_orchestrator_short_circuit import try_short_circuit_turn
 from app.services.chat_turn_orchestrator_support import (
     annotate_pending_action,
@@ -165,6 +166,7 @@ class ChatTurnOrchestrator:
             structured_context=turn_context.structured_context,
             conversation_history=conversation_history,
             turn_trace=turn_trace,
+            conversation_id=conversation_id,
         )
         finish_short_circuit(
             self.turn_observer,
@@ -291,6 +293,11 @@ class ChatTurnOrchestrator:
             ai_kwargs["max_tokens"] = max_response_tokens
         llm_started_at = time.perf_counter()
         usage_holder = GrokUsageHolder()
+        log_grok_prompt_messages(
+            ai_messages,
+            channel=channel.value,
+            conversation_id=conversation_id,
+        )
         try:
             async for token in self.ai_service.stream_response(
                 ai_messages,
@@ -422,11 +429,17 @@ class ChatTurnOrchestrator:
         structured_context: dict,
         conversation_history: list[dict],
         turn_trace: ChatTurnTrace,
+        conversation_id: Optional[str] = None,
     ) -> tuple[str, list]:
         ai_kwargs = {}
         if max_response_tokens is not None:
             ai_kwargs["max_tokens"] = max_response_tokens
         llm_started_at = time.perf_counter()
+        log_grok_prompt_messages(
+            ai_messages,
+            channel=channel.value,
+            conversation_id=conversation_id,
+        )
         try:
             grok_result = await self.ai_service.generate_response(
                 ai_messages,

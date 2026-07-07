@@ -24,7 +24,11 @@ def voice_response_instructions(
     locale: str | None = None,
     transcript_confidence: float | None = None,
 ) -> str:
+    from app.services.brain_prompt_policy import should_append_voice_instructions
     from app.services.locale_utils import locale_response_rule
+
+    if not should_append_voice_instructions():
+        return ""
 
     instructions = VOICE_RESPONSE_INSTRUCTIONS
     if (
