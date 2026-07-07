@@ -268,6 +268,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     _callGeneration++;
     _isAwaitingFollowUpSpeech = false;
     _pausedForSaveConfirmation = false;
+    _blockListenForSaveConfirmation = false;
     _emptyVoiceTurnRecoveryCount = 0;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();

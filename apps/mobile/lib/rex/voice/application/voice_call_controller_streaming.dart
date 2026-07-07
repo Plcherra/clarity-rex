@@ -10,7 +10,9 @@ extension VoiceCallControllerStreamingTurn on VoiceCallController {
     if (_isUsingNativeVoice) {
       return;
     }
-    if (_pausedForSaveConfirmation || _hasPendingSaveConfirmation()) {
+    if (_blockListenForSaveConfirmation ||
+        _pausedForSaveConfirmation ||
+        _hasPendingSaveConfirmation()) {
       _pausedForSaveConfirmation = true;
       return;
     }

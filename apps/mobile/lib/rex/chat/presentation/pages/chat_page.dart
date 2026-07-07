@@ -103,8 +103,17 @@ class _ChatPageState extends ConsumerState<ChatPage>
     });
     ref.listenManual<ChatState>(chatProvider, (previous, next) {
       final previousLength = previous?.messages.length ?? 0;
+      final previousLast = previous?.messages.isNotEmpty == true
+          ? previous!.messages.last
+          : null;
+      final nextLast = next.messages.isNotEmpty ? next.messages.last : null;
+      final voiceMessageChanged =
+          previousLast?.id != nextLast?.id ||
+          previousLast?.content != nextLast?.content ||
+          previousLast?.isVoiceInterim != nextLast?.isVoiceInterim;
       final shouldScroll =
           next.messages.length != previousLength ||
+          voiceMessageChanged ||
           next.isLoading != (previous?.isLoading ?? false) ||
           next.errorMessage != previous?.errorMessage;
       if (shouldScroll) {

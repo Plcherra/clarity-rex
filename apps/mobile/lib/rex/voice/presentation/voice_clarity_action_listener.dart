@@ -31,9 +31,11 @@ class _VoiceClarityActionListenerState
           ? const <ClarityActionCard>[]
           : pendingClarityActions(previous.messages);
       final voice = ref.read(voiceCallProvider.notifier);
-      if (pending.any((action) => action.canConfirm)) {
+      final hasPending = pending.any((action) => action.canConfirm);
+      final hadPending = previousPending.any((action) => action.canConfirm);
+      if (hasPending && !hadPending) {
         voice.pauseForSaveConfirmation();
-      } else if (previousPending.any((action) => action.canConfirm)) {
+      } else if (!hasPending && hadPending) {
         voice.resumeAfterSaveConfirmation();
       }
       if (pending.isEmpty) {

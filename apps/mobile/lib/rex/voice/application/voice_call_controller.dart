@@ -80,6 +80,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _warnedLegacyNativeVoiceFlag = false;
   var _isAwaitingFollowUpSpeech = false;
   var _pausedForSaveConfirmation = false;
+  var _blockListenForSaveConfirmation = false;
   var _emptyVoiceTurnRecoveryCount = 0;
   var _streamingUtteranceEndSent = false;
   var _streamingTurnSequence = 0;
@@ -210,6 +211,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _isStartingCall = true;
     _isAwaitingFollowUpSpeech = false;
     _emptyVoiceTurnRecoveryCount = 0;
+    _pausedForSaveConfirmation = false;
+    _blockListenForSaveConfirmation = false;
     _warnIfLegacyNativeVoiceFlagRequested();
     final generation = ++_callGeneration;
     _clearVisibleTranscript();
@@ -325,7 +328,18 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
+    final midUtterance = state.phase == VoiceCallPhase.listening &&
+        state.isCapturingSpeech;
+    if (midUtterance) {
+      _blockListenForSaveConfirmation = true;
+      return;
+    }
+    if (_pausedForSaveConfirmation) {
+      return;
+    }
+
     _pausedForSaveConfirmation = true;
+    _blockListenForSaveConfirmation = true;
     _callGeneration++;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();
@@ -351,7 +365,11 @@ class VoiceCallController extends Notifier<VoiceCallState>
   }
 
   void resumeAfterSaveConfirmation() {
-    if (!state.isCallActive || !_pausedForSaveConfirmation) {
+    if (!state.isCallActive) {
+      return;
+    }
+    _blockListenForSaveConfirmation = false;
+    if (!_pausedForSaveConfirmation) {
       return;
     }
     _pausedForSaveConfirmation = false;
@@ -371,10 +389,12 @@ class VoiceCallController extends Notifier<VoiceCallState>
       return;
     }
 
-    if (_hasPendingSaveConfirmation()) {
+    if (_hasPendingSaveConfirmation() || _blockListenForSaveConfirmation) {
       pauseForSaveConfirmation();
       return;
     }
+
+    _blockListenForSaveConfirmation = false;
 
     _isAwaitingFollowUpSpeech = true;
     _emptyVoiceTurnRecoveryCount = 0;

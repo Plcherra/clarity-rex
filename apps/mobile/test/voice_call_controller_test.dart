@@ -2648,4 +2648,129 @@ void main() {
     expect(cloudVoiceApi.synthesizedTexts, isEmpty);
     expect(playbackService.playStarted.isCompleted, isFalse);
   });
+
+  test('pauseForSaveConfirmation only interrupts once', () async {
+    final container = ProviderContainer(
+      overrides: [
+        microphonePermissionProvider.overrideWithValue(
+          const _GrantedMicrophonePermissionService(),
+        ),
+        voiceAudioSessionServiceProvider.overrideWithValue(
+          const _NoopVoiceAudioSessionService(),
+        ),
+        backgroundVoiceServiceProvider.overrideWithValue(
+          const _NoopBackgroundVoiceService(),
+        ),
+        audioCaptureServiceProvider.overrideWithValue(
+          const _NoopAudioCaptureService(),
+        ),
+        audioPlaybackServiceProvider.overrideWithValue(
+          const _NoopAudioPlaybackService(),
+        ),
+        streamingVoiceEnabledProvider.overrideWithValue(true),
+        nativeIosVoiceEnabledProvider.overrideWithValue(false),
+        streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+        streamingAudioCaptureServiceProvider.overrideWithValue(
+          _ScriptedStreamingAudioCaptureService(),
+        ),
+        bargeInDetectionServiceProvider.overrideWithValue(
+          const _NoopBargeInDetectionService(),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(voiceCallProvider.notifier);
+    expect(await controller.startCall(), isTrue);
+
+    controller.pauseForSaveConfirmation();
+    controller.pauseForSaveConfirmation();
+
+    expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+    controller.resumeAfterSaveConfirmation();
+    expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+  });
+
+  test(
+    'streaming voice completes turn while pending save card exists in history',
+    () async {
+      final captureService = _ScriptedStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isTrue);
+      await captureService.readyAt(0);
+
+      container.read(chatProvider.notifier).addMessage(
+        ChatMessage(
+          id: 'assistant-pending',
+          role: ChatMessageRole.assistant,
+          content: 'Should I save that goal?',
+          timestamp: DateTime(2026),
+          clarityActions: const [
+            ClarityActionCard(
+              id: 'plan-save-1',
+              action: 'save_plan',
+              payload: {},
+              confirmationText: 'Save goal?',
+              riskLevel: 'medium',
+              status: 'pending',
+            ),
+          ],
+        ),
+      );
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Tell me',
+      });
+      await Future<void>.delayed(Duration.zero);
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Tell me about my budgets',
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      captureService.finishCurrentWithSpeech();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      expect(
+        streamingApi.socket.sentEvents.where((event) => event == 'utterance.end'),
+        hasLength(1),
+      );
+      final messages = container.read(chatProvider).messages;
+      expect(messages.where((message) => message.role == ChatMessageRole.user), hasLength(1));
+      expect(messages.lastWhere((message) => message.role == ChatMessageRole.user).isVoiceInterim, isFalse);
+    },
+  );
 }
