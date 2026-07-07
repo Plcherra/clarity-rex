@@ -3,6 +3,11 @@ from typing import Optional, Protocol
 
 from fastapi import UploadFile
 
+from app.services.assistant_proposal_settings import (
+    AssistantProposalSettings,
+    resolve_assistant_proposal_settings,
+)
+from app.services.assistant_settings_repository import AssistantSettingsRepository
 from app.services.chat_context_service import ChatContextService
 from app.services.file_service import AttachmentContext, FileService
 from app.services.rex_channel import RexBrainChannel
@@ -97,6 +102,7 @@ class ChatTurnContext:
     time_context: dict
     accountability_signals: list
     user_message: dict
+    proposal_settings: AssistantProposalSettings
 
 
 class ChatTurnContextService:
@@ -161,6 +167,8 @@ class ChatTurnContextService:
             message_for_storage,
         )
 
+        proposal_settings = await self._load_proposal_settings()
+
         return ChatTurnContext(
             conversation_id=conversation_id,
             file_text=file_text,
@@ -171,7 +179,19 @@ class ChatTurnContextService:
             time_context=time_context,
             accountability_signals=accountability_signals,
             user_message=user_message,
+            proposal_settings=proposal_settings,
         )
+
+    async def _load_proposal_settings(self) -> AssistantProposalSettings:
+        user_id = getattr(self.memory_service, "user_id", None)
+        access_token = getattr(self.memory_service, "access_token", None)
+        if user_id and access_token:
+            repository = AssistantSettingsRepository(
+                user_id=user_id,
+                access_token=access_token,
+            )
+            return await repository.fetch_proposal_settings()
+        return resolve_assistant_proposal_settings({})
 
     async def existing_conversation_id(
         self,

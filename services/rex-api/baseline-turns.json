@@ -1,0 +1,50 @@
+﻿[
+  {
+    "turn": 1,
+    "user_message": "I'm choosing between two sport bikes ù one brand I love, one that's probably smarter. Thoughts?",
+    "assistant_response": "Sounds like a classic head-vs-heart choice. What's the brand you love, and which one's the \"smarter\" pick? Any specifics on models or what matters most to you (ride feel, reliability, cost, etc.)?",
+    "write_proposals": [],
+    "intent": "unknown",
+    "handler": "llm"
+  },
+  {
+    "turn": 2,
+    "user_message": "I haven't ridden in ten years.",
+    "assistant_response": "Got it ù that changes the equation a bit. After ten years off, your skills will be rusty, and sport bikes are unforgiving if you pick up bad habits or get surprised by power. \n\nPractical take: lean toward the \"smarter\" option for now (better reliability, electronics, or ergonomics that forgive mistakes), and strongly consider a refresher MSF course or track day before committing. Heart can wait until you're back in the groove.\n\nWhat are the two bikes/models?",
+    "write_proposals": [],
+    "intent": "unknown",
+    "handler": "llm"
+  },
+  {
+    "turn": 3,
+    "user_message": "This would be my first bike.",
+    "assistant_response": "Got it ù first bike after a decade off means starting from near-zero again. Sport bikes are powerful, twitchy, and easy to get in trouble on, especially if you're rebuilding skills. \n\nStrong recommendation: the \"smarter\" bike (or even reconsidering a non-sport option like a standard/naked bike with good electronics) is the way to go. Prioritize low power, forgiving ergonomics, and modern safety features. An MSF beginner course is basically non-negotiable here.\n\nStill curious which two models you're looking at.",
+    "write_proposals": [],
+    "intent": "memory_recall",
+    "handler": "llm"
+  },
+  {
+    "turn": 4,
+    "user_message": "I care more about how it looks and how I feel on it than being sensible.",
+    "assistant_response": "Honest take: if looks and feel are what actually matter to you, go with the brand you love. Just know that on your first bike after ten years, that choice raises the risk of getting in over your head quickly. \n\nStill, what are the two bikes?",
+    "write_proposals": [],
+    "intent": "unknown",
+    "handler": "llm"
+  },
+  {
+    "turn": 5,
+    "user_message": "Which would you pick?",
+    "assistant_response": "I'd pick the smarter one. Looks and feel matter, but on a first bike after ten years off, the risk of overconfidence or rusty skills is realùsport bikes don't forgive that easily. The \"probably smarter\" option gives you better odds of actually enjoying it long-term without drama. \n\nIf the loved brand is that much stronger on the emotional side, go for it, but start with a course either way. Still no models named?",
+    "write_proposals": [],
+    "intent": "unknown",
+    "handler": "llm"
+  },
+  {
+    "turn": 6,
+    "user_message": "What did we say about my first bike?",
+    "assistant_response": "We said it's your first bike after ten years off, so skills are basically starting from scratch. That led to a strong push toward the \"smarter\" choice (or even a less aggressive bike) for better forgiveness, electronics, and safety features, plus taking an MSF beginner course before committing.",
+    "write_proposals": [],
+    "intent": "memory_recall",
+    "handler": "llm"
+  }
+]

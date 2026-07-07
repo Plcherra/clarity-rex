@@ -14,10 +14,15 @@ from app.services.conversation_pending_action import PendingAction
 from app.services.conversational_plan_candidate import build_plan_candidate_payload
 from app.services.conversational_plan_detection import ConversationalPlanDetector
 from app.services.durable_write_pending import proposal_from_pending_action
+from app.services.goal_command_results import clarification_turn_result
 from app.services.goal_command_formatting import goal_title
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.plan_service import PlanService
 from app.services.save_intent_guards import user_declined_plan_save_recently
+from app.services.assistant_proposal_settings import (
+    AssistantProposalSettings,
+    PROPOSAL_KIND_GOALS,
+)
 
 
 class ConversationalPlanService:
@@ -45,7 +50,12 @@ class ConversationalPlanService:
         conversation_history: list[dict],
         time_context: dict,
         pending_action=None,
+        proposal_settings: Optional[AssistantProposalSettings] = None,
     ) -> Optional[dict]:
+        settings = proposal_settings or AssistantProposalSettings()
+        if not settings.allows_kind(PROPOSAL_KIND_GOALS):
+            return None
+
         pending = self._pending_action(pending_action)
         if pending is not None and not _allows_plan_proposal_while_pending(pending):
             return None
@@ -83,11 +93,39 @@ class ConversationalPlanService:
         if not _requires_user_confirmation(decision):
             return None
 
-        return await self.durable_write_service.propose_discipline_decision(
-            decision,
+        if decision.action in {
+            MemoryDisciplineAction.CREATE_MILESTONE,
+            MemoryDisciplineAction.UPDATE_PLAN,
+            MemoryDisciplineAction.UPDATE_MILESTONE,
+            MemoryDisciplineAction.CREATE_ENTITY_EVENT,
+        }:
+            return await self.durable_write_service.propose_discipline_decision(
+                decision,
+                conversation_id=conversation_id,
+                user_message=user_message,
+                conversation_messages=conversation_history,
+            )
+
+        title = str(payload.get("title") or goal_title(message)).strip()
+
+        if settings.uses_confirm_cards() or (
+            pending is not None and _allows_plan_proposal_while_pending(pending)
+        ):
+            return await self.durable_write_service.propose_discipline_decision(
+                decision,
+                conversation_id=conversation_id,
+                user_message=user_message,
+                conversation_messages=conversation_history,
+            )
+
+        return await clarification_turn_result(
+            self.memory_service,
             conversation_id=conversation_id,
             user_message=user_message,
-            conversation_messages=conversation_history,
+            response=(
+                f'I can save "{title}" as a goal in Goals if you want — '
+                "just say the word."
+            ),
         )
 
     def _pending_action(self, pending_action) -> Optional[PendingAction]:

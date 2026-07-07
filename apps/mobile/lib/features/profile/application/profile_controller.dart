@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/supabase/supabase_exceptions.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../auth/application/auth_service.dart';
+import '../domain/assistant_proposal_settings.dart';
 import 'locale_controller.dart';
 import 'profile_service.dart';
 
@@ -181,6 +182,28 @@ final class ProfileController extends ChangeNotifier {
 
     try {
       profile = await profileService.updateProactiveInsightsEnabled(enabled);
+      await syncAfterProfileChanged();
+    } catch (e) {
+      errorMessage = e.toString();
+      rethrow;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateAssistantProposalSettings(
+    AssistantProposalSettings settings,
+  ) async {
+    if (profile?.assistantSettings == settings) {
+      return;
+    }
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      profile = await profileService.updateAssistantProposalSettings(settings);
       await syncAfterProfileChanged();
     } catch (e) {
       errorMessage = e.toString();

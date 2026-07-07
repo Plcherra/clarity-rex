@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     rex_voice_instructions_enabled: bool = True
     rex_log_grok_prompt: bool = False
 
+    # Auto save/track proposals (dev override only): off | text | card
+    rex_auto_proposals_mode: Optional[str] = None
+    rex_auto_proposals_threads: Optional[bool] = None
+    rex_auto_proposals_goals: Optional[bool] = None
+    rex_auto_proposals_memory: Optional[bool] = None
+
     supabase_url: Optional[str] = None
     supabase_anon_key: Optional[str] = None
     supabase_service_role_key: Optional[str] = None

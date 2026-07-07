@@ -862,6 +862,38 @@ class AppLocalizationsEn extends AppLocalizations {
       'Save deterministic alerts when your data changes. No background monitoring runs until you turn this on.';
 
   @override
+  String get assistantCompanionSettingsTitle => 'Companion saves';
+
+  @override
+  String get assistantCompanionSettingsSubtitle =>
+      'Choose how Rex suggests goals, open threads, and memory during chat.';
+
+  @override
+  String get assistantCompanionSettingsGearLabel => 'Companion save settings';
+
+  @override
+  String get assistantAutoProposalsModeLabel => 'Auto suggestions';
+
+  @override
+  String get assistantAutoProposalsModeOff => 'Off';
+
+  @override
+  String get assistantAutoProposalsModeText => 'Text only';
+
+  @override
+  String get assistantAutoProposalsModeCard => 'Confirm card';
+
+  @override
+  String get assistantAutoProposalsTypeThreads =>
+      'Open threads (habits & check-ins)';
+
+  @override
+  String get assistantAutoProposalsTypeGoals => 'Goals (things to achieve)';
+
+  @override
+  String get assistantAutoProposalsTypeMemory => 'Memory (facts & preferences)';
+
+  @override
   String get dashboardChartCategorySpendSubtitle => 'This month total';
 
   @override

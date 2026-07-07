@@ -17,6 +17,11 @@ from app.services.conversation_pending_action import (
 from app.services.durable_write_pending import proposal_from_pending_action
 from app.services.durable_write_results import pending_memory_changes
 from app.services.goal_command_results import clarification_turn_result
+from app.services.rex_channel import RexBrainChannel
+from app.services.write_resolution_continuation import (
+    append_companion_continuation,
+    is_write_resolution_ack_turn,
+)
 
 
 def should_apply_write_confirmation(write_confirmation: Optional[dict]) -> bool:
@@ -40,6 +45,78 @@ def should_apply_pending_affirmation(
     )
 
 
+async def _finish_resolution_short_circuit(
+    orchestrator,
+    *,
+    turn_result: dict,
+    turn_context,
+    intent_decision,
+    financial_context,
+    channel: RexBrainChannel,
+    brain_message: str,
+    turn_trace: ChatTurnTrace,
+    turn_started_at: float,
+    route: str,
+    locale: Optional[str] = None,
+) -> dict:
+    turn_result = await append_companion_continuation(
+        orchestrator,
+        turn_context=turn_context,
+        intent_decision=intent_decision,
+        financial_context=financial_context,
+        channel=channel,
+        turn_result=turn_result,
+        brain_message=brain_message,
+        locale=locale,
+    )
+    finish_short_circuit(
+        orchestrator.turn_observer,
+        orchestrator.usage_recorder,
+        turn_trace,
+        turn_started_at,
+        route,
+    )
+    return turn_result
+
+
+async def _finish_short_circuit_turn(
+    orchestrator,
+    *,
+    turn_result: dict,
+    turn_context,
+    intent_decision,
+    financial_context,
+    channel: RexBrainChannel,
+    brain_message: str,
+    turn_trace: ChatTurnTrace,
+    turn_started_at: float,
+    route: str,
+    locale: Optional[str] = None,
+) -> dict:
+    if is_write_resolution_ack_turn(turn_result):
+        return await _finish_resolution_short_circuit(
+            orchestrator,
+            turn_result=turn_result,
+            turn_context=turn_context,
+            intent_decision=intent_decision,
+            financial_context=financial_context,
+            channel=channel,
+            brain_message=brain_message,
+            turn_trace=turn_trace,
+            turn_started_at=turn_started_at,
+            route=route,
+            locale=locale,
+        )
+    finish_short_circuit(
+        orchestrator.turn_observer,
+        orchestrator.usage_recorder,
+        turn_trace,
+        turn_started_at,
+        route,
+    )
+    return turn_result
+
+
 async def try_short_circuit_turn(
     orchestrator,
     *,
@@ -51,8 +128,11 @@ async def try_short_circuit_turn(
     turn_trace: ChatTurnTrace,
     turn_started_at: float,
     write_confirmation: Optional[dict] = None,
+    channel: RexBrainChannel = RexBrainChannel.CHAT,
+    locale: Optional[str] = None,
 ) -> Optional[dict]:
     conversation_id = turn_context.conversation_id
+    proposal_settings = turn_context.proposal_settings
     if should_apply_write_confirmation(write_confirmation):
         durable_turn = await orchestrator.durable_write_service.try_handle_pending(
             brain_message,
@@ -62,14 +142,19 @@ async def try_short_circuit_turn(
             write_confirmation=write_confirmation,
         )
         if durable_turn is not None:
-            finish_short_circuit(
-                orchestrator.turn_observer,
-                orchestrator.usage_recorder,
-                turn_trace,
-                turn_started_at,
-                "durable_write",
+            return await _finish_resolution_short_circuit(
+                orchestrator,
+                turn_result=durable_turn,
+                turn_context=turn_context,
+                intent_decision=intent_decision,
+                financial_context=financial_context,
+                channel=channel,
+                brain_message=brain_message,
+                turn_trace=turn_trace,
+                turn_started_at=turn_started_at,
+                route="durable_write",
+                locale=locale,
             )
-            return durable_turn
 
     open_thread_turn = await orchestrator.open_thread_turn_service.handle_turn(
         brain_message,
@@ -77,16 +162,22 @@ async def try_short_circuit_turn(
         user_message=turn_context.user_message,
         conversation_history=turn_context.conversation_history,
         pending_action=pending_action,
+        proposal_settings=proposal_settings,
     )
     if open_thread_turn:
-        finish_short_circuit(
-            orchestrator.turn_observer,
-            orchestrator.usage_recorder,
-            turn_trace,
-            turn_started_at,
-            "open_thread",
+        return await _finish_short_circuit_turn(
+            orchestrator,
+            turn_result=open_thread_turn,
+            turn_context=turn_context,
+            intent_decision=intent_decision,
+            financial_context=financial_context,
+            channel=channel,
+            brain_message=brain_message,
+            turn_trace=turn_trace,
+            turn_started_at=turn_started_at,
+            route="open_thread",
+            locale=locale,
         )
-        return open_thread_turn
 
     conversational_plan_turn = await orchestrator.conversational_plan_service.handle_turn(
         brain_message,
@@ -95,6 +186,7 @@ async def try_short_circuit_turn(
         conversation_history=turn_context.conversation_history,
         time_context=turn_context.time_context,
         pending_action=pending_action,
+        proposal_settings=proposal_settings,
     )
     if conversational_plan_turn:
         finish_short_circuit(
@@ -131,14 +223,19 @@ async def try_short_circuit_turn(
         pending_action=pending_action,
     )
     if delete_turn:
-        finish_short_circuit(
-            orchestrator.turn_observer,
-            orchestrator.usage_recorder,
-            turn_trace,
-            turn_started_at,
-            "memory_delete",
+        return await _finish_short_circuit_turn(
+            orchestrator,
+            turn_result=delete_turn,
+            turn_context=turn_context,
+            intent_decision=intent_decision,
+            financial_context=financial_context,
+            channel=channel,
+            brain_message=brain_message,
+            turn_trace=turn_trace,
+            turn_started_at=turn_started_at,
+            route="memory_delete",
+            locale=locale,
         )
-        return delete_turn
 
     goal_command_turn = await orchestrator.goal_command_service.handle_turn(
         brain_message,
@@ -165,16 +262,22 @@ async def try_short_circuit_turn(
         conversation_history=turn_context.conversation_history,
         time_context=turn_context.time_context,
         pending_action=pending_action,
+        proposal_settings=proposal_settings,
     )
     if simple_memory_turn:
-        finish_short_circuit(
-            orchestrator.turn_observer,
-            orchestrator.usage_recorder,
-            turn_trace,
-            turn_started_at,
-            "memory_turn",
+        return await _finish_short_circuit_turn(
+            orchestrator,
+            turn_result=simple_memory_turn,
+            turn_context=turn_context,
+            intent_decision=intent_decision,
+            financial_context=financial_context,
+            channel=channel,
+            brain_message=brain_message,
+            turn_trace=turn_trace,
+            turn_started_at=turn_started_at,
+            route="memory_turn",
+            locale=locale,
         )
-        return simple_memory_turn
 
     if should_apply_pending_affirmation(
         brain_message,
@@ -188,14 +291,19 @@ async def try_short_circuit_turn(
             write_confirmation=write_confirmation,
         )
         if durable_turn is not None:
-            finish_short_circuit(
-                orchestrator.turn_observer,
-                orchestrator.usage_recorder,
-                turn_trace,
-                turn_started_at,
-                "durable_write",
+            return await _finish_resolution_short_circuit(
+                orchestrator,
+                turn_result=durable_turn,
+                turn_context=turn_context,
+                intent_decision=intent_decision,
+                financial_context=financial_context,
+                channel=channel,
+                brain_message=brain_message,
+                turn_trace=turn_trace,
+                turn_started_at=turn_started_at,
+                route="durable_write",
+                locale=locale,
             )
-            return durable_turn
 
     pending_write_reminder = await _try_remind_pending_durable_write(
         orchestrator,

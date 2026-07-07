@@ -18,6 +18,10 @@ from app.services.open_thread_eligibility import (
     thread_offer_eligible,
     thread_offer_message_eligible,
 )
+from app.services.assistant_proposal_settings import (
+    AssistantProposalSettings,
+    PROPOSAL_KIND_THREADS,
+)
 
 
 THREAD_OFFER_PHRASE = "Want me to keep track of this and check in later?"
@@ -46,7 +50,9 @@ class OpenThreadTurnService:
         user_message: dict,
         conversation_history: list[dict],
         pending_action: Any = None,
+        proposal_settings: Optional[AssistantProposalSettings] = None,
     ) -> Optional[dict]:
+        settings = proposal_settings or AssistantProposalSettings()
         if pending_action is not None:
             pending = (
                 pending_action
@@ -97,6 +103,9 @@ class OpenThreadTurnService:
             )
 
         if offer_state.get("offered") or offer_state.get("declined"):
+            return None
+
+        if not settings.allows_kind(PROPOSAL_KIND_THREADS):
             return None
 
         if not message_might_need_open_thread_offer(
@@ -154,9 +163,12 @@ class OpenThreadTurnService:
         ):
             return None
 
-        if should_propose_open_thread_confirm_card(
-            message,
-            conversation_history=conversation_history,
+        if (
+            settings.uses_confirm_cards()
+            and should_propose_open_thread_confirm_card(
+                message,
+                conversation_history=conversation_history,
+            )
         ):
             title = infer_thread_title(
                 message,

@@ -28,7 +28,11 @@ def _fixed_time_context_service():
 
 
 @pytest.mark.asyncio
-async def test_open_thread_offer_works_on_voice_channel():
+async def test_open_thread_offer_works_on_voice_channel(monkeypatch):
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "card")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
     ai_service = FakeAIService(response="Voice follow-up")
     memory_service = FakeMemoryService()
     chat_service = ChatService(
@@ -48,6 +52,7 @@ async def test_open_thread_offer_works_on_voice_channel():
     assert result["memory_changes"]["write_proposals"][0]["title"] == "Better Morning Routine"
     assert THREAD_OFFER_PHRASE not in result["response"]
     assert ai_service.generate_calls == 0
+    get_settings.cache_clear()
 
 
 @pytest.mark.asyncio

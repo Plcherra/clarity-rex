@@ -85,6 +85,28 @@ TEMPORAL_ONLY_PATTERNS = (
 
 STRESS_ONLY_VENT_PATTERNS = (
     re.compile(r"\b(?:stressful|overwhelming|a lot to handle|really stressful)\b", re.I),
+    re.compile(r"\bcan'?t sleep\b", re.I),
+    re.compile(r"\btoo much on my mind\b", re.I),
+    re.compile(r"\bracing thoughts?\b", re.I),
+)
+
+ONE_OFF_COMMITMENT_PATTERNS = (
+    re.compile(
+        r"\b(?:gotta|have to|need to)\s+wake\b.+\b(?:tomorrow|tonight|today|this morning)\b",
+        re.I,
+    ),
+    re.compile(r"\bwake up around \d", re.I),
+    re.compile(r"\b(?:tomorrow|tonight).+\b(?:wake|get up|be up)\b", re.I),
+    re.compile(r"\bjust (?:starting|trying) to get (?:some )?sleep\b", re.I),
+)
+
+HABIT_THREAD_PATTERNS = (
+    re.compile(r"\b(?:every|each)\s+(?:day|night|morning|week)\b", re.I),
+    re.compile(r"\bchange my (?:sleep )?schedule\b", re.I),
+    re.compile(r"\bwish I could wake\b.+\b(?:every|each)\b", re.I),
+    re.compile(r"\bwake up (?:every|each)\b", re.I),
+    re.compile(r"\bnew habit\b", re.I),
+    re.compile(r"\b(?:night|morning|bedtime)\s+(?:routine|habit)\b", re.I),
 )
 
 COMPANION_FOLLOW_UP_SIGNAL_PATTERNS = (
@@ -188,11 +210,25 @@ def is_stress_only_vent(message: str) -> bool:
     cleaned = re.sub(r"\s+", " ", message.strip())
     if not any(pattern.search(cleaned) for pattern in STRESS_ONLY_VENT_PATTERNS):
         return False
+    if has_habit_thread_signal(cleaned):
+        return False
     return not re.search(
         r"\bi(?:'m| am)\s+(?:working on|trying to|planning to|going to)\b",
         cleaned,
         flags=re.I,
     )
+
+
+def has_habit_thread_signal(message: str) -> bool:
+    cleaned = re.sub(r"\s+", " ", message.strip())
+    return any(pattern.search(cleaned) for pattern in HABIT_THREAD_PATTERNS)
+
+
+def is_one_off_commitment(message: str, *, conversation_history: Optional[list[dict]] = None) -> bool:
+    context = _combined_user_context(message, conversation_history)
+    if has_habit_thread_signal(context):
+        return False
+    return any(pattern.search(context) for pattern in ONE_OFF_COMMITMENT_PATTERNS)
 
 
 def is_vague_thread_topic(message: str, *, conversation_history: Optional[list[dict]] = None) -> bool:
@@ -251,6 +287,8 @@ def message_might_need_open_thread_offer(
     if is_one_off_factual_question(message):
         return False
     if is_stress_only_vent(message):
+        return False
+    if is_one_off_commitment(message, conversation_history=conversation_history):
         return False
     if is_clear_measurable_goal(message):
         return False

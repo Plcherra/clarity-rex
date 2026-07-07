@@ -202,7 +202,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
           manageCategoriesRequest: _manageCategoriesRequest,
         ),
       ),
-      const AssistantScreen(),
+      AssistantScreen(profileController: widget.profileController),
       _financeTab(
         ProfileScreen(
           profileController: widget.profileController,

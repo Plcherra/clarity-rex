@@ -870,6 +870,40 @@ class AppLocalizationsEs extends AppLocalizations {
       'Guarda alertas deterministas cuando cambien tus datos. No hay monitoreo en segundo plano hasta que lo actives.';
 
   @override
+  String get assistantCompanionSettingsTitle => 'Guardado del compañero';
+
+  @override
+  String get assistantCompanionSettingsSubtitle =>
+      'Elige cómo Rex sugiere metas, hilos abiertos y memoria en el chat.';
+
+  @override
+  String get assistantCompanionSettingsGearLabel =>
+      'Ajustes de guardado del compañero';
+
+  @override
+  String get assistantAutoProposalsModeLabel => 'Sugerencias automáticas';
+
+  @override
+  String get assistantAutoProposalsModeOff => 'Desactivado';
+
+  @override
+  String get assistantAutoProposalsModeText => 'Solo texto';
+
+  @override
+  String get assistantAutoProposalsModeCard => 'Tarjeta de confirmación';
+
+  @override
+  String get assistantAutoProposalsTypeThreads =>
+      'Hilos abiertos (hábitos y seguimiento)';
+
+  @override
+  String get assistantAutoProposalsTypeGoals => 'Metas (logros)';
+
+  @override
+  String get assistantAutoProposalsTypeMemory =>
+      'Memoria (hechos y preferencias)';
+
+  @override
   String get dashboardChartCategorySpendSubtitle => 'Total de este mes';
 
   @override

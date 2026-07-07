@@ -1605,6 +1605,66 @@ abstract class AppLocalizations {
   /// **'Save deterministic alerts when your data changes. No background monitoring runs until you turn this on.'**
   String get profileProactiveInsightsSubtitle;
 
+  /// No description provided for @assistantCompanionSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Companion saves'**
+  String get assistantCompanionSettingsTitle;
+
+  /// No description provided for @assistantCompanionSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how Rex suggests goals, open threads, and memory during chat.'**
+  String get assistantCompanionSettingsSubtitle;
+
+  /// No description provided for @assistantCompanionSettingsGearLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Companion save settings'**
+  String get assistantCompanionSettingsGearLabel;
+
+  /// No description provided for @assistantAutoProposalsModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto suggestions'**
+  String get assistantAutoProposalsModeLabel;
+
+  /// No description provided for @assistantAutoProposalsModeOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get assistantAutoProposalsModeOff;
+
+  /// No description provided for @assistantAutoProposalsModeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text only'**
+  String get assistantAutoProposalsModeText;
+
+  /// No description provided for @assistantAutoProposalsModeCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm card'**
+  String get assistantAutoProposalsModeCard;
+
+  /// No description provided for @assistantAutoProposalsTypeThreads.
+  ///
+  /// In en, this message translates to:
+  /// **'Open threads (habits & check-ins)'**
+  String get assistantAutoProposalsTypeThreads;
+
+  /// No description provided for @assistantAutoProposalsTypeGoals.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals (things to achieve)'**
+  String get assistantAutoProposalsTypeGoals;
+
+  /// No description provided for @assistantAutoProposalsTypeMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory (facts & preferences)'**
+  String get assistantAutoProposalsTypeMemory;
+
   /// No description provided for @dashboardChartCategorySpendSubtitle.
   ///
   /// In en, this message translates to:

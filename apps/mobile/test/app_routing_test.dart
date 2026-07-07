@@ -21,6 +21,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/assistant_test_harness.dart';
 import 'helpers/l10n_test_wrapper.dart';
 
 void main() {
@@ -315,6 +316,9 @@ void main() {
     tester,
   ) async {
     final voiceController = _FakeVoiceCallController();
+    final harness = AssistantTestHarness();
+    addTearDown(harness.dispose);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -330,7 +334,9 @@ void main() {
             },
           ),
         ],
-        child: wrapWithL10n(const AssistantScreen()),
+        child: wrapWithL10n(
+          AssistantScreen(profileController: harness.profileController),
+        ),
       ),
     );
     await tester.pump();
@@ -423,6 +429,9 @@ Future<void> _pumpAssistantScreen(
   WidgetTester tester, {
   required ConversationApi conversationApi,
 }) async {
+  final harness = AssistantTestHarness();
+  addTearDown(harness.dispose);
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -435,7 +444,9 @@ Future<void> _pumpAssistantScreen(
           },
         ),
       ],
-      child: wrapWithL10n(const AssistantScreen()),
+      child: wrapWithL10n(
+        AssistantScreen(profileController: harness.profileController),
+      ),
     ),
   );
   await tester.pump();

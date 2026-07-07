@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/assistant_test_harness.dart';
 import 'helpers/l10n_test_wrapper.dart';
 
 void main() {
@@ -174,6 +175,9 @@ Future<void> _pumpAssistantNavigation(
   _FakeConversationApi? conversationApi,
   Key? rootKey,
 }) async {
+  final harness = AssistantTestHarness();
+  addTearDown(harness.dispose);
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -184,7 +188,12 @@ Future<void> _pumpAssistantNavigation(
         if (voiceController != null)
           voiceCallProvider.overrideWith(() => voiceController),
       ],
-      child: wrapWithL10n(AssistantScreen(key: rootKey)),
+      child: wrapWithL10n(
+        AssistantScreen(
+          key: rootKey,
+          profileController: harness.profileController,
+        ),
+      ),
     ),
   );
   await tester.pump();

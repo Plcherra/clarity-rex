@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/supabase_exceptions.dart';
 import '../../../core/supabase/supabase_records.dart';
 import '../../../core/supabase/supabase_service.dart';
+import '../domain/assistant_proposal_settings.dart';
 
 final class ProfileService {
   ProfileService({required SupabaseService supabaseService})
@@ -76,6 +77,7 @@ final class ProfileService {
     String? avatarUrl,
     String? preferredLocale,
     bool? proactiveInsightsEnabled,
+    AssistantProposalSettings? assistantSettings,
   }) async {
     final user = _currentUser;
     final payload = <String, dynamic>{};
@@ -88,6 +90,9 @@ final class ProfileService {
       payload['proactive_insights_enabled_at'] = proactiveInsightsEnabled
           ? DateTime.now().toUtc().toIso8601String()
           : null;
+    }
+    if (assistantSettings != null) {
+      payload['assistant_settings'] = assistantSettings.toJson();
     }
     if (payload.isEmpty) {
       throw const SupabaseDataException(
@@ -119,6 +124,12 @@ final class ProfileService {
 
   Future<ProfileRecord> updateProactiveInsightsEnabled(bool enabled) async {
     return updateCurrentProfile(proactiveInsightsEnabled: enabled);
+  }
+
+  Future<ProfileRecord> updateAssistantProposalSettings(
+    AssistantProposalSettings settings,
+  ) async {
+    return updateCurrentProfile(assistantSettings: settings);
   }
 
   Stream<ProfileRecord?> watchCurrentProfile() {

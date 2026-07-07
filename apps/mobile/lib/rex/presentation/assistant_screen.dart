@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_l10n.dart';
+import '../../features/profile/application/profile_controller.dart';
 import '../accountability/presentation/pages/accountability_page.dart';
 import '../chat/presentation/pages/chat_page.dart';
 import '../chat/presentation/pages/conversation_list_page.dart';
@@ -11,12 +12,15 @@ import '../../theme/clarity_colors.dart';
 import 'assistant_tab.dart';
 import 'rex_surfaces.dart';
 import 'rex_ui_tokens.dart';
+import 'widgets/assistant_proposal_settings_sheet.dart';
 
 const _assistantCompactWidth = 360.0;
 const _assistantTabHeight = 40.0;
 
 class AssistantScreen extends ConsumerStatefulWidget {
-  const AssistantScreen({super.key});
+  const AssistantScreen({super.key, required this.profileController});
+
+  final ProfileController profileController;
 
   @override
   ConsumerState<AssistantScreen> createState() => _AssistantScreenState();
@@ -95,6 +99,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
                   _AssistantTopSurface(
                     controller: _tabController,
                     isCompactWidth: isCompactWidth,
+                    profileController: widget.profileController,
                   ),
                   Expanded(
                     child: Align(
@@ -128,10 +133,12 @@ class _AssistantTopSurface extends StatelessWidget {
   const _AssistantTopSurface({
     required this.controller,
     required this.isCompactWidth,
+    required this.profileController,
   });
 
   final TabController controller;
   final bool isCompactWidth;
+  final ProfileController profileController;
 
   @override
   Widget build(BuildContext context) {
@@ -166,6 +173,7 @@ class _AssistantTopSurface extends StatelessWidget {
           _AssistantTabNavigation(
             controller: controller,
             isCompactWidth: isCompactWidth,
+            profileController: profileController,
           ),
         ],
       ),
@@ -177,41 +185,62 @@ class _AssistantTabNavigation extends StatelessWidget {
   const _AssistantTabNavigation({
     required this.controller,
     required this.isCompactWidth,
+    required this.profileController,
   });
 
   final TabController controller;
   final bool isCompactWidth;
+  final ProfileController profileController;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final colors = context.clarityColors;
+    final l10n = context.l10n;
 
-    return TabBar(
-      controller: controller,
-      dividerColor: Colors.transparent,
-      indicatorSize: TabBarIndicatorSize.label,
-      indicator: UnderlineTabIndicator(
-        borderSide: BorderSide(color: colors.accent, width: 2),
-        insets: const EdgeInsets.symmetric(horizontal: 8),
-      ),
-      labelColor: scheme.onSurface,
-      unselectedLabelColor: colors.textMuted,
-      labelStyle: theme.textTheme.labelSmall?.copyWith(
-        fontWeight: FontWeight.w700,
-      ),
-      unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
-        fontWeight: FontWeight.w500,
-      ),
-      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-      tabs: [
-        for (final tab in AssistantTab.values)
-          Tab(
-            key: tab.key,
-            height: _assistantTabHeight,
-            child: _AssistantTabItem(tab: tab),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: TabBar(
+            controller: controller,
+            dividerColor: Colors.transparent,
+            indicatorSize: TabBarIndicatorSize.label,
+            indicator: UnderlineTabIndicator(
+              borderSide: BorderSide(color: colors.accent, width: 2),
+              insets: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            labelColor: scheme.onSurface,
+            unselectedLabelColor: colors.textMuted,
+            labelStyle: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+            unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+            tabs: [
+              for (final tab in AssistantTab.values)
+                Tab(
+                  key: tab.key,
+                  height: _assistantTabHeight,
+                  child: _AssistantTabItem(tab: tab),
+                ),
+            ],
           ),
+        ),
+        IconButton(
+          tooltip: l10n.assistantCompanionSettingsGearLabel,
+          onPressed: () => showAssistantProposalSettingsSheet(
+            context: context,
+            profileController: profileController,
+          ),
+          icon: Icon(
+            Icons.tune_rounded,
+            color: scheme.onSurface.withValues(alpha: 0.72),
+          ),
+        ),
       ],
     );
   }

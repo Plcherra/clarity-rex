@@ -114,9 +114,10 @@ async def test_memory_reliability_rejection_does_not_save_or_recall():
         conversation_id,
     )
 
-    assert rejected["response"] == "No problem. I won't save that."
+    assert rejected["response"] == "Rex response"
     assert rejected["memory_changes"]["skipped"] == 1
     assert memory_service.long_term_memory == []
+    assert ai_service.generate_calls >= 1
     assert "mom's birthday" not in ai_service.messages[0]["content"]
 
 

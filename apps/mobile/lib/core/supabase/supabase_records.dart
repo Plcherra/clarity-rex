@@ -1,3 +1,5 @@
+import 'package:clarity/features/profile/domain/assistant_proposal_settings.dart';
+
 final class ProfileRecord {
   const ProfileRecord({
     required this.id,
@@ -7,6 +9,7 @@ final class ProfileRecord {
     this.preferredLocale,
     this.proactiveInsightsEnabled = false,
     this.proactiveInsightsEnabledAt,
+    this.assistantSettings = const AssistantProposalSettings(),
     required this.createdAt,
     required this.updatedAt,
   });
@@ -18,6 +21,7 @@ final class ProfileRecord {
   final String? preferredLocale;
   final bool proactiveInsightsEnabled;
   final DateTime? proactiveInsightsEnabledAt;
+  final AssistantProposalSettings assistantSettings;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -33,6 +37,9 @@ final class ProfileRecord {
       proactiveInsightsEnabledAt: _nullableDateTime(
         json,
         'proactive_insights_enabled_at',
+      ),
+      assistantSettings: AssistantProposalSettings.fromJson(
+        json['assistant_settings'] as Map<String, dynamic>?,
       ),
       createdAt: _dateTime(json, 'created_at'),
       updatedAt: _dateTime(json, 'updated_at'),

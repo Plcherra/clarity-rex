@@ -669,9 +669,10 @@ async def test_simple_memory_rejection_does_not_create_durable_memory():
 
     rejected = await chat_service.send_message("no don't save that", conversation_id)
 
-    assert rejected["response"] == "No problem. I won't save that."
+    assert rejected["response"] == "Rex response"
     assert rejected["memory_changes"]["skipped"] == 1
     assert memory_service.long_term_memory == []
+    assert ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio
@@ -1010,9 +1011,10 @@ async def test_contextual_memory_reject_request_does_not_save_recent_birthday():
 
     rejected = await chat_service.send_message("no don't save that", conversation_id)
 
-    assert rejected["response"] == "No problem. I won't save that."
+    assert rejected["response"] == "Rex normal follow-up"
     assert rejected["memory_changes"]["skipped"] == 1
     assert memory_service.long_term_memory == []
+    assert ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio

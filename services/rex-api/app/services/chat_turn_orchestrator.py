@@ -137,6 +137,8 @@ class ChatTurnOrchestrator:
             turn_trace=turn_trace,
             turn_started_at=turn_started_at,
             write_confirmation=write_confirmation,
+            channel=channel,
+            locale=locale,
         )
         if short_circuit is not None:
             return short_circuit
@@ -253,6 +255,8 @@ class ChatTurnOrchestrator:
             turn_trace=turn_trace,
             turn_started_at=turn_started_at,
             write_confirmation=write_confirmation,
+            channel=channel,
+            locale=locale,
         )
         if short_circuit is not None:
             yield {"event": "token", "token": short_circuit["response"]}

@@ -66,12 +66,13 @@ async def test_conversational_plan_routes_to_milestone_and_requires_confirmation
         requested["conversation_id"],
     )
 
-    assert "Saved" in confirmed["response"]
+    assert confirmed["response"] == "Rex normal response"
     assert confirmed["memory_changes"]["created"] == 1
     assert memory_service.created_plan_milestones
     saved = memory_service.created_plan_milestones[0]
     assert saved["plan_id"] == "plan-europe"
     assert not memory_service.pending_actions
+    assert chat_service.ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio
@@ -100,9 +101,10 @@ async def test_conversational_plan_rejection_clears_pending_action():
         requested["conversation_id"],
     )
 
-    assert "won't save" in rejected["response"].lower()
+    assert rejected["response"] == "Rex normal response"
     assert memory_service.created_plan_milestones == []
     assert not memory_service.pending_actions
+    assert chat_service.ai_service.generate_calls == 1
 
 
 @pytest.mark.asyncio
@@ -141,18 +143,9 @@ async def test_ambiguous_conversational_plan_asks_before_top_level_save():
         "I'm trying to build a consistent strength training routine three times per week."
     )
 
-    assert requested["memory_changes"]["confirmation_required"] == 1
-    assert requested["memory_changes"]["plan_save_proposals"][0]["action"] == "save_plan"
+    assert requested["memory_changes"]["confirmation_required"] == 0
     assert memory_service.created_plans == []
-    assert "Should I save that?" in requested["response"]
-
-    confirmed = await chat_service.send_message(
-        "Yes",
-        requested["conversation_id"],
-    )
-
-    assert confirmed["memory_changes"]["created"] == 1
-    assert memory_service.created_plans
+    assert "goal in Goals" in requested["response"]
 
 
 @pytest.mark.asyncio
