@@ -1,5 +1,6 @@
 from typing import Optional
 import json
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
@@ -13,6 +14,7 @@ from app.services.memory_service import MemoryServiceError
 
 
 router = APIRouter()
+LOGGER = logging.getLogger("clarity.chat")
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -104,6 +106,12 @@ async def _stream_chat_events(
         yield _sse_event("error", {"detail": error.detail})
     except MemoryServiceError as error:
         yield _sse_event("error", {"detail": error.detail})
+    except Exception as error:
+        LOGGER.exception("chat_stream_failed")
+        yield _sse_event(
+            "error",
+            {"detail": "Assistant request failed. Please try again."},
+        )
 
 
 def _sse_event(event: str, data: dict) -> str:

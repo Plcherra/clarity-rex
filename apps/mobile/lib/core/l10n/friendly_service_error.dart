@@ -152,13 +152,14 @@ String friendlyChatApiError(AppLocalizations l10n, ChatApiException error) {
   if (error.type == ChatApiErrorType.backendValidation && detail.isNotEmpty) {
     return detail;
   }
-  return switch (error.type) {
+    return switch (error.type) {
     ChatApiErrorType.network => l10n.chatErrorNetwork,
     ChatApiErrorType.timeout => l10n.chatErrorTimeout,
     ChatApiErrorType.upload => l10n.chatErrorUpload,
     ChatApiErrorType.backendValidation => l10n.chatErrorValidation,
     ChatApiErrorType.invalidResponse => l10n.chatErrorInvalidResponse,
-    ChatApiErrorType.unknown => l10n.chatPageSendFailed,
+    ChatApiErrorType.unknown =>
+      detail.isNotEmpty ? detail : l10n.chatPageSendFailed,
   };
 }
 
