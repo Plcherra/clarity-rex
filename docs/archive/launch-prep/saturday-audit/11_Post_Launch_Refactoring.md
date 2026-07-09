@@ -1,6 +1,6 @@
-# 10 — Post-Launch Refactoring and Nice-to-Haves
+# 11 — Post-Launch Refactoring and Nice-to-Haves
 
-**Covers:** God-file freezes/splits, silent catch cleanup, desktop non-targets, experimental flags, archived launch-prep debt, and complexity reduction. **Do not prioritize these over Saturday blockers** in files 01–07.
+**Covers:** God-file freezes/splits, silent catch cleanup, desktop non-targets, experimental flags, archived launch-prep debt, and complexity reduction. **Do not prioritize these over Saturday blockers** in files 01–07 (or product tracks 08–09 when claimed).
 
 **Primary paths:** `PROJECT_STRUCTURE.md` watch list, large `services/rex-api/app/services/*` modules, experimental voice flags
 
@@ -85,12 +85,12 @@
 
 ## Phase 5 — Product surface debt (known incomplete)
 
-### Issue: Single pending_action slot for plan + delete (A28 — also in 04)
+### Issue: Single pending_action slot for plan + delete (A28 — also in 04 / file 08 Phase 3)
 
 - **Severity:** Medium
-- **Why it matters:** Concurrent confirms can collide.
+- **Why it matters:** Concurrent confirms can collide; file import needs a queue.
 - **Estimated effort:** Large
-- **Brief fix suggestion:** Post-launch queue or multi-pending model.
+- **Brief fix suggestion:** Post-launch queue or multi-pending model — prefer implementing via file 08 Phase 3 when claiming multi-fact import.
 
 ### Issue: Accountability drill-down routes unused on mobile (A63)
 
@@ -104,7 +104,7 @@
 - **Severity:** Low
 - **Why it matters:** Backend CRUD exists; Knows MVP correctly hides Corrections tab.
 - **Estimated effort:** Large
-- **Brief fix suggestion:** Defer per PROJECT_STRUCTURE; do not promise in privacy/marketing (file 08).
+- **Brief fix suggestion:** Defer per PROJECT_STRUCTURE; do not promise in privacy/marketing (file 10).
 
 ### Issue: Plan update / entity-event conversational routes thin (A65)
 

@@ -1,4 +1,4 @@
-# 09 — Privacy, Legal, and Compliance
+# 10 — Privacy, Legal, and Compliance
 
 **Covers:** Subprocessor disclosure, consent alignment with product rules, encryption-at-rest documentation, third-party data flows, and audit-trail integrity from a compliance lens. Not all items block a private pilot; several block broad public marketing.
 
@@ -31,7 +31,7 @@
 - **Severity:** Low–Medium (mostly positive)
 - **Why it matters:** Product rules require visible, controllable saves; privacy claims must match confirm-card behavior.
 - **Estimated effort:** Small (manual)
-- **Brief fix suggestion:** Confirm no silent durable writes in chat/voice; Open Threads require explicit consent; Knows/Goals show saved items after apply.
+- **Brief fix suggestion:** Confirm no silent durable writes in chat/voice; Open Threads require explicit consent; Knows/Goals show saved items after apply. File-import candidates (file 08) must follow the same confirm rules — never silent save from attachments.
 
 ### Issue: In-app consent vs privacy policy alignment (A54)
 

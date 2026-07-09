@@ -96,4 +96,4 @@
 - **Severity:** Medium
 - **Why it matters:** Empty dashboard after name-only onboarding increases drop-off.
 - **Estimated effort:** Medium
-- **Brief fix suggestion:** Optional post-name prompt: Connect bank or Import CSV (mobile); coordinate with file 08 FTUE phases.
+- **Brief fix suggestion:** Optional post-name prompt: Connect bank or Import CSV (mobile); coordinate with file 09 FTUE phases.
