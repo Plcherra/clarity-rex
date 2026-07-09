@@ -185,12 +185,22 @@ extension ChatControllerSend on ChatController {
         }
       }
 
+      // Stream closed without a done event — treat as failure, never quiet success.
+      // Skip if this generation was cancelled/superseded (cancelStreaming / reset).
+      if (generation != _streamGeneration) {
+        return null;
+      }
       state = state.copyWith(
         isLoading: false,
         messages: _messagesWithStreamingStopped(state.messages),
-        clearError: true,
+        errorMessage: localizedError(
+          const ChatApiException(
+            'Assistant stream ended before the response was complete.',
+            type: ChatApiErrorType.invalidResponse,
+          ),
+        ),
       );
-      return latestAssistantContent(state.messages);
+      return null;
     } on ChatApiException catch (error) {
       if (generation == _streamGeneration) {
         state = state.copyWith(

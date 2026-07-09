@@ -174,9 +174,16 @@ class ChatController extends Notifier<ChatState> {
           state.messages,
           memoryChanges: memoryChanges,
         ),
+        clearError: true,
       );
     } on Object {
-      // Pending write hydration is best-effort when reopening a conversation.
+      // Keep loaded messages; surface a non-blocking banner so a still-pending
+      // confirm is not silently hidden on reopen.
+      state = state.copyWith(
+        errorMessage: lookupForLocale(
+          ref.read(localeControllerProvider).locale,
+        ).chatPendingWriteHydrationFailed,
+      );
     }
   }
 

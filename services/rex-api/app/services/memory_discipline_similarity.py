@@ -182,10 +182,11 @@ def record_title(record: dict[str, Any]) -> Optional[str]:
 
 
 def same_source(candidate: MemoryDisciplineCandidate, record: dict[str, Any]) -> bool:
+    # Only message/memory provenance counts. Conversation id alone would mark
+    # every prior fact in the same chat as a duplicate.
     for field_name in (
         "source_memory_id",
         "source_message_id",
-        "source_conversation_id",
     ):
         candidate_value = getattr(candidate, field_name)
         record_value = record.get(field_name)

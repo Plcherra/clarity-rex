@@ -1917,6 +1917,14 @@
   "accountabilityAddOpenThreadDetailHint": "Wake up at 5 AM and start my morning routine",
   "accountabilityGoalSaved": "Goal saved.",
   "accountabilityOpenThreadSaved": "Open thread saved.",
+  "accountabilityOpenThreadMaxActive": "You can have at most {count} active open threads. Close or pause one before adding another.",
+  "@accountabilityOpenThreadMaxActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "accountabilityOpenThreadCompleted": "Open thread completed.",
   "accountabilityMarkMissedTitle": "Mark missed?",
   "accountabilityMarkMissedBody": "Mark \"{title}\" as missed? It will leave your active Goals list.",
@@ -2234,6 +2242,7 @@
   "chatErrorUpload": "Could not upload that attachment. Try again.",
   "chatErrorValidation": "That message could not be sent. Check the attachment and try again.",
   "chatErrorInvalidResponse": "Clarity returned an unexpected response. Try again.",
+  "chatPendingWriteHydrationFailed": "Could not reload a pending save confirmation. Pull to refresh or reopen this chat.",
   "chatAttachmentTooLarge": "Attachment is too large. Maximum size is 2MB.",
   "chatAttachmentImageTooLarge": "Image is too large. Maximum size is 5MB.",
   "chatAttachmentPdfTooLarge": "PDF is too large. Maximum size is 10MB.",

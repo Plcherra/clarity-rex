@@ -8,11 +8,16 @@ from app.models.memory_discipline import (
     MemoryDisciplineDecision,
     MemoryRelatedRecord,
 )
+from app.services.memory_discipline_list_loader import DisciplineContextLoadError
 from app.services.memory_discipline_service import (
     MemoryDisciplineService,
     normalized_similarity_score,
     title_similarity_score,
     token_overlap_score,
+)
+from app.services.memory_discipline_writes import (
+    MemoryWriteError,
+    execute_disciplined_create,
 )
 
 
@@ -30,9 +35,12 @@ class FakeMemoryDisciplineRepository:
         self.calls = []
         self.return_empty_create = False
         self.return_empty_update = False
+        self.fail_list_long_term_memory = False
 
     async def list_long_term_memory(self, limit=50, memory_type=None, active=None):
         self.calls.append(("list_long_term_memory", active, limit))
+        if self.fail_list_long_term_memory:
+            raise RuntimeError("list_long_term_memory unavailable")
         return _filter_active(self.memories, active)[:limit]
 
     async def list_entities(
@@ -464,3 +472,46 @@ async def test_apply_decision_normalizes_obsolete_entity_references():
     assert repo.created_plans[0]["title"] == "Launch FlowForce"
     assert repo.created_plans[0]["description"] == "Ship FlowForce MVP."
     assert repo.created_plans[0]["primary_entity_id"] == "entity-flowforce"
+
+
+@pytest.mark.asyncio
+async def test_gather_context_fails_closed_when_list_raises():
+    repo = FakeMemoryDisciplineRepository()
+    repo.fail_list_long_term_memory = True
+    candidate = MemoryDisciplineCandidate(
+        kind=MemoryRecordKind.LONG_TERM_MEMORY,
+        payload={
+            "memory_type": "fact",
+            "content": "Mom's birthday is June 18",
+            "importance": 3,
+        },
+    )
+
+    with pytest.raises(DisciplineContextLoadError):
+        await MemoryDisciplineService(repo).gather_context(candidate)
+
+
+@pytest.mark.asyncio
+async def test_execute_disciplined_create_fails_closed_on_list_error():
+    repo = FakeMemoryDisciplineRepository()
+    repo.fail_list_long_term_memory = True
+    created = []
+
+    async def create_fn(payload):
+        created.append(payload)
+        return {"id": "memory-1", **payload}
+
+    with pytest.raises(MemoryWriteError) as exc_info:
+        await execute_disciplined_create(
+            MemoryDisciplineService(repo),
+            kind=MemoryRecordKind.LONG_TERM_MEMORY,
+            payload={
+                "memory_type": "fact",
+                "content": "Mom's birthday is June 18",
+                "importance": 3,
+            },
+            create_fn=create_fn,
+        )
+
+    assert exc_info.value.status_code == 503
+    assert created == []

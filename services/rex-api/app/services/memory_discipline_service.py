@@ -18,6 +18,7 @@ from app.services.memory_discipline_confirmed_writes import (
 from app.services.memory_discipline_decision_applier import (
     MemoryDisciplineDecisionApplier,
 )
+from app.services.memory_discipline_list_loader import safe_discipline_list
 from app.services.memory_discipline_repository import MemoryDisciplineRepository
 from app.services.memory_discipline_decision_factory import (
     MemoryDisciplineDecisionFactoryMixin,
@@ -72,28 +73,38 @@ class MemoryDisciplineService(MemoryDisciplineDecisionFactoryMixin):
         candidate: MemoryDisciplineCandidate,
     ) -> MemoryDisciplineContext:
         candidate_text = candidate_record_text(candidate.payload)
-        long_term_memories = await self._safe_list(
+        long_term_memories = await safe_discipline_list(
+            self.memory_service,
             "list_long_term_memory",
+            scan_limit=self.scan_limit,
             active=True,
             limit=self.scan_limit,
         )
-        entities = await self._safe_list(
+        entities = await safe_discipline_list(
+            self.memory_service,
             "list_entities",
+            scan_limit=self.scan_limit,
             active=True,
             limit=self.scan_limit,
         )
-        rules = await self._safe_list(
+        rules = await safe_discipline_list(
+            self.memory_service,
             "list_personal_rules",
+            scan_limit=self.scan_limit,
             active=True,
             limit=self.scan_limit,
         )
-        plans = await self._safe_list(
+        plans = await safe_discipline_list(
+            self.memory_service,
             "list_plans",
+            scan_limit=self.scan_limit,
             active=True,
             limit=self.scan_limit,
         )
-        milestones = await self._safe_list(
+        milestones = await safe_discipline_list(
+            self.memory_service,
             "list_plan_milestones",
+            scan_limit=self.scan_limit,
             active=True,
             limit=self.scan_limit,
         )
@@ -292,19 +303,6 @@ class MemoryDisciplineService(MemoryDisciplineDecisionFactoryMixin):
 
     async def apply_decision(self, decision: MemoryDisciplineDecision) -> dict:
         return await self.decision_applier.apply_decision(decision)
-
-    async def _safe_list(self, method_name: str, **kwargs: Any) -> list[dict]:
-        method = getattr(self.memory_service, method_name, None)
-        if method is None:
-            return []
-        try:
-            return await method(**kwargs)
-        except TypeError:
-            # Some test fakes use narrower signatures. Phase 1 should not make
-            # chat/runtime brittle while the discipline layer is being wired in.
-            return await method(limit=kwargs.get("limit", self.scan_limit))
-        except Exception:
-            return []
 
     def _related_records(
         self,

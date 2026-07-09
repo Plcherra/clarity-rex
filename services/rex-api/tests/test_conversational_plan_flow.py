@@ -54,7 +54,8 @@ async def test_conversational_plan_routes_to_milestone_and_requires_confirmation
         "work to support relocating to Europe."
     )
 
-    assert "Should I save that?" in requested["response"]
+    assert "Tap confirm to save" in requested["response"]
+    assert "nothing is saved until you confirm" in requested["response"]
     proposal = requested["memory_changes"]["plan_save_proposals"][0]
     assert proposal["action"] == "save_plan_milestone"
     assert requested["memory_changes"]["confirmation_required"] == 1

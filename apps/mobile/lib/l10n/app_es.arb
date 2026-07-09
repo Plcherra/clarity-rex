@@ -141,6 +141,14 @@
   "accountabilityOpenThreadCompleted": "Hilo abierto completado.",
   "accountabilityOpenThreadMarkedMissed": "Hilo abierto marcado como incumplido.",
   "accountabilityOpenThreadSaved": "Hilo abierto guardado.",
+  "accountabilityOpenThreadMaxActive": "Puedes tener como máximo {count} hilos abiertos activos. Cierra o pausa uno antes de agregar otro.",
+  "@accountabilityOpenThreadMaxActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "accountabilityOpenThreadUpdated": "Hilo abierto actualizado.",
   "accountabilityDetailEditOpenThread": "Editar hilo abierto",
   "accountabilityDetailGoalDetails": "Detalles del objetivo",
@@ -573,6 +581,7 @@
   "chatAttachmentUtf8Required": "El adjunto debe ser texto UTF-8 válido.",
   "chatBubbleClarityAction": "Acción de claridad",
   "chatErrorInvalidResponse": "Clarity devolvió una respuesta inesperada. Inténtalo de nuevo.",
+  "chatPendingWriteHydrationFailed": "No se pudo volver a cargar una confirmación de guardado pendiente. Desliza para actualizar o vuelve a abrir este chat.",
   "chatErrorNetwork": "No se pudo contactar con Clarity. Comprueba tu conexión e inténtalo de nuevo.",
   "chatErrorTimeout": "Tardó demasiado. Inténtalo de nuevo.",
   "chatErrorUpload": "No se pudo subir el adjunto. Inténtalo de nuevo.",

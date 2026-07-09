@@ -16,6 +16,7 @@ from app.routes.clarity import router as clarity_router
 from app.routes.open_threads import router as open_threads_router
 from app.routes.conversations import router as conversations_router
 from app.routes.entities import router as entities_router
+from app.routes.finance_audit import router as finance_audit_router
 from app.routes.memory import router as memory_router
 from app.routes.plaid import router as plaid_router
 from app.routes.plaid_webhooks import router as plaid_webhook_router
@@ -151,6 +152,7 @@ auth_dependencies = [Depends(get_current_user)]
 app.include_router(chat_router, dependencies=auth_dependencies)
 app.include_router(insights_router, dependencies=auth_dependencies)
 app.include_router(clarity_router, dependencies=auth_dependencies)
+app.include_router(finance_audit_router, dependencies=auth_dependencies)
 app.include_router(conversations_router, dependencies=auth_dependencies)
 app.include_router(memory_router, dependencies=auth_dependencies)
 app.include_router(entities_router, dependencies=auth_dependencies)

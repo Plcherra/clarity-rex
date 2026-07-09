@@ -12,6 +12,7 @@ from app.models.plan import (
     PlanUpdateRequest,
 )
 from app.services.conversational_plan_decision_store import confirmed_decision
+from app.services.durable_write_apply_failures import apply_failure_result
 from app.services.memory_discipline_confirmed_writes import CONFIRMED_PLAN_SERVICE_CHANNEL
 from app.services.plan_errors import PlanServiceError
 from app.services.plan_service import PlanService
@@ -125,18 +126,38 @@ class ConfirmedPlanWriteApplier:
                     write_payload["source_message_id"] = source_message_id
                 record = await self.memory_service.create_entity_event(write_payload)
             else:
-                return {
-                    "action": action.value,
-                    "applied": False,
-                    "reason": f"Unsupported confirmed action: {action.value}",
-                }
-        except PlanServiceError:
-            return {"action": action.value, "applied": False}
-        except Exception:
-            return {"action": action.value, "applied": False}
+                failure = apply_failure_result(
+                    snapshot_type="discipline_decision",
+                    detail=f"unsupported_action:{action.value}",
+                    conversation_id=conversation_id,
+                )
+                failure["action"] = action.value
+                return failure
+        except PlanServiceError as exc:
+            failure = apply_failure_result(
+                snapshot_type="discipline_decision",
+                error=exc,
+                conversation_id=conversation_id,
+            )
+            failure["action"] = action.value
+            return failure
+        except Exception as exc:
+            failure = apply_failure_result(
+                snapshot_type="discipline_decision",
+                error=exc,
+                conversation_id=conversation_id,
+            )
+            failure["action"] = action.value
+            return failure
 
         if not isinstance(record, dict) or not record.get("id"):
-            return {"action": action.value, "applied": False}
+            failure = apply_failure_result(
+                snapshot_type="discipline_decision",
+                detail="missing_record",
+                conversation_id=conversation_id,
+            )
+            failure["action"] = action.value
+            return failure
 
         merged = _record_was_merged(record)
         return {

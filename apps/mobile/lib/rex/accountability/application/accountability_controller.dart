@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clarity/core/l10n/app_localizations_lookup.dart';
+import 'package:clarity/core/l10n/friendly_service_error.dart';
+import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/rex/accountability/data/accountability_api.dart';
 import 'package:clarity/rex/accountability/data/accountability_models.dart';
 import 'package:clarity/rex/data/financial_context_service.dart';
@@ -38,6 +41,13 @@ class AccountabilityController extends Notifier<AccountabilityState> {
   @override
   AccountabilityState build() => const AccountabilityState();
 
+  String _localizedError(Object error) {
+    return friendlyServiceError(
+      lookupForLocale(ref.read(localeControllerProvider).locale),
+      error,
+    );
+  }
+
   Future<void> loadOverview() async {
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -55,7 +65,10 @@ class AccountabilityController extends Notifier<AccountabilityState> {
         clearError: true,
       );
     } on Object catch (error) {
-      state = state.copyWith(isLoading: false, errorMessage: error.toString());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _localizedError(error),
+      );
     }
   }
 
@@ -97,6 +110,17 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     required String title,
     String? summary,
   }) {
+    final overview = state.overview;
+    if (overview != null && overview.isAtOpenThreadLimit) {
+      final l10n = lookupForLocale(ref.read(localeControllerProvider).locale);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: l10n.accountabilityOpenThreadMaxActive(
+          AccountabilityOverview.maxActiveOpenThreads,
+        ),
+      );
+      return Future.value(false);
+    }
     return _runMutation(
       () => ref.read(accountabilityApiProvider).createOpenThread(
         title: title,
@@ -151,7 +175,10 @@ class AccountabilityController extends Notifier<AccountabilityState> {
       );
       return true;
     } on Object catch (error) {
-      state = state.copyWith(isLoading: false, errorMessage: error.toString());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _localizedError(error),
+      );
       return false;
     }
   }

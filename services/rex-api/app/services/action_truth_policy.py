@@ -202,10 +202,13 @@ def safe_pending_action_response(response: str, proposals: list[dict]) -> str:
         for proposal in proposals
         if str(proposal.get("confirmation_text") or "").strip()
     ]
+    if confirmations:
+        return (
+            " ".join(confirmations)
+            + " Tap confirm to save — nothing is saved until you confirm."
+        )
     return (
-        " ".join(confirmations)
-        if confirmations
-        else "I can prepare that, but I need confirmation before making the change."
+        "I can prepare that, but nothing is saved until you tap confirm."
     )
 def safe_unexecuted_memory_response(response: str) -> str:
     cleaned = response.strip()

@@ -3233,6 +3233,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountabilityOpenThreadSaved => 'Hilo abierto guardado.';
 
   @override
+  String accountabilityOpenThreadMaxActive(int count) {
+    return 'Puedes tener como máximo $count hilos abiertos activos. Cierra o pausa uno antes de agregar otro.';
+  }
+
+  @override
   String get accountabilityOpenThreadCompleted => 'Hilo abierto completado.';
 
   @override
@@ -3743,6 +3748,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get chatErrorInvalidResponse =>
       'Clarity devolvió una respuesta inesperada. Inténtalo de nuevo.';
+
+  @override
+  String get chatPendingWriteHydrationFailed =>
+      'No se pudo volver a cargar una confirmación de guardado pendiente. Desliza para actualizar o vuelve a abrir este chat.';
 
   @override
   String get chatAttachmentTooLarge =>

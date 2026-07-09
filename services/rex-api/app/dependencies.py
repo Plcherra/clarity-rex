@@ -11,6 +11,7 @@ from app.services.deepgram_service import DeepgramService
 from app.services.deepgram_streaming_service import DeepgramStreamingService
 from app.services.entity_service import EntityService
 from app.services.file_service import FileService
+from app.services.financial_audit_service import FinancialAuditService
 from app.services.google_tts_service import GoogleTTSService
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_service import SupabaseMemoryService
@@ -51,6 +52,12 @@ def get_clarity_control_service(
         user_id=current_user.id,
         access_token=current_user.access_token,
     )
+
+
+def get_financial_audit_service(
+    settings: Settings = Depends(get_settings),
+) -> FinancialAuditService:
+    return FinancialAuditService(settings=settings)
 
 
 def get_memory_discipline_service(

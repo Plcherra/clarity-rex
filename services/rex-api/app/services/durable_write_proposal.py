@@ -88,7 +88,10 @@ class DurableWriteProposal:
         if self.custom_assistant_prompt:
             return self.custom_assistant_prompt
         text = self.confirmation_text().rstrip("?")
-        return f"I can {text[0].lower()}{text[1:]} Should I save that?"
+        return (
+            f"I can {text[0].lower()}{text[1:]}. "
+            "Tap confirm to save — nothing is saved until you confirm."
+        )
 
     def _kind_label(self) -> str:
         labels = {

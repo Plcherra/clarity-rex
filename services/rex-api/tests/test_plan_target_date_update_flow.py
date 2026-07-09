@@ -75,7 +75,8 @@ async def test_bulk_plan_target_date_proposes_and_applies_on_confirm():
     proposal = proposed["memory_changes"]["write_proposals"][0]
     assert proposal["write_kind"] == "update_plan"
     assert "July 31, 2026" in proposal["body"]
-    assert "Should I save that?" in proposed["response"]
+    assert "Tap confirm to save" in proposed["response"]
+    assert "nothing is saved until you confirm" in proposed["response"]
 
     confirmed = await confirm_durable_write(chat_service, proposed)
 

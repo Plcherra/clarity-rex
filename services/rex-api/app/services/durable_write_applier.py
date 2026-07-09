@@ -11,11 +11,17 @@ from app.models.memory_discipline import (
 )
 from app.models.plan import PlanCreateRequest, PlanUpdateRequest
 from app.services.confirmed_plan_write_applier import ConfirmedPlanWriteApplier
+from app.services.durable_write_apply_failures import apply_failure_result
 from app.services.durable_write_proposal import DurableWriteProposal
 from app.services.memory_correction_types import CorrectionAffectedRecord
 from app.services.memory_correction_delete_applier import MemoryCorrectionDeleteApplier
 from app.services.memory_correction_repository_ops import MemoryCorrectionRepositoryOps
 from app.services.memory_discipline_confirmed_writes import CONFIRMED_PLAN_SERVICE_CHANNEL
+from app.services.memory_discipline_service import MemoryDisciplineService
+from app.services.memory_discipline_writes import (
+    MemoryWriteError,
+    apply_disciplined_long_term_memory,
+)
 from app.services.open_thread_service import OpenThreadService
 from app.models.open_thread import OpenThreadCreateRequest
 from app.services.plan_errors import PlanServiceError
@@ -31,10 +37,12 @@ class DurableWriteApplier:
         plan_service: Optional[PlanService] = None,
         open_thread_service: Optional[OpenThreadService] = None,
         plan_applier: Optional[ConfirmedPlanWriteApplier] = None,
+        discipline: Optional[MemoryDisciplineService] = None,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service or PlanService(memory_service)
         self.open_thread_service = open_thread_service or OpenThreadService(memory_service)
+        self.discipline = discipline or MemoryDisciplineService(memory_service)
         self.plan_applier = plan_applier or ConfirmedPlanWriteApplier(
             memory_service,
             plan_service=self.plan_service,
@@ -61,7 +69,11 @@ class DurableWriteApplier:
         if snapshot_type == "discipline_decision":
             decision = _decision_from_snapshot(snapshot)
             if decision is None:
-                return {"applied": False}
+                return apply_failure_result(
+                    snapshot_type=snapshot_type,
+                    detail="invalid_decision",
+                    conversation_id=conversation_id,
+                )
             return await self.plan_applier.apply_confirmed_decision(
                 decision,
                 conversation_id=conversation_id,
@@ -84,7 +96,11 @@ class DurableWriteApplier:
             return await self._apply_bulk_plan_target_date(snapshot)
         if snapshot_type == "record_delete":
             return await self._apply_record_delete(snapshot)
-        return {"applied": False, "reason": f"unsupported snapshot type: {snapshot_type}"}
+        return apply_failure_result(
+            snapshot_type=snapshot_type or "unknown",
+            detail="unsupported_snapshot_type",
+            conversation_id=conversation_id,
+        )
 
     async def _apply_memory(
         self,
@@ -94,30 +110,51 @@ class DurableWriteApplier:
         source_message_id: str | None,
     ) -> dict[str, Any]:
         payload = dict(snapshot.get("payload") or {})
-        metadata = dict(payload.get("metadata") or {})
-        metadata.setdefault("source", "durable_write_confirmed")
-        metadata.setdefault("discipline_write_channel", CONFIRMED_PLAN_SERVICE_CHANNEL)
-        try:
-            record = await self.memory_service.save_long_term_memory(
-                memory_type=str(payload.get("memory_type") or "fact"),
-                content=str(payload.get("content") or payload.get("body") or ""),
-                source_conversation_id=conversation_id,
-                source_message_id=source_message_id,
-                importance=int(payload.get("importance") or 3),
-                metadata=metadata,
+
+        async def create_fn(write_payload: dict[str, Any]) -> dict[str, Any]:
+            return await self.memory_service.save_long_term_memory(
+                memory_type=str(write_payload.get("memory_type") or "fact"),
+                content=str(write_payload.get("content") or ""),
+                source_conversation_id=write_payload.get("source_conversation_id")
+                or conversation_id,
+                source_message_id=write_payload.get("source_message_id")
+                or source_message_id,
+                importance=int(write_payload.get("importance") or 3),
+                metadata=dict(write_payload.get("metadata") or {}),
             )
-        except Exception:
-            return {"applied": False}
-        if not isinstance(record, dict) or not record.get("id"):
-            return {"applied": False}
-        return {"applied": True, "record": record, "merged": False}
+
+        try:
+            return await apply_disciplined_long_term_memory(
+                self.discipline,
+                payload=payload,
+                conversation_id=conversation_id,
+                source_message_id=source_message_id,
+                create_fn=create_fn,
+            )
+        except MemoryWriteError as exc:
+            return apply_failure_result(
+                snapshot_type="memory",
+                detail="discipline_context_unavailable"
+                if exc.status_code == 503
+                else "memory_write_error",
+                conversation_id=conversation_id,
+            )
+        except Exception as exc:
+            return apply_failure_result(
+                snapshot_type="memory",
+                error=exc,
+                conversation_id=conversation_id,
+            )
 
     async def _apply_memory_update(self, snapshot: dict[str, Any]) -> dict[str, Any]:
         payload = dict(snapshot.get("payload") or {})
         memory_id = str(payload.get("memory_id") or "").strip()
         update_memory = getattr(self.memory_service, "update_long_term_memory", None)
         if update_memory is None or not memory_id:
-            return {"applied": False}
+            return apply_failure_result(
+                snapshot_type="memory_update",
+                detail="missing_memory_id_or_updater",
+            )
         metadata = dict(payload.get("metadata") or {})
         metadata.setdefault("source", "durable_write_confirmed")
         try:
@@ -129,10 +166,16 @@ class DurableWriteApplier:
                 active=True,
                 metadata=metadata,
             )
-        except Exception:
-            return {"applied": False}
+        except Exception as exc:
+            return apply_failure_result(
+                snapshot_type="memory_update",
+                error=exc,
+            )
         if not isinstance(record, dict) or not record.get("id"):
-            return {"applied": False}
+            return apply_failure_result(
+                snapshot_type="memory_update",
+                detail="missing_record",
+            )
         return {"applied": True, "record": record, "merged": False}
 
     async def _apply_plan(
@@ -164,8 +207,12 @@ class DurableWriteApplier:
                     metadata=metadata,
                 )
             )
-        except PlanServiceError:
-            return {"applied": False}
+        except PlanServiceError as exc:
+            return apply_failure_result(
+                snapshot_type="plan",
+                error=exc,
+                conversation_id=conversation_id,
+            )
         merged = bool(
             merge_disclosed
             or (record.get("metadata") or {}).get("merged_into_existing_plan_id")
@@ -194,10 +241,18 @@ class DurableWriteApplier:
                     metadata=metadata,
                 )
             )
-        except Exception:
-            return {"applied": False}
+        except Exception as exc:
+            return apply_failure_result(
+                snapshot_type="open_thread",
+                error=exc,
+                conversation_id=conversation_id,
+            )
         if not isinstance(record, dict) or not record.get("id"):
-            return {"applied": False}
+            return apply_failure_result(
+                snapshot_type="open_thread",
+                detail="missing_record",
+                conversation_id=conversation_id,
+            )
         return {"applied": True, "record": record, "merged": False}
 
     async def _apply_bulk_plan_target_date(
@@ -208,7 +263,10 @@ class DurableWriteApplier:
         target_date = str(payload.get("target_date") or "").strip()
         raw_plans = payload.get("plans") or []
         if not target_date or not isinstance(raw_plans, list):
-            return {"applied": False}
+            return apply_failure_result(
+                snapshot_type="bulk_plan_target_date",
+                detail="invalid_payload",
+            )
 
         updated_records: list[dict[str, Any]] = []
         for item in raw_plans:
@@ -222,12 +280,19 @@ class DurableWriteApplier:
                     plan_id,
                     PlanUpdateRequest(target_date=target_date),
                 )
-            except PlanServiceError:
-                return {"applied": False, "records": updated_records}
+            except PlanServiceError as exc:
+                return apply_failure_result(
+                    snapshot_type="bulk_plan_target_date",
+                    error=exc,
+                    extra={"records": updated_records},
+                )
             updated_records.append(record)
 
         if not updated_records:
-            return {"applied": False}
+            return apply_failure_result(
+                snapshot_type="bulk_plan_target_date",
+                detail="no_plans_updated",
+            )
         return {
             "applied": True,
             "record": updated_records[-1],
@@ -244,7 +309,10 @@ class DurableWriteApplier:
         table = str(payload.get("table") or "").strip()
         record_id = str(payload.get("id") or "").strip()
         if not table or not record_id:
-            return {"applied": False}
+            return apply_failure_result(
+                snapshot_type="record_delete",
+                detail="invalid_payload",
+            )
 
         ops = MemoryCorrectionRepositoryOps(self.memory_service)
         delete_applier = MemoryCorrectionDeleteApplier(ops)
@@ -257,7 +325,10 @@ class DurableWriteApplier:
         )
         affected = await delete_applier.apply_single_delete_match(match)
         if affected is None:
-            return {"applied": False}
+            return apply_failure_result(
+                snapshot_type="record_delete",
+                detail="delete_not_applied",
+            )
         return {
             "applied": True,
             "record": {

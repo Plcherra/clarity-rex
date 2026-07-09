@@ -8,6 +8,7 @@ from app.models.memory_discipline import (
     MemoryDisciplineDecision,
 )
 from app.services.entity_normalization_service import EntityNormalizationService
+from app.services.memory_discipline_list_loader import safe_discipline_list
 from app.services.memory_discipline_similarity import meaningful_tokens, normalize_text
 
 
@@ -91,8 +92,10 @@ class MemoryDisciplineDecisionApplier:
         decision: MemoryDisciplineDecision,
     ) -> dict[str, Any]:
         payload = dict(decision.payload)
-        entities = await self._safe_list(
+        entities = await safe_discipline_list(
+            self.memory_service,
             "list_entities",
+            scan_limit=self.scan_limit,
             active=True,
             limit=self.scan_limit,
         )
@@ -126,17 +129,6 @@ class MemoryDisciplineDecisionApplier:
             text_fields=text_fields,
             link_field=link_field,
         ).payload
-
-    async def _safe_list(self, method_name: str, **kwargs: Any) -> list[dict]:
-        method = getattr(self.memory_service, method_name, None)
-        if method is None:
-            return []
-        try:
-            return await method(**kwargs)
-        except TypeError:
-            return await method(limit=kwargs.get("limit", self.scan_limit))
-        except Exception:
-            return []
 
     def _target_metadata(self, decision: MemoryDisciplineDecision) -> dict[str, Any]:
         target = self._target_record(decision)

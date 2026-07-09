@@ -70,8 +70,16 @@ def rejected_memory_changes(*, proposal: DurableWriteProposal) -> dict[str, Any]
     )
 
 
-def failed_memory_changes(*, proposal: DurableWriteProposal) -> dict[str, Any]:
+def failed_memory_changes(
+    *,
+    proposal: DurableWriteProposal,
+    reason: str | None = None,
+) -> dict[str, Any]:
     card = proposal.to_client_dict(status="failed")
+    safe_reason = str(reason or "").strip() or "durable_write_apply_failed"
+    # Structured ops/client signal — no user content or secrets.
+    card["error_message"] = safe_reason
+    card["failure_reason"] = safe_reason
     return _envelope(
         confirmation_required=0,
         proposals=[card],

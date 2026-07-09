@@ -126,18 +126,29 @@ extension ChatControllerActions on ChatController {
   }
 
   void _syncClarityActionFromMessages(String actionId) {
+    ClarityActionCard? terminalEvidence;
     for (final message in state.messages) {
       for (final action in message.clarityActions) {
         if (action.id != actionId) {
           continue;
         }
-        _updateClarityAction(actionId, (_) => action);
-        return;
+        // Only trust backend-reported terminal statuses. Never infer success
+        // from a missing card or a still-pending/applying local card.
+        if (action.isApplied || action.isFailed || action.isDismissed) {
+          terminalEvidence = action;
+        }
       }
+    }
+    if (terminalEvidence != null) {
+      _updateClarityAction(actionId, (_) => terminalEvidence!);
+      return;
     }
     _updateClarityAction(
       actionId,
-      (current) => current.copyWith(status: 'applied', clearError: true),
+      (current) => current.copyWith(
+        status: 'failed',
+        errorMessage: 'Could not confirm the plan save.',
+      ),
     );
   }
 

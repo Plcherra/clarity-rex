@@ -47,7 +47,8 @@ async def test_simple_memory_requires_confirmation_before_save():
     assert proposed["memory_changes"]["created"] == 0
     assert len(proposed["memory_changes"]["write_proposals"]) == 1
     assert proposed["memory_changes"]["write_proposals"][0]["write_kind"] == "memory"
-    assert "Should I save that?" in proposed["response"]
+    assert "Tap confirm to save" in proposed["response"]
+    assert "nothing is saved until you confirm" in proposed["response"]
     assert memory_service.long_term_memory == []
     assert chat_service.ai_service.messages == []
 
@@ -74,6 +75,62 @@ async def test_simple_memory_confirm_applies_frozen_snapshot():
     assert confirmed["memory_changes"]["confirmation_required"] == 0
     assert len(memory_service.long_term_memory) == 1
     assert memory_service.long_term_memory[0]["content"] == proposal["body"]
+
+
+@pytest.mark.asyncio
+async def test_confirm_merges_duplicate_created_between_propose_and_apply():
+    memory_service = FakeMemoryService()
+    chat_service = _chat_service(memory_service)
+
+    proposed = await chat_service.send_message("My mom's birthday is on the 18th")
+    conversation_id = proposed["conversation_id"]
+    proposal = proposed["memory_changes"]["write_proposals"][0]
+
+    # Simulate another save landing before the user confirms.
+    await memory_service.save_long_term_memory(
+        memory_type="fact",
+        content=proposal["body"],
+        importance=3,
+        metadata={"source": "parallel_save"},
+    )
+    assert len(memory_service.long_term_memory) == 1
+
+    confirmed = await chat_service.send_message(
+        "Yes",
+        conversation_id=conversation_id,
+        write_confirmation={
+            "proposal_id": proposal["id"],
+            "edits": {"title": proposal["title"], "body": proposal["body"]},
+        },
+    )
+
+    assert confirmed["memory_changes"]["write_proposals"][0]["status"] == "applied"
+    assert len(memory_service.long_term_memory) == 1
+    assert memory_service.long_term_memory[0]["content"] == proposal["body"]
+
+
+@pytest.mark.asyncio
+async def test_propose_simple_memory_routes_semantic_duplicate_to_update():
+    memory_service = FakeMemoryService()
+    await memory_service.save_long_term_memory(
+        memory_type="fact",
+        content="Mom's birthday is June 18",
+        importance=3,
+        metadata={"fact_kind": "birthday"},
+    )
+    chat_service = _chat_service(memory_service)
+
+    proposed = await chat_service.send_message("My mom's birthday is June 18")
+
+    assert proposed["memory_changes"]["confirmation_required"] == 1
+    proposal = proposed["memory_changes"]["write_proposals"][0]
+    assert proposal["status"] == "pending"
+    assert proposal["write_kind"] == "memory"
+    pending = memory_service.pending_actions.get(proposed["conversation_id"])
+    raw = (pending.get("context") or {}).get("durable_write_proposal") or {}
+    snapshot_type = (raw.get("apply_snapshot") or {}).get("type")
+    assert snapshot_type == "memory_update"
+    assert len(memory_service.long_term_memory) == 1
 
 
 @pytest.mark.asyncio

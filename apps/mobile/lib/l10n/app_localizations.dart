@@ -1698,7 +1698,7 @@ abstract class AppLocalizations {
   /// No description provided for @assistantFinanceEditsEnabledSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'When off, Rex can advise but won't propose transaction or budget changes.'**
+  /// **'When off, Rex can advise but won\'t propose transaction or budget changes.'**
   String get assistantFinanceEditsEnabledSubtitle;
 
   /// No description provided for @chatShowMore.
@@ -5572,6 +5572,12 @@ abstract class AppLocalizations {
   /// **'Open thread saved.'**
   String get accountabilityOpenThreadSaved;
 
+  /// No description provided for @accountabilityOpenThreadMaxActive.
+  ///
+  /// In en, this message translates to:
+  /// **'You can have at most {count} active open threads. Close or pause one before adding another.'**
+  String accountabilityOpenThreadMaxActive(int count);
+
   /// No description provided for @accountabilityOpenThreadCompleted.
   ///
   /// In en, this message translates to:
@@ -6353,6 +6359,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clarity returned an unexpected response. Try again.'**
   String get chatErrorInvalidResponse;
+
+  /// No description provided for @chatPendingWriteHydrationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reload a pending save confirmation. Pull to refresh or reopen this chat.'**
+  String get chatPendingWriteHydrationFailed;
 
   /// No description provided for @chatAttachmentTooLarge.
   ///

@@ -72,6 +72,7 @@ class ChatService(ChatVoiceMetadataMixin):
             memory_service,
             plan_service=self.goal_command_service.plan_service,
             ai_service=ai_service,
+            discipline=discipline,
         )
         self.open_thread_service = OpenThreadService(memory_service)
         self.open_thread_turn_service = OpenThreadTurnService(

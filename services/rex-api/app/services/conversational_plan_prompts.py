@@ -11,29 +11,32 @@ def confirmation_prompt(decision: MemoryDisciplineDecision) -> str:
     if decision.action == MemoryDisciplineAction.CREATE_MILESTONE:
         return (
             f"I can save {title} as a milestone under your plan "
-            f"{parent_title}. Should I save that?"
+            f"{parent_title}. Tap confirm to save — nothing is saved until you confirm."
         )
     if decision.action == MemoryDisciplineAction.CREATE_PLAN:
         return (
-            f"I can save {title} as a new plan in Clarity. Should I save that?"
+            f"I can save {title} as a new plan in Clarity. "
+            "Tap confirm to save — nothing is saved until you confirm."
         )
     if decision.action == MemoryDisciplineAction.UPDATE_PLAN:
         return (
             f"I can update your plan {parent_title} with this context: {title}. "
-            "Should I save that?"
+            "Tap confirm to save — nothing is saved until you confirm."
         )
     if decision.action == MemoryDisciplineAction.UPDATE_MILESTONE:
         return (
             f"I can update the milestone {title} under {parent_title}. "
-            "Should I save that?"
+            "Tap confirm to save — nothing is saved until you confirm."
         )
     if decision.action == MemoryDisciplineAction.CREATE_ENTITY_EVENT:
         entity_title = _entity_title(decision)
         return (
-            f"I can save {title} as a note on {entity_title}. Should I save that?"
+            f"I can save {title} as a note on {entity_title}. "
+            "Tap confirm to save — nothing is saved until you confirm."
         )
     return (
-        f"I can save {title} as a plan in Clarity. Should I save that?"
+        f"I can save {title} as a plan in Clarity. "
+        "Tap confirm to save — nothing is saved until you confirm."
     )
 
 

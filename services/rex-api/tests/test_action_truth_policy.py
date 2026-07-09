@@ -23,7 +23,10 @@ def test_pending_action_success_claim_returns_confirmation_text():
         [{"confirmation_text": "Move Starbucks to Coffee?"}],
     )
 
-    assert response == "Move Starbucks to Coffee?"
+    assert response == (
+        "Move Starbucks to Coffee? "
+        "Tap confirm to save — nothing is saved until you confirm."
+    )
 
 
 def test_unsupported_action_success_claim_is_blocked():

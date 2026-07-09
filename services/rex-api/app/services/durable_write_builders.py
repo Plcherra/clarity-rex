@@ -209,7 +209,8 @@ def proposal_from_bulk_plan_target_date(
         },
         custom_assistant_prompt=(
             f"I can set the target date to {date_label} for "
-            f"{len(titles)} goals: {joined_titles}. Should I save that?"
+            f"{len(titles)} goals: {joined_titles}. "
+            "Tap confirm to save — nothing is saved until you confirm."
         ),
     )
 

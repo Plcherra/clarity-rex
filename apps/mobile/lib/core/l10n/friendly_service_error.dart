@@ -2,6 +2,8 @@ import '../../features/plaid/application/plaid_connection_models.dart';
 import '../../features/accounts/data/plaid_account_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../supabase/supabase_exceptions.dart';
+import '../../rex/accountability/data/accountability_api.dart';
+import '../../rex/accountability/data/accountability_models.dart';
 import '../../rex/chat/data/chat_api.dart';
 import '../../rex/voice/data/cloud_voice_api.dart';
 import '../../rex/voice/data/streaming_voice_api.dart';
@@ -23,8 +25,28 @@ String friendlyServiceError(AppLocalizations l10n, Object error) {
   if (error is ChatApiException) {
     return friendlyChatApiError(l10n, error);
   }
+  if (error is AccountabilityApiException) {
+    return friendlyAccountabilityApiError(l10n, error);
+  }
   if (error is CloudVoiceApiException || error is StreamingVoiceApiException) {
     return friendlyVoiceApiError(l10n, error);
+  }
+  return l10n.serviceErrorGeneric;
+}
+
+String friendlyAccountabilityApiError(
+  AppLocalizations l10n,
+  AccountabilityApiException error,
+) {
+  final message = error.message.toLowerCase();
+  if (message.contains('at most') && message.contains('open thread')) {
+    return l10n.accountabilityOpenThreadMaxActive(
+      AccountabilityOverview.maxActiveOpenThreads,
+    );
+  }
+  final detail = error.message.trim();
+  if (detail.isNotEmpty) {
+    return detail;
   }
   return l10n.serviceErrorGeneric;
 }

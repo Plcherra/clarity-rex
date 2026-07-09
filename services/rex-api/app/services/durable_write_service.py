@@ -38,6 +38,11 @@ from app.services.plan_target_date_parsing import format_plan_target_date_label
 from app.services.goal_command_results import clarification_turn_result
 from app.services.goal_command_types import GoalCommand
 from app.services.memory_intent_service import SimpleMemoryIntent
+from app.services.memory_discipline_service import MemoryDisciplineService
+from app.services.memory_discipline_writes import (
+    MemoryWriteError,
+    find_long_term_memory_duplicate,
+)
 from app.services.plan_service import PlanService
 
 
@@ -50,12 +55,15 @@ class DurableWriteService:
         applier: Optional[DurableWriteApplier] = None,
         ai_service: Any = None,
         proposal_refiner: Optional[DurableWriteProposalRefiner] = None,
+        discipline: Optional[MemoryDisciplineService] = None,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service or PlanService(memory_service)
+        self.discipline = discipline or MemoryDisciplineService(memory_service)
         self.applier = applier or DurableWriteApplier(
             memory_service,
             plan_service=self.plan_service,
+            discipline=self.discipline,
         )
         self._proposal_refiner = proposal_refiner or (
             DurableWriteProposalRefiner(ai_service) if ai_service is not None else None
@@ -69,7 +77,34 @@ class DurableWriteService:
         user_message: dict,
         conversation_messages: Optional[list[dict]] = None,
     ) -> dict:
-        proposal = proposal_from_simple_memory(intent)
+        try:
+            duplicate = await find_long_term_memory_duplicate(
+                self.discipline,
+                payload={
+                    "memory_type": intent.memory_type,
+                    "content": intent.content,
+                    "importance": intent.importance,
+                    "metadata": dict(intent.metadata or {}),
+                },
+            )
+        except MemoryWriteError:
+            return await clarification_turn_result(
+                self.memory_service,
+                conversation_id=conversation_id,
+                user_message=user_message,
+                response=(
+                    "I understood that, but I couldn't check for related saved "
+                    "items just now. Please try again in a moment."
+                ),
+            )
+        if duplicate is not None:
+            proposal = proposal_from_memory_update(
+                intent,
+                record_id=duplicate.record_id,
+                previous_content=duplicate.previous_content,
+            )
+        else:
+            proposal = proposal_from_simple_memory(intent)
         return await self._propose(
             proposal,
             conversation_id=conversation_id,
@@ -300,6 +335,7 @@ class DurableWriteService:
             source_message_id=str(user_message.get("id") or "") or None,
         )
         if not result.get("applied"):
+            failure_reason = str(result.get("reason") or "").strip() or None
             if proposal.write_kind == "delete":
                 failure = (
                     f"I understood you wanted to delete {proposal.title}, "
@@ -315,7 +351,10 @@ class DurableWriteService:
                 conversation_id=conversation_id,
                 user_message=user_message,
                 response=failure,
-                memory_changes=failed_memory_changes(proposal=proposal),
+                memory_changes=failed_memory_changes(
+                    proposal=proposal,
+                    reason=failure_reason,
+                ),
             )
 
         await self._pending().clear(conversation_id)

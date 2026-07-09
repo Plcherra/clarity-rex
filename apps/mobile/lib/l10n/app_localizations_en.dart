@@ -906,8 +906,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantResponseStyleDetailed => 'Detailed';
 
   @override
-  String get assistantFinanceEditsEnabledLabel =>
-      'Allow Rex to edit finances';
+  String get assistantFinanceEditsEnabledLabel => 'Allow Rex to edit finances';
 
   @override
   String get assistantFinanceEditsEnabledSubtitle =>
@@ -3177,6 +3176,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountabilityOpenThreadSaved => 'Open thread saved.';
 
   @override
+  String accountabilityOpenThreadMaxActive(int count) {
+    return 'You can have at most $count active open threads. Close or pause one before adding another.';
+  }
+
+  @override
   String get accountabilityOpenThreadCompleted => 'Open thread completed.';
 
   @override
@@ -3663,6 +3667,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatErrorInvalidResponse =>
       'Clarity returned an unexpected response. Try again.';
+
+  @override
+  String get chatPendingWriteHydrationFailed =>
+      'Could not reload a pending save confirmation. Pull to refresh or reopen this chat.';
 
   @override
   String get chatAttachmentTooLarge =>

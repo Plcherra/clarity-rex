@@ -82,6 +82,15 @@ class AccountabilityOverview {
   final List<DuplicateWarning> duplicateWarnings;
   final Map<String, dynamic> metadata;
 
+  /// Matches backend `MAX_ACTIVE_OPEN_THREADS`.
+  static const int maxActiveOpenThreads = 5;
+
+  int get activeOpenThreadCount =>
+      openThreads.where((thread) => thread.status == 'active').length;
+
+  bool get isAtOpenThreadLimit =>
+      activeOpenThreadCount >= maxActiveOpenThreads;
+
   bool get isEmpty => !hasGoalsOrThreads;
 
   bool get hasGoalsOrThreads =>

@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/rex/rex_api_client.dart';
+import '../../../core/rex/rex_auth_headers.dart';
 import '../../../core/supabase/supabase_exceptions.dart';
 import '../../../core/supabase/supabase_service.dart';
 
@@ -22,8 +26,7 @@ final class FinancialAuditEventInput {
   final Map<String, dynamic> newValue;
   final Map<String, dynamic> metadata;
 
-  Map<String, dynamic> toInsertJson(String userId) => {
-    'user_id': userId,
+  Map<String, dynamic> toApiJson() => {
     'event_type': eventType.trim(),
     'entity_type': entityType.trim(),
     if (entityId?.trim().isNotEmpty == true) 'entity_id': entityId!.trim(),
@@ -76,10 +79,18 @@ final class FinancialAuditEvent {
 }
 
 final class FinancialAuditService {
-  FinancialAuditService({required SupabaseService supabaseService})
-    : _supabaseService = supabaseService;
+  FinancialAuditService({
+    required SupabaseService supabaseService,
+    RexApiClient? apiClient,
+    String? baseUrl,
+    RexAuthHeaders? authHeaders,
+  }) : _supabaseService = supabaseService,
+       _apiClient =
+           apiClient ??
+           RexApiClient(baseUrl: baseUrl, authHeaders: authHeaders);
 
   final SupabaseService _supabaseService;
+  final RexApiClient _apiClient;
 
   User get _currentUser {
     final user = _supabaseService.auth.currentUser;
@@ -88,7 +99,7 @@ final class FinancialAuditService {
   }
 
   Future<void> recordEvent(FinancialAuditEventInput input) async {
-    final user = _currentUser;
+    _currentUser;
     if (input.eventType.trim().isEmpty || input.entityType.trim().isEmpty) {
       throw const SupabaseDataException(
         table: 'financial_audit_events',
@@ -98,11 +109,26 @@ final class FinancialAuditService {
     }
 
     try {
-      await _supabaseService.client
-          .from('financial_audit_events')
-          .insert(input.toInsertJson(user.id));
+      final response = await _apiClient.postJson(
+        '/finance/audit-events',
+        input.toApiJson(),
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw SupabaseDataException(
+          table: 'financial_audit_events',
+          action: 'recordEvent',
+          message: _errorMessage(response.body),
+        );
+      }
     } on SupabaseDataException {
       rethrow;
+    } on RexAuthException catch (e) {
+      throw SupabaseDataException(
+        table: 'financial_audit_events',
+        action: 'recordEvent',
+        message: e.message,
+        cause: e,
+      );
     } on Object catch (e) {
       throw SupabaseDataException(
         table: 'financial_audit_events',
@@ -176,4 +202,19 @@ DateTime _dateTime(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value is String) return DateTime.parse(value);
   throw FormatException('Missing or invalid "$key".');
+}
+
+String _errorMessage(String body) {
+  try {
+    final decoded = jsonDecode(body);
+    if (decoded is Map<String, dynamic>) {
+      final detail = decoded['detail'];
+      if (detail is String && detail.trim().isNotEmpty) {
+        return detail;
+      }
+    }
+  } on Object {
+    // Fall through to generic message.
+  }
+  return 'Could not record financial audit event.';
 }
