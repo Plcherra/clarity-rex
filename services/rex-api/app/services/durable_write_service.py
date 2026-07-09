@@ -5,6 +5,10 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from app.models.memory_discipline import MemoryDisciplineDecision
+from app.services.assistant_proposal_settings import (
+    AssistantProposalSettings,
+    resolve_assistant_proposal_settings,
+)
 from app.services.conversation_pending_action import (
     ConversationPendingActionService,
     PendingAction,
@@ -76,7 +80,11 @@ class DurableWriteService:
         conversation_id: str,
         user_message: dict,
         conversation_messages: Optional[list[dict]] = None,
+        use_person_card: bool = True,
     ) -> dict:
+        related = (
+            await self._related_person_context(intent) if use_person_card else {}
+        )
         try:
             duplicate = await find_long_term_memory_duplicate(
                 self.discipline,
@@ -102,9 +110,15 @@ class DurableWriteService:
                 intent,
                 record_id=duplicate.record_id,
                 previous_content=duplicate.previous_content,
+                related=related,
+                use_person_card=use_person_card,
             )
         else:
-            proposal = proposal_from_simple_memory(intent)
+            proposal = proposal_from_simple_memory(
+                intent,
+                related=related,
+                use_person_card=use_person_card,
+            )
         return await self._propose(
             proposal,
             conversation_id=conversation_id,
@@ -121,11 +135,17 @@ class DurableWriteService:
         conversation_id: str,
         user_message: dict,
         conversation_messages: Optional[list[dict]] = None,
+        use_person_card: bool = True,
     ) -> dict:
+        related = (
+            await self._related_person_context(intent) if use_person_card else {}
+        )
         proposal = proposal_from_memory_update(
             intent,
             record_id=record_id,
             previous_content=previous_content,
+            related=related,
+            use_person_card=use_person_card,
         )
         return await self._propose(
             proposal,
@@ -177,6 +197,30 @@ class DurableWriteService:
             user_message=user_message,
             response=response,
             conversation_messages=conversation_messages,
+        )
+
+    async def apply_open_thread_consent(
+        self,
+        *,
+        title: str,
+        summary: str | None,
+        conversation_id: str,
+        user_message: dict,
+        conversation_messages: Optional[list[dict]] = None,
+    ) -> dict:
+        """Apply an open thread after explicit text consent (no confirm card)."""
+        proposal = proposal_from_open_thread(
+            title=title,
+            summary=summary,
+            conversation_id=conversation_id,
+            source_message_id=str(user_message.get("id") or "") or None,
+        )
+        pending = pending_action_for_durable_write(proposal=proposal)
+        return await self._apply(
+            proposal,
+            pending=pending,
+            conversation_id=conversation_id,
+            user_message=user_message,
         )
 
     async def propose_discipline_decision(
@@ -297,6 +341,8 @@ class DurableWriteService:
         user_message: dict,
         response: str | None = None,
         conversation_messages: Optional[list[dict]] = None,
+        proposal_settings: Optional[AssistantProposalSettings] = None,
+        surface_client_cards: Optional[bool] = None,
     ) -> dict:
         if self._proposal_refiner is not None:
             proposal = await self._proposal_refiner.refine(
@@ -308,18 +354,62 @@ class DurableWriteService:
             conversation_id,
             pending_action_for_durable_write(proposal=proposal),
         )
-        prompt = response if response is not None else (
-            f"{supersede_note}\n\n{proposal.assistant_prompt()}".strip()
-            if supersede_note
-            else proposal.assistant_prompt()
+        settings = proposal_settings or await self._resolve_proposal_settings()
+        show_cards = (
+            surface_client_cards
+            if surface_client_cards is not None
+            else settings.uses_confirm_cards()
         )
+        if response is not None:
+            prompt = response
+        elif show_cards:
+            prompt = (
+                f"{supersede_note}\n\n{proposal.assistant_prompt()}".strip()
+                if supersede_note
+                else proposal.assistant_prompt()
+            )
+        else:
+            text_prompt = proposal.text_confirmation_prompt()
+            prompt = (
+                f"{supersede_note}\n\n{text_prompt}".strip()
+                if supersede_note
+                else text_prompt
+            )
         return await clarification_turn_result(
             self.memory_service,
             conversation_id=conversation_id,
             user_message=user_message,
             response=prompt,
-            memory_changes=pending_memory_changes(proposal=proposal),
+            memory_changes=pending_memory_changes(
+                proposal=proposal,
+                surface_client_cards=show_cards,
+            ),
         )
+
+    async def _resolve_proposal_settings(self) -> AssistantProposalSettings:
+        user_id = getattr(self.memory_service, "user_id", None)
+        access_token = getattr(self.memory_service, "access_token", None)
+        if user_id and access_token:
+            try:
+                from app.services.assistant_settings_repository import (
+                    AssistantSettingsRepository,
+                )
+
+                repository = AssistantSettingsRepository(
+                    user_id=user_id,
+                    access_token=access_token,
+                )
+                return await repository.fetch_proposal_settings()
+            except Exception:
+                pass
+        return resolve_assistant_proposal_settings({})
+
+    async def _related_person_context(self, intent: SimpleMemoryIntent) -> dict:
+        if str((intent.metadata or {}).get("fact_kind") or "") != "relationship":
+            return {}
+        from app.services.person_confirm_proposal import resolve_related_person_context
+
+        return await resolve_related_person_context(self.memory_service, intent)
 
     async def _apply(
         self,
@@ -329,6 +419,23 @@ class DurableWriteService:
         conversation_id: str,
         user_message: dict,
     ) -> dict:
+        if proposal.person_card is not None:
+            from app.services.person_confirm_proposal import (
+                person_card_blocks_apply,
+                person_card_insufficient_fields_message,
+            )
+
+            if person_card_blocks_apply(proposal.person_card):
+                return await clarification_turn_result(
+                    self.memory_service,
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                    response=person_card_insufficient_fields_message(),
+                    memory_changes=failed_memory_changes(
+                        proposal=proposal,
+                        reason="person_card_insufficient_fields",
+                    ),
+                )
         result = await self.applier.apply_proposal(
             proposal,
             conversation_id=conversation_id,

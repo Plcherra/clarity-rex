@@ -18,19 +18,31 @@ async def confirm_durable_write(
         or memory_changes.get("plan_save_proposals")
         or []
     )
-    if not proposals:
+    proposal_id = None
+    proposal: dict[str, Any] = {}
+    if proposals:
+        proposal = proposals[0]
+        proposal_id = proposal.get("id") or "write-1"
+    else:
+        proposal_id = memory_changes.get("pending_proposal_id")
+    if not proposal_id:
         raise AssertionError("Expected a pending write proposal to confirm.")
-    proposal = proposals[0]
-    payload: dict[str, Any] = {"proposal_id": proposal.get("id") or "write-1"}
+    payload: dict[str, Any] = {"proposal_id": proposal_id}
     resolved_edits = edits
-    if resolved_edits is None and (
-        proposal.get("title") is not None or proposal.get("body") is not None
-    ):
-        resolved_edits = {
-            key: proposal[key]
-            for key in ("title", "body")
-            if proposal.get(key) is not None
-        }
+    if resolved_edits is None:
+        person_card = proposal.get("person_card")
+        if isinstance(person_card, dict):
+            resolved_edits = {
+                key: str(person_card.get(key) or "").strip()
+                for key in ("display_name", "relationship", "birthday", "notes")
+                if str(person_card.get(key) or "").strip()
+            }
+        elif proposal.get("title") is not None or proposal.get("body") is not None:
+            resolved_edits = {
+                key: proposal[key]
+                for key in ("title", "body")
+                if proposal.get(key) is not None
+            }
     if resolved_edits:
         payload["edits"] = resolved_edits
     return await chat_service.send_message(

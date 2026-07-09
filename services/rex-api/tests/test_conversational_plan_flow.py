@@ -124,7 +124,11 @@ async def test_explicit_goal_command_still_saves_without_conversational_confirma
 
 
 @pytest.mark.asyncio
-async def test_ambiguous_conversational_plan_asks_before_top_level_save():
+async def test_ambiguous_conversational_plan_asks_before_top_level_save(monkeypatch):
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "text")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
     memory_service = FakeMemoryService()
     for index in range(5):
         memory_service.plans.append(
@@ -147,6 +151,8 @@ async def test_ambiguous_conversational_plan_asks_before_top_level_save():
     assert requested["memory_changes"]["confirmation_required"] == 0
     assert memory_service.created_plans == []
     assert "goal in Goals" in requested["response"]
+    assert not (requested["memory_changes"].get("write_proposals") or [])
+    get_settings.cache_clear()
 
 
 @pytest.mark.asyncio

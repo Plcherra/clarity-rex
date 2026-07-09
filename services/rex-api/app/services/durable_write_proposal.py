@@ -47,6 +47,7 @@ class DurableWriteProposal:
     merge_target_title: Optional[str] = None
     risk_level: str = "medium"
     custom_assistant_prompt: Optional[str] = None
+    person_card: Optional[dict[str, Any]] = None
 
     @property
     def legacy_action(self) -> str:
@@ -58,6 +59,13 @@ class DurableWriteProposal:
                 f"Update existing plan \"{self.merge_target_title}\" with: "
                 f"{self.title}?"
             )
+        if self.person_card:
+            relationship = str(self.person_card.get("relationship") or "").strip()
+            name = str(self.person_card.get("display_name") or "").strip() or "this person"
+            label = f"your {relationship} ({name})" if relationship else name
+            if self.person_card.get("merge_hint"):
+                return f"Merge into one person card for {label}?"
+            return f"Save person card for {label} to Clarity Knows?"
         if self.write_kind == "memory":
             return f"Save to Clarity Knows as {self._kind_label()}?\n{self.body}"
         if self.write_kind == "plan":
@@ -91,6 +99,23 @@ class DurableWriteProposal:
         return (
             f"I can {text[0].lower()}{text[1:]}. "
             "Tap confirm to save — nothing is saved until you confirm."
+        )
+
+    def text_confirmation_prompt(self) -> str:
+        """Chat-only confirmation copy when auto-suggestions are text-only."""
+        if self.custom_assistant_prompt:
+            base = self.custom_assistant_prompt
+            return (
+                base.replace(
+                    "Tap confirm to save — nothing is saved until you confirm.",
+                    "Say yes to save — nothing is saved until you confirm.",
+                )
+                .replace("Tap confirm", "Say yes")
+            )
+        text = self.confirmation_text().rstrip("?")
+        return (
+            f"I can {text[0].lower()}{text[1:]}. "
+            "Say yes to save — nothing is saved until you confirm."
         )
 
     def _kind_label(self) -> str:
@@ -136,10 +161,12 @@ class DurableWriteProposal:
         }
         if self.write_kind == "delete":
             client["delete_table"] = payload.get("table")
+        if self.person_card:
+            client["person_card"] = dict(self.person_card)
         return client
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "write_kind": self.write_kind,
             "title": self.title,
             "body": self.body,
@@ -151,6 +178,9 @@ class DurableWriteProposal:
             "risk_level": self.risk_level,
             "custom_assistant_prompt": self.custom_assistant_prompt,
         }
+        if self.person_card:
+            payload["person_card"] = dict(self.person_card)
+        return payload
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> Optional[DurableWriteProposal]:
@@ -166,6 +196,7 @@ class DurableWriteProposal:
         else:
             editable_fields = ("title", "body")
         snapshot = raw.get("apply_snapshot") or {}
+        person_card = raw.get("person_card")
         return cls(
             write_kind=write_kind,
             title=title,
@@ -178,11 +209,14 @@ class DurableWriteProposal:
             risk_level=str(raw.get("risk_level") or "medium"),
             custom_assistant_prompt=str(raw.get("custom_assistant_prompt") or "").strip()
             or None,
+            person_card=dict(person_card) if isinstance(person_card, dict) else None,
         )
 
     def with_edits(self, edits: Optional[dict[str, Any]]) -> DurableWriteProposal:
         if not edits:
             return self
+        if self.person_card is not None:
+            return self._with_person_card_edits(edits)
         title = str(edits.get("title") or self.title).strip() or self.title
         body = str(edits.get("body") if "body" in edits else self.body).strip()
         snapshot = dict(self.apply_snapshot)
@@ -206,4 +240,65 @@ class DurableWriteProposal:
             merge_target_title=self.merge_target_title,
             risk_level=self.risk_level,
             custom_assistant_prompt=self.custom_assistant_prompt,
+            person_card=self.person_card,
+        )
+
+    def _with_person_card_edits(self, edits: dict[str, Any]) -> DurableWriteProposal:
+        from app.services.person_confirm_proposal import (
+            apply_person_card_edits,
+            count_person_card_fields,
+            _content_from_person_card,
+        )
+
+        person_card = apply_person_card_edits(
+            person_card=dict(self.person_card or {}),
+            edits=edits,
+        )
+        person_card.pop("insufficient_fields", None)
+        if count_person_card_fields(person_card) < 2:
+            # Keep proposal but mark insufficient fields for apply gate.
+            person_card = {**person_card, "insufficient_fields": True}
+        content = _content_from_person_card(person_card) or self.body
+        title = content.split(".", 1)[0].strip() or self.title
+        snapshot = dict(self.apply_snapshot)
+        inner = dict(snapshot.get("payload") or {})
+        metadata = dict(inner.get("metadata") or {})
+        metadata["fact_kind"] = "relationship"
+        metadata["memory_category"] = "People"
+        relationship = str(person_card.get("relationship") or "").strip()
+        display_name = str(person_card.get("display_name") or "").strip()
+        birthday = str(person_card.get("birthday") or "").strip()
+        notes = str(person_card.get("notes") or "").strip()
+        if relationship:
+            metadata["relationship"] = relationship
+        if display_name:
+            metadata["entity_label"] = display_name.casefold().replace(" ", "_")
+        if birthday:
+            metadata["normalized_date"] = birthday
+            metadata["fact_kind"] = "relationship"
+        person_meta = {
+            key: person_card.get(key)
+            for key in ("display_name", "relationship", "birthday", "notes")
+            if str(person_card.get(key) or "").strip()
+        }
+        if notes:
+            person_meta["notes"] = notes
+        metadata["person_card"] = person_meta
+        if relationship:
+            metadata["topic_fingerprint"] = f"fact:relationship:{relationship}"
+        inner["content"] = content
+        inner["metadata"] = metadata
+        snapshot["payload"] = inner
+        return DurableWriteProposal(
+            write_kind=self.write_kind,
+            title=title,
+            body=content,
+            target_label=self.target_label,
+            editable_fields=self.editable_fields,
+            apply_snapshot=snapshot,
+            proposal_id=self.proposal_id,
+            merge_target_title=self.merge_target_title,
+            risk_level=self.risk_level,
+            custom_assistant_prompt=self.custom_assistant_prompt,
+            person_card=person_card,
         )

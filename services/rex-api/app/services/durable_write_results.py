@@ -7,7 +7,23 @@ from typing import Any, Optional
 from app.services.durable_write_proposal import DurableWriteProposal
 
 
-def pending_memory_changes(*, proposal: DurableWriteProposal) -> dict[str, Any]:
+def pending_memory_changes(
+    *,
+    proposal: DurableWriteProposal,
+    surface_client_cards: bool = True,
+) -> dict[str, Any]:
+    """Build pending memory_changes for a durable write.
+
+    When surface_client_cards is False (text-only mode), keep confirmation
+    required but do not send write_proposals — the client must not show cards.
+    """
+    if not surface_client_cards:
+        return _envelope(
+            confirmation_required=1,
+            proposals=[],
+            text_confirmation_pending=True,
+            pending_proposal_id=proposal.proposal_id,
+        )
     card = proposal.to_client_dict(status="pending")
     return _envelope(
         confirmation_required=1,
@@ -96,6 +112,8 @@ def _envelope(
     confirmation_required: int = 0,
     proposals: list[dict[str, Any]],
     record: Optional[dict[str, Any]] = None,
+    text_confirmation_pending: bool = False,
+    pending_proposal_id: str | None = None,
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "created": created,
@@ -107,6 +125,10 @@ def _envelope(
         "write_proposals": proposals,
         "plan_save_proposals": proposals,
     }
+    if text_confirmation_pending:
+        payload["text_confirmation_pending"] = True
+    if pending_proposal_id:
+        payload["pending_proposal_id"] = pending_proposal_id
     if record is not None:
         payload["applied_record"] = {
             "id": record.get("id"),

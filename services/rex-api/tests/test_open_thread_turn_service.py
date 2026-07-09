@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from app.models.open_thread import MAX_ACTIVE_OPEN_THREADS, OpenThreadCreateRequest
+from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.open_thread_service import OpenThreadService
 from app.services.open_thread_turn_service import (
     THREAD_OFFER_PHRASE,
@@ -71,6 +72,7 @@ class FakeTurnMemoryServiceWithContext(FakeTurnMemoryService):
 class FakeDurableWriteService:
     def __init__(self) -> None:
         self.proposals: list[dict] = []
+        self.applied_consents: list[dict] = []
 
     async def propose_open_thread(self, **kwargs):
         self.proposals.append(kwargs)
@@ -89,6 +91,18 @@ class FakeDurableWriteService:
                         "title": kwargs["title"],
                     }
                 ],
+            },
+        }
+
+    async def apply_open_thread_consent(self, **kwargs):
+        self.applied_consents.append(kwargs)
+        return {
+            "response": f'Tracked "{kwargs["title"]}" as an open thread in Goals.',
+            "conversation_id": kwargs["conversation_id"],
+            "memory_changes": {
+                "confirmation_required": 0,
+                "created": 1,
+                "write_proposals": [],
             },
         }
 
@@ -178,7 +192,7 @@ async def test_open_thread_turn_service_offers_once_for_eligible_companion_topic
 
 
 @pytest.mark.asyncio
-async def test_open_thread_turn_service_proposes_after_yes():
+async def test_open_thread_turn_service_applies_after_yes_in_text_mode():
     memory = FakeTurnMemoryService()
     store = FakeOpenThreadStore()
     threads = OpenThreadService(store)
@@ -207,6 +221,47 @@ async def test_open_thread_turn_service_proposes_after_yes():
         conversation_id="conversation-1",
         user_message={"id": "user-2", "content": "Yes"},
         conversation_history=history,
+        proposal_settings=AssistantProposalSettings(mode="text"),
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["confirmation_required"] == 0
+    assert not result["memory_changes"].get("write_proposals")
+    assert durable.applied_consents[0]["title"] == "Better Morning Routine"
+    assert durable.proposals == []
+
+
+@pytest.mark.asyncio
+async def test_open_thread_turn_service_proposes_card_after_yes_in_card_mode():
+    memory = FakeTurnMemoryService()
+    store = FakeOpenThreadStore()
+    threads = OpenThreadService(store)
+    durable = FakeDurableWriteService()
+    service = OpenThreadTurnService(
+        memory,
+        open_thread_service=threads,
+        durable_write_service=durable,
+    )
+    history = [
+        {
+            "role": "user",
+            "content": "I've been trying to figure out a better morning routine lately.",
+        },
+        {
+            "role": "assistant",
+            "content": (
+                f"{THREAD_OFFER_PHRASE} It would show up in your Goals tab as an open thread — "
+                "not saved memory."
+            ),
+        },
+    ]
+
+    result = await service.handle_turn(
+        "Yes",
+        conversation_id="conversation-1",
+        user_message={"id": "user-2", "content": "Yes"},
+        conversation_history=history,
+        proposal_settings=AssistantProposalSettings(mode="card"),
     )
 
     assert result is not None
@@ -216,6 +271,7 @@ async def test_open_thread_turn_service_proposes_after_yes():
     assert summary is not None
     assert summary.startswith("Follow up on")
     assert summary != durable.proposals[0]["title"]
+    assert durable.applied_consents == []
 
 
 @pytest.mark.asyncio

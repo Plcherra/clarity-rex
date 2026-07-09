@@ -87,6 +87,52 @@ class ChatMessage {
   }
 }
 
+class ClarityPersonCardData {
+  const ClarityPersonCardData({
+    this.displayName = '',
+    this.relationship = '',
+    this.birthday = '',
+    this.notes = '',
+    this.mergeHint,
+    this.relatedSummary,
+  });
+
+  final String displayName;
+  final String relationship;
+  final String birthday;
+  final String notes;
+  final String? mergeHint;
+  final String? relatedSummary;
+
+  factory ClarityPersonCardData.fromJson(Map<String, dynamic> json) {
+    return ClarityPersonCardData(
+      displayName: _text(json['display_name']),
+      relationship: _text(json['relationship']),
+      birthday: _text(json['birthday']),
+      notes: _text(json['notes']),
+      mergeHint: json['merge_hint'] is String
+          ? (json['merge_hint'] as String).trim().isEmpty
+                ? null
+                : (json['merge_hint'] as String).trim()
+          : null,
+      relatedSummary: json['related_summary'] is String
+          ? (json['related_summary'] as String).trim().isEmpty
+                ? null
+                : (json['related_summary'] as String).trim()
+          : null,
+    );
+  }
+
+  Map<String, String> toEdits() {
+    return {
+      'display_name': displayName,
+      'relationship': relationship,
+      'birthday': birthday,
+      'notes': notes,
+    };
+  }
+}
+
 class ClarityActionCard {
   const ClarityActionCard({
     required this.id,
@@ -103,6 +149,7 @@ class ClarityActionCard {
     this.targetLabel,
     this.editableFields = const [],
     this.deleteTable,
+    this.personCard,
   });
 
   final String id;
@@ -119,11 +166,13 @@ class ClarityActionCard {
   final String? targetLabel;
   final List<String> editableFields;
   final String? deleteTable;
+  final ClarityPersonCardData? personCard;
 
   factory ClarityActionCard.fromJson(Map<String, dynamic> json) {
     final payload = json['payload'];
     final result = json['result'];
     final editable = json['editable_fields'];
+    final personCardRaw = json['person_card'];
     return ClarityActionCard(
       id: _text(json['id']),
       action: _text(json['action']),
@@ -158,6 +207,9 @@ class ClarityActionCard {
       deleteTable: json['delete_table'] is String
           ? json['delete_table'] as String
           : null,
+      personCard: personCardRaw is Map<String, dynamic>
+          ? ClarityPersonCardData.fromJson(personCardRaw)
+          : null,
     );
   }
 
@@ -189,6 +241,7 @@ class ClarityActionCard {
     String? targetLabel,
     List<String>? editableFields,
     String? deleteTable,
+    ClarityPersonCardData? personCard,
     bool clearError = false,
   }) {
     return ClarityActionCard(
@@ -206,6 +259,7 @@ class ClarityActionCard {
       targetLabel: targetLabel ?? this.targetLabel,
       editableFields: editableFields ?? this.editableFields,
       deleteTable: deleteTable ?? this.deleteTable,
+      personCard: personCard ?? this.personCard,
     );
   }
 }

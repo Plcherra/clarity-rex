@@ -21,6 +21,8 @@ _REPEAT_WORD_PATTERN = re.compile(r"\b(\w+)\s+\1\b", re.IGNORECASE)
 def needs_proposal_copy_refinement(proposal: DurableWriteProposal) -> bool:
     if proposal.write_kind not in _REFINABLE_KINDS:
         return False
+    if proposal.person_card is not None:
+        return False
     title = str(proposal.title or "").strip()
     body = str(proposal.body or "").strip()
     if not body:
@@ -121,6 +123,7 @@ class DurableWriteProposalRefiner:
                 merge_target_title=refined.merge_target_title,
                 risk_level=refined.risk_level,
                 custom_assistant_prompt=refined.custom_assistant_prompt,
+                person_card=refined.person_card,
             )
         return refined
 

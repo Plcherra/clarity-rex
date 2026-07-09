@@ -91,7 +91,27 @@ async def get_pending_write_proposal(
             "write_proposals": [],
             "plan_save_proposals": [],
         }
-    return pending_memory_changes(proposal=proposal)
+
+    from app.services.assistant_settings_repository import AssistantSettingsRepository
+    from app.services.assistant_proposal_settings import resolve_assistant_proposal_settings
+
+    user_id = getattr(memory_service, "user_id", None)
+    access_token = getattr(memory_service, "access_token", None)
+    if user_id and access_token:
+        try:
+            settings = await AssistantSettingsRepository(
+                user_id=user_id,
+                access_token=access_token,
+            ).fetch_proposal_settings()
+        except Exception:
+            settings = resolve_assistant_proposal_settings({})
+    else:
+        settings = resolve_assistant_proposal_settings({})
+
+    return pending_memory_changes(
+        proposal=proposal,
+        surface_client_cards=settings.uses_confirm_cards(),
+    )
 
 
 @router.delete("/{conversation_id}", status_code=204)

@@ -201,6 +201,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonDismiss => 'Dismiss';
 
   @override
+  String get commonKeepEditing => 'Keep editing';
+
+  @override
+  String get personConfirmTitle => 'Save person';
+
+  @override
+  String get personConfirmNameLabel => 'Name';
+
+  @override
+  String get personConfirmRelationshipLabel => 'Relationship';
+
+  @override
+  String get personConfirmBirthdayLabel => 'Birthday';
+
+  @override
+  String get personConfirmNotesLabel => 'Notes';
+
+  @override
+  String get personConfirmTwoFieldsRequired => 'Add at least 2 fields to save.';
+
+  @override
+  String get personConfirmDiscardTitle => 'Discard this person card?';
+
+  @override
+  String get personConfirmDiscardBody =>
+      'You typed details that haven’t been saved. Discard them?';
+
+  @override
   String get commonToday => 'Today';
 
   @override
@@ -866,7 +894,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantCompanionSettingsSubtitle =>
-      'Choose how Rex suggests goals, open threads, and memory during chat.';
+      'Choose how Rex suggests goals, open threads, and memory during chat. Text only never shows confirm cards — Rex asks in the conversation instead.';
 
   @override
   String get assistantCompanionSettingsGearLabel => 'Companion save settings';
@@ -882,6 +910,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantAutoProposalsModeCard => 'Confirm card';
+
+  @override
+  String get assistantAutoProposalsModeTextHint =>
+      'Rex asks in chat. No confirm cards for memory, goals, or open threads.';
+
+  @override
+  String get assistantAutoProposalsModeCardHint =>
+      'Rex shows an editable confirm card before saving.';
 
   @override
   String get assistantAutoProposalsTypeThreads =>

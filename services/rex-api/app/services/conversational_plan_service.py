@@ -99,6 +99,7 @@ class ConversationalPlanService:
             MemoryDisciplineAction.UPDATE_MILESTONE,
             MemoryDisciplineAction.CREATE_ENTITY_EVENT,
         }:
+            # Text mode still sets server pending; DurableWriteService omits cards.
             return await self.durable_write_service.propose_discipline_decision(
                 decision,
                 conversation_id=conversation_id,

@@ -117,6 +117,7 @@ class MemoryTurnService(
         conversation_id: str,
         user_message: dict,
         conversation_history: Optional[list[dict]] = None,
+        use_person_card: bool = True,
     ) -> dict:
         if self.durable_write_service is None:
             return await self._save_confirmed_simple_memory(
@@ -129,6 +130,7 @@ class MemoryTurnService(
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_messages=conversation_history,
+            use_person_card=use_person_card,
         )
 
     async def _propose_memory_update(
@@ -139,6 +141,7 @@ class MemoryTurnService(
         user_message: dict,
         record: dict,
         conversation_history: Optional[list[dict]] = None,
+        use_person_card: bool = True,
     ) -> dict:
         record_id = str(record.get("id") or "")
         if self.durable_write_service is None:
@@ -167,6 +170,7 @@ class MemoryTurnService(
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_messages=conversation_history,
+            use_person_card=use_person_card,
         )
 
     async def _save_confirmed_simple_memory(

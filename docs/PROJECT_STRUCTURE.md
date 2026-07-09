@@ -257,6 +257,7 @@ Run from `services/rex-api` after env is loaded:
 | Script | Purpose |
 | --- | --- |
 | `scripts/backfill_structured_memory.py` | Batch promotion of flat memories into structured entities/plans/rules |
+| `scripts/backfill_person_birthday_events.py` | Promote orphan birthday Event flats into person cards (dry-run default) |
 | `scripts/apply_memory_corrections.py` | Classify/apply user corrections and dry-run duplicate audits |
 | `scripts/cleanup_user_memory_duplicates.py` | Per-user Knows duplicate cleanup |
 

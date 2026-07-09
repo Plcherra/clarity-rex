@@ -23,7 +23,21 @@ def proposal_from_memory_update(
     *,
     record_id: str,
     previous_content: str | None = None,
+    related: Optional[dict[str, Any]] = None,
+    use_person_card: bool = True,
 ) -> DurableWriteProposal:
+    if (
+        use_person_card
+        and str((intent.metadata or {}).get("fact_kind") or "") == "relationship"
+    ):
+        from app.services.person_confirm_proposal import proposal_from_relationship_memory
+
+        return proposal_from_relationship_memory(
+            intent,
+            related=related,
+            record_id=record_id,
+            previous_content=previous_content,
+        )
     metadata = direct_save_metadata(
         {
             **intent.metadata,
@@ -50,7 +64,19 @@ def proposal_from_memory_update(
     )
 
 
-def proposal_from_simple_memory(intent: SimpleMemoryIntent) -> DurableWriteProposal:
+def proposal_from_simple_memory(
+    intent: SimpleMemoryIntent,
+    *,
+    related: Optional[dict[str, Any]] = None,
+    use_person_card: bool = True,
+) -> DurableWriteProposal:
+    if (
+        use_person_card
+        and str((intent.metadata or {}).get("fact_kind") or "") == "relationship"
+    ):
+        from app.services.person_confirm_proposal import proposal_from_relationship_memory
+
+        return proposal_from_relationship_memory(intent, related=related)
     metadata = direct_save_metadata(intent.metadata)
     title = _memory_title(intent.content)
     return DurableWriteProposal(

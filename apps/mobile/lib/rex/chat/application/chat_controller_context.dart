@@ -32,11 +32,16 @@ extension ChatControllerContext on ChatController {
     final payload = <String, dynamic>{'proposal_id': action.id};
     if (action.hasEditableFields) {
       final edits = <String, dynamic>{};
-      if (action.editableFields.contains('title') && action.title != null) {
-        edits['title'] = action.title;
-      }
-      if (action.editableFields.contains('body') && action.body != null) {
-        edits['body'] = action.body;
+      final personCard = action.personCard;
+      if (personCard != null) {
+        edits.addAll(personCard.toEdits());
+      } else {
+        if (action.editableFields.contains('title') && action.title != null) {
+          edits['title'] = action.title;
+        }
+        if (action.editableFields.contains('body') && action.body != null) {
+          edits['body'] = action.body;
+        }
       }
       if (edits.isNotEmpty) {
         payload['edits'] = edits;

@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from chat_service_fakes import FakeAIService, FakeMemoryService
+from memory_persist_assertions import assert_person_card_covers
 from app.services.chat_service import ChatService
 from app.services.durable_write_pending import pending_action_for_durable_write
 from app.services.durable_write_proposal import DurableWriteProposal
@@ -73,8 +74,12 @@ async def test_simple_memory_confirm_applies_frozen_snapshot():
 
     assert confirmed["memory_changes"]["created"] == 1
     assert confirmed["memory_changes"]["confirmation_required"] == 0
-    assert len(memory_service.long_term_memory) == 1
-    assert memory_service.long_term_memory[0]["content"] == proposal["body"]
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+        flat_content_gone="mom's birthday",
+    )
 
 
 @pytest.mark.asyncio
@@ -105,8 +110,11 @@ async def test_confirm_merges_duplicate_created_between_propose_and_apply():
     )
 
     assert confirmed["memory_changes"]["write_proposals"][0]["status"] == "applied"
-    assert len(memory_service.long_term_memory) == 1
-    assert memory_service.long_term_memory[0]["content"] == proposal["body"]
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+    )
 
 
 @pytest.mark.asyncio
@@ -271,9 +279,11 @@ async def test_confirm_with_edits_applies_edited_body():
     )
 
     assert confirmed["memory_changes"]["created"] == 1
-    assert len(memory_service.long_term_memory) == 1
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 18."
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+        flat_content_gone="mom's birthday",
     )
     applied = confirmed["memory_changes"]["write_proposals"][0]
     assert applied["status"] == "applied"

@@ -94,6 +94,15 @@ class OpenThreadTurnService:
                 topic_message,
                 conversation_history=conversation_history,
             )
+            # Text mode: user already consented in chat — apply without a card.
+            if settings.uses_text_offers():
+                return await self.durable_write_service.apply_open_thread_consent(
+                    title=title,
+                    summary=summary,
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                    conversation_messages=conversation_history,
+                )
             return await self.durable_write_service.propose_open_thread(
                 title=title,
                 summary=summary,

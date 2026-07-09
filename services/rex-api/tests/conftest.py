@@ -38,4 +38,19 @@ def default_authenticated_user(monkeypatch):
     yield
 
     app.dependency_overrides = original_overrides
+
+
+@pytest.fixture(autouse=True)
+def default_card_proposal_mode(monkeypatch):
+    """Card-mode default so durable-write card tests stay green.
+
+    Product default for users is text; tests that need text mode set
+    REX_AUTO_PROPOSALS_MODE=text explicitly.
+    """
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "card")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
     app.dependency_overrides.clear()

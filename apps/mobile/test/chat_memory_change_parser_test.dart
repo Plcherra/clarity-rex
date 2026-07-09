@@ -1,0 +1,65 @@
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:clarity/rex/chat/application/chat_memory_change_parser.dart';
+
+void main() {
+  test('hides pending cards when text_confirmation_pending is set', () {
+    final cards = clarityActionCardsFromMemoryChanges({
+      'confirmation_required': 1,
+      'text_confirmation_pending': true,
+      'write_proposals': [
+        {
+          'id': 'write-1',
+          'action': 'save_memory',
+          'write_kind': 'memory',
+          'confirmation_text': 'Save?',
+          'risk_level': 'medium',
+          'status': 'pending',
+          'title': 'Mom',
+          'body': 'Birthday',
+        },
+      ],
+    });
+    expect(cards, isEmpty);
+  });
+
+  test('allowConfirmCards false suppresses all cards', () {
+    final cards = clarityActionCardsFromMemoryChanges(
+      {
+        'write_proposals': [
+          {
+            'id': 'write-1',
+            'action': 'save_memory',
+            'write_kind': 'memory',
+            'confirmation_text': 'Save?',
+            'risk_level': 'medium',
+            'status': 'pending',
+          },
+        ],
+      },
+      allowConfirmCards: false,
+    );
+    expect(cards, isEmpty);
+  });
+
+  test('still shows applied status cards', () {
+    final cards = clarityActionCardsFromMemoryChanges({
+      'confirmation_required': 0,
+      'write_proposals': [
+        {
+          'id': 'write-1',
+          'action': 'save_memory',
+          'write_kind': 'memory',
+          'confirmation_text': 'Saved',
+          'risk_level': 'medium',
+          'status': 'applied',
+          'result': [
+            {'id': 'mem-1', 'action': 'direct_saved'},
+          ],
+        },
+      ],
+    });
+    expect(cards, hasLength(1));
+    expect(cards.first.isApplied, isTrue);
+  });
+}

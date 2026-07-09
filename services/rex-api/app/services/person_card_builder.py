@@ -31,12 +31,17 @@ class PersonCardBuilder(PersonCardBuilderText):
             return None
 
         label = self._clean_label(metadata.get("entity_label"))
+        # Older birthday flats sometimes stored only relationship (e.g. mother)
+        # without entity_label — still materialize into a person card.
+        if not label:
+            label = self._clean_label(metadata.get("relationship"))
         entity_owner = self._clean_text(metadata.get("entity_owner"))
         entity_relation = self._clean_text(metadata.get("entity_relation"))
         relation_key = entity_relation or label
         relationship = (
             PERSON_RELATIONSHIPS.get(relation_key)
             or PERSON_RELATIONSHIPS.get(label)
+            or PERSON_RELATIONSHIPS.get(self._clean_label(metadata.get("relationship")))
             or entity_relation
             or "person"
         )

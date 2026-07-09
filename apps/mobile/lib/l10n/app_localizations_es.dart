@@ -203,6 +203,35 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonDismiss => 'Despedir';
 
   @override
+  String get commonKeepEditing => 'Seguir editando';
+
+  @override
+  String get personConfirmTitle => 'Guardar persona';
+
+  @override
+  String get personConfirmNameLabel => 'Nombre';
+
+  @override
+  String get personConfirmRelationshipLabel => 'Relación';
+
+  @override
+  String get personConfirmBirthdayLabel => 'Cumpleaños';
+
+  @override
+  String get personConfirmNotesLabel => 'Notas';
+
+  @override
+  String get personConfirmTwoFieldsRequired =>
+      'Agrega al menos 2 campos para guardar.';
+
+  @override
+  String get personConfirmDiscardTitle => '¿Descartar esta tarjeta de persona?';
+
+  @override
+  String get personConfirmDiscardBody =>
+      'Escribiste detalles que aún no se han guardado. ¿Descartarlos?';
+
+  @override
   String get commonToday => 'Hoy';
 
   @override
@@ -874,7 +903,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get assistantCompanionSettingsSubtitle =>
-      'Elige cómo Rex sugiere metas, hilos abiertos y memoria en el chat.';
+      'Elige cómo Rex sugiere metas, hilos abiertos y memoria en el chat. Solo texto nunca muestra tarjetas de confirmación — Rex pregunta en la conversación.';
 
   @override
   String get assistantCompanionSettingsGearLabel =>
@@ -891,6 +920,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get assistantAutoProposalsModeCard => 'Tarjeta de confirmación';
+
+  @override
+  String get assistantAutoProposalsModeTextHint =>
+      'Rex pregunta en el chat. Sin tarjetas de confirmación para memoria, metas o hilos abiertos.';
+
+  @override
+  String get assistantAutoProposalsModeCardHint =>
+      'Rex muestra una tarjeta editable antes de guardar.';
 
   @override
   String get assistantAutoProposalsTypeThreads =>

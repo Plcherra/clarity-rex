@@ -76,7 +76,11 @@ async def test_off_mode_skips_thread_offer_for_habit_message(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_text_mode_offers_thread_for_habit_not_sleep_vent():
+async def test_text_mode_offers_thread_for_habit_not_sleep_vent(monkeypatch):
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "text")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
     chat_service = _chat_service(FakeMemoryService())
 
     vent = await chat_service.send_message(SLEEP_VENT)
@@ -85,6 +89,8 @@ async def test_text_mode_offers_thread_for_habit_not_sleep_vent():
     habit = await chat_service.send_message(HABIT_THREAD)
     assert THREAD_OFFER_PHRASE in habit["response"]
     assert habit["memory_changes"]["confirmation_required"] == 0
+    assert not (habit["memory_changes"].get("write_proposals") or [])
+    get_settings.cache_clear()
 
 
 @pytest.mark.asyncio

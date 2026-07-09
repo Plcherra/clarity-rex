@@ -458,6 +458,60 @@ abstract class AppLocalizations {
   /// **'Dismiss'**
   String get commonDismiss;
 
+  /// No description provided for @commonKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get commonKeepEditing;
+
+  /// No description provided for @personConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save person'**
+  String get personConfirmTitle;
+
+  /// No description provided for @personConfirmNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get personConfirmNameLabel;
+
+  /// No description provided for @personConfirmRelationshipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get personConfirmRelationshipLabel;
+
+  /// No description provided for @personConfirmBirthdayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Birthday'**
+  String get personConfirmBirthdayLabel;
+
+  /// No description provided for @personConfirmNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get personConfirmNotesLabel;
+
+  /// No description provided for @personConfirmTwoFieldsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least 2 fields to save.'**
+  String get personConfirmTwoFieldsRequired;
+
+  /// No description provided for @personConfirmDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this person card?'**
+  String get personConfirmDiscardTitle;
+
+  /// No description provided for @personConfirmDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You typed details that haven’t been saved. Discard them?'**
+  String get personConfirmDiscardBody;
+
   /// No description provided for @commonToday.
   ///
   /// In en, this message translates to:
@@ -1614,7 +1668,7 @@ abstract class AppLocalizations {
   /// No description provided for @assistantCompanionSettingsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose how Rex suggests goals, open threads, and memory during chat.'**
+  /// **'Choose how Rex suggests goals, open threads, and memory during chat. Text only never shows confirm cards — Rex asks in the conversation instead.'**
   String get assistantCompanionSettingsSubtitle;
 
   /// No description provided for @assistantCompanionSettingsGearLabel.
@@ -1646,6 +1700,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm card'**
   String get assistantAutoProposalsModeCard;
+
+  /// No description provided for @assistantAutoProposalsModeTextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Rex asks in chat. No confirm cards for memory, goals, or open threads.'**
+  String get assistantAutoProposalsModeTextHint;
+
+  /// No description provided for @assistantAutoProposalsModeCardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Rex shows an editable confirm card before saving.'**
+  String get assistantAutoProposalsModeCardHint;
 
   /// No description provided for @assistantAutoProposalsTypeThreads.
   ///

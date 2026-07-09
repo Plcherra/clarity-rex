@@ -179,6 +179,17 @@ class _AssistantProposalSettingsSheetState
                           );
                         },
                 ),
+                const SizedBox(height: 10),
+                Text(
+                  settings.usesConfirmCards
+                      ? l10n.assistantAutoProposalsModeCardHint
+                      : settings.usesTextOffers
+                      ? l10n.assistantAutoProposalsModeTextHint
+                      : l10n.assistantCompanionSettingsSubtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.textMuted,
+                  ),
+                ),
                 if (settings.enabled) ...[
                   const SizedBox(height: 20),
                   SwitchListTile.adaptive(

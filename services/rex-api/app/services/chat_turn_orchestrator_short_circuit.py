@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.chat_turn_observability import ChatTurnTrace
 from app.services.chat_turn_orchestrator_support import (
     finish_short_circuit,
@@ -311,6 +312,7 @@ async def try_short_circuit_turn(
         pending_action=pending_action,
         conversation_id=conversation_id,
         user_message=turn_context.user_message,
+        proposal_settings=proposal_settings,
     )
     if pending_write_reminder is not None:
         finish_short_circuit(
@@ -351,6 +353,7 @@ async def _try_remind_pending_durable_write(
     pending_action,
     conversation_id: str,
     user_message: dict,
+    proposal_settings=None,
 ) -> Optional[dict]:
     pending = (
         pending_action
@@ -368,13 +371,25 @@ async def _try_remind_pending_durable_write(
     if proposal.write_kind == "delete":
         return None
 
+    settings = proposal_settings or AssistantProposalSettings()
+    show_cards = settings.uses_confirm_cards()
+    if show_cards:
+        reminder = (
+            "I still have a pending save waiting for your confirmation. "
+            "Use the save card to confirm or dismiss it."
+        )
+    else:
+        reminder = (
+            "I still have a pending save waiting for your confirmation. "
+            "Say yes to save it, or no to dismiss."
+        )
     return await clarification_turn_result(
         orchestrator.memory_service,
         conversation_id=conversation_id,
         user_message=user_message,
-        response=(
-            "I still have a pending save waiting for your confirmation. "
-            "Use the save card to confirm or dismiss it."
+        response=reminder,
+        memory_changes=pending_memory_changes(
+            proposal=proposal,
+            surface_client_cards=show_cards,
         ),
-        memory_changes=pending_memory_changes(proposal=proposal),
     )

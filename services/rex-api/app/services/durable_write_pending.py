@@ -46,5 +46,10 @@ def write_confirmation_edits(raw: Any) -> Optional[dict[str, Any]]:
     edits = raw.get("edits")
     if isinstance(edits, dict):
         return dict(edits)
-    cleaned = {key: raw[key] for key in ("title", "body") if key in raw}
+    person_keys = ("display_name", "relationship", "birthday", "notes")
+    cleaned = {
+        key: raw[key]
+        for key in ("title", "body", *person_keys)
+        if key in raw
+    }
     return cleaned or None
