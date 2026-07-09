@@ -1,6 +1,6 @@
-# 09 — Post-Launch Refactoring and Nice-to-Haves
+# 10 — Post-Launch Refactoring and Nice-to-Haves
 
-**Covers:** God-file freezes/splits, silent catch cleanup, desktop non-targets, experimental flags, archived launch-prep debt, and complexity reduction. **Do not prioritize these over Saturday blockers** in files 01–06.
+**Covers:** God-file freezes/splits, silent catch cleanup, desktop non-targets, experimental flags, archived launch-prep debt, and complexity reduction. **Do not prioritize these over Saturday blockers** in files 01–07.
 
 **Primary paths:** `PROJECT_STRUCTURE.md` watch list, large `services/rex-api/app/services/*` modules, experimental voice flags
 
@@ -45,7 +45,7 @@
 - **Brief fix suggestion:** Audit and classify:
   - `durable_write_proposal_refiner.py` — OK to return unrefined; add debug log
   - `voice_call_controller_timers.dart` barge-in — log once
-  - `chat_controller.dart` pending hydration — fixed in file 01/04
+  - `chat_controller.dart` pending hydration — fixed in file 01/05
   - `memory_discipline_service.py` / `memory_reference_resolver.py` empty returns — fixed in file 01
   - `BackgroundVoiceService` swallowing `MissingPluginException` — expected on iOS until bridge; log at info
 
@@ -140,7 +140,7 @@
 - **Severity:** Medium
 - **Why it matters:** Cost abuse after launch as user count grows.
 - **Estimated effort:** Small
-- **Brief fix suggestion:** Implement max_length caps if not done in file 03 before traffic grows.
+- **Brief fix suggestion:** Implement max_length caps if not done in file 04 before traffic grows.
 
 ### Issue: No adaptive voice bitrate / low-power mode (A40 — also in 06)
 

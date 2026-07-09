@@ -1,4 +1,4 @@
-# 06 — Voice and iOS
+# 07 — Voice and iOS
 
 **Covers:** iOS background voice gap vs product vision, Android FG service baseline, streaming/REST paths, battery/network concerns, and launch messaging decisions. Do after safety/config — then decide fix vs honest de-scope before marketing.
 
@@ -49,7 +49,7 @@
 - **Severity:** High
 - **Why it matters:** Security issue on web voice; native is fine.
 - **Estimated effort:** Medium
-- **Brief fix suggestion:** Ticket endpoint or defer web voice; redact logs (file 03).
+- **Brief fix suggestion:** Ticket endpoint or defer web voice; redact logs (file 04).
 
 ### Issue: Continuous mic + WS + TTS battery/network load (A40)
 
@@ -104,3 +104,21 @@
 - **Why it matters:** Resume after app switch can race with timers and pending confirms.
 - **Estimated effort:** Medium
 - **Brief fix suggestion:** On resume, rehydrate pending proposals; do not auto-restart listening over an open confirm; show reconnect copy from existing l10n keys.
+
+---
+
+## Phase 7 — Stuck listening / unsent final transcript
+
+### Issue: Voice final transcript not sent; UI stuck in listening (A77)
+
+- **Severity:** High
+- **Why it matters:** Manual smoke (Jul 2026): long utterances and turns after a failed memory save left interim text on screen, mic/stop controls active, and no chat send — user had to recover manually. Core voice promise fails if talking does not become a turn.
+- **Estimated effort:** Medium
+- **Brief fix suggestion:** Trace `voice_call_controller` phase machine: listening → final STT → commit user message → send via same chat path → idle/thinking. Ensure final transcript always commits or surfaces an honest failure; never leave listening armed with unsent text. Add regression coverage for long utterances and for turns immediately after a clarification/error reply. Do not add artificial timeouts to “fix” races — fix state transitions.
+
+### Issue: Stuck listening more likely after clarification / error turns (A78)
+
+- **Severity:** Medium
+- **Why it matters:** Same smoke: hang appeared after Rex’s city-clarification loop; recovery path may not reset listening cleanly when the assistant short-circuits.
+- **Estimated effort:** Small–Medium
+- **Brief fix suggestion:** After any completed assistant response (including short-circuit clarifications), force a clean listening reset or explicit idle; clear interim transcript if send failed. Coordinate with file 05 recovery/timer work so auto-restart does not re-arm over a half-sent turn.

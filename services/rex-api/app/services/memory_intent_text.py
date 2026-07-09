@@ -60,40 +60,76 @@ class MemoryIntentTextMixin:
         self,
         conversation_history: list[dict],
     ) -> bool:
-        recent_text = " ".join(
-            str(message.get("content") or "")
-            for message in conversation_history[-6:]
-            if message.get("role") in {"user", "assistant"}
-        ).lower()
-        if not recent_text:
-            return False
-        has_location_topic = any(
-            term in recent_text
-            for term in (
-                "city",
-                "location",
-                "where i live",
-                "where you live",
+        """True only while Rex is actively waiting for a place reply.
+
+        Sticky history (any recent city + spelling talk) is too broad for
+        multi-topic chats. Gate on the latest assistant turn asking for a city.
+        """
+        return self._assistant_awaiting_location_reply(conversation_history)
+
+    def _assistant_awaiting_location_reply(
+        self,
+        conversation_history: list[dict],
+    ) -> bool:
+        for message in reversed(conversation_history[-8:]):
+            if message.get("role") != "assistant":
+                continue
+            content = str(message.get("content") or "").strip().lower()
+            if not content:
+                continue
+            if "couldn't read the city clearly" in content:
+                return True
+            if "send just the city" in content:
+                return True
+            ask_markers = (
+                "what's the right city",
+                "what is the right city",
+                "what city",
+                "which city",
+                "city name",
                 "correct city",
                 "correct location",
-                "fix my city",
-                "fix my location",
+                "where do you live",
+                "where you live",
             )
+            return any(marker in content for marker in ask_markers)
+        return False
+
+    def looks_like_person_or_name_memory(self, message: str) -> bool:
+        """Bail out of place clarification when the turn is about a person/name."""
+        normalized = self._normalize_reply(message)
+        if not normalized:
+            return False
+        person_markers = (
+            "mother",
+            "mama",
+            "mom",
+            "mum",
+            "father",
+            "papa",
+            "dad",
+            "brother",
+            "sister",
+            "cousin",
+            "friend",
+            "partner",
+            "wife",
+            "husband",
+            "boyfriend",
+            "girlfriend",
+            "fiancé",
+            "fiance",
+            "fiancée",
+            "fiancee",
         )
-        has_correction_language = any(
-            term in recent_text
-            for term in (
-                "change",
-                "correct",
-                "fix",
-                "update",
-                "updating",
-                "wrong",
-                "spelled",
-                "spelling",
-            )
-        )
-        return has_location_topic and has_correction_language
+        if any(re.search(rf"\b{re.escape(marker)}\b", normalized) for marker in person_markers):
+            return True
+        if re.search(r"\b(?:full\s+)?name\b", normalized) and not re.search(
+            r"\b(?:city|location|town)\s+name\b",
+            normalized,
+        ):
+            return True
+        return False
 
     def _place_from_contextual_location_reply(self, message: str) -> Optional[str]:
         cleaned = self._clean_fact(message)

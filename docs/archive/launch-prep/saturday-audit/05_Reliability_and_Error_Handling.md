@@ -1,4 +1,4 @@
-# 04 — Reliability and Error Handling
+# 05 — Reliability and Error Handling
 
 **Covers:** Offline/network failure during confirm, retry UX, pending-action ambiguity, voice recovery timers vs engineering rules, and honest error surfaces. After truth + security, this is what keeps users from losing trust on flaky networks.
 

@@ -224,6 +224,8 @@ class MemoryIntentService(
     ) -> bool:
         if self.is_memory_lookup_or_topic_shift(message):
             return False
+        if self.looks_like_person_or_name_memory(message):
+            return False
         if not self._recent_location_correction_context(conversation_history):
             return False
         if self._detect_contextual_location_memory(

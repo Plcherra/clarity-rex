@@ -18,17 +18,43 @@ _RELATIONSHIP_ROLES = (
     "fiance",
     "fiancée",
     "fiancee",
+    "mother",
+    "mama",
+    "mom",
+    "mum",
+    "father",
+    "papa",
+    "dad",
+)
+_RELATIONSHIP_ROLE_ALT = "|".join(
+    sorted((re.escape(role) for role in _RELATIONSHIP_ROLES), key=len, reverse=True)
 )
 _RELATIONSHIP_SAVE_USER_PATTERN = re.compile(
     r"\b(?:save|remember|keep)\s+my\s+"
-    rf"(?P<relationship>{'|'.join(re.escape(role) for role in _RELATIONSHIP_ROLES)})\s+"
-    r"(?P<name>[A-Za-z][A-Za-z\s.'-]{1,60})",
-    re.IGNORECASE,
+    rf"(?P<relationship>{_RELATIONSHIP_ROLE_ALT})\s+"
+    r"(?P<name>[\w][\w\s.'-]{1,60})",
+    re.IGNORECASE | re.UNICODE,
+)
+_RELATIONSHIP_NAME_CALLED_PATTERN = re.compile(
+    rf"\b(?:my\s+)?(?P<relationship>{_RELATIONSHIP_ROLE_ALT})(?:'s)?\s+name\b"
+    r".{0,200}?\b(?:(?:is\s+)?called|named)\s+"
+    r"(?P<name>[\w][\w'-]{0,40})",
+    re.IGNORECASE | re.UNICODE | re.DOTALL,
+)
+_RELATIONSHIP_NAME_IS_PATTERN = re.compile(
+    rf"\b(?:my\s+)?(?P<relationship>{_RELATIONSHIP_ROLE_ALT})(?:'s)?\s+name\s+is\s+"
+    r"(?P<name>[\w][\w'-]{0,40})",
+    re.IGNORECASE | re.UNICODE,
+)
+_RELATIONSHIP_IS_PATTERN = re.compile(
+    rf"\bmy\s+(?P<relationship>{_RELATIONSHIP_ROLE_ALT})\s+is\s+"
+    r"(?P<name>[\w][\w'-]{0,40})",
+    re.IGNORECASE | re.UNICODE,
 )
 _ASSISTANT_RELATIONSHIP_SAVE_PATTERN = re.compile(
-    r"\bsave\s+(?P<name>[A-Za-z][A-Za-z\s.'-]{1,40}?)\s+as\s+your\s+"
+    r"\bsave\s+(?P<name>[\w][\w\s.'-]{1,40}?)\s+as\s+your\s+"
     r"(?P<relationship>[^?.!]+)",
-    re.IGNORECASE,
+    re.IGNORECASE | re.UNICODE,
 )
 _DEVICE_TAIL = (
     r"(?:\bpc\b|\bcomputer\b|\blaptop\b|\bdesktop\b|\bphone\b|\btablet\b|"
@@ -173,6 +199,12 @@ class MemoryIntentFactMixin:
     def _detect_relationship_person(self, message: str) -> Optional[SimpleMemoryIntent]:
         match = _RELATIONSHIP_SAVE_USER_PATTERN.search(message)
         if match is None:
+            match = _RELATIONSHIP_NAME_CALLED_PATTERN.search(message)
+        if match is None:
+            match = _RELATIONSHIP_NAME_IS_PATTERN.search(message)
+        if match is None:
+            match = _RELATIONSHIP_IS_PATTERN.search(message)
+        if match is None:
             match = _ASSISTANT_RELATIONSHIP_SAVE_PATTERN.search(message)
         if match is None:
             return None
@@ -187,10 +219,10 @@ class MemoryIntentFactMixin:
         relationship: str,
     ) -> Optional[SimpleMemoryIntent]:
         clean_name = self._clean_fact(name)
-        clean_relationship = self._clean_fact(relationship).lower()
+        clean_relationship = self._clean_person(relationship)
         if len(clean_name) < 2 or len(clean_relationship) < 2:
             return None
-        if clean_name.lower() in {"birthday", "memory", "friend"}:
+        if clean_name.lower() in {"birthday", "memory", "friend", "called", "named"}:
             return None
         display_name = clean_name.title()
         entity_label = self._normalize_name(clean_name)

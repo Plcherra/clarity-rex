@@ -885,7 +885,7 @@ async def test_memory_turn_service_rejects_ambiguous_city_spelling_fragment():
 
 
 @pytest.mark.asyncio
-async def test_memory_turn_service_rejects_garbled_city_voice_transcript():
+async def test_memory_turn_service_does_not_force_city_clarification_after_update_claim():
     store = FakeMemoryTurnStore()
     store.long_term_memory.append(
         {
@@ -924,9 +924,46 @@ async def test_memory_turn_service_rejects_garbled_city_voice_transcript():
         time_context={"date": "2026-06-13"},
     )
 
-    assert result is not None
-    assert result["response"].startswith("I couldn't read the city clearly")
+    assert result is None
     assert store.long_term_memory[0]["content"] == "User lives in Somerville."
+
+
+@pytest.mark.asyncio
+async def test_memory_turn_service_proposes_mother_name_despite_recent_city_talk():
+    store = FakeMemoryTurnStore()
+    service = MemoryTurnService(store)
+    history = [
+        {
+            "id": "message-1",
+            "conversation_id": "conversation-1",
+            "role": "user",
+            "content": "You don't have any memory about my city?",
+        },
+        {
+            "id": "message-2",
+            "conversation_id": "conversation-1",
+            "role": "assistant",
+            "content": "Yes — Full name: Pedro Martins. Lives in Somerville.",
+        },
+    ]
+
+    result = await service.handle_turn(
+        "Alright. Let's put my mother's name. It's called Ariadjana.",
+        conversation_id="conversation-1",
+        user_message={
+            "id": "message-3",
+            "content": "Alright. Let's put my mother's name. It's called Ariadjana.",
+        },
+        conversation_history=history,
+        time_context={"date": "2026-06-13"},
+    )
+
+    assert result is not None
+    assert "couldn't read the city" not in result["response"].lower()
+    assert "Ariadjana" in result["response"]
+    assert result["memory_changes"]["created"] == 1
+    assert store.long_term_memory
+    assert "Ariadjana" in store.long_term_memory[0]["content"]
 
 
 @pytest.mark.asyncio

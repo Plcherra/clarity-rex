@@ -1,4 +1,4 @@
-# 03 — Production Security and Config
+# 04 — Production Security and Config
 
 **Covers:** Auth fail-closed behavior, prompt logging, secrets validation, Plaid encryption key separation, WebSocket JWT exposure, input limits, readiness disclosure, and RLS residual notes. Misconfiguration here can be worse than a product bug.
 
@@ -135,4 +135,4 @@
 - **Severity:** Medium
 - **Why it matters:** Real email in migration notes + powerful admin APIs increase insider risk.
 - **Estimated effort:** Small
-- **Brief fix suggestion:** Remove PII from migration comments; rotate/lock owner account with MFA (ties to file 02 Phase 4).
+- **Brief fix suggestion:** Remove PII from migration comments; rotate/lock owner account with MFA (ties to file 03 Phase 4).

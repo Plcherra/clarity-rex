@@ -1,4 +1,4 @@
-# 08 — Privacy, Legal, and Compliance
+# 09 — Privacy, Legal, and Compliance
 
 **Covers:** Subprocessor disclosure, consent alignment with product rules, encryption-at-rest documentation, third-party data flows, and audit-trail integrity from a compliance lens. Not all items block a private pilot; several block broad public marketing.
 
@@ -49,14 +49,14 @@
 - **Severity:** Critical when enabled
 - **Why it matters:** Full prompts in logs are a privacy incident waiting to happen.
 - **Estimated effort:** Small
-- **Brief fix suggestion:** Hard-disable in production (file 03 Phase 2); verify here as a compliance checkbox.
+- **Brief fix suggestion:** Hard-disable in production (file 04 Phase 2); verify here as a compliance checkbox.
 
 ### Issue: Web voice JWT in URL (H3 — implement in 03)
 
 - **Severity:** High
 - **Why it matters:** Auth tokens in logs/history are a privacy and account-takeover risk.
 - **Estimated effort:** Medium
-- **Brief fix suggestion:** Ticket endpoint + log redaction (file 03); treat as privacy gate for web voice.
+- **Brief fix suggestion:** Ticket endpoint + log redaction (file 04); treat as privacy gate for web voice.
 
 ---
 

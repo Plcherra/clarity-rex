@@ -1,4 +1,4 @@
-# 05 — Plaid and Finance Ops
+# 06 — Plaid and Finance Ops
 
 **Covers:** Plaid production readiness, update-mode re-auth, sync/degraded states, finance assistant QA, and ops checklist. Money path failures are high-trust damage even when auth is solid.
 
@@ -96,4 +96,4 @@
 - **Severity:** Medium
 - **Why it matters:** Empty dashboard after name-only onboarding increases drop-off.
 - **Estimated effort:** Medium
-- **Brief fix suggestion:** Optional post-name prompt: Connect bank or Import CSV (mobile); coordinate with file 07 FTUE phases.
+- **Brief fix suggestion:** Optional post-name prompt: Connect bank or Import CSV (mobile); coordinate with file 08 FTUE phases.

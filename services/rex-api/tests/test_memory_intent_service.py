@@ -442,6 +442,63 @@ def test_detects_relationship_person_save_request():
     assert intent.metadata["entity_label"] == "pedro"
 
 
+def test_detects_mother_name_spoken_save_request():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory(
+        "Let's put my mother's name. It's called Ariadjana. "
+        "It's spelled A R I A D Y N A."
+    )
+
+    assert intent is not None
+    assert intent.content == "User's mom is Ariadjana."
+    assert intent.metadata["fact_kind"] == "relationship"
+    assert intent.metadata["entity_label"] == "ariadjana"
+    assert intent.metadata["relationship"] == "mom"
+
+
+def test_person_name_turn_does_not_need_location_clarification():
+    service = MemoryIntentService()
+    history = [
+        {
+            "role": "user",
+            "content": "You don't have any memory about my city?",
+        },
+        {
+            "role": "assistant",
+            "content": "Yes — you live in Somerville.",
+        },
+    ]
+
+    assert service.needs_contextual_location_clarification(
+        "Let's put my mama's name. It's Ariagena. It's spelled a r i a d.",
+        conversation_history=history,
+    ) is False
+
+
+def test_location_clarification_only_when_assistant_asks_for_city():
+    service = MemoryIntentService()
+    history = [
+        {"role": "user", "content": "Can you change my city?"},
+        {"role": "assistant", "content": "Sure, what's the right city?"},
+    ]
+
+    assert service.needs_contextual_location_clarification(
+        "Two m's",
+        conversation_history=history,
+    ) is True
+    assert service.needs_contextual_location_clarification(
+        "Two m's",
+        conversation_history=[
+            {"role": "user", "content": "I live in Somerville."},
+            {
+                "role": "assistant",
+                "content": "Got it, I updated that: you live in Somerville.",
+            },
+        ],
+    ) is False
+
+
 def test_detects_possessive_third_party_birthday():
     service = MemoryIntentService()
 

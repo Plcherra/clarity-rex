@@ -1,4 +1,4 @@
-# 02 — Observability and Crash Reporting
+# 03 — Observability and Crash Reporting
 
 **Covers:** Production blindness — crash reporting, product analytics, and the minimum event set needed to diagnose Saturday failures. Do this immediately after truth-rule fixes so every subsequent smoke test is visible in telemetry.
 

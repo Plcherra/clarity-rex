@@ -1,4 +1,4 @@
-# 07 — Spanish, i18n, and UX
+# 08 — Spanish, i18n, and UX
 
 **Covers:** Spanish launch completeness (especially save/confirm), remaining hardcoded English, first-time user experience, web honesty, and loading/empty-state polish. Do after safety and reliability — or explicitly label Spanish as beta.
 
@@ -96,7 +96,7 @@
 - **Severity:** Medium
 - **Why it matters:** Claiming full cross-platform finance/voice overstates CSV-less web and no background voice.
 - **Estimated effort:** Small
-- **Brief fix suggestion:** Marketing + App Store / site copy: web companion; mobile primary; fix stale Plaid web string (file 05).
+- **Brief fix suggestion:** Marketing + App Store / site copy: web companion; mobile primary; fix stale Plaid web string (file 06).
 
 ### Issue: Loading/empty states adequate but gallery excludes loaders (A51)
 
