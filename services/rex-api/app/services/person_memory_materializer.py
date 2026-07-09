@@ -1,7 +1,9 @@
 from typing import Any, Optional
 
 from app.services.person_card_builder import PersonCardBuilder
+from app.services.person_card_constants import PERSON_RELATIONSHIPS
 from app.services.person_memory_archival import PersonMemoryArchival
+from app.services.person_memory_consolidator import PersonMemoryConsolidator
 
 
 class PersonMemoryMaterializer:
@@ -10,6 +12,7 @@ class PersonMemoryMaterializer:
     def __init__(self) -> None:
         self._builder = PersonCardBuilder()
         self._archival = PersonMemoryArchival(self._builder)
+        self._consolidator = PersonMemoryConsolidator(self._builder)
 
     async def materialize_from_active_memories(
         self,
@@ -48,21 +51,24 @@ class PersonMemoryMaterializer:
             normalized_name=card["normalized_name"],
             relationship=card.get("relationship"),
         )
+        person = existing
         if existing is None:
-            await create_entity(card)
-            await self._archival.archive_covered_person_source_memories(
-                memory_service, [memory]
-            )
-            return
-        if update_entity is None:
+            person = await create_entity(card)
+        elif update_entity is not None:
+            updates = self._builder.merge_person_card(existing, card)
+            if updates:
+                person = await update_entity(str(existing["id"]), **updates) or existing
+            else:
+                person = existing
+        if not isinstance(person, dict):
             return
 
-        updates = self._builder.merge_person_card(existing, card)
-        if updates:
-            await update_entity(str(existing["id"]), **updates)
+        # Cover the just-written flat, then pull related birthday/people flats
+        # onto the same card (e.g. mom birthday Event + new mom name).
         await self._archival.archive_covered_person_source_memories(
             memory_service, [memory]
         )
+        await self._consolidator.consolidate_for_person(memory_service, person)
 
     def person_card_from_memory(self, memory: dict) -> Optional[dict[str, Any]]:
         return self._builder.person_card_from_memory(memory)
@@ -101,14 +107,14 @@ class PersonMemoryMaterializer:
                     return entity
         # Prefer matching an existing relationship card (e.g. mom) so a name
         # change updates the same person instead of creating a parallel card.
-        clean_relationship = self._builder._clean_label(relationship)
+        clean_relationship = self._canonical_relationship(relationship)
         if clean_relationship and clean_relationship not in {"person", "self", "user"}:
             for entity in entities:
-                entity_relationship = self._builder._clean_label(
+                entity_relationship = self._canonical_relationship(
                     entity.get("relationship")
                 )
                 attrs = entity.get("metadata") if isinstance(entity.get("metadata"), dict) else {}
-                attr_rel = self._builder._clean_label(
+                attr_rel = self._canonical_relationship(
                     (attrs.get("attributes") or {}).get("relationship_to_user")
                     if isinstance(attrs.get("attributes"), dict)
                     else None
@@ -124,3 +130,9 @@ class PersonMemoryMaterializer:
                 if self._builder._normalize_name(alias) == normalized_name:
                     return entity
         return None
+
+    def _canonical_relationship(self, value: object) -> str:
+        text = self._builder._clean_label(value)
+        if not text:
+            return ""
+        return PERSON_RELATIONSHIPS.get(text, text)

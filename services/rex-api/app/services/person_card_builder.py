@@ -86,7 +86,8 @@ class PersonCardBuilder(PersonCardBuilderText):
         metadata: dict[str, Any],
     ) -> Optional[dict[str, Any]]:
         label = self._clean_label(metadata.get("entity_label"))
-        relationship = self._clean_text(metadata.get("relationship")) or "person"
+        raw_relationship = self._clean_text(metadata.get("relationship")) or "person"
+        relationship = PERSON_RELATIONSHIPS.get(raw_relationship, raw_relationship)
         memory_id = self._clean_text(memory.get("id"))
         if not label:
             return None
@@ -225,10 +226,21 @@ class PersonCardBuilder(PersonCardBuilderText):
         elif not is_self_card and card.get("display_name"):
             incoming_display = self._clean_text(card.get("display_name"))
             current_display = self._clean_text(existing.get("display_name"))
-            if incoming_display and incoming_display != current_display:
+            # Birthday flats often use role labels ("Mom"). Don't overwrite a
+            # real personal name already on the card.
+            if self._is_relationship_role_label(incoming_display) and current_display and (
+                not self._is_relationship_role_label(current_display)
+            ):
+                pass
+            elif incoming_display and incoming_display != current_display:
                 updates["display_name"] = card["display_name"]
                 updates["normalized_name"] = card["normalized_name"]
-            if card.get("summary"):
+            if card.get("summary") and not updates.get("display_name"):
+                # Keep existing summary when we only attach attributes.
+                pass
+            elif card.get("summary") and (
+                not current_display or self._is_relationship_role_label(current_display)
+            ):
                 updates["summary"] = card["summary"]
 
         metadata = self._merge_metadata(existing.get("metadata"), card.get("metadata"))
@@ -247,6 +259,19 @@ class PersonCardBuilder(PersonCardBuilderText):
             updates["importance"] = card["importance"]
 
         return updates
+
+    def _is_relationship_role_label(self, value: str) -> bool:
+        normalized = self._clean_text(value).casefold()
+        return normalized in {
+            "mom",
+            "mother",
+            "mum",
+            "mama",
+            "dad",
+            "father",
+            "papa",
+            "person",
+        }
 
     def _merge_metadata(self, existing: object, incoming: object) -> dict[str, Any]:
         existing_dict = existing if isinstance(existing, dict) else {}

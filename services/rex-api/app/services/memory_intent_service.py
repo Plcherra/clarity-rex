@@ -5,12 +5,14 @@ from app.services.memory_date_normalizer import MemoryDateNormalizer
 from app.services.memory_intent_birthday import MemoryIntentBirthdayMixin
 from app.services.memory_intent_facts import MemoryIntentFactMixin
 from app.services.memory_intent_models import SimpleMemoryIntent
+from app.services.memory_intent_relationship import MemoryIntentRelationshipMixin
 from app.services.memory_intent_text import MemoryIntentTextMixin
 from app.services.personal_plan_intent_parser import PersonalPlanIntentParser
 
 
 class MemoryIntentService(
     MemoryIntentBirthdayMixin,
+    MemoryIntentRelationshipMixin,
     MemoryIntentFactMixin,
     MemoryIntentTextMixin,
 ):
@@ -167,6 +169,13 @@ class MemoryIntentService(
         )
         if contextual_save_proposal is not None:
             return contextual_save_proposal
+
+        contextual_relationship = self._detect_contextual_relationship_name(
+            message,
+            conversation_history=conversation_history,
+        )
+        if contextual_relationship is not None:
+            return contextual_relationship
 
         contextual_birthday = self._detect_contextual_birthday_memory(
             message,

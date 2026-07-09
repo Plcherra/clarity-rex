@@ -457,6 +457,43 @@ def test_detects_mother_name_spoken_save_request():
     assert intent.metadata["relationship"] == "mom"
 
 
+def test_detects_save_moms_name_as_phrase():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory(
+        "Can you save my mom's name as Ariadyna?"
+    )
+
+    assert intent is not None
+    assert intent.content == "User's mom is Ariadyna."
+    assert intent.metadata["fact_kind"] == "relationship"
+    assert intent.metadata["relationship"] == "mom"
+    assert intent.metadata["entity_label"] == "ariadyna"
+    # Fingerprint is relationship-stable so name changes update the same topic.
+    assert intent.metadata["topic_fingerprint"] == "fact:relationship:mom"
+
+
+def test_detects_contextual_name_reply_after_update_request():
+    service = MemoryIntentService()
+    history = [
+        {"role": "user", "content": "Can you update my mama's name?"},
+        {
+            "role": "assistant",
+            "content": "Sure — what should I save as your mama's name?",
+        },
+    ]
+
+    intent = service.detect_contextual_memory(
+        "Its Ariadyna",
+        conversation_history=history,
+    )
+
+    assert intent is not None
+    assert intent.content == "User's mom is Ariadyna."
+    assert intent.metadata["fact_kind"] == "relationship"
+    assert intent.metadata["relationship"] == "mom"
+
+
 def test_person_name_turn_does_not_need_location_clarification():
     service = MemoryIntentService()
     history = [

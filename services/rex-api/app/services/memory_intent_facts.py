@@ -3,59 +3,6 @@ from typing import Optional
 
 from app.services.memory_intent_models import SimpleMemoryIntent
 
-_RELATIONSHIP_ROLES = (
-    "best friend",
-    "friend",
-    "brother",
-    "sister",
-    "cousin",
-    "partner",
-    "wife",
-    "husband",
-    "boyfriend",
-    "girlfriend",
-    "fiancé",
-    "fiance",
-    "fiancée",
-    "fiancee",
-    "mother",
-    "mama",
-    "mom",
-    "mum",
-    "father",
-    "papa",
-    "dad",
-)
-_RELATIONSHIP_ROLE_ALT = "|".join(
-    sorted((re.escape(role) for role in _RELATIONSHIP_ROLES), key=len, reverse=True)
-)
-_RELATIONSHIP_SAVE_USER_PATTERN = re.compile(
-    r"\b(?:save|remember|keep)\s+my\s+"
-    rf"(?P<relationship>{_RELATIONSHIP_ROLE_ALT})\s+"
-    r"(?P<name>[\w][\w\s.'-]{1,60})",
-    re.IGNORECASE | re.UNICODE,
-)
-_RELATIONSHIP_NAME_CALLED_PATTERN = re.compile(
-    rf"\b(?:my\s+)?(?P<relationship>{_RELATIONSHIP_ROLE_ALT})(?:'s)?\s+name\b"
-    r".{0,200}?\b(?:(?:is\s+)?called|named)\s+"
-    r"(?P<name>[\w][\w'-]{0,40})",
-    re.IGNORECASE | re.UNICODE | re.DOTALL,
-)
-_RELATIONSHIP_NAME_IS_PATTERN = re.compile(
-    rf"\b(?:my\s+)?(?P<relationship>{_RELATIONSHIP_ROLE_ALT})(?:'s)?\s+name\s+is\s+"
-    r"(?P<name>[\w][\w'-]{0,40})",
-    re.IGNORECASE | re.UNICODE,
-)
-_RELATIONSHIP_IS_PATTERN = re.compile(
-    rf"\bmy\s+(?P<relationship>{_RELATIONSHIP_ROLE_ALT})\s+is\s+"
-    r"(?P<name>[\w][\w'-]{0,40})",
-    re.IGNORECASE | re.UNICODE,
-)
-_ASSISTANT_RELATIONSHIP_SAVE_PATTERN = re.compile(
-    r"\bsave\s+(?P<name>[\w][\w\s.'-]{1,40}?)\s+as\s+your\s+"
-    r"(?P<relationship>[^?.!]+)",
-    re.IGNORECASE | re.UNICODE,
-)
 _DEVICE_TAIL = (
     r"(?:\bpc\b|\bcomputer\b|\blaptop\b|\bdesktop\b|\bphone\b|\btablet\b|"
     r"\bconsole\b|\b[A-Za-z][A-Za-z0-9 -]*\d{1,4}\s*[A-Za-z]{0,3}\b)"
@@ -195,55 +142,6 @@ class MemoryIntentFactMixin:
                 "device_model": device,
             },
         )
-
-    def _detect_relationship_person(self, message: str) -> Optional[SimpleMemoryIntent]:
-        match = _RELATIONSHIP_SAVE_USER_PATTERN.search(message)
-        if match is None:
-            match = _RELATIONSHIP_NAME_CALLED_PATTERN.search(message)
-        if match is None:
-            match = _RELATIONSHIP_NAME_IS_PATTERN.search(message)
-        if match is None:
-            match = _RELATIONSHIP_IS_PATTERN.search(message)
-        if match is None:
-            match = _ASSISTANT_RELATIONSHIP_SAVE_PATTERN.search(message)
-        if match is None:
-            return None
-        return self._relationship_person_intent(
-            match.group("name"),
-            match.group("relationship"),
-        )
-
-    def _relationship_person_intent(
-        self,
-        name: str,
-        relationship: str,
-    ) -> Optional[SimpleMemoryIntent]:
-        clean_name = self._clean_fact(name)
-        clean_relationship = self._clean_person(relationship)
-        if len(clean_name) < 2 or len(clean_relationship) < 2:
-            return None
-        if clean_name.lower() in {"birthday", "memory", "friend", "called", "named"}:
-            return None
-        display_name = clean_name.title()
-        entity_label = self._normalize_name(clean_name)
-        return SimpleMemoryIntent(
-            memory_type="fact",
-            content=f"User's {clean_relationship} is {display_name}.",
-            importance=4,
-            metadata={
-                "fact_kind": "relationship",
-                "memory_category": "People",
-                "entity_label": entity_label,
-                "relationship": clean_relationship,
-                "topic_fingerprint": (
-                    f"fact:relationship:{entity_label}:"
-                    f"{self._fingerprint(clean_relationship)}"
-                ),
-            },
-        )
-
-    def _normalize_name(self, value: str) -> str:
-        return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
 
     def _device_intent_from_label(self, device: str) -> Optional[SimpleMemoryIntent]:
         cleaned = self._clean_device_model(device)

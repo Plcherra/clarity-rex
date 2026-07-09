@@ -807,6 +807,48 @@ async def test_relationship_person_save_after_mom_birthday_does_not_reuse_birthd
 
 
 @pytest.mark.asyncio
+async def test_save_moms_name_as_proposes_and_consolidates_birthday_event():
+    ai_service = FakeAIService(response="Rex follow-up")
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        ai_service,
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+
+    birthday_proposed = await chat_service.send_message(
+        "My mom's birthday is June 18"
+    )
+    birthday_saved = await confirm_durable_write(chat_service, birthday_proposed)
+    conversation_id = birthday_saved["conversation_id"]
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+    )
+
+    name_proposed = await chat_service.send_message(
+        "Can you save my mom's name as Ariadyna?",
+        conversation_id,
+    )
+    assert name_proposed["memory_changes"]["confirmation_required"] == 1
+    name_saved = await confirm_durable_write(chat_service, name_proposed)
+
+    assert name_saved["memory_changes"]["created"] == 1 or name_saved[
+        "memory_changes"
+    ].get("updated", 0) >= 1
+    person = assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        display_name_contains="Ariadyna",
+        attribute_contains={"birthday": "June 18"},
+    )
+    assert person["display_name"] == "Ariadyna"
+    assert memory_service.long_term_memory == []
+
+
+@pytest.mark.asyncio
 async def test_possessive_third_party_birthday_saves_correct_person_label():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()

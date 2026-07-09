@@ -848,6 +848,52 @@ async def test_relationship_name_update_merges_same_person_card():
 
 
 @pytest.mark.asyncio
+async def test_relationship_name_save_consolidates_existing_birthday_flat():
+    service = InMemoryRetrievalService(
+        memories=[
+            {
+                "id": "memory-mom-birthday",
+                "memory_type": "fact",
+                "content": "User's mom's birthday is June 18.",
+                "importance": 5,
+                "active": True,
+                "metadata": {
+                    "fact_kind": "birthday",
+                    "memory_category": "Events",
+                    "entity_label": "mom",
+                    "normalized_date": "June 18",
+                    "topic_fingerprint": "fact:birthday:mom",
+                },
+            },
+            {
+                "id": "memory-mom-name",
+                "memory_type": "fact",
+                "content": "User's mom is Ariadyna.",
+                "importance": 5,
+                "active": True,
+                "metadata": {
+                    "fact_kind": "relationship",
+                    "memory_category": "People",
+                    "relationship": "mom",
+                    "entity_label": "ariadyna",
+                    "topic_fingerprint": "fact:relationship:mom",
+                },
+            },
+        ]
+    )
+
+    materializer = PersonMemoryMaterializer()
+    await materializer.materialize_from_memory(service, service.memories[1])
+
+    assert len(service.entities) == 1
+    person = service.entities[0]
+    assert person["display_name"] == "Ariadyna"
+    assert person["relationship"] == "mother"
+    assert person["metadata"]["attributes"]["birthday"] == "June 18"
+    assert service.memories == []
+
+
+@pytest.mark.asyncio
 async def test_structured_memory_context_includes_plans_linked_to_selected_person():
     service = InMemoryRetrievalService(
         memories=[],
