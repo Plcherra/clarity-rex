@@ -12,6 +12,7 @@ from app.services.action_truth_policy import (
     safe_unexecuted_finance_response,
     safe_unexecuted_goal_response,
     safe_unexecuted_memory_response,
+    safe_unexecuted_saved_memory_claim_response,
     safe_unsupported_action_response,
 )
 from app.services.chat_turn_observability import ChatTurnTrace
@@ -156,6 +157,14 @@ class ChatResponseTruthService:
                 updated,
                 turn_trace,
             )
+        # Any intent: block Knows/saved-memory success claims without a write.
+        updated = safe_unexecuted_saved_memory_claim_response(response)
+        response = _apply_truth_guard(
+            "unexecuted_saved_memory_claim",
+            response,
+            updated,
+            turn_trace,
+        )
         updated = safe_unexecuted_finance_response(
             response,
             user_message=user_message,

@@ -1,10 +1,11 @@
 from typing import Any, Optional
 
+from app.services.durable_record_delete import hard_delete_record
 from app.services.person_card_builder import PersonCardBuilder
 
 
 class PersonMemoryArchival:
-    """Archive flat source memories covered by Person entity cards."""
+    """Remove flat source memories covered by Person entity cards."""
 
     def __init__(self, builder: PersonCardBuilder) -> None:
         self._builder = builder
@@ -14,9 +15,13 @@ class PersonMemoryArchival:
         memory_service,
         memories: list[dict],
     ) -> None:
+        """Hard-delete covered flat duplicates after a person card exists.
+
+        Soft-archive hid orphans and made integrity bugs hard to catch. Covered
+        flats are deleted once the person card is confirmed.
+        """
         list_entities = getattr(memory_service, "list_entities", None)
-        update_memory = getattr(memory_service, "update_long_term_memory", None)
-        if list_entities is None or update_memory is None:
+        if list_entities is None:
             return
         try:
             entities = await list_entities(entity_type="person", active=True, limit=100)
@@ -40,22 +45,11 @@ class PersonMemoryArchival:
             )
             if matched is None:
                 continue
-            person, attributes, reason = matched
-            archived_metadata = {
-                **memory_metadata,
-                "canonical_entity_id": person.get("id"),
-                "canonical_entity_type": "person",
-                "duplicate_archive_reason": reason,
-                "covered_attributes": sorted(attributes),
-            }
-            try:
-                await update_memory(
-                    memory_id,
-                    active=False,
-                    metadata=archived_metadata,
-                )
-            except Exception:
-                continue
+            await hard_delete_record(
+                memory_service,
+                table="long_term_memory",
+                record_id=memory_id,
+            )
 
     async def archive_source_memories_for_entity(
         self,
@@ -64,6 +58,7 @@ class PersonMemoryArchival:
         *,
         reason: str = "entity_archived",
     ) -> None:
+        """When a person entity is user-archived, soft-deactivate linked flats."""
         deactivate_memory = getattr(memory_service, "deactivate_long_term_memory", None)
         update_memory = getattr(memory_service, "update_long_term_memory", None)
         if deactivate_memory is None and update_memory is None:
@@ -114,13 +109,23 @@ class PersonMemoryArchival:
                 continue
             person_attributes = person_metadata.get("attributes")
             if not isinstance(person_attributes, dict):
-                continue
+                person_attributes = {}
             if self._builder._is_self_entity(entity):
                 attributes = self._builder._self_attributes(memory, memory_metadata)
                 reason = "covered_by_self_person_card"
-            else:
-                attributes = self._person_memory_attributes(memory_metadata)
-                reason = "covered_by_person_card"
+                if attributes and self._person_attributes_cover(
+                    person_attributes, attributes
+                ):
+                    return entity, attributes, reason
+                continue
+
+            fact_kind = str(memory_metadata.get("fact_kind") or "").casefold()
+            category = str(memory_metadata.get("memory_category") or "").casefold()
+            if fact_kind == "relationship" or category == "people":
+                return entity, {"relationship": "covered"}, "covered_by_person_card"
+
+            attributes = self._person_memory_attributes(memory_metadata)
+            reason = "covered_by_person_card"
             if attributes and self._person_attributes_cover(person_attributes, attributes):
                 return entity, attributes, reason
         return None

@@ -3065,11 +3065,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get memoryHeaderEmptyActiveBody =>
-      'Pídele a Rex en el chat o por voz que guarde algo y aparecerá aquí.';
+      'Agrega algo aquí, o pídele a Rex en el chat o por voz que lo guarde.';
 
   @override
   String get memoryHeaderEmptyBody =>
-      'Aquí aparecerán los datos, las personas y las preferencias guardadas desde el chat o la voz.';
+      'Aquí aparecerán los datos, las personas y las preferencias guardadas.';
+
+  @override
+  String get memoryHeaderEmptyAddAction => 'Agregar información guardada';
 
   @override
   String get memoryHeaderNoMatchingTitle => 'No hay información coincidente';

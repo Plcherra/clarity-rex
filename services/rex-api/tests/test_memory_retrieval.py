@@ -43,6 +43,13 @@ class InMemoryRetrievalService(SupabaseMemoryService):
                 return memory
         return None
 
+    async def delete_long_term_memory(self, memory_id):
+        before = len(self.memories)
+        self.memories = [
+            memory for memory in self.memories if memory["id"] != memory_id
+        ]
+        return len(self.memories) < before
+
     async def list_entities(
         self,
         limit=50,
@@ -752,16 +759,12 @@ async def test_save_path_materializes_self_person_from_safe_flat_facts():
         "memory-location",
         "memory-birthday",
     }
-    assert [memory["active"] for memory in service.memories] == [False, False, False]
-    assert all(
-        memory["metadata"]["duplicate_archive_reason"]
-        == "covered_by_self_person_card"
-        for memory in service.memories
-    )
+    # Covered flats are hard-deleted once the person card exists.
+    assert service.memories == []
 
 
 @pytest.mark.asyncio
-async def test_save_path_archives_non_self_person_source_memory():
+async def test_save_path_hard_deletes_non_self_person_source_memory():
     service = InMemoryRetrievalService(
         [
             {
@@ -793,10 +796,55 @@ async def test_save_path_archives_non_self_person_source_memory():
     assert person["display_name"] == "Cousin Ana"
     assert person["metadata"]["attributes"]["birthday"] == "July 9"
     assert person["metadata"]["source_memory_ids"] == ["memory-ana-birthday"]
-    assert service.memories[0]["active"] is False
-    assert service.memories[0]["metadata"]["duplicate_archive_reason"] == (
-        "covered_by_person_card"
+    assert service.memories == []
+
+
+@pytest.mark.asyncio
+async def test_relationship_name_update_merges_same_person_card():
+    service = InMemoryRetrievalService(
+        memories=[
+            {
+                "id": "memory-mom-name",
+                "memory_type": "fact",
+                "content": "My mother's name is Ariadyna.",
+                "importance": 5,
+                "active": True,
+                "metadata": {
+                    "fact_kind": "relationship",
+                    "memory_category": "People",
+                    "relationship": "mother",
+                    "entity_label": "Ariadyna",
+                    "topic_fingerprint": "fact:relationship:mother",
+                },
+            },
+        ],
+        entities=[
+            {
+                "id": "entity-mom",
+                "entity_type": "person",
+                "display_name": "S Mom",
+                "normalized_name": "s mom",
+                "aliases": ["mom", "mother"],
+                "relationship": "mother",
+                "summary": "Mother: S Mom.",
+                "importance": 5,
+                "status": "active",
+                "active": True,
+                "metadata": {
+                    "attributes": {"relationship_to_user": "mother"},
+                    "source_memory_ids": ["memory-old-mom"],
+                },
+            }
+        ],
     )
+
+    materializer = PersonMemoryMaterializer()
+    await materializer.materialize_from_memory(service, service.memories[0])
+
+    assert len(service.entities) == 1
+    assert service.entities[0]["display_name"] == "Ariadyna"
+    assert service.entities[0]["relationship"] == "mother"
+    assert service.memories == []
 
 
 @pytest.mark.asyncio

@@ -99,6 +99,22 @@ class PersonMemoryMaterializer:
             for entity in entities:
                 if self._builder._is_self_entity(entity):
                     return entity
+        # Prefer matching an existing relationship card (e.g. mom) so a name
+        # change updates the same person instead of creating a parallel card.
+        clean_relationship = self._builder._clean_label(relationship)
+        if clean_relationship and clean_relationship not in {"person", "self", "user"}:
+            for entity in entities:
+                entity_relationship = self._builder._clean_label(
+                    entity.get("relationship")
+                )
+                attrs = entity.get("metadata") if isinstance(entity.get("metadata"), dict) else {}
+                attr_rel = self._builder._clean_label(
+                    (attrs.get("attributes") or {}).get("relationship_to_user")
+                    if isinstance(attrs.get("attributes"), dict)
+                    else None
+                )
+                if entity_relationship == clean_relationship or attr_rel == clean_relationship:
+                    return entity
         for entity in entities:
             if self._builder._normalize_name(entity.get("normalized_name")) == normalized_name:
                 return entity

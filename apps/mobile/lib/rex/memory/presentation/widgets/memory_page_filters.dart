@@ -86,11 +86,8 @@ SavedMemoryResults filterSavedMemory({
               entity.searchableFields.map((field) => field.memoryRecordLabel),
             ),
           ),
-    goalMemories: showPeopleOnly || showPreferencesOnly
-        ? const []
-        : memories
-              .where((memory) => memory.memoryGroup == MemoryGroup.goals)
-              .toList(growable: false),
+    // Goals/plans belong on the Goals tab only.
+    goalMemories: const [],
     rules: showPeopleOnly || showPreferencesOnly
         ? const []
         : filterList(
@@ -104,19 +101,7 @@ SavedMemoryResults filterSavedMemory({
               rule.status.memoryRecordLabel,
             ]),
           ),
-    plans: showPeopleOnly || showPreferencesOnly
-        ? const []
-        : filterList(
-            state.plans,
-            (plan) => _matchesQuery(normalizedQuery, [
-              plan.title,
-              plan.description,
-              plan.desiredOutcome,
-              plan.planType.memoryRecordLabel,
-              'Priority ${plan.priority}',
-              plan.status.memoryRecordLabel,
-            ]),
-          ),
+    plans: const [],
     events: showPeopleOnly || showPreferencesOnly
         ? const []
         : memories

@@ -82,7 +82,7 @@ async def test_save_path_materializer_still_builds_person_cards():
     await materializer.materialize_from_active_memories(store)
 
     assert len(store.entities) == 1
-    assert store.memories[0]["active"] is False
+    assert store.memories == []
 
     retrieval = MemoryRetrievalService(store)
     context = await retrieval.get_structured_memory_context(
@@ -124,3 +124,10 @@ class _EntityListMemoryService:
 
     async def deactivate_long_term_memory(self, memory_id):
         return await self.update_long_term_memory(memory_id, active=False)
+
+    async def delete_long_term_memory(self, memory_id):
+        before = len(self.memories)
+        self.memories = [
+            memory for memory in self.memories if memory["id"] != memory_id
+        ]
+        return len(self.memories) < before

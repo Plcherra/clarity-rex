@@ -108,21 +108,41 @@ class MemorySearchAndFilters extends StatelessWidget {
 }
 
 class SavedMemoryHeader extends StatelessWidget {
-  const SavedMemoryHeader({super.key});
+  const SavedMemoryHeader({
+    super.key,
+    this.onCreate,
+    this.createEnabled = true,
+  });
+
+  final VoidCallback? onCreate;
+  final bool createEnabled;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final l10n = context.l10n;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: RexUiTokens.space4),
-      child: Text(
-        context.l10n.memoryHeaderSectionTitle,
-        style: theme.textTheme.titleLarge?.copyWith(
-          color: colors.textPrimary,
-          fontWeight: FontWeight.w900,
-        ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.memoryHeaderSectionTitle,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          if (onCreate != null)
+            IconButton(
+              onPressed: createEnabled ? onCreate : null,
+              icon: const Icon(Icons.add_rounded),
+              tooltip: l10n.memoryCreateAddTooltip,
+            ),
+        ],
       ),
     );
   }
@@ -219,11 +239,15 @@ class _EmptyMemoryShell extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.body,
+    this.actionLabel,
+    this.onAction,
   });
 
   final IconData icon;
   final String title;
   final String body;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -267,6 +291,13 @@ class _EmptyMemoryShell extends StatelessWidget {
                   fontSize: 14,
                 ),
               ),
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: RexUiTokens.space12),
+                FilledButton.tonal(
+                  onPressed: onAction,
+                  child: Text(actionLabel!),
+                ),
+              ],
             ],
           ),
         ),
@@ -276,9 +307,14 @@ class _EmptyMemoryShell extends StatelessWidget {
 }
 
 class MemoryEmptyState extends StatelessWidget {
-  const MemoryEmptyState({required this.activeOnly, super.key});
+  const MemoryEmptyState({
+    required this.activeOnly,
+    this.onCreate,
+    super.key,
+  });
 
   final bool activeOnly;
+  final VoidCallback? onCreate;
 
   String _emptyTitle(AppLocalizations l10n) {
     return activeOnly
@@ -299,6 +335,8 @@ class MemoryEmptyState extends StatelessWidget {
       icon: Icons.psychology_alt_outlined,
       title: _emptyTitle(l10n),
       body: _emptyBody(l10n),
+      actionLabel: onCreate == null ? null : l10n.memoryHeaderEmptyAddAction,
+      onAction: onCreate,
     );
   }
 }

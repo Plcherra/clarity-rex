@@ -91,12 +91,15 @@ class MemoryState {
   }
 
   bool get isSavedOverviewEmpty {
-    return memories.isEmpty &&
+    // Plans/goals live on the Goals tab — they must not keep Knows non-empty.
+    final knowsMemories = memories.where(
+      (memory) => memory.memoryGroup != MemoryGroup.goals,
+    );
+    return knowsMemories.isEmpty &&
         people.isEmpty &&
         placeEntities.isEmpty &&
         otherEntities.isEmpty &&
-        rules.isEmpty &&
-        plans.isEmpty;
+        rules.isEmpty;
   }
 }
 

@@ -36,6 +36,10 @@ class MemorySaveMatcher:
         for memory in archived_memories:
             if self._memory_payload_matches_intent(memory, intent):
                 return memory
+        # After hard-delete of covered flats, person cards are the durable source.
+        person = await self._find_covering_person_entity(intent)
+        if person is not None:
+            return person
         return None
 
     async def _find_active_memory_by_topic(
@@ -44,6 +48,9 @@ class MemorySaveMatcher:
     ) -> Optional[dict]:
         intent_fingerprint = self._intent_fingerprint(intent)
         if not intent_fingerprint:
+            person = await self._find_covering_person_entity(intent)
+            if person is not None:
+                return person
             return None
         memories = await self._active_memories_for_intent(intent)
         for memory in memories:
@@ -52,6 +59,9 @@ class MemorySaveMatcher:
         for memory in memories:
             if self._memory_topic_matches_intent(memory, intent):
                 return memory
+        person = await self._find_covering_person_entity(intent)
+        if person is not None:
+            return person
         return None
 
     async def _active_memories_for_intent(
@@ -90,6 +100,106 @@ class MemorySaveMatcher:
             for memory in memories
             if self._is_covered_by_structured_memory(memory)
         ]
+
+    async def _find_covering_person_entity(
+        self,
+        intent: SimpleMemoryIntent,
+    ) -> Optional[dict]:
+        list_entities = getattr(self.memory_service, "list_entities", None)
+        if list_entities is None:
+            return None
+        try:
+            entities = await list_entities(
+                entity_type="person",
+                active=True,
+                limit=100,
+            )
+        except Exception:
+            return None
+        for entity in entities:
+            if self._person_entity_covers_intent(entity, intent):
+                return entity
+        return None
+
+    def _person_entity_covers_intent(
+        self,
+        entity: dict,
+        intent: SimpleMemoryIntent,
+    ) -> bool:
+        if entity.get("active") is False:
+            return False
+        fact_kind = str(intent.metadata.get("fact_kind") or "")
+        relationship = self._normalize_memory_text(
+            str(entity.get("relationship") or "")
+        )
+        metadata = entity.get("metadata") if isinstance(entity.get("metadata"), dict) else {}
+        attributes = (
+            metadata.get("attributes")
+            if isinstance(metadata.get("attributes"), dict)
+            else {}
+        )
+        attr_rel = self._normalize_memory_text(
+            str(attributes.get("relationship_to_user") or "")
+        )
+
+        if fact_kind == "birthday":
+            intent_entity = self._normalize_memory_text(
+                str(intent.metadata.get("entity_label") or "")
+            )
+            intent_date = self._normalize_memory_text(
+                str(intent.metadata.get("normalized_date") or "")
+            )
+            birthday = self._normalize_memory_text(str(attributes.get("birthday") or ""))
+            if not birthday:
+                return False
+            if intent_date and intent_date not in birthday and birthday not in intent_date:
+                return False
+            if relationship == "self" and (
+                not intent_entity or intent_entity in {"self", "user", "me"}
+            ):
+                return True
+            if not intent_entity:
+                return False
+            haystacks = {
+                relationship,
+                attr_rel,
+                self._normalize_memory_text(str(entity.get("display_name") or "")),
+                self._normalize_memory_text(str(entity.get("normalized_name") or "")),
+            }
+            for alias in entity.get("aliases") or []:
+                haystacks.add(self._normalize_memory_text(str(alias)))
+            # mom/mother and dad/father are interchangeable relationship labels.
+            if intent_entity in {"mom", "mother", "mum", "mama"}:
+                haystacks.update({"mom", "mother", "mum", "mama"})
+            if intent_entity in {"dad", "father", "papa"}:
+                haystacks.update({"dad", "father", "papa"})
+            return any(
+                intent_entity == value or intent_entity in value or value in intent_entity
+                for value in haystacks
+                if value
+            )
+
+        if fact_kind in {"name", "location"}:
+            if relationship != "self":
+                return False
+            if fact_kind == "name":
+                full_name = self._normalize_memory_text(
+                    str(attributes.get("full_name") or "")
+                )
+                intent_content = self._normalize_memory_text(intent.content)
+                return bool(full_name) and full_name in intent_content
+            location = self._normalize_memory_text(str(attributes.get("location") or ""))
+            intent_content = self._normalize_memory_text(intent.content)
+            return bool(location) and location in intent_content
+
+        if fact_kind == "relationship":
+            intent_rel = self._normalize_memory_text(
+                str(intent.metadata.get("relationship") or "")
+            )
+            return bool(intent_rel) and (
+                intent_rel == relationship or intent_rel == attr_rel
+            )
+        return False
 
     def _memory_matches_intent(
         self,
@@ -168,11 +278,15 @@ class MemorySaveMatcher:
         if fact_kind == "personal_plan":
             return self._memory_plan_topic_matches(normalized_content, intent)
         if fact_kind == "relationship":
-            entity = self._normalize_memory_text(
-                str(intent.metadata.get("entity_label") or "")
-            )
             relationship = self._normalize_memory_text(
                 str(intent.metadata.get("relationship") or "")
+            )
+            # Name changes for the same relationship should update the existing
+            # mom/friend fact instead of creating a parallel record.
+            if relationship and relationship in normalized_content:
+                return True
+            entity = self._normalize_memory_text(
+                str(intent.metadata.get("entity_label") or "")
             )
             return bool(entity and relationship) and entity in normalized_content and (
                 relationship in normalized_content

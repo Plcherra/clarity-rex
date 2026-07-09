@@ -67,6 +67,21 @@ class PersonCardBuilderText:
         name = self._trim_fact_value(match.group(1))
         return name if self._is_safe_full_name(name) else ""
 
+    def _extract_single_name(self, content: str) -> str:
+        """Accept a single given name for explicit name facts (e.g. 'My name is Pedro')."""
+        match = re.search(
+            r"\b(?:my name is|user's name is|your name is)\s+"
+            r"([A-Za-z][A-Za-z.'-]*)",
+            content,
+            flags=re.IGNORECASE,
+        )
+        if match is None:
+            return ""
+        name = self._trim_fact_value(match.group(1))
+        if not name or name.casefold() in SELF_LABELS:
+            return ""
+        return name if name.replace(".", "").replace("'", "").isalpha() else ""
+
     def _extract_location(self, content: str) -> str:
         match = re.search(
             r"\b(?:i live in|user lives in|you live in)\s+([^.!?;]+)",

@@ -168,6 +168,8 @@ class PersonCardBuilder(PersonCardBuilderText):
         attributes: dict[str, str] = {}
 
         full_name = self._extract_full_name(content)
+        if not full_name and fact_kind == "name":
+            full_name = self._extract_single_name(content)
         if fact_kind == "name" and full_name:
             attributes["full_name"] = full_name
         elif full_name:
@@ -209,6 +211,9 @@ class PersonCardBuilder(PersonCardBuilderText):
             updates["relationship"] = card["relationship"]
         elif is_self_card and existing.get("relationship") != "self":
             updates["relationship"] = "self"
+        elif card.get("relationship") and existing.get("relationship"):
+            # Keep relationship label; name changes update the same card.
+            pass
 
         if is_self_card and card.get("display_name") != SELF_DISPLAY_FALLBACK:
             current_display = self._clean_text(existing.get("display_name"))
@@ -217,6 +222,14 @@ class PersonCardBuilder(PersonCardBuilderText):
                 current_normalized = self._normalize_name(existing.get("normalized_name"))
                 if current_normalized in {"", "self", "user"}:
                     updates["normalized_name"] = card["normalized_name"]
+        elif not is_self_card and card.get("display_name"):
+            incoming_display = self._clean_text(card.get("display_name"))
+            current_display = self._clean_text(existing.get("display_name"))
+            if incoming_display and incoming_display != current_display:
+                updates["display_name"] = card["display_name"]
+                updates["normalized_name"] = card["normalized_name"]
+            if card.get("summary"):
+                updates["summary"] = card["summary"]
 
         metadata = self._merge_metadata(existing.get("metadata"), card.get("metadata"))
         if removed_aliases:

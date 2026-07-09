@@ -22,6 +22,7 @@ from app.services.memory_discipline_writes import (
     MemoryWriteError,
     apply_disciplined_long_term_memory,
 )
+from app.services.memory_persist_orchestrator import MemoryPersistOrchestrator
 from app.services.open_thread_service import OpenThreadService
 from app.models.open_thread import OpenThreadCreateRequest
 from app.services.plan_errors import PlanServiceError
@@ -38,11 +39,15 @@ class DurableWriteApplier:
         open_thread_service: Optional[OpenThreadService] = None,
         plan_applier: Optional[ConfirmedPlanWriteApplier] = None,
         discipline: Optional[MemoryDisciplineService] = None,
+        persist_orchestrator: Optional[MemoryPersistOrchestrator] = None,
     ) -> None:
         self.memory_service = memory_service
         self.plan_service = plan_service or PlanService(memory_service)
         self.open_thread_service = open_thread_service or OpenThreadService(memory_service)
         self.discipline = discipline or MemoryDisciplineService(memory_service)
+        self.persist_orchestrator = (
+            persist_orchestrator or MemoryPersistOrchestrator()
+        )
         self.plan_applier = plan_applier or ConfirmedPlanWriteApplier(
             memory_service,
             plan_service=self.plan_service,
@@ -124,7 +129,7 @@ class DurableWriteApplier:
             )
 
         try:
-            return await apply_disciplined_long_term_memory(
+            result = await apply_disciplined_long_term_memory(
                 self.discipline,
                 payload=payload,
                 conversation_id=conversation_id,
@@ -145,6 +150,13 @@ class DurableWriteApplier:
                 error=exc,
                 conversation_id=conversation_id,
             )
+        record = result.get("record") if isinstance(result, dict) else None
+        if isinstance(record, dict):
+            await self.persist_orchestrator.after_long_term_memory_write(
+                self.memory_service,
+                record,
+            )
+        return result
 
     async def _apply_memory_update(self, snapshot: dict[str, Any]) -> dict[str, Any]:
         payload = dict(snapshot.get("payload") or {})
@@ -176,6 +188,10 @@ class DurableWriteApplier:
                 snapshot_type="memory_update",
                 detail="missing_record",
             )
+        await self.persist_orchestrator.after_long_term_memory_write(
+            self.memory_service,
+            record,
+        )
         return {"applied": True, "record": record, "merged": False}
 
     async def _apply_plan(

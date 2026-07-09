@@ -11,6 +11,7 @@ from app.services.memory_discipline_writes import (
 )
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 from app.models.memory_discipline import MemoryRecordKind
+from app.services.memory_persist_orchestrator import MemoryPersistOrchestrator
 from app.services.person_memory_materializer import PersonMemoryMaterializer
 
 
@@ -21,10 +22,14 @@ class MemoryWriteService:
         discipline: MemoryDisciplineService,
         *,
         materializer: Optional[PersonMemoryMaterializer] = None,
+        persist_orchestrator: Optional[MemoryPersistOrchestrator] = None,
     ) -> None:
         self.memory_service = memory_service
         self.discipline = discipline
         self.materializer = materializer or PersonMemoryMaterializer()
+        self.persist_orchestrator = persist_orchestrator or MemoryPersistOrchestrator(
+            materializer=self.materializer,
+        )
         self._long_term_repository = LongTermMemoryRepository(memory_service)
 
     async def create_memory(self, request: MemoryCreateRequest) -> dict[str, Any]:
@@ -51,6 +56,11 @@ class MemoryWriteService:
         except MemoryServiceError as error:
             raise MemoryWriteError(error.detail, error.status_code) from error
 
+        if isinstance(record, dict):
+            await self.persist_orchestrator.after_long_term_memory_write(
+                self.memory_service,
+                record,
+            )
         return record
 
     async def _save_long_term_memory(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -60,18 +70,3 @@ class MemoryWriteService:
             importance=int(payload.get("importance") or 3),
             metadata=dict(payload.get("metadata") or {}),
         )
-
-    async def _materialize_if_person_fact(self, record: dict[str, Any]) -> None:
-        metadata = record.get("metadata")
-        if not isinstance(metadata, dict):
-            return
-        category = str(metadata.get("memory_category") or "").casefold()
-        if category not in {"people", "events"} and metadata.get("fact_kind") != "birthday":
-            return
-        try:
-            await self.materializer.materialize_from_memory(
-                self.memory_service,
-                record,
-            )
-        except Exception:
-            return

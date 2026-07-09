@@ -15,8 +15,9 @@ import 'helpers/l10n_test_wrapper.dart';
 
 Future<void> pumpMemoryPage(
   WidgetTester tester,
-  MemoryPageFakeMemoryApi api,
-) async {
+  MemoryPageFakeMemoryApi api, {
+  bool showAppBar = true,
+}) async {
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferencesAsyncPlatform.instance =
       InMemorySharedPreferencesAsync.withData({});
@@ -31,7 +32,7 @@ Future<void> pumpMemoryPage(
         memoryApiProvider.overrideWithValue(api),
         localeControllerProvider.overrideWithValue(localeController),
       ],
-      child: wrapWithL10n(const MemoryPage()),
+      child: wrapWithL10n(MemoryPage(showAppBar: showAppBar)),
     ),
   );
   await tester.pumpAndSettle();

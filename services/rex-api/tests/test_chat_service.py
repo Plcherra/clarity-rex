@@ -468,6 +468,23 @@ async def test_chat_service_blocks_memory_success_claim_without_backend_write():
 
 
 @pytest.mark.asyncio
+async def test_chat_service_blocks_mother_name_success_claim_on_unknown_turn():
+    ai_service = FakeAIService(
+        response="Updated your mother's name to Ariadyna in saved memory."
+    )
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(ai_service, FileService(), memory_service)
+
+    result = await chat_service.send_message("Its Ariadyna")
+
+    assert result["response"] == (
+        "I can help with that, but I don't have a confirmed saved change from this "
+        "turn. Tell me the exact fact to save or try again."
+    )
+    assert result["memory_changes"] is None
+
+
+@pytest.mark.asyncio
 async def test_chat_service_allows_old_chat_no_result_claim_after_completed_search():
     ai_service = FakeAIService(
         response="I checked the old chats and found no mentions of your mom."

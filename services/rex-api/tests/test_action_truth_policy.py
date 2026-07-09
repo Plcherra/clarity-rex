@@ -81,6 +81,44 @@ def test_unexecuted_memory_saving_claim_is_blocked():
     )
 
 
+def test_saved_memory_claim_without_write_is_blocked_for_unknown_turns():
+    from app.services.action_truth_policy import (
+        response_claims_saved_memory_success,
+        safe_unexecuted_saved_memory_claim_response,
+    )
+
+    claim = "Updated your mother's name to Ariadyna in saved memory."
+    assert response_claims_saved_memory_success(claim) is True
+    response = safe_unexecuted_saved_memory_claim_response(claim)
+    assert response == (
+        "I can help with that, but I don't have a confirmed saved change from this "
+        "turn. Tell me the exact fact to save or try again."
+    )
+
+
+def test_casual_success_without_memory_claim_is_not_blocked_by_saved_memory_guard():
+    from app.services.action_truth_policy import (
+        safe_unexecuted_saved_memory_claim_response,
+    )
+
+    response = safe_unexecuted_saved_memory_claim_response(
+        "Got it — sounds like a good night."
+    )
+    assert response == "Got it — sounds like a good night."
+
+
+def test_spanish_saved_memory_claim_without_write_is_blocked():
+    from app.services.action_truth_policy import (
+        response_claims_saved_memory_success,
+        safe_unexecuted_saved_memory_claim_response,
+    )
+
+    claim = "Lo guardé en la memoria guardada."
+    assert response_claims_saved_memory_success(claim) is True
+    response = safe_unexecuted_saved_memory_claim_response(claim)
+    assert "don't have a confirmed saved change" in response
+
+
 def test_unexecuted_delete_success_claim_is_blocked():
     response = safe_unexecuted_delete_response(
         "Done, I deleted it.",

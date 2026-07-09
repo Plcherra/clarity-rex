@@ -36,9 +36,7 @@ class SavedMemoryResults {
         people.isEmpty &&
         places.isEmpty &&
         placeEntities.isEmpty &&
-        goalMemories.isEmpty &&
         rules.isEmpty &&
-        plans.isEmpty &&
         events.isEmpty &&
         otherMemories.isEmpty &&
         otherEntities.isEmpty;

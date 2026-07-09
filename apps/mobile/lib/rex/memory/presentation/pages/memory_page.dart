@@ -119,24 +119,6 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           priority: result.importance,
         );
         successMessage = l10n.memoryPageRuleCreated;
-      case MemoryCreateKind.plan:
-        final result = await showStructuredCreateSheet(
-          context,
-          title: l10n.memoryCreatePlanTitle,
-          primaryLabel: l10n.commonTitle,
-          detailLabel: l10n.commonDescription,
-          extraLabel: l10n.memoryEditDesiredOutcomeLabel,
-        );
-        if (result == null) {
-          return;
-        }
-        saved = await notifier.createPlan(
-          title: result.title,
-          description: result.detail,
-          desiredOutcome: result.extra,
-          priority: result.importance,
-        );
-        successMessage = l10n.memoryPagePlanCreated;
     }
 
     if (!mounted) {
@@ -469,7 +451,14 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                           : _setQuickFilter,
                     ),
                     const SizedBox(height: 12),
-                    const SavedMemoryHeader(),
+                    SavedMemoryHeader(
+                      onCreate: widget.showAppBar
+                          ? null
+                          : (state.isLoading || state.isSaving
+                              ? null
+                              : _startCreate),
+                      createEnabled: !state.isLoading && !state.isSaving,
+                    ),
                     const SizedBox(height: 8),
                     ActiveMemoryToggle(
                       value: state.activeOnly,
@@ -500,7 +489,12 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
             else if (state.isSavedOverviewEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: MemoryEmptyState(activeOnly: state.activeOnly),
+                child: MemoryEmptyState(
+                  activeOnly: state.activeOnly,
+                  onCreate: state.isLoading || state.isSaving
+                      ? null
+                      : _startCreate,
+                ),
               )
             else if (filteredSaved.isEmpty)
               SliverFillRemaining(

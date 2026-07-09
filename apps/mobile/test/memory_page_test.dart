@@ -53,14 +53,9 @@ void main() {
 
     expect(find.text('Pedro prefers email updates.'), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      find.text('Ship Plaid review'),
-      120,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Ship Plaid review'), findsOneWidget);
+    // Goals/plans live on the Goals tab only — not in Knows.
+    expect(find.text('Ship Plaid review'), findsNothing);
+    expect(find.text('Goals'), findsNothing);
 
     await tester.scrollUntilVisible(
       find.text('MFA was enabled successfully.'),
@@ -156,21 +151,16 @@ void main() {
     expect(find.text(l10n.memoryOverviewLoadMore), findsNothing);
   });
 
-  testWidgets('MemoryPage shows plan milestone previews on plan cards', (
+  testWidgets('MemoryPage does not show Goals or plan cards in Knows', (
     tester,
   ) async {
     final api = MemoryPageFakeMemoryApi();
 
     await pumpMemoryPage(tester, api);
 
-    await tester.scrollUntilVisible(
-      find.textContaining('Submit compliance docs'),
-      120,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('Submit compliance docs'), findsOneWidget);
+    expect(find.text('Ship Plaid review'), findsNothing);
+    expect(find.textContaining('Submit compliance docs'), findsNothing);
+    expect(find.text('Goals'), findsNothing);
   });
 
   testWidgets('MemoryPage shows entity event previews on place cards', (
@@ -190,30 +180,22 @@ void main() {
     expect(find.textContaining('Moved to Somerville'), findsOneWidget);
   });
 
-  testWidgets('MemoryPage can add a plan milestone from the plan card menu', (
+  testWidgets('MemoryPage shows create affordance when AppBar is hidden', (
     tester,
   ) async {
     final api = MemoryPageFakeMemoryApi();
     final l10n = lookupAppLocalizations(const Locale('en'));
 
-    await pumpMemoryPage(tester, api);
+    await pumpMemoryPage(tester, api, showAppBar: false);
 
-    await openMemoryActionsForText(tester, 'Ship Plaid review');
-    await tester.tap(find.text(l10n.memoryTileAddMilestone));
+    expect(find.byTooltip(l10n.memoryCreateAddTooltip), findsOneWidget);
+    await tester.tap(find.byTooltip(l10n.memoryCreateAddTooltip));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).first, 'Collect audit logs');
-    await tester.enterText(find.byType(TextField).at(1), 'Gather evidence pack');
-    await tester.tap(find.text(l10n.memoryCreateSave));
-    await tester.pumpAndSettle();
-
-    expect(api.milestoneCreates, [
-      {
-        'planId': 'plan-1',
-        'title': 'Collect audit logs',
-        'description': 'Gather evidence pack',
-      },
-    ]);
-    expect(find.text(l10n.memoryPageMilestoneCreated), findsOneWidget);
+    expect(find.text(l10n.memoryCreateChooseType), findsOneWidget);
+    expect(find.text(l10n.memoryCreateFact), findsOneWidget);
+    expect(find.text(l10n.commonPerson), findsOneWidget);
+    expect(find.text(l10n.memoryCreateRule), findsOneWidget);
+    expect(find.text(l10n.memoryCreatePlan), findsNothing);
   });
 }

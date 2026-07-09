@@ -5257,14 +5257,20 @@ abstract class AppLocalizations {
   /// No description provided for @memoryHeaderEmptyActiveBody.
   ///
   /// In en, this message translates to:
-  /// **'Ask Rex in chat or voice to save something, and it will show up here.'**
+  /// **'Add something here, or ask Rex in chat or voice to save it.'**
   String get memoryHeaderEmptyActiveBody;
 
   /// No description provided for @memoryHeaderEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Saved facts, people, and preferences from chat or voice will appear here.'**
+  /// **'Saved facts, people, and preferences will appear here.'**
   String get memoryHeaderEmptyBody;
+
+  /// No description provided for @memoryHeaderEmptyAddAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add saved information'**
+  String get memoryHeaderEmptyAddAction;
 
   /// No description provided for @memoryHeaderNoMatchingTitle.
   ///

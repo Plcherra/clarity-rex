@@ -12,6 +12,7 @@ from durable_write_test_helpers import (
     confirm_durable_write,
     save_message_with_confirmation,
 )
+from memory_persist_assertions import assert_person_card_covers
 from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.rex_channel import RexBrainChannel
@@ -72,18 +73,21 @@ async def test_simple_memory_saves_durable_memory_directly():
     assert saved["memory_changes"]["confirmation_required"] == 0
     assert saved["messages"][-1]["content"] == saved["response"]
     assert ai_service.generate_calls == 1
-    assert memory_service.long_term_memory[0]["memory_type"] == "fact"
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 18."
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+        flat_content_gone="mom's birthday",
     )
-    assert len(memory_service.entities) == 0
 
     await chat_service.send_message(
         "Do you remember my mom's birthday?",
         saved["conversation_id"],
     )
 
-    assert "- fact: User's mom's birthday is June 18." in ai_service.messages[0]["content"]
+    prompt = ai_service.messages[0]["content"]
+    assert "June 18" in prompt
+    assert "Mom" in prompt or "mother" in prompt.casefold()
 
 
 @pytest.mark.asyncio
@@ -105,8 +109,11 @@ async def test_inverted_birthday_phrase_saves_durable_memory_directly():
     assert_companion_continuation_response(saved)
     assert saved["memory_changes"]["created"] == 1
     assert saved["memory_changes"]["confirmation_required"] == 0
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 18."
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+        flat_content_gone="mom's birthday",
     )
     assert ai_service.generate_calls == 1
 
@@ -132,10 +139,13 @@ async def test_identity_and_location_facts_save_without_confirmation():
     assert name_turn["memory_changes"]["created"] == 1
     assert_companion_continuation_response(location_turn)
     assert location_turn["memory_changes"]["created"] == 1
-    assert [memory["content"] for memory in memory_service.long_term_memory] == [
-        "User's name is Pedro.",
-        "User lives in Somerville.",
-    ]
+    person = assert_person_card_covers(
+        memory_service,
+        relationship="self",
+        attribute_contains={"full_name": "Pedro", "location": "Somerville"},
+    )
+    assert person["display_name"] == "Pedro"
+    assert memory_service.long_term_memory == []
     assert ai_service.generate_calls == 2
 
 
@@ -165,8 +175,11 @@ async def test_contextual_birthday_answer_saves_directly():
     )
     assert confirmation["memory_changes"]["created"] == 1
     assert confirmation["memory_changes"]["confirmation_required"] == 0
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 18."
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+        flat_content_gone="mom's birthday",
     )
 
 
@@ -207,8 +220,11 @@ async def test_contextual_birthday_month_day_answer_saves_directly():
     )
     assert confirmation["memory_changes"]["created"] == 1
     assert confirmation["memory_changes"]["confirmation_required"] == 0
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 18."
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+        flat_content_gone="mom's birthday",
     )
 
 
@@ -247,8 +263,11 @@ async def test_simple_memory_direct_save_works_in_voice_stream():
         },
     )
     assert confirmed["memory_changes"]["created"] == 1
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 18."
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+        flat_content_gone="mom's birthday",
     )
 
     follow_up_events = [
@@ -261,10 +280,9 @@ async def test_simple_memory_direct_save_works_in_voice_stream():
     ]
 
     assert follow_up_events[-1]["event"] == "done"
-    assert (
-        "- fact: User's mom's birthday is June 18."
-        in ai_service.messages[0]["content"]
-    )
+    prompt = ai_service.messages[0]["content"]
+    assert "June 18" in prompt
+    assert "Mom" in prompt or "mother" in prompt.casefold()
 
 
 @pytest.mark.asyncio
@@ -306,10 +324,16 @@ async def test_voice_stream_directly_updates_location_memory():
     )
     assert confirmed["memory_changes"]["updated"] == 1
     assert ai_service.generate_calls == 1
-    assert len(memory_service.long_term_memory) == 1
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User lives in Somerville, Massachusetts."
+    person = assert_person_card_covers(
+        memory_service,
+        relationship="self",
+        attribute_contains={"location": "Somerville"},
     )
+    assert "Somerville" in str(
+        (person.get("metadata") or {}).get("attributes") or {}
+    )
+    # Covered location flat is hard-deleted after the self card exists.
+    assert memory_service.long_term_memory == []
 
 
 @pytest.mark.asyncio
@@ -703,7 +727,12 @@ async def test_simple_memory_repeated_confirmation_does_not_save_duplicate_memor
     assert saved["memory_changes"]["created"] == 1
     assert follow_up["response"] == "Rex normal follow-up"
     assert follow_up["memory_changes"] is None
-    assert len(memory_service.long_term_memory) == 1
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+    )
+    assert memory_service.long_term_memory == []
 
 
 @pytest.mark.asyncio
@@ -726,8 +755,12 @@ async def test_simple_memory_repeated_fact_does_not_save_duplicate_memory():
 
     assert repeated["response"] == "I already have that saved."
     assert repeated["memory_changes"]["skipped"] == 1
-    assert len(memory_service.long_term_memory) == 1
-    assert len(memory_service.entities) == 0
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+    )
+    assert memory_service.long_term_memory == []
 
 
 @pytest.mark.asyncio
@@ -754,9 +787,23 @@ async def test_relationship_person_save_after_mom_birthday_does_not_reuse_birthd
 
     assert_companion_continuation_response(confirmed, expected_response="Rex follow-up")
     assert confirmed["memory_changes"]["created"] == 1
-    assert len(memory_service.long_term_memory) == 2
-    assert len(memory_service.entities) == 0
-    assert any("Pedro" in memory["content"] for memory in memory_service.long_term_memory)
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "January 1"},
+    )
+    # Friend relationship may stay flat or become a person card; birthday flat is gone.
+    assert all(
+        "birthday" not in str(memory.get("content") or "").casefold()
+        for memory in memory_service.long_term_memory
+    )
+    assert any(
+        "Pedro" in str(memory.get("content") or "")
+        for memory in memory_service.long_term_memory
+    ) or any(
+        "Pedro" in str(entity.get("display_name") or "")
+        for entity in memory_service.entities
+    )
 
 
 @pytest.mark.asyncio
@@ -775,8 +822,13 @@ async def test_possessive_third_party_birthday_saves_correct_person_label():
     saved = await confirm_durable_write(chat_service, proposed)
 
     assert saved["memory_changes"]["created"] == 1
-    assert "Pedro" in memory_service.long_term_memory[0]["content"]
-    assert "June 18" in memory_service.long_term_memory[0]["content"]
+    person = assert_person_card_covers(
+        memory_service,
+        display_name_contains="Pedro",
+        attribute_contains={"birthday": "June 18"},
+    )
+    assert "Pedro" in str(person.get("display_name") or "")
+    assert memory_service.long_term_memory == []
     assert ai_service.generate_calls == 1
 
 
@@ -847,7 +899,7 @@ async def test_without_please_strips_saved_entity_name():
 
 
 @pytest.mark.asyncio
-async def test_confirmed_mom_birthday_rephrase_skips_without_entity_promotion():
+async def test_confirmed_mom_birthday_rephrase_skips_after_person_card():
     ai_service = FakeAIService()
     memory_service = FakeMemoryService()
     chat_service = ChatService(
@@ -865,12 +917,16 @@ async def test_confirmed_mom_birthday_rephrase_skips_without_entity_promotion():
     )
 
     assert repeated["memory_changes"]["skipped"] == 1
-    assert len(memory_service.long_term_memory) == 1
-    assert len(memory_service.entities) == 0
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+    )
+    assert memory_service.long_term_memory == []
 
 
 @pytest.mark.asyncio
-async def test_confirmed_self_facts_stay_flat_without_entity_promotion():
+async def test_confirmed_self_facts_materialize_into_person_card():
     ai_service = FakeAIService(response="Rex recall follow-up")
     memory_service = FakeMemoryService()
     chat_service = ChatService(
@@ -906,13 +962,19 @@ async def test_confirmed_self_facts_stay_flat_without_entity_promotion():
     assert location["memory_changes"]["created"] == 1
     assert birthday["memory_changes"]["created"] == 1
     assert work["memory_changes"]["created"] == 1
-    assert len(memory_service.long_term_memory) == 4
-    assert all(memory["active"] is True for memory in memory_service.long_term_memory)
-    assert len(memory_service.entities) == 0
-    assert all(
-        "duplicate_archive_reason" not in (memory.get("metadata") or {})
-        for memory in memory_service.long_term_memory
+    person = assert_person_card_covers(
+        memory_service,
+        relationship="self",
+        display_name_contains="Pedro",
+        attribute_contains={
+            "full_name": "Pedro Martins",
+            "location": "Somerville",
+            "birthday": "June 18",
+        },
     )
+    attrs = (person.get("metadata") or {}).get("attributes") or {}
+    assert "Bom Dough" in str(attrs.get("workplace") or attrs.get("notes") or "")
+    assert memory_service.long_term_memory == []
 
     recall = await chat_service.send_message(
         "What does Clarity know about me?",
@@ -921,14 +983,12 @@ async def test_confirmed_self_facts_stay_flat_without_entity_promotion():
 
     assert ai_service.generate_calls == 5
     prompt_text = ai_service.messages[0]["content"]
-    assert "User's name is Pedro Martins" in prompt_text
-    assert "User lives in Somerville" in prompt_text
-    assert "- saved knowledge/person Pedro Martins - self" not in prompt_text
+    assert "Pedro Martins" in prompt_text
     assert recall["response"] == "Rex recall follow-up"
 
 
 @pytest.mark.asyncio
-async def test_contextual_memory_save_request_saves_recent_birthday_without_card():
+async def test_contextual_memory_save_request_saves_recent_birthday_as_person_card():
     ai_service = FakeAIService(response="Rex normal follow-up")
     memory_service = FakeMemoryService()
     chat_service = ChatService(
@@ -960,8 +1020,11 @@ async def test_contextual_memory_save_request_saves_recent_birthday_without_card
 
     assert_companion_continuation_response(saved, expected_response="Rex normal follow-up")
     assert saved["memory_changes"]["created"] == 1
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 18."
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+        flat_content_gone="mom's birthday",
     )
 
 
@@ -992,8 +1055,11 @@ async def test_contextual_memory_save_extracts_birthday_date_from_rex_previous_t
 
     assert_companion_continuation_response(saved, expected_response="Rex normal follow-up")
     assert saved["memory_changes"]["created"] == 1
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 18."
+    assert_person_card_covers(
+        memory_service,
+        relationship="mother",
+        attribute_contains={"birthday": "June 18"},
+        flat_content_gone="mom's birthday",
     )
 
 

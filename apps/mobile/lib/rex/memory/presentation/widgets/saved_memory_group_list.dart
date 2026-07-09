@@ -101,25 +101,7 @@ class SavedMemoryGroupList extends StatelessWidget {
       ),
       ...saved.places.map(_memoryTile),
     ]);
-    addGroup(MemoryGroup.goals, [
-      ...saved.plans.map(
-        (plan) => PlanMemoryTile(
-          plan: plan,
-          milestonePreviews: milestonePreviewsFor(plan.id),
-          onEdit: () => onEditPlan(plan),
-          onAddMilestone: () => onAddPlanMilestone(plan),
-          onEditMilestone: (milestone) => onEditPlanMilestone(plan, milestone),
-          onDeactivate: plan.active
-              ? () => onArchiveStructuredMemory(
-                  StructuredMemoryKind.plan,
-                  plan.id,
-                  'plan',
-                )
-              : null,
-        ),
-      ),
-      ...saved.goalMemories.map(_memoryTile),
-    ]);
+    // Goals/plans live on the Goals tab only — not in Knows.
     addGroup(
       MemoryGroup.rules,
       saved.rules
