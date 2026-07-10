@@ -170,7 +170,7 @@ User message (chat or voice)
 | Finance context (assistant) | `apps/mobile/lib/features/finance/application/assistant_financial_context_*.dart` |
 | Knows | `apps/mobile/lib/rex/memory/application/memory_controller.dart` |
 | HTTP client | `apps/mobile/lib/core/rex/rex_api_client.dart` |
-| Confirm cards | `apps/mobile/lib/rex/chat/presentation/widgets/clarity_action_cards_strip.dart` |
+| Confirm cards | `apps/mobile/lib/rex/chat/presentation/widgets/clarity_action_cards_strip.dart` (relationship + social-event cards; voice uses same `write_proposals`) |
 
 **Legacy brain modules deleted (July 2026):** `rex_brain*.py` experiment modules and their tests were removed. Debug production assistant behavior only in `SimpleRexBrain`, `ChatTurnOrchestrator`, and `ChatService`.
 
@@ -183,12 +183,15 @@ User message (chat or voice)
 3. Mobile receives `write_proposals` only (no hidden discipline metadata).
 4. After confirm, item is visible in Knows or Goals without manual refresh.
 5. Open Threads require explicit consent — no silent create.
+6. Relationship edges and shared-history (social) events require explicit user confirmation in chat **and** voice — same `write_proposals` path; no chat-only social saves.
+7. Social-neighborhood prompt injection ships only after Knows UI can show Connections and Shared history (Phase 03 before Phase 02).
+8. No ops script or silent job may create `entity_relationships` or shared-history links without user confirmation. Do not auto-bridge people from old conversations.
 
-**Requires confirm card (chat/voice):** flat memory, plans/goals, entity events, deletes.
+**Requires confirm card (chat/voice):** flat memory, person/entity cards, relationships/connections (`relationship`), social/shared events (`social_event`), plans/goals, entity events, deletes.
 
-**Manual UI:** Knows / Goals REST CRUD — user fills form and taps Save.
+**Manual UI:** Knows / Goals REST CRUD — user fills form and taps Save (including Connections and Shared history when those surfaces exist).
 
-**Mobile confirm flow:** `write_proposals` → `ClarityActionCardsStrip` → `write_confirmation` → refresh `memoryProvider` + `accountabilityProvider`.
+**Mobile confirm flow:** `write_proposals` → `ClarityActionCardsStrip` (and voice confirm UX on the same proposals) → `write_confirmation` → refresh `memoryProvider` + `accountabilityProvider` (and relationship/shared-history providers when added).
 
 ### Write lifecycle
 
@@ -199,25 +202,54 @@ UserIntent → MemoryDisciplineService.decide() (where wired)
           → memory_changes / Knows refresh
 ```
 
-- `MemoryDisciplineService` runs before structured creates and flat creates (`POST /memory`, chat saves).
+- `MemoryDisciplineService` runs before structured creates and flat creates (`POST /memory`, chat saves), and before creating or updating **entity relationships** and **shared-history / social events** (including participant sets).
 - Duplicate detection merges or updates existing records instead of silently creating duplicates.
+- Duplicate active relationship edges for the same `(from_entity_id, to_entity_id, predicate)` must merge/update — never silently create a second active edge.
 - UI success is allowed only after the backend returns a confirmed record id.
 - Person materialization runs after confirmed person-category flat saves — **not** on Knows read/list paths.
+
+### Relationship web (target wiring)
+
+People Cards remain `entities` (nodes). Connections and Shared history extend Saved Memory:
+
+| Object | Storage |
+| --- | --- |
+| Person / node | `entities` (`entity_type = person`), including self node (`relationship = self`) |
+| Connection / edge | `entity_relationships` (`from_entity_id`, `to_entity_id`, `predicate`, status, …) |
+| Shared history | `entity_events` + `entity_event_participants` (multi-person membership) |
+
+Canonical tables/services (land with social-intelligence phases; keep modules under file-size limits):
+
+| Role | Backend | Mobile |
+| --- | --- | --- |
+| Relationship edges | `entity_relationship_service.py`, `entity_relationship_repository.py`, `/entity-relationships` | relationship models/API, Knows Connections UI, relationship confirm card |
+| Event participants | `entity_event_participant_service.py` (or equivalent), `entity_event_participants` | Shared history on person detail |
+| Self node | `self_entity_service.py` | via person card `relationship = self` |
+| Social write propose/apply | `social_relation_intent.py`, `social_event_intent.py`, `social_relationship_proposal.py`, durable-write social apply | same `write_proposals` in chat and voice |
+| Social neighborhood (read) | `social_neighborhood_service.py` | N/A (backend prompt) |
+| Social prompt section | `prompt_social_neighborhood_context.py` | N/A |
+| Predicate vocabulary | `relationship_predicates.py` | confirm-card predicate labels |
+
+**Ship order (Truth Rule):** Knows Connections + Shared history visibility (and confirm cards) before enabling social-neighborhood sections in prompts.
 
 ### Production paths
 
 | Area | Backend | Mobile |
 | --- | --- | --- |
 | Chat turn | `ChatService`, `ChatTurnOrchestrator`, `SimpleRexBrain` | `ChatController`, `ChatApi` |
+| Voice turn | same `ChatService` / orchestrator path | `VoiceCallController*`, same `write_proposals` confirm |
 | Saved flat memory | `/memory`, `long_term_memory_repository.py`, `memory_write_service.py` | `MemoryApi`, `MemoryPage` |
 | Structured memory | `/entities`, `/rules`, `/plans` | `memory_structured_api.dart`, Knows tiles |
 | Person/entity cards | `entity_service.py` | person memory models, saved memory group list |
+| Connections | `entity_relationships`, `entity_relationship_service.py`, `/entity-relationships` | Knows Connections, relationship confirm cards |
+| Shared history | `entity_events` + `entity_event_participants` | Knows Shared history, social-event confirm cards |
+| Social neighborhood | `social_neighborhood_service.py`, `prompt_social_neighborhood_context.py` | N/A (must only use Knows-visible facts) |
 | Goals | `/plans`, `/accountability/overview` | `AccountabilityPage`, Goals section |
 | Open Threads | `open_thread_service.py`, `/open-threads` | Goals tab Open Threads section |
 | Old chat search | `conversation_repository.py`, `chat_search_*`, `chat_recall_*` | Chats tab search, recall context |
-| Saved-knowledge overview | `SavedKnowledgeOverviewService`, `/saved-knowledge/overview` | Knows tab |
-| Prompt labels | `prompt_memory_context.py`, `prompt_open_threads_context.py`, `prompt_structured_context.py` | N/A (backend-owned) |
-| Truth enforcement | `chat_response_truth.py`, `action_truth_policy.py` | Chat UI displays backend response state |
+| Saved-knowledge overview | `SavedKnowledgeOverviewService`, `/saved-knowledge/overview` | Knows tab — must include People, Connections, and Shared history (not people-only) |
+| Prompt labels | `prompt_memory_context.py`, `prompt_open_threads_context.py`, `prompt_structured_context.py`, `prompt_social_neighborhood_context.py` | N/A (backend-owned) |
+| Truth enforcement | `chat_response_truth.py`, `action_truth_policy.py` | Chat/voice UI displays backend response state |
 
 ### Recall modules
 
@@ -227,18 +259,23 @@ UserIntent → MemoryDisciplineService.decide() (where wired)
 | Chat search fetch | `chat_recall_service.py` |
 | Chat search ranking | `chat_search_ranking.py` |
 | User-scoped storage | `conversation_repository.py` |
+| Social neighborhood | `social_neighborhood_service.py` |
 
-Prompt modules label old chat hits as `Chat history, not saved memory`. `action_truth_policy.py` handles degraded, filtered, partial, and empty recall fallbacks.
+Prompt modules label old chat hits as `Chat history, not saved memory`. Social neighborhood is labeled as saved knowledge (Connections / Shared history), never as chat history. `action_truth_policy.py` handles degraded, filtered, partial, and empty recall fallbacks — and must not treat unconfirmed or Knows-invisible social facts as remembered.
 
 ### Knows manual create
 
 - Flat fact/preference via `POST /memory`
 - Person, rule, plan via structured create routes
+- Connections via `/entity-relationships` (or Knows UI) after user action
+- Shared history via entity events + participants (or Knows UI) after user action
 - Open Threads are **not** created through Knows — use `/open-threads` or consent flow in Goals context
 
 ### Duplicate suppression
 
 When a flat long-term memory is fully covered by a structured person card, archive the flat memory instead of showing a second active Knows item.
+
+When a relationship edge fully covers a prior flat “X is my Y” fact, prefer the Connection in Knows/prompt and avoid duplicate active flats for the same link.
 
 ### Memory corrections
 
@@ -249,6 +286,7 @@ When a flat long-term memory is fully covered by a structured person card, archi
 - **Commitments fully removed** (July 2026). The `commitments` table, routes, and assistant write paths are deleted. Companion continuity uses **Open Threads** only; plan-linked small steps use **milestones**.
 - Early `memory_candidates` / `memory_confirmations` tables are **DB-archived only** (migration `20260604120456_archive_legacy_rex_memory_review_tables.sql`). No production code reads or writes them. Chat and voice saves use `DurableWriteProposal` → confirm cards → `DurableWriteApplier` with `MemoryDisciplineService` on the write path.
 - Disabled bypass paths: `GoalCommandReclassifier` direct memory→goal writes, separate `save_plan` pending, auto merge unless `merge_disclosed_to` is set, auto person materialization on generic LTM REST create.
+- **No automatic relationship-edge backfill** from `entities.relationship` text, chat history, or heuristic co-mentions. Existing person cards remain valid nodes; Connections are created only through explicit user confirmation or manual Knows save.
 
 ### Ops scripts
 
@@ -260,6 +298,8 @@ Run from `services/rex-api` after env is loaded:
 | `scripts/backfill_person_birthday_events.py` | Promote orphan birthday Event flats into person cards (dry-run default) |
 | `scripts/apply_memory_corrections.py` | Classify/apply user corrections and dry-run duplicate audits |
 | `scripts/cleanup_user_memory_duplicates.py` | Per-user Knows duplicate cleanup |
+
+Do **not** add ops scripts that create `entity_relationships` or shared-history participant graphs without per-item user confirmation. Dry-run **reports** of possible links are allowed only if they never write edges.
 
 `SupabaseMemoryService` in `memory_service.py` is the production Supabase facade for conversations and memory.
 
@@ -391,6 +431,8 @@ Native iOS voice bridge is experimental and must not become a second assistant p
 | Finance read model | `financial_read_model_service.dart` |
 | Chat turn | `chat_service.py`, `chat_turn_orchestrator.py` |
 | Memory writes | `memory_write_service.py`, `DurableWriteService` |
+| Connections / shared history | `entity_relationship_service.py`, `entity_event_participants`, Knows Connections UI |
+| Social neighborhood | `social_neighborhood_service.py`, `prompt_social_neighborhood_context.py` |
 | Open Threads | `open_thread_service.py`, `/open-threads` |
 | Plaid sync | `services/rex-api` Plaid routes and sync services |
 
