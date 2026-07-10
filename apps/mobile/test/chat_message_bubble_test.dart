@@ -28,7 +28,7 @@ void main() {
     expect(decoration.border, isNull);
   });
 
-  testWidgets('user bubble uses dark theme accent without a border', (
+  testWidgets('user bubble uses soft accent tint without a border', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -42,7 +42,7 @@ void main() {
 
     final decoration = _bubbleDecoration(tester);
 
-    expect(decoration.color, ClarityColors.dark.accent);
+    expect(decoration.color, ClarityColors.dark.accentSoft);
     expect(decoration.border, isNull);
   });
 

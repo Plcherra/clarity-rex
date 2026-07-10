@@ -88,15 +88,15 @@ class _AccountabilityTile extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Material(
-      color: colors.surfaceSoft.withValues(alpha: 0.35),
-      borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+      color: colors.surfaceSoft.withValues(alpha: 0.22),
+      borderRadius: BorderRadius.circular(RexUiTokens.memoryTileRadius),
       child: InkWell(
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+        borderRadius: BorderRadius.circular(RexUiTokens.memoryTileRadius),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: RexUiTokens.space12,
-            vertical: RexUiTokens.space8,
+            horizontal: RexUiTokens.memoryTilePaddingH,
+            vertical: RexUiTokens.memoryTilePaddingV,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,22 +116,26 @@ class _AccountabilityTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: colors.textPrimary,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: RexUiTokens.space4),
+                      const SizedBox(height: RexUiTokens.space2),
                       Text(
                         subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.textMuted,
-                          height: 1.3,
+                          height: 1.25,
                         ),
                       ),
                     ],
-                    const SizedBox(height: RexUiTokens.space4),
+                    const SizedBox(height: RexUiTokens.space2),
                     _TileMetaRow(
                       deadline: deadline,
                       priority: priority,
@@ -139,7 +143,7 @@ class _AccountabilityTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: RexUiTokens.space8),
+              const SizedBox(width: RexUiTokens.space4),
               _StatusChip(status: status),
               trailing,
             ],
@@ -166,8 +170,10 @@ class _TileMetaRow extends StatelessWidget {
     ];
     return Text(
       parts.join(' · '),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: colors.textSecondary,
+        color: colors.textMuted,
         fontWeight: FontWeight.w500,
       ),
     );
@@ -230,9 +236,10 @@ class _SignalTile extends StatelessWidget {
     final action = signal.recommendedAction?.trim();
 
     return RexSurface(
-      color: colors.surfaceSoft.withValues(alpha: 0.35),
+      color: colors.surfaceSoft.withValues(alpha: 0.22),
       borderColor: _severityColor(colors).withValues(alpha: 0.24),
-      padding: const EdgeInsets.all(RexUiTokens.space12),
+      radius: RexUiTokens.memoryTileRadius,
+      padding: const EdgeInsets.all(RexUiTokens.memoryTilePaddingH),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

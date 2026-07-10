@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_generic_action_card.dart';
 import 'package:clarity/rex/chat/presentation/widgets/clarity_person_confirm_card.dart';
+import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 
 /// Confirm/dismiss cards for pending Clarity write proposals.
 class ClarityActionCardsStrip extends StatelessWidget {
@@ -28,7 +29,7 @@ class ClarityActionCardsStrip extends StatelessWidget {
       children: [
         for (final action in actions)
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: RexUiTokens.confirmCardGap),
             child: _buildActionCard(action),
           ),
       ],
@@ -97,25 +98,32 @@ Future<void> showClarityActionConfirmationDialog(
           onDismiss(dismissed);
         };
       }
-      return Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: action.personCard != null
-                ? ClarityPersonConfirmCard(
-                    action: action,
-                    onConfirm: wrapConfirm,
-                    onDismiss: wrapDismiss,
-                  )
-                : ClarityGenericActionCard(
-                    action: action,
-                    onConfirm: wrapConfirm,
-                    onDismiss: wrapDismiss,
-                  ),
+      return SafeArea(
+        child: Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: RexUiTokens.space16,
+            vertical: RexUiTokens.space16,
+          ),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(RexUiTokens.confirmCardRadius),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(RexUiTokens.confirmCardPadding),
+              child: action.personCard != null
+                  ? ClarityPersonConfirmCard(
+                      action: action,
+                      onConfirm: wrapConfirm,
+                      onDismiss: wrapDismiss,
+                    )
+                  : ClarityGenericActionCard(
+                      action: action,
+                      onConfirm: wrapConfirm,
+                      onDismiss: wrapDismiss,
+                    ),
+            ),
           ),
         ),
       );

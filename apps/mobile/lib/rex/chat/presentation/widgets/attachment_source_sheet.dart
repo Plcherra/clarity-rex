@@ -12,52 +12,39 @@ class AttachmentSourceSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
     final l10n = context.l10n;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.divider,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.attachmentSheetTitle,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w800,
             ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.attachmentSheetTitle,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            _AttachmentSourceTile(
-              icon: Icons.photo_library_rounded,
-              title: l10n.attachmentSheetGalleryTitle,
-              subtitle: l10n.attachmentSheetGallerySubtitle,
-              source: ChatAttachmentSource.gallery,
-            ),
-            _AttachmentSourceTile(
-              icon: Icons.photo_camera_rounded,
-              title: l10n.attachmentSheetCameraTitle,
-              subtitle: l10n.attachmentSheetCameraSubtitle,
-              source: ChatAttachmentSource.camera,
-            ),
-            _AttachmentSourceTile(
-              icon: Icons.folder_rounded,
-              title: l10n.attachmentSheetFilesTitle,
-              subtitle: l10n.attachmentSheetFilesSubtitle,
-              source: ChatAttachmentSource.files,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 10),
+          _AttachmentSourceTile(
+            icon: Icons.photo_library_rounded,
+            title: l10n.attachmentSheetGalleryTitle,
+            subtitle: l10n.attachmentSheetGallerySubtitle,
+            source: ChatAttachmentSource.gallery,
+          ),
+          _AttachmentSourceTile(
+            icon: Icons.photo_camera_rounded,
+            title: l10n.attachmentSheetCameraTitle,
+            subtitle: l10n.attachmentSheetCameraSubtitle,
+            source: ChatAttachmentSource.camera,
+          ),
+          _AttachmentSourceTile(
+            icon: Icons.folder_rounded,
+            title: l10n.attachmentSheetFilesTitle,
+            subtitle: l10n.attachmentSheetFilesSubtitle,
+            source: ChatAttachmentSource.files,
+          ),
+        ],
       ),
     );
   }

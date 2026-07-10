@@ -7,15 +7,15 @@ import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_dialogs.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_shared_widgets.dart';
 import 'package:clarity/theme/clarity_colors.dart';
+import 'package:clarity/theme/clarity_sheet_insets.dart';
 
 Future<MemoryEditResult?> showFlatMemoryEditSheet(
   BuildContext context, {
   required MemoryItem memory,
 }) {
-  return showModalBottomSheet<MemoryEditResult>(
+  return showClarityModalBottomSheet<MemoryEditResult>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
     builder: (sheetContext) => MemoryFlatEditSheet(memory: memory),
   );
 }
@@ -54,7 +54,6 @@ class _MemoryFlatEditSheetState extends State<MemoryFlatEditSheet> {
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
     final l10n = context.l10n;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final updatedLabel = memoryUpdatedLabel(
       l10n,
       widget.memory.updatedAt,
@@ -62,7 +61,7 @@ class _MemoryFlatEditSheetState extends State<MemoryFlatEditSheet> {
     );
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottomInset),
+      padding: claritySheetPadding(context),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

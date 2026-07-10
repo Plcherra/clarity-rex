@@ -24,6 +24,7 @@ import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/theme/clarity_colors.dart';
+import 'package:clarity/theme/clarity_sheet_insets.dart';
 
 /// Main chat surface: empty thread UI + composer.
 class ChatPage extends ConsumerStatefulWidget {
@@ -226,10 +227,9 @@ class _ChatPageState extends ConsumerState<ChatPage>
       return;
     }
 
-    final source = await showModalBottomSheet<ChatAttachmentSource>(
+    final source = await showClarityModalBottomSheet<ChatAttachmentSource>(
       context: context,
       backgroundColor: context.clarityColors.surfaceElevated,
-      showDragHandle: false,
       builder: (_) => const AttachmentSourceSheet(),
     );
     if (!mounted || source == null) {
@@ -449,11 +449,16 @@ class _ChatPageState extends ConsumerState<ChatPage>
     final currentConversation = ref.watch(currentConversationProvider);
     final l10n = context.l10n;
     final voiceSupported = AppCapabilities.instance.supportsAnyVoice;
-    final voiceTooltip = voiceSupported
-        ? (voiceCall.isCallActive
-            ? l10n.chatPageShowVoiceCallTooltip
-            : l10n.chatInputStartVoiceModeTooltip)
-        : l10n.chatInputVoiceWebTooltip;
+    final isWeb = AppCapabilities.instance.isWeb;
+    final voiceTooltip = !voiceSupported
+        ? l10n.voiceWebUnavailableMessage
+        : voiceCall.isCallActive
+        ? (isWeb
+            ? l10n.voiceWebForegroundOnlyHint
+            : l10n.chatPageShowVoiceCallTooltip)
+        : (isWeb
+            ? l10n.chatInputVoiceWebTooltip
+            : l10n.chatInputStartVoiceModeTooltip);
 
     return RexScaffold(
       appBar: widget.showAppBar
@@ -473,8 +478,11 @@ class _ChatPageState extends ConsumerState<ChatPage>
             )
           : null,
       resizeToAvoidBottomInset: true,
+      // Top inset: AssistantScreen / AppBar. Bottom inset: ChatInputBar only
+      // (avoids double home-indicator padding on notched iPhones).
       body: SafeArea(
         top: false,
+        bottom: false,
         child: Column(
           children: [
             Expanded(

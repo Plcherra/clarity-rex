@@ -88,7 +88,9 @@ class ChatTranscript extends StatelessWidget {
                             messageIndex: entry.key,
                           );
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.only(
+                          bottom: RexUiTokens.messageGap,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -129,15 +131,15 @@ class ChatTranscript extends StatelessWidget {
                     onConfirm: onConfirmClarityAction,
                     onDismiss: onDismissClarityAction,
                   ),
-                  const SizedBox(height: RexUiTokens.space12),
+                  const SizedBox(height: RexUiTokens.confirmCardGap),
                 ],
                 if (showVoiceTranscript)
                   VoiceLiveTranscript(state: voiceState!),
                 if (errorMessage != null) ...[
-                  const SizedBox(height: RexUiTokens.space12),
+                  const SizedBox(height: RexUiTokens.space8),
                   _ChatErrorBanner(message: errorMessage!),
                 ],
-                const SizedBox(height: RexUiTokens.space16),
+                const SizedBox(height: RexUiTokens.space8),
               ]),
             ),
           ),
@@ -233,17 +235,21 @@ class _VoiceProcessingIndicatorState extends State<_VoiceProcessingIndicator> {
         : l10n.voicePanelThoughtFor(elapsed);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 6, left: 42),
+      padding: const EdgeInsets.only(
+        top: RexUiTokens.space2,
+        left: RexUiTokens.bubbleSideInset,
+      ),
       child: Row(
         children: [
           if (isThinking) ...[
-            ClarityDiamondLoader(size: 16),
+            ClarityDiamondLoader(size: 14),
             const SizedBox(width: RexUiTokens.space8),
           ],
           Text(
             label,
-            style: theme.textTheme.bodyMedium?.copyWith(
+            style: theme.textTheme.labelSmall?.copyWith(
               color: colors.textMuted,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

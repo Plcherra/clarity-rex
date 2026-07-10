@@ -9,6 +9,7 @@ import 'package:clarity/rex/accountability/presentation/accountability_display_h
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
+import 'package:clarity/theme/clarity_sheet_insets.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
 part 'accountability_page_sections.dart';
@@ -230,11 +231,11 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 RexUiTokens.space16,
                 RexUiTokens.space8,
                 RexUiTokens.space16,
-                RexUiTokens.space24,
+                clarityScrollBottomClearance(context),
               ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
@@ -245,7 +246,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                     onAddGoal: _createPlan,
                     onAddOpenThread: _createOpenThread,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: RexUiTokens.space12),
                   if (state.isLoading && overview == null)
                     const _InitialLoading()
                   else if (overview == null ||
@@ -254,7 +255,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                   else ...[
                     if (overview.hasInsightSignals) ...[
                       _AccountabilityInsightsSection(overview: overview),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: RexUiTokens.space16),
                     ],
                     if (!overview.isEmpty) ...[
                       _GoalsSection(
@@ -263,7 +264,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                       onArchivePlan: _archivePlan,
                       onAddGoal: _createPlan,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: RexUiTokens.space16),
                     _OpenThreadsSection(
                       threads: overview.openThreads
                           .where((thread) => thread.status == 'active')

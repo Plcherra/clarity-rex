@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -39,6 +40,14 @@ class ClarityMaterialApp extends StatelessWidget {
           theme: ClarityTheme.light(),
           darkTheme: ClarityTheme.dark(),
           themeMode: themeModeController.themeMode,
+          builder: (context, child) {
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: ClarityTheme.systemUiOverlayStyle(
+                Theme.of(context).brightness,
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
           home: home,
         );
       },

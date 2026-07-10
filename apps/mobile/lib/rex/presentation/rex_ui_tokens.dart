@@ -17,6 +17,7 @@ class RexUiTokens {
   static const textSubtle = ClarityColors.textMuted;
   static const accent = ClarityColors.teal;
   static const accentStrong = ClarityColors.tealGlow;
+  /// Legacy solid fill — chat bubbles use theme `accentSoft` instead.
   static const userBubble = ClarityColors.teal;
   static const danger = ClarityColors.danger;
 
@@ -27,6 +28,29 @@ class RexUiTokens {
   static const space16 = ClaritySpacing.lg;
   static const space20 = ClaritySpacing.xl;
   static const space24 = ClaritySpacing.xxl;
+
+  /// Chat transcript density (shared across chat + voice interim rows).
+  static const bubblePaddingH = ClaritySpacing.md;
+  static const bubblePaddingV = ClaritySpacing.sm;
+  static const messageGap = ClaritySpacing.sm;
+  static const bubbleSideInset = 36.0;
+
+  /// Knows list row density (shared tile shell).
+  static const memoryTilePaddingH = ClaritySpacing.sm;
+  static const memoryTilePaddingV = ClaritySpacing.sm;
+  static const memoryTileRadius = ClarityRadius.small;
+
+  /// Pending confirm cards (chat + voice strip).
+  static const confirmCardPadding = ClaritySpacing.md;
+  static const confirmCardGap = ClaritySpacing.sm;
+  static const confirmCardRadius = ClarityRadius.medium;
+  static const confirmButtonHeight = 40.0;
+
+  /// Chat composer chrome.
+  static const composerPaddingH = ClaritySpacing.sm;
+  static const composerPaddingTop = ClaritySpacing.xs;
+  static const composerPaddingBottom = ClaritySpacing.sm;
+  static const composerFieldPaddingV = ClaritySpacing.sm;
 
   static const radiusSmall = ClarityRadius.small;
   static const radiusMedium = ClarityRadius.medium;

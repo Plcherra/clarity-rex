@@ -79,7 +79,7 @@ class _Section extends StatelessWidget {
             letterSpacing: 0.2,
           ),
         ),
-        const SizedBox(height: RexUiTokens.space8),
+        const SizedBox(height: RexUiTokens.space4),
         if (children.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: RexUiTokens.space4),
@@ -113,7 +113,7 @@ class _Section extends StatelessWidget {
               for (var index = 0; index < children.length; index++) ...[
                 children[index],
                 if (index != children.length - 1)
-                  const SizedBox(height: RexUiTokens.space8),
+                  const SizedBox(height: RexUiTokens.space4),
               ],
             ],
           ),

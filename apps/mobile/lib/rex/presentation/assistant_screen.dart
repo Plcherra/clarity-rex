@@ -15,7 +15,7 @@ import 'rex_ui_tokens.dart';
 import 'widgets/assistant_proposal_settings_sheet.dart';
 
 const _assistantCompactWidth = 360.0;
-const _assistantTabHeight = 40.0;
+const _assistantTabHeight = 36.0;
 
 class AssistantScreen extends ConsumerStatefulWidget {
   const AssistantScreen({super.key, required this.profileController});
@@ -96,10 +96,16 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
               bottom: false,
               child: Column(
                 children: [
-                  _AssistantTopSurface(
-                    controller: _tabController,
-                    isCompactWidth: isCompactWidth,
-                    profileController: widget.profileController,
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 920),
+                      child: _AssistantTopSurface(
+                        controller: _tabController,
+                        isCompactWidth: isCompactWidth,
+                        profileController: widget.profileController,
+                      ),
+                    ),
                   ),
                   Expanded(
                     child: Align(
@@ -147,29 +153,23 @@ class _AssistantTopSurface extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        isCompactWidth ? 12 : 16,
-        isCompactWidth ? 4 : 8,
-        isCompactWidth ? 12 : 16,
-        isCompactWidth ? 4 : 8,
+        isCompactWidth ? RexUiTokens.space12 : RexUiTokens.space16,
+        RexUiTokens.space4,
+        isCompactWidth ? RexUiTokens.space12 : RexUiTokens.space16,
+        RexUiTokens.space4,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             context.l10n.navAssistant,
-            style:
-                (isCompactWidth
-                        ? theme.textTheme.titleMedium
-                        : theme.textTheme.titleLarge)
-                    ?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: scheme.onSurface,
-                      height: 1.05,
-                    ),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurface,
+              height: 1.05,
+            ),
           ),
-          SizedBox(
-            height: isCompactWidth ? RexUiTokens.space8 : RexUiTokens.space12,
-          ),
+          const SizedBox(height: RexUiTokens.space8),
           _AssistantTabNavigation(
             controller: controller,
             isCompactWidth: isCompactWidth,

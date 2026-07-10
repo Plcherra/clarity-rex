@@ -22,16 +22,17 @@ void main() {
     expect(find.text('Location: Somerville'), findsNothing);
     expect(find.text('Birthday: June 18'), findsNothing);
     expect(find.text('Workplace: Bom Dough'), findsNothing);
+    // Importance / dates / extra chips stay out of the lean list row.
     expect(
       find.text('Important date: Launch review: 2026-06-20'),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(find.textContaining('Updated 05/31/2026'), findsNothing);
     expect(find.textContaining('Bank of America'), findsNothing);
     expect(find.textContaining('payroll'), findsNothing);
 
     expect(find.text('My name is Pedro Martins.'), findsNothing);
     expect(find.text('Structured memory'), findsNothing);
-    expect(find.textContaining('Updated 05/31/2026'), findsWidgets);
 
     await tester.scrollUntilVisible(
       find.text('Pedro is building Clarity.'),
@@ -41,8 +42,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Pedro is building Clarity.'), findsOneWidget);
-    expect(find.textContaining('Fact ·'), findsWidgets);
-    expect(find.textContaining('Preference ·'), findsWidgets);
+    expect(find.text('Fact'), findsWidgets);
+    expect(find.text('Preference'), findsWidgets);
 
     await tester.scrollUntilVisible(
       find.text('Pedro prefers email updates.'),
@@ -163,7 +164,7 @@ void main() {
     expect(find.text('Goals'), findsNothing);
   });
 
-  testWidgets('MemoryPage shows entity event previews on place cards', (
+  testWidgets('MemoryPage place rows stay lean without event chip chrome', (
     tester,
   ) async {
     final api = MemoryPageFakeMemoryApi();
@@ -171,13 +172,37 @@ void main() {
     await pumpMemoryPage(tester, api);
 
     await tester.scrollUntilVisible(
-      find.textContaining('Moved to Somerville'),
+      find.text('Somerville'),
       120,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Moved to Somerville'), findsOneWidget);
+    expect(find.text('Somerville'), findsWidgets);
+    expect(find.text('Home city.'), findsOneWidget);
+    expect(find.textContaining('Moved to Somerville'), findsNothing);
+  });
+
+  testWidgets('MemoryPage edit sheet shows importance and updated date', (
+    tester,
+  ) async {
+    final api = MemoryPageFakeMemoryApi();
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    await pumpMemoryPage(tester, api);
+
+    await tester.scrollUntilVisible(
+      find.text('Pedro is building Clarity.'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pedro is building Clarity.'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.memoryEditEditMemoryTitle), findsOneWidget);
+    expect(find.text(l10n.commonImportance), findsOneWidget);
+    expect(find.textContaining('Updated 05/31/2026'), findsOneWidget);
   });
 
   testWidgets('MemoryPage shows create affordance when AppBar is hidden', (
@@ -193,9 +218,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.memoryCreateChooseType), findsOneWidget);
-    expect(find.text(l10n.memoryCreateFact), findsOneWidget);
-    expect(find.text(l10n.commonPerson), findsOneWidget);
-    expect(find.text(l10n.memoryCreateRule), findsOneWidget);
+    // List rows also show type labels like "Fact"; scope to create ListTiles.
+    expect(
+      find.widgetWithText(ListTile, l10n.memoryCreateFact),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(ListTile, l10n.commonPerson),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(ListTile, l10n.memoryCreateRule),
+      findsOneWidget,
+    );
     expect(find.text(l10n.memoryCreatePlan), findsNothing);
   });
 }

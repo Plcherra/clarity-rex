@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/l10n/clarity_locale_catalog.dart';
 import '../../../theme/clarity_colors.dart';
+import '../../../theme/clarity_sheet_insets.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/presentation/mfa_enrollment_screen.dart';
@@ -43,105 +44,99 @@ final class ProfileScreen extends StatelessWidget {
   }
 
   Future<void> _openAppearance(BuildContext context) async {
-    await showModalBottomSheet<void>(
+    await showClarityModalBottomSheet<void>(
       context: context,
-      showDragHandle: true,
       builder: (sheetContext) {
-        return SafeArea(
-          child: ListenableBuilder(
-            listenable: themeModeController,
-            builder: (context, _) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.l10n.profileAppearance,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+        return ListenableBuilder(
+          listenable: themeModeController,
+          builder: (context, _) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.profileAppearance,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
                     ),
-                    const SizedBox(height: 12),
-                    for (final mode in ThemeMode.values)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(_themeModeLabel(context, mode)),
-                        trailing: themeModeController.themeMode == mode
-                            ? const Icon(Icons.check_rounded)
-                            : null,
-                        onTap: () async {
-                          await themeModeController.setThemeMode(mode);
-                          if (sheetContext.mounted) {
-                            Navigator.of(sheetContext).pop();
-                          }
-                        },
-                      ),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (final mode in ThemeMode.values)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(_themeModeLabel(context, mode)),
+                      trailing: themeModeController.themeMode == mode
+                          ? const Icon(Icons.check_rounded)
+                          : null,
+                      onTap: () async {
+                        await themeModeController.setThemeMode(mode);
+                        if (sheetContext.mounted) {
+                          Navigator.of(sheetContext).pop();
+                        }
+                      },
+                    ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
   }
 
   Future<void> _openLanguage(BuildContext context) async {
-    await showModalBottomSheet<void>(
+    await showClarityModalBottomSheet<void>(
       context: context,
-      showDragHandle: true,
       builder: (sheetContext) {
-        return SafeArea(
-          child: ListenableBuilder(
-            listenable: localeController,
-            builder: (context, _) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.l10n.profileLanguage,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+        return ListenableBuilder(
+          listenable: localeController,
+          builder: (context, _) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.profileLanguage,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
                     ),
-                    const SizedBox(height: 12),
-                    for (final supported in localeController.enabledLocales)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(localeController.labelFor(supported)),
-                        trailing:
-                            localeController.localeTag ==
-                                ClarityLocaleCatalog.localeTagFor(supported)
-                            ? const Icon(Icons.check_rounded)
-                            : null,
-                        onTap: () async {
-                          await localeController.setLocale(supported);
-                          if (sheetContext.mounted) {
-                            Navigator.of(sheetContext).pop();
-                          }
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  context.l10n.profileLanguageUpdated(
-                                    localeController.labelFor(supported),
-                                  ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (final supported in localeController.enabledLocales)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(localeController.labelFor(supported)),
+                      trailing:
+                          localeController.localeTag ==
+                              ClarityLocaleCatalog.localeTagFor(supported)
+                          ? const Icon(Icons.check_rounded)
+                          : null,
+                      onTap: () async {
+                        await localeController.setLocale(supported);
+                        if (sheetContext.mounted) {
+                          Navigator.of(sheetContext).pop();
+                        }
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                context.l10n.profileLanguageUpdated(
+                                  localeController.labelFor(supported),
                                 ),
                               ),
-                            );
-                          }
-                        },
-                      ),
-                  ],
-                ),
-              );
-            },
-          ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

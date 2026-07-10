@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/app_l10n.dart';
@@ -8,7 +9,18 @@ enum AddAccountOption { connectBank, importCsv, manual }
 Future<AddAccountOption?> showAddAccountOptionsDialog(BuildContext context) {
   return showDialog<AddAccountOption>(
     context: context,
-    builder: (dialogContext) => const AddAccountOptionsDialog(),
+    builder: (dialogContext) {
+      const dialog = AddAccountOptionsDialog();
+      if (!kIsWeb) {
+        return dialog;
+      }
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 560),
+          child: dialog,
+        ),
+      );
+    },
   );
 }
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
+import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
@@ -86,18 +88,11 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surfaceElevated.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.primary.withValues(alpha: 0.10),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(RexUiTokens.confirmCardRadius),
+        border: Border.all(color: borderColor),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(RexUiTokens.confirmCardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -108,14 +103,14 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                     isDeleteAction
                         ? Icons.delete_outline_rounded
                         : Icons.save_outlined,
-                    size: 22,
+                    size: 18,
                     color: isDeleteAction ? scheme.error : scheme.primary,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: RexUiTokens.space8),
                   Expanded(
                     child: Text(
                       pendingProposalHeadline(action),
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                         height: 1.25,
                       ),
@@ -123,21 +118,21 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: RexUiTokens.space12),
             ] else ...[
               if (financeActionHeadline(action) case final headline?) ...[
                 Text(
                   headline,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                     height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: RexUiTokens.space8),
               ],
               Wrap(
-                spacing: 6,
-                runSpacing: 6,
+                spacing: RexUiTokens.space4,
+                runSpacing: RexUiTokens.space4,
                 children: [
                   _MemoryChip(label: action.actionLabel),
                   _MemoryChip(
@@ -150,7 +145,7 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: RexUiTokens.space8),
               Text(
                 action.confirmationText,
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -160,42 +155,48 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
               ),
             ],
             if (canEditTitle) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: RexUiTokens.space4),
               TextField(
                 controller: _titleController,
                 enabled: !action.isApplying,
                 style: theme.textTheme.titleSmall,
                 decoration: InputDecoration(
                   labelText: 'Title',
+                  isDense: true,
                   filled: true,
                   fillColor: colors.surfaceSoft.withValues(alpha: 0.72),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      RexUiTokens.radiusSmall,
+                    ),
                   ),
                 ),
               ),
             ],
             if (canEditBody) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: RexUiTokens.space8),
               TextField(
                 controller: _bodyController,
                 enabled: !action.isApplying,
-                minLines: 3,
-                maxLines: 5,
+                minLines: 2,
+                maxLines: 4,
                 style: theme.textTheme.bodyMedium,
                 decoration: InputDecoration(
                   labelText: 'Details (optional)',
                   alignLabelWithHint: true,
+                  isDense: true,
                   filled: true,
                   fillColor: colors.surfaceSoft.withValues(alpha: 0.72),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      RexUiTokens.radiusSmall,
+                    ),
                   ),
                 ),
               ),
             ],
             if (action.errorMessage != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: RexUiTokens.space8),
               Text(
                 action.errorMessage!,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -205,7 +206,7 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
               ),
             ],
             if (action.isApplied) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: RexUiTokens.space8),
               Text(
                 l10n.commonRecordsApplied(action.result.length),
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -217,37 +218,47 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
             if (action.canConfirm ||
                 action.canDismiss ||
                 action.isApplying) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: RexUiTokens.space12),
               if ((action.canConfirm || action.isApplying) &&
                   widget.onConfirm != null)
                 FilledButton.icon(
                   onPressed: action.isApplying
                       ? null
-                      : () => widget.onConfirm!(_confirmedAction()),
+                      : () {
+                          HapticFeedback.lightImpact();
+                          widget.onConfirm!(_confirmedAction());
+                        },
                   icon: action.isApplying
-                      ? const ClarityInlineLoader(size: 18, strokeWidth: 2)
-                      : const Icon(Icons.check_rounded, size: 20),
+                      ? const ClarityInlineLoader(size: 16, strokeWidth: 2)
+                      : const Icon(Icons.check_rounded, size: 18),
                   label: Text(isDeleteAction ? 'Delete' : l10n.commonConfirm),
                   style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
+                    minimumSize: const Size.fromHeight(
+                      RexUiTokens.confirmButtonHeight,
+                    ),
                     backgroundColor: isDeleteAction ? scheme.error : null,
                     foregroundColor: isDeleteAction ? scheme.onError : null,
-                    textStyle: theme.textTheme.titleSmall?.copyWith(
+                    textStyle: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               if (action.canDismiss && widget.onDismiss != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: RexUiTokens.space8),
                 OutlinedButton.icon(
                   onPressed: action.isApplying
                       ? null
-                      : () => widget.onDismiss!(action),
-                  icon: const Icon(Icons.close_rounded, size: 20),
+                      : () {
+                          HapticFeedback.selectionClick();
+                          widget.onDismiss!(action);
+                        },
+                  icon: const Icon(Icons.close_rounded, size: 18),
                   label: Text(isDeleteAction ? 'Keep it' : l10n.commonDismiss),
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                    textStyle: theme.textTheme.titleSmall?.copyWith(
+                    minimumSize: const Size.fromHeight(
+                      RexUiTokens.confirmButtonHeight,
+                    ),
+                    textStyle: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -324,10 +335,13 @@ class _MemoryChip extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: chipColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(
+          horizontal: RexUiTokens.space8,
+          vertical: RexUiTokens.space4,
+        ),
         child: Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(

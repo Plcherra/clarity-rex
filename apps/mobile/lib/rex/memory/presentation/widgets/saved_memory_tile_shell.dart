@@ -96,113 +96,146 @@ class SavedMemoryTileShell extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
     final l10n = context.l10n;
-    final updatedLabel = memoryUpdatedLabel(l10n, updatedAt, createdAt);
+    // List row stays lean: title + optional one-line detail + type.
+    // Importance and dates live in the edit sheet.
+    final detailLine = _listDetailLine(
+      subtitle: subtitle,
+      supplementalLabels: supplementalLabels,
+    );
     final metaParts = <String>[
       typeLabel,
-      memoryImportanceShortLabel(l10n, importance),
-      if (updatedLabel.isNotEmpty) updatedLabel,
       if (!active) l10n.commonInactive,
     ];
+    final updatedLabel = memoryUpdatedLabel(l10n, updatedAt, createdAt);
+    final semanticsParts = <String>[
+      title,
+      if (detailLine != null) detailLine,
+      ...metaParts,
+      memoryImportanceShortLabel(l10n, importance),
+      if (updatedLabel.isNotEmpty) updatedLabel,
+    ];
+    // Plan/Goals tiles may still pass milestone chips; Knows never sets this.
+    final showPlanExtras = onAddMilestone != null &&
+        (supplementalLabels.isNotEmpty || supplementalWidgets.isNotEmpty);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         RexUiTokens.space16,
-        RexUiTokens.space4,
+        RexUiTokens.space2,
         RexUiTokens.space16,
-        RexUiTokens.space4,
+        RexUiTokens.space2,
       ),
-      child: Material(
-        color: colors.surfaceSoft.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-          onTap: onEdit,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: RexUiTokens.space12,
-              vertical: RexUiTokens.space8,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: _ImportanceDot(
-                    importance: importance,
-                    active: active,
+      child: Semantics(
+        button: true,
+        label: semanticsParts.join(', '),
+        child: Material(
+          color: colors.surfaceSoft.withValues(alpha: 0.22),
+          borderRadius: BorderRadius.circular(RexUiTokens.memoryTileRadius),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(RexUiTokens.memoryTileRadius),
+            onTap: onEdit,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: RexUiTokens.memoryTilePaddingH,
+                vertical: RexUiTokens.memoryTilePaddingV,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      icon,
+                      color: active ? colors.accent : colors.textMuted,
+                      size: 16,
+                    ),
                   ),
-                ),
-                const SizedBox(width: RexUiTokens.space8),
-                Icon(
-                  icon,
-                  color: active ? colors.accent : colors.textMuted,
-                  size: 16,
-                ),
-                const SizedBox(width: RexUiTokens.space8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: active
-                              ? colors.textPrimary
-                              : colors.textMuted,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-                        const SizedBox(height: RexUiTokens.space4),
+                  const SizedBox(width: RexUiTokens.space8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          subtitle!,
-                          maxLines: 3,
+                          title,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
+                          style: theme.textTheme.titleSmall?.copyWith(
                             color: active
-                                ? colors.textSecondary
+                                ? colors.textPrimary
                                 : colors.textMuted,
-                            height: 1.3,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
-                      const SizedBox(height: RexUiTokens.space4),
-                      Text(
-                        metaParts.join(' · '),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colors.textSecondary,
-                          fontWeight: FontWeight.w500,
+                        if (detailLine != null) ...[
+                          const SizedBox(height: RexUiTokens.space2),
+                          Text(
+                            detailLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: active
+                                  ? colors.textSecondary
+                                  : colors.textMuted,
+                              height: 1.25,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: RexUiTokens.space2),
+                        Text(
+                          metaParts.join(' · '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colors.textMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      if (supplementalLabels.isNotEmpty ||
-                          supplementalWidgets.isNotEmpty) ...[
-                        const SizedBox(height: RexUiTokens.space8),
-                        Wrap(
-                          spacing: RexUiTokens.space8,
-                          runSpacing: RexUiTokens.space8,
-                          children: [
-                            for (final label in supplementalLabels)
-                              MemoryMetaChip(label: label),
-                            ...supplementalWidgets,
-                          ],
-                        ),
+                        if (showPlanExtras) ...[
+                          const SizedBox(height: RexUiTokens.space4),
+                          Wrap(
+                            spacing: RexUiTokens.space8,
+                            runSpacing: RexUiTokens.space4,
+                            children: [
+                              for (final label in supplementalLabels)
+                                MemoryMetaChip(label: label),
+                              ...supplementalWidgets,
+                            ],
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: RexUiTokens.space4),
-                _MemoryActionsMenu(
-                  onEdit: onEdit,
-                  onDeactivate: onDeactivate,
-                  onAddMilestone: onAddMilestone,
-                ),
-              ],
+                  const SizedBox(width: RexUiTokens.space4),
+                  _MemoryActionsMenu(
+                    onEdit: onEdit,
+                    onDeactivate: onDeactivate,
+                    onAddMilestone: onAddMilestone,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+String? _listDetailLine({
+  required String? subtitle,
+  required List<String> supplementalLabels,
+}) {
+  final trimmed = subtitle?.trim();
+  if (trimmed != null && trimmed.isNotEmpty) {
+    return trimmed;
+  }
+  for (final label in supplementalLabels) {
+    final value = label.trim();
+    if (value.isNotEmpty) {
+      return value;
+    }
+  }
+  return null;
 }
 
 List<Widget> baseMemoryChips({
@@ -228,29 +261,6 @@ String shortMemoryDate(DateTime value) {
 
 DateTime? savedMemoryDate(DateTime? updatedAt, DateTime? createdAt) {
   return updatedAt ?? createdAt;
-}
-
-class _ImportanceDot extends StatelessWidget {
-  const _ImportanceDot({required this.importance, required this.active});
-
-  final int importance;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.clarityColors;
-    return Container(
-      width: 8,
-      height: 8,
-      margin: const EdgeInsets.only(top: 4),
-      decoration: BoxDecoration(
-        color: active
-            ? memoryImportanceColor(colors, importance)
-            : colors.textMuted,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
 }
 
 class _MemoryActionsMenu extends StatelessWidget {

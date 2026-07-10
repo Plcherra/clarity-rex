@@ -20,17 +20,15 @@ Future<void> _showPlanDetailSheet(
   var status = plan.status;
   DateTime? targetDate = plan.targetDate;
 
-  await showModalBottomSheet<void>(
+  await showClarityModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
     builder: (sheetContext) {
       return StatefulBuilder(
         builder: (context, setState) {
           final colors = context.clarityColors;
-          final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
           return Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottomInset),
+            padding: claritySheetPadding(context),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,

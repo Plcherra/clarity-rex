@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
+import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
@@ -29,12 +30,15 @@ class VoiceLiveTranscript extends StatelessWidget {
 
     if (isFailed) {
       return Padding(
-        padding: const EdgeInsets.only(top: 4, bottom: 12),
+        padding: const EdgeInsets.only(
+          top: RexUiTokens.space4,
+          bottom: RexUiTokens.messageGap,
+        ),
         child: Text(
           visibleText,
-          style: theme.textTheme.bodyLarge?.copyWith(
+          style: theme.textTheme.labelMedium?.copyWith(
             color: colors.textPrimary,
-            height: 1.45,
+            height: 1.35,
           ),
         ),
       );
@@ -42,7 +46,10 @@ class VoiceLiveTranscript extends StatelessWidget {
 
     if (state.phase == VoiceCallPhase.speaking) {
       return Padding(
-        padding: const EdgeInsets.only(top: 4, bottom: 12),
+        padding: const EdgeInsets.only(
+          top: RexUiTokens.space4,
+          bottom: RexUiTokens.messageGap,
+        ),
         child: Row(
           children: [
             _VoiceWaveIndicator(
@@ -53,7 +60,7 @@ class VoiceLiveTranscript extends StatelessWidget {
             const SizedBox(width: RexUiTokens.space8),
             Text(
               l10n.voicePanelSpeaking,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: theme.textTheme.labelMedium?.copyWith(
                 color: colors.textMuted,
               ),
             ),
@@ -64,7 +71,10 @@ class VoiceLiveTranscript extends StatelessWidget {
 
     if (state.phase == VoiceCallPhase.listening && !state.isMuted) {
       return Padding(
-        padding: const EdgeInsets.only(top: 4, bottom: 12),
+        padding: const EdgeInsets.only(
+          top: RexUiTokens.space4,
+          bottom: RexUiTokens.messageGap,
+        ),
         child: Row(
           children: [
             _VoiceWaveIndicator(
@@ -75,7 +85,7 @@ class VoiceLiveTranscript extends StatelessWidget {
             const SizedBox(width: RexUiTokens.space8),
             Text(
               l10n.voicePanelStartTalking,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: theme.textTheme.labelMedium?.copyWith(
                 color: colors.textMuted,
               ),
             ),
@@ -151,7 +161,12 @@ class _InlineVoiceCallPanelState extends State<InlineVoiceCallPanel> {
     final isFailed = state.phase == VoiceCallPhase.failed;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+      padding: const EdgeInsets.fromLTRB(
+        RexUiTokens.composerPaddingH,
+        0,
+        RexUiTokens.composerPaddingH,
+        RexUiTokens.space4,
+      ),
       child: Row(
         children: [
           Semantics(
@@ -162,10 +177,11 @@ class _InlineVoiceCallPanelState extends State<InlineVoiceCallPanel> {
               isMuted: state.isMuted,
               color: isFailed ? colors.danger : colors.accent,
               isFailed: isFailed,
+              compact: true,
             ),
           ),
           const SizedBox(width: RexUiTokens.space8),
-          if (state.isMuted && !isFailed)
+          if (state.isMuted && !isFailed) ...[
             Text(
               l10n.voicePanelMuted,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -173,7 +189,21 @@ class _InlineVoiceCallPanelState extends State<InlineVoiceCallPanel> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-          const Spacer(),
+            const Spacer(),
+          ] else if (AppCapabilities.instance.isWeb && !isFailed)
+            Expanded(
+              child: Text(
+                l10n.voiceWebForegroundOnlyHint,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: colors.textMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            )
+          else
+            const Spacer(),
           if (isFailed) ...[
             _VoiceFlatIconButton(
               icon: Icons.settings_outlined,
@@ -246,11 +276,11 @@ class _VoiceFlatIconButton extends StatelessWidget {
 
     return IconButton(
       onPressed: onPressed,
-      icon: Icon(icon, size: 22),
+      icon: Icon(icon, size: 20),
       tooltip: tooltip,
       style: IconButton.styleFrom(
-        minimumSize: const Size.square(40),
-        fixedSize: const Size.square(40),
+        minimumSize: const Size.square(36),
+        fixedSize: const Size.square(36),
         padding: EdgeInsets.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         backgroundColor: Colors.transparent,
@@ -305,10 +335,10 @@ class _VoiceWaveIndicatorState extends State<_VoiceWaveIndicator>
   @override
   Widget build(BuildContext context) {
     if (widget.isFailed) {
-      return Icon(Icons.error_outline_rounded, color: widget.color, size: 20);
+      return Icon(Icons.error_outline_rounded, color: widget.color, size: 18);
     }
     if (widget.isMuted && widget.phase == VoiceCallPhase.listening) {
-      return Icon(Icons.mic_off_outlined, color: widget.color, size: 20);
+      return Icon(Icons.mic_off_outlined, color: widget.color, size: 18);
     }
     if (widget.phase == VoiceCallPhase.thinking) {
       final label = widget.thinkingLabel;
@@ -323,7 +353,7 @@ class _VoiceWaveIndicatorState extends State<_VoiceWaveIndicator>
       }
     }
     if (widget.phase == VoiceCallPhase.speaking) {
-      return Icon(Icons.volume_up_outlined, color: widget.color, size: 20);
+      return Icon(Icons.volume_up_outlined, color: widget.color, size: 18);
     }
 
     return AnimatedBuilder(

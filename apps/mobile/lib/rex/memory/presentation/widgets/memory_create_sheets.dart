@@ -4,6 +4,7 @@ import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
 import 'package:clarity/theme/clarity_colors.dart';
+import 'package:clarity/theme/clarity_sheet_insets.dart';
 
 enum MemoryCreateKind {
   fact,
@@ -58,9 +59,8 @@ const memoryCreateCategories = memoryCreateCategoryKeys;
 
 Future<MemoryCreateKind?> showMemoryCreateTypePicker(BuildContext context) {
   final l10n = context.l10n;
-  return showModalBottomSheet<MemoryCreateKind>(
+  return showClarityModalBottomSheet<MemoryCreateKind>(
     context: context,
-    showDragHandle: true,
     builder: (sheetContext) {
       final options = [
         (MemoryCreateKind.fact, l10n.memoryCreateFact),
@@ -68,8 +68,7 @@ Future<MemoryCreateKind?> showMemoryCreateTypePicker(BuildContext context) {
         (MemoryCreateKind.person, l10n.commonPerson),
         (MemoryCreateKind.rule, l10n.memoryCreateRule),
       ];
-      return SafeArea(
-        child: SingleChildScrollView(
+      return SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -87,8 +86,7 @@ Future<MemoryCreateKind?> showMemoryCreateTypePicker(BuildContext context) {
                 ),
             ],
           ),
-        ),
-      );
+        );
     },
   );
 }
@@ -97,19 +95,17 @@ Future<FlatMemoryCreateResult?> showFlatMemoryCreateSheet(
   BuildContext context, {
   required MemoryCreateKind kind,
 }) {
-  return showModalBottomSheet<FlatMemoryCreateResult>(
+  return showClarityModalBottomSheet<FlatMemoryCreateResult>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
     builder: (sheetContext) => _FlatMemoryCreateSheet(kind: kind),
   );
 }
 
 Future<PersonCreateResult?> showPersonCreateSheet(BuildContext context) {
-  return showModalBottomSheet<PersonCreateResult>(
+  return showClarityModalBottomSheet<PersonCreateResult>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
     builder: (sheetContext) => const _PersonCreateSheet(),
   );
 }
@@ -121,10 +117,9 @@ Future<StructuredCreateResult?> showStructuredCreateSheet(
   required String detailLabel,
   String? extraLabel,
 }) {
-  return showModalBottomSheet<StructuredCreateResult>(
+  return showClarityModalBottomSheet<StructuredCreateResult>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
     builder: (sheetContext) => _StructuredCreateSheet(
       title: title,
       primaryLabel: primaryLabel,
@@ -170,9 +165,8 @@ class _FlatMemoryCreateSheetState extends State<_FlatMemoryCreateSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottomInset),
+      padding: claritySheetPadding(context),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -287,9 +281,8 @@ class _PersonCreateSheetState extends State<_PersonCreateSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottomInset),
+      padding: claritySheetPadding(context),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -405,9 +398,8 @@ class _StructuredCreateSheetState extends State<_StructuredCreateSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottomInset),
+      padding: claritySheetPadding(context),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

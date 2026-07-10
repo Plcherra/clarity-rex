@@ -5,6 +5,7 @@ import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_dialogs.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_shared_widgets.dart';
 import 'package:clarity/theme/clarity_colors.dart';
+import 'package:clarity/theme/clarity_sheet_insets.dart';
 
 Future<StructuredEditResult?> showStructuredMemoryEditSheet(
   BuildContext context, {
@@ -23,10 +24,9 @@ Future<StructuredEditResult?> showStructuredMemoryEditSheet(
   String? extraLabel,
   String? extraValue,
 }) {
-  return showModalBottomSheet<StructuredEditResult>(
+  return showClarityModalBottomSheet<StructuredEditResult>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
     builder: (sheetContext) => MemoryStructuredEditSheet(
       title: title,
       typeLabel: typeLabel,
@@ -114,7 +114,6 @@ class _MemoryStructuredEditSheetState extends State<MemoryStructuredEditSheet> {
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
     final l10n = context.l10n;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final updatedLabel = memoryUpdatedLabel(
       l10n,
       widget.updatedAt,
@@ -122,7 +121,7 @@ class _MemoryStructuredEditSheetState extends State<MemoryStructuredEditSheet> {
     );
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottomInset),
+      padding: claritySheetPadding(context),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

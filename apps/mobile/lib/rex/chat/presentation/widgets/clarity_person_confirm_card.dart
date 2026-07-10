@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
+import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
@@ -164,25 +166,24 @@ class _ClarityPersonConfirmCardState extends State<ClarityPersonConfirmCard> {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surfaceElevated.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(RexUiTokens.confirmCardRadius),
         border: Border.all(
           color: scheme.primary.withValues(alpha: 0.42),
-          width: 1.5,
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(RexUiTokens.confirmCardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
               l10n.personConfirmTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             if (mergeHint != null && mergeHint.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: RexUiTokens.space8),
               Text(
                 mergeHint,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -191,25 +192,25 @@ class _ClarityPersonConfirmCardState extends State<ClarityPersonConfirmCard> {
                 ),
               ),
             ],
-            const SizedBox(height: 14),
+            const SizedBox(height: RexUiTokens.space12),
             _PersonField(
               controller: _nameController,
               label: l10n.personConfirmNameLabel,
               enabled: !action.isApplying,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: RexUiTokens.space8),
             _PersonField(
               controller: _relationshipController,
               label: l10n.personConfirmRelationshipLabel,
               enabled: !action.isApplying,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: RexUiTokens.space8),
             _PersonField(
               controller: _birthdayController,
               label: l10n.personConfirmBirthdayLabel,
               enabled: !action.isApplying,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: RexUiTokens.space8),
             _PersonField(
               controller: _notesController,
               label: l10n.personConfirmNotesLabel,
@@ -218,7 +219,7 @@ class _ClarityPersonConfirmCardState extends State<ClarityPersonConfirmCard> {
               maxLines: 4,
             ),
             if (_filledCount < 2) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: RexUiTokens.space8),
               Text(
                 l10n.personConfirmTwoFieldsRequired,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -227,28 +228,40 @@ class _ClarityPersonConfirmCardState extends State<ClarityPersonConfirmCard> {
                 ),
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: RexUiTokens.space12),
             if (widget.onConfirm != null)
               FilledButton.icon(
                 onPressed: canSave
-                    ? () => widget.onConfirm!(_confirmedAction())
+                    ? () {
+                        HapticFeedback.lightImpact();
+                        widget.onConfirm!(_confirmedAction());
+                      }
                     : null,
                 icon: action.isApplying
-                    ? const ClarityInlineLoader(size: 18, strokeWidth: 2)
-                    : const Icon(Icons.check_rounded, size: 20),
+                    ? const ClarityInlineLoader(size: 16, strokeWidth: 2)
+                    : const Icon(Icons.check_rounded, size: 18),
                 label: Text(l10n.commonConfirm),
                 style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
+                  minimumSize: const Size.fromHeight(
+                    RexUiTokens.confirmButtonHeight,
+                  ),
                 ),
               ),
             if (widget.onDismiss != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: RexUiTokens.space8),
               OutlinedButton.icon(
-                onPressed: action.isApplying ? null : _handleDismiss,
-                icon: const Icon(Icons.close_rounded, size: 20),
+                onPressed: action.isApplying
+                    ? null
+                    : () {
+                        HapticFeedback.selectionClick();
+                        _handleDismiss();
+                      },
+                icon: const Icon(Icons.close_rounded, size: 18),
                 label: Text(l10n.commonDismiss),
                 style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
+                  minimumSize: const Size.fromHeight(
+                    RexUiTokens.confirmButtonHeight,
+                  ),
                 ),
               ),
             ],
@@ -284,9 +297,12 @@ class _PersonField extends StatelessWidget {
       maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
+        isDense: true,
         filled: true,
         fillColor: colors.surfaceSoft.withValues(alpha: 0.72),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(RexUiTokens.radiusSmall),
+        ),
       ),
     );
   }

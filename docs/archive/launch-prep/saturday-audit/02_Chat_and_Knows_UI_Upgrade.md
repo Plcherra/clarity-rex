@@ -1,386 +1,213 @@
 # 02 — Cross-Platform UI Upgrade (Chat, Knows, Native Polish, Web)
 
-**Covers:** Make Clarity feel lighter and more practical across **Android**, **iOS**, and **web** — without a full redesign or a second design system. Shared Flutter density/canon work first; then platform-specific polish; then a dedicated web track (marketing site + Flutter companion at `/app/`).
+**Covers:** Make Clarity feel lighter and more practical across **Android**, **iOS**, and **web** — without a full redesign or a second design system.
 
 **Canon:** `CLARITY_RULES.md` — Saved Memory in Knows; Goals in Goals; keep them separate. Marketing and UI must not overclaim platform parity (see file 07 matrix / file 09 honesty).
 
-**Primary paths**
+---
+
+## Progress snapshot (Jul 2026)
+
+| Phase | Scope | Status |
+| --- | --- | --- |
+| **A** | Shared Flutter canon + density | **DONE** (A1–A5) |
+| **B** | Android polish | **DONE** code (B1–B3); **B4** screenshots open |
+| **C** | iOS polish | **DONE** code (C1–C3); **C4** screenshots open |
+| **D** | Web marketing (`apps/web`) | **DEFERRED** — skipped this pass; do after F smoke if claiming landing |
+| **E** | Flutter web `/app/` | **DONE** code (E1/E3/E4); **E2** needs browser smoke in F |
+| **F** | Cross-platform verify | **OPEN** — use smoke list below |
+
+**Claim rule:** Do not market “redesigned on every platform” until Phase F is checked for the platforms named in the claim.
+
+**Out of this file:** background voice (07), Plaid prod smoke (06), Spanish FTUE (09), file→Knows (08), legal substance (10), desktop (11), full rebrand.
+
+---
+
+## Primary paths
 
 | Surface | Paths |
 | --- | --- |
-| Shared Flutter | `chat_message_bubble.dart`, `chat_transcript.dart`, `clarity_action_cards_strip.dart` / person card, `saved_memory_group_list.dart`, `saved_memory_tile_shell.dart`, `RexUiTokens`, `lib/theme/*`, Knows/Goals sheets |
-| Android | Material nav/system bars, FG voice chrome, edge-to-edge / gesture nav insets, Play-facing screenshots |
-| iOS | Safe areas / Dynamic Island / home indicator, Cupertino-feel sheets where already used, foreground voice chrome, App Store screenshots |
-| Web marketing | `apps/web` Astro (`index.astro`, `global.css`, `site.ts`, product screens) |
-| Web app | Flutter web PWA at `/app/` (`AppCapabilities.isWeb`, `web_centered_dialog.dart`, chat/voice capability gates, deploy scripts) |
+| Shared Flutter | `chat_message_bubble.dart`, `chat_transcript.dart`, confirm cards, `saved_memory_tile_shell.dart`, `RexUiTokens`, `clarity_sheet_insets.dart`, Knows/Goals sheets |
+| Android / iOS | Safe areas, system bars, sheets, foreground voice chrome |
+| Web marketing | `apps/web` Astro — **deferred (Phase D)** |
+| Web app | Flutter `/app/` — `AppCapabilities`, 920px column, honest voice/attach copy, `flutter_bootstrap.js` |
 
 ---
 
-## Track map (how to execute)
+# Phase A — Shared Flutter: canon + density — DONE
 
-```text
-Phase A — Shared canon + density (Android + iOS + Flutter web inherit)
-Phase B — Android-specific polish
-Phase C — iOS-specific polish
-Phase D — Web marketing polish (apps/web)
-Phase E — Web companion app polish (Flutter /app/)
-Phase F — Cross-platform verify + screenshot honesty
+### A1 Goals out of Knows (A70) — DONE
+Knows list/filters force empty plans/goals; empty copy is facts/people/preferences only.
+
+### A2 Chat bubbles lighter (A71–A72) — DONE
+User bubbles use `accentSoft` + `textPrimary`. Shared `bubblePaddingH/V`, `messageGap`, `bodyMedium` / height 1.35.
+
+### A3 Knows lean rows (A73–A74) — DONE
+Row = title + optional one-line detail + type. Importance/dates in edit sheet. Shared `memoryTilePadding*` / `memoryTileRadius`.
+
+### A4 Confirm strip slim (A75) — DONE
+Shared `confirmCardPadding` / `confirmCardGap` / `confirmButtonHeight`; no drop shadow; truth-honest confirm/dismiss.
+
+### A5 Shell density (A100) — DONE
+Goals reuse Knows tile tokens; composer `composerPadding*` + `bodyMedium`. Finance redesign untouched.
+
+---
+
+# Phase B — Android — code DONE; screenshots open
+
+### B1 System UI (A101–A102) — DONE
+Sheets `useSafeArea` + `claritySheetPadding`. Confirm dialog `SafeArea`. `ClarityTheme.systemUiOverlayStyle` + `AnnotatedRegion`.
+
+### B2 Material sheets (A103) — DONE
+Knows/Goals/attach/settings sheets use shared sheet helper; attach uses theme drag handle.
+
+### B3 Voice chrome (A104) — DONE
+Voice panel H padding = composer; `bubbleSideInset` 36. FG service untouched (file 07).
+
+### B4 Play screenshots (A105) — OPEN (manual)
+Refresh chat / Knows / Goals / voice captures after device QA. Sync to Phase D if landing reuses them.
+
+---
+
+# Phase C — iOS — code DONE; screenshots open
+
+### C1 Safe areas / nav density (A106–A107) — DONE
+Chat body `SafeArea(bottom: false)`; composer owns bottom. `clarityScrollBottomClearance` on Knows/Goals/Chats. Assistant header denser; `toolbarHeight` 48.
+
+### C2 Sheets + haptics (A108) — DONE
+`showClarityModalBottomSheet` (drag, dismiss, safe area, grabber). Confirm/dismiss use existing light haptics.
+
+### C3 Foreground voice (A109) — DONE
+Compact wave; smaller controls; lighter status. Background walk-and-talk still file 07.
+
+### C4 App Store screenshots (A110) — OPEN (manual)
+Same as B4 for iOS captures; sync with Phase D when marketing runs.
+
+---
+
+# Phase D — Web marketing (`apps/web`) — DEFERRED
+
+Skipped this pass (user chose E over D). Still open when claiming the landing:
+
+| ID | Issue | Notes |
+| --- | --- | --- |
+| A111 | Hero clutter / weak brand | One composition first viewport |
+| A112 | Product gallery honesty | No Goals-in-Knows; no false “full web parity” |
+| A113 | Legal page readability | Presentation only — file 10 owns substance |
+| A114 | Mobile responsive / perf | 375–430px QA; don’t break `/app/` deploy |
+| A115 | Download / login CTAs | Honest Open web app vs store links |
+| A116 | Screenshot sync | After A–C (+ E) look right |
+
+---
+
+# Phase E — Flutter web `/app/` — code DONE; browser smoke in F
+
+### E1 Capability honesty (A117) — DONE
+Web attach tooltip = files only. CSV disabled + mobile-only copy. Plaid unavailable string no longer “coming soon on web” (web Plaid stays on). Voice honesty → E3.
+
+### E1 Layout column (A118) — DONE
+Assistant header + tabs constrained to 920px. Add-account dialog centered/max-width on web.
+
+### E2 Density / keyboard (A119–A120) — OPEN (smoke only)
+Shared Phase A/B/C patterns apply on web. No web-only widget fork. Verify in Phase F browser smoke.
+
+### E3 Voice honesty (A121) — DONE
+Tooltips + inline panel: browser session / keep tab open. Unavailable path points to chat/mobile. Background voice off via `AppCapabilities`. JWT-in-URL remains file 04/07.
+
+### E4 Boot failure UI (A122) — DONE (UI)
+Friendlier copy in `apps/mobile/web/flutter_bootstrap.js`. Deploy ops still in `apps/web` README / scripts.
+
+---
+
+# Phase F — Smoke test list (do this next)
+
+Check each box on the platforms you claim. Mark **N/A** if that surface is out of launch scope.
+
+## F0 — Automated (quick)
+
+```bash
+cd apps/mobile
+flutter test test/chat_message_bubble_test.dart test/chat_input_bar_test.dart test/memory_page_test.dart test/voice_clarity_actions_test.dart
 ```
 
-Work **A before B/C** (shared tokens/widgets). **D and E are independent** of B/C but should not contradict A. **F last.**
+- [ ] All four suites pass
 
-Saturday note: Phase A (especially Goals-out-of-Knows) is the highest-value slice. B–E are product-feel; not truth/security blockers.
+## F1 — Canon + density (every Flutter surface you ship)
 
----
+| # | Check | Android | iOS | `/app/` |
+| --- | --- | :---: | :---: | :---: |
+| 1 | Knows has **no** Goals / plans group or plan tiles | ☐ | ☐ | ☐ |
+| 2 | Knows empty copy does **not** mention goals | ☐ | ☐ | ☐ |
+| 3 | Goals tab still shows plans + Open Threads | ☐ | ☐ | ☐ |
+| 4 | Chat: soft user bubbles; readable light **and** dark | ☐ | ☐ | ☐ |
+| 5 | Chat: bubbles not overly padded; transcript feels dense but readable | ☐ | ☐ | ☐ |
+| 6 | Knows rows: title + optional one line + type; no importance/date chrome in list | ☐ | ☐ | ☐ |
+| 7 | Knows edit sheet still shows importance + dates | ☐ | ☐ | ☐ |
+| 8 | Confirm card: slim, no heavy shadow; Confirm/Dismiss obvious | ☐ | ☐ | ☐ |
+| 9 | Confirm → item appears in Knows or Goals; Rex does not claim saved before confirm | ☐ | ☐ | ☐ |
+| 10 | Goals tiles match Knows density (not card-heavy) | ☐ | ☐ | ☐ |
 
-# Phase A — Shared Flutter: canon + density
+## F2 — Android-only
 
-Applies to Android, iOS, and Flutter web unless a later phase overrides.
+| # | Check | Pass |
+| --- | --- | :---: |
+| 11 | Gesture nav / 3-button: chat composer, Knows list, sheets clear of system bars | ☐ |
+| 12 | Status bar icons readable in light and dark | ☐ |
+| 13 | Knows create/edit, attach, Goals detail sheets: drag handle + dismiss OK | ☐ |
+| 14 | Voice panel aligns with composer; confirm during voice usable | ☐ |
+| 15 | FG / notification voice behavior **unchanged** (no regression from UI polish) | ☐ |
 
-## A1 — Canon: Goals out of Knows
+## F3 — iOS-only
 
-### Issue: Goals group rendered inside Knows (A70)
+| # | Check | Pass |
+| --- | --- | :---: |
+| 16 | Notch / Dynamic Island / home indicator: chat send, attach sheet, Knows edit, voice panel not clipped | ☐ |
+| 17 | Assistant tabs + header feel denser; back swipe still works | ☐ |
+| 18 | Sheets: drag-to-dismiss + grabber; confirm/dismiss light haptic | ☐ |
+| 19 | Foreground voice chrome matches chat density | ☐ |
+| 20 | Do **not** expect background walk-and-talk (file 07) | ☐ noted |
 
-- **Severity:** High (product clarity)
-- **Platforms:** All Flutter surfaces
-- **Why it matters:** Same goals in Knows and Goals; violates “clearly separate Saved Memory and Goals.”
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Remove `MemoryGroup.goals` / plan tiles from `SavedMemoryGroupList` and Knows filters that only exist to surface plans. Keep create/edit on Goals tab (and chat confirm → Goals refresh). Update Knows empty-state copy if it mentions goals. Re-check web marketing Knows screenshot/copy (Phase D) so it does not show Goals inside Knows.
+## F4 — Flutter web `/app/`
 
-## A2 — Chat bubbles: lighter density
+| # | Check | Pass |
+| --- | --- | :---: |
+| 21 | Wide desktop: assistant header + content stay in ~920px centered column (not full-bleed stretch) | ☐ |
+| 22 | Mic tooltip / active voice hint: browser / keep tab open (not “full mobile voice”) | ☐ |
+| 23 | Attach tooltip: file-oriented (not “file or image” if that overclaims) | ☐ |
+| 24 | Add account: CSV disabled with mobile-only copy; Plaid available if web Link works | ☐ |
+| 25 | Chat send + streaming reply scroll OK (desktop Chrome) | ☐ |
+| 26 | Mobile Safari (or narrow Chrome): composer not permanently covered; can send | ☐ |
+| 27 | Confirm strip usable with mouse/touch; truth-honest after confirm | ☐ |
+| 28 | Knows / Goals density readable on wide + narrow | ☐ |
+| 29 | Boot: normal load shows “Loading Clarity…” then app (not stuck blank) | ☐ |
+| 30 | Optional: break asset path once in staging → friendly boot error (refresh / wrong files), not silent blank | ☐ |
 
-### Issue: Solid teal user bubbles feel heavy (A71)
+## F5 — Marketing / store (only if claiming those surfaces)
 
-- **Severity:** Medium
-- **Platforms:** All Flutter
-- **Why it matters:** Dense filled bubbles dominate the transcript; Grok-like UIs use muted text + slight tint.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** In `chat_message_bubble.dart` / `RexUiTokens.userBubble`, replace solid teal fill with a soft tint (low-alpha teal or elevated surface). Keep readable contrast in light and dark. Preserve streaming / expandable assistant behavior.
+| # | Check | Pass |
+| --- | --- | :---: |
+| 31 | Phase D still deferred — landing not claimed updated | ☐ / N/A |
+| 32 | Play screenshots match shipping density + Knows-without-Goals (B4) | ☐ / N/A |
+| 33 | App Store screenshots same (C4) | ☐ / N/A |
+| 34 | Landing product cards / CTAs honest if D runs later | ☐ / N/A |
 
-### Issue: Bubble and transcript spacing too large (A72)
+## F6 — Fail criteria (any one = do not claim polish done)
 
-- **Severity:** Medium
-- **Platforms:** All Flutter
-- **Why it matters:** Large padding + `bodyLarge` + generous list gaps make short turns feel like cards.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Tighten bubble padding; reduce inter-message spacing in `chat_transcript.dart` (and voice interim spacing if needed). Prefer `RexUiTokens` / `ClaritySpacing` tweaks over one-off magic numbers.
-
-## A3 — Knows: practical rows, details on tap
-
-### Issue: Knows tiles show too much chrome (A73)
-
-- **Severity:** Medium
-- **Platforms:** All Flutter
-- **Why it matters:** Title + long subtitle + type · importance · date + icons makes scanning hard.
-- **Estimated effort:** Medium
-- **Brief fix suggestion:** Default row = **title + one meta line**. Move importance and dates into the edit sheet. Keep overflow / archive reachable.
-
-### Issue: Knows list still feels card-heavy (A74)
-
-- **Severity:** Low–Medium
-- **Platforms:** All Flutter
-- **Why it matters:** Large radius + thick surfaces read as dashboard cards, not a memory list.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Slightly reduce tile padding/radius in the shared tile shell; avoid nested “card in card.” Do not invent a second design system.
-
-## A4 — Confirm strip slim-down
-
-### Issue: Confirm action strip padding is heavy (A75)
-
-- **Severity:** Low–Medium
-- **Platforms:** All Flutter (chat + voice dialogs)
-- **Why it matters:** Pending save cards compete with the transcript.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Reduce padding in confirm strip / person card shells; keep confirm/reject obvious and truth-honest (no visual “success” without applied).
-
-## A5 — Shared shell density (optional stretch)
-
-### Issue: Assistant / finance shells still feel dashboard-heavy (A100)
-
-- **Severity:** Low–Medium
-- **Platforms:** All Flutter
-- **Why it matters:** Chat/Knows polish can still feel heavy next to dense Dashboard/Goals chrome.
-- **Estimated effort:** Medium
-- **Brief fix suggestion:** Light pass on Goals list density and chat composer chrome only — same tokens, no rebrand. Stop before touching full finance redesign.
+- Goals visible inside Knows
+- Confirm UI looks “saved” before backend apply
+- Web voice copy implies background / mobile parity
+- Web offers CSV as working
+- Clipped composer / sheets on a target device
+- Marketing screenshots show old heavy UI or Goals-in-Knows while claiming redesign
 
 ---
 
-# Phase B — Android-specific polish
-
-Shared Phase A lands first; then verify and tune Android.
-
-## B1 — System UI and navigation
-
-### Issue: Edge-to-edge / gesture nav insets inconsistent (A101)
-
-- **Severity:** Medium
-- **Platform:** Android
-- **Why it matters:** Content or confirm strip can sit under gesture bars or status bar on modern Android.
-- **Estimated effort:** Small–Medium
-- **Brief fix suggestion:** Audit chat, Knows, Goals, voice overlay, and confirm strip with `SafeArea` / `MediaQuery.padding` on gesture-nav devices. Prefer one consistent inset pattern; do not add artificial delays.
-
-### Issue: Status / navigation bar contrast vs theme (A102)
-
-- **Severity:** Low–Medium
-- **Platform:** Android
-- **Why it matters:** Light/dark theme switches can leave icons unreadable on system bars.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Align `SystemChrome` / `SystemUiOverlayStyle` with `ThemeMode` (Profile theme control). Spot-check Material 3 `NavigationBar` if used on main shell.
-
-## B2 — Material feel without a redesign
-
-### Issue: Sheets and ripples feel generic or heavy on Android (A103)
-
-- **Severity:** Low
-- **Platform:** Android
-- **Why it matters:** After density pass, Android should still feel native (ripples, scrim, sheet height), not iOS-copied.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Keep Material components; tune bottom-sheet initial size and scrim for Knows edit / attach / confirm. No Cupertino swap on Android.
-
-## B3 — Voice chrome on Android
-
-### Issue: Voice overlay density competes with FG-service UX (A104)
-
-- **Severity:** Medium
-- **Platform:** Android
-- **Why it matters:** Android is the strongest walk-and-talk surface; heavy interim UI fights the product promise.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Apply A2/A4 spacing to voice interim + confirm dialogs. Do **not** change FG service / background behavior here (file 07 owns that). Visual polish only.
-
-## B4 — Android store / QA visuals
-
-### Issue: Play screenshots and device QA lag behind polish (A105)
-
-- **Severity:** Low (marketing)
-- **Platform:** Android
-- **Why it matters:** Store and landing images can show pre-density UI or Goals-in-Knows.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** After A+B, refresh key Play screenshots (chat, Knows, Goals, voice). Feed updated assets to Phase D if landing uses the same captures.
-
----
-
-# Phase C — iOS-specific polish
-
-## C1 — Safe areas and Apple chrome
-
-### Issue: Notch / Dynamic Island / home indicator clipping (A106)
-
-- **Severity:** Medium
-- **Platform:** iOS
-- **Why it matters:** Chat composer, confirm strip, and voice overlay are easy to clip on notched devices.
-- **Estimated effort:** Small–Medium
-- **Brief fix suggestion:** Device QA on recent iPhone: chat send, attach sheet, person confirm card, Knows edit sheet, voice panel. Fix with shared safe-area patterns — no platform-only hacks that break Android.
-
-### Issue: Large title / nav bar density mismatch (A107)
-
-- **Severity:** Low
-- **Platform:** iOS
-- **Why it matters:** After bubble density pass, oversized nav chrome still feels “cardy.”
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Tighten Assistant / Knows / Goals app-bar spacing where Flutter controls it; keep iOS back/swipe expectations intact.
-
-## C2 — Sheets and haptics
-
-### Issue: Edit / attach sheets feel Android-ported on iPhone (A108)
-
-- **Severity:** Low–Medium
-- **Platform:** iOS
-- **Why it matters:** Users expect familiar sheet grabbers and dismiss behavior.
-- **Estimated effort:** Small–Medium
-- **Brief fix suggestion:** Where sheets already exist, ensure drag-to-dismiss and top padding work on iOS; optional light haptic on confirm/reject **only if** already patterned elsewhere — do not invent a haptic system.
-
-## C3 — Voice chrome on iOS (foreground)
-
-### Issue: Foreground voice UI heavier than chat after polish (A109)
-
-- **Severity:** Medium
-- **Platform:** iOS
-- **Why it matters:** iOS launch story is foreground voice; UI should feel as light as chat.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Match voice interim/confirm density to Phase A. Background walk-and-talk remains file 07 (capability honesty), not this file.
-
-## C4 — App Store / QA visuals
-
-### Issue: App Store screenshots and landing assets stale (A110)
-
-- **Severity:** Low (marketing)
-- **Platform:** iOS
-- **Why it matters:** Same as Android — honesty and polish must match shipping UI.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Refresh chat / Knows / Goals / voice captures post Phase A+C; sync with Phase D.
-
----
-
-# Phase D — Web marketing site (`apps/web`)
-
-Dedicated track. This is **not** Flutter. Scope: landing, trust pages, product storytelling. Do **not** build an authenticated web dashboard here (README deferred list stays deferred).
-
-## D1 — Visual system and first viewport
-
-### Issue: Landing hero / product story feels generic or cluttered (A111)
-
-- **Severity:** Medium
-- **Platform:** Web marketing
-- **Why it matters:** `goclarity.app` is the trust + download surface; weak branding or dashboard-like first viewport hurts conversion and Plaid review trust.
-- **Estimated effort:** Medium
-- **Brief fix suggestion:** In `index.astro` + `global.css`, keep **one composition** in the first viewport: brand, one headline, one short lede, one CTA group, one dominant device visual. Avoid packing stats, FAQs, and multi-screen grids into the hero. Prefer expressive type over default Inter-only if changing fonts — stay coherent with existing teal/dark system; no purple-glow AI cliché redesign.
-
-### Issue: Product screen gallery overclaims or shows wrong canon (A112)
-
-- **Severity:** High (honesty) / Medium (UI)
-- **Platform:** Web marketing
-- **Why it matters:** Copy like “mobile and web” on Dashboard, or Knows showing goals, trains wrong expectations.
-- **Estimated effort:** Small–Medium
-- **Brief fix suggestion:** Update `productScreens` / `site.ts` copy to match real capabilities (web companion limits; Goals not inside Knows). Replace screenshots after mobile polish so chat density and Knows rows match shipping UI.
-
-## D2 — Trust and legal page readability
-
-### Issue: Privacy / security / terms pages are dense walls of text (A113)
-
-- **Severity:** Low–Medium
-- **Platform:** Web marketing
-- **Why it matters:** Trust pages are part of launch polish; unreadable legal hurts Plaid and users.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Improve typography rhythm and section headers in shared layout/CSS only — **do not** rewrite legal substance here (file 10 owns subprocessors/policy content). Polish presentation, not claims.
-
-## D3 — Responsive and performance
-
-### Issue: Landing breaks or feels heavy on small phones (A114)
-
-- **Severity:** Medium
-- **Platform:** Web marketing
-- **Why it matters:** Many users hit the site on mobile browsers before installing.
-- **Estimated effort:** Small–Medium
-- **Brief fix suggestion:** QA 375–430px widths: hero stack, CTAs, device image, FAQ. Compress/lazy-load non-hero images; keep hero image eager. Preserve Cloudflare deploy rules (do not break `/app/` Flutter assets — see web README).
-
-### Issue: Download / login CTAs unclear across platforms (A115)
-
-- **Severity:** Medium
-- **Platform:** Web marketing
-- **Why it matters:** “Web · iPhone · Android” eyebrow must match real store links and `/app/` companion behavior.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** Audit `DownloadActions.astro` + `authLinks`: honest labels (Open web app vs Get on iPhone/Android). Hide or soft-label missing store links; never imply full parity.
-
-## D4 — Marketing ↔ product visual sync
-
-### Issue: Landing screenshots diverge from app after polish (A116)
-
-- **Severity:** Medium
-- **Platform:** Web marketing
-- **Why it matters:** Users install and feel bait-and-switched.
-- **Estimated effort:** Small (process) + asset work
-- **Brief fix suggestion:** After Phases A–C (and E if `/app/` chrome changes), refresh `public/images/app/*` and alt text. Checklist item in Phase F.
-
----
-
-# Phase E — Web companion app (Flutter at `/app/`)
-
-Dedicated track for the **authenticated Flutter web** experience. Companion, not mobile parity.
-
-## E1 — Capability-honest UI
-
-### Issue: Web UI offers actions that cannot work (A117)
-
-- **Severity:** High (trust)
-- **Platform:** Flutter web
-- **Why it matters:** Attach/CSV/background-voice/Plaid affordances that fail or lie break trust.
-- **Estimated effort:** Medium
-- **Brief fix suggestion:** Audit chat attach, voice entry, CSV import, Plaid connect against `AppCapabilities`. Hide or replace with honest empty/disabled copy (coordinate stale Plaid string with file 06). No fake success.
-
-### Issue: Web layout feels like a stretched phone (A118)
-
-- **Severity:** Medium
-- **Platform:** Flutter web
-- **Why it matters:** Desktop/laptop users get an awkward narrow column or full-bleed mobile chrome.
-- **Estimated effort:** Medium
-- **Brief fix suggestion:** Use existing `web_centered_dialog.dart` patterns; add a simple max-width content column for chat/Knows/Goals on wide viewports. Do **not** build a multi-pane desktop IDE. Keep one composition per view.
-
-## E2 — Chat / Knows density on web
-
-### Issue: Phase A density not verified on Flutter web (A119)
-
-- **Severity:** Medium
-- **Platform:** Flutter web
-- **Why it matters:** Pointer/hover and wide screens change how heavy bubbles/tiles feel.
-- **Estimated effort:** Small
-- **Brief fix suggestion:** After A, smoke `/app/` chat + Knows + confirm cards in Chrome/Safari. Fix web-only overflow/scroll quirks; keep shared widgets.
-
-### Issue: Keyboard and scroll quirks on web chat (A120)
-
-- **Severity:** Medium
-- **Platform:** Flutter web
-- **Why it matters:** Composer covered by keyboard or scroll jump makes web companion feel broken.
-- **Estimated effort:** Medium
-- **Brief fix suggestion:** QA mobile Safari + desktop Chrome: send, attach (if enabled), streaming reply, confirm strip. Fix inset/scroll only with proper Flutter web patterns — no timer hacks.
-
-## E3 — Web voice honesty (UI only)
-
-### Issue: Voice UI on web overpromises (A121)
-
-- **Severity:** Medium
-- **Platform:** Flutter web
-- **Why it matters:** No background voice; mic requires secure context; JWT-in-URL is a security issue (file 04/07).
-- **Estimated effort:** Small (UI) 
-- **Brief fix suggestion:** If voice is offered on web, label it as browser session / foreground-only. If disabled, show clear companion copy pointing to mobile. Do not polish a broken path into looking “complete.”
-
-## E4 — Boot and deploy UX
-
-### Issue: “Loading Clarity…” / blank boot still possible after bad deploy (A122)
-
-- **Severity:** High when it happens
-- **Platform:** Flutter web
-- **Why it matters:** Marketing HTML served as JS leaves users stuck; known Cloudflare footgun.
-- **Estimated effort:** Small (ops + light UI)
-- **Brief fix suggestion:** Keep deploy checklist from `apps/web/README.md` / deploy scripts. Optional: friendlier boot failure message if assets fail to load (no fake “you’re in”). Not a redesign.
-
----
-
-# Phase F — Cross-platform verify
-
-### Issue: Visual + canon + honesty smoke (A76 / A123)
-
-- **Severity:** Medium (gate for claiming UI polish)
-- **Platforms:** Android, iOS, web marketing, Flutter web
-- **Why it matters:** Density and platform tweaks can hurt contrast, clip controls, or leave marketing lying.
-- **Estimated effort:** Medium (manual + focused tests)
-- **Brief fix suggestion:**
-
-| Check | Android | iOS | Web marketing | Flutter `/app/` |
-| --- | :---: | :---: | :---: | :---: |
-| Knows has no Goals group | ☐ | ☐ | screenshots/copy ☐ | ☐ |
-| Chat density readable light/dark | ☐ | ☐ | — | ☐ |
-| Confirm strip usable + truth-honest | ☐ | ☐ | — | ☐ |
-| Safe areas / system bars OK | ☐ | ☐ | responsive ☐ | scroll/keyboard ☐ |
-| Voice chrome matches density | ☐ | ☐ foreground | — | honest label/hidden ☐ |
-| Store/landing screenshots updated | ☐ | ☐ | ☐ | optional |
-| Capability copy honest | Plaid/CSV/voice | Plaid/voice | CTAs + product cards | `AppCapabilities` |
-
-Run existing Flutter bubble/Knows widget tests; adjust expectations if layout assertions break. Spot-check landing build (`npm run build`) and `/app/` boot after deploy script.
-
----
-
-## Out of scope (do not pull into this file)
-
-- Full rebrand, glassmorphism, Material 3 rewrite, or new illustration system
-- Authenticated web dashboard / billing admin (still deferred per `apps/web` README)
-- Spanish FTUE / marketing copy localization (file 09) — this file may add EN strings; ES in 09
-- File import → Knows/Goals product work (file 08)
-- Voice hang / background iOS implementation (file 07)
-- Plaid production smoke and finance ops (file 06)
-- Privacy policy substance / subprocessors (file 10)
-- Backend memory intent / location clarifier (code fix; not UI)
-- Desktop macOS/Windows as a launch target (file 11)
-
----
-
-## Suggested execution order
-
-1. **A1** Goals out of Knows (canon win)  
-2. **A2–A4** shared density  
-3. **B** + **C** device QA and platform fixes in parallel if two people  
-4. **E1** capability-honest web app (trust) before deep web density  
-5. **D** landing copy/screenshots after mobile looks right  
-6. **E2–E4** web companion polish  
-7. **F** full matrix  
-
-**Claim rule:** Do not market “redesigned on every platform” until F’s table is checked for the platforms named in the claim.
+## Suggested next steps
+
+1. Run **F0** automated tests  
+2. Smoke **F1** on one mobile build (Android or iOS)  
+3. Smoke **F4** on `/app/` (Chrome + one mobile browser)  
+4. Device-specific **F2** / **F3** for the platforms you ship  
+5. Only then: **B4/C4** screenshots → optional **Phase D** landing sync  
+
+**Claim rule:** Do not market “redesigned on every platform” until the F tables above are checked for those platforms.

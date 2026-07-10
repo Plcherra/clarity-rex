@@ -15,6 +15,7 @@ import 'package:clarity/rex/memory/presentation/widgets/memory_truncation_banner
 import 'package:clarity/rex/memory/presentation/widgets/saved_memory_group_list.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
+import 'package:clarity/theme/clarity_sheet_insets.dart';
 
 class MemoryPage extends ConsumerStatefulWidget {
   const MemoryPage({super.key, this.showAppBar = true});
@@ -516,7 +517,11 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                 onEditPlanMilestone: _editPlanMilestone,
                 onArchiveStructuredMemory: _archiveStructuredMemory,
               ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: clarityScrollBottomClearance(context),
+              ),
+            ),
           ],
         ),
       ),

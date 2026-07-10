@@ -61,15 +61,13 @@ class ChatMessageBubble extends StatelessWidget {
     final background = interimUserBubble
         ? Colors.transparent
         : isUser
-        ? colors.accent
+        ? colors.accentSoft
         : colors.surfaceElevated.withValues(alpha: isDark ? 0.82 : 0.92);
     final foreground = interimUserBubble
         ? colors.textMuted
-        : isUser
-        ? (isDark ? Colors.black : Colors.white)
         : colors.textPrimary;
     final codeBackground = isUser
-        ? foreground.withValues(alpha: isDark ? 0.16 : 0.20)
+        ? colors.accent.withValues(alpha: isDark ? 0.18 : 0.14)
         : colors.background.withValues(alpha: isDark ? 0.42 : 0.54);
     final imageAttachment = _buildImageAttachment(maxWidth);
     final fileAttachment = imageAttachment == null
@@ -78,8 +76,8 @@ class ChatMessageBubble extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: isUser ? 42 : 0,
-        right: isUser ? 0 : 42,
+        left: isUser ? RexUiTokens.bubbleSideInset : 0,
+        right: isUser ? 0 : RexUiTokens.bubbleSideInset,
         bottom: 1,
       ),
       child: Row(
@@ -96,9 +94,9 @@ class ChatMessageBubble extends StatelessWidget {
                       alignment: Alignment.centerRight,
                       child: SelectableText.rich(
                         TextSpan(
-                          style: theme.textTheme.bodyLarge?.copyWith(
+                          style: theme.textTheme.bodyMedium?.copyWith(
                             color: foreground,
-                            height: 1.45,
+                            height: 1.35,
                             letterSpacing: 0,
                           ),
                           children: chatMessageInlineMarkdownSpans(
@@ -129,9 +127,9 @@ class ChatMessageBubble extends StatelessWidget {
                   ),
                 ),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isUser ? 16 : 15,
-                    vertical: isUser ? 12 : 11,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: RexUiTokens.bubblePaddingH,
+                    vertical: RexUiTokens.bubblePaddingV,
                   ),
                   child: isLoading && text.isEmpty
                       ? ChatTypingDots(color: foreground)
@@ -152,9 +150,9 @@ class ChatMessageBubble extends StatelessWidget {
                               isUser
                                   ? SelectableText.rich(
                                       TextSpan(
-                                        style: theme.textTheme.bodyLarge?.copyWith(
+                                        style: theme.textTheme.bodyMedium?.copyWith(
                                           color: foreground,
-                                          height: 1.45,
+                                          height: 1.35,
                                           letterSpacing: 0,
                                         ),
                                         children: chatMessageInlineMarkdownSpans(
@@ -167,9 +165,9 @@ class ChatMessageBubble extends StatelessWidget {
                                     )
                                   : ChatMessageExpandableBody(
                                       text: text,
-                                      textStyle: theme.textTheme.bodyLarge!.copyWith(
+                                      textStyle: theme.textTheme.bodyMedium!.copyWith(
                                         color: foreground,
-                                        height: 1.45,
+                                        height: 1.35,
                                         letterSpacing: 0,
                                       ),
                                       foreground: foreground,
@@ -275,16 +273,18 @@ class ChatMessageBubble extends StatelessWidget {
       return null;
     }
 
+    final colors = context.clarityColors;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: isUser ? 0.14 : 0.08),
+        color: colors.surfaceSoft.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: isUser ? 0.18 : 0.08),
-        ),
+        border: Border.all(color: colors.border),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: RexUiTokens.space8,
+          vertical: RexUiTokens.space8,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -293,6 +293,7 @@ class ChatMessageBubble extends StatelessWidget {
                   ? Icons.picture_as_pdf_outlined
                   : Icons.description_outlined,
               size: 18,
+              color: colors.textSecondary,
             ),
             const SizedBox(width: RexUiTokens.space8),
             Flexible(
@@ -302,6 +303,7 @@ class ChatMessageBubble extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
+                  color: colors.textPrimary,
                 ),
               ),
             ),

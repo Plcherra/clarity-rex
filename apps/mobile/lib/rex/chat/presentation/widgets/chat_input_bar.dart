@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
+import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_attachment_image.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
@@ -103,14 +104,27 @@ class _ChatInputBarState extends State<ChatInputBar> {
       color: colors.background,
       child: SafeArea(
         top: false,
+        // Owns bottom safe area for chat (home indicator / gesture inset).
+        minimum: const EdgeInsets.only(
+          bottom: RexUiTokens.composerPaddingBottom,
+        ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+          padding: const EdgeInsets.fromLTRB(
+            RexUiTokens.composerPaddingH,
+            RexUiTokens.composerPaddingTop,
+            RexUiTokens.composerPaddingH,
+            0,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (hasAttachment || widget.attachmentError != null)
                 Padding(
-                  padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
+                  padding: const EdgeInsets.only(
+                    left: RexUiTokens.space4,
+                    right: RexUiTokens.space4,
+                    bottom: RexUiTokens.space4,
+                  ),
                   child: _AttachmentPreview(
                     attachment: widget.attachment,
                     previewBytes: widget.attachmentPreviewBytes,
@@ -125,7 +139,9 @@ class _ChatInputBarState extends State<ChatInputBar> {
                 children: [
                   _ComposerIconButton(
                     icon: Icons.attach_file_rounded,
-                    tooltip: l10n.chatInputAttachTooltip,
+                    tooltip: AppCapabilities.instance.isWeb
+                        ? l10n.chatInputAttachWebTooltip
+                        : l10n.chatInputAttachTooltip,
                     onPressed: widget.isLoading ? null : widget.onPickAttachment,
                   ),
                   _ComposerIconButton(
@@ -154,17 +170,18 @@ class _ChatInputBarState extends State<ChatInputBar> {
                         border: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         enabledBorder: InputBorder.none,
+                        isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 12,
+                          horizontal: RexUiTokens.space8,
+                          vertical: RexUiTokens.composerFieldPaddingV,
                         ),
-                        hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                        hintStyle: theme.textTheme.bodyMedium?.copyWith(
                           color: colors.textMuted.withValues(
                             alpha: 0.7,
                           ),
                         ),
                       ),
-                      style: theme.textTheme.bodyLarge?.copyWith(
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         color: colors.textPrimary,
                         height: 1.35,
                       ),

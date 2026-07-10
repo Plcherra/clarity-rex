@@ -6,15 +6,15 @@ import '../../../core/l10n/app_l10n.dart';
 import '../../../features/profile/application/profile_controller.dart';
 import '../../../features/profile/domain/assistant_proposal_settings.dart';
 import '../../../theme/clarity_colors.dart';
+import '../../../theme/clarity_sheet_insets.dart';
 
 Future<void> showAssistantProposalSettingsSheet({
   required BuildContext context,
   required ProfileController profileController,
 }) {
-  return showModalBottomSheet<void>(
+  return showClarityModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
     builder: (sheetContext) {
       return AssistantProposalSettingsSheet(
         profileController: profileController,
@@ -60,23 +60,17 @@ class _AssistantProposalSettingsSheetState
     final theme = Theme.of(context);
     final colors = context.clarityColors;
 
-    return SafeArea(
-      child: ListenableBuilder(
-        listenable: widget.profileController,
-        builder: (context, _) {
-          final settings =
-              widget.profileController.profile?.assistantSettings ??
-              const AssistantProposalSettings();
-          final loading = widget.profileController.isLoading;
+    return ListenableBuilder(
+      listenable: widget.profileController,
+      builder: (context, _) {
+        final settings =
+            widget.profileController.profile?.assistantSettings ??
+            const AssistantProposalSettings();
+        final loading = widget.profileController.isLoading;
 
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              4,
-              20,
-              20 + MediaQuery.viewInsetsOf(context).bottom,
-            ),
-            child: Column(
+        return Padding(
+          padding: claritySheetPadding(context, top: 4),
+          child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -227,7 +221,6 @@ class _AssistantProposalSettingsSheetState
             ),
           );
         },
-      ),
-    );
+      );
   }
 }

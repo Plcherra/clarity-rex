@@ -2122,7 +2122,7 @@ abstract class AppLocalizations {
   /// No description provided for @plaidConnectWebUnavailableMessage.
   ///
   /// In en, this message translates to:
-  /// **'Bank connect on the web app is coming soon. Use the mobile app to link accounts for now.'**
+  /// **'Bank connect isn\'t available on this device. Use the iOS or Android app to link accounts.'**
   String get plaidConnectWebUnavailableMessage;
 
   /// No description provided for @accountsNoticeDismissTooltip.
@@ -2569,6 +2569,12 @@ abstract class AppLocalizations {
   /// **'Attach file or image'**
   String get chatInputAttachTooltip;
 
+  /// No description provided for @chatInputAttachWebTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a file'**
+  String get chatInputAttachWebTooltip;
+
   /// No description provided for @chatInputStartVoiceModeTooltip.
   ///
   /// In en, this message translates to:
@@ -2578,14 +2584,20 @@ abstract class AppLocalizations {
   /// No description provided for @chatInputVoiceWebTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Voice is not available on this device'**
+  /// **'Start browser voice (keep this tab open)'**
   String get chatInputVoiceWebTooltip;
 
   /// No description provided for @voiceWebUnavailableMessage.
   ///
   /// In en, this message translates to:
-  /// **'Voice is not available on this device. Use chat for now.'**
+  /// **'Voice isn\'t available here. Use chat, or open Clarity on iOS or Android.'**
   String get voiceWebUnavailableMessage;
+
+  /// No description provided for @voiceWebForegroundOnlyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser voice — keep this tab open'**
+  String get voiceWebForegroundOnlyHint;
 
   /// No description provided for @chatInputMessageHint.
   ///

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'clarity_colors.dart';
 import 'clarity_radius.dart';
@@ -9,6 +10,23 @@ class ClarityTheme {
   static ThemeData dark() => _build(ClarityColors.dark, Brightness.dark);
 
   static ThemeData light() => _build(ClarityColors.light, Brightness.light);
+
+  /// Status / navigation bar icons stay readable across ThemeMode flips.
+  static SystemUiOverlayStyle systemUiOverlayStyle(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    final background = isDark
+        ? ClarityColors.dark.background
+        : ClarityColors.light.background;
+    return SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: background,
+      systemNavigationBarIconBrightness:
+          isDark ? Brightness.light : Brightness.dark,
+      systemNavigationBarContrastEnforced: false,
+    );
+  }
 
   static ThemeData _build(ClarityColorTokens colors, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
@@ -67,9 +85,11 @@ class ClarityTheme {
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
+        toolbarHeight: 48,
         backgroundColor: colors.background,
         foregroundColor: colors.textPrimary,
         surfaceTintColor: Colors.transparent,
+        systemOverlayStyle: systemUiOverlayStyle(brightness),
         titleTextStyle: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w700,
@@ -126,9 +146,16 @@ class ClarityTheme {
         backgroundColor: colors.surfaceElevated,
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: colors.surfaceElevated,
-        modalBarrierColor: Colors.black.withValues(alpha: isDark ? 0.70 : 0.35),
-        dragHandleColor: colors.divider,
+        modalBarrierColor: Colors.black.withValues(alpha: isDark ? 0.55 : 0.32),
+        dragHandleColor: colors.textMuted.withValues(alpha: 0.55),
+        dragHandleSize: const Size(40, 4),
         showDragHandle: true,
+        clipBehavior: Clip.antiAlias,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(ClarityRadius.dialog),
+          ),
+        ),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,

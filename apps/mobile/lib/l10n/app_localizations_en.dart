@@ -1148,7 +1148,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plaidConnectWebUnavailableMessage =>
-      'Bank connect on the web app is coming soon. Use the mobile app to link accounts for now.';
+      'Bank connect isn\'t available on this device. Use the iOS or Android app to link accounts.';
 
   @override
   String get accountsNoticeDismissTooltip => 'Dismiss';
@@ -1394,15 +1394,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatInputAttachTooltip => 'Attach file or image';
 
   @override
+  String get chatInputAttachWebTooltip => 'Attach a file';
+
+  @override
   String get chatInputStartVoiceModeTooltip => 'Start voice mode';
 
   @override
   String get chatInputVoiceWebTooltip =>
-      'Voice is not available on this device';
+      'Start browser voice (keep this tab open)';
 
   @override
   String get voiceWebUnavailableMessage =>
-      'Voice is not available on this device. Use chat for now.';
+      'Voice isn\'t available here. Use chat, or open Clarity on iOS or Android.';
+
+  @override
+  String get voiceWebForegroundOnlyHint => 'Browser voice — keep this tab open';
 
   @override
   String get chatInputMessageHint => 'Message Assistant…';
