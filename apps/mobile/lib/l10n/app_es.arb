@@ -241,6 +241,18 @@
   "assistantTabChats": "Chats",
   "assistantTabGoals": "Objetivos",
   "assistantTabKnows": "sabe",
+  "assistantTabOverview": "Resumen",
+  "assistantOverviewTitle": "Resumen del compañero",
+  "assistantOverviewSubtitle": "Reglas, patrones, hilos abiertos y objetivos que Rex sigue contigo.",
+  "assistantOverviewBrowseChats": "Ver chats",
+  "assistantOverviewAttentionTitle": "Qué vigilar",
+  "assistantOverviewAttentionEmpty": "Nada necesita atención ahora.",
+  "assistantOverviewRulesTitle": "Reglas activas",
+  "assistantOverviewRulesEmpty": "Aún no hay reglas activas. Guarda una en Sabe o pídeselo a Rex.",
+  "assistantOverviewThreadsTitle": "Hilos abiertos",
+  "assistantOverviewThreadsEmpty": "No hay hilos abiertos. Los hábitos y seguimientos aparecerán aquí.",
+  "assistantOverviewGoalsTitle": "Objetivos activos",
+  "assistantOverviewGoalsEmpty": "Aún no hay objetivos activos. Añade uno en Objetivos o pídeselo a Rex.",
   "assistantTabSemanticLabel": "Pestaña Asistente {tab}",
   "@assistantTabSemanticLabel": {
     "placeholders": {

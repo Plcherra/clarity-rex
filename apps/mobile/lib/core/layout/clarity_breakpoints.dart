@@ -32,7 +32,7 @@ bool isClarityWideLayout(BuildContext context) {
 /// minus gutters so wide screens fill most of the window.
 const double clarityFinanceContentMaxWidth = 1920;
 const double clarityAssistantContentMaxWidth = 1920;
-const double clarityProfileContentMaxWidth = 1120;
+const double clarityProfileContentMaxWidth = 1920;
 const double clarityChatColumnMaxWidth = 960;
 const double clarityDesktopContentGutter = 24;
 

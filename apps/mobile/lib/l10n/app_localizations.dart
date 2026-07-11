@@ -5332,11 +5332,83 @@ abstract class AppLocalizations {
   /// **'Goals'**
   String get assistantTabGoals;
 
+  /// No description provided for @assistantTabOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get assistantTabOverview;
+
   /// No description provided for @assistantTabChats.
   ///
   /// In en, this message translates to:
   /// **'Chats'**
   String get assistantTabChats;
+
+  /// No description provided for @assistantOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Companion overview'**
+  String get assistantOverviewTitle;
+
+  /// No description provided for @assistantOverviewSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules, patterns, open threads, and goals Rex is tracking with you.'**
+  String get assistantOverviewSubtitle;
+
+  /// No description provided for @assistantOverviewBrowseChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse chats'**
+  String get assistantOverviewBrowseChats;
+
+  /// No description provided for @assistantOverviewAttentionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What to watch'**
+  String get assistantOverviewAttentionTitle;
+
+  /// No description provided for @assistantOverviewAttentionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs attention right now.'**
+  String get assistantOverviewAttentionEmpty;
+
+  /// No description provided for @assistantOverviewRulesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active rules'**
+  String get assistantOverviewRulesTitle;
+
+  /// No description provided for @assistantOverviewRulesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No active rules yet. Save one in Knows or ask Rex.'**
+  String get assistantOverviewRulesEmpty;
+
+  /// No description provided for @assistantOverviewThreadsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open threads'**
+  String get assistantOverviewThreadsTitle;
+
+  /// No description provided for @assistantOverviewThreadsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No open threads. Habits and check-ins will show here.'**
+  String get assistantOverviewThreadsEmpty;
+
+  /// No description provided for @assistantOverviewGoalsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active goals'**
+  String get assistantOverviewGoalsTitle;
+
+  /// No description provided for @assistantOverviewGoalsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No active goals yet. Add one in Goals or ask Rex.'**
+  String get assistantOverviewGoalsEmpty;
 
   /// No description provided for @assistantTabSemanticLabel.
   ///

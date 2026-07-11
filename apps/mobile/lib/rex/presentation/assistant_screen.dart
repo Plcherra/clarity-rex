@@ -10,6 +10,7 @@ import '../chat/presentation/pages/conversation_list_page.dart';
 import '../memory/presentation/pages/memory_page.dart';
 import 'assistant_chat_visible_provider.dart';
 import '../../theme/clarity_colors.dart';
+import 'assistant_overview_page.dart';
 import 'assistant_tab.dart';
 import 'rex_surfaces.dart';
 import 'rex_ui_tokens.dart';
@@ -70,6 +71,14 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
     _tabController.animateTo(AssistantTab.chat.index);
   }
 
+  void _openKnowsTab() {
+    _tabController.animateTo(AssistantTab.memory.index);
+  }
+
+  void _openGoalsTab() {
+    _tabController.animateTo(AssistantTab.goals.index);
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<int>(assistantChatTabRequestProvider, (previous, next) {
@@ -112,6 +121,8 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
                             tab: tab,
                             wideSplit: wide,
                             onConversationSelected: _openChatTab,
+                            onOpenKnows: _openKnowsTab,
+                            onOpenGoals: _openGoalsTab,
                           ),
                       ],
                     ),
@@ -306,11 +317,15 @@ class _AssistantTabContent extends StatelessWidget {
     required this.tab,
     required this.wideSplit,
     required this.onConversationSelected,
+    required this.onOpenKnows,
+    required this.onOpenGoals,
   });
 
   final AssistantTab tab;
   final bool wideSplit;
   final VoidCallback onConversationSelected;
+  final VoidCallback onOpenKnows;
+  final VoidCallback onOpenGoals;
 
   @override
   Widget build(BuildContext context) {
@@ -320,9 +335,11 @@ class _AssistantTabContent extends StatelessWidget {
           : const ChatPage(showAppBar: false),
       AssistantTab.memory => const MemoryPage(showAppBar: false),
       AssistantTab.goals => const AccountabilityPage(showAppBar: false),
-      AssistantTab.chats => ConversationListPage(
-        showAppBar: false,
-        onConversationSelected: onConversationSelected,
+      AssistantTab.overview => AssistantOverviewPage(
+        key: const ValueKey<String>('assistant-overview-page'),
+        onOpenChat: onConversationSelected,
+        onOpenKnows: onOpenKnows,
+        onOpenGoals: onOpenGoals,
       ),
     };
   }

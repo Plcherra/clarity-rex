@@ -41,10 +41,17 @@ class AccountabilityController extends Notifier<AccountabilityState> {
   AccountabilityState build() => const AccountabilityState();
 
   String _localizedError(Object error) {
-    return friendlyServiceError(
-      lookupForLocale(ref.read(localeControllerProvider).locale),
-      error,
-    );
+    try {
+      return friendlyServiceError(
+        lookupForLocale(ref.read(localeControllerProvider).locale),
+        error,
+      );
+    } on Object {
+      return friendlyServiceError(
+        lookupEnglishLocalizationsForTests(),
+        error,
+      );
+    }
   }
 
   Future<void> loadOverview() async {

@@ -5,6 +5,10 @@ import 'package:clarity/app/app_composition.dart';
 import 'package:clarity/core/supabase/supabase_records.dart';
 import 'package:clarity/features/auth/presentation/auth_screen.dart';
 import 'package:clarity/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:clarity/features/profile/application/locale_controller.dart';
+import 'package:clarity/features/profile/presentation/profile_screen.dart';
+import 'package:clarity/features/shell/presentation/home_shell.dart';
+import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/presentation/assistant_screen.dart';
 import 'package:clarity/rex/presentation/assistant_tab.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
@@ -12,8 +16,6 @@ import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
-import 'package:clarity/features/profile/presentation/profile_screen.dart';
-import 'package:clarity/features/shell/presentation/home_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -36,19 +38,19 @@ void main() {
       'chat',
       'memory',
       'goals',
-      'chats',
+      'overview',
     ]);
     expect(AssistantTab.values.map((tab) => tab.label(l10n)), [
       'Chat',
       'Knows',
       'Goals',
-      'Chats',
+      'Overview',
     ]);
     expect(AssistantTab.values.map((tab) => tab.semanticLabel(l10n)), [
       'Assistant Chat tab',
       'Assistant Knows tab',
       'Assistant Goals tab',
-      'Assistant Chats tab',
+      'Assistant Overview tab',
     ]);
   });
 
@@ -204,7 +206,7 @@ void main() {
     expect(find.text('Sign out'), findsOneWidget);
   });
 
-  testWidgets('assistant tab exposes Chat Knows Goals and Chats sections', (
+  testWidgets('assistant tab exposes Chat Knows Goals and Overview sections', (
     tester,
   ) async {
     final app = AppComposition(initialAuthenticated: true);
@@ -245,7 +247,7 @@ void main() {
     expect(find.text('Voice'), findsNothing);
   });
 
-  testWidgets('assistant shared tab nav switches to Chats content', (
+  testWidgets('assistant shared tab nav exposes Overview instead of Chats', (
     tester,
   ) async {
     final app = AppComposition(initialAuthenticated: true);
@@ -271,10 +273,10 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.psychology_alt_outlined));
     await tester.pump();
-    await tester.tap(find.byKey(AssistantTab.chats.key));
-    await tester.pump(const Duration(milliseconds: 350));
 
-    expect(find.text('Chats'), findsWidgets);
+    expect(find.byKey(AssistantTab.overview.key), findsOneWidget);
+    expect(find.text('Overview'), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('assistant-tab-chats')), findsNothing);
     expect(find.byTooltip('Conversations'), findsNothing);
   });
 
@@ -287,7 +289,7 @@ void main() {
     );
 
     await tester.enterText(find.byType(TextField), 'Draft for Rex');
-    await tester.tap(find.byKey(AssistantTab.chats.key));
+    await tester.tap(find.byKey(AssistantTab.overview.key));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(AssistantTab.chat.key));
     await tester.pumpAndSettle();
@@ -295,22 +297,25 @@ void main() {
     expect(find.text('Draft for Rex'), findsOneWidget);
   });
 
-  testWidgets('assistant returns from Chats to selected conversation in Chat', (
-    tester,
-  ) async {
-    await _pumpAssistantScreen(
-      tester,
-      conversationApi: _FakeConversationApi.withConversation(),
-    );
+  testWidgets(
+    'assistant returns from chat history to selected conversation in Chat',
+    (tester) async {
+      await _pumpAssistantScreen(
+        tester,
+        conversationApi: _FakeConversationApi.withConversation(),
+      );
 
-    await tester.tap(find.byKey(AssistantTab.chats.key));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Budget check-in'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(AssistantTab.overview.key));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Browse chats'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Budget check-in'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Loaded from history'), findsOneWidget);
-    expect(find.text('Conversations'), findsNothing);
-  });
+      expect(find.text('Loaded from history'), findsOneWidget);
+      expect(find.text('Conversations'), findsNothing);
+    },
+  );
 
   testWidgets('assistant chat mic starts voice for the active conversation', (
     tester,
@@ -326,6 +331,7 @@ void main() {
             _FakeConversationApi.withConversation(),
           ),
           voiceCallProvider.overrideWith(() => voiceController),
+          localeControllerProvider.overrideWithValue(harness.localeController),
           actionResultMessageFormatterProvider.overrideWith(
             (ref) {
               final l10n = lookupAppLocalizations(const Locale('en'));
@@ -341,7 +347,9 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.byKey(AssistantTab.chats.key));
+    await tester.tap(find.byKey(AssistantTab.overview.key));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Browse chats'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Budget check-in'));
     await tester.pumpAndSettle();
@@ -436,6 +444,7 @@ Future<void> _pumpAssistantScreen(
     ProviderScope(
       overrides: [
         conversationApiProvider.overrideWithValue(conversationApi),
+        localeControllerProvider.overrideWithValue(harness.localeController),
         actionResultMessageFormatterProvider.overrideWith(
           (ref) {
             final l10n = lookupAppLocalizations(const Locale('en'));

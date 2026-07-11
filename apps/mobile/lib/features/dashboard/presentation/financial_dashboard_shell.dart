@@ -13,7 +13,6 @@ class _DashboardScrollBody extends StatefulWidget {
     required this.accountCount,
     this.scrollToAnchor,
     this.onScrollToAnchorHandled,
-    this.onSeeAllInsights,
   });
 
   final String title;
@@ -27,7 +26,6 @@ class _DashboardScrollBody extends StatefulWidget {
   final int accountCount;
   final DashboardInsightAnchor? scrollToAnchor;
   final VoidCallback? onScrollToAnchorHandled;
-  final VoidCallback? onSeeAllInsights;
 
   @override
   State<_DashboardScrollBody> createState() => _DashboardScrollBodyState();
@@ -117,11 +115,6 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
     final l10n = context.l10n;
     final snapshot = widget.snapshot;
     final budgetPerformance = widget.budgetPerformance;
-    final insightItems = buildDashboardInsightItems(
-      l10n: l10n,
-      snapshot: snapshot,
-      budgetPerformance: budgetPerformance,
-    );
     final chronologicalGroups = _chronologicalMonthlyGroups(
       snapshot.monthlyGroups,
     );
@@ -135,13 +128,8 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
           ? widget.accountCount
           : null,
     );
-    final insights = insightItems.isEmpty
-        ? null
-        : _DashboardInsightsStrip(
-            items: insightItems,
-            onSeeChart: _scrollToInsightAnchor,
-            onSeeAllInsights: widget.onSeeAllInsights,
-          );
+    // Finance charts already surface spending pressure; companion insights live
+    // under Assistant Overview.
     final cashFlowChart = _DashboardChartSection(
       sectionKey: _monthlyCashFlowKey,
       title: l10n.dashboardOverviewMonthlyCashFlow,
@@ -193,22 +181,7 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
                       _FinancialDataStatusBanner(loadIssues: widget.loadIssues),
                       const SizedBox(height: 14),
                     ],
-                    if (wide && insights != null)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(flex: 5, child: overviewCard),
-                          const SizedBox(width: 16),
-                          Expanded(flex: 4, child: insights),
-                        ],
-                      )
-                    else ...[
-                      overviewCard,
-                      if (insights != null) ...[
-                        const SizedBox(height: _sectionGap),
-                        insights,
-                      ],
-                    ],
+                    overviewCard,
                     const SizedBox(height: _sectionGap),
                     if (wide) ...[
                       Row(

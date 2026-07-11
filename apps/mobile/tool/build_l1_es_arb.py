@@ -63,6 +63,7 @@ MANUAL_ES: dict[str, str] = {
     "chatPageDefaultTitle": "Rex",
     "assistantTabChat": "Chat",
     "assistantTabChats": "Chats",
+    "assistantTabOverview": "Resumen",
     "usageAdminRadarChatLlm": "Chat LLM",
     "usageAdminRadarVoiceLlm": "Voz LLM",
     "usageAdminRadarSttMin": "STT min",

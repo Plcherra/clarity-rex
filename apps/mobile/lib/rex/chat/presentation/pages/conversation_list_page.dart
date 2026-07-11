@@ -34,11 +34,13 @@ class ConversationListPage extends ConsumerStatefulWidget {
 class _ConversationListPageState extends ConsumerState<ConversationListPage>
     with AutomaticKeepAliveClientMixin<ConversationListPage> {
   late final TextEditingController _searchController;
+  late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _scrollController = ScrollController();
     Future.microtask(
       () => ref.read(conversationListProvider.notifier).loadConversations(),
     );
@@ -47,6 +49,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -141,7 +144,23 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
     );
 
     if (wasCurrent) {
-      Navigator.of(context).pop();
+      if (widget.onConversationSelected != null || widget.compactSidebar) {
+        // Stay on the assistant chat surface; open a fresh conversation.
+        final next = await ref
+            .read(conversationListProvider.notifier)
+            .createConversation();
+        if (!mounted) {
+          return;
+        }
+        if (next != null) {
+          ref.read(chatProvider.notifier).startConversation(next.id);
+          widget.onConversationSelected?.call();
+        } else {
+          ref.read(chatProvider.notifier).reset();
+        }
+      } else {
+        Navigator.of(context).pop();
+      }
     }
   }
 
@@ -218,12 +237,16 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
     );
 
     final body = Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: widget.compactSidebar,
       child: RefreshIndicator(
         color: colors.accent,
         backgroundColor: colors.surfaceElevated,
         onRefresh: () =>
             ref.read(conversationListProvider.notifier).loadConversations(),
         child: CustomScrollView(
+          controller: _scrollController,
+          primary: false,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             if (!widget.showAppBar)
@@ -269,7 +292,12 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
               ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                padding: EdgeInsets.fromLTRB(
+                  widget.compactSidebar ? 12 : 16,
+                  widget.compactSidebar ? 8 : 12,
+                  widget.compactSidebar ? 12 : 16,
+                  4,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

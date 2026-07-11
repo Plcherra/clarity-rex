@@ -3105,7 +3105,47 @@ class AppLocalizationsEs extends AppLocalizations {
   String get assistantTabGoals => 'Objetivos';
 
   @override
+  String get assistantTabOverview => 'Resumen';
+
+  @override
   String get assistantTabChats => 'Chats';
+
+  @override
+  String get assistantOverviewTitle => 'Resumen del compañero';
+
+  @override
+  String get assistantOverviewSubtitle =>
+      'Reglas, patrones, hilos abiertos y objetivos que Rex sigue contigo.';
+
+  @override
+  String get assistantOverviewBrowseChats => 'Ver chats';
+
+  @override
+  String get assistantOverviewAttentionTitle => 'Qué vigilar';
+
+  @override
+  String get assistantOverviewAttentionEmpty => 'Nada necesita atención ahora.';
+
+  @override
+  String get assistantOverviewRulesTitle => 'Reglas activas';
+
+  @override
+  String get assistantOverviewRulesEmpty =>
+      'Aún no hay reglas activas. Guarda una en Sabe o pídeselo a Rex.';
+
+  @override
+  String get assistantOverviewThreadsTitle => 'Hilos abiertos';
+
+  @override
+  String get assistantOverviewThreadsEmpty =>
+      'No hay hilos abiertos. Los hábitos y seguimientos aparecerán aquí.';
+
+  @override
+  String get assistantOverviewGoalsTitle => 'Objetivos activos';
+
+  @override
+  String get assistantOverviewGoalsEmpty =>
+      'Aún no hay objetivos activos. Añade uno en Objetivos o pídeselo a Rex.';
 
   @override
   String assistantTabSemanticLabel(String tab) {

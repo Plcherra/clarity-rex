@@ -3047,7 +3047,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantTabGoals => 'Goals';
 
   @override
+  String get assistantTabOverview => 'Overview';
+
+  @override
   String get assistantTabChats => 'Chats';
+
+  @override
+  String get assistantOverviewTitle => 'Companion overview';
+
+  @override
+  String get assistantOverviewSubtitle =>
+      'Rules, patterns, open threads, and goals Rex is tracking with you.';
+
+  @override
+  String get assistantOverviewBrowseChats => 'Browse chats';
+
+  @override
+  String get assistantOverviewAttentionTitle => 'What to watch';
+
+  @override
+  String get assistantOverviewAttentionEmpty =>
+      'Nothing needs attention right now.';
+
+  @override
+  String get assistantOverviewRulesTitle => 'Active rules';
+
+  @override
+  String get assistantOverviewRulesEmpty =>
+      'No active rules yet. Save one in Knows or ask Rex.';
+
+  @override
+  String get assistantOverviewThreadsTitle => 'Open threads';
+
+  @override
+  String get assistantOverviewThreadsEmpty =>
+      'No open threads. Habits and check-ins will show here.';
+
+  @override
+  String get assistantOverviewGoalsTitle => 'Active goals';
+
+  @override
+  String get assistantOverviewGoalsEmpty =>
+      'No active goals yet. Add one in Goals or ask Rex.';
 
   @override
   String assistantTabSemanticLabel(String tab) {

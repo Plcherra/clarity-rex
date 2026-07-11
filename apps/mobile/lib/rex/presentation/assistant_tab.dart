@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/l10n/app_l10n.dart';
 import '../../l10n/app_localizations.dart';
 
-enum AssistantTab { chat, memory, goals, chats }
+enum AssistantTab { chat, memory, goals, overview }
 
 extension AssistantTabContract on AssistantTab {
   String get id {
@@ -11,7 +11,7 @@ extension AssistantTabContract on AssistantTab {
       AssistantTab.chat => 'chat',
       AssistantTab.memory => 'memory',
       AssistantTab.goals => 'goals',
-      AssistantTab.chats => 'chats',
+      AssistantTab.overview => 'overview',
     };
   }
 
@@ -20,7 +20,7 @@ extension AssistantTabContract on AssistantTab {
       AssistantTab.chat => l10n.assistantTabChat,
       AssistantTab.memory => l10n.assistantTabKnows,
       AssistantTab.goals => l10n.assistantTabGoals,
-      AssistantTab.chats => l10n.assistantTabChats,
+      AssistantTab.overview => l10n.assistantTabOverview,
     };
   }
 
@@ -29,7 +29,7 @@ extension AssistantTabContract on AssistantTab {
       AssistantTab.chat => Icons.chat_bubble_outline_rounded,
       AssistantTab.memory => Icons.psychology_alt_outlined,
       AssistantTab.goals => Icons.flag_outlined,
-      AssistantTab.chats => Icons.forum_outlined,
+      AssistantTab.overview => Icons.insights_outlined,
     };
   }
 

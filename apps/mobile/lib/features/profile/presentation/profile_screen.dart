@@ -10,7 +10,7 @@ import '../../auth/presentation/mfa_enrollment_screen.dart';
 import '../application/locale_controller.dart';
 import '../application/profile_controller.dart';
 import '../application/theme_mode_controller.dart';
-import 'package:clarity/features/usage_admin/presentation/owner_usage_profile_entry.dart';
+import 'profile_screen_sections.dart';
 import 'profile_screen_widgets.dart';
 import 'usage_summary_screen.dart';
 
@@ -268,140 +268,32 @@ final class ProfileScreen extends StatelessWidget {
                   email: email,
                 ),
                 const SizedBox(height: 18),
-                ProfileSectionLabel(l10n.profileAccountSection),
-                const SizedBox(height: 8),
-                ProfileActionGroup(
-                  children: [
-                    ProfileActionTile(
-                      icon: Icons.badge_outlined,
-                      title: l10n.profileNameTitle,
-                      subtitle: name == null || name.isEmpty
-                          ? l10n.profileAddYourName
-                          : name,
-                      onTap: () => _editName(context),
-                    ),
-                    ProfileActionTile(
-                      icon: Icons.verified_user_outlined,
-                      title: l10n.profileMfaTitle,
-                      subtitle: l10n.profileMfaSubtitle,
-                      onTap: () => _openMfaSettings(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                ProfileSectionLabel(l10n.profileRexVoiceSection),
-                const SizedBox(height: 8),
-                ProfileActionGroup(
-                  children: [
-                    ProfileActionTile(
-                      icon: Icons.graphic_eq_rounded,
-                      title: l10n.profileVoiceUsageTitle,
-                      subtitle: l10n.profileVoiceUsageSubtitle,
-                      onTap: () => _openUsage(context),
-                    ),
-                  ],
-                ),
-                const OwnerUsageProfileEntry(),
-                const SizedBox(height: 18),
-                ProfileSectionLabel(l10n.profileAppearance),
-                const SizedBox(height: 8),
                 if (desktop)
-                  ProfileThemeInlineControl(controller: themeModeController)
+                  ProfileDesktopSections(
+                    profileController: profileController,
+                    themeModeController: themeModeController,
+                    localeController: localeController,
+                    displayName: name,
+                    onEditName: () => _editName(context),
+                    onOpenMfa: () => _openMfaSettings(context),
+                    onOpenUsage: () => _openUsage(context),
+                    onSignOut:
+                        signOut == null ? null : () => _confirmSignOut(context),
+                  )
                 else
-                  ListenableBuilder(
-                    listenable: themeModeController,
-                    builder: (context, _) {
-                      return ProfileActionGroup(
-                        children: [
-                          ProfileActionTile(
-                            icon: Icons.contrast_rounded,
-                            title: l10n.profileAppearance,
-                            subtitle: profileThemeModeLabel(
-                              context,
-                              themeModeController.themeMode,
-                            ),
-                            onTap: () => _openAppearance(context),
-                          ),
-                        ],
-                      );
-                    },
+                  ProfileCompactSections(
+                    profileController: profileController,
+                    themeModeController: themeModeController,
+                    localeController: localeController,
+                    displayName: name,
+                    onEditName: () => _editName(context),
+                    onOpenMfa: () => _openMfaSettings(context),
+                    onOpenUsage: () => _openUsage(context),
+                    onOpenAppearance: () => _openAppearance(context),
+                    onOpenLanguage: () => _openLanguage(context),
+                    onSignOut:
+                        signOut == null ? null : () => _confirmSignOut(context),
                   ),
-                const SizedBox(height: 18),
-                ProfileSectionLabel(l10n.profileProactiveInsightsTitle),
-                const SizedBox(height: 8),
-                ProfileActionGroup(
-                  children: [
-                    SwitchListTile.adaptive(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
-                      secondary: Icon(
-                        Icons.notifications_active_outlined,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.72),
-                      ),
-                      title: Text(l10n.profileProactiveInsightsTitle),
-                      subtitle: Text(l10n.profileProactiveInsightsSubtitle),
-                      value: profile?.proactiveInsightsEnabled ?? false,
-                      onChanged: profileController.isLoading
-                          ? null
-                          : (enabled) async {
-                              try {
-                                await profileController
-                                    .updateProactiveInsightsEnabled(enabled);
-                              } on Object {
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      profileController.errorMessage ??
-                                          l10n.profileUpdateFailed,
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                ProfileSectionLabel(l10n.profileLanguage),
-                const SizedBox(height: 8),
-                if (desktop)
-                  ProfileLanguageInlineControl(controller: localeController)
-                else
-                  ListenableBuilder(
-                    listenable: localeController,
-                    builder: (context, _) {
-                      return ProfileActionGroup(
-                        children: [
-                          ProfileActionTile(
-                            icon: Icons.translate_rounded,
-                            title: l10n.profileLanguage,
-                            subtitle: localeController.label,
-                            onTap: () => _openLanguage(context),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                if (signOut != null) ...[
-                  const SizedBox(height: 18),
-                  ProfileSectionLabel(l10n.profileSessionSection),
-                  const SizedBox(height: 8),
-                  ProfileActionGroup(
-                    children: [
-                      ProfileActionTile(
-                        icon: Icons.logout_rounded,
-                        title: l10n.commonSignOut,
-                        subtitle: l10n.profileSignOutSubtitle,
-                        destructive: true,
-                        onTap: () => _confirmSignOut(context),
-                      ),
-                    ],
-                  ),
-                ],
               ],
             ),
           ),

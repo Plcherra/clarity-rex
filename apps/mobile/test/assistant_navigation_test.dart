@@ -1,4 +1,8 @@
+import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/l10n/app_localizations.dart';
+import 'package:clarity/rex/accountability/data/accountability_api.dart';
+import 'package:clarity/rex/accountability/data/accountability_models.dart';
+import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
@@ -70,23 +74,24 @@ void main() {
   });
 
   testWidgets(
-    'Assistant navigation keeps Chats as a tab, not a header action',
+    'Assistant navigation keeps Overview as a tab, not a Chats tab',
     (tester) async {
       await _pumpAssistantNavigation(tester);
 
-      expect(find.byKey(AssistantTab.chats.key), findsOneWidget);
+      expect(find.byKey(AssistantTab.overview.key), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('assistant-tab-chats')), findsNothing);
       expect(find.byTooltip('Conversations'), findsNothing);
 
-      await tester.tap(find.byKey(AssistantTab.chats.key));
+      await tester.tap(find.byKey(AssistantTab.overview.key));
       await tester.pumpAndSettle();
 
-      expect(find.text('Chats'), findsWidgets);
+      expect(find.text('Companion overview'), findsOneWidget);
       expect(find.byTooltip('Conversations'), findsNothing);
     },
   );
 
   testWidgets(
-    'Chats search submits backend query and renders backend results',
+    'Chats search from Overview submits backend query and renders results',
     (tester) async {
       final conversationApi = _FakeConversationApi(
         searchResults: [
@@ -102,7 +107,9 @@ void main() {
       );
       await _pumpAssistantNavigation(tester, conversationApi: conversationApi);
 
-      await tester.tap(find.byKey(AssistantTab.chats.key));
+      await tester.tap(find.byKey(AssistantTab.overview.key));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Browse chats'));
       await tester.pumpAndSettle();
 
       final searchField = find.byWidgetPredicate(
@@ -159,7 +166,7 @@ void main() {
         AssistantTab.chat,
         AssistantTab.memory,
         AssistantTab.goals,
-        AssistantTab.chats,
+        AssistantTab.overview,
       ]) {
         await tester.tap(find.byKey(tab.key));
         await tester.pumpAndSettle();
@@ -185,6 +192,8 @@ Future<void> _pumpAssistantNavigation(
           conversationApi ?? _FakeConversationApi(),
         ),
         memoryApiProvider.overrideWithValue(_FakeMemoryApi()),
+        accountabilityApiProvider.overrideWithValue(_FakeAccountabilityApi()),
+        localeControllerProvider.overrideWithValue(harness.localeController),
         if (voiceController != null)
           voiceCallProvider.overrideWith(() => voiceController),
       ],
@@ -321,6 +330,43 @@ class _FakeMemoryApi extends MemoryApi {
     int limit = kPlanMilestonePreviewLimit,
   }) async {
     return const [];
+  }
+
+  @override
+  Future<Map<String, dynamic>> getSavedKnowledgeOverview({
+    bool activeOnly = true,
+    int limit = kMemoryListLimit,
+  }) async {
+    return const {
+      'memories': <Map<String, dynamic>>[],
+      'people': <Map<String, dynamic>>[],
+      'entities': <Map<String, dynamic>>[],
+      'rules': <Map<String, dynamic>>[],
+      'plans': <Map<String, dynamic>>[],
+    };
+  }
+}
+
+class _FakeAccountabilityApi extends AccountabilityApi {
+  @override
+  Future<AccountabilityOverview> getOverview({
+    int limit = 25,
+    Map<String, dynamic>? budgetPerformance,
+  }) async {
+    return const AccountabilityOverview(
+      signals: [],
+      ruleRisks: [],
+      planRisks: [],
+      recentPatterns: [],
+      activeRules: [],
+      openThreads: [],
+      activePlans: [],
+      openMilestones: [],
+      completedMilestones: [],
+      planHierarchy: [],
+      duplicateWarnings: [],
+      metadata: {},
+    );
   }
 }
 
