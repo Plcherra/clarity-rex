@@ -4,20 +4,23 @@ import { authLinks, downloadLinks } from '@content/site';
 type Props = {
   layout?: 'hero' | 'footer' | 'compact';
   showGhostLink?: boolean;
+  /** Store badges default on for footer only — keeps the hero to one primary CTA. */
   showStoreBadges?: boolean;
+  primaryLabel?: string;
 };
 
 const {
   layout = 'hero',
   showGhostLink = false,
-  showStoreBadges = layout === 'hero' || layout === 'footer',
+  showStoreBadges = layout === 'footer',
+  primaryLabel = authLinks.createAccount.label,
 } = Astro.props;
 ---
 
 <div class:list={['download-actions', `download-actions--${layout}`]}>
   <div class="download-actions__primary">
     <a class="button button--primary" href={authLinks.createAccount.href}>
-      {authLinks.createAccount.label}
+      {primaryLabel}
     </a>
     {
       showGhostLink ? (
@@ -42,8 +45,12 @@ const {
               <span class="store-badge__name">App Store</span>
             </a>
           ) : (
-            <span class="store-badge store-badge--apple store-badge--pending" aria-disabled="true">
-              <span class="store-badge__label">Download on the</span>
+            <span
+              class="store-badge store-badge--apple store-badge--pending"
+              aria-disabled="true"
+              title="iOS App Store listing is not live yet"
+            >
+              <span class="store-badge__label">iOS coming soon</span>
               <span class="store-badge__name">App Store</span>
             </span>
           )
@@ -59,7 +66,16 @@ const {
               <span class="store-badge__label">Get it on</span>
               <span class="store-badge__name">Google Play</span>
             </a>
-          ) : null
+          ) : (
+            <span
+              class="store-badge store-badge--google store-badge--pending"
+              aria-disabled="true"
+              title="Google Play listing is not live yet"
+            >
+              <span class="store-badge__label">Android coming soon</span>
+              <span class="store-badge__name">Google Play</span>
+            </span>
+          )
         }
       </div>
     ) : null

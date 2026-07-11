@@ -1,18 +1,18 @@
 ---
 import AuthLayout from '@layouts/AuthLayout.astro';
-import { product } from '@content/site';
+import { authLinks, product } from '@content/site';
 
 const steps = [
   {
-    title: 'Open Clarity on your phone',
-    body: 'Use the app you installed during beta setup.',
+    title: 'Open Clarity on web or phone',
+    body: 'Go to goclarity.app/app/ in your browser, or open the iPhone or Android app when you have it installed.',
   },
   {
     title: 'Choose Sign in',
     body: 'Use the same email and password you used to create your account.',
   },
   {
-    title: 'Finish setup inside the app',
+    title: 'Finish setup inside Clarity',
     body: 'Connect accounts, explore your dashboard, and talk with Rex when you are ready.',
   },
 ] as const;
@@ -20,7 +20,7 @@ const steps = [
 
 <AuthLayout
   title="Email confirmed - Clarity"
-  description="Your Clarity account email address is confirmed. Return to the app and sign in."
+  description="Your Clarity account email address is confirmed. Sign in on web or in the app."
 >
   <section class="auth-card" aria-labelledby="auth-confirmed-title">
     <div class="auth-card__badge" aria-hidden="true">
@@ -29,7 +29,7 @@ const steps = [
     <p class="eyebrow">Account verified</p>
     <h1 id="auth-confirmed-title">You are all set.</h1>
     <p class="auth-card__lede">
-      Your email is confirmed for Clarity. You can close this page and sign in from the app.
+      Your email is confirmed for Clarity. You can close this page and sign in on web or in the app.
     </p>
 
     <div id="auth-confirmed-error" class="auth-alert auth-alert--error" hidden>
@@ -51,7 +51,7 @@ const steps = [
     </ol>
 
     <div class="auth-card__actions">
-      <a class="button button--large" href="/">Back to Clarity</a>
+      <a class="button button--large" href={authLinks.signIn.href}>Open Clarity on web</a>
       <a class="button button--secondary button--large" href={`mailto:${product.supportEmail}`}>
         Contact support
       </a>

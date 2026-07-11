@@ -34,7 +34,7 @@ Work files **in this sequence**. Within each file, work phases top-to-bottom.
 | **Ship Android-first + iOS-foreground English pilot** | Complete files 01 + 03–04 (critical phases), Plaid smoke from 06, and explicitly de-scope iOS walk-and-talk + Spanish parity |
 | **Do not claim** | Spanish parity, enterprise offline reliability, voice-while-walking on iOS, full web/desktop parity, file → Knows import (unless 08 done) |
 | **Defer** | Files 09–11 polish and refactor unless Spanish/web are launch marketing claims; file 08 unless marketing “import notes into Knows” |
-| **UI polish (02)** | A–C code + E code largely landed; Phase D (marketing) deferred; run Phase F smoke before claiming polish. Not a blocker for truth/security |
+| **UI polish (02)** | A–E code largely landed (D marketing honesty done; A116 screenshot refresh open). Run Phase F smoke before claiming polish. Not a blocker for truth/security |
 | **File import (08)** | Not a Saturday must-pass; place after voice so confirm/truth stack is stable; before Spanish so new copy is localized |
 
 ---
@@ -53,5 +53,5 @@ IDs match the audit canvas (`C*` Critical, `H*` High, `M*` Medium, `L*` Low). Ad
 4. **06** Phase 1 (prod Plaid smoke)
 5. **07** Phase 1 (iOS voice: fix or de-scope messaging) + stuck-listening hang if reproducible
 6. **09** Phase 1 (Spanish: finish confirm cards or label beta)
-7. **02** Phase F smoke (A–C + E already coded; D deferred) before claiming UI polish on a platform
+7. **02** Phase F smoke (A–E coded; D honesty landed; A116 screenshots still open) before claiming UI polish
 8. **08** only if claiming file→Knows; otherwise leave as post-pilot

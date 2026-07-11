@@ -17,15 +17,14 @@ Build now:
 - Security and Data Handling
 - Data Deletion
 - Contact
-- Waitlist/contact shell
+- Authenticated Flutter web companion at `/app/` (built from `apps/mobile`, deployed with this site)
 
 Deferred:
 
-- Authenticated web dashboard
-- Plaid Link in browser
-- Rex chat or voice in browser
 - Billing or admin tools
+- Authenticated marketing-site dashboard (separate from Flutter `/app/`)
 
+The Flutter web companion supports chat, foreground browser voice, and web Plaid Link. Mobile-only capabilities (CSV import, background voice) stay honest in landing copy — do not claim full phone parity.
 ## Local Development
 
 ```bash

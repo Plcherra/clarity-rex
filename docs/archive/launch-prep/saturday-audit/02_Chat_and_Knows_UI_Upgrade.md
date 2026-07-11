@@ -13,9 +13,9 @@
 | **A** | Shared Flutter canon + density | **DONE** (A1–A5) |
 | **B** | Android polish | **DONE** code (B1–B3); **B4** screenshots open |
 | **C** | iOS polish | **DONE** code (C1–C3); **C4** screenshots open |
-| **D** | Web marketing (`apps/web`) | **DEFERRED** — skipped this pass; do after F smoke if claiming landing |
+| **D** | Web marketing (`apps/web`) | **DONE** copy/layout/honesty (A111–A115); **A116** screenshot refresh still open (B4/C4) |
 | **E** | Flutter web `/app/` | **DONE** code (E1/E3/E4); **E2** needs browser smoke in F |
-| **F** | Cross-platform verify | **OPEN** — use smoke list below |
+| **F** | Cross-platform verify | **OPEN** — F0 automated below; device/browser checks for you |
 
 **Claim rule:** Do not market “redesigned on every platform” until Phase F is checked for the platforms named in the claim.
 
@@ -29,7 +29,7 @@
 | --- | --- |
 | Shared Flutter | `chat_message_bubble.dart`, `chat_transcript.dart`, confirm cards, `saved_memory_tile_shell.dart`, `RexUiTokens`, `clarity_sheet_insets.dart`, Knows/Goals sheets |
 | Android / iOS | Safe areas, system bars, sheets, foreground voice chrome |
-| Web marketing | `apps/web` Astro — **deferred (Phase D)** |
+| Web marketing | `apps/web` Astro — Phase D landed |
 | Web app | Flutter `/app/` — `AppCapabilities`, 920px column, honest voice/attach copy, `flutter_bootstrap.js` |
 
 ---
@@ -55,71 +55,57 @@ Goals reuse Knows tile tokens; composer `composerPadding*` + `bodyMedium`. Finan
 
 # Phase B — Android — code DONE; screenshots open
 
-### B1 System UI (A101–A102) — DONE
-Sheets `useSafeArea` + `claritySheetPadding`. Confirm dialog `SafeArea`. `ClarityTheme.systemUiOverlayStyle` + `AnnotatedRegion`.
-
-### B2 Material sheets (A103) — DONE
-Knows/Goals/attach/settings sheets use shared sheet helper; attach uses theme drag handle.
-
-### B3 Voice chrome (A104) — DONE
-Voice panel H padding = composer; `bubbleSideInset` 36. FG service untouched (file 07).
+### B1–B3 — DONE
+Safe areas, system UI overlay, sheets, voice chrome. FG service untouched (file 07).
 
 ### B4 Play screenshots (A105) — OPEN (manual)
-Refresh chat / Knows / Goals / voice captures after device QA. Sync to Phase D if landing reuses them.
+Refresh chat / Knows / Goals / voice captures after device QA. Sync into `apps/web/public/images/app` (A116).
 
 ---
 
 # Phase C — iOS — code DONE; screenshots open
 
-### C1 Safe areas / nav density (A106–A107) — DONE
-Chat body `SafeArea(bottom: false)`; composer owns bottom. `clarityScrollBottomClearance` on Knows/Goals/Chats. Assistant header denser; `toolbarHeight` 48.
-
-### C2 Sheets + haptics (A108) — DONE
-`showClarityModalBottomSheet` (drag, dismiss, safe area, grabber). Confirm/dismiss use existing light haptics.
-
-### C3 Foreground voice (A109) — DONE
-Compact wave; smaller controls; lighter status. Background walk-and-talk still file 07.
+### C1–C3 — DONE
+Safe areas, denser chrome, sheets/haptics, foreground voice density. Background voice still file 07.
 
 ### C4 App Store screenshots (A110) — OPEN (manual)
-Same as B4 for iOS captures; sync with Phase D when marketing runs.
+Same as B4 for iOS; sync with A116 when marketing assets refresh.
 
 ---
 
-# Phase D — Web marketing (`apps/web`) — DEFERRED
+# Phase D — Web marketing (`apps/web`) — DONE (except screenshot assets)
 
-Skipped this pass (user chose E over D). Still open when claiming the landing:
+### D1 Hero / first viewport (A111) — DONE
+Hero = brand eyebrow + tagline + lede + primary “Open Clarity on web” + ghost “See how it works” + trust line. Store badges moved to footer CTA only. Device aria-label = mobile preview (honest).
 
-| ID | Issue | Notes |
-| --- | --- | --- |
-| A111 | Hero clutter / weak brand | One composition first viewport |
-| A112 | Product gallery honesty | No Goals-in-Knows; no false “full web parity” |
-| A113 | Legal page readability | Presentation only — file 10 owns substance |
-| A114 | Mobile responsive / perf | 375–430px QA; don’t break `/app/` deploy |
-| A115 | Download / login CTAs | Honest Open web app vs store links |
-| A116 | Screenshot sync | After A–C (+ E) look right |
+### D2 Product gallery honesty (A112) — DONE
+Knows copy: facts/people/events/preferences — **no goals**. New Goals gallery card with `goals.webp`. Softened “everywhere / mobile and web parity” claims. Voice: not “hands-free”; browser-tab honesty. FAQ added: web vs phone capabilities.
+
+### D3 Trust / legal readability (A113) — DONE (presentation)
+`hero__actions` / `button--large` / `policy-hero` CSS. Retention table stacks on small screens. Broken PDF link removed. data-deletion scope includes web companion. Privacy waitlist → contact forms.
+
+### D4 Responsive + CTAs (A114–A115) — DONE
+Auth pages dark-theme inputs; confirmed/reset copy points to web + phone. App Store pending = “iOS coming soon”. Primary CTA = Open Clarity on web. README deferred list matches `/app/` reality.
+
+### D5 Screenshot sync (A116) — OPEN (manual / B4+C4)
+Copy and gallery wiring are honest. **Re-capture** Knows (no Goals), chat density, Goals screen after device QA, then re-run `apps/web/scripts/sync-landing-assets.mjs` and refresh OG if needed. Until then, do not claim “landing screenshots match redesign.”
 
 ---
 
 # Phase E — Flutter web `/app/` — code DONE; browser smoke in F
 
-### E1 Capability honesty (A117) — DONE
-Web attach tooltip = files only. CSV disabled + mobile-only copy. Plaid unavailable string no longer “coming soon on web” (web Plaid stays on). Voice honesty → E3.
-
-### E1 Layout column (A118) — DONE
-Assistant header + tabs constrained to 920px. Add-account dialog centered/max-width on web.
+### E1 Capability honesty + layout (A117–A118) — DONE
+Honest attach/voice/CSV/Plaid copy. 920px column. Add-account dialog constrained on web.
 
 ### E2 Density / keyboard (A119–A120) — OPEN (smoke only)
-Shared Phase A/B/C patterns apply on web. No web-only widget fork. Verify in Phase F browser smoke.
+Shared patterns apply; verify in F4 browser smoke.
 
-### E3 Voice honesty (A121) — DONE
-Tooltips + inline panel: browser session / keep tab open. Unavailable path points to chat/mobile. Background voice off via `AppCapabilities`. JWT-in-URL remains file 04/07.
-
-### E4 Boot failure UI (A122) — DONE (UI)
-Friendlier copy in `apps/mobile/web/flutter_bootstrap.js`. Deploy ops still in `apps/web` README / scripts.
+### E3–E4 Voice honesty + boot UI (A121–A122) — DONE
+Browser-session voice labels. Friendlier boot failure in `flutter_bootstrap.js`.
 
 ---
 
-# Phase F — Smoke test list (do this next)
+# Phase F — Smoke test list
 
 Check each box on the platforms you claim. Mark **N/A** if that surface is out of launch scope.
 
@@ -128,9 +114,13 @@ Check each box on the platforms you claim. Mark **N/A** if that surface is out o
 ```bash
 cd apps/mobile
 flutter test test/chat_message_bubble_test.dart test/chat_input_bar_test.dart test/memory_page_test.dart test/voice_clarity_actions_test.dart
+
+cd apps/web
+npm run build
 ```
 
-- [ ] All four suites pass
+- [x] Flutter four suites pass (20 tests)
+- [x] `apps/web` `npm run build` passes (Phase D)
 
 ## F1 — Canon + density (every Flutter surface you ship)
 
@@ -171,43 +161,45 @@ flutter test test/chat_message_bubble_test.dart test/chat_input_bar_test.dart te
 
 | # | Check | Pass |
 | --- | --- | :---: |
-| 21 | Wide desktop: assistant header + content stay in ~920px centered column (not full-bleed stretch) | ☐ |
-| 22 | Mic tooltip / active voice hint: browser / keep tab open (not “full mobile voice”) | ☐ |
-| 23 | Attach tooltip: file-oriented (not “file or image” if that overclaims) | ☐ |
+| 21 | Wide desktop: assistant header + content stay in ~920px centered column | ☐ |
+| 22 | Mic tooltip / active voice hint: browser / keep tab open | ☐ |
+| 23 | Attach tooltip: file-oriented | ☐ |
 | 24 | Add account: CSV disabled with mobile-only copy; Plaid available if web Link works | ☐ |
 | 25 | Chat send + streaming reply scroll OK (desktop Chrome) | ☐ |
 | 26 | Mobile Safari (or narrow Chrome): composer not permanently covered; can send | ☐ |
-| 27 | Confirm strip usable with mouse/touch; truth-honest after confirm | ☐ |
+| 27 | Confirm strip usable; truth-honest after confirm | ☐ |
 | 28 | Knows / Goals density readable on wide + narrow | ☐ |
-| 29 | Boot: normal load shows “Loading Clarity…” then app (not stuck blank) | ☐ |
-| 30 | Optional: break asset path once in staging → friendly boot error (refresh / wrong files), not silent blank | ☐ |
+| 29 | Boot: “Loading Clarity…” then app (not stuck blank) | ☐ |
+| 30 | Optional: bad asset path → friendly boot error | ☐ |
 
-## F5 — Marketing / store (only if claiming those surfaces)
+## F5 — Marketing / store
 
 | # | Check | Pass |
 | --- | --- | :---: |
-| 31 | Phase D still deferred — landing not claimed updated | ☐ / N/A |
-| 32 | Play screenshots match shipping density + Knows-without-Goals (B4) | ☐ / N/A |
-| 33 | App Store screenshots same (C4) | ☐ / N/A |
-| 34 | Landing product cards / CTAs honest if D runs later | ☐ / N/A |
+| 31 | Landing hero: one primary CTA (“Open Clarity on web”); stores in footer | ☐ |
+| 32 | Knows gallery copy has **no** goals; Goals is its own card | ☐ |
+| 33 | Voice / web FAQ do not claim full mobile parity | ☐ |
+| 34 | App Store badge shows “iOS coming soon” when URL empty | ☐ |
+| 35 | Privacy / data-deletion readable at ~375px; no broken PDF | ☐ |
+| 36 | Screenshots match shipping density (after B4/C4 refresh) | ☐ / N/A until recapture |
 
 ## F6 — Fail criteria (any one = do not claim polish done)
 
-- Goals visible inside Knows
+- Goals visible inside Knows (app or landing copy)
 - Confirm UI looks “saved” before backend apply
 - Web voice copy implies background / mobile parity
 - Web offers CSV as working
 - Clipped composer / sheets on a target device
-- Marketing screenshots show old heavy UI or Goals-in-Knows while claiming redesign
+- Marketing screenshots show Goals-in-Knows or old heavy UI while claiming redesign
 
 ---
 
 ## Suggested next steps
 
-1. Run **F0** automated tests  
-2. Smoke **F1** on one mobile build (Android or iOS)  
-3. Smoke **F4** on `/app/` (Chrome + one mobile browser)  
-4. Device-specific **F2** / **F3** for the platforms you ship  
-5. Only then: **B4/C4** screenshots → optional **Phase D** landing sync  
+1. Run **F0** Flutter tests locally if not already  
+2. Smoke **F5** on `npm run preview` (or deployed landing) — Phase D checks  
+3. Smoke **F1** + **F4** on one mobile build and `/app/`  
+4. Device **F2** / **F3** for platforms you ship  
+5. **B4/C4 → A116** screenshot refresh before any “redesigned landing” claim  
 
 **Claim rule:** Do not market “redesigned on every platform” until the F tables above are checked for those platforms.

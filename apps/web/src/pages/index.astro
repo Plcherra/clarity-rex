@@ -22,7 +22,7 @@ const productScreens = [
   {
     label: 'Dashboard',
     title: 'See the month at a glance.',
-    body: 'Balances, cash flow, and spending by category — mobile and web.',
+    body: 'Balances, cash flow, and spending by category — on phone and in the web companion.',
     image: '/images/app/dashboard-cash-flow.webp',
     alt: 'Clarity dashboard with total balance, monthly cash flow chart, and spending by category.',
   },
@@ -35,10 +35,17 @@ const productScreens = [
   },
   {
     label: 'Knows',
-    title: 'Memory, clearly labeled.',
-    body: 'People, events, goals, and preferences — separate from chat history.',
+    title: 'Saved memory, clearly labeled.',
+    body: 'Facts, people, events, and preferences — separate from Goals and from chat history.',
     image: '/images/app/knows.webp',
-    alt: 'Clarity Knows screen showing people, facts, and events Clarity remembers.',
+    alt: 'Clarity Knows screen showing people, facts, and events Clarity remembers — not goals.',
+  },
+  {
+    label: 'Goals',
+    title: 'Goals and open threads.',
+    body: 'Achievement-oriented plans and light habit check-ins live here — not inside Knows.',
+    image: '/images/app/goals.webp',
+    alt: 'Clarity Goals screen showing plans and open threads for accountability.',
   },
   {
     label: 'Budgets',
@@ -56,8 +63,8 @@ const productScreens = [
   },
   {
     label: 'Voice',
-    title: 'Talk to Rex hands-free.',
-    body: 'Same Rex Brain as chat — same memory rules, same financial truth.',
+    title: 'Talk to Rex on the go.',
+    body: 'Same Rex brain as chat. Best on iPhone and Android; browser voice works while this tab stays open.',
     image: '/images/app/voice.webp',
     alt: 'Clarity voice usage screen showing Rex voice activity and daily call charts.',
   },
@@ -67,16 +74,16 @@ const productScreens = [
 <BaseLayout title={page.title} description={page.description}>
   <section class="landing-hero">
     <div class="landing-hero__copy">
-      <p class="eyebrow">Web · iPhone · Android</p>
+      <p class="eyebrow">Clarity</p>
       <h1>{product.tagline}</h1>
       <p class="landing-hero__lede">{product.heroLede}</p>
-      <DownloadActions layout="hero" showGhostLink />
+      <DownloadActions layout="hero" showGhostLink primaryLabel="Open Clarity on web" />
       <p class="hero-trust-line" aria-label="Trust highlights">
         {heroTrustLine.join(' · ')}
       </p>
     </div>
 
-    <div class="hero-device-stack" aria-label="Clarity app on mobile and web">
+    <div class="hero-device-stack" aria-label="Clarity mobile app preview">
       <div class="device-card device-card--primary">
         <img
           src="/images/app/dashboard-cash-flow.webp"
@@ -112,7 +119,7 @@ const productScreens = [
     <div class="section__header section__header--center">
       <p class="eyebrow">How it works</p>
       <h2 id="how-heading">Up and running in minutes.</h2>
-      <p>Create your account, connect what you want, and use the same Clarity everywhere.</p>
+      <p>Create your account, connect what you want, and use Clarity on web and mobile with the same login.</p>
     </div>
     <ol class="how-steps">
       {
@@ -137,8 +144,11 @@ const productScreens = [
   <section class="section product-section" id="app-gallery" aria-labelledby="product-heading">
     <div class="section__header section__header--center">
       <p class="eyebrow">The app</p>
-      <h2 id="product-heading">Built for daily review — mobile and web.</h2>
-      <p>Real screens. Dark, calm UI. One account across every device.</p>
+      <h2 id="product-heading">Built for daily review.</h2>
+      <p>
+        Real screens from Clarity. Mobile apps are the fullest day-to-day experience; the web
+        companion covers the core flow with the same account.
+      </p>
     </div>
     <div class="product-grid">
       {
@@ -190,7 +200,7 @@ const productScreens = [
     <div class="final-cta__inner">
       <h2 id="final-cta-heading">Ready to see your money clearly?</h2>
       <p class="final-cta__lede">
-        Create your free account on web — same login on iPhone and Android when you download.
+        Open Clarity on web — same login on iPhone and Android when you download.
       </p>
       <DownloadActions layout="footer" showStoreBadges />
       <p class="final-cta__note">

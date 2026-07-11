@@ -14,11 +14,11 @@ export const product = {
   assistantName: 'Rex',
   tagline: 'Money, memory, and Rex — one calm place.',
   heroLede:
-    'Connect accounts, track budgets, and talk to Rex. One workspace for your financial picture and what matters — on web, iPhone, and Android.',
+    'Connect accounts, track budgets, and talk to Rex. Start on the web companion, then use the same login on iPhone and Android when you download.',
   oneLiner:
     'Personal finance, budgets, and durable memory — with Rex, the assistant that explains your picture from real data, not guesses.',
   description:
-    'Connect accounts, track budgets, and talk to Rex on web, iPhone, and Android. One calm workspace for your money and what matters.',
+    'Connect accounts, track budgets, and talk to Rex. Web companion plus iPhone and Android apps — one login, honest about what each surface supports.',
   supportEmail: 'clarity.rex@gmail.com',
   operatorName: 'Clarity',
   siteUrl: 'https://goclarity.app',
@@ -157,7 +157,7 @@ export const authLinks = {
     href: downloadLinks.webLogin,
   },
   createAccount: {
-    label: 'Create free account',
+    label: 'Open Clarity on web',
     href: downloadLinks.webLogin,
   },
 } as const;
@@ -167,7 +167,7 @@ export const primaryCta = authLinks.createAccount;
 export const subscriptionValue = {
   headline: 'Why Clarity',
   subhead:
-    'One subscription. One workspace. Your accounts, memory, and Rex — always in sync.',
+    'One account. One calm workspace for money, memory, and Rex — across the surfaces you use.',
   columns: [
     {
       title: 'Your money picture',
@@ -175,11 +175,11 @@ export const subscriptionValue = {
     },
     {
       title: 'Memory that stays organized',
-      body: 'People, goals, events, and preferences — saved clearly, separate from chat history.',
+      body: 'Saved facts, people, events, and preferences in Knows — separate from Goals and from chat history.',
     },
     {
       title: 'Rex when you need context',
-      body: 'Chat and voice on the same data you see in the app. No guessing, no moving money.',
+      body: 'Chat and voice use the same Rex brain and the same data you see in the app. No guessing, no moving money.',
     },
   ],
   pricingNote:
@@ -189,7 +189,7 @@ export const subscriptionValue = {
 export const howItWorksSteps = [
   {
     title: 'Create your account on web',
-    body: 'Sign up at goclarity.app in minutes. Download on iPhone or Android when store links are live — same login everywhere.',
+    body: 'Sign up at goclarity.app in minutes. Download on iPhone or Android when store links are live — same login.',
   },
   {
     title: 'Connect accounts with consent',
@@ -197,7 +197,7 @@ export const howItWorksSteps = [
   },
   {
     title: 'Review your month and talk to Rex',
-    body: 'Dashboard, budgets, Knows, and Rex share one source of truth on phone and web.',
+    body: 'Dashboard, budgets, Knows, Goals, and Rex share one source of truth. Mobile apps add the fullest day-to-day experience; the web companion covers the core flow.',
   },
 ] as const;
 
@@ -226,6 +226,11 @@ export const faqs = [
     question: 'What can Rex see?',
     answer:
       'Rex uses the context you connect or save inside Clarity: transactions, budgets, goals, saved memory, and conversation history. Rex does not move money or guess balances.',
+  },
+  {
+    question: 'Is the web app the same as the phone apps?',
+    answer:
+      'Same account and the same Rex brain. The web companion covers the core flow. Some features — like CSV statement import and background voice while walking — are mobile-first. Browser voice works while the tab stays open.',
   },
   {
     question: 'Can I delete my data?',

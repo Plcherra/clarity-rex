@@ -3,7 +3,6 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import { product, publicRoutes } from '@content/site';
 
 const page = publicRoutes.find((route) => route.path === '/data-deletion')!;
-const policyPdfPath = '/policies/Clarity_Data_Retention_and_Deletion_Policy_v1.0.pdf';
 ---
 
 <BaseLayout title={page.title} description={page.description}>
@@ -22,7 +21,6 @@ const policyPdfPath = '/policies/Clarity_Data_Retention_and_Deletion_Policy_v1.0
     <div class="policy-actions" aria-label="Policy links">
       <a class="button" href="/contact">Request deletion</a>
       <a class="button button--secondary" href="/privacy">Privacy Policy</a>
-      <a class="button button--secondary" href={policyPdfPath}>PDF version</a>
     </div>
   </section>
 
@@ -33,9 +31,10 @@ const policyPdfPath = '/policies/Clarity_Data_Retention_and_Deletion_Policy_v1.0
     </div>
     <div class="panel policy-panel">
       <p>
-        Clarity is an early-stage personal AI financial co-pilot mobile application operated by
+        Clarity is an early-stage personal AI financial co-pilot operated by
         Pedro Martins as a solo founder. Clarity helps users understand spending, budgets, goals,
-        and financial context through the Clarity app and Rex, the AI assistant inside the product.
+        and financial context through the Clarity apps (iOS, Android, and the web companion) and Rex,
+        the AI assistant inside the product.
       </p>
       <p>
         Clarity's retention approach is based on data minimization, purpose limitation, user
@@ -310,7 +309,6 @@ const policyPdfPath = '/policies/Clarity_Data_Retention_and_Deletion_Policy_v1.0
       <div class="policy-actions policy-actions--compact">
         <a class="button button--secondary" href="/privacy">Privacy Policy</a>
         <a class="button button--secondary" href="/contact">Contact page</a>
-        <a class="button button--secondary" href={policyPdfPath}>PDF version</a>
       </div>
     </div>
     <p class="policy-disclaimer">
