@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/person_memory_model.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
@@ -27,9 +28,10 @@ Future<PersonEditResult?> showPersonEditSheet(
   BuildContext context, {
   required PersonMemoryItem person,
 }) {
-  return showClarityModalBottomSheet<PersonEditResult>(
+  return showClarityAdaptiveOverlay<PersonEditResult>(
     context: context,
     isScrollControlled: true,
+    dialogMaxWidth: 520,
     builder: (sheetContext) => MemoryPersonEditSheet(person: person),
   );
 }

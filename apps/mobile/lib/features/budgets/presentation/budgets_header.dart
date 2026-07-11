@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/layout/clarity_breakpoints.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../theme/clarity_shadows.dart';
 import '../domain/budget_models.dart';
@@ -147,7 +148,8 @@ class _BudgetPeriodToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return DecoratedBox(
+    final desktop = isClarityDesktopLayout(context);
+    final toggle = DecoratedBox(
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.38),
         borderRadius: BorderRadius.circular(12),
@@ -173,6 +175,16 @@ class _BudgetPeriodToggle extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+    if (!desktop) {
+      return toggle;
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: toggle,
       ),
     );
   }

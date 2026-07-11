@@ -21,6 +21,7 @@ import '../../../rex/presentation/assistant_chat_visible_provider.dart';
 import '../../../rex/presentation/assistant_screen.dart';
 import '../../../rex/voice/presentation/voice_clarity_action_listener.dart';
 import '../../../app/ui_dependencies.dart';
+import '../../../core/layout/clarity_breakpoints.dart';
 import 'home_shell_layout.dart';
 
 /// Shell tab index for the Assistant destination (Dashboard=0 … Assistant=3).
@@ -144,8 +145,8 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
     });
   }
 
-  Widget _shellTab(Widget child) {
-    return ShellContentConstraints(child: child);
+  Widget _shellTab(Widget child, {required double maxWidth}) {
+    return ShellContentConstraints(maxWidth: maxWidth, child: child);
   }
 
   @override
@@ -168,6 +169,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
     final l10n = context.l10n;
     final pages = <Widget>[
       _shellTab(
+        maxWidth: clarityFinanceContentMaxWidth,
         DashboardScreen(
           controller: widget.ui.dashboard,
           transactionController: widget.ui.transactions,
@@ -189,6 +191,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
         ),
       ),
       _shellTab(
+        maxWidth: clarityFinanceContentMaxWidth,
         AccountsScreen(
           controller: widget.ui.accounts,
           dashboardController: widget.ui.dashboard,
@@ -199,15 +202,18 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
         ),
       ),
       _shellTab(
+        maxWidth: clarityFinanceContentMaxWidth,
         BudgetsScreen(
           controller: widget.ui.budgets,
           manageCategoriesRequest: _manageCategoriesRequest,
         ),
       ),
       _shellTab(
+        maxWidth: clarityAssistantContentMaxWidth,
         AssistantScreen(profileController: widget.profileController),
       ),
       _shellTab(
+        maxWidth: clarityProfileContentMaxWidth,
         ProfileScreen(
           profileController: widget.profileController,
           authController: widget.authController,

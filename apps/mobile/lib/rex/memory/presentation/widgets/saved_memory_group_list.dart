@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:clarity/core/layout/clarity_breakpoints.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
@@ -45,6 +46,7 @@ class SavedMemoryGroupList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final wide = isClarityWideLayout(context);
     final children = <Widget>[];
 
     void addGroup(MemoryGroup group, List<Widget> tiles) {
@@ -54,8 +56,29 @@ class SavedMemoryGroupList extends StatelessWidget {
       children.add(_MemoryGroupHeader(
         label: group.localizedLabel(l10n),
       ));
-      for (final tile in tiles) {
-        children.add(tile);
+      if (wide) {
+        children.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: RexUiTokens.space16,
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final tileWidth = (constraints.maxWidth - 12) / 2;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (final tile in tiles)
+                      SizedBox(width: tileWidth, child: tile),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      } else {
+        children.addAll(tiles);
       }
     }
 

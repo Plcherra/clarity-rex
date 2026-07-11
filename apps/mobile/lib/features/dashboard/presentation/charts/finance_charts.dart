@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 
 import 'package:clarity/core/formatting/formatting.dart';
+import 'package:clarity/core/layout/clarity_breakpoints.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/core/models/models.dart';
 import 'package:clarity/features/budgets/domain/budget_models.dart';
@@ -31,7 +32,7 @@ class MonthlyCashFlowChart extends StatelessWidget {
     final spendValues = recent.map(_spendForGroup).toList();
 
     return SizedBox(
-      height: 200,
+      height: financeChartHeight(context),
       child: BarChart(
         BarChartData(
           maxY: financeChartMaxY([...incomeValues, ...spendValues]),
@@ -229,7 +230,7 @@ class SixMonthSpendTrendChart extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 180,
+      height: financeChartHeight(context, compact: 180),
       child: LineChart(
         LineChartData(
           minX: 0,
@@ -497,4 +498,8 @@ double financeChartMaxY(Iterable<double> values) {
     (max, value) => value > max ? value : max,
   );
   return maxY <= 0 ? 1 : maxY * 1.15;
+}
+
+double financeChartHeight(BuildContext context, {double compact = 200}) {
+  return isClarityDesktopLayout(context) ? 300 : compact;
 }

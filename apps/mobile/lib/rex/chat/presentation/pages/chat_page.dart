@@ -24,6 +24,7 @@ import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/theme/clarity_colors.dart';
+import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
 import 'package:clarity/theme/clarity_sheet_insets.dart';
 
 /// Main chat surface: empty thread UI + composer.
@@ -227,9 +228,11 @@ class _ChatPageState extends ConsumerState<ChatPage>
       return;
     }
 
-    final source = await showClarityModalBottomSheet<ChatAttachmentSource>(
+    final source = await showClarityAdaptiveOverlay<ChatAttachmentSource>(
       context: context,
       backgroundColor: context.clarityColors.surfaceElevated,
+      dialogMaxWidth: 420,
+      dialogMaxHeight: 360,
       builder: (_) => const AttachmentSourceSheet(),
     );
     if (!mounted || source == null) {

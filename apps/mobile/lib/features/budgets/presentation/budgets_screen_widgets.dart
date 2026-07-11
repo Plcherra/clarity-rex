@@ -184,38 +184,99 @@ class _BudgetsLoadedContent extends StatelessWidget {
     final l10n = context.l10n;
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final desktop = isClarityDesktopLayout(context);
+    final header = BudgetsHeader(
+      selectedType: selectedType,
+      selectedPeriodKey: selectedPeriodKey,
+      keys: keys,
+      monthlyLabel: selectedPeriodKey.trim().isEmpty
+          ? l10n.budgetsHeaderSelectMonth
+          : formatYearMonthLabel(selectedPeriodKey),
+      weeklyLabel: weeklyDate == null
+          ? l10n.budgetsHeaderPickWeekStart
+          : viewModel.formatLongDate(weeklyDate!),
+      weeklyRangeLabel: viewModel.weeklyRangeLabel(selectedPeriodKey),
+      customStartLabel: customStart == null
+          ? l10n.commonStart
+          : formatShortDate(customStart!),
+      customEndLabel: customEnd == null
+          ? l10n.commonEnd
+          : formatShortDate(customEnd!),
+      onPeriodTypeChanged: onPeriodTypeChanged,
+      onPickMonthly: onPickMonthly,
+      onPickWeekly: onPickWeekly,
+      onPickCustomStart: onPickCustomStart,
+      onPickCustomEnd: onPickCustomEnd,
+      compactButtonStyle: compactButtonStyle,
+    );
+    final summary = Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: desktop ? 520 : double.infinity),
+        child: _BudgetSummaryStrip(metrics: metrics),
+      ),
+    );
+    final chart = ClarityCard(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.budgetsScreenBudgetVsSpentTitle,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          BudgetVsSpentChart(performance: metrics.performance),
+        ],
+      ),
+    );
+    final categories = BudgetCategoryList(
+      items: data.categoryItems,
+      controllers: controllers,
+      focusNodes: focusNodes,
+      onCategoryValueChanged: onDraftEdited,
+      onTrackCategoryCount: metrics.performance.onTrackCategoryCount,
+      budgetedCategoryCount: metrics.performance.budgetedCategoryCount,
+    );
+
+    if (desktop && !keyboardOpen) {
+      return SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: EdgeInsets.only(bottom: keyboardInset + 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 4,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  header,
+                  const SizedBox(height: 10),
+                  summary,
+                  const SizedBox(height: 10),
+                  categories,
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(flex: 5, child: chart),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: EdgeInsets.only(bottom: keyboardInset + 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          BudgetsHeader(
-            selectedType: selectedType,
-            selectedPeriodKey: selectedPeriodKey,
-            keys: keys,
-            monthlyLabel: selectedPeriodKey.trim().isEmpty
-                ? l10n.budgetsHeaderSelectMonth
-                : formatYearMonthLabel(selectedPeriodKey),
-            weeklyLabel: weeklyDate == null
-                ? l10n.budgetsHeaderPickWeekStart
-                : viewModel.formatLongDate(weeklyDate!),
-            weeklyRangeLabel: viewModel.weeklyRangeLabel(selectedPeriodKey),
-            customStartLabel: customStart == null
-                ? l10n.commonStart
-                : formatShortDate(customStart!),
-            customEndLabel: customEnd == null
-                ? l10n.commonEnd
-                : formatShortDate(customEnd!),
-            onPeriodTypeChanged: onPeriodTypeChanged,
-            onPickMonthly: onPickMonthly,
-            onPickWeekly: onPickWeekly,
-            onPickCustomStart: onPickCustomStart,
-            onPickCustomEnd: onPickCustomEnd,
-            compactButtonStyle: compactButtonStyle,
-          ),
+          header,
           const SizedBox(height: 10),
-          _BudgetSummaryStrip(metrics: metrics),
+          summary,
           if (!keyboardOpen) ...[
             const SizedBox(height: 10),
             ClarityCard(
@@ -251,14 +312,7 @@ class _BudgetsLoadedContent extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 10),
-          BudgetCategoryList(
-            items: data.categoryItems,
-            controllers: controllers,
-            focusNodes: focusNodes,
-            onCategoryValueChanged: onDraftEdited,
-            onTrackCategoryCount: metrics.performance.onTrackCategoryCount,
-            budgetedCategoryCount: metrics.performance.budgetedCategoryCount,
-          ),
+          categories,
         ],
       ),
     );

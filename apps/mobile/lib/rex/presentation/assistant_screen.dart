@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/layout/clarity_breakpoints.dart';
 import '../../core/l10n/app_l10n.dart';
 import '../../features/profile/application/profile_controller.dart';
 import '../accountability/presentation/pages/accountability_page.dart';
@@ -83,6 +84,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
 
     final isCompactWidth =
         MediaQuery.sizeOf(context).width < _assistantCompactWidth;
+    final wide = isClarityWideLayout(context);
 
     return RexTheme(
       child: Builder(
@@ -108,6 +110,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
                         for (final tab in AssistantTab.values)
                           _AssistantTabContent(
                             tab: tab,
+                            wideSplit: wide,
                             onConversationSelected: _openChatTab,
                           ),
                       ],
@@ -228,6 +231,7 @@ class _AssistantTabNavigation extends StatelessWidget {
                 context: context,
                 profileController: profileController,
               ),
+              mouseCursor: SystemMouseCursors.click,
               borderRadius: BorderRadius.circular(RexUiTokens.radiusSmall),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -300,16 +304,20 @@ class _AssistantTabItem extends StatelessWidget {
 class _AssistantTabContent extends StatelessWidget {
   const _AssistantTabContent({
     required this.tab,
+    required this.wideSplit,
     required this.onConversationSelected,
   });
 
   final AssistantTab tab;
+  final bool wideSplit;
   final VoidCallback onConversationSelected;
 
   @override
   Widget build(BuildContext context) {
     return switch (tab) {
-      AssistantTab.chat => const ChatPage(showAppBar: false),
+      AssistantTab.chat => wideSplit
+          ? _AssistantChatSplit(onConversationSelected: onConversationSelected)
+          : const ChatPage(showAppBar: false),
       AssistantTab.memory => const MemoryPage(showAppBar: false),
       AssistantTab.goals => const AccountabilityPage(showAppBar: false),
       AssistantTab.chats => ConversationListPage(
@@ -317,5 +325,46 @@ class _AssistantTabContent extends StatelessWidget {
         onConversationSelected: onConversationSelected,
       ),
     };
+  }
+}
+
+class _AssistantChatSplit extends StatelessWidget {
+  const _AssistantChatSplit({required this.onConversationSelected});
+
+  final VoidCallback onConversationSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.clarityColors;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: 280,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                right: BorderSide(color: colors.border.withValues(alpha: 0.55)),
+              ),
+            ),
+            child: ConversationListPage(
+              showAppBar: false,
+              onConversationSelected: onConversationSelected,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: clarityChatColumnMaxWidth,
+              ),
+              child: const ChatPage(showAppBar: false),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

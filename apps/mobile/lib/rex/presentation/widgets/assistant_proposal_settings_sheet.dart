@@ -2,19 +2,21 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/layout/clarity_adaptive_overlay.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../features/profile/application/profile_controller.dart';
 import '../../../features/profile/domain/assistant_proposal_settings.dart';
 import '../../../theme/clarity_colors.dart';
-import '../../../theme/clarity_sheet_insets.dart';
 
 Future<void> showAssistantProposalSettingsSheet({
   required BuildContext context,
   required ProfileController profileController,
 }) {
-  return showClarityModalBottomSheet<void>(
+  return showClarityAdaptiveOverlay<void>(
     context: context,
     isScrollControlled: true,
+    dialogMaxWidth: 520,
+    dialogMaxHeight: 640,
     builder: (sheetContext) {
       return AssistantProposalSettingsSheet(
         profileController: profileController,

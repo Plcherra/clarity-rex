@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/layout/finance_content_constraints.dart';
 import '../../../theme/clarity_colors.dart';
@@ -41,12 +42,28 @@ class HomeShellAdaptiveScaffold extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      body: body,
-      bottomNavigationBar: _HomeShellCenteredDock(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: onDestinationSelected,
-        destinations: destinations,
+    const digitKeys = <LogicalKeyboardKey>[
+      LogicalKeyboardKey.digit1,
+      LogicalKeyboardKey.digit2,
+      LogicalKeyboardKey.digit3,
+      LogicalKeyboardKey.digit4,
+      LogicalKeyboardKey.digit5,
+    ];
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        for (var i = 0; i < destinations.length && i < digitKeys.length; i++)
+          SingleActivator(digitKeys[i]): () => onDestinationSelected(i),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          body: body,
+          bottomNavigationBar: _HomeShellCenteredDock(
+            selectedIndex: selectedIndex,
+            onDestinationSelected: onDestinationSelected,
+            destinations: destinations,
+          ),
+        ),
       ),
     );
   }
@@ -100,7 +117,28 @@ class _HomeShellCenteredDock extends StatelessWidget {
                   child: NavigationBar(
                     selectedIndex: selectedIndex,
                     onDestinationSelected: onDestinationSelected,
-                    destinations: destinations,
+                    destinations: [
+                      for (var i = 0; i < destinations.length; i++)
+                        NavigationDestination(
+                          icon: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Tooltip(
+                              message: '${destinations[i].label} (${i + 1})',
+                              child: destinations[i].icon,
+                            ),
+                          ),
+                          selectedIcon: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Tooltip(
+                              message: '${destinations[i].label} (${i + 1})',
+                              child:
+                                  destinations[i].selectedIcon ??
+                                  destinations[i].icon,
+                            ),
+                          ),
+                          label: destinations[i].label,
+                        ),
+                    ],
                   ),
                 ),
               ),

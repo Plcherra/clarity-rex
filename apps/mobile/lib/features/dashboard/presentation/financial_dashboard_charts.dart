@@ -33,6 +33,7 @@ class _DashboardCollapsibleChartGroup extends StatelessWidget {
     required this.initiallyExpanded,
     this.controller,
     required this.children,
+    this.alwaysExpanded = false,
   });
 
   final String title;
@@ -40,11 +41,42 @@ class _DashboardCollapsibleChartGroup extends StatelessWidget {
   final bool initiallyExpanded;
   final ExpansionTileController? controller;
   final List<Widget> children;
+  final bool alwaysExpanded;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+
+    if (alwaysExpanded) {
+      return ClarityCard(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
+        backgroundColor: _dashboardPanel(context),
+        borderColor: _dashboardOutline(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                subtitle!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.58),
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
+            ...children,
+          ],
+        ),
+      );
+    }
 
     return ClarityCard(
       padding: EdgeInsets.zero,

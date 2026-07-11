@@ -3,14 +3,37 @@ import 'package:flutter/material.dart';
 /// Breakpoint below which the shell uses a full-width bottom [NavigationBar].
 const double homeShellCompactBreakpoint = 800;
 
-/// Max width for shell tab content on ultra-wide viewports (all five tabs).
+/// Outer shell content cap on ultra-wide viewports.
 const double homeShellMaxContentWidth = 1440;
 
 bool isHomeShellCompactWidth(BuildContext context) {
   return MediaQuery.sizeOf(context).width < homeShellCompactBreakpoint;
 }
 
-/// Centers shell tab content on ultra-wide viewports with a readable max width.
+/// Centers [child] with a surface-specific max width.
+class ShellContentConstraints extends StatelessWidget {
+  const ShellContentConstraints({
+    super.key,
+    required this.child,
+    this.maxWidth = homeShellMaxContentWidth,
+  });
+
+  final Widget child;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Back-compat alias used by finance screens that wrap themselves.
 class FinanceContentConstraints extends StatelessWidget {
   const FinanceContentConstraints({super.key, required this.child});
 
@@ -18,15 +41,9 @@ class FinanceContentConstraints extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: homeShellMaxContentWidth),
-        child: child,
-      ),
+    return ShellContentConstraints(
+      maxWidth: homeShellMaxContentWidth,
+      child: child,
     );
   }
 }
-
-/// Alias for shared shell content width (finance + assistant + profile).
-typedef ShellContentConstraints = FinanceContentConstraints;

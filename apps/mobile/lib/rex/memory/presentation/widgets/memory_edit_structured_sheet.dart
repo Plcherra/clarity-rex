@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/app_l10n.dart';
+import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_dialogs.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_shared_widgets.dart';
@@ -26,9 +27,10 @@ Future<StructuredEditResult?> showStructuredMemoryEditSheet(
   bool showImportance = true,
   bool showActive = true,
 }) {
-  return showClarityModalBottomSheet<StructuredEditResult>(
+  return showClarityAdaptiveOverlay<StructuredEditResult>(
     context: context,
     isScrollControlled: true,
+    dialogMaxWidth: 520,
     builder: (sheetContext) => MemoryStructuredEditSheet(
       title: title,
       typeLabel: typeLabel,

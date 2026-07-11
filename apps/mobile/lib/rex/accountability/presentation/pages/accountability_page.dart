@@ -9,6 +9,8 @@ import 'package:clarity/rex/accountability/presentation/accountability_display_h
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
+import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
+import 'package:clarity/core/layout/clarity_breakpoints.dart';
 import 'package:clarity/theme/clarity_sheet_insets.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
@@ -257,21 +259,48 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                     else if (overview == null || overview.isEmpty)
                       _EmptyAccountabilityState(onAddGoal: _createPlan)
                     else ...[
-                      _GoalsSection(
-                        plans: overview.activePlans,
-                        onOpenPlan: _openPlanDetail,
-                        onArchivePlan: _archivePlan,
-                        onAddGoal: _createPlan,
-                      ),
-                      const SizedBox(height: RexUiTokens.space16),
-                      _OpenThreadsSection(
-                        threads: overview.openThreads
-                            .where((thread) => thread.status == 'active')
-                            .toList(growable: false),
-                        onClose: _closeOpenThread,
-                        onPause: _pauseOpenThread,
-                        onEdit: _editOpenThread,
-                      ),
+                      if (isClarityWideLayout(context))
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _GoalsSection(
+                                plans: overview.activePlans,
+                                onOpenPlan: _openPlanDetail,
+                                onArchivePlan: _archivePlan,
+                                onAddGoal: _createPlan,
+                              ),
+                            ),
+                            const SizedBox(width: RexUiTokens.space16),
+                            Expanded(
+                              child: _OpenThreadsSection(
+                                threads: overview.openThreads
+                                    .where((thread) => thread.status == 'active')
+                                    .toList(growable: false),
+                                onClose: _closeOpenThread,
+                                onPause: _pauseOpenThread,
+                                onEdit: _editOpenThread,
+                              ),
+                            ),
+                          ],
+                        )
+                      else ...[
+                        _GoalsSection(
+                          plans: overview.activePlans,
+                          onOpenPlan: _openPlanDetail,
+                          onArchivePlan: _archivePlan,
+                          onAddGoal: _createPlan,
+                        ),
+                        const SizedBox(height: RexUiTokens.space16),
+                        _OpenThreadsSection(
+                          threads: overview.openThreads
+                              .where((thread) => thread.status == 'active')
+                              .toList(growable: false),
+                          onClose: _closeOpenThread,
+                          onPause: _pauseOpenThread,
+                          onEdit: _editOpenThread,
+                        ),
+                      ],
                     ],
                   ]),
                 ),

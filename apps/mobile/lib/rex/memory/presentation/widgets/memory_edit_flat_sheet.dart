@@ -5,6 +5,7 @@ import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
 import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_dialogs.dart';
+import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/theme/clarity_sheet_insets.dart';
 
@@ -12,9 +13,10 @@ Future<MemoryEditResult?> showFlatMemoryEditSheet(
   BuildContext context, {
   required MemoryItem memory,
 }) {
-  return showClarityModalBottomSheet<MemoryEditResult>(
+  return showClarityAdaptiveOverlay<MemoryEditResult>(
     context: context,
     isScrollControlled: true,
+    dialogMaxWidth: 520,
     builder: (sheetContext) => MemoryFlatEditSheet(memory: memory),
   );
 }

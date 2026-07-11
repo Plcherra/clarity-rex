@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/layout/clarity_breakpoints.dart';
 import '../../../core/layout/finance_content_constraints.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/platform/app_capabilities.dart';

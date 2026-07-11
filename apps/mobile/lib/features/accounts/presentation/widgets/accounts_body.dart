@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/ui_dependencies.dart';
+import '../../../../core/layout/clarity_breakpoints.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
 import '../../../../widgets/clarity_diamond_loader.dart';
@@ -43,9 +45,28 @@ class AccountsBody extends StatelessWidget {
   final DateTime? Function(Account account) lastSyncedAtFor;
   final DateTime? Function(Account account) webhookLastReceivedAtFor;
 
+  Widget _accountTile(BuildContext context, AccountOverviewItem item) {
+    if (item.account.isPlaidConnected) {
+      return PlaidAccountTile(
+        item: item,
+        status: statusFor(item.account),
+        lastSyncedAt: lastSyncedAtFor(item.account),
+        webhookLastReceivedAt: webhookLastReceivedAtFor(item.account),
+        onResync: () => onResyncPlaidItem(item.account.plaidItemId!),
+        onDisconnect: () => onDisconnectPlaidItem(item.account),
+        onTap: () => onOpenAccountDetail(item.account),
+      );
+    }
+    return ManualAccountTile(
+      item: item,
+      onTap: () => onOpenAccountDetail(item.account),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final desktop = isClarityDesktopLayout(context);
     return ListenableBuilder(
       listenable: dataNotifier,
       builder: (context, _) {
@@ -82,53 +103,72 @@ class AccountsBody extends StatelessWidget {
 
         return RefreshIndicator(
           onRefresh: onRefreshAccounts,
-          child: ListView(
+          child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-            children: [
-              if (accountNotice != null) ...[
-                AccountNoticeCard(
-                  message: accountNotice!,
-                  onDismiss: onDismissNotice,
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    if (accountNotice != null) ...[
+                      AccountNoticeCard(
+                        message: accountNotice!,
+                        onDismiss: onDismissNotice,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    AccountsSummaryCard(accounts: accounts),
+                    const SizedBox(height: 16),
+                  ]),
                 ),
-                const SizedBox(height: 12),
-              ],
-              AccountsSummaryCard(accounts: accounts),
-              const SizedBox(height: 16),
-              for (var i = 0; i < accounts.length; i++) ...[
-                if (accounts[i].account.isPlaidConnected)
-                  PlaidAccountTile(
-                    item: accounts[i],
-                    status: statusFor(accounts[i].account),
-                    lastSyncedAt: lastSyncedAtFor(accounts[i].account),
-                    webhookLastReceivedAt: webhookLastReceivedAtFor(
-                      accounts[i].account,
+              ),
+              if (desktop)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                  sliver: SliverGrid(
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 420,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.55,
                     ),
-                    onResync: () =>
-                        onResyncPlaidItem(accounts[i].account.plaidItemId!),
-                    onDisconnect: () =>
-                        onDisconnectPlaidItem(accounts[i].account),
-                    onTap: () => onOpenAccountDetail(accounts[i].account),
-                  )
-                else
-                  ManualAccountTile(
-                    item: accounts[i],
-                    onTap: () => onOpenAccountDetail(accounts[i].account),
-                  ),
-                if (i < accounts.length - 1)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    child: Divider(
-                      height: 1,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outlineVariant.withValues(alpha: 0.48),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _accountTile(context, accounts[index]),
+                      childCount: accounts.length,
                     ),
                   ),
-              ],
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        return Column(
+                          children: [
+                            _accountTile(context, accounts[index]),
+                            if (index < accounts.length - 1)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                child: Divider(
+                                  height: 1,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant
+                                      .withValues(alpha: 0.48),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                      childCount: accounts.length,
+                    ),
+                  ),
+                ),
             ],
           ),
         );

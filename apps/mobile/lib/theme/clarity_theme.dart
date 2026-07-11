@@ -163,9 +163,19 @@ class ClarityTheme {
         backgroundColor: colors.surfaceElevated,
         actionTextColor: colors.accent,
         contentTextStyle: TextStyle(color: colors.textPrimary),
+        // Keep clear of the centered bottom dock on wide layouts.
+        insetPadding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(ClarityRadius.medium),
           side: BorderSide(color: outlineSoft),
+        ),
+      ),
+      scrollbarTheme: ScrollbarThemeData(
+        thumbVisibility: const WidgetStatePropertyAll(true),
+        thickness: const WidgetStatePropertyAll(8),
+        radius: const Radius.circular(8),
+        thumbColor: WidgetStatePropertyAll(
+          colors.textPrimary.withValues(alpha: isDark ? 0.32 : 0.22),
         ),
       ),
       listTileTheme: ListTileThemeData(

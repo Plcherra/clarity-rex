@@ -20,9 +20,10 @@ Future<void> _showPlanDetailSheet(
   var status = plan.status;
   DateTime? targetDate = plan.targetDate;
 
-  await showClarityModalBottomSheet<void>(
+  await showClarityAdaptiveOverlay<void>(
     context: context,
     isScrollControlled: true,
+    dialogMaxWidth: 520,
     builder: (sheetContext) {
       return StatefulBuilder(
         builder: (context, setState) {

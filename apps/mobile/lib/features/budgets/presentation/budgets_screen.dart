@@ -5,6 +5,8 @@ import '../../../core/formatting/formatting.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../l10n/app_localizations.dart';
 import '../domain/budget_models.dart';
+import '../../../core/layout/clarity_adaptive_overlay.dart';
+import '../../../core/layout/clarity_breakpoints.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
@@ -367,14 +369,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   Future<void> _openCategoryManagement() async {
-    await showModalBottomSheet<void>(
+    await showClarityAdaptiveOverlay<void>(
       context: context,
       isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => FractionallySizedBox(
-        heightFactor: 0.92,
-        child: CategoryManagementSheet(controller: widget.controller),
-      ),
+      showDragHandle: !isClarityDesktopLayout(context),
+      dialogMaxWidth: 840,
+      dialogMaxHeight: 720,
+      builder: (overlayContext) {
+        final desktop = isClarityDesktopLayout(overlayContext);
+        final sheet = CategoryManagementSheet(controller: widget.controller);
+        if (desktop) {
+          return SizedBox(height: 680, child: sheet);
+        }
+        return FractionallySizedBox(heightFactor: 0.92, child: sheet);
+      },
     );
     if (!mounted) return;
     await _loadData();

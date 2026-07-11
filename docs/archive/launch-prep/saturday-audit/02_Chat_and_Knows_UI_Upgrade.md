@@ -161,16 +161,24 @@ npm run build
 
 | # | Check | Pass |
 | --- | --- | :---: |
-| 21 | Wide desktop: assistant header + content stay in ~920px centered column | ☐ |
-| 22 | Mic tooltip / active voice hint: browser / keep tab open | ☐ |
-| 23 | Attach tooltip: file-oriented | ☐ |
-| 24 | Add account: CSV disabled with mobile-only copy; Plaid available if web Link works | ☐ |
-| 25 | Chat send + streaming reply scroll OK (desktop Chrome) | ☐ |
-| 26 | Mobile Safari (or narrow Chrome): composer not permanently covered; can send | ☐ |
-| 27 | Confirm strip usable; truth-honest after confirm | ☐ |
-| 28 | Knows / Goals density readable on wide + narrow | ☐ |
-| 29 | Boot: “Loading Clarity…” then app (not stuck blank) | ☐ |
-| 30 | Optional: bad asset path → friendly boot error | ☐ |
+| 21 | Wide desktop: finance tabs ~1200px, assistant ~900px, profile ~720px (not full ultrawide bleed) | ☐ |
+| 22 | Bottom centered dock present (≥800px); Digit1–5 shortcuts switch tabs; hover tooltips | ☐ |
+| 23 | No drag-handle sheets on wide: category manage, profile appearance/language, memory create/edit → centered dialogs | ☐ |
+| 24 | Dashboard: overview+insights row; charts in 2-col grid without accordion taps | ☐ |
+| 25 | Accounts: tile grid (no hollow stretched rows); Budgets: compact period control + side chart | ☐ |
+| 26 | Profile: inline theme segmented control + language dropdown (no chevron→sheet on desktop) | ☐ |
+| 27 | Assistant wide: Chats list + Chat split pane; chat column capped ~760 | ☐ |
+| 28 | Visible scrollbar thumbs; snackbars clear of dock; mouse click cursors on tiles | ☐ |
+| 29 | Mic tooltip / active voice hint: browser / keep tab open | ☐ |
+| 30 | Attach tooltip: file-oriented | ☐ |
+| 31 | Add account: CSV disabled with mobile-only copy; Plaid available if web Link works | ☐ |
+| 32 | Chat send + streaming reply scroll OK (desktop Chrome) | ☐ |
+| 33 | Mobile Safari (or narrow Chrome): composer not permanently covered; can send | ☐ |
+| 34 | Confirm strip usable; truth-honest after confirm | ☐ |
+| 35 | Knows / Goals density readable on wide + narrow | ☐ |
+| 36 | Boot: “Loading Clarity…” then app (not stuck blank) | ☐ |
+| 37 | Optional: bad asset path → friendly boot error | ☐ |
+| 38 | Widget tests: breakpoints + adaptive overlay + dock at 1280/1920 (`desktop_layout_foundation_test.dart`) | ☐ |
 
 ## F5 — Marketing / store
 

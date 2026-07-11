@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
+import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/theme/clarity_sheet_insets.dart';
 
@@ -59,8 +60,9 @@ const memoryCreateCategories = memoryCreateCategoryKeys;
 
 Future<MemoryCreateKind?> showMemoryCreateTypePicker(BuildContext context) {
   final l10n = context.l10n;
-  return showClarityModalBottomSheet<MemoryCreateKind>(
+  return showClarityAdaptiveOverlay<MemoryCreateKind>(
     context: context,
+    dialogMaxWidth: 420,
     builder: (sheetContext) {
       final options = [
         (MemoryCreateKind.fact, l10n.memoryCreateFact),
@@ -95,17 +97,19 @@ Future<FlatMemoryCreateResult?> showFlatMemoryCreateSheet(
   BuildContext context, {
   required MemoryCreateKind kind,
 }) {
-  return showClarityModalBottomSheet<FlatMemoryCreateResult>(
+  return showClarityAdaptiveOverlay<FlatMemoryCreateResult>(
     context: context,
     isScrollControlled: true,
+    dialogMaxWidth: 520,
     builder: (sheetContext) => _FlatMemoryCreateSheet(kind: kind),
   );
 }
 
 Future<PersonCreateResult?> showPersonCreateSheet(BuildContext context) {
-  return showClarityModalBottomSheet<PersonCreateResult>(
+  return showClarityAdaptiveOverlay<PersonCreateResult>(
     context: context,
     isScrollControlled: true,
+    dialogMaxWidth: 520,
     builder: (sheetContext) => const _PersonCreateSheet(),
   );
 }
@@ -117,9 +121,10 @@ Future<StructuredCreateResult?> showStructuredCreateSheet(
   required String detailLabel,
   String? extraLabel,
 }) {
-  return showClarityModalBottomSheet<StructuredCreateResult>(
+  return showClarityAdaptiveOverlay<StructuredCreateResult>(
     context: context,
     isScrollControlled: true,
+    dialogMaxWidth: 520,
     builder: (sheetContext) => _StructuredCreateSheet(
       title: title,
       primaryLabel: primaryLabel,
