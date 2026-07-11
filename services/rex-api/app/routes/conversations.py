@@ -4,6 +4,7 @@ from app.dependencies import get_memory_service
 from app.models.conversation import (
     ConversationResponse,
     ConversationSearchResultResponse,
+    ConversationTitleUpdateRequest,
     MessageResponse,
 )
 from app.services.durable_write_pending import proposal_from_pending_action
@@ -39,6 +40,26 @@ async def create_conversation(
         raise _memory_http_error(error) from error
 
     return ConversationResponse(**conversation)
+
+
+@router.patch("/{conversation_id}", response_model=ConversationResponse)
+async def update_conversation_title(
+    conversation_id: str,
+    payload: ConversationTitleUpdateRequest,
+    memory_service: SupabaseMemoryService = Depends(get_memory_service),
+) -> ConversationResponse:
+    try:
+        conversation = await memory_service.update_conversation_title(
+            conversation_id,
+            payload.title,
+        )
+    except MemoryServiceError as error:
+        raise _memory_http_error(error) from error
+
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+
+    return ConversationResponse(**_public_conversation(conversation))
 
 
 @router.get("/search", response_model=list[ConversationSearchResultResponse])

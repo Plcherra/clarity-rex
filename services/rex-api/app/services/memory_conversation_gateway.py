@@ -109,6 +109,16 @@ class MemoryConversationGateway:
             conversation_id,
         )
 
+    async def update_conversation_title(
+        self,
+        conversation_id: str,
+        title: str,
+    ) -> Optional[dict]:
+        return await self._get_conversation_repository().update_conversation_title(
+            conversation_id,
+            title,
+        )
+
     async def get_conversation_pending_action(
         self,
         conversation_id: str,

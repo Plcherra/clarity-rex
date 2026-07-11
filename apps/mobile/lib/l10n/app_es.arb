@@ -925,6 +925,10 @@
   "conversationListDeleteFailed": "No se pudo eliminar la conversación.",
   "conversationListDeleteTitle": "¿Eliminar conversación?",
   "conversationListDeletedSnackBar": "Conversación eliminada",
+  "conversationListRenameTitle": "Renombrar chat",
+  "conversationListRenameHint": "Nombre del chat",
+  "conversationListRenameFailed": "No se pudo renombrar el chat.",
+  "conversationListRenamedSnackBar": "Chat renombrado",
   "conversationListEmptyFilteredMessage": "Borre el filtro de fechas o elija un rango más amplio.",
   "conversationListEmptyFilteredTitle": "No hay chats en {filter}",
   "@conversationListEmptyFilteredTitle": {

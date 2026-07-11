@@ -61,6 +61,7 @@ class ConversationHistoryTile extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     required this.onDelete,
+    this.onRename,
     this.compact = false,
   });
 
@@ -68,6 +69,7 @@ class ConversationHistoryTile extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final VoidCallback? onRename;
   final bool compact;
 
   @override
@@ -76,18 +78,23 @@ class ConversationHistoryTile extends StatelessWidget {
     final colors = context.clarityColors;
     final l10n = context.l10n;
     final preview = conversationPreview(l10n, conversation);
-    final horizontal = compact ? RexUiTokens.space12 : RexUiTokens.space16;
-    final vertical = compact ? RexUiTokens.space8 : RexUiTokens.space12;
+    final title = conversationTitle(l10n, conversation);
+    final horizontal = compact ? RexUiTokens.space8 : RexUiTokens.space16;
+    final vertical = compact ? 6.0 : RexUiTokens.space12;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(horizontal, 0, horizontal, compact ? 6 : 8),
+      padding: EdgeInsets.fromLTRB(horizontal, 0, horizontal, compact ? 2 : 8),
       child: Material(
         color: isSelected
             ? colors.accent.withValues(alpha: 0.12)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+        borderRadius: BorderRadius.circular(
+          compact ? RexUiTokens.radiusSmall : RexUiTokens.radiusMedium,
+        ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
+          borderRadius: BorderRadius.circular(
+            compact ? RexUiTokens.radiusSmall : RexUiTokens.radiusMedium,
+          ),
           onTap: onTap,
           onLongPress: onDelete,
           mouseCursor: SystemMouseCursors.click,
@@ -98,66 +105,102 @@ class ConversationHistoryTile extends StatelessWidget {
               vertical: vertical,
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (!compact) ...[
                   _ConversationGlyph(isSelected: isSelected),
                   const SizedBox(width: RexUiTokens.space12),
                 ],
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              conversationTitle(l10n, conversation),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: colors.textPrimary,
-                                fontWeight: isSelected
-                                    ? FontWeight.w800
-                                    : FontWeight.w600,
+                  child: compact
+                      ? Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colors.textPrimary,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
+                                  height: 1.2,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: RexUiTokens.space8),
-                          ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: compact ? 64 : 96,
-                            ),
-                            child: Text(
+                            const SizedBox(width: RexUiTokens.space8),
+                            Text(
                               timestampLabel(l10n, conversation.timestamp),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.right,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: colors.textMuted,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: compact ? 4 : RexUiTokens.space8),
-                      Text(
-                        preview,
-                        maxLines: compact ? 1 : 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                          height: 1.35,
-                          fontSize: compact ? 13 : null,
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      color: colors.textPrimary,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: RexUiTokens.space8),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 96,
+                                  ),
+                                  child: Text(
+                                    timestampLabel(
+                                      l10n,
+                                      conversation.timestamp,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: colors.textMuted,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: RexUiTokens.space8),
+                            Text(
+                              preview,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colors.textSecondary,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ),
                 const SizedBox(width: RexUiTokens.space4),
-                _ConversationMenu(onDelete: onDelete),
+                _ConversationMenu(
+                  onDelete: onDelete,
+                  onRename: onRename,
+                  compact: compact,
+                ),
               ],
             ),
           ),
@@ -568,26 +611,68 @@ class _ConversationGlyph extends StatelessWidget {
 }
 
 class _ConversationMenu extends StatelessWidget {
-  const _ConversationMenu({required this.onDelete});
+  const _ConversationMenu({
+    required this.onDelete,
+    this.onRename,
+    this.compact = false,
+  });
 
   final VoidCallback onDelete;
+  final VoidCallback? onRename;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
     final l10n = context.l10n;
-    return IconButton(
-      tooltip: l10n.commonDelete,
-      mouseCursor: SystemMouseCursors.click,
-      visualDensity: VisualDensity.compact,
+    if (onRename == null) {
+      return IconButton(
+        tooltip: l10n.commonDelete,
+        mouseCursor: SystemMouseCursors.click,
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: BoxConstraints(
+          minWidth: compact ? 32 : 36,
+          minHeight: compact ? 32 : 36,
+        ),
+        onPressed: onDelete,
+        icon: Icon(
+          Icons.delete_outline_rounded,
+          size: compact ? 16 : 18,
+          color: colors.textMuted,
+        ),
+      );
+    }
+
+    return PopupMenuButton<String>(
+      tooltip: l10n.conversationHistoryActionsTooltip,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-      onPressed: onDelete,
+      constraints: BoxConstraints(
+        minWidth: compact ? 32 : 36,
+        minHeight: compact ? 32 : 36,
+      ),
       icon: Icon(
-        Icons.delete_outline_rounded,
-        size: 18,
+        Icons.more_vert_rounded,
+        size: compact ? 16 : 18,
         color: colors.textMuted,
       ),
+      onSelected: (value) {
+        if (value == 'rename') {
+          onRename!();
+        } else if (value == 'delete') {
+          onDelete();
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: 'rename',
+          child: Text(l10n.commonRename),
+        ),
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Text(l10n.commonDelete),
+        ),
+      ],
     );
   }
 }

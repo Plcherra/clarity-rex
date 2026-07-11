@@ -2,6 +2,7 @@ from typing import Optional
 
 from app.services.chat_embedding_repository import ChatEmbeddingRepository
 from app.services.chat_search_repository import ChatSearchRepository
+from app.services.conversation_title import derive_conversation_title
 from app.services.memory_errors import MemoryServiceError
 
 
@@ -88,7 +89,78 @@ class ConversationRepository:
         )
         message = self.store._first_row(rows)
         await self.save_message_chat_embedding(message)
+        if role == "user":
+            await self.maybe_set_title_from_first_user_message(
+                conversation_id,
+                content,
+            )
         return message
+
+    async def get_conversation_title(self, conversation_id: str) -> Optional[str]:
+        rows = await self.store._request(
+            "GET",
+            self.store.settings.supabase_conversations_table,
+            query={
+                "id": f"eq.{conversation_id}",
+                "select": "title",
+                "limit": "1",
+            },
+        )
+        row = self.store._first_row(rows)
+        if not row:
+            return None
+        title = row.get("title")
+        if isinstance(title, str):
+            return title
+        return None
+
+    async def update_conversation_title(
+        self,
+        conversation_id: str,
+        title: str,
+    ) -> Optional[dict]:
+        if not await self.conversation_exists(conversation_id):
+            return None
+
+        cleaned = " ".join((title or "").split()).strip()
+        if not cleaned:
+            raise MemoryServiceError(
+                "Conversation title cannot be empty.",
+                status_code=400,
+            )
+
+        rows = await self.store._request(
+            "PATCH",
+            self.store.settings.supabase_conversations_table,
+            body={"title": cleaned},
+            query={
+                "id": f"eq.{conversation_id}",
+                "select": CONVERSATION_SELECT,
+            },
+            prefer="return=representation",
+        )
+        row = self.store._first_row(rows)
+        if not row:
+            return None
+        recent_messages = await self.get_recent_messages(conversation_id, limit=1)
+        last_message = recent_messages[-1] if recent_messages else None
+        return self._conversation_with_preview(row, last_message)
+
+    async def maybe_set_title_from_first_user_message(
+        self,
+        conversation_id: str,
+        content: str,
+    ) -> None:
+        existing = await self.get_conversation_title(conversation_id)
+        if isinstance(existing, str) and existing.strip():
+            return
+        derived = derive_conversation_title(content)
+        await self.store._request(
+            "PATCH",
+            self.store.settings.supabase_conversations_table,
+            body={"title": derived},
+            query={"id": f"eq.{conversation_id}"},
+        )
 
     async def get_recent_messages(
         self,

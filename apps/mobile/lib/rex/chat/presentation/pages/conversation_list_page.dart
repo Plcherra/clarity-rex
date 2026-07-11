@@ -89,6 +89,82 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
     }
   }
 
+  Future<void> _renameConversation(Conversation conversation) async {
+    final l10n = context.l10n;
+    final controller = TextEditingController(
+      text: conversation.title?.trim().isNotEmpty == true
+          ? conversation.title!.trim()
+          : conversationTitle(l10n, conversation),
+    );
+    try {
+      final nextTitle = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => wrapWebCenteredDialog(
+          dialogContext,
+          AlertDialog(
+            title: Text(l10n.conversationListRenameTitle),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              textInputAction: TextInputAction.done,
+              maxLength: 120,
+              decoration: InputDecoration(
+                labelText: l10n.conversationListRenameHint,
+                border: const OutlineInputBorder(),
+              ),
+              onSubmitted: (value) {
+                Navigator.of(dialogContext).pop(value.trim());
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(l10n.commonCancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(controller.text.trim());
+                },
+                child: Text(l10n.commonSave),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (nextTitle == null || nextTitle.isEmpty) {
+        return;
+      }
+
+      final renamed = await ref
+          .read(conversationListProvider.notifier)
+          .renameConversation(
+            conversationId: conversation.id,
+            title: nextTitle,
+          );
+
+      if (!mounted) {
+        return;
+      }
+
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      if (!renamed) {
+        final errorMessage =
+            ref.read(conversationListProvider).errorMessage ??
+            l10n.conversationListRenameFailed;
+        messenger.showSnackBar(SnackBar(content: Text(errorMessage)));
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.conversationListRenamedSnackBar)),
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
   Future<void> _deleteConversation(Conversation conversation) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -374,6 +450,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                                   conversation.id == currentConversation?.id,
                               onTap: () => _openConversation(conversation),
                               onDelete: () => _deleteConversation(conversation),
+                              onRename: () => _renameConversation(conversation),
                               compact: widget.compactSidebar,
                             ),
                         ],

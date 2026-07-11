@@ -2887,6 +2887,30 @@ abstract class AppLocalizations {
   /// **'Conversation deleted'**
   String get conversationListDeletedSnackBar;
 
+  /// No description provided for @conversationListRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename chat'**
+  String get conversationListRenameTitle;
+
+  /// No description provided for @conversationListRenameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat name'**
+  String get conversationListRenameHint;
+
+  /// No description provided for @conversationListRenameFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not rename chat.'**
+  String get conversationListRenameFailed;
+
+  /// No description provided for @conversationListRenamedSnackBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat renamed'**
+  String get conversationListRenamedSnackBar;
+
   /// No description provided for @conversationListNewConversationTooltip.
   ///
   /// In en, this message translates to:

@@ -113,6 +113,7 @@ extension ChatControllerSend on ChatController {
       );
       await _refreshSavedMemoryOverviewIfNeeded(result.memoryChanges);
       await _refreshGoalsOverviewIfNeeded(result.memoryChanges);
+      unawaited(ref.read(conversationListProvider.notifier).loadConversations());
       return assistantTextFromApiResponse(result) ??
           latestAssistantContent(state.messages);
     } on ChatApiException catch (error) {
@@ -180,6 +181,7 @@ extension ChatControllerSend on ChatController {
           );
           await _refreshSavedMemoryOverviewIfNeeded(response.memoryChanges);
           await _refreshGoalsOverviewIfNeeded(response.memoryChanges);
+          unawaited(ref.read(conversationListProvider.notifier).loadConversations());
           return assistantTextFromApiResponse(response) ??
               latestAssistantContent(state.messages);
         }

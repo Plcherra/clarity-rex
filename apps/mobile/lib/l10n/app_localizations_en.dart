@@ -1568,6 +1568,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conversationListDeletedSnackBar => 'Conversation deleted';
 
   @override
+  String get conversationListRenameTitle => 'Rename chat';
+
+  @override
+  String get conversationListRenameHint => 'Chat name';
+
+  @override
+  String get conversationListRenameFailed => 'Could not rename chat.';
+
+  @override
+  String get conversationListRenamedSnackBar => 'Chat renamed';
+
+  @override
   String get conversationListNewConversationTooltip => 'New conversation';
 
   @override

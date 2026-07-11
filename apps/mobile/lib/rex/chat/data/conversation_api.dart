@@ -122,6 +122,23 @@ class ConversationApi {
     }
   }
 
+  Future<Conversation> updateConversationTitle({
+    required String conversationId,
+    required String title,
+  }) async {
+    final response = await _apiClient.patchJson(
+      '/conversations/$conversationId',
+      {'title': title},
+    );
+    final data = _decodeResponse(response);
+
+    if (data is! Map<String, dynamic>) {
+      throw const ChatApiException('Backend returned an invalid response.');
+    }
+
+    return Conversation.fromJson(data);
+  }
+
   dynamic _decodeResponse(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ChatApiException(_errorMessage(response.body));

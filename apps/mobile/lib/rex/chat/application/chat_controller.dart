@@ -10,6 +10,7 @@ import 'package:clarity/features/dashboard/application/dashboard_deep_link_navig
 import 'package:clarity/features/dashboard/domain/dashboard_insight_anchor.dart';
 import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
+import 'package:clarity/rex/chat/application/conversation_controller.dart';
 import 'package:clarity/rex/actions/data/clarity_actions_api.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/application/chat_action_result_formatter.dart';

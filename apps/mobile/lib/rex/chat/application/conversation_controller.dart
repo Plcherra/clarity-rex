@@ -221,6 +221,52 @@ class ConversationListController extends Notifier<ConversationListState> {
     }
   }
 
+  Future<bool> renameConversation({
+    required String conversationId,
+    required String title,
+  }) async {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) {
+      return false;
+    }
+
+    final previousConversations = state.conversations;
+    final optimistic = previousConversations
+        .map(
+          (conversation) => conversation.id == conversationId
+              ? conversation.copyWith(title: trimmed)
+              : conversation,
+        )
+        .toList(growable: false);
+
+    state = state.copyWith(conversations: optimistic, clearError: true);
+
+    try {
+      final updated = await ref
+          .read(conversationApiProvider)
+          .updateConversationTitle(
+            conversationId: conversationId,
+            title: trimmed,
+          );
+      state = state.copyWith(
+        conversations: previousConversations
+            .map(
+              (conversation) =>
+                  conversation.id == conversationId ? updated : conversation,
+            )
+            .toList(growable: false),
+        clearError: true,
+      );
+      return true;
+    } on Object catch (error) {
+      state = state.copyWith(
+        conversations: previousConversations,
+        errorMessage: _localizedError(error),
+      );
+      return false;
+    }
+  }
+
   Future<void> searchConversations(String query) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) {

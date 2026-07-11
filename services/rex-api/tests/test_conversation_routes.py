@@ -148,6 +148,20 @@ class FakeConversationMemoryService:
         self.deleted_conversation_ids.append(conversation_id)
         return True
 
+    async def update_conversation_title(self, conversation_id, title):
+        self._raise_if_configured()
+        cleaned = " ".join((title or "").split()).strip()
+        if not cleaned:
+            raise MemoryServiceError(
+                "Conversation title cannot be empty.",
+                status_code=400,
+            )
+        for conversation in self.conversations:
+            if conversation["id"] == conversation_id:
+                conversation["title"] = cleaned
+                return dict(conversation)
+        return None
+
     async def get_conversation_pending_action(self, conversation_id):
         self._raise_if_configured()
         return self.pending_actions.get(conversation_id)
@@ -256,6 +270,34 @@ def test_delete_conversation(client):
 
     assert response.status_code == 204
     assert fake_memory_service.deleted_conversation_ids == ["conversation-1"]
+
+
+def test_update_conversation_title(client):
+    fake_memory_service = FakeConversationMemoryService()
+    override_memory_service(fake_memory_service)
+
+    response = client.patch(
+        "/conversations/conversation-2",
+        json={"title": "  Budget check-in  "},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == "conversation-2"
+    assert data["title"] == "Budget check-in"
+    assert fake_memory_service.conversations[1]["title"] == "Budget check-in"
+
+
+def test_update_conversation_title_returns_404_for_missing_conversation(client):
+    override_memory_service(FakeConversationMemoryService())
+
+    response = client.patch(
+        "/conversations/missing",
+        json={"title": "Missing chat"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Conversation not found."
 
 
 def test_get_pending_write_returns_empty_when_no_pending_action(client):

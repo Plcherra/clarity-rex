@@ -18,6 +18,10 @@ class ConversationResponse(BaseModel):
     last_message: Optional[MessageResponse] = None
 
 
+class ConversationTitleUpdateRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+
+
 class ConversationSearchResultResponse(BaseModel):
     conversation_id: str
     conversation_title: Optional[str] = None
