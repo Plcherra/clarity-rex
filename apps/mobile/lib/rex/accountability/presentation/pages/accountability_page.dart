@@ -72,10 +72,12 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
       ),
     );
     if (result == null || !mounted) return;
-    final saved = await ref.read(accountabilityProvider.notifier).createOpenThread(
-      title: result.primary,
-      summary: result.detail.isEmpty ? null : result.detail,
-    );
+    final saved = await ref
+        .read(accountabilityProvider.notifier)
+        .createOpenThread(
+          title: result.primary,
+          summary: result.detail.isEmpty ? null : result.detail,
+        );
     if (!mounted) return;
     _showMutationResult(saved ? l10n.accountabilityOpenThreadSaved : null);
   }
@@ -100,7 +102,9 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
         .read(accountabilityProvider.notifier)
         .pauseOpenThread(thread.id);
     if (!mounted) return;
-    _showMutationResult(saved ? context.l10n.accountabilityOpenThreadUpdated : null);
+    _showMutationResult(
+      saved ? context.l10n.accountabilityOpenThreadUpdated : null,
+    );
   }
 
   Future<void> _editOpenThread(OpenThread thread) async {
@@ -118,11 +122,13 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
       ),
     );
     if (result == null || !mounted) return;
-    final saved = await ref.read(accountabilityProvider.notifier).updateOpenThread(
-      thread.id,
-      title: result.primary,
-      summary: result.detail.isEmpty ? null : result.detail,
-    );
+    final saved = await ref
+        .read(accountabilityProvider.notifier)
+        .updateOpenThread(
+          thread.id,
+          title: result.primary,
+          summary: result.detail.isEmpty ? null : result.detail,
+        );
     if (!mounted) return;
     _showMutationResult(saved ? l10n.accountabilityOpenThreadUpdated : null);
   }
@@ -146,23 +152,21 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     await _showPlanDetailSheet(
       context,
       plan: plan,
-      onSave: ({
-        title,
-        description,
-        priority,
-        status,
-        targetDate,
-      }) async {
-        final saved = await ref.read(accountabilityProvider.notifier).updatePlan(
-          plan.id,
-          title: title,
-          description: description,
-          priority: priority,
-          status: status,
-          targetDateIso: targetDate?.toUtc().toIso8601String(),
-        );
+      onSave: ({title, description, priority, status, targetDate}) async {
+        final saved = await ref
+            .read(accountabilityProvider.notifier)
+            .updatePlan(
+              plan.id,
+              title: title,
+              description: description,
+              priority: priority,
+              status: status,
+              targetDateIso: targetDate?.toUtc().toIso8601String(),
+            );
         if (mounted) {
-          _showMutationResult(saved ? context.l10n.accountabilityGoalUpdated : null);
+          _showMutationResult(
+            saved ? context.l10n.accountabilityGoalUpdated : null,
+          );
         }
         return saved;
       },
@@ -227,51 +231,53 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
         color: colors.accent,
         backgroundColor: colors.surfaceSoft,
         onRefresh: _refresh,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                RexUiTokens.space16,
-                RexUiTokens.space8,
-                RexUiTokens.space16,
-                clarityScrollBottomClearance(context),
-              ),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  if (state.errorMessage != null)
-                    _ErrorBanner(message: state.errorMessage!),
-                  _GoalActionBar(
-                    isBusy: state.isLoading,
-                    onAddGoal: _createPlan,
-                    onAddOpenThread: _createOpenThread,
-                  ),
-                  const SizedBox(height: RexUiTokens.space12),
-                  if (state.isLoading && overview == null)
-                    const _InitialLoading()
-                  else if (overview == null || overview.isEmpty)
-                    _EmptyAccountabilityState(onAddGoal: _createPlan)
-                  else ...[
-                    _GoalsSection(
-                      plans: overview.activePlans,
-                      onOpenPlan: _openPlanDetail,
-                      onArchivePlan: _archivePlan,
+        child: Scrollbar(
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  RexUiTokens.space16,
+                  RexUiTokens.space8,
+                  RexUiTokens.space16,
+                  clarityScrollBottomClearance(context),
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    if (state.errorMessage != null)
+                      _ErrorBanner(message: state.errorMessage!),
+                    _GoalActionBar(
+                      isBusy: state.isLoading,
                       onAddGoal: _createPlan,
+                      onAddOpenThread: _createOpenThread,
                     ),
-                    const SizedBox(height: RexUiTokens.space16),
-                    _OpenThreadsSection(
-                      threads: overview.openThreads
-                          .where((thread) => thread.status == 'active')
-                          .toList(growable: false),
-                      onClose: _closeOpenThread,
-                      onPause: _pauseOpenThread,
-                      onEdit: _editOpenThread,
-                    ),
-                  ],
-                ]),
+                    const SizedBox(height: RexUiTokens.space12),
+                    if (state.isLoading && overview == null)
+                      const _InitialLoading()
+                    else if (overview == null || overview.isEmpty)
+                      _EmptyAccountabilityState(onAddGoal: _createPlan)
+                    else ...[
+                      _GoalsSection(
+                        plans: overview.activePlans,
+                        onOpenPlan: _openPlanDetail,
+                        onArchivePlan: _archivePlan,
+                        onAddGoal: _createPlan,
+                      ),
+                      const SizedBox(height: RexUiTokens.space16),
+                      _OpenThreadsSection(
+                        threads: overview.openThreads
+                            .where((thread) => thread.status == 'active')
+                            .toList(growable: false),
+                        onClose: _closeOpenThread,
+                        onPause: _pauseOpenThread,
+                        onEdit: _editOpenThread,
+                      ),
+                    ],
+                  ]),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-/// Breakpoint below which the shell uses bottom [NavigationBar] (mobile layout).
+/// Breakpoint below which the shell uses a full-width bottom [NavigationBar].
 const double homeShellCompactBreakpoint = 800;
 
-/// Max width for finance tab content on ultra-wide viewports.
-const double homeShellMaxContentWidth = 1320;
+/// Max width for shell tab content on ultra-wide viewports (all five tabs).
+const double homeShellMaxContentWidth = 1440;
 
 bool isHomeShellCompactWidth(BuildContext context) {
   return MediaQuery.sizeOf(context).width < homeShellCompactBreakpoint;
 }
 
-/// Centers finance screens on ultra-wide viewports with a readable max width.
+/// Centers shell tab content on ultra-wide viewports with a readable max width.
 class FinanceContentConstraints extends StatelessWidget {
   const FinanceContentConstraints({super.key, required this.child});
 
@@ -27,3 +27,6 @@ class FinanceContentConstraints extends StatelessWidget {
     );
   }
 }
+
+/// Alias for shared shell content width (finance + assistant + profile).
+typedef ShellContentConstraints = FinanceContentConstraints;

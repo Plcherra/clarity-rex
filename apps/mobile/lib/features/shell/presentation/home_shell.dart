@@ -144,8 +144,8 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
     });
   }
 
-  Widget _financeTab(Widget child) {
-    return FinanceContentConstraints(child: child);
+  Widget _shellTab(Widget child) {
+    return ShellContentConstraints(child: child);
   }
 
   @override
@@ -167,7 +167,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
 
     final l10n = context.l10n;
     final pages = <Widget>[
-      _financeTab(
+      _shellTab(
         DashboardScreen(
           controller: widget.ui.dashboard,
           transactionController: widget.ui.transactions,
@@ -188,7 +188,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
           },
         ),
       ),
-      _financeTab(
+      _shellTab(
         AccountsScreen(
           controller: widget.ui.accounts,
           dashboardController: widget.ui.dashboard,
@@ -198,14 +198,16 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
           isActive: _idx == 1,
         ),
       ),
-      _financeTab(
+      _shellTab(
         BudgetsScreen(
           controller: widget.ui.budgets,
           manageCategoriesRequest: _manageCategoriesRequest,
         ),
       ),
-      AssistantScreen(profileController: widget.profileController),
-      _financeTab(
+      _shellTab(
+        AssistantScreen(profileController: widget.profileController),
+      ),
+      _shellTab(
         ProfileScreen(
           profileController: widget.profileController,
           authController: widget.authController,
@@ -244,15 +246,6 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
       ),
     ];
 
-    final railDestinations = [
-      for (final destination in navDestinations)
-        NavigationRailDestination(
-          icon: destination.icon,
-          selectedIcon: destination.selectedIcon,
-          label: Text(destination.label),
-        ),
-    ];
-
     return HeroMode(
       enabled: false,
       child: VoiceClarityActionListener(
@@ -260,7 +253,6 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
           selectedIndex: _idx,
           onDestinationSelected: (i) => setState(() => _selectIndex(i)),
           destinations: navDestinations,
-          railDestinations: railDestinations,
           body: ImportJobStatusHost(
             controller: widget.ui.importJobStatus,
             onManageCategories: _openCategoryManagement,

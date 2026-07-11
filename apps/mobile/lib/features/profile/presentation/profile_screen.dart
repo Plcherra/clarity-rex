@@ -182,9 +182,9 @@ final class ProfileScreen extends StatelessWidget {
       }
       await profileController.updateCurrentProfile(fullName: nextName);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.profileUpdatedSnackBar)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.profileUpdatedSnackBar)));
     } on Object {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -244,144 +244,147 @@ final class ProfileScreen extends StatelessWidget {
             surfaceTintColor: Colors.transparent,
             elevation: 0,
           ),
-          body: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-            children: [
-              _ProfileHeader(
-                name: name == null || name.isEmpty
-                    ? l10n.profileDefaultUserName
-                    : name,
-                email: email,
-              ),
-              const SizedBox(height: 18),
-              _ProfileSectionLabel(l10n.profileAccountSection),
-              const SizedBox(height: 8),
-              _ProfileActionGroup(
-                children: [
-                  _ProfileActionTile(
-                    icon: Icons.badge_outlined,
-                    title: l10n.profileNameTitle,
-                    subtitle: name == null || name.isEmpty
-                        ? l10n.profileAddYourName
-                        : name,
-                    onTap: () => _editName(context),
-                  ),
-                  _ProfileActionTile(
-                    icon: Icons.verified_user_outlined,
-                    title: l10n.profileMfaTitle,
-                    subtitle: l10n.profileMfaSubtitle,
-                    onTap: () => _openMfaSettings(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              _ProfileSectionLabel(l10n.profileRexVoiceSection),
-              const SizedBox(height: 8),
-              _ProfileActionGroup(
-                children: [
-                  _ProfileActionTile(
-                    icon: Icons.graphic_eq_rounded,
-                    title: l10n.profileVoiceUsageTitle,
-                    subtitle: l10n.profileVoiceUsageSubtitle,
-                    onTap: () => _openUsage(context),
-                  ),
-                ],
-              ),
-              const OwnerUsageProfileEntry(),
-              const SizedBox(height: 18),
-              _ProfileSectionLabel(l10n.profileAppearance),
-              const SizedBox(height: 8),
-              ListenableBuilder(
-                listenable: themeModeController,
-                builder: (context, _) {
-                  return _ProfileActionGroup(
-                    children: [
-                      _ProfileActionTile(
-                        icon: Icons.contrast_rounded,
-                        title: l10n.profileAppearance,
-                        subtitle: _themeModeLabel(
-                          context,
-                          themeModeController.themeMode,
-                        ),
-                        onTap: () => _openAppearance(context),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 18),
-              _ProfileSectionLabel(l10n.profileProactiveInsightsTitle),
-              const SizedBox(height: 8),
-              _ProfileActionGroup(
-                children: [
-                  SwitchListTile.adaptive(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    secondary: Icon(
-                      Icons.notifications_active_outlined,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(
-                        alpha: 0.72,
-                      ),
-                    ),
-                    title: Text(l10n.profileProactiveInsightsTitle),
-                    subtitle: Text(l10n.profileProactiveInsightsSubtitle),
-                    value: profile?.proactiveInsightsEnabled ?? false,
-                    onChanged: profileController.isLoading
-                        ? null
-                        : (enabled) async {
-                            try {
-                              await profileController.updateProactiveInsightsEnabled(
-                                enabled,
-                              );
-                            } on Object {
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    profileController.errorMessage ??
-                                        l10n.profileUpdateFailed,
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              _ProfileSectionLabel(l10n.profileLanguage),
-              const SizedBox(height: 8),
-              ListenableBuilder(
-                listenable: localeController,
-                builder: (context, _) {
-                  return _ProfileActionGroup(
-                    children: [
-                      _ProfileActionTile(
-                        icon: Icons.translate_rounded,
-                        title: l10n.profileLanguage,
-                        subtitle: localeController.label,
-                        onTap: () => _openLanguage(context),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              if (signOut != null) ...[
+          body: Scrollbar(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+              children: [
+                _ProfileHeader(
+                  name: name == null || name.isEmpty
+                      ? l10n.profileDefaultUserName
+                      : name,
+                  email: email,
+                ),
                 const SizedBox(height: 18),
-                _ProfileSectionLabel(l10n.profileSessionSection),
+                _ProfileSectionLabel(l10n.profileAccountSection),
                 const SizedBox(height: 8),
                 _ProfileActionGroup(
                   children: [
                     _ProfileActionTile(
-                      icon: Icons.logout_rounded,
-                      title: l10n.commonSignOut,
-                      subtitle: l10n.profileSignOutSubtitle,
-                      destructive: true,
-                      onTap: () => _confirmSignOut(context),
+                      icon: Icons.badge_outlined,
+                      title: l10n.profileNameTitle,
+                      subtitle: name == null || name.isEmpty
+                          ? l10n.profileAddYourName
+                          : name,
+                      onTap: () => _editName(context),
+                    ),
+                    _ProfileActionTile(
+                      icon: Icons.verified_user_outlined,
+                      title: l10n.profileMfaTitle,
+                      subtitle: l10n.profileMfaSubtitle,
+                      onTap: () => _openMfaSettings(context),
                     ),
                   ],
                 ),
+                const SizedBox(height: 18),
+                _ProfileSectionLabel(l10n.profileRexVoiceSection),
+                const SizedBox(height: 8),
+                _ProfileActionGroup(
+                  children: [
+                    _ProfileActionTile(
+                      icon: Icons.graphic_eq_rounded,
+                      title: l10n.profileVoiceUsageTitle,
+                      subtitle: l10n.profileVoiceUsageSubtitle,
+                      onTap: () => _openUsage(context),
+                    ),
+                  ],
+                ),
+                const OwnerUsageProfileEntry(),
+                const SizedBox(height: 18),
+                _ProfileSectionLabel(l10n.profileAppearance),
+                const SizedBox(height: 8),
+                ListenableBuilder(
+                  listenable: themeModeController,
+                  builder: (context, _) {
+                    return _ProfileActionGroup(
+                      children: [
+                        _ProfileActionTile(
+                          icon: Icons.contrast_rounded,
+                          title: l10n.profileAppearance,
+                          subtitle: _themeModeLabel(
+                            context,
+                            themeModeController.themeMode,
+                          ),
+                          onTap: () => _openAppearance(context),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 18),
+                _ProfileSectionLabel(l10n.profileProactiveInsightsTitle),
+                const SizedBox(height: 8),
+                _ProfileActionGroup(
+                  children: [
+                    SwitchListTile.adaptive(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+                      secondary: Icon(
+                        Icons.notifications_active_outlined,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.72),
+                      ),
+                      title: Text(l10n.profileProactiveInsightsTitle),
+                      subtitle: Text(l10n.profileProactiveInsightsSubtitle),
+                      value: profile?.proactiveInsightsEnabled ?? false,
+                      onChanged: profileController.isLoading
+                          ? null
+                          : (enabled) async {
+                              try {
+                                await profileController
+                                    .updateProactiveInsightsEnabled(enabled);
+                              } on Object {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      profileController.errorMessage ??
+                                          l10n.profileUpdateFailed,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                _ProfileSectionLabel(l10n.profileLanguage),
+                const SizedBox(height: 8),
+                ListenableBuilder(
+                  listenable: localeController,
+                  builder: (context, _) {
+                    return _ProfileActionGroup(
+                      children: [
+                        _ProfileActionTile(
+                          icon: Icons.translate_rounded,
+                          title: l10n.profileLanguage,
+                          subtitle: localeController.label,
+                          onTap: () => _openLanguage(context),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                if (signOut != null) ...[
+                  const SizedBox(height: 18),
+                  _ProfileSectionLabel(l10n.profileSessionSection),
+                  const SizedBox(height: 8),
+                  _ProfileActionGroup(
+                    children: [
+                      _ProfileActionTile(
+                        icon: Icons.logout_rounded,
+                        title: l10n.commonSignOut,
+                        subtitle: l10n.profileSignOutSubtitle,
+                        destructive: true,
+                        onTap: () => _confirmSignOut(context),
+                      ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         );
       },

@@ -54,9 +54,9 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
   }
 
   Future<void> _setActiveOnly(bool activeOnly) async {
-    await ref.read(memoryProvider.notifier).loadSavedOverview(
-          activeOnly: activeOnly,
-        );
+    await ref
+        .read(memoryProvider.notifier)
+        .loadSavedOverview(activeOnly: activeOnly);
   }
 
   Future<void> _setQuickFilter(MemoryQuickFilter filter) async {
@@ -148,7 +148,9 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       return;
     }
 
-    _showSnackBar(saved ? context.l10n.memoryPageMemoryUpdated : _currentError());
+    _showSnackBar(
+      saved ? context.l10n.memoryPageMemoryUpdated : _currentError(),
+    );
   }
 
   Future<void> _archiveMemory(MemoryItem memory) async {
@@ -164,7 +166,9 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       return;
     }
 
-    _showSnackBar(archived ? context.l10n.memoryPageMemoryArchived : _currentError());
+    _showSnackBar(
+      archived ? context.l10n.memoryPageMemoryArchived : _currentError(),
+    );
   }
 
   Future<void> _editPerson(PersonMemoryItem person) async {
@@ -197,7 +201,9 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     final metadata = Map<String, dynamic>.from(person.metadata);
     metadata['attributes'] = existingAttributes;
 
-    final saved = await ref.read(memoryProvider.notifier).updatePerson(
+    final saved = await ref
+        .read(memoryProvider.notifier)
+        .updatePerson(
           person.id,
           displayName: result.displayName,
           relationship: result.relationship,
@@ -235,7 +241,9 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       return;
     }
 
-    final saved = await ref.read(memoryProvider.notifier).updateEntity(
+    final saved = await ref
+        .read(memoryProvider.notifier)
+        .updateEntity(
           entity.id,
           displayName: result.primary,
           summary: result.detail,
@@ -338,7 +346,9 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       return;
     }
 
-    final saved = await ref.read(memoryProvider.notifier).createPlanMilestone(
+    final saved = await ref
+        .read(memoryProvider.notifier)
+        .createPlanMilestone(
           plan.id,
           title: result.title,
           description: result.detail,
@@ -373,7 +383,9 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       return;
     }
 
-    final saved = await ref.read(memoryProvider.notifier).updatePlanMilestone(
+    final saved = await ref
+        .read(memoryProvider.notifier)
+        .updatePlanMilestone(
           milestone.id,
           title: result.primary,
           description: result.detail,
@@ -416,7 +428,8 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
   }
 
   String _currentError() {
-    return ref.read(memoryProvider).errorMessage ?? context.l10n.memoryPageActionFailed;
+    return ref.read(memoryProvider).errorMessage ??
+        context.l10n.memoryPageActionFailed;
   }
 
   @override
@@ -433,7 +446,9 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
               title: Text(context.l10n.memoryPageTitle),
               actions: [
                 IconButton(
-                  onPressed: state.isLoading || state.isSaving ? null : _startCreate,
+                  onPressed: state.isLoading || state.isSaving
+                      ? null
+                      : _startCreate,
                   icon: const Icon(Icons.add_rounded),
                   tooltip: context.l10n.memoryCreateAddTooltip,
                 ),
@@ -447,94 +462,96 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           : null,
       body: RefreshIndicator(
         onRefresh: _refresh,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    MemorySearchAndFilters(
-                      controller: _searchController,
-                      selectedFilter: _quickFilter,
-                      onFilterSelected: state.isLoading
-                          ? null
-                          : _setQuickFilter,
-                    ),
-                    const SizedBox(height: 8),
-                    SavedMemoryHeader(
-                      onCreate: widget.showAppBar
-                          ? null
-                          : (state.isLoading || state.isSaving
-                              ? null
-                              : _startCreate),
-                      createEnabled: !state.isLoading && !state.isSaving,
-                    ),
-                    const SizedBox(height: 4),
-                    ActiveMemoryToggle(
-                      value: state.activeOnly,
-                      onChanged: state.isLoading ? null : _setActiveOnly,
-                    ),
-                    if (state.overviewCanLoadMore)
-                      MemoryTruncationBanner(
-                        canLoadMore: state.overviewCanLoadMore,
-                        onLoadMore: state.isLoading
+        child: Scrollbar(
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      MemorySearchAndFilters(
+                        controller: _searchController,
+                        selectedFilter: _quickFilter,
+                        onFilterSelected: state.isLoading
                             ? null
-                            : () => ref
-                                  .read(memoryProvider.notifier)
-                                  .loadMoreSavedOverview(),
+                            : _setQuickFilter,
                       ),
-                    if (state.errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          top: RexUiTokens.space12,
+                      const SizedBox(height: 8),
+                      SavedMemoryHeader(
+                        onCreate: widget.showAppBar
+                            ? null
+                            : (state.isLoading || state.isSaving
+                                  ? null
+                                  : _startCreate),
+                        createEnabled: !state.isLoading && !state.isSaving,
+                      ),
+                      const SizedBox(height: 4),
+                      ActiveMemoryToggle(
+                        value: state.activeOnly,
+                        onChanged: state.isLoading ? null : _setActiveOnly,
+                      ),
+                      if (state.overviewCanLoadMore)
+                        MemoryTruncationBanner(
+                          canLoadMore: state.overviewCanLoadMore,
+                          onLoadMore: state.isLoading
+                              ? null
+                              : () => ref
+                                    .read(memoryProvider.notifier)
+                                    .loadMoreSavedOverview(),
                         ),
-                        child: MemoryErrorBanner(message: state.errorMessage!),
-                      ),
-                  ],
+                      if (state.errorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            top: RexUiTokens.space12,
+                          ),
+                          child: MemoryErrorBanner(
+                            message: state.errorMessage!,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            if (state.isLoading && state.isSavedOverviewEmpty)
-              const SliverFillRemaining(child: MemoryLoadingState())
-            else if (state.isSavedOverviewEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: MemoryEmptyState(
-                  activeOnly: state.activeOnly,
-                  onCreate: state.isLoading || state.isSaving
-                      ? null
-                      : _startCreate,
+              if (state.isLoading && state.isSavedOverviewEmpty)
+                const SliverFillRemaining(child: MemoryLoadingState())
+              else if (state.isSavedOverviewEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: MemoryEmptyState(
+                    activeOnly: state.activeOnly,
+                    onCreate: state.isLoading || state.isSaving
+                        ? null
+                        : _startCreate,
+                  ),
+                )
+              else if (filteredSaved.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: MemoryFilteredEmptyState(),
+                )
+              else
+                SavedMemoryGroupList(
+                  saved: filteredSaved,
+                  eventPreviewsFor: state.eventPreviewsFor,
+                  milestonePreviewsFor: state.milestonePreviewsFor,
+                  onEditMemory: _editMemory,
+                  onArchiveMemory: _archiveMemory,
+                  onEditPerson: _editPerson,
+                  onEditEntity: _editEntity,
+                  onEditRule: _editRule,
+                  onEditPlan: _editPlan,
+                  onAddPlanMilestone: _addPlanMilestone,
+                  onEditPlanMilestone: _editPlanMilestone,
+                  onArchiveStructuredMemory: _archiveStructuredMemory,
                 ),
-              )
-            else if (filteredSaved.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: MemoryFilteredEmptyState(),
-              )
-            else
-              SavedMemoryGroupList(
-                saved: filteredSaved,
-                eventPreviewsFor: state.eventPreviewsFor,
-                milestonePreviewsFor: state.milestonePreviewsFor,
-                onEditMemory: _editMemory,
-                onArchiveMemory: _archiveMemory,
-                onEditPerson: _editPerson,
-                onEditEntity: _editEntity,
-                onEditRule: _editRule,
-                onEditPlan: _editPlan,
-                onAddPlanMilestone: _addPlanMilestone,
-                onEditPlanMilestone: _editPlanMilestone,
-                onArchiveStructuredMemory: _archiveStructuredMemory,
+              SliverToBoxAdapter(
+                child: SizedBox(height: clarityScrollBottomClearance(context)),
               ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: clarityScrollBottomClearance(context),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

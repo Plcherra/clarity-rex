@@ -126,134 +126,136 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
     return DecoratedBox(
       decoration: BoxDecoration(color: cs.surface),
       child: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  if (widget.title.trim().isNotEmpty) ...[
-                    Text(
-                      widget.title,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        letterSpacing: 2.4,
-                        color: cs.onSurface.withValues(alpha: 0.38),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                  if (widget.title.trim().isEmpty) const SizedBox(height: 2),
-                  if (widget.loadIssues.isNotEmpty) ...[
-                    _FinancialDataStatusBanner(loadIssues: widget.loadIssues),
-                    const SizedBox(height: 14),
-                  ],
-                  _FinancialOverviewCard(
-                    snapshot: snapshot,
-                    isGlobalScope: widget.scope is GlobalDashboardScope,
-                    accountCount: widget.scope is GlobalDashboardScope
-                        ? widget.accountCount
-                        : null,
-                  ),
-                  if (insightItems.isNotEmpty) ...[
-                    const SizedBox(height: _sectionGap),
-                    _DashboardInsightsStrip(
-                      items: insightItems,
-                      onSeeChart: _scrollToInsightAnchor,
-                      onSeeAllInsights: widget.onSeeAllInsights,
-                    ),
-                  ],
-                  const SizedBox(height: _sectionGap),
-                  _DashboardCollapsibleChartGroup(
-                    title: l10n.dashboardSectionCoreCharts,
-                    initiallyExpanded: true,
-                    controller: _coreChartsController,
-                    children: [
-                      _DashboardChartSection(
-                        sectionKey: _monthlyCashFlowKey,
-                        title: l10n.dashboardOverviewMonthlyCashFlow,
-                        child: MonthlyCashFlowChart(
-                          monthlyGroups: chronologicalGroups,
+        child: Scrollbar(
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    if (widget.title.trim().isNotEmpty) ...[
+                      Text(
+                        widget.title,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          letterSpacing: 2.4,
+                          color: cs.onSurface.withValues(alpha: 0.38),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                      const SizedBox(height: 10),
+                    ],
+                    if (widget.title.trim().isEmpty) const SizedBox(height: 2),
+                    if (widget.loadIssues.isNotEmpty) ...[
+                      _FinancialDataStatusBanner(loadIssues: widget.loadIssues),
+                      const SizedBox(height: 14),
+                    ],
+                    _FinancialOverviewCard(
+                      snapshot: snapshot,
+                      isGlobalScope: widget.scope is GlobalDashboardScope,
+                      accountCount: widget.scope is GlobalDashboardScope
+                          ? widget.accountCount
+                          : null,
+                    ),
+                    if (insightItems.isNotEmpty) ...[
                       const SizedBox(height: _sectionGap),
-                      _DashboardChartSection(
-                        title: l10n.dashboardOverviewSpendingByCategory,
-                        subtitle: l10n.dashboardChartCategorySpendSubtitle,
-                        child: CategorySpendChart(
-                          categories: snapshot.topCategories,
-                        ),
+                      _DashboardInsightsStrip(
+                        items: insightItems,
+                        onSeeChart: _scrollToInsightAnchor,
+                        onSeeAllInsights: widget.onSeeAllInsights,
                       ),
                     ],
-                  ),
-                  const SizedBox(height: _sectionGap),
-                  _DashboardCollapsibleChartGroup(
-                    title: l10n.dashboardSectionTrendCharts,
-                    subtitle: l10n.dashboardSectionTrendChartsHint,
-                    initiallyExpanded: false,
-                    children: [
-                      _DashboardChartSection(
-                        title: l10n.dashboardOverviewSixMonthTrend,
-                        child: SixMonthSpendTrendChart(
-                          monthlyGroups: chronologicalGroups,
+                    const SizedBox(height: _sectionGap),
+                    _DashboardCollapsibleChartGroup(
+                      title: l10n.dashboardSectionCoreCharts,
+                      initiallyExpanded: true,
+                      controller: _coreChartsController,
+                      children: [
+                        _DashboardChartSection(
+                          sectionKey: _monthlyCashFlowKey,
+                          title: l10n.dashboardOverviewMonthlyCashFlow,
+                          child: MonthlyCashFlowChart(
+                            monthlyGroups: chronologicalGroups,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: _sectionGap),
-                  _DashboardTransactionsSection(
-                    snapshot: snapshot,
-                    controller: widget.controller,
-                    transactionController: widget.transactionController,
-                    scope: widget.scope,
-                  ),
-                  const SizedBox(height: _sectionGap),
-                  _DashboardCollapsibleChartGroup(
-                    title: l10n.dashboardSectionSpendingAnalysis,
-                    subtitle: l10n.dashboardSectionSpendingAnalysisHint,
-                    initiallyExpanded: false,
-                    controller: _spendingAnalysisController,
-                    children: [
-                      _DashboardChartSection(
-                        sectionKey: _spendingPressureKey,
-                        title: l10n.dashboardOverviewSpendingPressure,
-                        subtitle: l10n.dashboardChartSpendingPressureSubtitle,
-                        child: BiggestLeaksChart(
-                          leaks: snapshot.biggestLeaksThisMonth,
+                        const SizedBox(height: _sectionGap),
+                        _DashboardChartSection(
+                          title: l10n.dashboardOverviewSpendingByCategory,
+                          subtitle: l10n.dashboardChartCategorySpendSubtitle,
+                          child: CategorySpendChart(
+                            categories: snapshot.topCategories,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: _sectionGap),
-                  _SectionTitle(
-                    theme: theme,
-                    title: l10n.dashboardOverviewBudgetPerformance,
-                  ),
-                  const SizedBox(height: 16),
-                  KeyedSubtree(
-                    key: _budgetPerformanceKey,
-                    child: _BudgetPerformanceCard(
-                      performance: budgetPerformance,
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  _DashboardBudgetChartPanel(performance: budgetPerformance),
-                  const SizedBox(height: _sectionGap),
-                  _SectionTitle(
-                    theme: theme,
-                    title: l10n.dashboardOverviewAccountHealth,
-                  ),
-                  const SizedBox(height: 16),
-                  _AccountHealthCard(
-                    snapshot: snapshot,
-                    budgetPerformance: budgetPerformance,
-                    transactionCount: widget.transactionCount,
-                  ),
-                ]),
+                    const SizedBox(height: _sectionGap),
+                    _DashboardCollapsibleChartGroup(
+                      title: l10n.dashboardSectionTrendCharts,
+                      subtitle: l10n.dashboardSectionTrendChartsHint,
+                      initiallyExpanded: false,
+                      children: [
+                        _DashboardChartSection(
+                          title: l10n.dashboardOverviewSixMonthTrend,
+                          child: SixMonthSpendTrendChart(
+                            monthlyGroups: chronologicalGroups,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: _sectionGap),
+                    _DashboardTransactionsSection(
+                      snapshot: snapshot,
+                      controller: widget.controller,
+                      transactionController: widget.transactionController,
+                      scope: widget.scope,
+                    ),
+                    const SizedBox(height: _sectionGap),
+                    _DashboardCollapsibleChartGroup(
+                      title: l10n.dashboardSectionSpendingAnalysis,
+                      subtitle: l10n.dashboardSectionSpendingAnalysisHint,
+                      initiallyExpanded: false,
+                      controller: _spendingAnalysisController,
+                      children: [
+                        _DashboardChartSection(
+                          sectionKey: _spendingPressureKey,
+                          title: l10n.dashboardOverviewSpendingPressure,
+                          subtitle: l10n.dashboardChartSpendingPressureSubtitle,
+                          child: BiggestLeaksChart(
+                            leaks: snapshot.biggestLeaksThisMonth,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: _sectionGap),
+                    _SectionTitle(
+                      theme: theme,
+                      title: l10n.dashboardOverviewBudgetPerformance,
+                    ),
+                    const SizedBox(height: 16),
+                    KeyedSubtree(
+                      key: _budgetPerformanceKey,
+                      child: _BudgetPerformanceCard(
+                        performance: budgetPerformance,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _DashboardBudgetChartPanel(performance: budgetPerformance),
+                    const SizedBox(height: _sectionGap),
+                    _SectionTitle(
+                      theme: theme,
+                      title: l10n.dashboardOverviewAccountHealth,
+                    ),
+                    const SizedBox(height: 16),
+                    _AccountHealthCard(
+                      snapshot: snapshot,
+                      budgetPerformance: budgetPerformance,
+                      transactionCount: widget.transactionCount,
+                    ),
+                  ]),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -55,7 +55,7 @@ class ChatMessageBubble extends StatelessWidget {
     final colors = context.clarityColors;
     final isDark = theme.brightness == Brightness.dark;
     final width = MediaQuery.sizeOf(context).width;
-    final maxWidth = width >= 700 ? 600.0 : width * 0.86;
+    final maxWidth = width >= 700 ? 760.0 : width * 0.86;
     final interimUserBubble = isUser && isVoiceInterim;
 
     final background = interimUserBubble

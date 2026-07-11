@@ -90,23 +90,23 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
       builder: (context) {
         final colors = context.clarityColors;
         return AlertDialog(
-        title: Text(context.l10n.conversationListDeleteTitle),
-        content: Text(context.l10n.conversationListDeleteBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(context.l10n.commonCancel),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.danger,
-              foregroundColor: colors.background,
+          title: Text(context.l10n.conversationListDeleteTitle),
+          content: Text(context.l10n.conversationListDeleteBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(context.l10n.commonCancel),
             ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(context.l10n.commonDelete),
-          ),
-        ],
-      );
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.danger,
+                foregroundColor: colors.background,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(context.l10n.commonDelete),
+            ),
+          ],
+        );
       },
     );
 
@@ -215,140 +215,140 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
       state.dateFilter,
     );
 
-    final body = RefreshIndicator(
-      color: colors.accent,
-      backgroundColor: colors.surfaceElevated,
-      onRefresh: () =>
-          ref.read(conversationListProvider.notifier).loadConversations(),
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          if (!widget.showAppBar)
+    final body = Scrollbar(
+      child: RefreshIndicator(
+        color: colors.accent,
+        backgroundColor: colors.surfaceElevated,
+        onRefresh: () =>
+            ref.read(conversationListProvider.notifier).loadConversations(),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            if (!widget.showAppBar)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        l10n.conversationListTitle,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colors.textPrimary,
+                            ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: state.isLoading ? null : _newConversation,
+                        icon: const Icon(Icons.add_rounded),
+                        tooltip: l10n.conversationListNewConversationTooltip,
+                        color: colors.accent,
+                        style: IconButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (state.errorMessage != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: _HistoryErrorBanner(message: state.errorMessage!),
+                ),
+              ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: Row(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      l10n.conversationListTitle,
-                      style: Theme.of(context).textTheme.titleMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: colors.textPrimary,
-                          ),
+                    _ConversationSearchField(
+                      controller: _searchController,
+                      isSearching: state.isSearching,
+                      onSubmitted: _submitSearch,
+                      onClear: _clearSearch,
                     ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: state.isLoading ? null : _newConversation,
-                      icon: const Icon(Icons.add_rounded),
-                      tooltip: l10n.conversationListNewConversationTooltip,
-                      color: colors.accent,
-                      style: IconButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                      ),
+                    const SizedBox(height: RexUiTokens.space12),
+                    _ConversationDateFilters(
+                      filter: state.dateFilter,
+                      onFilterChanged: _setDateFilter,
+                      onCustomTap: _pickCustomDateFilter,
                     ),
                   ],
                 ),
               ),
             ),
-          if (state.errorMessage != null)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: _HistoryErrorBanner(message: state.errorMessage!),
-              ),
-            ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ConversationSearchField(
-                    controller: _searchController,
-                    isSearching: state.isSearching,
-                    onSubmitted: _submitSearch,
-                    onClear: _clearSearch,
-                  ),
-                  const SizedBox(height: RexUiTokens.space12),
-                  _ConversationDateFilters(
-                    filter: state.dateFilter,
-                    onFilterChanged: _setDateFilter,
-                    onCustomTap: _pickCustomDateFilter,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (state.searchQuery.isNotEmpty)
-            _ConversationSearchResultsSliver(
-              state: state,
-              results: filteredSearchResults,
-              onResultTap: _openSearchResult,
-            )
-          else if (state.isLoading && state.conversations.isEmpty)
-            SliverFillRemaining(
-              child: Center(
-                child: ClarityPathLoader(
-                  size: 52,
-                  label: l10n.conversationListLoading,
-                ),
-              ),
-            )
-          else if (filteredConversations.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: _EmptyConversationState(
-                    title: state.dateFilter.isActive
-                        ? l10n.conversationListEmptyFilteredTitle(
-                            conversationDateFilterLabel(
-                              l10n,
-                              state.dateFilter,
-                              now,
-                            ).toLowerCase(),
-                          )
-                        : l10n.conversationListEmptyTitle,
-                    message: state.dateFilter.isActive
-                        ? l10n.conversationListEmptyFilteredMessage
-                        : l10n.conversationListEmptyMessage,
-                    isLoading: state.isLoading,
-                    onNewConversation: _newConversation,
+            if (state.searchQuery.isNotEmpty)
+              _ConversationSearchResultsSliver(
+                state: state,
+                results: filteredSearchResults,
+                onResultTap: _openSearchResult,
+              )
+            else if (state.isLoading && state.conversations.isEmpty)
+              SliverFillRemaining(
+                child: Center(
+                  child: ClarityPathLoader(
+                    size: 52,
+                    label: l10n.conversationListLoading,
                   ),
                 ),
-              ),
-            )
-          else
-            SliverList(
-              delegate: SliverChildListDelegate(
-                conversationGroups(l10n, filteredConversations)
-                    .expand<Widget>(
-                      (group) => [
-                        ConversationDateHeader(
-                          label: group.label,
-                          count: group.conversations.length,
-                        ),
-                        for (final conversation in group.conversations)
-                          ConversationHistoryTile(
-                            conversation: conversation,
-                            isSelected:
-                                conversation.id == currentConversation?.id,
-                            onTap: () => _openConversation(conversation),
-                            onDelete: () => _deleteConversation(conversation),
+              )
+            else if (filteredConversations.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: _EmptyConversationState(
+                      title: state.dateFilter.isActive
+                          ? l10n.conversationListEmptyFilteredTitle(
+                              conversationDateFilterLabel(
+                                l10n,
+                                state.dateFilter,
+                                now,
+                              ).toLowerCase(),
+                            )
+                          : l10n.conversationListEmptyTitle,
+                      message: state.dateFilter.isActive
+                          ? l10n.conversationListEmptyFilteredMessage
+                          : l10n.conversationListEmptyMessage,
+                      isLoading: state.isLoading,
+                      onNewConversation: _newConversation,
+                    ),
+                  ),
+                ),
+              )
+            else
+              SliverList(
+                delegate: SliverChildListDelegate(
+                  conversationGroups(l10n, filteredConversations)
+                      .expand<Widget>(
+                        (group) => [
+                          ConversationDateHeader(
+                            label: group.label,
+                            count: group.conversations.length,
                           ),
-                      ],
-                    )
-                    .toList(growable: false),
+                          for (final conversation in group.conversations)
+                            ConversationHistoryTile(
+                              conversation: conversation,
+                              isSelected:
+                                  conversation.id == currentConversation?.id,
+                              onTap: () => _openConversation(conversation),
+                              onDelete: () => _deleteConversation(conversation),
+                            ),
+                        ],
+                      )
+                      .toList(growable: false),
+                ),
               ),
+            SliverToBoxAdapter(
+              child: SizedBox(height: clarityScrollBottomClearance(context)),
             ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: clarityScrollBottomClearance(context),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
 
@@ -487,7 +487,10 @@ class _ConversationSearchResultsSliver extends StatelessWidget {
                   ),
                   const SizedBox(height: RexUiTokens.space4),
                   Text(
-                    l10n.conversationListNoMatchesBody(state.searchQuery, suffix),
+                    l10n.conversationListNoMatchesBody(
+                      state.searchQuery,
+                      suffix,
+                    ),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: colors.textSecondary,
@@ -659,11 +662,16 @@ class _EmptyConversationState extends StatelessWidget {
                 fontSize: 14,
               ),
             ),
-            SizedBox(height: compact ? RexUiTokens.space12 : RexUiTokens.space16),
+            SizedBox(
+              height: compact ? RexUiTokens.space12 : RexUiTokens.space16,
+            ),
             FilledButton.icon(
               style: FilledButton.styleFrom(
                 visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
               ),
               onPressed: isLoading ? null : onNewConversation,
               icon: const Icon(Icons.add_rounded, size: 18),

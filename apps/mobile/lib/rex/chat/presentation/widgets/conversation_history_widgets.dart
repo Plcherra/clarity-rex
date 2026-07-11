@@ -86,6 +86,7 @@ class ConversationHistoryTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(RexUiTokens.radiusMedium),
         onTap: onTap,
         onLongPress: onDelete,
+        mouseCursor: SystemMouseCursors.click,
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: RexUiTokens.space4,
@@ -562,36 +563,18 @@ class _ConversationMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
     final l10n = context.l10n;
-    return PopupMenuButton<_ConversationAction>(
-      tooltip: l10n.conversationHistoryActionsTooltip,
-      color: colors.surfaceElevated,
-      iconColor: colors.textMuted,
-      onSelected: (action) {
-        switch (action) {
-          case _ConversationAction.delete:
-            onDelete();
-        }
-      },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: _ConversationAction.delete,
-          child: Row(
-            children: [
-              Icon(Icons.delete_outline_rounded, color: colors.danger),
-              const SizedBox(width: RexUiTokens.space12),
-              Text(
-                l10n.commonDelete,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+    return IconButton(
+      tooltip: l10n.commonDelete,
+      mouseCursor: SystemMouseCursors.click,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      onPressed: onDelete,
+      icon: Icon(
+        Icons.delete_outline_rounded,
+        size: 18,
+        color: colors.textMuted,
+      ),
     );
   }
 }
-
-enum _ConversationAction { delete }

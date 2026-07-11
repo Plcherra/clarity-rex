@@ -96,33 +96,21 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
               bottom: false,
               child: Column(
                 children: [
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 920),
-                      child: _AssistantTopSurface(
-                        controller: _tabController,
-                        isCompactWidth: isCompactWidth,
-                        profileController: widget.profileController,
-                      ),
-                    ),
+                  _AssistantTopSurface(
+                    controller: _tabController,
+                    isCompactWidth: isCompactWidth,
+                    profileController: widget.profileController,
                   ),
                   Expanded(
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 920),
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: [
-                            for (final tab in AssistantTab.values)
-                              _AssistantTabContent(
-                                tab: tab,
-                                onConversationSelected: _openChatTab,
-                              ),
-                          ],
-                        ),
-                      ),
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        for (final tab in AssistantTab.values)
+                          _AssistantTabContent(
+                            tab: tab,
+                            onConversationSelected: _openChatTab,
+                          ),
+                      ],
                     ),
                   ),
                 ],

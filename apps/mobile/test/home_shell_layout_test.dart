@@ -1,7 +1,6 @@
 import 'package:clarity/core/layout/finance_content_constraints.dart';
 import 'package:clarity/features/shell/presentation/home_shell_layout.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/l10n_test_wrapper.dart';
@@ -9,11 +8,11 @@ import 'helpers/l10n_test_wrapper.dart';
 void main() {
   test('isHomeShellCompactWidth respects 800px breakpoint', () {
     expect(homeShellCompactBreakpoint, 800);
-    expect(homeShellMaxContentWidth, greaterThanOrEqualTo(1200));
-    expect(homeShellMaxContentWidth, lessThanOrEqualTo(1400));
+    expect(homeShellMaxContentWidth, 1440);
+    expect(homeShellDockMaxWidth, 600);
   });
 
-  testWidgets('HomeShellAdaptiveScaffold uses NavigationRail at 1280px', (
+  testWidgets('HomeShellAdaptiveScaffold uses centered dock at 1280px', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1280, 800);
@@ -32,26 +31,20 @@ void main() {
             NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
             NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
           ],
-          railDestinations: const [
-            NavigationRailDestination(
-              icon: Icon(Icons.home),
-              label: Text('Home'),
-            ),
-            NavigationRailDestination(
-              icon: Icon(Icons.person),
-              label: Text('Profile'),
-            ),
-          ],
           body: const Placeholder(),
         ),
       ),
     );
 
-    expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+    expect(bar.destinations.length, 2);
+    final dockBox = tester.renderObject<RenderBox>(find.byType(NavigationBar));
+    expect(dockBox.size.width, lessThanOrEqualTo(homeShellDockMaxWidth));
   });
 
-  testWidgets('HomeShellAdaptiveScaffold uses bottom nav below 800px', (
+  testWidgets('HomeShellAdaptiveScaffold uses full-width bottom nav below 800px', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -70,16 +63,6 @@ void main() {
             NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
             NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
           ],
-          railDestinations: const [
-            NavigationRailDestination(
-              icon: Icon(Icons.home),
-              label: Text('Home'),
-            ),
-            NavigationRailDestination(
-              icon: Icon(Icons.person),
-              label: Text('Profile'),
-            ),
-          ],
           body: const Placeholder(),
         ),
       ),
@@ -87,6 +70,9 @@ void main() {
 
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.byType(NavigationRail), findsNothing);
+    final barBox = tester.renderObject<RenderBox>(find.byType(NavigationBar));
+    // Full-bleed bar matches the compact viewport (not the centered dock).
+    expect(barBox.size.width, closeTo(390, 1));
   });
 
   testWidgets('FinanceContentConstraints caps child width on ultra-wide screens', (

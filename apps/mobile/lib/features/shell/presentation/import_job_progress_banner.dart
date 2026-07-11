@@ -3,6 +3,7 @@ import 'package:flutter/scheduler.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/l10n/app_l10n.dart';
+import '../../../core/layout/finance_content_constraints.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../widgets/clarity_card.dart';
 
@@ -158,17 +159,20 @@ class _BottomSafeImportOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final wide = !isHomeShellCompactWidth(context);
     return Positioned(
       left: 0,
       right: 0,
-      bottom: 0,
+      bottom: wide ? 8 : 0,
       child: SafeArea(
         top: false,
         minimum: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         child: Align(
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: BoxConstraints(
+              maxWidth: wide ? homeShellMaxContentWidth : 720,
+            ),
             child: child,
           ),
         ),

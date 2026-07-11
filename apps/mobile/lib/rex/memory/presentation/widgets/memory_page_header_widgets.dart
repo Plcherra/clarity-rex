@@ -276,7 +276,7 @@ class _EmptyMemoryShell extends StatelessWidget {
           compact ? RexUiTokens.space8 : RexUiTokens.space16,
         ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 380),
+          constraints: const BoxConstraints(maxWidth: 560),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

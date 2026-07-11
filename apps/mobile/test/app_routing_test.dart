@@ -354,7 +354,7 @@ void main() {
     expect(find.byTooltip('End voice'), findsOneWidget);
   });
 
-  testWidgets('home shell uses NavigationRail at desktop width', (tester) async {
+  testWidgets('home shell uses centered bottom dock at desktop width', (tester) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -385,8 +385,8 @@ void main() {
     await tester.pump();
 
     expect(find.byType(HomeShell), findsOneWidget);
-    expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(NavigationBar), findsOneWidget);
   });
 
   testWidgets('home shell keeps bottom navigation on narrow width', (tester) async {
