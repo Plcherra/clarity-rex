@@ -49,7 +49,8 @@ class RexUiTokens {
   /// Chat composer chrome.
   static const composerPaddingH = ClaritySpacing.sm;
   static const composerPaddingTop = ClaritySpacing.xs;
-  static const composerPaddingBottom = ClaritySpacing.md;
+  /// Explicit bottom inset — web SafeArea is often 0, so this must clear the edge.
+  static const composerPaddingBottom = ClaritySpacing.xxl;
   static const composerFieldPaddingV = ClaritySpacing.sm;
   static const composerIconSize = 40.0;
 

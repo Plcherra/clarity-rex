@@ -1202,6 +1202,7 @@
   "assistantCompanionSettingsTitle": "Guardado del compañero",
   "assistantCompanionSettingsSubtitle": "Elige cómo Rex sugiere metas, hilos abiertos y memoria en el chat. Solo texto nunca muestra tarjetas de confirmación — Rex pregunta en la conversación.",
   "assistantCompanionSettingsGearLabel": "Ajustes de guardado del compañero",
+  "assistantCompanionSettingsTabLabel": "Guardados",
   "assistantAutoProposalsModeLabel": "Sugerencias automáticas",
   "assistantAutoProposalsModeOff": "Desactivado",
   "assistantAutoProposalsModeText": "Solo texto",

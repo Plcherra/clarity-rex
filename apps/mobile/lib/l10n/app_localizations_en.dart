@@ -903,6 +903,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantCompanionSettingsGearLabel => 'Companion save settings';
 
   @override
+  String get assistantCompanionSettingsTabLabel => 'Saves';
+
+  @override
   String get assistantAutoProposalsModeLabel => 'Auto suggestions';
 
   @override

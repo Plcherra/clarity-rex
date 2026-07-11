@@ -15,7 +15,7 @@ import 'rex_ui_tokens.dart';
 import 'widgets/assistant_proposal_settings_sheet.dart';
 
 const _assistantCompactWidth = 360.0;
-const _assistantTabHeight = 36.0;
+const _assistantTabHeight = 44.0;
 
 class AssistantScreen extends ConsumerStatefulWidget {
   const AssistantScreen({super.key, required this.profileController});
@@ -154,22 +154,22 @@ class _AssistantTopSurface extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         isCompactWidth ? RexUiTokens.space12 : RexUiTokens.space16,
-        RexUiTokens.space12,
+        RexUiTokens.space20,
         isCompactWidth ? RexUiTokens.space12 : RexUiTokens.space16,
-        RexUiTokens.space4,
+        RexUiTokens.space8,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             context.l10n.navAssistant,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
               color: scheme.onSurface,
-              height: 1.15,
+              height: 1.1,
             ),
           ),
-          const SizedBox(height: RexUiTokens.space8),
+          const SizedBox(height: RexUiTokens.space12),
           _AssistantTabNavigation(
             controller: controller,
             isCompactWidth: isCompactWidth,
@@ -200,7 +200,7 @@ class _AssistantTabNavigation extends StatelessWidget {
     final l10n = context.l10n;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: TabBar(
@@ -232,23 +232,36 @@ class _AssistantTabNavigation extends StatelessWidget {
         ),
         SizedBox(
           height: _assistantTabHeight,
-          width: 40,
-          child: IconButton(
-            tooltip: l10n.assistantCompanionSettingsGearLabel,
-            onPressed: () => showAssistantProposalSettingsSheet(
-              context: context,
-              profileController: profileController,
-            ),
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-            style: IconButton.styleFrom(
-              shape: const CircleBorder(),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            icon: Icon(
-              Icons.tune_rounded,
-              size: 20,
-              color: scheme.onSurface.withValues(alpha: 0.72),
+          width: 52,
+          child: Tooltip(
+            message: l10n.assistantCompanionSettingsGearLabel,
+            child: InkWell(
+              onTap: () => showAssistantProposalSettingsSheet(
+                context: context,
+                profileController: profileController,
+              ),
+              borderRadius: BorderRadius.circular(RexUiTokens.radiusSmall),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.tune_rounded,
+                    size: 20,
+                    color: scheme.onSurface.withValues(alpha: 0.78),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.assistantCompanionSettingsTabLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: colors.textMuted,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

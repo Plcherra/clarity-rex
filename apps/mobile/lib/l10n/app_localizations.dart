@@ -62,7 +62,8 @@ import 'app_localizations_es.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -70,7 +71,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -82,17 +84,18 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('es')
+    Locale('es'),
   ];
 
   /// No description provided for @appTitle.
@@ -1335,7 +1338,10 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Bank connected successfully: {institutionName}{accountsSyncedSuffix}.'**
-  String homeShellBankConnectedSuccess(String institutionName, String accountsSyncedSuffix);
+  String homeShellBankConnectedSuccess(
+    String institutionName,
+    String accountsSyncedSuffix,
+  );
 
   /// No description provided for @homeShellBankConnectedYourBank.
   ///
@@ -1545,7 +1551,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{category} rose {percent} month-over-month ({amount}).'**
-  String dashboardInsightsMomLeakUp(String category, String percent, String amount);
+  String dashboardInsightsMomLeakUp(
+    String category,
+    String percent,
+    String amount,
+  );
 
   /// No description provided for @dashboardInsightsMomLeakNew.
   ///
@@ -1672,6 +1682,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Companion save settings'**
   String get assistantCompanionSettingsGearLabel;
+
+  /// No description provided for @assistantCompanionSettingsTabLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saves'**
+  String get assistantCompanionSettingsTabLabel;
 
   /// No description provided for @assistantAutoProposalsModeLabel.
   ///
@@ -2043,7 +2059,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{filtered} of {total} transactions | {dateRangeDescription}'**
-  String dashboardTransactionsFilteredCount(int filtered, int total, String dateRangeDescription);
+  String dashboardTransactionsFilteredCount(
+    int filtered,
+    int total,
+    String dateRangeDescription,
+  );
 
   /// No description provided for @accountsScreenRefreshTooltip.
   ///
@@ -3747,7 +3767,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Merge \"{source}\" into \"{target}\"? This will move {usage} to \"{target}\" and delete \"{source}\".'**
-  String categorySheetMergeCategoryContent(String source, String target, String usage);
+  String categorySheetMergeCategoryContent(
+    String source,
+    String target,
+    String usage,
+  );
 
   /// No description provided for @categorySheetCategoryMergedSnack.
   ///
@@ -3795,7 +3819,10 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Future \"{merchant}\" imports will use \"{category}\". Existing transactions will not be changed.'**
-  String categorySheetUpdateFutureImportsContent(String merchant, String category);
+  String categorySheetUpdateFutureImportsContent(
+    String merchant,
+    String category,
+  );
 
   /// No description provided for @categorySheetUpdateRuleButton.
   ///
@@ -4893,7 +4920,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'This will permanently delete the {count} visible transaction{transactionSuffix} for this account in {monthLabel}. Other months will stay untouched.'**
-  String monthDetailDeleteMonthBody(int count, String transactionSuffix, String monthLabel);
+  String monthDetailDeleteMonthBody(
+    int count,
+    String transactionSuffix,
+    String monthLabel,
+  );
 
   /// No description provided for @monthDetailDeleteMonthButton.
   ///
@@ -4905,7 +4936,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Deleted {count} {monthLabel} transaction{transactionSuffix}.'**
-  String monthDetailDeletedTransactions(int count, String monthLabel, String transactionSuffix);
+  String monthDetailDeletedTransactions(
+    int count,
+    String monthLabel,
+    String transactionSuffix,
+  );
 
   /// No description provided for @monthDetailNothingDeleted.
   ///
@@ -5889,19 +5924,32 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{periodLabel} · {startDate} – {endDate}'**
-  String usageAdminFilterRangeLabel(String periodLabel, String startDate, String endDate);
+  String usageAdminFilterRangeLabel(
+    String periodLabel,
+    String startDate,
+    String endDate,
+  );
 
   /// No description provided for @usageAdminAccountsSummary.
   ///
   /// In en, this message translates to:
   /// **'{registeredCount} accounts · {activeCount} with usage · {voiceMinutes} voice · {aiCalls} AI calls'**
-  String usageAdminAccountsSummary(int registeredCount, int activeCount, String voiceMinutes, int aiCalls);
+  String usageAdminAccountsSummary(
+    int registeredCount,
+    int activeCount,
+    String voiceMinutes,
+    int aiCalls,
+  );
 
   /// No description provided for @usageAdminActiveUsersSummary.
   ///
   /// In en, this message translates to:
   /// **'{activeUserCount} active users · {voiceMinutes} voice · {aiCalls} AI calls'**
-  String usageAdminActiveUsersSummary(int activeUserCount, String voiceMinutes, int aiCalls);
+  String usageAdminActiveUsersSummary(
+    int activeUserCount,
+    String voiceMinutes,
+    int aiCalls,
+  );
 
   /// No description provided for @usageAdminUsersSection.
   ///
@@ -5931,7 +5979,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{voiceMinutes} voice · {chatCalls} chat · {voiceCalls} voice calls'**
-  String usageAdminUserTileSummary(String voiceMinutes, int chatCalls, int voiceCalls);
+  String usageAdminUserTileSummary(
+    String voiceMinutes,
+    int chatCalls,
+    int voiceCalls,
+  );
 
   /// No description provided for @usageAdminLoadingUserUsage.
   ///
@@ -6387,7 +6439,10 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Accounts refreshed: {accountLabel}, {updateCount, plural, =1{1 transaction update} other{{updateCount} transaction updates}}.'**
-  String plaidRefreshWithTransactionUpdates(String accountLabel, int updateCount);
+  String plaidRefreshWithTransactionUpdates(
+    String accountLabel,
+    int updateCount,
+  );
 
   /// No description provided for @plaidRefreshBalancesOnlyUnavailable.
   ///
@@ -6618,7 +6673,8 @@ abstract class AppLocalizations {
   String get voiceErrorBackgroundMicRestart;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -6627,25 +6683,26 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'es'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'es'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return AppLocalizationsEn();
-    case 'es': return AppLocalizationsEs();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
+    'that was used.',
   );
 }

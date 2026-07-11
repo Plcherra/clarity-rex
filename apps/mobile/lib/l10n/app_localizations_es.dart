@@ -913,6 +913,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ajustes de guardado del compañero';
 
   @override
+  String get assistantCompanionSettingsTabLabel => 'Guardados';
+
+  @override
   String get assistantAutoProposalsModeLabel => 'Sugerencias automáticas';
 
   @override

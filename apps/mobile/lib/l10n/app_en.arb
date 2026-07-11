@@ -517,6 +517,7 @@
   "assistantCompanionSettingsTitle": "Companion saves",
   "assistantCompanionSettingsSubtitle": "Choose how Rex suggests goals, open threads, and memory during chat. Text only never shows confirm cards — Rex asks in the conversation instead.",
   "assistantCompanionSettingsGearLabel": "Companion save settings",
+  "assistantCompanionSettingsTabLabel": "Saves",
   "assistantAutoProposalsModeLabel": "Auto suggestions",
   "assistantAutoProposalsModeOff": "Off",
   "assistantAutoProposalsModeText": "Text only",

@@ -34,19 +34,29 @@ class MemorySearchAndFilters extends StatelessWidget {
       children: [
         TextField(
           controller: controller,
-          style: theme.textTheme.bodyMedium?.copyWith(color: colors.textPrimary),
+          style: theme.textTheme.bodySmall?.copyWith(color: colors.textPrimary),
           textInputAction: TextInputAction.search,
           cursorColor: colors.accent,
           decoration: InputDecoration(
             hintText: l10n.memoryHeaderSearchHint,
-            hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            hintStyle: theme.textTheme.bodySmall?.copyWith(
               color: colors.textMuted,
             ),
-            prefixIcon: Icon(Icons.search_rounded, color: colors.textSecondary),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              size: 18,
+              color: colors.textSecondary,
+            ),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 36,
+              minHeight: 36,
+            ),
             suffixIcon: controller.text.isEmpty
                 ? null
                 : IconButton(
                     onPressed: controller.clear,
+                    iconSize: 18,
+                    visualDensity: VisualDensity.compact,
                     icon: Icon(
                       Icons.close_rounded,
                       color: colors.textSecondary,
@@ -68,8 +78,8 @@ class MemorySearchAndFilters extends StatelessWidget {
               borderSide: BorderSide(color: colors.borderActive, width: 1.2),
             ),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: RexUiTokens.space12,
-              vertical: RexUiTokens.space8,
+              horizontal: RexUiTokens.space8,
+              vertical: RexUiTokens.space4,
             ),
             isDense: true,
           ),
@@ -77,7 +87,7 @@ class MemorySearchAndFilters extends StatelessWidget {
         const SizedBox(height: RexUiTokens.space8),
         Wrap(
           spacing: RexUiTokens.space8,
-          runSpacing: RexUiTokens.space8,
+          runSpacing: RexUiTokens.space4,
           children: [
             for (final filter in MemoryQuickFilter.values)
               ChoiceChip(
@@ -89,14 +99,16 @@ class MemorySearchAndFilters extends StatelessWidget {
                 backgroundColor: colors.surfaceElevated.withValues(alpha: 0.72),
                 selectedColor: colors.accent,
                 disabledColor: colors.surface,
-                visualDensity: VisualDensity.compact,
+                visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
                 ),
                 side: BorderSide.none,
                 showCheckmark: false,
-                labelStyle: theme.textTheme.labelMedium?.copyWith(
+                labelStyle: theme.textTheme.labelSmall?.copyWith(
                   color: selectedFilter == filter
                       ? selectedTextColor
                       : colors.textSecondary,
@@ -133,7 +145,7 @@ class SavedMemoryHeader extends StatelessWidget {
           Expanded(
             child: Text(
               l10n.memoryHeaderSectionTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
+              style: theme.textTheme.titleSmall?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
               ),
