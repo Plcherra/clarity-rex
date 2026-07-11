@@ -857,7 +857,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get insightsOpenTooltip => 'Insights';
 
   @override
-  String get insightsCurrentSection => 'Señales actuales';
+  String get insightsCurrentSection => 'Qué necesita atención';
 
   @override
   String get insightsSavedSection => 'Alertas guardadas';
@@ -872,7 +872,38 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get insightsOptInRequired =>
-      'Opcional: activa los insights proactivos en Perfil para guardar alertas con el tiempo. Las señales actuales abajo siempre funcionan sin guardar.';
+      'Opcional: activa los insights proactivos en Perfil para guardar alertas con el tiempo.';
+
+  @override
+  String get insightsReviewDashboard => 'Revisar en el Panel';
+
+  @override
+  String get insightsTypeSpendingPressure => 'Presión de gasto';
+
+  @override
+  String get insightsTypeBudgetOver => 'Sobre presupuesto';
+
+  @override
+  String get insightsTypeCashFlow => 'Flujo de efectivo';
+
+  @override
+  String get insightsTypeAccountability => 'Metas y hábitos';
+
+  @override
+  String get insightsGuidanceSpendingPressure =>
+      'Esta categoría está impulsando un gasto inusual. Revisa transacciones recientes y decide si recortar o fijar un presupuesto más claro.';
+
+  @override
+  String get insightsGuidanceBudgetOver =>
+      'Este presupuesto ya se excedió. Ajusta el límite si el gasto es intencional, o pausa compras relacionadas hasta que se reinicie el periodo.';
+
+  @override
+  String get insightsGuidanceCashFlow =>
+      'El flujo neto necesita atención este mes. Compara ingresos y gastos antes de nuevos compromisos.';
+
+  @override
+  String get insightsGuidanceAccountability =>
+      'Una meta o hilo abierto necesita un check-in. Abre Metas para actualizar el progreso o ajustar el plan.';
 
   @override
   String get insightsSourceDashboard => 'Desde tu panel';
@@ -882,7 +913,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get insightsStorageUnavailable =>
-      'El almacenamiento de insights guardados aún no está disponible. Las señales actuales abajo siguen funcionando con los datos de tu panel.';
+      'El almacenamiento de insights guardados aún no está disponible. Las señales en vivo arriba siguen funcionando con los datos de tu panel.';
 
   @override
   String get insightsApiUnreadableError =>

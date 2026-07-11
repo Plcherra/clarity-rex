@@ -19,10 +19,12 @@ class ConversationListPage extends ConsumerStatefulWidget {
     super.key,
     this.showAppBar = true,
     this.onConversationSelected,
+    this.compactSidebar = false,
   });
 
   final bool showAppBar;
   final VoidCallback? onConversationSelected;
+  final bool compactSidebar;
 
   @override
   ConsumerState<ConversationListPage> createState() =>
@@ -227,25 +229,31 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
             if (!widget.showAppBar)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  padding: EdgeInsets.fromLTRB(
+                    widget.compactSidebar ? 12 : 16,
+                    8,
+                    widget.compactSidebar ? 8 : 16,
+                    8,
+                  ),
                   child: Row(
                     children: [
-                      Text(
-                        l10n.conversationListTitle,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: colors.textPrimary,
-                            ),
+                      Expanded(
+                        child: Text(
+                          l10n.conversationListTitle,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: colors.textPrimary,
+                              ),
+                        ),
                       ),
-                      const Spacer(),
-                      IconButton(
+                      FilledButton.tonalIcon(
                         onPressed: state.isLoading ? null : _newConversation,
-                        icon: const Icon(Icons.add_rounded),
-                        tooltip: l10n.conversationListNewConversationTooltip,
-                        color: colors.accent,
-                        style: IconButton.styleFrom(
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: Text(l10n.conversationListNewChat),
+                        style: FilledButton.styleFrom(
                           visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                         ),
                       ),
                     ],
@@ -338,6 +346,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                                   conversation.id == currentConversation?.id,
                               onTap: () => _openConversation(conversation),
                               onDelete: () => _deleteConversation(conversation),
+                              compact: widget.compactSidebar,
                             ),
                         ],
                       )

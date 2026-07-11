@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/layout/clarity_breakpoints.dart';
 import '../../../core/layout/finance_content_constraints.dart';
 import '../../../core/l10n/app_l10n.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../dashboard/application/dashboard_deep_link_navigation.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
@@ -47,7 +48,9 @@ class _InsightsFeedScreenState extends ConsumerState<InsightsFeedScreen> {
     final cs = theme.colorScheme;
     final liveItems = widget.liveItems;
     final savedItems = state.items;
+    // Only nudge opt-in when there is nothing useful live and sync was skipped.
     final showOptInBanner =
+        liveItems.isEmpty &&
         state.syncSkipped &&
         state.syncReason == 'opt_in_required' &&
         !state.storageUnavailable;
@@ -109,14 +112,13 @@ class _InsightsFeedScreenState extends ConsumerState<InsightsFeedScreen> {
                       _InsightsEmptyState(message: l10n.insightsFeedEmpty)
                     else
                       for (final item in liveItems) ...[
-                        _InsightFeedTile(
+                        _InsightBriefingCard(
                           item: item,
-                          onTap: () {},
-                          onViewDashboard: item.anchor == null
+                          onReviewDashboard: item.anchor == null
                               ? null
                               : () => _openDashboardAnchor(item),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 12),
                       ],
                     const SizedBox(height: 18),
                     Text(
@@ -130,18 +132,18 @@ class _InsightsFeedScreenState extends ConsumerState<InsightsFeedScreen> {
                       _InsightsEmptyState(message: l10n.insightsSavedEmpty)
                     else
                       for (final item in savedItems) ...[
-                        _InsightFeedTile(
+                        _InsightBriefingCard(
                           item: item,
                           onTap: () async {
                             await ref
                                 .read(insightsProvider.notifier)
                                 .markRead(item);
                           },
-                          onViewDashboard: item.anchor == null
+                          onReviewDashboard: item.anchor == null
                               ? null
                               : () => _openDashboardAnchor(item),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 12),
                       ],
                   ],
                 ),
@@ -212,25 +214,24 @@ class _InsightsEmptyState extends StatelessWidget {
   }
 }
 
-class _InsightFeedTile extends StatelessWidget {
-  const _InsightFeedTile({
+class _InsightBriefingCard extends StatelessWidget {
+  const _InsightBriefingCard({
     required this.item,
-    required this.onTap,
-    this.onViewDashboard,
+    this.onTap,
+    this.onReviewDashboard,
   });
 
   final InsightItem item;
-  final VoidCallback onTap;
-  final VoidCallback? onViewDashboard;
+  final VoidCallback? onTap;
+  final VoidCallback? onReviewDashboard;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = context.l10n;
-    final sourceLabel = item.source == InsightSource.accountability
-        ? l10n.insightsSourceAccountability
-        : l10n.insightsSourceDashboard;
+    final typeLabel = _typeLabel(l10n, item.type);
+    final guidance = _guidance(l10n, item.type);
 
     return ClarityCard(
       onTap: onTap,
@@ -249,45 +250,73 @@ class _InsightFeedTile extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                 ),
-              Expanded(
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: Text(
-                  sourceLabel,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.56),
-                    fontWeight: FontWeight.w700,
+                  typeLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             item.body,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
               height: 1.35,
             ),
           ),
-          if (onViewDashboard != null) ...[
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: onViewDashboard,
-              mouseCursor: SystemMouseCursors.click,
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Text(
-                  l10n.dashboardInsightsSeeChart,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
+          const SizedBox(height: 10),
+          Text(
+            guidance,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurface.withValues(alpha: 0.72),
+              height: 1.4,
+            ),
+          ),
+          if (onReviewDashboard != null) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: onReviewDashboard,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
+                child: Text(l10n.insightsReviewDashboard),
               ),
             ),
           ],
         ],
       ),
     );
+  }
+
+  String _typeLabel(AppLocalizations l10n, InsightType type) {
+    return switch (type) {
+      InsightType.momLeak => l10n.insightsTypeSpendingPressure,
+      InsightType.budgetOverspend => l10n.insightsTypeBudgetOver,
+      InsightType.netCashFlow => l10n.insightsTypeCashFlow,
+      InsightType.accountabilitySignal => l10n.insightsTypeAccountability,
+    };
+  }
+
+  String _guidance(AppLocalizations l10n, InsightType type) {
+    return switch (type) {
+      InsightType.momLeak => l10n.insightsGuidanceSpendingPressure,
+      InsightType.budgetOverspend => l10n.insightsGuidanceBudgetOver,
+      InsightType.netCashFlow => l10n.insightsGuidanceCashFlow,
+      InsightType.accountabilitySignal => l10n.insightsGuidanceAccountability,
+    };
   }
 }

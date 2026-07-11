@@ -340,29 +340,23 @@ class _AssistantChatSplit extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          width: 280,
+          width: 340,
           child: DecoratedBox(
             decoration: BoxDecoration(
+              color: colors.surface.withValues(alpha: 0.55),
               border: Border(
                 right: BorderSide(color: colors.border.withValues(alpha: 0.55)),
               ),
             ),
             child: ConversationListPage(
               showAppBar: false,
+              compactSidebar: true,
               onConversationSelected: onConversationSelected,
             ),
           ),
         ),
-        Expanded(
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: clarityChatColumnMaxWidth,
-              ),
-              child: const ChatPage(showAppBar: false),
-            ),
-          ),
+        const Expanded(
+          child: ChatPage(showAppBar: false),
         ),
       ],
     );

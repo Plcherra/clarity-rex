@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
-import 'finance_content_constraints.dart';
+import 'package:flutter/material.dart';
 
 /// Shared layout breakpoints for Clarity web/desktop composition.
 enum ClarityLayoutSize { compact, medium, wide }
 
-const double clarityLayoutMediumBreakpoint = homeShellCompactBreakpoint;
+/// Breakpoint below which the shell uses a full-width bottom [NavigationBar].
+const double clarityLayoutMediumBreakpoint = 800;
 const double clarityLayoutWideBreakpoint = 1100;
 
 ClarityLayoutSize clarityLayoutSizeOf(BuildContext context) {
@@ -27,10 +28,21 @@ bool isClarityWideLayout(BuildContext context) {
   return clarityLayoutSizeOf(context) == ClarityLayoutSize.wide;
 }
 
-/// Content max widths by surface (inside the shell).
-/// Prefer using most of an ultrawide viewport for finance/assistant;
-/// keep profile slightly narrower as a settings column.
-const double clarityFinanceContentMaxWidth = 1440;
-const double clarityAssistantContentMaxWidth = 1400;
-const double clarityProfileContentMaxWidth = 840;
-const double clarityChatColumnMaxWidth = 820;
+/// Preferred max widths. [ShellContentConstraints] also clamps to the viewport
+/// minus gutters so wide screens fill most of the window.
+const double clarityFinanceContentMaxWidth = 1920;
+const double clarityAssistantContentMaxWidth = 1920;
+const double clarityProfileContentMaxWidth = 1120;
+const double clarityChatColumnMaxWidth = 960;
+const double clarityDesktopContentGutter = 24;
+
+/// Usable content width: fill the viewport with modest gutters, up to [preferredMax].
+double clarityClampedContentWidth(
+  BuildContext context,
+  double preferredMax, {
+  double gutter = clarityDesktopContentGutter,
+}) {
+  final viewport = MediaQuery.sizeOf(context).width;
+  final available = math.max(320.0, viewport - gutter * 2);
+  return math.min(preferredMax, available);
+}

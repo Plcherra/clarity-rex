@@ -1596,7 +1596,7 @@ abstract class AppLocalizations {
   /// No description provided for @insightsCurrentSection.
   ///
   /// In en, this message translates to:
-  /// **'Current signals'**
+  /// **'What needs attention'**
   String get insightsCurrentSection;
 
   /// No description provided for @insightsSavedSection.
@@ -1620,8 +1620,62 @@ abstract class AppLocalizations {
   /// No description provided for @insightsOptInRequired.
   ///
   /// In en, this message translates to:
-  /// **'Optional: turn on proactive insights in Profile to save alerts over time. Current signals below always work without saving.'**
+  /// **'Optional: turn on proactive insights in Profile to save alerts over time.'**
   String get insightsOptInRequired;
+
+  /// No description provided for @insightsReviewDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Review on Dashboard'**
+  String get insightsReviewDashboard;
+
+  /// No description provided for @insightsTypeSpendingPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Spending pressure'**
+  String get insightsTypeSpendingPressure;
+
+  /// No description provided for @insightsTypeBudgetOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Over budget'**
+  String get insightsTypeBudgetOver;
+
+  /// No description provided for @insightsTypeCashFlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash flow'**
+  String get insightsTypeCashFlow;
+
+  /// No description provided for @insightsTypeAccountability.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals & habits'**
+  String get insightsTypeAccountability;
+
+  /// No description provided for @insightsGuidanceSpendingPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'This category is driving unusual spend. Review recent transactions and decide whether to cut back or set a clearer budget.'**
+  String get insightsGuidanceSpendingPressure;
+
+  /// No description provided for @insightsGuidanceBudgetOver.
+  ///
+  /// In en, this message translates to:
+  /// **'This budget is already over. Adjust the limit if the spend is intentional, or pause related purchases until the period resets.'**
+  String get insightsGuidanceBudgetOver;
+
+  /// No description provided for @insightsGuidanceCashFlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Net cash flow needs a closer look this month. Compare income and spending before new commitments.'**
+  String get insightsGuidanceCashFlow;
+
+  /// No description provided for @insightsGuidanceAccountability.
+  ///
+  /// In en, this message translates to:
+  /// **'A goal or open thread needs a check-in. Open Goals to update progress or adjust the plan.'**
+  String get insightsGuidanceAccountability;
 
   /// No description provided for @insightsSourceDashboard.
   ///
@@ -1638,7 +1692,7 @@ abstract class AppLocalizations {
   /// No description provided for @insightsStorageUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Saved insights storage is not available yet. Current signals below still work from your dashboard data.'**
+  /// **'Saved insights storage is not available yet. Live signals above still work from your dashboard data.'**
   String get insightsStorageUnavailable;
 
   /// No description provided for @insightsApiUnreadableError.

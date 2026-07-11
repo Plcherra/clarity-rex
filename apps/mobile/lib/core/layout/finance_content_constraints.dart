@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
+import 'clarity_breakpoints.dart';
+
 /// Breakpoint below which the shell uses a full-width bottom [NavigationBar].
-const double homeShellCompactBreakpoint = 800;
+const double homeShellCompactBreakpoint = clarityLayoutMediumBreakpoint;
 
 /// Outer shell content cap on ultra-wide viewports.
-const double homeShellMaxContentWidth = 1440;
+const double homeShellMaxContentWidth = clarityFinanceContentMaxWidth;
 
 bool isHomeShellCompactWidth(BuildContext context) {
   return MediaQuery.sizeOf(context).width < homeShellCompactBreakpoint;
 }
 
-/// Centers [child] with a surface-specific max width.
+/// Centers [child] with a surface-specific max width, filling most of the viewport.
 class ShellContentConstraints extends StatelessWidget {
   const ShellContentConstraints({
     super.key,
@@ -23,10 +25,11 @@ class ShellContentConstraints extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = clarityClampedContentWidth(context, maxWidth);
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
+        constraints: BoxConstraints(maxWidth: width),
         child: child,
       ),
     );

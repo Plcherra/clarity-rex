@@ -11,10 +11,10 @@ void main() {
   test('clarity breakpoints match shell compact and wide bands', () {
     expect(clarityLayoutMediumBreakpoint, homeShellCompactBreakpoint);
     expect(clarityLayoutWideBreakpoint, 1100);
-    expect(clarityFinanceContentMaxWidth, 1440);
-    expect(clarityAssistantContentMaxWidth, 1400);
-    expect(clarityProfileContentMaxWidth, 840);
-    expect(clarityChatColumnMaxWidth, 820);
+    expect(clarityFinanceContentMaxWidth, 1920);
+    expect(clarityAssistantContentMaxWidth, 1920);
+    expect(clarityProfileContentMaxWidth, 1120);
+    expect(clarityChatColumnMaxWidth, 960);
   });
 
   testWidgets('isClarityDesktopLayout false below 800 and true at 1280', (

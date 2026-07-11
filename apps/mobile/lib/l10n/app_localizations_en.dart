@@ -849,7 +849,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsOpenTooltip => 'Insights';
 
   @override
-  String get insightsCurrentSection => 'Current signals';
+  String get insightsCurrentSection => 'What needs attention';
 
   @override
   String get insightsSavedSection => 'Saved alerts';
@@ -864,7 +864,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get insightsOptInRequired =>
-      'Optional: turn on proactive insights in Profile to save alerts over time. Current signals below always work without saving.';
+      'Optional: turn on proactive insights in Profile to save alerts over time.';
+
+  @override
+  String get insightsReviewDashboard => 'Review on Dashboard';
+
+  @override
+  String get insightsTypeSpendingPressure => 'Spending pressure';
+
+  @override
+  String get insightsTypeBudgetOver => 'Over budget';
+
+  @override
+  String get insightsTypeCashFlow => 'Cash flow';
+
+  @override
+  String get insightsTypeAccountability => 'Goals & habits';
+
+  @override
+  String get insightsGuidanceSpendingPressure =>
+      'This category is driving unusual spend. Review recent transactions and decide whether to cut back or set a clearer budget.';
+
+  @override
+  String get insightsGuidanceBudgetOver =>
+      'This budget is already over. Adjust the limit if the spend is intentional, or pause related purchases until the period resets.';
+
+  @override
+  String get insightsGuidanceCashFlow =>
+      'Net cash flow needs a closer look this month. Compare income and spending before new commitments.';
+
+  @override
+  String get insightsGuidanceAccountability =>
+      'A goal or open thread needs a check-in. Open Goals to update progress or adjust the plan.';
 
   @override
   String get insightsSourceDashboard => 'From your dashboard';
@@ -874,7 +905,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get insightsStorageUnavailable =>
-      'Saved insights storage is not available yet. Current signals below still work from your dashboard data.';
+      'Saved insights storage is not available yet. Live signals above still work from your dashboard data.';
 
   @override
   String get insightsApiUnreadableError =>
