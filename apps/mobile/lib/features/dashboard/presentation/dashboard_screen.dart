@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
-import '../domain/dashboard_snapshot.dart';
+import '../../insights/domain/insight_item.dart';
 import '../../insights/presentation/insights_feed_screen.dart';
 import '../domain/dashboard_insight_anchor.dart';
+import '../domain/dashboard_snapshot.dart';
 import 'financial_dashboard_view.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -30,6 +31,14 @@ class DashboardScreen extends StatelessWidget {
   final DashboardInsightAnchor? scrollToAnchor;
   final VoidCallback? onScrollToAnchorHandled;
 
+  void _openInsights(BuildContext context, List<InsightItem> liveItems) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => InsightsFeedScreen(liveItems: liveItems),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FinancialDashboardView(
@@ -44,14 +53,8 @@ class DashboardScreen extends StatelessWidget {
       onImportCsvInstead: onImportCsvInstead,
       scrollToAnchor: scrollToAnchor,
       onScrollToAnchorHandled: onScrollToAnchorHandled,
-      onSeeAllInsights: isRoot
-          ? () {
-              Navigator.of(context).push<void>(
-                MaterialPageRoute<void>(
-                  builder: (context) => const InsightsFeedScreen(),
-                ),
-              );
-            }
+      onOpenInsights: isRoot
+          ? (liveItems) => _openInsights(context, liveItems)
           : null,
     );
   }

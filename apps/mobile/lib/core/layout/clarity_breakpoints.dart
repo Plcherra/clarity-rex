@@ -28,7 +28,9 @@ bool isClarityWideLayout(BuildContext context) {
 }
 
 /// Content max widths by surface (inside the shell).
-const double clarityFinanceContentMaxWidth = 1200;
-const double clarityAssistantContentMaxWidth = 900;
-const double clarityProfileContentMaxWidth = 720;
-const double clarityChatColumnMaxWidth = 760;
+/// Prefer using most of an ultrawide viewport for finance/assistant;
+/// keep profile slightly narrower as a settings column.
+const double clarityFinanceContentMaxWidth = 1440;
+const double clarityAssistantContentMaxWidth = 1400;
+const double clarityProfileContentMaxWidth = 840;
+const double clarityChatColumnMaxWidth = 820;

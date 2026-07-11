@@ -11,6 +11,7 @@ import '../../finance/application/financial_read_model_service.dart';
 import '../domain/dashboard_snapshot.dart';
 import '../domain/dashboard_insight_anchor.dart';
 import '../../insights/domain/insight_generator.dart';
+import '../../insights/domain/insight_item.dart';
 import '../domain/dashboard_transaction_groups.dart';
 import '../../../core/formatting/formatting.dart';
 import '../../../core/models/models.dart';
@@ -204,7 +205,7 @@ class FinancialDashboardView extends StatefulWidget {
     this.onImportCsvInstead,
     this.scrollToAnchor,
     this.onScrollToAnchorHandled,
-    this.onSeeAllInsights,
+    this.onOpenInsights,
   });
 
   final DashboardUiController controller;
@@ -228,7 +229,7 @@ class FinancialDashboardView extends StatefulWidget {
   final VoidCallback? onImportCsvInstead;
   final DashboardInsightAnchor? scrollToAnchor;
   final VoidCallback? onScrollToAnchorHandled;
-  final VoidCallback? onSeeAllInsights;
+  final ValueChanged<List<InsightItem>>? onOpenInsights;
 
   @override
   State<FinancialDashboardView> createState() => _FinancialDashboardViewState();
@@ -325,6 +326,23 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
               )
             : null,
         actions: [
+          if (widget.onOpenInsights != null)
+            IconButton(
+              tooltip: l10n.insightsOpenTooltip,
+              icon: const Icon(Icons.insights_outlined),
+              color: cs.onSurface.withValues(alpha: 0.72),
+              onPressed: () {
+                final data = _dataNotifier.data;
+                final live = data == null
+                    ? const <InsightItem>[]
+                    : generateDashboardInsightItems(
+                        l10n: l10n,
+                        snapshot: data.snapshot,
+                        budgetPerformance: data.budgetPerformance,
+                      );
+                widget.onOpenInsights!(live);
+              },
+            ),
           if (widget.onUploadTransactions != null &&
               AppCapabilities.instance.supportsCsvImport)
             IconButton(
@@ -392,8 +410,16 @@ class _FinancialDashboardViewState extends State<FinancialDashboardView> {
             accountCount: data.accountCount,
             scrollToAnchor: widget.scrollToAnchor,
             onScrollToAnchorHandled: widget.onScrollToAnchorHandled,
-            onSeeAllInsights: widget.scope is GlobalDashboardScope
-                ? widget.onSeeAllInsights
+            onSeeAllInsights: widget.scope is GlobalDashboardScope &&
+                    widget.onOpenInsights != null
+                ? () {
+                    final live = generateDashboardInsightItems(
+                      l10n: context.l10n,
+                      snapshot: data.snapshot,
+                      budgetPerformance: data.budgetPerformance,
+                    );
+                    widget.onOpenInsights!(live);
+                  }
                 : null,
           );
           final body = widget.showBackButton

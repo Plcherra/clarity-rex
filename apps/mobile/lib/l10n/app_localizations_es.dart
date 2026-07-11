@@ -854,12 +854,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get insightsFeedTitle => 'Insights';
 
   @override
+  String get insightsOpenTooltip => 'Insights';
+
+  @override
+  String get insightsCurrentSection => 'Señales actuales';
+
+  @override
+  String get insightsSavedSection => 'Alertas guardadas';
+
+  @override
   String get insightsFeedEmpty =>
-      'Aún no hay insights guardados. Activa los insights proactivos en Perfil para guardar alertas deterministas cuando cambien tus datos.';
+      'No hay señales actuales por ahora. Vuelve después de nuevo gasto o actividad de presupuesto.';
+
+  @override
+  String get insightsSavedEmpty =>
+      'Aún no hay alertas guardadas. Activa los insights proactivos en Perfil para conservarlos con el tiempo.';
 
   @override
   String get insightsOptInRequired =>
-      'Activa los insights proactivos en Perfil para guardarlos aquí. La franja del Panel sigue mostrando señales actuales sin guardarlas.';
+      'Opcional: activa los insights proactivos en Perfil para guardar alertas con el tiempo. Las señales actuales abajo siempre funcionan sin guardar.';
 
   @override
   String get insightsSourceDashboard => 'Desde tu panel';
@@ -869,7 +882,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get insightsStorageUnavailable =>
-      'Los insights guardados aún no están disponibles. La franja del Panel sigue mostrando señales actuales. Activa los insights proactivos en Perfil cuando el almacenamiento esté listo.';
+      'El almacenamiento de insights guardados aún no está disponible. Las señales actuales abajo siguen funcionando con los datos de tu panel.';
 
   @override
   String get insightsApiUnreadableError =>

@@ -1587,16 +1587,40 @@ abstract class AppLocalizations {
   /// **'Insights'**
   String get insightsFeedTitle;
 
+  /// No description provided for @insightsOpenTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get insightsOpenTooltip;
+
+  /// No description provided for @insightsCurrentSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Current signals'**
+  String get insightsCurrentSection;
+
+  /// No description provided for @insightsSavedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved alerts'**
+  String get insightsSavedSection;
+
   /// No description provided for @insightsFeedEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No saved insights yet. Turn on proactive insights in Profile to save deterministic alerts when your data changes.'**
+  /// **'No current signals right now. Check back after new spending or budget activity.'**
   String get insightsFeedEmpty;
+
+  /// No description provided for @insightsSavedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved alerts yet. Turn on proactive insights in Profile to keep alerts over time.'**
+  String get insightsSavedEmpty;
 
   /// No description provided for @insightsOptInRequired.
   ///
   /// In en, this message translates to:
-  /// **'Turn on proactive insights in Profile to save alerts here. The Dashboard strip still shows current signals without saving them.'**
+  /// **'Optional: turn on proactive insights in Profile to save alerts over time. Current signals below always work without saving.'**
   String get insightsOptInRequired;
 
   /// No description provided for @insightsSourceDashboard.
@@ -1614,7 +1638,7 @@ abstract class AppLocalizations {
   /// No description provided for @insightsStorageUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Saved insights are not available yet. The Dashboard strip still shows current signals. Turn on proactive insights in Profile once storage is ready.'**
+  /// **'Saved insights storage is not available yet. Current signals below still work from your dashboard data.'**
   String get insightsStorageUnavailable;
 
   /// No description provided for @insightsApiUnreadableError.

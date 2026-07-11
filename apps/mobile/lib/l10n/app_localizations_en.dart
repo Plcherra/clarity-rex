@@ -846,12 +846,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsFeedTitle => 'Insights';
 
   @override
+  String get insightsOpenTooltip => 'Insights';
+
+  @override
+  String get insightsCurrentSection => 'Current signals';
+
+  @override
+  String get insightsSavedSection => 'Saved alerts';
+
+  @override
   String get insightsFeedEmpty =>
-      'No saved insights yet. Turn on proactive insights in Profile to save deterministic alerts when your data changes.';
+      'No current signals right now. Check back after new spending or budget activity.';
+
+  @override
+  String get insightsSavedEmpty =>
+      'No saved alerts yet. Turn on proactive insights in Profile to keep alerts over time.';
 
   @override
   String get insightsOptInRequired =>
-      'Turn on proactive insights in Profile to save alerts here. The Dashboard strip still shows current signals without saving them.';
+      'Optional: turn on proactive insights in Profile to save alerts over time. Current signals below always work without saving.';
 
   @override
   String get insightsSourceDashboard => 'From your dashboard';
@@ -861,7 +874,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get insightsStorageUnavailable =>
-      'Saved insights are not available yet. The Dashboard strip still shows current signals. Turn on proactive insights in Profile once storage is ready.';
+      'Saved insights storage is not available yet. Current signals below still work from your dashboard data.';
 
   @override
   String get insightsApiUnreadableError =>
