@@ -62,6 +62,27 @@ Write-Output "    output=$MobileDir\build\web"
 Push-Location $MobileDir
 try {
   & flutter @args
+  if ($LASTEXITCODE -ne 0) {
+    throw "flutter build web failed with exit code $LASTEXITCODE"
+  }
+
+  # Stamp index.html so flutter_bootstrap can cache-bust main.dart.js on CDN edges.
+  $webOut = Join-Path $MobileDir "build\web"
+  $versionPath = Join-Path $webOut "version.json"
+  $indexPath = Join-Path $webOut "index.html"
+  $buildNumber = "0"
+  if (Test-Path $versionPath) {
+    $versionJson = Get-Content $versionPath -Raw | ConvertFrom-Json
+    if ($versionJson.build_number) {
+      $buildNumber = [string]$versionJson.build_number
+    }
+  }
+  if (Test-Path $indexPath) {
+    $indexHtml = Get-Content $indexPath -Raw
+    $indexHtml = $indexHtml.Replace("BUILD_NUMBER_PLACEHOLDER", $buildNumber)
+    Set-Content -Path $indexPath -Value $indexHtml -NoNewline
+    Write-Output "    stamped clarity-web-build=$buildNumber"
+  }
 } finally {
   Pop-Location
 }

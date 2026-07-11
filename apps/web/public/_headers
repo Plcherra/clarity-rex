@@ -1,37 +1,39 @@
 # Force correct MIME for Flutter boot scripts (never cache SPA HTML fallbacks).
+# Use no-store so custom-domain CDN edges cannot keep stale main.dart.js for hours.
 /app/passkeys_bundle.js
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-store, max-age=0, must-revalidate
   Content-Type: application/javascript
 
 /app/flutter_bootstrap.js
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-store, max-age=0, must-revalidate
   Content-Type: application/javascript
 
 /app/flutter.js
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-store, max-age=0, must-revalidate
   Content-Type: application/javascript
 
 /app/flutter_service_worker.js
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-store, max-age=0, must-revalidate
   Content-Type: application/javascript
 
 /app/main.dart.js
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-store, max-age=0, must-revalidate
   Content-Type: application/javascript
 
 /app/js/record.worklet.js
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-store, max-age=0, must-revalidate
   Content-Type: application/javascript
 
 /app/assets/packages/record_web/assets/js/record.worklet.js
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-store, max-age=0, must-revalidate
   Content-Type: application/javascript
 
 /app/*.js
   Content-Type: application/javascript
-
-/app/*
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-store, max-age=0, must-revalidate
 
 /app/index.html
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-store, max-age=0, must-revalidate
+
+/app/*
+  Cache-Control: no-store, max-age=0, must-revalidate

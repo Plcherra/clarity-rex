@@ -22,6 +22,28 @@
       '</p>';
   }
 
+  // Custom domains can keep caching main.dart.js for hours even after Pages
+  // deploys. Append a build stamp so each release uses a fresh cache key.
+  try {
+    const builds = window._flutter?.buildConfig?.builds;
+    if (Array.isArray(builds)) {
+      const stamp =
+        document.querySelector('meta[name="clarity-web-build"]')?.content ||
+        window._flutter.buildConfig.engineRevision ||
+        String(Date.now());
+      for (const build of builds) {
+        if (
+          typeof build.mainJsPath === 'string' &&
+          !build.mainJsPath.includes('?')
+        ) {
+          build.mainJsPath = `${build.mainJsPath}?v=${encodeURIComponent(stamp)}`;
+        }
+      }
+    }
+  } catch (_) {
+    // Boot must continue even if cache-bust patching fails.
+  }
+
   _flutter.loader.load({
     onEntrypointLoaded: async function (engineInitializer) {
       try {
