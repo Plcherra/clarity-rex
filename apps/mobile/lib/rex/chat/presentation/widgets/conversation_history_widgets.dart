@@ -54,7 +54,7 @@ class ConversationDateHeader extends StatelessWidget {
   }
 }
 
-class ConversationHistoryTile extends StatelessWidget {
+class ConversationHistoryTile extends StatefulWidget {
   const ConversationHistoryTile({
     super.key,
     required this.conversation,
@@ -73,135 +73,161 @@ class ConversationHistoryTile extends StatelessWidget {
   final bool compact;
 
   @override
+  State<ConversationHistoryTile> createState() =>
+      _ConversationHistoryTileState();
+}
+
+class _ConversationHistoryTileState extends State<ConversationHistoryTile> {
+  bool _hovered = false;
+  bool _menuOpen = false;
+
+  bool get _showActions => !widget.compact || _hovered || _menuOpen;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
     final l10n = context.l10n;
-    final preview = conversationPreview(l10n, conversation);
-    final title = conversationTitle(l10n, conversation);
+    final preview = conversationPreview(l10n, widget.conversation);
+    final title = conversationTitle(l10n, widget.conversation);
+    final compact = widget.compact;
     final horizontal = compact ? RexUiTokens.space8 : RexUiTokens.space16;
     final vertical = compact ? 6.0 : RexUiTokens.space12;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(horizontal, 0, horizontal, compact ? 2 : 8),
-      child: Material(
-        color: isSelected
-            ? colors.accent.withValues(alpha: 0.12)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(
-          compact ? RexUiTokens.radiusSmall : RexUiTokens.radiusMedium,
-        ),
-        child: InkWell(
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: Material(
+          color: widget.isSelected
+              ? colors.accent.withValues(alpha: 0.12)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(
             compact ? RexUiTokens.radiusSmall : RexUiTokens.radiusMedium,
           ),
-          onTap: onTap,
-          onLongPress: onDelete,
-          mouseCursor: SystemMouseCursors.click,
-          hoverColor: colors.accent.withValues(alpha: 0.08),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? RexUiTokens.space8 : RexUiTokens.space4,
-              vertical: vertical,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(
+              compact ? RexUiTokens.radiusSmall : RexUiTokens.radiusMedium,
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (!compact) ...[
-                  _ConversationGlyph(isSelected: isSelected),
-                  const SizedBox(width: RexUiTokens.space12),
-                ],
-                Expanded(
-                  child: compact
-                      ? Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                title,
+            onTap: widget.onTap,
+            onLongPress: widget.onDelete,
+            mouseCursor: SystemMouseCursors.click,
+            hoverColor: colors.accent.withValues(alpha: 0.08),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? RexUiTokens.space8 : RexUiTokens.space4,
+                vertical: vertical,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (!compact) ...[
+                    _ConversationGlyph(isSelected: widget.isSelected),
+                    const SizedBox(width: RexUiTokens.space12),
+                  ],
+                  Expanded(
+                    child: compact
+                        ? Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colors.textPrimary,
+                                    fontWeight: widget.isSelected
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: RexUiTokens.space8),
+                              Text(
+                                timestampLabel(
+                                  l10n,
+                                  widget.conversation.timestamp,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colors.textMuted,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                        color: colors.textPrimary,
+                                        fontWeight: widget.isSelected
+                                            ? FontWeight.w800
+                                            : FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: RexUiTokens.space8),
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 96,
+                                    ),
+                                    child: Text(
+                                      timestampLabel(
+                                        l10n,
+                                        widget.conversation.timestamp,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.right,
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                        color: colors.textMuted,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: RexUiTokens.space8),
+                              Text(
+                                preview,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: colors.textPrimary,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w800
-                                      : FontWeight.w600,
-                                  height: 1.2,
+                                  color: colors.textSecondary,
+                                  height: 1.35,
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: RexUiTokens.space8),
-                            Text(
-                              timestampLabel(l10n, conversation.timestamp),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colors.textMuted,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      color: colors.textPrimary,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w800
-                                          : FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: RexUiTokens.space8),
-                                ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxWidth: 96,
-                                  ),
-                                  child: Text(
-                                    timestampLabel(
-                                      l10n,
-                                      conversation.timestamp,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.right,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: colors.textMuted,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: RexUiTokens.space8),
-                            Text(
-                              preview,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colors.textSecondary,
-                                height: 1.35,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-                const SizedBox(width: RexUiTokens.space4),
-                _ConversationMenu(
-                  onDelete: onDelete,
-                  onRename: onRename,
-                  compact: compact,
-                ),
-              ],
+                            ],
+                          ),
+                  ),
+                  if (_showActions) ...[
+                    const SizedBox(width: RexUiTokens.space4),
+                    _ConversationMenu(
+                      onDelete: widget.onDelete,
+                      onRename: widget.onRename,
+                      compact: compact,
+                      onMenuOpenChanged: (open) {
+                        setState(() => _menuOpen = open);
+                      },
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -615,11 +641,13 @@ class _ConversationMenu extends StatelessWidget {
     required this.onDelete,
     this.onRename,
     this.compact = false,
+    this.onMenuOpenChanged,
   });
 
   final VoidCallback onDelete;
   final VoidCallback? onRename;
   final bool compact;
+  final ValueChanged<bool>? onMenuOpenChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -656,7 +684,10 @@ class _ConversationMenu extends StatelessWidget {
         size: compact ? 16 : 18,
         color: colors.textMuted,
       ),
+      onOpened: () => onMenuOpenChanged?.call(true),
+      onCanceled: () => onMenuOpenChanged?.call(false),
       onSelected: (value) {
+        onMenuOpenChanged?.call(false);
         if (value == 'rename') {
           onRename!();
         } else if (value == 'delete') {

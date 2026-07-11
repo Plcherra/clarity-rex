@@ -1,6 +1,7 @@
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/presentation/widgets/conversation_history_widgets.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -58,6 +59,15 @@ void main() {
 
     expect(find.text('Night routine'), findsOneWidget);
     expect(find.text('Help me think through tonight.'), findsNothing);
+    expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: Offset.zero);
+    addTearDown(gesture.removePointer);
+    await tester.pump();
+    await gesture.moveTo(tester.getCenter(find.byType(ConversationHistoryTile)));
+    await tester.pumpAndSettle();
+
     expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
   });
 }

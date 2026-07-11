@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -345,37 +347,91 @@ class _AssistantTabContent extends StatelessWidget {
   }
 }
 
-class _AssistantChatSplit extends StatelessWidget {
+class _AssistantChatSplit extends StatefulWidget {
   const _AssistantChatSplit({required this.onConversationSelected});
 
   final VoidCallback onConversationSelected;
 
   @override
+  State<_AssistantChatSplit> createState() => _AssistantChatSplitState();
+}
+
+class _AssistantChatSplitState extends State<_AssistantChatSplit> {
+  static const double _defaultSidebarWidth = 340;
+  static const double _minSidebarWidth = 240;
+  static const double _maxSidebarWidth = 520;
+
+  double _sidebarWidth = _defaultSidebarWidth;
+
+  void _resizeSidebar(double delta, double maxAllowed) {
+    final next = (_sidebarWidth + delta).clamp(
+      _minSidebarWidth,
+      math.min(_maxSidebarWidth, maxAllowed),
+    ).toDouble();
+    if (next == _sidebarWidth) {
+      return;
+    }
+    setState(() => _sidebarWidth = next);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          width: 340,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.surface.withValues(alpha: 0.55),
-              border: Border(
-                right: BorderSide(color: colors.border.withValues(alpha: 0.55)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxAllowed = math.max(
+          _minSidebarWidth,
+          constraints.maxWidth * 0.45,
+        );
+        final width = _sidebarWidth
+            .clamp(_minSidebarWidth, maxAllowed)
+            .toDouble();
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: width,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.surface.withValues(alpha: 0.55),
+                  border: Border(
+                    right: BorderSide(
+                      color: colors.border.withValues(alpha: 0.55),
+                    ),
+                  ),
+                ),
+                child: ConversationListPage(
+                  showAppBar: false,
+                  compactSidebar: true,
+                  onConversationSelected: widget.onConversationSelected,
+                ),
               ),
             ),
-            child: ConversationListPage(
-              showAppBar: false,
-              compactSidebar: true,
-              onConversationSelected: onConversationSelected,
+            MouseRegion(
+              cursor: SystemMouseCursors.resizeColumn,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragUpdate: (details) {
+                  _resizeSidebar(details.delta.dx, maxAllowed);
+                },
+                child: SizedBox(
+                  width: 8,
+                  child: Center(
+                    child: Container(
+                      width: 1,
+                      height: double.infinity,
+                      color: colors.border.withValues(alpha: 0.65),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-        const Expanded(
-          child: ChatPage(showAppBar: false),
-        ),
-      ],
+            const Expanded(
+              child: ChatPage(showAppBar: false),
+            ),
+          ],
+        );
+      },
     );
   }
 }
