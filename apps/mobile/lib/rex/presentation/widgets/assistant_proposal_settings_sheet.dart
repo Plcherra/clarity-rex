@@ -7,6 +7,7 @@ import '../../../core/l10n/app_l10n.dart';
 import '../../../features/profile/application/profile_controller.dart';
 import '../../../features/profile/domain/assistant_proposal_settings.dart';
 import '../../../theme/clarity_colors.dart';
+import '../../../theme/clarity_sheet_insets.dart';
 
 Future<void> showAssistantProposalSettingsSheet({
   required BuildContext context,
