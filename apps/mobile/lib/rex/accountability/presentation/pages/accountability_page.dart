@@ -249,16 +249,10 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                   const SizedBox(height: RexUiTokens.space12),
                   if (state.isLoading && overview == null)
                     const _InitialLoading()
-                  else if (overview == null ||
-                      (overview.isEmpty && !overview.hasInsightSignals))
+                  else if (overview == null || overview.isEmpty)
                     _EmptyAccountabilityState(onAddGoal: _createPlan)
                   else ...[
-                    if (overview.hasInsightSignals) ...[
-                      _AccountabilityInsightsSection(overview: overview),
-                      const SizedBox(height: RexUiTokens.space16),
-                    ],
-                    if (!overview.isEmpty) ...[
-                      _GoalsSection(
+                    _GoalsSection(
                       plans: overview.activePlans,
                       onOpenPlan: _openPlanDetail,
                       onArchivePlan: _archivePlan,
@@ -273,7 +267,6 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
                       onPause: _pauseOpenThread,
                       onEdit: _editOpenThread,
                     ),
-                    ],
                   ],
                 ]),
               ),

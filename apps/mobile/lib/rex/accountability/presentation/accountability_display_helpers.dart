@@ -26,14 +26,14 @@ String? planSubtitle(PlanRecord plan) {
   return null;
 }
 
-String? openThreadSubtitle(OpenThread thread) {
+String? openThreadSubtitle(AppLocalizations l10n, OpenThread thread) {
   final summary = thread.summary?.trim();
   if (summary != null &&
       summary.isNotEmpty &&
       !accountabilityTextsMatch(summary, thread.title)) {
     return summary;
   }
-  return 'Companion follow-up — not saved memory';
+  return l10n.accountabilityTilesOpenThreadDefaultSubtitle;
 }
 
 String priorityShortLabel(AppLocalizations l10n, int priority) {
@@ -58,30 +58,4 @@ String statusShortLabel(AppLocalizations l10n, String status) {
     return l10n.accountabilityStatusInProgress;
   }
   return normalized[0].toUpperCase() + normalized.substring(1);
-}
-
-String? accountabilitySignalSubtitle(AccountabilitySignal signal) {
-  final summary = signal.summary.trim();
-  if (summary.isNotEmpty) {
-    return summary;
-  }
-  final reason = signal.reason.trim();
-  if (reason.isNotEmpty) {
-    return reason;
-  }
-  return null;
-}
-
-String accountabilitySeverityLabel(
-  AppLocalizations l10n,
-  AccountabilitySeverity severity,
-) {
-  return switch (severity) {
-    AccountabilitySeverity.info => l10n.commonInfo,
-    AccountabilitySeverity.low => l10n.commonLow,
-    AccountabilitySeverity.medium => l10n.commonMedium,
-    AccountabilitySeverity.high => l10n.commonHigh,
-    AccountabilitySeverity.critical => l10n.commonCritical,
-    AccountabilitySeverity.unknown => l10n.commonUnknown,
-  };
 }

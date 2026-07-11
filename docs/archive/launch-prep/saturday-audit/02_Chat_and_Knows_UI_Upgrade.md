@@ -43,7 +43,7 @@ Knows list/filters force empty plans/goals; empty copy is facts/people/preferenc
 User bubbles use `accentSoft` + `textPrimary`. Shared `bubblePaddingH/V`, `messageGap`, `bodyMedium` / height 1.35.
 
 ### A3 Knows lean rows (A73–A74) — DONE
-Row = title + optional one-line detail + type. Importance/dates in edit sheet. Shared `memoryTilePadding*` / `memoryTileRadius`.
+Row = title + optional one-line detail + type. Importance only on goals/plans/rules edit+create; people/facts/preferences omit it. Shared `memoryTilePadding*` / `memoryTileRadius`.
 
 ### A4 Confirm strip slim (A75) — DONE
 Shared `confirmCardPadding` / `confirmCardGap` / `confirmButtonHeight`; no drop shadow; truth-honest confirm/dismiss.
@@ -132,7 +132,7 @@ npm run build
 | 4 | Chat: soft user bubbles; readable light **and** dark | ☐ | ☐ | ☐ |
 | 5 | Chat: bubbles not overly padded; transcript feels dense but readable | ☐ | ☐ | ☐ |
 | 6 | Knows rows: title + optional one line + type; no importance/date chrome in list | ☐ | ☐ | ☐ |
-| 7 | Knows edit sheet still shows importance + dates | ☐ | ☐ | ☐ |
+| 7 | Importance only on goals/plans/rules (not people/facts/preferences); dates OK where shown | ☐ | ☐ | ☐ |
 | 8 | Confirm card: slim, no heavy shadow; Confirm/Dismiss obvious | ☐ | ☐ | ☐ |
 | 9 | Confirm → item appears in Knows or Goals; Rex does not claim saved before confirm | ☐ | ☐ | ☐ |
 | 10 | Goals tiles match Knows density (not card-heavy) | ☐ | ☐ | ☐ |

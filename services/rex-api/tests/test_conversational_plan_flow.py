@@ -354,3 +354,48 @@ async def test_conversational_plan_update_requires_confirmation_and_applies():
 
     assert "Italian citizenship" in plan_text
     assert not memory_service.pending_actions
+
+
+@pytest.mark.asyncio
+async def test_card_mode_affirmation_after_text_offer_returns_write_proposals(
+    monkeypatch,
+):
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "card")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    memory_service = FakeMemoryService()
+    for index in range(5):
+        memory_service.plans.append(
+            {
+                "id": f"plan-{index}",
+                "plan_type": "personal",
+                "title": f"Existing plan {index}",
+                "description": "Unrelated active plan occupying top-level budget.",
+                "priority": 4,
+                "active": True,
+                "status": "active",
+            }
+        )
+    chat_service = _chat_service(memory_service)
+    conversation_id = await memory_service.create_conversation()
+    await memory_service.save_message(
+        conversation_id,
+        "user",
+        "I'm trying to build a consistent strength training routine three times per week.",
+    )
+    await memory_service.save_message(
+        conversation_id,
+        "assistant",
+        (
+            'I can save "Build a consistent strength training routine" '
+            "as a goal in Goals if you want — just say the word."
+        ),
+    )
+
+    affirmed = await chat_service.send_message("yes please", conversation_id)
+
+    changes = affirmed.get("memory_changes") or {}
+    assert changes.get("confirmation_required") == 1
+    assert changes.get("write_proposals")
+    get_settings.cache_clear()

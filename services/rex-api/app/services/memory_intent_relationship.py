@@ -72,6 +72,13 @@ _RELATIONSHIP_NAME_TOPIC_PATTERN = re.compile(
     rf"(?P<relationship>{_RELATIONSHIP_ROLE_ALT})(?:'s)?\s+name\b",
     re.IGNORECASE | re.UNICODE,
 )
+_GENERIC_PERSON_ROLE_ALT = r"(?:girl|guy|woman|man|person|friend)"
+_GENERIC_PERSON_NAME_TOPIC_PATTERN = re.compile(
+    r"\b(?:save|remember|keep|update|change|set|put|what(?:'s| is))\s+"
+    r"(?:the\s+|my\s+|a\s+)?"
+    rf"(?P<relationship>{_GENERIC_PERSON_ROLE_ALT})(?:'s)?\s+name\b",
+    re.IGNORECASE | re.UNICODE,
+)
 _NAME_REPLY_PATTERN = re.compile(
     r"^(?:it(?:'s| is|s)\s+|that(?:'s| is)\s+|her\s+name\s+is\s+|his\s+name\s+is\s+)?"
     r"(?P<name>[A-Za-z][\w'-]{1,40})\.?$",
@@ -173,6 +180,8 @@ class MemoryIntentRelationshipMixin:
             content = str(item.get("content") or "")
             match = _RELATIONSHIP_NAME_TOPIC_PATTERN.search(content)
             if match is None:
+                match = _GENERIC_PERSON_NAME_TOPIC_PATTERN.search(content)
+            if match is None:
                 # Also catch "Can you update my mama's name?" without save verbs
                 # already covered; and "mother's name" talk.
                 soft = re.search(
@@ -181,6 +190,14 @@ class MemoryIntentRelationshipMixin:
                     content,
                     re.IGNORECASE | re.UNICODE,
                 )
+                if soft is None:
+                    soft = re.search(
+                        r"\b(?:the\s+|my\s+|a\s+)?"
+                        rf"(?P<relationship>{_GENERIC_PERSON_ROLE_ALT})"
+                        r"(?:'s)?\s+name\b",
+                        content,
+                        re.IGNORECASE | re.UNICODE,
+                    )
                 if soft is None:
                     continue
                 return self._clean_person(soft.group("relationship"))

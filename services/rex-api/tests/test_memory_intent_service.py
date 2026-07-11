@@ -636,3 +636,25 @@ def test_yes_after_unrelated_birthday_does_not_reconfirm_birthday():
     assert intent is not None
     assert intent.content == "User's best friend is Pedro."
     assert intent.metadata["fact_kind"] == "relationship"
+
+
+def test_detects_contextual_girl_name_reply_after_save_request():
+    service = MemoryIntentService()
+    history = [
+        {"role": "user", "content": "Can you save the girl's name?"},
+        {
+            "role": "assistant",
+            "content": "Sure — what's her name?",
+        },
+    ]
+
+    intent = service.detect_contextual_memory(
+        "Isa",
+        conversation_history=history,
+    )
+
+    assert intent is not None
+    assert intent.content == "User's girl is Isa."
+    assert intent.metadata["fact_kind"] == "relationship"
+    assert intent.metadata["relationship"] == "girl"
+    assert intent.metadata["entity_label"] == "isa"

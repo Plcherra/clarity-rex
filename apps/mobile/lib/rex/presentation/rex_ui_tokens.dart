@@ -49,8 +49,9 @@ class RexUiTokens {
   /// Chat composer chrome.
   static const composerPaddingH = ClaritySpacing.sm;
   static const composerPaddingTop = ClaritySpacing.xs;
-  static const composerPaddingBottom = ClaritySpacing.sm;
+  static const composerPaddingBottom = ClaritySpacing.md;
   static const composerFieldPaddingV = ClaritySpacing.sm;
+  static const composerIconSize = 40.0;
 
   static const radiusSmall = ClarityRadius.small;
   static const radiusMedium = ClarityRadius.medium;

@@ -208,6 +208,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
     int? importance,
     String? status,
     bool? active,
+    Map<String, dynamic>? metadata,
   }) async {
     state = state.copyWith(isSaving: true, clearError: true);
     try {
@@ -222,6 +223,7 @@ mixin MemoryActionController on Notifier<MemoryState>, MemoryReadController {
             importance: importance,
             status: status,
             active: active,
+            metadata: metadata,
           );
       await loadSavedOverview(activeOnly: state.activeOnly);
       state = state.copyWith(isSaving: false, clearError: true);

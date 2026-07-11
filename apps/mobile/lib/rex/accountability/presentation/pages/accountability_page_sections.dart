@@ -1,44 +1,5 @@
 part of 'accountability_page.dart';
 
-class _AccountabilityInsightsSection extends StatelessWidget {
-  const _AccountabilityInsightsSection({required this.overview});
-
-  final AccountabilityOverview overview;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _Section(
-          title: l10n.accountabilitySectionsNeedsAttention,
-          emptyText: l10n.accountabilitySectionsNoSignals,
-          children: overview.signals
-              .map((signal) => _SignalTile(signal: signal))
-              .toList(growable: false),
-        ),
-        const SizedBox(height: 24),
-        _Section(
-          title: l10n.accountabilitySectionsRuleRisks,
-          emptyText: l10n.accountabilitySectionsNoRuleRisks,
-          children: overview.ruleRisks
-              .map((signal) => _SignalTile(signal: signal))
-              .toList(growable: false),
-        ),
-        const SizedBox(height: 24),
-        _Section(
-          title: l10n.accountabilitySectionsRecentPatterns,
-          emptyText: l10n.accountabilitySectionsNoRecentPatterns,
-          children: overview.recentPatterns
-              .map((signal) => _SignalTile(signal: signal))
-              .toList(growable: false),
-        ),
-      ],
-    );
-  }
-}
-
 class _GoalsSection extends StatelessWidget {
   const _GoalsSection({
     required this.plans,
@@ -101,7 +62,7 @@ class _OpenThreadsSection extends StatelessWidget {
               onEdit: () => onEdit(thread),
             ),
           )
-          .toList(),
+          .toList(growable: false),
     );
   }
 }

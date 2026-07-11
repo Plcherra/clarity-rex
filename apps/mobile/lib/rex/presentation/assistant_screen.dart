@@ -154,7 +154,7 @@ class _AssistantTopSurface extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         isCompactWidth ? RexUiTokens.space12 : RexUiTokens.space16,
-        RexUiTokens.space4,
+        RexUiTokens.space12,
         isCompactWidth ? RexUiTokens.space12 : RexUiTokens.space16,
         RexUiTokens.space4,
       ),
@@ -166,7 +166,7 @@ class _AssistantTopSurface extends StatelessWidget {
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
               color: scheme.onSurface,
-              height: 1.05,
+              height: 1.15,
             ),
           ),
           const SizedBox(height: RexUiTokens.space8),
@@ -219,7 +219,7 @@ class _AssistantTabNavigation extends StatelessWidget {
             unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w500,
             ),
-            labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 2),
             tabs: [
               for (final tab in AssistantTab.values)
                 Tab(
@@ -230,15 +230,26 @@ class _AssistantTabNavigation extends StatelessWidget {
             ],
           ),
         ),
-        IconButton(
-          tooltip: l10n.assistantCompanionSettingsGearLabel,
-          onPressed: () => showAssistantProposalSettingsSheet(
-            context: context,
-            profileController: profileController,
-          ),
-          icon: Icon(
-            Icons.tune_rounded,
-            color: scheme.onSurface.withValues(alpha: 0.72),
+        SizedBox(
+          height: _assistantTabHeight,
+          width: 40,
+          child: IconButton(
+            tooltip: l10n.assistantCompanionSettingsGearLabel,
+            onPressed: () => showAssistantProposalSettingsSheet(
+              context: context,
+              profileController: profileController,
+            ),
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            style: IconButton.styleFrom(
+              shape: const CircleBorder(),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            icon: Icon(
+              Icons.tune_rounded,
+              size: 20,
+              color: scheme.onSurface.withValues(alpha: 0.72),
+            ),
           ),
         ),
       ],
@@ -272,7 +283,7 @@ class _AssistantTabItem extends StatelessWidget {
                   tab.labelFor(context),
                   maxLines: 1,
                   overflow: TextOverflow.visible,
-                  style: theme.textTheme.labelMedium?.copyWith(
+                  style: theme.textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),

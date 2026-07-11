@@ -183,7 +183,7 @@ void main() {
     expect(find.textContaining('Moved to Somerville'), findsNothing);
   });
 
-  testWidgets('MemoryPage edit sheet shows importance and updated date', (
+  testWidgets('MemoryPage flat edit sheet shows updated date without importance', (
     tester,
   ) async {
     final api = MemoryPageFakeMemoryApi();
@@ -201,7 +201,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.memoryEditEditMemoryTitle), findsOneWidget);
-    expect(find.text(l10n.commonImportance), findsOneWidget);
+    expect(find.text(l10n.commonImportance), findsNothing);
     expect(find.textContaining('Updated 05/31/2026'), findsOneWidget);
   });
 

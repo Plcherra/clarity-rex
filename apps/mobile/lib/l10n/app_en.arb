@@ -97,6 +97,7 @@
   "commonUnavailable": "Unavailable",
   "commonSignOut": "Sign out",
   "commonEdit": "Edit",
+  "commonPause": "Pause",
   "commonImport": "Import",
   "commonLoading": "Loading",
   "commonRemove": "Remove",
@@ -923,6 +924,7 @@
   "accountabilitySectionsNoRecentPatterns": "No recent patterns to review.",
   "accountabilityTilesGoalActionsTooltip": "Goal actions",
   "accountabilityTilesOpenThreadActionsTooltip": "Open thread actions",
+  "accountabilityTilesOpenThreadDefaultSubtitle": "Companion follow-up — not saved memory",
   "accountabilityTilesMarkMissed": "Mark missed",
   "accountabilityDetailGoalDetails": "Goal details",
   "accountabilityDetailEditOpenThread": "Edit open thread",
@@ -1894,6 +1896,17 @@
   "memoryCreateMilestoneTitle": "Add a milestone",
   "memoryEditEditMilestoneTitle": "Edit milestone",
   "memoryEditEditPersonTitle": "Edit person",
+  "memoryEditPersonRelationshipHint": "Relationship — e.g. friend, coworker, sister",
+  "memoryEditPersonRelationshipHelper": "Clarity uses this as the relationship type.",
+  "memoryEditPersonBirthdayHint": "mm/dd/yyyy",
+  "memoryEditPersonDeleteBody": "Remove {name} from Knows? This archives the person card.",
+  "@memoryEditPersonDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "memoryEditEditRuleTitle": "Edit rule",
   "memoryEditEditPlanTitle": "Edit plan",
   "memoryEditRuleTextLabel": "Rule text",

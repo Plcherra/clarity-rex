@@ -142,7 +142,6 @@ class _FlatMemoryCreateSheetState extends State<_FlatMemoryCreateSheet> {
   late final TextEditingController _contentController;
   late MemoryType _memoryType;
   late String _category;
-  var _importance = 3.0;
 
   @override
   void initState() {
@@ -206,12 +205,6 @@ class _FlatMemoryCreateSheetState extends State<_FlatMemoryCreateSheet> {
                 hintText: l10n.memoryEditSummaryHint,
               ),
             ),
-            const SizedBox(height: 12),
-            _ImportanceSlider(
-              label: l10n.commonImportance,
-              value: _importance,
-              onChanged: (value) => setState(() => _importance = value),
-            ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -242,7 +235,7 @@ class _FlatMemoryCreateSheetState extends State<_FlatMemoryCreateSheet> {
       FlatMemoryCreateResult(
         memoryType: _memoryType,
         content: content,
-        importance: _importance.round(),
+        importance: 3,
         memoryCategory: _category,
       ),
     );
@@ -260,7 +253,6 @@ class _PersonCreateSheetState extends State<_PersonCreateSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _relationshipController;
   late final TextEditingController _summaryController;
-  var _importance = 3.0;
 
   @override
   void initState() {
@@ -309,12 +301,6 @@ class _PersonCreateSheetState extends State<_PersonCreateSheet> {
               maxLines: 4,
               decoration: InputDecoration(labelText: l10n.commonSummary),
             ),
-            const SizedBox(height: 12),
-            _ImportanceSlider(
-              label: l10n.commonImportance,
-              value: _importance,
-              onChanged: (value) => setState(() => _importance = value),
-            ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -350,7 +336,7 @@ class _PersonCreateSheetState extends State<_PersonCreateSheet> {
         summary: _summaryController.text.trim().isEmpty
             ? null
             : _summaryController.text.trim(),
-        importance: _importance.round(),
+        importance: 3,
       ),
     );
   }

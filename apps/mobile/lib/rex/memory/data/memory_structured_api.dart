@@ -69,6 +69,7 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
     int? importance,
     String? status,
     bool? active,
+    Map<String, dynamic>? metadata,
   }) async {
     final data = await _patchJson(
       '/entities/$personId',
@@ -81,6 +82,7 @@ mixin _StructuredMemoryApi on _MemoryApiTransport {
         'importance': importance,
         'status': status,
         'active': active,
+        'metadata': metadata,
       }),
     );
     return PersonMemoryItem.fromJson(data);

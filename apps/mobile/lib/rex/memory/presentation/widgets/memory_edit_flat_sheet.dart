@@ -5,7 +5,6 @@ import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
 import 'package:clarity/rex/memory/presentation/memory_l10n.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_dialogs.dart';
-import 'package:clarity/rex/memory/presentation/widgets/memory_edit_shared_widgets.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/theme/clarity_sheet_insets.dart';
 
@@ -32,7 +31,6 @@ class MemoryFlatEditSheet extends StatefulWidget {
 class _MemoryFlatEditSheetState extends State<MemoryFlatEditSheet> {
   late final TextEditingController _contentController;
   late MemoryType _memoryType;
-  late double _importance;
   late bool _active;
 
   @override
@@ -40,7 +38,6 @@ class _MemoryFlatEditSheetState extends State<MemoryFlatEditSheet> {
     super.initState();
     _contentController = TextEditingController(text: widget.memory.content);
     _memoryType = widget.memory.memoryType;
-    _importance = widget.memory.importance.toDouble();
     _active = widget.memory.active;
   }
 
@@ -103,12 +100,6 @@ class _MemoryFlatEditSheetState extends State<MemoryFlatEditSheet> {
                 hintText: l10n.memoryEditSummaryHint,
               ),
             ),
-            const SizedBox(height: 12),
-            MemoryEditImportanceSlider(
-              label: l10n.commonImportance,
-              value: _importance,
-              onChanged: (value) => setState(() => _importance = value),
-            ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.commonActive),
@@ -153,7 +144,7 @@ class _MemoryFlatEditSheetState extends State<MemoryFlatEditSheet> {
       MemoryEditResult(
         memoryType: _memoryType == MemoryType.other ? null : _memoryType,
         content: content,
-        importance: _importance.round(),
+        importance: widget.memory.importance,
         active: _active,
       ),
     );

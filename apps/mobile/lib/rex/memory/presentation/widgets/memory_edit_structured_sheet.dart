@@ -23,6 +23,8 @@ Future<StructuredEditResult?> showStructuredMemoryEditSheet(
   required DateTime? createdAt,
   String? extraLabel,
   String? extraValue,
+  bool showImportance = true,
+  bool showActive = true,
 }) {
   return showClarityModalBottomSheet<StructuredEditResult>(
     context: context,
@@ -42,6 +44,8 @@ Future<StructuredEditResult?> showStructuredMemoryEditSheet(
       active: active,
       updatedAt: updatedAt,
       createdAt: createdAt,
+      showImportance: showImportance,
+      showActive: showActive,
     ),
   );
 }
@@ -63,6 +67,8 @@ class MemoryStructuredEditSheet extends StatefulWidget {
     required this.createdAt,
     this.extraLabel,
     this.extraValue,
+    this.showImportance = true,
+    this.showActive = true,
   });
 
   final String title;
@@ -79,6 +85,8 @@ class MemoryStructuredEditSheet extends StatefulWidget {
   final bool active;
   final DateTime? updatedAt;
   final DateTime? createdAt;
+  final bool showImportance;
+  final bool showActive;
 
   @override
   State<MemoryStructuredEditSheet> createState() =>
@@ -165,18 +173,21 @@ class _MemoryStructuredEditSheetState extends State<MemoryStructuredEditSheet> {
                 decoration: InputDecoration(labelText: widget.extraLabel),
               ),
             ],
-            const SizedBox(height: 12),
-            MemoryEditImportanceSlider(
-              label: widget.importanceLabel,
-              value: _importance,
-              onChanged: (value) => setState(() => _importance = value),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.commonActive),
-              value: _active,
-              onChanged: (value) => setState(() => _active = value),
-            ),
+            if (widget.showImportance) ...[
+              const SizedBox(height: 12),
+              MemoryEditImportanceSlider(
+                label: widget.importanceLabel,
+                value: _importance,
+                onChanged: (value) => setState(() => _importance = value),
+              ),
+            ],
+            if (widget.showActive)
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.commonActive),
+                value: _active,
+                onChanged: (value) => setState(() => _active = value),
+              ),
             if (updatedLabel.isNotEmpty)
               ListTile(
                 contentPadding: EdgeInsets.zero,

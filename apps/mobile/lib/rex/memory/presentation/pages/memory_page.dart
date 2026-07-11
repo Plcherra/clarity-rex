@@ -6,6 +6,7 @@ import 'package:clarity/rex/memory/application/memory_controller.dart';
 import 'package:clarity/rex/memory/data/memory_models.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_archive_dialogs.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_create_sheets.dart';
+import 'package:clarity/rex/memory/presentation/widgets/memory_edit_person_sheet.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_edit_sheets.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_filters.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_page_header_widgets.dart';
@@ -168,34 +169,43 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
 
   Future<void> _editPerson(PersonMemoryItem person) async {
     final l10n = context.l10n;
-    final result = await showStructuredEditSheet(
-      context,
-      title: l10n.memoryEditEditPersonTitle,
-      typeLabel: l10n.commonPerson,
-      primaryLabel: l10n.commonName,
-      primaryValue: person.displayName,
-      detailLabel: l10n.commonSummary,
-      detailValue: person.summary,
-      importanceLabel: l10n.commonImportance,
-      importance: person.importance,
-      status: person.status,
-      active: person.active,
-      updatedAt: person.updatedAt,
-      createdAt: person.createdAt,
-    );
+    final result = await showPersonEditSheet(context, person: person);
     if (result == null) {
       return;
     }
 
-    final saved = await ref
-        .read(memoryProvider.notifier)
-        .updatePerson(
+    if (result.delete) {
+      final archived = await ref
+          .read(memoryProvider.notifier)
+          .archiveStructuredMemory(StructuredMemoryKind.person, person.id);
+      if (mounted) {
+        _showSnackBar(
+          archived
+              ? context.l10n.commonArchivedNamed(person.displayName)
+              : _currentError(),
+        );
+      }
+      return;
+    }
+
+    final existingAttributes = Map<String, dynamic>.from(person.attributes);
+    if (result.birthday == null || result.birthday!.isEmpty) {
+      existingAttributes.remove('birthday');
+    } else {
+      existingAttributes['birthday'] = result.birthday;
+    }
+    final metadata = Map<String, dynamic>.from(person.metadata);
+    metadata['attributes'] = existingAttributes;
+
+    final saved = await ref.read(memoryProvider.notifier).updatePerson(
           person.id,
-          displayName: result.primary,
-          summary: result.detail,
-          importance: result.importance,
-          status: result.status,
-          active: result.active,
+          displayName: result.displayName,
+          relationship: result.relationship,
+          summary: result.summary,
+          importance: person.importance,
+          status: person.status,
+          active: person.active,
+          metadata: metadata,
         );
     if (mounted) {
       _showSnackBar(saved ? l10n.memoryPagePersonUpdated : _currentError());
@@ -218,6 +228,8 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
       active: entity.active,
       updatedAt: entity.updatedAt,
       createdAt: entity.createdAt,
+      showImportance: false,
+      showActive: false,
     );
     if (result == null) {
       return;
@@ -440,7 +452,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -451,7 +463,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                           ? null
                           : _setQuickFilter,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     SavedMemoryHeader(
                       onCreate: widget.showAppBar
                           ? null
@@ -460,7 +472,7 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                               : _startCreate),
                       createEnabled: !state.isLoading && !state.isSaving,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     ActiveMemoryToggle(
                       value: state.activeOnly,
                       onChanged: state.isLoading ? null : _setActiveOnly,

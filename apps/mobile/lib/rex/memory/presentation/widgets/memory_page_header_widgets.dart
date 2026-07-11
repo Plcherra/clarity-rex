@@ -34,12 +34,12 @@ class MemorySearchAndFilters extends StatelessWidget {
       children: [
         TextField(
           controller: controller,
-          style: theme.textTheme.bodyLarge?.copyWith(color: colors.textPrimary),
+          style: theme.textTheme.bodyMedium?.copyWith(color: colors.textPrimary),
           textInputAction: TextInputAction.search,
           cursorColor: colors.accent,
           decoration: InputDecoration(
             hintText: l10n.memoryHeaderSearchHint,
-            hintStyle: theme.textTheme.bodyLarge?.copyWith(
+            hintStyle: theme.textTheme.bodyMedium?.copyWith(
               color: colors.textMuted,
             ),
             prefixIcon: Icon(Icons.search_rounded, color: colors.textSecondary),
@@ -68,12 +68,13 @@ class MemorySearchAndFilters extends StatelessWidget {
               borderSide: BorderSide(color: colors.borderActive, width: 1.2),
             ),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: RexUiTokens.space16,
-              vertical: RexUiTokens.space16,
+              horizontal: RexUiTokens.space12,
+              vertical: RexUiTokens.space8,
             ),
+            isDense: true,
           ),
         ),
-        const SizedBox(height: RexUiTokens.space12),
+        const SizedBox(height: RexUiTokens.space8),
         Wrap(
           spacing: RexUiTokens.space8,
           runSpacing: RexUiTokens.space8,
@@ -88,12 +89,14 @@ class MemorySearchAndFilters extends StatelessWidget {
                 backgroundColor: colors.surfaceElevated.withValues(alpha: 0.72),
                 selectedColor: colors.accent,
                 disabledColor: colors.surface,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
                 ),
                 side: BorderSide.none,
                 showCheckmark: false,
-                labelStyle: theme.textTheme.labelLarge?.copyWith(
+                labelStyle: theme.textTheme.labelMedium?.copyWith(
                   color: selectedFilter == filter
                       ? selectedTextColor
                       : colors.textSecondary,
@@ -130,9 +133,9 @@ class SavedMemoryHeader extends StatelessWidget {
           Expanded(
             child: Text(
               l10n.memoryHeaderSectionTitle,
-              style: theme.textTheme.titleLarge?.copyWith(
+              style: theme.textTheme.titleMedium?.copyWith(
                 color: colors.textPrimary,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),

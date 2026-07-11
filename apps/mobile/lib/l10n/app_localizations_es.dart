@@ -188,6 +188,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonEdit => 'Editar';
 
   @override
+  String get commonPause => 'Pausar';
+
+  @override
   String get commonImport => 'Importar';
 
   @override
@@ -1875,6 +1878,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Acciones del hilo abierto';
 
   @override
+  String get accountabilityTilesOpenThreadDefaultSubtitle =>
+      'Seguimiento del compañero — no es memoria guardada';
+
+  @override
   String get accountabilityTilesMarkMissed => 'marca perdida';
 
   @override
@@ -3201,6 +3208,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get memoryEditEditPersonTitle => 'Editar persona';
+
+  @override
+  String get memoryEditPersonRelationshipHint =>
+      'Relación — p. ej. amigo, compañero, hermana';
+
+  @override
+  String get memoryEditPersonRelationshipHelper =>
+      'Clarity usa esto como tipo de relación.';
+
+  @override
+  String get memoryEditPersonBirthdayHint => 'mm/dd/aaaa';
+
+  @override
+  String memoryEditPersonDeleteBody(String name) {
+    return '¿Quitar a $name de Knows? Esto archiva la tarjeta de persona.';
+  }
 
   @override
   String get memoryEditEditRuleTitle => 'Editar regla';

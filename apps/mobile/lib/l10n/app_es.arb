@@ -186,6 +186,7 @@
   "accountabilityStatusInProgress": "En curso",
   "accountabilityStatusOpen": "Abierto",
   "accountabilityTilesOpenThreadActionsTooltip": "Acciones del hilo abierto",
+  "accountabilityTilesOpenThreadDefaultSubtitle": "Seguimiento del compañero — no es memoria guardada",
   "accountabilityTilesGoalActionsTooltip": "Acciones de objetivos",
   "accountabilityTilesMarkMissed": "marca perdida",
   "accountabilityUpdateFailed": "Error al actualizar los objetivos.",
@@ -716,6 +717,7 @@
     }
   },
   "commonEdit": "Editar",
+  "commonPause": "Pausar",
   "commonEnable": "Permitir",
   "commonEnd": "Fin",
   "commonExpense": "Gastos",
@@ -1577,6 +1579,17 @@
   "memoryEditDesiredOutcomeLabel": "Resultado deseado",
   "memoryEditEditMemoryTitle": "Editar memoria",
   "memoryEditEditPersonTitle": "Editar persona",
+  "memoryEditPersonRelationshipHint": "Relación — p. ej. amigo, compañero, hermana",
+  "memoryEditPersonRelationshipHelper": "Clarity usa esto como tipo de relación.",
+  "memoryEditPersonBirthdayHint": "mm/dd/aaaa",
+  "memoryEditPersonDeleteBody": "¿Quitar a {name} de Knows? Esto archiva la tarjeta de persona.",
+  "@memoryEditPersonDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "memoryEditEditPlanTitle": "Editar plan",
   "memoryEditEditRuleTitle": "Editar regla",
   "memoryEditRuleTextLabel": "Texto de regla",

@@ -13,6 +13,11 @@ from app.models.memory_discipline import (
 from app.services.conversation_pending_action import PendingAction
 from app.services.conversational_plan_candidate import build_plan_candidate_payload
 from app.services.conversational_plan_detection import ConversationalPlanDetector
+from app.services.conversational_plan_offer import (
+    is_plan_offer_affirmation,
+    is_plan_offer_decline,
+    plan_offer_state_from_history,
+)
 from app.services.durable_write_pending import proposal_from_pending_action
 from app.services.goal_command_results import clarification_turn_result
 from app.services.goal_command_formatting import goal_title
@@ -66,6 +71,28 @@ class ConversationalPlanService:
         if user_declined_plan_save_recently(conversation_history):
             return None
 
+        offer = plan_offer_state_from_history(conversation_history)
+        if is_plan_offer_decline(message, offer):
+            return await clarification_turn_result(
+                self.memory_service,
+                conversation_id=conversation_id,
+                user_message=user_message,
+                response="Okay — I won't save that as a goal.",
+            )
+        if is_plan_offer_affirmation(message, offer):
+            topic = str(offer.get("topic_message") or offer.get("offered_title") or "").strip()
+            if topic:
+                return await self._propose_from_topic(
+                    topic,
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                    conversation_history=conversation_history,
+                    time_context=time_context,
+                    settings=settings,
+                    pending=pending,
+                    force_propose=True,
+                )
+
         if not self.detector.looks_like_conversational_plan(message):
             return None
         if self.detector.should_skip_for_explicit_command(
@@ -75,8 +102,31 @@ class ConversationalPlanService:
         ):
             return None
 
-        payload = build_plan_candidate_payload(
+        return await self._propose_from_topic(
             message,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            conversation_history=conversation_history,
+            time_context=time_context,
+            settings=settings,
+            pending=pending,
+            force_propose=False,
+        )
+
+    async def _propose_from_topic(
+        self,
+        topic: str,
+        *,
+        conversation_id: str,
+        user_message: dict,
+        conversation_history: list[dict],
+        time_context: dict,
+        settings: AssistantProposalSettings,
+        pending: Optional[PendingAction],
+        force_propose: bool,
+    ) -> Optional[dict]:
+        payload = build_plan_candidate_payload(
+            topic,
             time_context=time_context,
             conversation_id=conversation_id,
             source_message_id=str(user_message.get("id") or "") or None,
@@ -99,7 +149,6 @@ class ConversationalPlanService:
             MemoryDisciplineAction.UPDATE_MILESTONE,
             MemoryDisciplineAction.CREATE_ENTITY_EVENT,
         }:
-            # Text mode still sets server pending; DurableWriteService omits cards.
             return await self.durable_write_service.propose_discipline_decision(
                 decision,
                 conversation_id=conversation_id,
@@ -107,10 +156,12 @@ class ConversationalPlanService:
                 conversation_messages=conversation_history,
             )
 
-        title = str(payload.get("title") or goal_title(message)).strip()
+        title = str(payload.get("title") or goal_title(topic)).strip()
 
-        if settings.uses_confirm_cards() or (
-            pending is not None and _allows_plan_proposal_while_pending(pending)
+        if (
+            force_propose
+            or settings.uses_confirm_cards()
+            or (pending is not None and _allows_plan_proposal_while_pending(pending))
         ):
             return await self.durable_write_service.propose_discipline_decision(
                 decision,

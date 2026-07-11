@@ -186,6 +186,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonEdit => 'Edit';
 
   @override
+  String get commonPause => 'Pause';
+
+  @override
   String get commonImport => 'Import';
 
   @override
@@ -1847,6 +1850,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Open thread actions';
 
   @override
+  String get accountabilityTilesOpenThreadDefaultSubtitle =>
+      'Companion follow-up — not saved memory';
+
+  @override
   String get accountabilityTilesMarkMissed => 'Mark missed';
 
   @override
@@ -3143,6 +3150,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memoryEditEditPersonTitle => 'Edit person';
+
+  @override
+  String get memoryEditPersonRelationshipHint =>
+      'Relationship — e.g. friend, coworker, sister';
+
+  @override
+  String get memoryEditPersonRelationshipHelper =>
+      'Clarity uses this as the relationship type.';
+
+  @override
+  String get memoryEditPersonBirthdayHint => 'mm/dd/yyyy';
+
+  @override
+  String memoryEditPersonDeleteBody(String name) {
+    return 'Remove $name from Knows? This archives the person card.';
+  }
 
   @override
   String get memoryEditEditRuleTitle => 'Edit rule';

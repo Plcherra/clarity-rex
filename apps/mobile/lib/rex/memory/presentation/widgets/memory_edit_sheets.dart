@@ -31,6 +31,8 @@ Future<StructuredEditResult?> showStructuredEditSheet(
   required DateTime? createdAt,
   String? extraLabel,
   String? extraValue,
+  bool showImportance = true,
+  bool showActive = true,
 }) {
   return showStructuredMemoryEditSheet(
     context,
@@ -48,5 +50,7 @@ Future<StructuredEditResult?> showStructuredEditSheet(
     createdAt: createdAt,
     extraLabel: extraLabel,
     extraValue: extraValue,
+    showImportance: showImportance,
+    showActive: showActive,
   );
 }

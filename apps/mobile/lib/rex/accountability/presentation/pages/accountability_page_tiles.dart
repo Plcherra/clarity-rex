@@ -46,7 +46,7 @@ class _OpenThreadTile extends StatelessWidget {
       leading: Icon(Icons.chat_bubble_outline_rounded, size: 18, color: context.clarityColors.textSecondary),
       icon: null,
       title: thread.title,
-      subtitle: openThreadSubtitle(thread),
+      subtitle: openThreadSubtitle(context.l10n, thread),
       deadline: thread.updatedAt,
       priority: 3,
       status: thread.status,
@@ -205,130 +205,6 @@ class _PriorityDot extends StatelessWidget {
   }
 }
 
-class _SignalTile extends StatelessWidget {
-  const _SignalTile({required this.signal});
-
-  final AccountabilitySignal signal;
-
-  Color _severityColor(ClarityColorTokens colors) {
-    return switch (signal.severity) {
-      AccountabilitySeverity.critical ||
-      AccountabilitySeverity.high => colors.danger,
-      AccountabilitySeverity.medium => colors.warning,
-      AccountabilitySeverity.low || AccountabilitySeverity.info => colors.accent,
-      AccountabilitySeverity.unknown => colors.textMuted,
-    };
-  }
-
-  IconData _signalIcon() {
-    return switch (signal.signalType) {
-      AccountabilitySignalType.budgetRisk => Icons.pie_chart_outline_rounded,
-      _ => Icons.insights_outlined,
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.clarityColors;
-    final theme = Theme.of(context);
-    final l10n = context.l10n;
-    final subtitle = accountabilitySignalSubtitle(signal);
-    final action = signal.recommendedAction?.trim();
-
-    return RexSurface(
-      color: colors.surfaceSoft.withValues(alpha: 0.22),
-      borderColor: _severityColor(colors).withValues(alpha: 0.24),
-      radius: RexUiTokens.memoryTileRadius,
-      padding: const EdgeInsets.all(RexUiTokens.memoryTilePaddingH),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                _signalIcon(),
-                size: 16,
-                color: _severityColor(colors),
-              ),
-              const SizedBox(width: RexUiTokens.space8),
-              Expanded(
-                child: Text(
-                  signal.title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: RexUiTokens.space8),
-              _SeverityChip(severity: signal.severity),
-            ],
-          ),
-          if (signal.signalType == AccountabilitySignalType.budgetRisk) ...[
-            const SizedBox(height: RexUiTokens.space4),
-            Text(
-              signal.signalType.label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          if (subtitle != null) ...[
-            const SizedBox(height: RexUiTokens.space4),
-            Text(
-              subtitle,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colors.textMuted,
-                height: 1.35,
-              ),
-            ),
-          ],
-          if (action != null && action.isNotEmpty) ...[
-            const SizedBox(height: RexUiTokens.space4),
-            Text(
-              action,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          if (signal.status != AccountabilityStatus.unknown &&
-              signal.status != AccountabilityStatus.active) ...[
-            const SizedBox(height: RexUiTokens.space4),
-            Text(
-              statusShortLabel(l10n, signal.status.name),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SeverityChip extends StatelessWidget {
-  const _SeverityChip({required this.severity});
-
-  final AccountabilitySeverity severity;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.clarityColors;
-    return Text(
-      accountabilitySeverityLabel(context.l10n, severity),
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: colors.textSecondary,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
-}
-
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.status});
 
@@ -396,7 +272,7 @@ class _OpenThreadActions extends StatelessWidget {
       icon: Icon(Icons.more_horiz_rounded, color: colors.textMuted, size: 18),
       itemBuilder: (context) => [
         PopupMenuItem(value: 'edit', child: Text(l10n.commonEdit)),
-        PopupMenuItem(value: 'pause', child: const Text('Pause')),
+        PopupMenuItem(value: 'pause', child: Text(l10n.commonPause)),
         PopupMenuItem(value: 'close', child: Text(l10n.commonArchive)),
       ],
       onSelected: (value) {

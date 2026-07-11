@@ -5,7 +5,6 @@ import 'package:clarity/core/l10n/friendly_service_error.dart';
 import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/rex/accountability/data/accountability_api.dart';
 import 'package:clarity/rex/accountability/data/accountability_models.dart';
-import 'package:clarity/rex/data/financial_context_service.dart';
 
 final accountabilityProvider =
     NotifierProvider<AccountabilityController, AccountabilityState>(
@@ -52,13 +51,9 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final financialService = ref.read(assistantFinancialContextServiceProvider);
-      final budgetPerformance = financialService == null
-          ? null
-          : await financialService.budgetPerformanceSummary();
-      final overview = await ref
-          .read(accountabilityApiProvider)
-          .getOverview(budgetPerformance: budgetPerformance);
+      // Goals tab is plans + open threads only. Budget/rule/pattern insights
+      // belong on a future Overview surface — do not attach budget_performance.
+      final overview = await ref.read(accountabilityApiProvider).getOverview();
       state = state.copyWith(
         overview: overview,
         isLoading: false,
@@ -161,13 +156,7 @@ class AccountabilityController extends Notifier<AccountabilityState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       await action();
-      final financialService = ref.read(assistantFinancialContextServiceProvider);
-      final budgetPerformance = financialService == null
-          ? null
-          : await financialService.budgetPerformanceSummary();
-      final overview = await ref
-          .read(accountabilityApiProvider)
-          .getOverview(budgetPerformance: budgetPerformance);
+      final overview = await ref.read(accountabilityApiProvider).getOverview();
       state = state.copyWith(
         overview: overview,
         isLoading: false,

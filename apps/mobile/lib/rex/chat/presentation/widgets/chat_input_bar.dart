@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -135,7 +133,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
                   ),
                 ),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   _ComposerIconButton(
                     icon: Icons.attach_file_rounded,
@@ -167,9 +165,14 @@ class _ChatInputBarState extends State<ChatInputBar> {
                       cursorColor: colors.accent,
                       decoration: InputDecoration(
                         hintText: l10n.chatInputMessageHint,
+                        filled: false,
+                        fillColor: Colors.transparent,
                         border: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         enabledBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: RexUiTokens.space8,
@@ -252,6 +255,9 @@ class _ComposerIconButton extends StatelessWidget {
         : enabled
         ? colors.textPrimary
         : colors.textMuted.withValues(alpha: 0.45);
+    final softFill = isActive && enabled
+        ? colors.accent.withValues(alpha: 0.14)
+        : Colors.transparent;
 
     return IconButton(
       onPressed: onPressed,
@@ -263,15 +269,17 @@ class _ComposerIconButton extends StatelessWidget {
           : Icon(icon, size: 22),
       tooltip: tooltip,
       style: IconButton.styleFrom(
-        minimumSize: const Size.square(40),
-        fixedSize: const Size.square(40),
+        minimumSize: const Size.square(RexUiTokens.composerIconSize),
+        fixedSize: const Size.square(RexUiTokens.composerIconSize),
         padding: EdgeInsets.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        backgroundColor: Colors.transparent,
+        backgroundColor: softFill,
         foregroundColor: foreground,
         disabledForegroundColor: colors.textMuted.withValues(alpha: 0.45),
         shadowColor: Colors.transparent,
         elevation: 0,
+        shape: const CircleBorder(),
+        overlayColor: colors.textPrimary.withValues(alpha: 0.08),
       ),
     );
   }
