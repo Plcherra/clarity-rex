@@ -67,41 +67,46 @@ class _HomeShellCenteredDock extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
 
+    // Must shrink-wrap vertically: Align without heightFactor expands to the
+    // Scaffold's full max height for bottomNavigationBar and starves the body.
     return SafeArea(
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: homeShellDockMaxWidth),
-            child: Material(
-              color: colors.surfaceElevated,
-              elevation: 2,
-              shadowColor: colors.textPrimary.withValues(alpha: 0.12),
-              surfaceTintColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(ClarityRadius.pill),
-                side: BorderSide(color: colors.border.withValues(alpha: 0.55)),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  navigationBarTheme: Theme.of(context).navigationBarTheme
-                      .copyWith(
-                        backgroundColor: Colors.transparent,
-                        elevation: 0,
-                        height: 56,
-                      ),
+        child: Row(
+          children: [
+            const Spacer(),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: homeShellDockMaxWidth),
+              child: Material(
+                color: colors.surfaceElevated,
+                elevation: 2,
+                shadowColor: colors.textPrimary.withValues(alpha: 0.12),
+                surfaceTintColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(ClarityRadius.pill),
+                  side: BorderSide(color: colors.border.withValues(alpha: 0.55)),
                 ),
-                child: NavigationBar(
-                  selectedIndex: selectedIndex,
-                  onDestinationSelected: onDestinationSelected,
-                  destinations: destinations,
+                clipBehavior: Clip.antiAlias,
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    navigationBarTheme: Theme.of(context).navigationBarTheme
+                        .copyWith(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          height: 56,
+                        ),
+                  ),
+                  child: NavigationBar(
+                    selectedIndex: selectedIndex,
+                    onDestinationSelected: onDestinationSelected,
+                    destinations: destinations,
+                  ),
                 ),
               ),
             ),
-          ),
+            const Spacer(),
+          ],
         ),
       ),
     );

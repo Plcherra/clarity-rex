@@ -31,7 +31,11 @@ void main() {
             NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
             NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
           ],
-          body: const Placeholder(),
+          body: const ColoredBox(
+            key: Key('shell-body'),
+            color: Colors.red,
+            child: SizedBox.expand(),
+          ),
         ),
       ),
     );
@@ -42,6 +46,9 @@ void main() {
     expect(bar.destinations.length, 2);
     final dockBox = tester.renderObject<RenderBox>(find.byType(NavigationBar));
     expect(dockBox.size.width, lessThanOrEqualTo(homeShellDockMaxWidth));
+    // Dock must not consume the scaffold body (was a full-height Align bug).
+    final bodyBox = tester.renderObject<RenderBox>(find.byKey(const Key('shell-body')));
+    expect(bodyBox.size.height, greaterThan(400));
   });
 
   testWidgets('HomeShellAdaptiveScaffold uses full-width bottom nav below 800px', (
