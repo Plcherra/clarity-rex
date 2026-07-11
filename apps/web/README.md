@@ -98,6 +98,13 @@ Verify after deploy:
 - `https://goclarity.app/app/passkeys_bundle.js` — JavaScript, not HTML
 - `https://goclarity.app/app/main.dart.js` — JavaScript (~5 MB)
 
+If `/app/` still shows MIME `text/html` for `.js` files after a good deploy, **purge the
+Cloudflare cache** for the custom domain (Caching → Configuration → Purge Everything,
+or purge `https://goclarity.app/app/passkeys_bundle.js` and
+`https://goclarity.app/app/flutter_bootstrap.js`). A prior landing-only deploy can leave
+HTML SPA fallbacks cached under those URLs (`cf-cache-status: HIT`) while
+`*.pages.dev` already serves the real JS.
+
 **Cloudflare zone settings:** disable **Speed → Optimization → Auto Minify → JavaScript**
 for `goclarity.app`. Minifying Flutter's already-minified `main.dart.js` can leave the boot
 screen stuck on "Loading Clarity…". Script tags use `data-cfasync="false"` to opt out of

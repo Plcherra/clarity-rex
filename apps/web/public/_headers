@@ -1,3 +1,24 @@
+# Force correct MIME for Flutter boot scripts (never cache SPA HTML fallbacks).
+/app/passkeys_bundle.js
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: application/javascript
+
+/app/flutter_bootstrap.js
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: application/javascript
+
+/app/flutter.js
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: application/javascript
+
+/app/flutter_service_worker.js
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: application/javascript
+
+/app/main.dart.js
+  Cache-Control: public, max-age=3600, must-revalidate
+  Content-Type: application/javascript
+
 /app/js/record.worklet.js
   Cache-Control: public, max-age=3600, must-revalidate
   Content-Type: application/javascript
@@ -6,14 +27,11 @@
   Cache-Control: public, max-age=3600, must-revalidate
   Content-Type: application/javascript
 
+/app/*.js
+  Content-Type: application/javascript
+
 /app/*
   Cache-Control: public, max-age=3600, must-revalidate
 
 /app/index.html
   Cache-Control: public, max-age=0, must-revalidate
-
-/app/flutter_bootstrap.js
-  Cache-Control: public, max-age=0, must-revalidate
-
-/app/main.dart.js
-  Cache-Control: public, max-age=3600, must-revalidate
