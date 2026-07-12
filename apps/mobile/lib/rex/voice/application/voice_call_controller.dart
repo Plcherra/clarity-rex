@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clarity/core/l10n/app_locale.dart';
 import 'package:clarity/core/l10n/app_localizations_lookup.dart';
 import 'package:clarity/core/l10n/friendly_service_error.dart';
+import 'package:clarity/core/network/device_connectivity.dart';
 import 'package:clarity/core/observability/clarity_product_events.dart';
 import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/features/profile/application/locale_controller.dart';
@@ -221,6 +222,18 @@ class VoiceCallController extends Notifier<VoiceCallState>
     final activeConversationId =
         conversationId ?? ref.read(chatProvider).conversationId;
 
+    // A23 light preflight: honest offline message before mic / WS work.
+    final online = await ref.read(deviceOnlineCheckProvider)();
+    if (!_isCurrentCall(generation)) {
+      _isStartingCall = false;
+      return false;
+    }
+    if (!online) {
+      failL10n((l10n) => l10n.chatErrorNetwork);
+      _isStartingCall = false;
+      return false;
+    }
+
     final permissionDecision = await ref
         .read(microphonePermissionProvider)
         .requestMicrophonePermission(includeSpeechRecognition: false);
@@ -321,7 +334,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
 
   bool _hasPendingSaveConfirmation() {
     final pending = pendingClarityActions(ref.read(chatProvider).messages);
-    return pending.any((action) => action.canConfirm);
+    return pending.any((action) => action.isConfirmActive);
   }
 
   void pauseForSaveConfirmation() {
@@ -386,6 +399,11 @@ class VoiceCallController extends Notifier<VoiceCallState>
     }
 
     if (state.phase == VoiceCallPhase.thinking) {
+      // Confirm just resolved — do not force-recover if another confirm is still
+      // active (e.g. failed retry card). Only unstick when the slot is clear.
+      if (_hasPendingSaveConfirmation()) {
+        return;
+      }
       _recoverFromStuckThinking(_callGeneration);
       return;
     }

@@ -156,7 +156,7 @@ extension VoiceCallControllerTimers on VoiceCallController {
         return;
       }
       _recoverFromEmptyVoiceTurn(
-        'I did not hear anything. I am listening again.',
+        voiceL10n.voiceFailureDidNotCatch,
       );
     });
   }
@@ -203,6 +203,14 @@ extension VoiceCallControllerTimers on VoiceCallController {
     if (!_isCurrentCall(generation) ||
         !state.isCallActive ||
         state.phase != VoiceCallPhase.thinking) {
+      return;
+    }
+    // Never interrupt an in-flight or failed confirm — Truth Rule / A25.
+    // Resume listening only after the confirm resolves or the user dismisses.
+    if (_pausedForSaveConfirmation ||
+        _blockListenForSaveConfirmation ||
+        _hasPendingSaveConfirmation()) {
+      _cancelThinkingTimeout();
       return;
     }
 

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:clarity/core/l10n/app_localizations_lookup.dart';
 import 'package:clarity/core/l10n/friendly_service_error.dart';
+import 'package:clarity/core/network/device_connectivity.dart';
 import 'package:clarity/core/observability/clarity_product_events.dart';
 import 'package:clarity/features/dashboard/application/dashboard_deep_link_navigation.dart';
 import 'package:clarity/features/dashboard/domain/dashboard_insight_anchor.dart';

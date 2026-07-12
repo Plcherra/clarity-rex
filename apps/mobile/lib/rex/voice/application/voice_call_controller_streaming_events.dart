@@ -284,9 +284,7 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             if (event.errorCode == 'empty_audio' ||
                 _isNoAudioError(event.detail ?? '')) {
               debugPrint('rex_voice_stream empty_audio_recovered');
-              _recoverFromEmptyVoiceTurn(
-                'I did not catch that. I am listening again.',
-              );
+              _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
               break;
             }
             final detail = event.detail?.trim();

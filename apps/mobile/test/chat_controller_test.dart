@@ -1,4 +1,5 @@
 import 'package:clarity/core/l10n/app_localizations_lookup.dart';
+import 'package:clarity/core/network/device_connectivity.dart';
 import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/data/chat_api.dart';
@@ -19,6 +20,12 @@ import 'memory_page_test_helpers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() {
+    debugDeviceOnlineCheckOverride = () async => true;
+  });
+  tearDownAll(() {
+    debugDeviceOnlineCheckOverride = null;
+  });
 
   test(
     'applyBackendMessages attaches pending write proposals from voice turns',
@@ -119,6 +126,13 @@ void main() {
   test(
     'ChatController refreshes Knows after confirmed memory archive',
     () async {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      final localeController = LocaleController(
+        preferences: SharedPreferencesAsync(),
+      );
+      await localeController.load();
+
       final chatApi = _FakeChatApi(
         response: const ChatApiResponse(
           conversationId: 'conversation-1',
@@ -132,6 +146,7 @@ void main() {
         overrides: [
           chatApiProvider.overrideWithValue(chatApi),
           memoryApiProvider.overrideWithValue(memoryApi),
+          localeControllerProvider.overrideWithValue(localeController),
         ],
       );
       addTearDown(container.dispose);
@@ -149,6 +164,13 @@ void main() {
   test(
     'ChatController does not build financial context for casual chat',
     () async {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      final localeController = LocaleController(
+        preferences: SharedPreferencesAsync(),
+      );
+      await localeController.load();
+
       final chatApi = _FakeChatApi(
         response: const ChatApiResponse(
           conversationId: 'conversation-1',
@@ -171,6 +193,7 @@ void main() {
           assistantFinancialContextServiceProvider.overrideWithValue(
             financialContextService,
           ),
+          localeControllerProvider.overrideWithValue(localeController),
         ],
       );
       addTearDown(container.dispose);
@@ -191,6 +214,13 @@ void main() {
   test(
     'ChatController does not build financial context for money recall',
     () async {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      final localeController = LocaleController(
+        preferences: SharedPreferencesAsync(),
+      );
+      await localeController.load();
+
       final chatApi = _FakeChatApi(
         response: const ChatApiResponse(
           conversationId: 'conversation-1',
@@ -213,6 +243,7 @@ void main() {
           assistantFinancialContextServiceProvider.overrideWithValue(
             financialContextService,
           ),
+          localeControllerProvider.overrideWithValue(localeController),
         ],
       );
       addTearDown(container.dispose);
@@ -315,17 +346,28 @@ void main() {
   );
 
   test(
-    'confirm fails when backend response has no applied evidence',
+    'confirm aborts offline with chatErrorNetwork before sending write',
     () async {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      final localeController = LocaleController(
+        preferences: SharedPreferencesAsync(),
+      );
+      await localeController.load();
+
       final chatApi = _FakeChatApi(
         response: const ChatApiResponse(
           conversationId: 'conversation-1',
-          response: '',
+          response: 'Should not send',
           messages: [],
         ),
       );
       final container = ProviderContainer(
-        overrides: [chatApiProvider.overrideWithValue(chatApi)],
+        overrides: [
+          chatApiProvider.overrideWithValue(chatApi),
+          localeControllerProvider.overrideWithValue(localeController),
+          deviceOnlineCheckProvider.overrideWithValue(() async => false),
+        ],
       );
       addTearDown(container.dispose);
       final controller = container.read(chatProvider.notifier);
@@ -367,8 +409,188 @@ void main() {
         'plan-proposal-1',
       );
       expect(card?.status, 'failed');
-      expect(card?.errorMessage, 'Could not confirm the plan save.');
+      expect(
+        card?.errorMessage,
+        lookupForLocale(localeController.locale).chatErrorNetwork,
+      );
+      expect(chatApi.writeConfirmations, isEmpty);
+    },
+  );
+
+  test(
+    'confirm fails when backend response has no applied evidence',
+    () async {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      final localeController = LocaleController(
+        preferences: SharedPreferencesAsync(),
+      );
+      await localeController.load();
+
+      final chatApi = _FakeChatApi(
+        response: const ChatApiResponse(
+          conversationId: 'conversation-1',
+          response: '',
+          messages: [],
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          chatApiProvider.overrideWithValue(chatApi),
+          localeControllerProvider.overrideWithValue(localeController),
+        ],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(chatProvider.notifier);
+
+      controller.applyBackendMessages(
+        conversationId: 'conversation-1',
+        messages: const [
+          ChatApiMessage(
+            id: 'message-1',
+            conversationId: 'conversation-1',
+            role: 'assistant',
+            content: 'Want me to save this goal?',
+          ),
+        ],
+        memoryChanges: {
+          'confirmation_required': 1,
+          'write_proposals': [
+            {
+              'id': 'plan-proposal-1',
+              'write_kind': 'plan',
+              'action': 'save_plan',
+              'title': 'Buy pull-up bar',
+              'body': 'Buy pull-up bar',
+              'confirmation_text': 'Save this as a goal in Clarity?',
+              'risk_level': 'medium',
+              'status': 'pending',
+            },
+          ],
+        },
+      );
+
+      final pending = pendingClarityActions(
+        container.read(chatProvider).messages,
+      );
+      await controller.executeClarityAction(pending.first);
+
+      final card = _clarityActionById(
+        container.read(chatProvider).messages,
+        'plan-proposal-1',
+      );
+      expect(card?.status, 'failed');
+      expect(card?.errorMessage, isNotNull);
+      expect(card?.errorMessage, isNotEmpty);
       expect(card?.isApplied, isFalse);
+      expect(
+        pendingClarityActions(container.read(chatProvider).messages),
+        hasLength(1),
+      );
+    },
+  );
+
+  test(
+    'confirm network failure keeps failed card retryable with same proposal id',
+    () async {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      final localeController = LocaleController(
+        preferences: SharedPreferencesAsync(),
+      );
+      await localeController.load();
+
+      final chatApi = _FakeChatApi(
+        response: ChatApiResponse(
+          conversationId: 'conversation-1',
+          response: 'Saved.',
+          messages: const [],
+          memoryChanges: {
+            'write_proposals': [
+              {
+                'id': 'plan-proposal-1',
+                'write_kind': 'plan',
+                'action': 'save_plan',
+                'title': 'Buy pull-up bar',
+                'body': 'Buy pull-up bar',
+                'confirmation_text': 'Save this as a goal in Clarity?',
+                'risk_level': 'medium',
+                'status': 'applied',
+              },
+            ],
+          },
+        ),
+        sendErrors: [
+          const ChatApiException(
+            'network down',
+            type: ChatApiErrorType.network,
+          ),
+        ],
+      );
+      final container = ProviderContainer(
+        overrides: [
+          chatApiProvider.overrideWithValue(chatApi),
+          localeControllerProvider.overrideWithValue(localeController),
+        ],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(chatProvider.notifier);
+
+      controller.applyBackendMessages(
+        conversationId: 'conversation-1',
+        messages: const [
+          ChatApiMessage(
+            id: 'message-1',
+            conversationId: 'conversation-1',
+            role: 'assistant',
+            content: 'Want me to save this goal?',
+          ),
+        ],
+        memoryChanges: {
+          'confirmation_required': 1,
+          'write_proposals': [
+            {
+              'id': 'plan-proposal-1',
+              'write_kind': 'plan',
+              'action': 'save_plan',
+              'title': 'Buy pull-up bar',
+              'body': 'Buy pull-up bar',
+              'confirmation_text': 'Save this as a goal in Clarity?',
+              'risk_level': 'medium',
+              'status': 'pending',
+            },
+          ],
+        },
+      );
+
+      final pending = pendingClarityActions(
+        container.read(chatProvider).messages,
+      );
+      expect(pending, hasLength(1));
+
+      await controller.executeClarityAction(pending.first);
+      final failed = _clarityActionById(
+        container.read(chatProvider).messages,
+        'plan-proposal-1',
+      );
+      expect(failed?.status, 'failed');
+      expect(failed?.canRetry, isTrue);
+      expect(failed?.isApplied, isFalse);
+      expect(
+        pendingClarityActions(container.read(chatProvider).messages),
+        hasLength(1),
+      );
+      expect(chatApi.writeConfirmations, hasLength(1));
+      expect(chatApi.writeConfirmations.first?['proposal_id'], 'plan-proposal-1');
+
+      await controller.executeClarityAction(failed!);
+      final applied = _clarityActionById(
+        container.read(chatProvider).messages,
+        'plan-proposal-1',
+      );
+      expect(applied?.status, 'applied');
+      expect(chatApi.writeConfirmations, hasLength(2));
+      expect(chatApi.writeConfirmations.last?['proposal_id'], 'plan-proposal-1');
     },
   );
 
@@ -583,13 +805,18 @@ class _FakeChatApi extends ChatApi {
     required this.response,
     this.streamEvents = const <ChatStreamEvent>[],
     this.delayBeforeYielding,
+    this.sendErrors = const <Object?>[],
+    this.responses = const <ChatApiResponse>[],
   });
 
   final ChatApiResponse response;
   final List<ChatStreamEvent> streamEvents;
   final Duration? delayBeforeYielding;
+  final List<Object?> sendErrors;
+  final List<ChatApiResponse> responses;
   final financialContexts = <Map<String, dynamic>?>[];
   final writeConfirmations = <Map<String, dynamic>?>[];
+  var _sendCount = 0;
 
   @override
   Future<ChatApiResponse> sendMessage(
@@ -601,6 +828,16 @@ class _FakeChatApi extends ChatApi {
   }) async {
     financialContexts.add(financialContext);
     writeConfirmations.add(writeConfirmation);
+    final index = _sendCount++;
+    if (index < sendErrors.length) {
+      final error = sendErrors[index];
+      if (error != null) {
+        throw error;
+      }
+    }
+    if (index < responses.length) {
+      return responses[index];
+    }
     return response;
   }
 

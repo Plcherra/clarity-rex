@@ -23,29 +23,8 @@
 - **Why it matters:** Confirms RLS + JWT path actually protect data in the deployed environment.
 - **Estimated effort:** Small (manual)
 - **Brief fix suggestion:** Unauthenticated `/chat` → 401; user A cannot read user B conversation/memory via API.
-- **Status:** ⬜ Manual smoke (pre-launch)
-- **Notes:** Code path: missing token with Supabase configured → 401. Cross-user isolation relies on RLS + user-scoped repositories.
-
-**VPS smoke (run after deploy with `APP_ENVIRONMENT=production`):**
-
-```bash
-# 1) Unauthenticated chat must be 401
-curl -sS -o /tmp/chat_noauth.json -w "%{http_code}\n" \
-  -X POST https://api.goclarity.app/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message":"hello"}'
-# expect: 401
-
-# 2) Ready is public status-only (no model/Plaid details)
-curl -sS https://api.goclarity.app/ready
-# expect: {"status":"ok","service":"clarity-rex"}
-
-# 3) Cross-user: with user A access token, try user B conversation id
-curl -sS -o /tmp/cross_user.json -w "%{http_code}\n" \
-  -H "Authorization: Bearer $USER_A_ACCESS_TOKEN" \
-  "https://api.goclarity.app/conversations/$USER_B_CONVERSATION_ID"
-# expect: 404 or empty/forbidden — never user B content
-```
+- **Status:** ✅ Done (2026-07-12) — manual smoke on VPS
+- **Notes:** Unauth `POST /chat` → 401. Slim public `/ready` → `{status, service}` only after deploy of `4b7b7e1`. Cross-user: user A JWT against other user's conversation → `404 Conversation not found.` (no B message content).
 
 ---
 

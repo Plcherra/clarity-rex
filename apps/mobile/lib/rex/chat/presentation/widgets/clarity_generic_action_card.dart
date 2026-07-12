@@ -236,9 +236,18 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                                 size: 16,
                                 strokeWidth: 2,
                               )
-                            : const Icon(Icons.check_rounded, size: 18),
+                            : Icon(
+                                action.canRetry
+                                    ? Icons.refresh_rounded
+                                    : Icons.check_rounded,
+                                size: 18,
+                              ),
                         label: Text(
-                          isDeleteAction ? 'Delete' : l10n.commonConfirm,
+                          action.canRetry
+                              ? l10n.commonRetry
+                              : (isDeleteAction
+                                    ? 'Delete'
+                                    : l10n.commonConfirm),
                         ),
                         style: FilledButton.styleFrom(
                           minimumSize: const Size.fromHeight(

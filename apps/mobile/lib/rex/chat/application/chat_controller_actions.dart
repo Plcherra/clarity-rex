@@ -9,6 +9,10 @@ extension ChatControllerActions on ChatController {
       return;
     }
 
+    if (!await _ensureOnlineForConfirm(action.id)) {
+      return;
+    }
+
     _updateClarityAction(
       action.id,
       (current) => current.copyWith(status: 'applying', clearError: true),
@@ -100,32 +104,93 @@ extension ChatControllerActions on ChatController {
   }
 
   Future<void> _confirmPlanSave(ClarityActionCard action) async {
+    // A28 Saturday guard: one in-flight confirm at a time (single pending_action).
+    final alreadyApplying = pendingClarityActions(state.messages).any(
+      (other) => other.isApplying && other.id != action.id,
+    );
+    if (alreadyApplying || state.isLoading) {
+      _failClarityActionConfirm(
+        action.id,
+        errorMessage: _confirmWriteFailedMessage(),
+      );
+      return;
+    }
+    // A23 light preflight: fail card with chatErrorNetwork before claiming save.
+    if (!await _ensureOnlineForConfirm(action.id)) {
+      return;
+    }
     _updateClarityAction(
       action.id,
       (current) => current.copyWith(status: 'applying', clearError: true),
     );
+    // Always re-send with the same proposal id (retry-safe).
+    final writeConfirmation = _writeConfirmationPayload(action);
     final response = await _runSendMessageForAssistantResponse(
       'Yes',
       stream: false,
-      writeConfirmation: _writeConfirmationPayload(action),
+      writeConfirmation: writeConfirmation,
     );
     if (response == null) {
       ClarityProductEvents.writeConfirmationResult(
         result: 'failed',
         actionType: action.action,
       );
-      _updateClarityAction(
+      // Prefer the network/API error already set on chat state; keep it on the
+      // card so Retry stays visible without implying the write applied.
+      final confirmError = state.errorMessage?.trim();
+      _failClarityActionConfirm(
         action.id,
-        (current) => current.copyWith(
-          status: 'failed',
-          errorMessage: 'Could not confirm the plan save.',
-        ),
+        errorMessage: (confirmError != null && confirmError.isNotEmpty)
+            ? confirmError
+            : _confirmWriteFailedMessage(),
+        clearChatError: true,
       );
       return;
     }
     _syncClarityActionFromMessages(action.id);
     if (response.trim().isNotEmpty) {
       unawaited(ref.read(voiceCallProvider.notifier).speakFollowUp(response));
+    }
+  }
+
+  String _confirmWriteFailedMessage() {
+    return lookupForLocale(
+      ref.read(localeControllerProvider).locale,
+    ).chatConfirmWriteFailed;
+  }
+
+  String _networkUnavailableMessage() {
+    return lookupForLocale(
+      ref.read(localeControllerProvider).locale,
+    ).chatErrorNetwork;
+  }
+
+  Future<bool> _ensureOnlineForConfirm(String actionId) async {
+    final online = await ref.read(deviceOnlineCheckProvider)();
+    if (online) {
+      return true;
+    }
+    _failClarityActionConfirm(
+      actionId,
+      errorMessage: _networkUnavailableMessage(),
+    );
+    return false;
+  }
+
+  void _failClarityActionConfirm(
+    String actionId, {
+    required String errorMessage,
+    bool clearChatError = false,
+  }) {
+    _updateClarityAction(
+      actionId,
+      (current) => current.copyWith(
+        status: 'failed',
+        errorMessage: errorMessage,
+      ),
+    );
+    if (clearChatError) {
+      state = state.copyWith(clearError: true);
     }
   }
 
@@ -157,12 +222,9 @@ extension ChatControllerActions on ChatController {
       result: 'failed',
       actionType: 'unknown',
     );
-    _updateClarityAction(
+    _failClarityActionConfirm(
       actionId,
-      (current) => current.copyWith(
-        status: 'failed',
-        errorMessage: 'Could not confirm the plan save.',
-      ),
+      errorMessage: _confirmWriteFailedMessage(),
     );
   }
 

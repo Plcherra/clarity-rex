@@ -31,8 +31,8 @@ class _VoiceClarityActionListenerState
           ? const <ClarityActionCard>[]
           : pendingClarityActions(previous.messages);
       final voice = ref.read(voiceCallProvider.notifier);
-      final hasPending = pending.any((action) => action.canConfirm);
-      final hadPending = previousPending.any((action) => action.canConfirm);
+      final hasPending = pending.any((action) => action.isConfirmActive);
+      final hadPending = previousPending.any((action) => action.isConfirmActive);
       if (hasPending && !hadPending) {
         voice.pauseForSaveConfirmation();
       } else if (!hasPending && hadPending) {
@@ -43,6 +43,14 @@ class _VoiceClarityActionListenerState
       }
       if (previousPending.isNotEmpty &&
           pending.first.id == previousPending.first.id) {
+        // Same proposal: re-show dialog when confirm fails mid-voice so Retry
+        // remains available outside the chat tab (H5).
+        final becameFailed = pending.first.isFailed &&
+            !previousPending.first.isFailed &&
+            _openClarityActionId == null;
+        if (becameFailed) {
+          _maybeShowClarityActionDialog(pending);
+        }
         return;
       }
       _maybeShowClarityActionDialog(pending);

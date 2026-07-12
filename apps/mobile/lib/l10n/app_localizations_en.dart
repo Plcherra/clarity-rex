@@ -3847,6 +3847,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not reload a pending save confirmation. Pull to refresh or reopen this chat.';
 
   @override
+  String get chatConfirmWriteFailed =>
+      'Could not confirm the save. Tap Retry to try again.';
+
+  @override
   String get chatAttachmentTooLarge =>
       'Attachment is too large. Maximum size is 2MB.';
 

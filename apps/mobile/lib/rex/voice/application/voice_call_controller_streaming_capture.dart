@@ -128,7 +128,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       if (listenEpoch != _streamingListenEpoch) {
         return;
       }
-      _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
+      _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
       return;
     }
 
@@ -287,7 +287,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
       if (listenEpoch != _streamingListenEpoch) {
         return;
       }
-      _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
+      _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
       return;
     }
 
@@ -378,9 +378,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     }
     if (recording == null) {
       if (state.phase == VoiceCallPhase.listening) {
-        _recoverFromEmptyVoiceTurn(
-          'I did not catch that. I am listening again.',
-        );
+        _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
       }
       return;
     }
@@ -454,9 +452,7 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     } on CloudVoiceApiException catch (error) {
       if (_isCurrentCall(generation)) {
         if (_isNoAudioError(error.message)) {
-          _recoverFromEmptyVoiceTurn(
-            'I did not catch that. I am listening again.',
-          );
+          _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
           return;
         }
         failVoiceApi(error);

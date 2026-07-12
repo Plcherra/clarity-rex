@@ -597,6 +597,7 @@
   "chatBubbleClarityAction": "Acción de claridad",
   "chatErrorInvalidResponse": "Clarity devolvió una respuesta inesperada. Inténtalo de nuevo.",
   "chatPendingWriteHydrationFailed": "No se pudo volver a cargar una confirmación de guardado pendiente. Desliza para actualizar o vuelve a abrir este chat.",
+  "chatConfirmWriteFailed": "No se pudo confirmar el guardado. Toca Rever para intentarlo de nuevo.",
   "chatErrorNetwork": "No se pudo contactar con Clarity. Comprueba tu conexión e inténtalo de nuevo.",
   "chatErrorTimeout": "Tardó demasiado. Inténtalo de nuevo.",
   "chatErrorUpload": "No se pudo subir el adjunto. Inténtalo de nuevo.",

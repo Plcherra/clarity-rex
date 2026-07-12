@@ -4,6 +4,9 @@ import 'dart:typed_data';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:cross_file/cross_file.dart';
+import 'package:clarity/core/l10n/app_localizations_lookup.dart';
+import 'package:clarity/core/network/device_connectivity.dart';
+import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/domain/chat_message.dart';
@@ -36,6 +39,13 @@ part 'voice_call_controller_test_fakes.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() {
+    // Avoid DNS preflight on every startCall in unit tests (A23).
+    debugDeviceOnlineCheckOverride = () async => true;
+  });
+  tearDownAll(() {
+    debugDeviceOnlineCheckOverride = null;
+  });
 
   test(
     'voice endpoint detector keeps short pauses inside long speech open',
@@ -171,6 +181,54 @@ void main() {
 
     expect(calls, ['preferLoudSpeaker']);
   });
+
+  test(
+    'startCall aborts offline with chatErrorNetwork before listening',
+    () async {
+      final previous = debugDeviceOnlineCheckOverride;
+      debugDeviceOnlineCheckOverride = () async => false;
+      addTearDown(() {
+        debugDeviceOnlineCheckOverride = previous;
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(_FakeStreamingVoiceApi()),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            _HangingStreamingAudioCaptureService(),
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+      expect(await controller.startCall(), isFalse);
+
+      final state = container.read(voiceCallProvider);
+      expect(state.phase, VoiceCallPhase.failed);
+      expect(state.errorMessage, lookupEnglishLocalizationsForTests().chatErrorNetwork);
+    },
+  );
 
   test(
     'streaming voice keeps listening while capture hangs without local endpoint',

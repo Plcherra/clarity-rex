@@ -218,8 +218,11 @@ class ClarityActionCard {
   bool get isApplied => status == 'applied';
   bool get isFailed => status == 'failed';
   bool get isDismissed => status == 'dismissed';
+  /// Pending, in-flight, or failed — still needs user attention or resolve.
+  bool get isConfirmActive => isPending || isApplying || isFailed;
   bool get canConfirm => isPending || isFailed;
   bool get canDismiss => isPending || isFailed;
+  bool get canRetry => isFailed;
   bool get hasEditableFields => editableFields.isNotEmpty;
   String get actionLabel =>
       (writeKind ?? action).memoryRecordLabel;

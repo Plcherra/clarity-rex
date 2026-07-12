@@ -162,14 +162,15 @@ class _ClarityPersonConfirmCardState extends State<ClarityPersonConfirmCard> {
     final l10n = context.l10n;
     final canSave = _filledCount >= 2 && !action.isApplying;
     final mergeHint = widget.action.personCard?.mergeHint?.trim();
+    final borderColor = action.isFailed
+        ? scheme.error.withValues(alpha: 0.46)
+        : scheme.primary.withValues(alpha: 0.42);
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surfaceElevated.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(RexUiTokens.confirmCardRadius),
-        border: Border.all(
-          color: scheme.primary.withValues(alpha: 0.42),
-        ),
+        border: Border.all(color: borderColor),
       ),
       child: Padding(
         padding: const EdgeInsets.all(RexUiTokens.confirmCardPadding),
@@ -228,6 +229,16 @@ class _ClarityPersonConfirmCardState extends State<ClarityPersonConfirmCard> {
                 ),
               ),
             ],
+            if (action.errorMessage != null) ...[
+              const SizedBox(height: RexUiTokens.space8),
+              Text(
+                action.errorMessage!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.error,
+                  height: 1.3,
+                ),
+              ),
+            ],
             const SizedBox(height: RexUiTokens.space12),
             Row(
               children: [
@@ -242,8 +253,15 @@ class _ClarityPersonConfirmCardState extends State<ClarityPersonConfirmCard> {
                           : null,
                       icon: action.isApplying
                           ? const ClarityInlineLoader(size: 16, strokeWidth: 2)
-                          : const Icon(Icons.check_rounded, size: 18),
-                      label: Text(l10n.commonConfirm),
+                          : Icon(
+                              action.canRetry
+                                  ? Icons.refresh_rounded
+                                  : Icons.check_rounded,
+                              size: 18,
+                            ),
+                      label: Text(
+                        action.canRetry ? l10n.commonRetry : l10n.commonConfirm,
+                      ),
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(
                           RexUiTokens.confirmButtonHeight,

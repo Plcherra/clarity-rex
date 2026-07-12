@@ -2302,6 +2302,7 @@
   "chatErrorValidation": "That message could not be sent. Check the attachment and try again.",
   "chatErrorInvalidResponse": "Clarity returned an unexpected response. Try again.",
   "chatPendingWriteHydrationFailed": "Could not reload a pending save confirmation. Pull to refresh or reopen this chat.",
+  "chatConfirmWriteFailed": "Could not confirm the save. Tap Retry to try again.",
   "chatAttachmentTooLarge": "Attachment is too large. Maximum size is 2MB.",
   "chatAttachmentImageTooLarge": "Image is too large. Maximum size is 5MB.",
   "chatAttachmentPdfTooLarge": "PDF is too large. Maximum size is 10MB.",

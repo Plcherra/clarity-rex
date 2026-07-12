@@ -52,6 +52,8 @@ class ClarityActionCardsStrip extends StatelessWidget {
   }
 }
 
+/// Active confirm cards: pending, applying (in-flight), or failed (retryable).
+/// Failed must stay visible so the user can retry with the same proposal id.
 List<ClarityActionCard> pendingClarityActions(Iterable<ChatMessage> messages) {
   final seenIds = <String>{};
   for (final message in messages.toList().reversed) {
@@ -60,7 +62,7 @@ List<ClarityActionCard> pendingClarityActions(Iterable<ChatMessage> messages) {
     }
     final pending = <ClarityActionCard>[];
     for (final action in message.clarityActions) {
-      if (action.status != 'pending') {
+      if (!action.isConfirmActive) {
         continue;
       }
       if (action.id.isEmpty || seenIds.add(action.id)) {

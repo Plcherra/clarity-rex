@@ -3929,6 +3929,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo volver a cargar una confirmación de guardado pendiente. Desliza para actualizar o vuelve a abrir este chat.';
 
   @override
+  String get chatConfirmWriteFailed =>
+      'No se pudo confirmar el guardado. Toca Rever para intentarlo de nuevo.';
+
+  @override
   String get chatAttachmentTooLarge =>
       'El adjunto es demasiado grande. El tamaño máximo es 2 MB.';
 

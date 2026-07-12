@@ -6678,6 +6678,12 @@ abstract class AppLocalizations {
   /// **'Could not reload a pending save confirmation. Pull to refresh or reopen this chat.'**
   String get chatPendingWriteHydrationFailed;
 
+  /// No description provided for @chatConfirmWriteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not confirm the save. Tap Retry to try again.'**
+  String get chatConfirmWriteFailed;
+
   /// No description provided for @chatAttachmentTooLarge.
   ///
   /// In en, this message translates to:

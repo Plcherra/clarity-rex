@@ -90,7 +90,7 @@ extension VoiceCallControllerChatSync on VoiceCallController {
     ]).trim();
     if (transcript.isEmpty) {
       if (recoverIfEmpty) {
-        _recoverFromEmptyVoiceTurn('I did not catch that. I am listening again.');
+        _recoverFromEmptyVoiceTurn(voiceL10n.voiceFailureDidNotCatch);
       }
       return;
     }

@@ -98,4 +98,52 @@ void main() {
     expect(find.text(l10n.commonDismiss), findsOneWidget);
     expect(find.text('Save to Clarity Knows'), findsOneWidget);
   });
+
+  testWidgets('failed clarity action stays visible with Retry', (tester) async {
+    var retried = false;
+    await tester.pumpWidget(
+      wrapWithL10n(
+        Scaffold(
+          body: ChatTranscript(
+            messages: const [
+              ChatMessage(
+                id: 'assistant-1',
+                role: ChatMessageRole.assistant,
+                content: 'Should I save that?',
+                clarityActions: [
+                  ClarityActionCard(
+                    id: 'plan-save-1',
+                    action: 'save_plan',
+                    payload: {},
+                    confirmationText:
+                        'Save strength routine as a plan in Clarity?',
+                    riskLevel: 'medium',
+                    status: 'failed',
+                    errorMessage: 'Could not reach Clarity.',
+                    writeKind: 'plan',
+                    title: 'Strength routine',
+                    body: 'Train three times a week',
+                    editableFields: ['title', 'body'],
+                  ),
+                ],
+              ),
+            ],
+            errorMessage: null,
+            scrollController: ScrollController(),
+            onPromptSelected: (_) {},
+            onConfirmClarityAction: (_) => retried = true,
+            onDismissClarityAction: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text(l10n.commonRetry), findsOneWidget);
+    expect(find.text('Could not reach Clarity.'), findsOneWidget);
+
+    await tester.tap(find.text(l10n.commonRetry));
+    await tester.pump();
+
+    expect(retried, isTrue);
+  });
 }
