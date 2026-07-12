@@ -3075,6 +3075,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantOverviewBrowseChats => 'Browse chats';
 
   @override
+  String get assistantChatSidebarHideTooltip => 'Hide chats';
+
+  @override
+  String get assistantChatSidebarShowTooltip => 'Show chats';
+
+  @override
   String get assistantOverviewAttentionTitle => 'What to watch';
 
   @override

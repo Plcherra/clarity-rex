@@ -2,7 +2,8 @@ part of 'memory_controller.dart';
 
 mixin MemoryReadController on Notifier<MemoryState> {
   Future<void> loadSavedOverview({bool? activeOnly}) async {
-    final nextActiveOnly = activeOnly ?? state.activeOnly;
+    // Knows always lists active items; archive/delete is the only off-ramp.
+    const nextActiveOnly = true;
     state = state.copyWith(
       activeOnly: nextActiveOnly,
       isLoading: true,

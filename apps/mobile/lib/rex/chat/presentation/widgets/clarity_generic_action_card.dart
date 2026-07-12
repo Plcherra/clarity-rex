@@ -219,51 +219,71 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                 action.canDismiss ||
                 action.isApplying) ...[
               const SizedBox(height: RexUiTokens.space12),
-              if ((action.canConfirm || action.isApplying) &&
-                  widget.onConfirm != null)
-                FilledButton.icon(
-                  onPressed: action.isApplying
-                      ? null
-                      : () {
-                          HapticFeedback.lightImpact();
-                          widget.onConfirm!(_confirmedAction());
-                        },
-                  icon: action.isApplying
-                      ? const ClarityInlineLoader(size: 16, strokeWidth: 2)
-                      : const Icon(Icons.check_rounded, size: 18),
-                  label: Text(isDeleteAction ? 'Delete' : l10n.commonConfirm),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(
-                      RexUiTokens.confirmButtonHeight,
+              Row(
+                children: [
+                  if ((action.canConfirm || action.isApplying) &&
+                      widget.onConfirm != null)
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: action.isApplying
+                            ? null
+                            : () {
+                                HapticFeedback.lightImpact();
+                                widget.onConfirm!(_confirmedAction());
+                              },
+                        icon: action.isApplying
+                            ? const ClarityInlineLoader(
+                                size: 16,
+                                strokeWidth: 2,
+                              )
+                            : const Icon(Icons.check_rounded, size: 18),
+                        label: Text(
+                          isDeleteAction ? 'Delete' : l10n.commonConfirm,
+                        ),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(
+                            RexUiTokens.confirmButtonHeight,
+                          ),
+                          backgroundColor:
+                              isDeleteAction ? scheme.error : null,
+                          foregroundColor:
+                              isDeleteAction ? scheme.onError : null,
+                          textStyle: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
                     ),
-                    backgroundColor: isDeleteAction ? scheme.error : null,
-                    foregroundColor: isDeleteAction ? scheme.onError : null,
-                    textStyle: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
+                  if (action.canConfirm &&
+                      action.canDismiss &&
+                      widget.onConfirm != null &&
+                      widget.onDismiss != null)
+                    const SizedBox(width: RexUiTokens.space8),
+                  if (action.canDismiss && widget.onDismiss != null)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: action.isApplying
+                            ? null
+                            : () {
+                                HapticFeedback.selectionClick();
+                                widget.onDismiss!(action);
+                              },
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        label: Text(
+                          isDeleteAction ? 'Keep it' : l10n.commonDismiss,
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(
+                            RexUiTokens.confirmButtonHeight,
+                          ),
+                          textStyle: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              if (action.canDismiss && widget.onDismiss != null) ...[
-                const SizedBox(height: RexUiTokens.space8),
-                OutlinedButton.icon(
-                  onPressed: action.isApplying
-                      ? null
-                      : () {
-                          HapticFeedback.selectionClick();
-                          widget.onDismiss!(action);
-                        },
-                  icon: const Icon(Icons.close_rounded, size: 18),
-                  label: Text(isDeleteAction ? 'Keep it' : l10n.commonDismiss),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(
-                      RexUiTokens.confirmButtonHeight,
-                    ),
-                    textStyle: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ],
           ],
         ),

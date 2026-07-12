@@ -29,7 +29,7 @@ _VALID_RESPONSE_STYLES = {
 
 @dataclass(frozen=True)
 class AssistantProposalSettings:
-    mode: str = AUTO_PROPOSALS_TEXT
+    mode: str = AUTO_PROPOSALS_CARD
     threads: bool = True
     goals: bool = True
     memory: bool = True
@@ -81,9 +81,9 @@ def _coerce_bool(value: Any, *, default: bool) -> bool:
 
 def parse_assistant_settings(raw: Optional[dict[str, Any]]) -> AssistantProposalSettings:
     payload = raw if isinstance(raw, dict) else {}
-    mode = str(payload.get("auto_proposals_mode") or AUTO_PROPOSALS_TEXT).strip().lower()
+    mode = str(payload.get("auto_proposals_mode") or AUTO_PROPOSALS_CARD).strip().lower()
     if mode not in _VALID_MODES:
-        mode = AUTO_PROPOSALS_TEXT
+        mode = AUTO_PROPOSALS_CARD
     response_style = str(payload.get("response_style") or RESPONSE_STYLE_BALANCED).strip().lower()
     if response_style not in _VALID_RESPONSE_STYLES:
         response_style = RESPONSE_STYLE_BALANCED

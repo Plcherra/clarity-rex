@@ -1,6 +1,6 @@
 final class AssistantProposalSettings {
   const AssistantProposalSettings({
-    this.mode = AssistantProposalSettings.text,
+    this.mode = AssistantProposalSettings.card,
     this.threads = true,
     this.goals = true,
     this.memory = true,
@@ -31,11 +31,11 @@ final class AssistantProposalSettings {
 
   factory AssistantProposalSettings.fromJson(Map<String, dynamic>? json) {
     final payload = json ?? const {};
-    final rawMode = (payload['auto_proposals_mode'] as String? ?? text).trim();
+    final rawMode = (payload['auto_proposals_mode'] as String? ?? card).trim();
     final mode = switch (rawMode) {
       off => off,
-      card => card,
-      _ => text,
+      text => text,
+      _ => card,
     };
     final rawStyle =
         (payload['response_style'] as String? ?? balanced).trim().toLowerCase();
@@ -109,8 +109,8 @@ extension AssistantProposalModeValue on AssistantProposalMode {
   static AssistantProposalMode fromStorage(String? raw) {
     return switch (raw?.trim()) {
       AssistantProposalSettings.off => AssistantProposalMode.off,
-      AssistantProposalSettings.card => AssistantProposalMode.card,
-      _ => AssistantProposalMode.text,
+      AssistantProposalSettings.text => AssistantProposalMode.text,
+      _ => AssistantProposalMode.card,
     };
   }
 }

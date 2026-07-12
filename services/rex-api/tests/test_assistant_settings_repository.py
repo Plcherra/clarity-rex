@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.assistant_proposal_settings import AUTO_PROPOSALS_TEXT
+from app.services.assistant_proposal_settings import AUTO_PROPOSALS_CARD
 from app.services.assistant_settings_repository import AssistantSettingsRepository
 from app.services.memory_service import MemoryServiceError
 
@@ -19,4 +19,4 @@ async def test_fetch_proposal_settings_falls_back_when_profile_query_fails():
 
     settings = await repository.fetch_proposal_settings()
 
-    assert settings.mode == AUTO_PROPOSALS_TEXT
+    assert settings.mode == AUTO_PROPOSALS_CARD

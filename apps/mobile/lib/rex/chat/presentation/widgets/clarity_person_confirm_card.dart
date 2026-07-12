@@ -229,42 +229,50 @@ class _ClarityPersonConfirmCardState extends State<ClarityPersonConfirmCard> {
               ),
             ],
             const SizedBox(height: RexUiTokens.space12),
-            if (widget.onConfirm != null)
-              FilledButton.icon(
-                onPressed: canSave
-                    ? () {
-                        HapticFeedback.lightImpact();
-                        widget.onConfirm!(_confirmedAction());
-                      }
-                    : null,
-                icon: action.isApplying
-                    ? const ClarityInlineLoader(size: 16, strokeWidth: 2)
-                    : const Icon(Icons.check_rounded, size: 18),
-                label: Text(l10n.commonConfirm),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(
-                    RexUiTokens.confirmButtonHeight,
+            Row(
+              children: [
+                if (widget.onConfirm != null)
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: canSave
+                          ? () {
+                              HapticFeedback.lightImpact();
+                              widget.onConfirm!(_confirmedAction());
+                            }
+                          : null,
+                      icon: action.isApplying
+                          ? const ClarityInlineLoader(size: 16, strokeWidth: 2)
+                          : const Icon(Icons.check_rounded, size: 18),
+                      label: Text(l10n.commonConfirm),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(
+                          RexUiTokens.confirmButtonHeight,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            if (widget.onDismiss != null) ...[
-              const SizedBox(height: RexUiTokens.space8),
-              OutlinedButton.icon(
-                onPressed: action.isApplying
-                    ? null
-                    : () {
-                        HapticFeedback.selectionClick();
-                        _handleDismiss();
-                      },
-                icon: const Icon(Icons.close_rounded, size: 18),
-                label: Text(l10n.commonDismiss),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(
-                    RexUiTokens.confirmButtonHeight,
+                if (widget.onConfirm != null && widget.onDismiss != null)
+                  const SizedBox(width: RexUiTokens.space8),
+                if (widget.onDismiss != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: action.isApplying
+                          ? null
+                          : () {
+                              HapticFeedback.selectionClick();
+                              _handleDismiss();
+                            },
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      label: Text(l10n.commonDismiss),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(
+                          RexUiTokens.confirmButtonHeight,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ],
         ),
       ),

@@ -3133,6 +3133,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get assistantOverviewBrowseChats => 'Ver chats';
 
   @override
+  String get assistantChatSidebarHideTooltip => 'Ocultar chats';
+
+  @override
+  String get assistantChatSidebarShowTooltip => 'Mostrar chats';
+
+  @override
   String get assistantOverviewAttentionTitle => 'Qué vigilar';
 
   @override

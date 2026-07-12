@@ -70,7 +70,7 @@ _FINANCE_WRITE_TERMS = (
 )
 
 _SUCCESS_TERMS = tuple(
-    "saved|saving|updated|updating|fixed|fixing|changed|changing|deleted|deleting|"
+    "saved|saving|i'll save|i will save|updated|updating|fixed|fixing|changed|changing|deleted|deleting|"
     "created|creating|moved|moving|sent|sending|categorized|categorizing|"
     "recategorized|recategorizing|noted|noting|remembered|remembering|"
     "completed|done|all set|"
@@ -163,9 +163,14 @@ def response_claims_saved_memory_success(response: str) -> bool:
         return False
     if _contains_any(text, _SAVED_MEMORY_CLAIM_TERMS):
         return True
+    # "Yes, saved: Marcella is my friend." style without Knows wording.
+    if re.search(r"\b(?:yes[, ]+)?saved\s*:", text):
+        return True
+    if re.search(r"\bi(?:'| a)?ll save\b.+\bas\b", text):
+        return True
     # "Saved." / "Got it, I updated that:" style without pending confirm language.
     if re.search(
-        r"\b(?:saved|updated|remembered)\b.{0,80}\b(?:memory|knows|fact|preference)\b",
+        r"\b(?:saved|updated|remembered)\b.{0,80}\b(?:memory|knows|fact|preference|friend|goal)\b",
         text,
     ):
         return True

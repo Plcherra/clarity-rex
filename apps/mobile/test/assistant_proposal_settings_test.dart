@@ -24,6 +24,12 @@ void main() {
     expect(restored, original);
   });
 
+  test('defaults proposal mode to card', () {
+    final settings = AssistantProposalSettings.fromJson({});
+    expect(settings.mode, AssistantProposalSettings.card);
+    expect(settings.usesConfirmCards, isTrue);
+  });
+
   test('defaults response style to balanced', () {
     final settings = AssistantProposalSettings.fromJson({});
     expect(settings.responseStyle, AssistantProposalSettings.balanced);

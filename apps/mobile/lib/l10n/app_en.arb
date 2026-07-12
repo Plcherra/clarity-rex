@@ -1865,6 +1865,8 @@
   "assistantOverviewTitle": "Companion overview",
   "assistantOverviewSubtitle": "Rules, patterns, open threads, and goals Rex is tracking with you.",
   "assistantOverviewBrowseChats": "Browse chats",
+  "assistantChatSidebarHideTooltip": "Hide chats",
+  "assistantChatSidebarShowTooltip": "Show chats",
   "assistantOverviewAttentionTitle": "What to watch",
   "assistantOverviewAttentionEmpty": "Nothing needs attention right now.",
   "assistantOverviewRulesTitle": "Active rules",

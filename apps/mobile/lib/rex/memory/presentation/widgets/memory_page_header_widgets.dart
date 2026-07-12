@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/app_l10n.dart';
-import '../../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_quick_filter.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
@@ -163,50 +162,6 @@ class SavedMemoryHeader extends StatelessWidget {
   }
 }
 
-class ActiveMemoryToggle extends StatelessWidget {
-  const ActiveMemoryToggle({
-    required this.value,
-    required this.onChanged,
-    super.key,
-  });
-
-  final bool value;
-  final ValueChanged<bool>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.clarityColors;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: RexUiTokens.space8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              context.l10n.memoryHeaderActiveOnly,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          Switch.adaptive(
-            value: value,
-            activeThumbColor: theme.brightness == Brightness.dark
-                ? Colors.black
-                : Colors.white,
-            activeTrackColor: colors.accent,
-            inactiveThumbColor: colors.textMuted,
-            inactiveTrackColor: colors.surfaceElevated,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class MemoryErrorBanner extends StatelessWidget {
   const MemoryErrorBanner({required this.message, super.key});
 
@@ -323,33 +278,19 @@ class _EmptyMemoryShell extends StatelessWidget {
 
 class MemoryEmptyState extends StatelessWidget {
   const MemoryEmptyState({
-    required this.activeOnly,
     this.onCreate,
     super.key,
   });
 
-  final bool activeOnly;
   final VoidCallback? onCreate;
-
-  String _emptyTitle(AppLocalizations l10n) {
-    return activeOnly
-        ? l10n.memoryHeaderEmptyActiveTitle
-        : l10n.memoryHeaderEmptyTitle;
-  }
-
-  String _emptyBody(AppLocalizations l10n) {
-    return activeOnly
-        ? l10n.memoryHeaderEmptyActiveBody
-        : l10n.memoryHeaderEmptyBody;
-  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return _EmptyMemoryShell(
       icon: Icons.psychology_alt_outlined,
-      title: _emptyTitle(l10n),
-      body: _emptyBody(l10n),
+      title: l10n.memoryHeaderEmptyActiveTitle,
+      body: l10n.memoryHeaderEmptyActiveBody,
       actionLabel: onCreate == null ? null : l10n.memoryHeaderEmptyAddAction,
       onAction: onCreate,
     );

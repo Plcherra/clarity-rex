@@ -1,11 +1,7 @@
 import 'dart:async';
 
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
-
+import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
+import 'package:clarity/core/layout/clarity_breakpoints.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/features/dashboard/application/dashboard_deep_link_navigation.dart';
@@ -24,8 +20,11 @@ import 'package:clarity/rex/presentation/rex_surfaces.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/theme/clarity_colors.dart';
-import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
-import 'package:clarity/theme/clarity_sheet_insets.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// Main chat surface: empty thread UI + composer.
 class ChatPage extends ConsumerStatefulWidget {
@@ -60,6 +59,10 @@ class _ChatPageState extends ConsumerState<ChatPage>
 
   void _maybeShowClarityActionDialog(List<ClarityActionCard> pending) {
     if (!mounted || pending.isEmpty) {
+      return;
+    }
+    // Wide chat already shows an inline confirm strip — skip the modal.
+    if (isClarityWideLayout(context)) {
       return;
     }
     final action = pending.first;

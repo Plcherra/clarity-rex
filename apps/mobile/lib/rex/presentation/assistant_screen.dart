@@ -360,8 +360,10 @@ class _AssistantChatSplitState extends State<_AssistantChatSplit> {
   static const double _defaultSidebarWidth = 340;
   static const double _minSidebarWidth = 240;
   static const double _maxSidebarWidth = 520;
+  static const double _collapsedRailWidth = 44;
 
   double _sidebarWidth = _defaultSidebarWidth;
+  bool _sidebarCollapsed = false;
 
   void _resizeSidebar(double delta, double maxAllowed) {
     final next = (_sidebarWidth + delta).clamp(
@@ -374,18 +376,23 @@ class _AssistantChatSplitState extends State<_AssistantChatSplit> {
     setState(() => _sidebarWidth = next);
   }
 
+  void _toggleSidebar() {
+    setState(() => _sidebarCollapsed = !_sidebarCollapsed);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
+    final l10n = context.l10n;
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxAllowed = math.max(
           _minSidebarWidth,
           constraints.maxWidth * 0.45,
         );
-        final width = _sidebarWidth
-            .clamp(_minSidebarWidth, maxAllowed)
-            .toDouble();
+        final width = _sidebarCollapsed
+            ? _collapsedRailWidth
+            : _sidebarWidth.clamp(_minSidebarWidth, maxAllowed).toDouble();
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -400,32 +407,60 @@ class _AssistantChatSplitState extends State<_AssistantChatSplit> {
                     ),
                   ),
                 ),
-                child: ConversationListPage(
-                  showAppBar: false,
-                  compactSidebar: true,
-                  onConversationSelected: widget.onConversationSelected,
-                ),
+                child: _sidebarCollapsed
+                    ? Align(
+                        alignment: Alignment.topCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: IconButton(
+                            tooltip: l10n.assistantChatSidebarShowTooltip,
+                            onPressed: _toggleSidebar,
+                            icon: const Icon(Icons.view_sidebar_outlined),
+                          ),
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: IconButton(
+                              tooltip: l10n.assistantChatSidebarHideTooltip,
+                              onPressed: _toggleSidebar,
+                              icon: const Icon(Icons.view_sidebar),
+                            ),
+                          ),
+                          Expanded(
+                            child: ConversationListPage(
+                              showAppBar: false,
+                              compactSidebar: true,
+                              onConversationSelected:
+                                  widget.onConversationSelected,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
-            MouseRegion(
-              cursor: SystemMouseCursors.resizeColumn,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onHorizontalDragUpdate: (details) {
-                  _resizeSidebar(details.delta.dx, maxAllowed);
-                },
-                child: SizedBox(
-                  width: 8,
-                  child: Center(
-                    child: Container(
-                      width: 1,
-                      height: double.infinity,
-                      color: colors.border.withValues(alpha: 0.65),
+            if (!_sidebarCollapsed)
+              MouseRegion(
+                cursor: SystemMouseCursors.resizeColumn,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onHorizontalDragUpdate: (details) {
+                    _resizeSidebar(details.delta.dx, maxAllowed);
+                  },
+                  child: SizedBox(
+                    width: 8,
+                    child: Center(
+                      child: Container(
+                        width: 1,
+                        height: double.infinity,
+                        color: colors.border.withValues(alpha: 0.65),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
             const Expanded(
               child: ChatPage(showAppBar: false),
             ),

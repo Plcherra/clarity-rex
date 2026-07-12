@@ -53,12 +53,6 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
     setState(() => _searchQuery = _searchController.text);
   }
 
-  Future<void> _setActiveOnly(bool activeOnly) async {
-    await ref
-        .read(memoryProvider.notifier)
-        .loadSavedOverview(activeOnly: activeOnly);
-  }
-
   Future<void> _setQuickFilter(MemoryQuickFilter filter) async {
     if (_quickFilter == filter) {
       return;
@@ -488,11 +482,6 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                                   : _startCreate),
                         createEnabled: !state.isLoading && !state.isSaving,
                       ),
-                      const SizedBox(height: 4),
-                      ActiveMemoryToggle(
-                        value: state.activeOnly,
-                        onChanged: state.isLoading ? null : _setActiveOnly,
-                      ),
                       if (state.overviewCanLoadMore)
                         MemoryTruncationBanner(
                           canLoadMore: state.overviewCanLoadMore,
@@ -521,7 +510,6 @@ class _MemoryPageState extends ConsumerState<MemoryPage> {
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: MemoryEmptyState(
-                    activeOnly: state.activeOnly,
                     onCreate: state.isLoading || state.isSaving
                         ? null
                         : _startCreate,

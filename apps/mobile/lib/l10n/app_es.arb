@@ -245,6 +245,8 @@
   "assistantOverviewTitle": "Resumen del compañero",
   "assistantOverviewSubtitle": "Reglas, patrones, hilos abiertos y objetivos que Rex sigue contigo.",
   "assistantOverviewBrowseChats": "Ver chats",
+  "assistantChatSidebarHideTooltip": "Ocultar chats",
+  "assistantChatSidebarShowTooltip": "Mostrar chats",
   "assistantOverviewAttentionTitle": "Qué vigilar",
   "assistantOverviewAttentionEmpty": "Nada necesita atención ahora.",
   "assistantOverviewRulesTitle": "Reglas activas",

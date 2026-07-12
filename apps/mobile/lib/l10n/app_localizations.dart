@@ -5386,6 +5386,18 @@ abstract class AppLocalizations {
   /// **'Browse chats'**
   String get assistantOverviewBrowseChats;
 
+  /// No description provided for @assistantChatSidebarHideTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide chats'**
+  String get assistantChatSidebarHideTooltip;
+
+  /// No description provided for @assistantChatSidebarShowTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show chats'**
+  String get assistantChatSidebarShowTooltip;
+
   /// No description provided for @assistantOverviewAttentionTitle.
   ///
   /// In en, this message translates to:

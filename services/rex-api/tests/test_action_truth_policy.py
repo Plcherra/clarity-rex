@@ -96,6 +96,27 @@ def test_saved_memory_claim_without_write_is_blocked_for_unknown_turns():
     )
 
 
+def test_yes_saved_shorthand_without_write_is_blocked():
+    from app.services.action_truth_policy import (
+        response_claims_saved_memory_success,
+        safe_unexecuted_saved_memory_claim_response,
+    )
+
+    claim = "Yes, saved: Marcella is my friend."
+    assert response_claims_saved_memory_success(claim) is True
+    response = safe_unexecuted_saved_memory_claim_response(claim)
+    assert "don't have a confirmed saved change" in response
+
+
+def test_ill_save_as_goal_claim_is_success_term_for_pending_guard():
+    response = safe_pending_action_response(
+        "Yes, I'll save 'Pay my bills tomorrow' as a Goal.",
+        [{"confirmation_text": "Save Pay my bills tomorrow as a goal?"}],
+    )
+    assert "Tap confirm to save" in response
+    assert "nothing is saved until you confirm" in response
+
+
 def test_casual_success_without_memory_claim_is_not_blocked_by_saved_memory_guard():
     from app.services.action_truth_policy import (
         safe_unexecuted_saved_memory_claim_response,

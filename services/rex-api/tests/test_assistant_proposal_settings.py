@@ -12,14 +12,15 @@ from app.services.assistant_proposal_settings import (
 )
 
 
-def test_parse_assistant_settings_defaults_to_text_mode() -> None:
+def test_parse_assistant_settings_defaults_to_card_mode() -> None:
     settings = parse_assistant_settings({})
-    assert settings.mode == AUTO_PROPOSALS_TEXT
+    assert settings.mode == AUTO_PROPOSALS_CARD
     assert settings.threads is True
     assert settings.goals is True
     assert settings.memory is True
     assert settings.response_style == RESPONSE_STYLE_BALANCED
     assert settings.finance_edits_enabled is True
+    assert settings.uses_confirm_cards() is True
 
 
 def test_parse_assistant_settings_finance_edits_disabled() -> None:

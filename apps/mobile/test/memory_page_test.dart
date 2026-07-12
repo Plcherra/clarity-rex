@@ -101,7 +101,7 @@ void main() {
   });
 
   testWidgets(
-    'MemoryPage active-only toggle applies to flat and people records',
+    'MemoryPage always loads active records and has no active-only toggle',
     (tester) async {
       final api = MemoryPageFakeMemoryApi();
 
@@ -109,28 +109,10 @@ void main() {
 
       expect(api.memoryActiveFilters.last, isTrue);
       expect(api.entityActiveFilters.last, isTrue);
+      expect(find.text('Active information only'), findsNothing);
+      expect(find.byType(Switch), findsNothing);
       expect(find.text('Inactive flat fallback memory.'), findsNothing);
       expect(listTileText('Inactive Person'), findsNothing);
-
-      await tester.tap(find.byType(Switch).first);
-      await tester.pumpAndSettle();
-
-      expect(api.memoryActiveFilters.last, isNull);
-      expect(api.entityActiveFilters.last, isNull);
-
-      await tester.drag(find.byType(Scrollable).first, const Offset(0, -250));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Inactive Person'), findsOneWidget);
-
-      await tester.scrollUntilVisible(
-        find.text('Inactive flat fallback memory.'),
-        120,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Inactive flat fallback memory.'), findsOneWidget);
     },
   );
 
