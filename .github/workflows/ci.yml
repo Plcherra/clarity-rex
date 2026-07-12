@@ -13,6 +13,12 @@ jobs:
         working-directory: apps/mobile
     steps:
       - uses: actions/checkout@v4
+      - name: Guard against shipping backend secrets in mobile
+        run: |
+          if grep -RInE 'service_role|PLAID_SECRET|GROK_API_KEY|GROK_API|sk-[A-Za-z0-9]' lib; then
+            echo "Forbidden secret patterns found under apps/mobile/lib" >&2
+            exit 1
+          fi
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -50,6 +56,8 @@ jobs:
         run: test -f supabase/migrations/20260702000100_create_user_insights.sql
       - name: Verify user_insights RLS initplan migration exists
         run: test -f supabase/migrations/20260702000200_user_insights_rls_initplan.sql
+      - name: Verify open_threads RLS initplan migration exists
+        run: test -f supabase/migrations/20260712000100_open_threads_rls_initplan.sql
       - name: Verify commitments drop migration exists
         run: test -f supabase/migrations/20260703000200_drop_commitments.sql
 

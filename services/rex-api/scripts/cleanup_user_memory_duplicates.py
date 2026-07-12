@@ -34,7 +34,7 @@ def normalize_org_label(value: str) -> str:
 async def run_cleanup(*, user_id: str, dry_run: bool) -> None:
     from app.services.memory_service import SupabaseMemoryService
 
-    memory_service = SupabaseMemoryService(user_id=user_id, access_token="service")
+    memory_service = SupabaseMemoryService(user_id=user_id, use_service_role=True)
     list_entities = getattr(memory_service, "list_entities", None)
     list_memories = getattr(memory_service, "list_long_term_memory", None)
     deactivate_entity = getattr(memory_service, "deactivate_entity", None)

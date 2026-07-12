@@ -11,7 +11,11 @@ from app.services.chat_service import ChatService
 from app.services.file_service import FileService
 from app.services.rex_channel import RexBrainChannel
 from app.services.time_context_service import TimeContextService
-from durable_write_test_helpers import assert_companion_continuation_response, confirm_durable_write
+from durable_write_test_helpers import (
+    assert_companion_continuation_response,
+    assert_mom_birthday_person_entity,
+    confirm_durable_write,
+)
 
 
 def _time_context_service() -> TimeContextService:
@@ -77,14 +81,14 @@ async def test_memory_reliability_mom_birthday_saves_and_recalls_directly():
     assert_companion_continuation_response(saved)
     assert saved["memory_changes"]["created"] == 1
     assert saved["memory_changes"]["confirmation_required"] == 0
-    assert len(memory_service.long_term_memory) == 1
+    assert_mom_birthday_person_entity(memory_service, "June 18")
 
     await chat_service.send_message(
         "Do you remember my mom's birthday?",
         saved["conversation_id"],
     )
 
-    assert "- fact: User's mom's birthday is June 18." in ai_service.messages[0]["content"]
+    assert "Birthday: June 18" in ai_service.messages[0]["content"]
 
 
 @pytest.mark.asyncio
@@ -136,7 +140,7 @@ async def test_memory_reliability_duplicate_fact_does_not_create_duplicate_recor
     assert saved["memory_changes"]["created"] == 1
     assert repeated["response"] == "I already have that saved."
     assert repeated["memory_changes"]["skipped"] == 1
-    assert len(memory_service.long_term_memory) == 1
+    assert_mom_birthday_person_entity(memory_service, "June 18")
 
 
 @pytest.mark.asyncio
@@ -172,10 +176,7 @@ async def test_memory_reliability_simple_correction_updates_directly():
     assert result["memory_correction"] is None
     assert result["memory_changes"]["updated"] == 1
     assert result["memory_changes"]["confirmation_required"] == 0
-    assert len(memory_service.long_term_memory) == 1
-    assert memory_service.long_term_memory[0]["content"] == (
-        "User's mom's birthday is June 28."
-    )
+    assert_mom_birthday_person_entity(memory_service, "June 28")
 
 
 @pytest.mark.asyncio
@@ -218,7 +219,7 @@ async def test_memory_reliability_voice_stream_saves_and_recalls_memory():
     assert_companion_continuation_response(confirmed_events[-1])
     assert confirmed_events[-1]["memory_changes"]["created"] == 1
     assert recall_events[-1]["event"] == "done"
-    assert "- fact: User's mom's birthday is June 18." in ai_service.messages[0]["content"]
+    assert "Birthday: June 18" in ai_service.messages[0]["content"]
 
 
 @pytest.mark.asyncio

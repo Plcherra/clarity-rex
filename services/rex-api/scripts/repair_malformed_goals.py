@@ -130,7 +130,7 @@ async def _main() -> None:
 
     await startup_http_client()
     try:
-        memory_service = SupabaseMemoryService()
+        memory_service = SupabaseMemoryService(use_service_role=True)
         report = await repair_malformed_goals(
             memory_service,
             apply=args.apply,

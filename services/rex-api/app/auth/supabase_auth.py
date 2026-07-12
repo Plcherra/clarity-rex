@@ -7,6 +7,7 @@ from starlette.requests import HTTPConnection
 
 from app.config import Settings, get_settings
 from app.services.http_client import request_with_retries
+from app.services.voice_stream_ticket_store import voice_stream_ticket_store
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,22 @@ async def get_current_user(
     connection: HTTPConnection,
     settings: Settings = Depends(get_settings),
 ) -> AuthenticatedUser:
+    ticket = (connection.query_params.get("ticket") or "").strip()
+    if ticket:
+        # Peek only — WebSocket handler consumes so the ticket stays single-use.
+        record = voice_stream_ticket_store.peek(ticket)
+        if record is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired voice stream ticket.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return AuthenticatedUser(
+            id=record.user_id,
+            email=record.email,
+            access_token=record.access_token,
+        )
+
     token = _authorization_header_token(connection.headers.get("authorization"))
     if token is None:
         token = connection.query_params.get("access_token")
@@ -31,10 +48,26 @@ async def authenticate_websocket(
     websocket: WebSocket,
     settings: Optional[Settings] = None,
 ) -> AuthenticatedUser:
+    active_settings = settings or get_settings()
+    ticket = (websocket.query_params.get("ticket") or "").strip()
+    if ticket:
+        record = voice_stream_ticket_store.consume(ticket)
+        if record is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired voice stream ticket.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return AuthenticatedUser(
+            id=record.user_id,
+            email=record.email,
+            access_token=record.access_token,
+        )
+
     token = _authorization_header_token(websocket.headers.get("authorization"))
     if token is None:
         token = websocket.query_params.get("access_token")
-    return await authenticate_access_token(token, settings=settings or get_settings())
+    return await authenticate_access_token(token, settings=active_settings)
 
 
 async def authenticate_access_token(
@@ -42,7 +75,9 @@ async def authenticate_access_token(
     settings: Settings,
 ) -> AuthenticatedUser:
     if not _supabase_auth_configured(settings):
-        if settings.app_environment == "production":
+        # Fail closed unless APP_ENVIRONMENT is exactly development.
+        # Typos like "prod" must not yield a fixed fake user.
+        if not settings.allows_unauthenticated_dev_user:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Supabase auth is not configured.",

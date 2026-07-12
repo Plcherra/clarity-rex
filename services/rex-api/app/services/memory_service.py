@@ -27,10 +27,23 @@ class SupabaseMemoryService(
         settings: Optional[Settings] = None,
         user_id: Optional[str] = None,
         access_token: Optional[str] = None,
+        *,
+        use_service_role: bool = False,
     ) -> None:
+        if use_service_role and access_token:
+            raise ValueError(
+                "Pass access_token for user-scoped access or "
+                "use_service_role=True for ops — not both."
+            )
+        if not use_service_role and not access_token:
+            raise ValueError(
+                "SupabaseMemoryService requires access_token or "
+                "use_service_role=True (no implicit service-role fallback)."
+            )
         self.settings = settings or get_settings()
         self.user_id = user_id
         self.access_token = access_token
+        self.use_service_role = use_service_role
         self.chat_embedding_service = ChatEmbeddingService(self.settings)
         self.conversation_repository = ConversationRepository(self)
         self.long_term_memory_repository = LongTermMemoryRepository(self)

@@ -10,6 +10,10 @@ from app.services.chat_service import (
 from app.services.file_service import FileService
 from app.services.time_context_service import TimeContextService
 from chat_service_fakes import FakeAIService, FakeMemoryService
+from durable_write_test_helpers import (
+    assert_mom_birthday_person_entity,
+    assert_self_location_person_entity,
+)
 from voice_stream_async_client import (
     async_confirm_voice_proposal,
     async_voice_client,
@@ -128,8 +132,9 @@ async def test_voice_updates_location_and_recall_loads_updated_fact():
         updated = await async_confirm_voice_proposal(client, chat, updated_proposed)
 
         assert updated["memory_changes"]["updated"] == 1
-        assert memory_service.long_term_memory[0]["content"] == (
-            "User lives in Somerville, Massachusetts."
+        assert_self_location_person_entity(
+            memory_service,
+            "Somerville, Massachusetts",
         )
 
         ai_service.stream_tokens = ["You live in Somerville, Massachusetts."]
@@ -160,9 +165,7 @@ async def test_voice_saves_and_recalls_mom_birthday_without_pending_cards():
         saved = await async_confirm_voice_proposal(client, chat, proposed)
 
         assert saved["memory_changes"]["created"] == 1
-        assert memory_service.long_term_memory[0]["content"] == (
-            "User's mom's birthday is June 18."
-        )
+        assert_mom_birthday_person_entity(memory_service, "June 18")
 
         ai_service.stream_tokens = ["Your mom's birthday is June 18."]
         recalled, _ = await async_voice_websocket_turn(

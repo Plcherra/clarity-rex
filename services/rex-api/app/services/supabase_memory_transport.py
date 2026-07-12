@@ -238,14 +238,18 @@ class SupabaseMemoryTransport:
         )
 
     def _supabase_api_key(self) -> Optional[str]:
+        if getattr(self, "use_service_role", False):
+            return self.settings.supabase_service_role_key
         if self.access_token and self.settings.supabase_anon_key:
             return self.settings.supabase_anon_key
-        return self.settings.supabase_service_role_key
+        return None
 
     def _supabase_auth_token(self) -> Optional[str]:
+        if getattr(self, "use_service_role", False):
+            return self.settings.supabase_service_role_key
         if self.access_token and self.settings.supabase_anon_key:
             return self.access_token
-        return self.settings.supabase_service_role_key
+        return None
 
     def _scoped_body(self, method: str, body: dict) -> dict:
         body = self._strip_protected_write_fields(body)

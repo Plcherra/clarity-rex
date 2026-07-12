@@ -364,7 +364,7 @@ async def _main() -> None:
     await startup_http_client()
     try:
         report = await cleanup_project_names(
-            SupabaseMemoryService(),
+            SupabaseMemoryService(use_service_role=True),
             apply=args.apply,
             limit=args.limit,
         )

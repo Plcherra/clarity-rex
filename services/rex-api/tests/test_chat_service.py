@@ -10,6 +10,7 @@ from chat_service_fakes import (
     FakeUpload,
 )
 from durable_write_test_helpers import (
+    CONFIRM_SAVE_SUFFIX,
     assert_companion_continuation_response,
     confirm_durable_write,
     save_message_with_confirmation,
@@ -323,7 +324,10 @@ async def test_chat_service_extracts_create_budget_clarity_action_proposal():
         },
     )
 
-    assert result["response"] == "Set Code AI Tools budget to $250/month?"
+    assert result["response"] == (
+        "Set Code AI Tools budget to $250/month?"
+        + CONFIRM_SAVE_SUFFIX
+    )
     assert result["memory_changes"]["clarity_action_proposals"] == [
         {
             "id": "clarity-action-1",
@@ -395,7 +399,9 @@ async def test_chat_service_replaces_pending_action_success_claim_with_confirmat
 
     result = await chat_service.send_message("Move Starbucks to Coffee")
 
-    assert result["response"] == "Move Starbucks to Coffee?"
+    assert result["response"] == (
+        "Move Starbucks to Coffee?" + CONFIRM_SAVE_SUFFIX
+    )
     assert result["messages"][-1]["content"] == result["response"]
     assert result["memory_changes"]["clarity_action_proposals"][0]["status"] == (
         "pending"
@@ -1120,7 +1126,9 @@ async def test_supabase_memory_requires_configuration():
         Settings(
             supabase_url=None,
             supabase_service_role_key=None,
-        )
+            _env_file=None,
+        ),
+        use_service_role=True,
     )
 
     with pytest.raises(MemoryServiceError) as error:

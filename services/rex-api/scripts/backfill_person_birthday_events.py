@@ -57,10 +57,10 @@ async def _main() -> None:
         if args.user_id:
             memory_service = SupabaseMemoryService(
                 user_id=args.user_id,
-                access_token="service",
+                use_service_role=True,
             )
         else:
-            memory_service = SupabaseMemoryService()
+            memory_service = SupabaseMemoryService(use_service_role=True)
         report = await PersonBirthdayBackfillService().run(
             memory_service,
             apply=args.apply,

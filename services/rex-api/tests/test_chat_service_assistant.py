@@ -17,7 +17,7 @@ async def test_simple_rex_brain_keeps_chat_ai_call_unchanged():
 
     await chat_service.send_message("hey Rex")
 
-    assert ai_service.kwargs == {}
+    assert ai_service.kwargs == {"max_tokens": 1000}
     assert "routing contract" not in ai_service.messages[0]["content"].lower()
 
 
@@ -95,7 +95,7 @@ async def test_financial_context_included_for_spending_analysis():
         },
     )
 
-    assert ai_service.kwargs == {}
+    assert ai_service.kwargs == {"max_tokens": 1000}
     system_prompt = ai_service.messages[0]["content"]
     assert "Clarity financial summary" in system_prompt
     assert "routing contract" not in system_prompt.lower()

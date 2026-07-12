@@ -406,6 +406,12 @@ class _EmbeddingSaveStore(_SearchStore):
         super().__init__(user_id=user_id)
         self.chat_embedding_service = _FakeEmbeddingService()
         self.created_embeddings = []
+        self.conversations["conversation-omen"] = {
+            "id": "conversation-omen",
+            "user_id": user_id,
+            "title": "",
+            "timestamp": "2026-06-23T21:13:00Z",
+        }
 
     async def _request(self, method, table, *, query=None, body=None, prefer=None, **kwargs):
         if method == "POST" and table == "messages":

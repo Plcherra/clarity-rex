@@ -3,6 +3,10 @@ from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Only these values are accepted. Typos like "prod" must not silently
+# enable development auth bypass or skip production validation.
+KNOWN_APP_ENVIRONMENTS = frozenset({"development", "production"})
+
 
 class Settings(BaseSettings):
     app_environment: str = "development"
@@ -136,8 +140,26 @@ class Settings(BaseSettings):
         ]
 
     @property
+    def normalized_app_environment(self) -> str:
+        return self.app_environment.strip().lower()
+
+    @property
     def is_production(self) -> bool:
-        return self.app_environment.strip().lower() == "production"
+        return self.normalized_app_environment == "production"
+
+    @property
+    def allows_unauthenticated_dev_user(self) -> bool:
+        """Fake auth user only in local development — never for typos or prod."""
+        return self.normalized_app_environment == "development"
+
+    def environment_validation_errors(self) -> list[str]:
+        if self.normalized_app_environment in KNOWN_APP_ENVIRONMENTS:
+            return []
+        allowed = ", ".join(sorted(KNOWN_APP_ENVIRONMENTS))
+        return [
+            f"APP_ENVIRONMENT must be one of: {allowed} "
+            f"(got {self.app_environment!r})"
+        ]
 
     def production_validation_errors(self) -> list[str]:
         if not self.is_production:
@@ -159,7 +181,31 @@ class Settings(BaseSettings):
                 "GOOGLE_TTS_PROJECT_ID with GOOGLE_TTS_CREDENTIALS_JSON "
                 "or GOOGLE_APPLICATION_CREDENTIALS"
             )
+        # Usage tracking + Plaid persistence need service role at runtime.
+        if not self.supabase_service_role_key:
+            errors.append("SUPABASE_SERVICE_ROLE_KEY")
+        if self._plaid_credentials_present():
+            if not (self.plaid_token_encryption_secret or "").strip():
+                errors.append("PLAID_TOKEN_ENCRYPTION_SECRET")
+            from app.services.plaid_config import get_plaid_config_status
+
+            plaid_status = get_plaid_config_status(self)
+            if not plaid_status.configured:
+                errors.extend(plaid_status.missing)
+                errors.extend(plaid_status.invalid)
         return errors
+
+    def _plaid_credentials_present(self) -> bool:
+        return bool(
+            (self.plaid_client_id or "").strip()
+            or (self.plaid_secret or "").strip()
+        )
+
+    def startup_validation_errors(self) -> list[str]:
+        return [
+            *self.environment_validation_errors(),
+            *self.production_validation_errors(),
+        ]
 
 
 @lru_cache

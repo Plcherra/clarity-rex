@@ -30,11 +30,16 @@ class PlaidTokenService:
             raise PlaidSyncServiceError("Plaid token reference is unreadable.") from error
 
     def _fernet_key(self) -> bytes:
-        secret = (
-            self.settings.plaid_token_encryption_secret
-            or self.settings.plaid_secret
-            or ""
-        ).strip()
+        dedicated = (self.settings.plaid_token_encryption_secret or "").strip()
+        if dedicated:
+            secret = dedicated
+        elif self.settings.is_production:
+            raise PlaidSyncServiceError(
+                "PLAID_TOKEN_ENCRYPTION_SECRET is required in production."
+            )
+        else:
+            # Development only — never fall back to PLAID_SECRET in production.
+            secret = (self.settings.plaid_secret or "").strip()
         if not secret:
             raise PlaidSyncServiceError("Plaid token encryption is not configured.")
         return base64.urlsafe_b64encode(hashlib.sha256(secret.encode()).digest())

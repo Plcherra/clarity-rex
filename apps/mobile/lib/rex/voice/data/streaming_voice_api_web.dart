@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:html' as html;
 import 'dart:typed_data';
+
+import 'package:http/http.dart' as http;
 
 import 'package:clarity/rex/voice/data/voice_websocket.dart';
 
@@ -111,37 +114,19 @@ class WebVoiceWebSocket implements VoiceWebSocket {
   }
 }
 
-/// Browser WebSockets cannot set custom headers on the upgrade request.
-/// Pass the Supabase JWT via `access_token` query param (rex-api accepts this
-/// when the Authorization header is absent).
-Uri _webSocketUriWithAuth(Uri uri, Map<String, String>? headers) {
-  final authorization = headers?['Authorization']?.trim();
-  if (authorization == null || authorization.isEmpty) {
-    return uri;
-  }
-
-  const bearerPrefix = 'Bearer ';
-  final token = authorization.startsWith(bearerPrefix)
-      ? authorization.substring(bearerPrefix.length).trim()
-      : authorization;
-
-  if (token.isEmpty) {
-    return uri;
-  }
-
-  return uri.replace(
-    queryParameters: {...uri.queryParameters, 'access_token': token},
-  );
-}
-
+/// Browser WebSockets cannot set custom headers. Fetch a short-lived ticket
+/// over HTTPS (Authorization header), then connect with `ticket` only —
+/// never put the Supabase JWT in the WebSocket query string.
 Future<VoiceWebSocket> connectVoiceWebSocket(
   Uri uri, {
   Map<String, String>? headers,
 }) async {
   try {
-    return await WebVoiceWebSocket.connect(
-      _webSocketUriWithAuth(uri, headers),
+    final ticket = await _fetchVoiceStreamTicket(uri, headers);
+    final ticketUri = uri.replace(
+      queryParameters: {...uri.queryParameters, 'ticket': ticket},
     );
+    return await WebVoiceWebSocket.connect(ticketUri);
   } on StreamingVoiceApiException {
     rethrow;
   } on Object {
@@ -149,4 +134,41 @@ Future<VoiceWebSocket> connectVoiceWebSocket(
       'Could not open Assistant voice stream. Check your connection and try again.',
     );
   }
+}
+
+Future<String> _fetchVoiceStreamTicket(
+  Uri wsUri,
+  Map<String, String>? headers,
+) async {
+  final httpScheme = switch (wsUri.scheme) {
+    'wss' => 'https',
+    'ws' => 'http',
+    _ => wsUri.scheme,
+  };
+  final ticketUri = wsUri.replace(
+    scheme: httpScheme,
+    path: '${wsUri.path}/ticket',
+    query: '',
+  );
+  final response = await http
+      .post(ticketUri, headers: headers ?? const {})
+      .timeout(const Duration(seconds: 8));
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw const StreamingVoiceApiException(
+      'Could not open Assistant voice stream. Check your connection and try again.',
+    );
+  }
+  final decoded = jsonDecode(response.body);
+  if (decoded is! Map<String, dynamic>) {
+    throw const StreamingVoiceApiException(
+      'Could not open Assistant voice stream. Check your connection and try again.',
+    );
+  }
+  final ticket = (decoded['ticket'] as String?)?.trim() ?? '';
+  if (ticket.isEmpty) {
+    throw const StreamingVoiceApiException(
+      'Could not open Assistant voice stream. Check your connection and try again.',
+    );
+  }
+  return ticket;
 }

@@ -261,11 +261,16 @@ def has_specific_actionable_continuity(
     conversation_history: Optional[list[dict]] = None,
 ) -> bool:
     context = _combined_user_context(message, conversation_history)
+    if is_vague_thread_topic(message, conversation_history=conversation_history):
+        if _multi_turn_context_is_actionable(message, conversation_history):
+            return True
+        prior_context = _combined_user_context("", conversation_history)
+        if prior_context and has_habit_thread_signal(prior_context):
+            return True
+        return False
     # Habit continuity wins even when the current turn is a short "remember that".
     if has_habit_thread_signal(context):
         return True
-    if is_vague_thread_topic(message, conversation_history=conversation_history):
-        return False
     if has_companion_follow_up_signal(message):
         return True
     if has_strong_actionable_plan_signal(context):

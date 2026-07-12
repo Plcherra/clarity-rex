@@ -31,6 +31,19 @@ async def test_auth_rejects_dev_fallback_in_production_when_supabase_is_not_conf
 
 
 @pytest.mark.asyncio
+async def test_auth_rejects_dev_fallback_for_unknown_environment():
+    """Typos like 'prod' must fail closed — never mint the fixed fake user."""
+    with pytest.raises(HTTPException) as exc:
+        await authenticate_access_token(
+            None,
+            Settings(app_environment="prod", _env_file=None),
+        )
+
+    assert exc.value.status_code == 503
+    assert exc.value.detail == "Supabase auth is not configured."
+
+
+@pytest.mark.asyncio
 async def test_auth_uses_development_user_when_supabase_is_not_configured():
     user = await authenticate_access_token(
         None,
@@ -39,6 +52,16 @@ async def test_auth_uses_development_user_when_supabase_is_not_configured():
 
     assert user.id == "00000000-0000-0000-0000-000000000000"
     assert user.access_token == "development-token"
+
+
+@pytest.mark.asyncio
+async def test_auth_development_bypass_is_case_insensitive():
+    user = await authenticate_access_token(
+        None,
+        Settings(app_environment="Development", _env_file=None),
+    )
+
+    assert user.id == "00000000-0000-0000-0000-000000000000"
 
 
 @pytest.mark.asyncio

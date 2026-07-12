@@ -16,6 +16,10 @@ from app.services.rex_channel import RexBrainChannel
 from app.services.time_context_service import TimeContextService
 from chat_service_fakes import FakeAIService, FakeMemoryService
 from app.services.voice_stream_session import VoiceStreamSession
+from durable_write_test_helpers import (
+    assert_mom_birthday_person_entity,
+    assert_self_location_person_entity,
+)
 from voice_stream_async_client import (
     async_confirm_voice_proposal,
     async_voice_client,
@@ -96,9 +100,7 @@ async def test_voice_stream_saves_direct_memory_through_real_chat_service(
 
         assert ai_service.generate_calls == 1
         assert ai_service.stream_calls == 0
-        assert memory_service.long_term_memory[0]["content"] == (
-            "User's mom's birthday is June 18."
-        )
+        assert_mom_birthday_person_entity(memory_service, "June 18")
         assert any(
             "voice_turn_timing" in record.message
             and "intent=memory_save" in record.message
@@ -151,9 +153,9 @@ async def test_voice_stream_updates_memory_through_real_chat_service():
 
         assert ai_service.generate_calls == 1
         assert ai_service.stream_calls == 0
-        assert len(memory_service.long_term_memory) == 1
-        assert memory_service.long_term_memory[0]["content"] == (
-            "User lives in Somerville, Massachusetts."
+        assert_self_location_person_entity(
+            memory_service,
+            "Somerville, Massachusetts",
         )
 
 

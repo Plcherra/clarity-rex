@@ -5,6 +5,29 @@ from __future__ import annotations
 from typing import Any, Optional
 
 
+CONFIRM_SAVE_SUFFIX = (
+    " Tap confirm to save — nothing is saved until you confirm."
+)
+
+
+def assert_mom_birthday_person_entity(memory_service, month_day: str) -> None:
+    assert len(memory_service.entities) == 1
+    entity = memory_service.entities[0]
+    assert entity["entity_type"] == "person"
+    assert entity.get("relationship") == "mother"
+    assert entity["metadata"]["attributes"]["birthday"] == month_day
+    assert memory_service.long_term_memory == []
+
+
+def assert_self_location_person_entity(memory_service, location: str) -> None:
+    assert len(memory_service.entities) == 1, memory_service.entities
+    entity = memory_service.entities[0]
+    actual = entity["metadata"]["attributes"]["location"]
+    assert entity.get("relationship") == "self", entity
+    assert actual == location, actual
+    assert memory_service.long_term_memory == []
+
+
 async def confirm_durable_write(
     chat_service,
     proposed_turn: dict[str, Any],

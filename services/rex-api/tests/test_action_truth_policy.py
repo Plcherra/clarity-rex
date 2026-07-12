@@ -17,6 +17,20 @@ from app.services.action_truth_policy import (
 )
 
 
+def test_canonical_recall_fallbacks_are_not_saved_memory_success_claims():
+    from app.services.action_truth_policy import (
+        safe_unexecuted_saved_memory_claim_response,
+    )
+
+    for fallback in (
+        DEGRADED_RECALL_FALLBACK,
+        EMPTY_RECALL_FALLBACK,
+        FILTERED_RECALL_FALLBACK,
+        PARTIAL_RECALL_FALLBACK,
+    ):
+        assert safe_unexecuted_saved_memory_claim_response(fallback) == fallback
+
+
 def test_pending_action_success_claim_returns_confirmation_text():
     response = safe_pending_action_response(
         "Done, I moved Starbucks to Coffee.",

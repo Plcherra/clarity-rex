@@ -33,10 +33,10 @@ class PlaidConfigStatus:
     ios_bundle_id_configured: bool
     android_package_name_configured: bool
 
-    def to_readiness(self) -> dict[str, Any]:
+    def to_readiness(self, *, required_for_ready: bool = False) -> dict[str, Any]:
         return {
             "configured": self.configured,
-            "required_for_ready": False,
+            "required_for_ready": required_for_ready,
             "required": list(REQUIRED_PLAID_ENV_VARS),
             "environment": self.environment or "unset",
             "products": list(self.products),

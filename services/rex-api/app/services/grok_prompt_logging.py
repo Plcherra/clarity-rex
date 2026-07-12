@@ -18,7 +18,7 @@ def log_grok_prompt_messages(
     conversation_id: str | None = None,
     max_chars: int = 12000,
 ) -> None:
-    if not get_settings().rex_log_grok_prompt:
+    if not grok_prompt_logging_enabled(get_settings()):
         return
     payload = {
         "channel": channel,
@@ -27,6 +27,13 @@ def log_grok_prompt_messages(
         "messages": _summarize_messages(messages, max_chars=max_chars),
     }
     LOGGER.info("grok_prompt %s", json.dumps(payload, ensure_ascii=False, sort_keys=True))
+
+
+def grok_prompt_logging_enabled(settings) -> bool:
+    """Dev-only. Hard-disabled in production even if REX_LOG_GROK_PROMPT=true."""
+    if settings.is_production:
+        return False
+    return bool(settings.rex_log_grok_prompt)
 
 
 def _summarize_messages(

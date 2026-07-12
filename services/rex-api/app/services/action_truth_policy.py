@@ -31,6 +31,15 @@ CHAT_SEARCH_CAPABILITY_FALLBACK = (
     "I can search saved chat history when chat search is available. I won't treat "
     "this visible chat as the only source."
 )
+_CANONICAL_TRUTH_FALLBACKS = frozenset(
+    {
+        DEGRADED_RECALL_FALLBACK,
+        EMPTY_RECALL_FALLBACK,
+        FILTERED_RECALL_FALLBACK,
+        PARTIAL_RECALL_FALLBACK,
+        CHAT_SEARCH_CAPABILITY_FALLBACK,
+    }
+)
 UNEXECUTED_DELETE_FALLBACK = (
     "I can help delete saved memory, but I don't have a confirmed backend delete "
     "from this turn. Tell me the exact saved item to delete and I'll ask for "
@@ -106,6 +115,8 @@ _LIMITATION_TERMS = tuple(
 )
 def _normalized(response: str) -> str: return f" {response.lower()} "
 def _contains_any(text: str, terms: tuple[str, ...]) -> bool: return any(term in text for term in terms)
+def _is_canonical_truth_fallback(response: str) -> bool:
+    return response.strip() in _CANONICAL_TRUTH_FALLBACKS
 def _chat_search_statuses(memory_status: object) -> list[dict]:
     if not isinstance(memory_status, dict):
         return []
@@ -115,7 +126,10 @@ def _chat_search_statuses(memory_status: object) -> list[dict]:
         if isinstance(status, dict) and status.get("source") == "chat_search"
     ]
 def response_claims_unconfirmed_success(response: str) -> bool:
-    text = _normalized(response)
+    cleaned = response.strip()
+    if _is_canonical_truth_fallback(cleaned):
+        return False
+    text = _normalized(cleaned)
     return not _contains_any(text, _CONFIRMATION_TERMS) and _contains_any(text, _SUCCESS_TERMS)
 
 
@@ -156,7 +170,10 @@ _SAVED_MEMORY_CLAIM_TERMS = (
 
 def response_claims_saved_memory_success(response: str) -> bool:
     """True when the reply claims a durable Knows/memory write succeeded."""
-    text = _normalized(response)
+    cleaned = response.strip()
+    if _is_canonical_truth_fallback(cleaned):
+        return False
+    text = _normalized(cleaned)
     if _contains_any(text, _CONFIRMATION_TERMS):
         return False
     if not _contains_any(text, _SUCCESS_TERMS):

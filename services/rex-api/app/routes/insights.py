@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.auth.supabase_auth import AuthenticatedUser, get_current_user
 from app.dependencies import get_insight_sync_service
@@ -34,6 +34,26 @@ class InsightListResponse(BaseModel):
 class InsightSyncRequest(BaseModel):
     financial_context: Optional[dict[str, Any]] = None
     accountability_signals: Optional[list[dict[str, Any]]] = None
+
+    @field_validator("financial_context")
+    @classmethod
+    def _cap_financial_context(cls, value: Optional[dict[str, Any]]):
+        if value is None:
+            return None
+        if len(str(value)) > 32_000:
+            raise ValueError("financial_context exceeds maximum size of 32000 characters.")
+        return value
+
+    @field_validator("accountability_signals")
+    @classmethod
+    def _cap_accountability_signals(cls, value: Optional[list[dict[str, Any]]]):
+        if value is None:
+            return None
+        if len(str(value)) > 16_000:
+            raise ValueError(
+                "accountability_signals exceeds maximum size of 16000 characters."
+            )
+        return value
 
 
 class InsightSyncResponse(BaseModel):

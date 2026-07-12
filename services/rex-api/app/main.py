@@ -5,8 +5,9 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.auth.supabase_auth import get_current_user
+from app.auth.supabase_auth import AuthenticatedUser, get_current_user
 from app.config import get_settings
+from app.logging_filters import install_sensitive_query_log_filters
 from app.routes.accountability import router as accountability_router
 from app.routes.apple_app_site_association import (
     router as apple_app_site_association_router,
@@ -38,15 +39,13 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    production_errors = settings.production_validation_errors()
-    if production_errors:
-        message = (
-            "Production configuration incomplete: "
-            + ", ".join(production_errors)
-        )
+    startup_errors = settings.startup_validation_errors()
+    if startup_errors:
+        message = "Startup configuration invalid: " + ", ".join(startup_errors)
         logger.error(message)
         raise RuntimeError(message)
 
+    install_sensitive_query_log_filters()
     await startup_http_client()
     logger.info(
         "Google TTS configured: voice=%s rate=%s pitch=%s",
@@ -62,6 +61,7 @@ async def lifespan(app: FastAPI):
 
 settings = get_settings()
 init_sentry(settings)
+install_sensitive_query_log_filters()
 
 app = FastAPI(title="Clarity API", lifespan=lifespan)
 
@@ -112,8 +112,18 @@ def health_check() -> dict[str, str]:
 
 
 @app.get("/ready")
-def readiness_check() -> dict:
+def readiness_check() -> dict[str, str]:
+    """Public readiness — status only. Details require auth via /ready/details."""
+    return {"status": "ok", "service": "clarity-rex"}
+
+
+@app.get("/ready/details")
+def readiness_details(
+    current_user: AuthenticatedUser = Depends(get_current_user),
+) -> dict:
+    _ = current_user
     plaid_status = get_plaid_config_status(settings)
+    plaid_required = settings.is_production
     checks = {
         "grok": {
             "configured": bool(settings.grok_api_key and settings.grok_model),
@@ -134,12 +144,28 @@ def readiness_check() -> dict:
             },
         },
         "supabase": {
-            "configured": bool(settings.supabase_url and settings.supabase_anon_key),
+            "configured": bool(
+                settings.supabase_url
+                and settings.supabase_anon_key
+                and (
+                    not settings.is_production
+                    or settings.supabase_service_role_key
+                )
+            ),
             "required": [
                 "SUPABASE_URL",
                 "SUPABASE_ANON_KEY",
+                *(
+                    ["SUPABASE_SERVICE_ROLE_KEY"]
+                    if settings.is_production
+                    else []
+                ),
             ],
-            "optional": ["SUPABASE_SERVICE_ROLE_KEY"],
+            "optional": (
+                []
+                if settings.is_production
+                else ["SUPABASE_SERVICE_ROLE_KEY"]
+            ),
         },
         "deepgram": {
             "configured": bool(settings.deepgram_api_key),
@@ -160,7 +186,7 @@ def readiness_check() -> dict:
             "pitch": settings.google_tts_pitch,
             "volume_gain_db": settings.google_tts_volume_gain_db,
         },
-        "plaid": plaid_status.to_readiness(),
+        "plaid": plaid_status.to_readiness(required_for_ready=plaid_required),
         "sentry": {
             "configured": bool((settings.sentry_dsn or "").strip()),
             "required_for_ready": False,

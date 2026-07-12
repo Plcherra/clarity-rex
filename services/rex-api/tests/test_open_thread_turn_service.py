@@ -124,6 +124,7 @@ async def test_open_thread_turn_service_offers_text_for_clear_plan():
         conversation_id="conversation-1",
         user_message={"id": "user-1", "content": "I've been trying to figure out a better morning routine lately."},
         conversation_history=[],
+        proposal_settings=AssistantProposalSettings(mode="text"),
     )
 
     assert result is not None

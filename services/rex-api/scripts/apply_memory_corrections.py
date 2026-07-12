@@ -19,7 +19,7 @@ async def run_correction(
     force: bool = False,
     limit: int = 250,
 ) -> dict:
-    memory_service = SupabaseMemoryService()
+    memory_service = SupabaseMemoryService(use_service_role=True)
     service = MemoryCorrectionService(memory_service, scan_limit=limit)
     intent = service.detect_correction_intent(correction)
     if not apply:
@@ -285,7 +285,7 @@ async def main() -> None:
             )
         else:
             report = await run_audit(
-                SupabaseMemoryService(),
+                SupabaseMemoryService(use_service_role=True),
                 apply=args.apply,
                 limit=args.limit,
             )
