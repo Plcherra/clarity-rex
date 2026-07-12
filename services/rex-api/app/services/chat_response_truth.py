@@ -55,7 +55,20 @@ class ChatResponseTruthService:
             updated,
             turn_trace,
         )
-        if clarity_action_proposals:
+        # Only short-circuit when a durable write proposal is pending confirm.
+        # Finance clarity_action blocks must not skip memory/goal truth guards.
+        has_pending_write = any(
+            isinstance(item, dict)
+            and str(item.get("status") or "pending").strip().lower()
+            in {"pending", "failed"}
+            and (
+                item.get("write_kind")
+                or item.get("proposal_id")
+                or item.get("confirmation_text")
+            )
+            for item in (clarity_action_proposals or [])
+        )
+        if has_pending_write:
             return response
         updated = safe_unsupported_action_response(response, unsupported_actions)
         response = _apply_truth_guard(
@@ -184,14 +197,20 @@ class ChatResponseTruthService:
 
     def _user_requested_memory_save(self, user_message: str) -> bool:
         from app.services.memory_intent_service import MemoryIntentService
+        from app.services.save_intent_guards import has_explicit_save_intent
 
+        if has_explicit_save_intent(user_message):
+            return True
         service = MemoryIntentService()
         if service.is_contextual_memory_save_request(user_message):
+            return True
+        if service.detect_simple_memory(user_message) is not None:
             return True
         normalized = service._normalize_reply(user_message)
         return bool(
             re.search(
-                r"\b(?:save|remember|keep)\b.*\b(?:memory|knows|pc|computer|laptop|device|model|birthday)\b",
+                r"\b(?:save|remember|keep)\b.*\b(?:memory|knows|friend|person|"
+                r"pc|computer|laptop|device|model|birthday|plan|goal)\b",
                 normalized,
             )
         )

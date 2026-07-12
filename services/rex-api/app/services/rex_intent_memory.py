@@ -69,7 +69,7 @@ class RexIntentMemoryHelper:
             return True
         if " please remember " in f" {normalized_message} ":
             return True
-        if normalized_message.startswith(
+        polite_prefix = normalized_message.startswith(
             (
                 "can ",
                 "could ",
@@ -80,12 +80,24 @@ class RexIntentMemoryHelper:
                 "when ",
                 "where ",
                 "who ",
+                "would ",
             )
-        ):
-            return False
+        )
+        if polite_prefix:
+            # "Can you save/remember X" is a save request, not a question to skip.
+            if re.search(
+                r"\b(?:save|remember|keep|track|add)\b",
+                normalized_message,
+            ) is None:
+                return False
+            if self.looks_like_memory_recall_question(normalized_message):
+                return False
+            return True
         return contains(
             normalized_message,
             tuple(term for term in MEMORY_SAVE_TERMS if term != "remember"),
+        ) or bool(
+            re.search(r"\b(?:save|keep)\b.+\bas\b", normalized_message)
         )
 
     def looks_like_memory_delete(self, normalized_message: str) -> bool:

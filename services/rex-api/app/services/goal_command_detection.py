@@ -43,6 +43,14 @@ _INLINE_GOAL_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"\b(?:track|save|add)\s+(?:a\s+)?plan\s+to\s+(?P<goal>.+)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:track|save|add)\s+(?P<goal>.+?)\s+as\s+(?:a\s+)?plan\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"\bmy\s+goal\s+is\s+(?P<goal>.+)",
         re.IGNORECASE,
     ),

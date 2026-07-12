@@ -372,7 +372,7 @@ async def _try_remind_pending_durable_write(
         return None
 
     settings = proposal_settings or AssistantProposalSettings()
-    show_cards = settings.uses_confirm_cards()
+    show_cards = settings.auto_proposals_enabled()
     if show_cards:
         reminder = (
             "I still have a pending save waiting for your confirmation. "

@@ -6,11 +6,15 @@ import re
 
 _EXPLICIT_SAVE_PATTERN = re.compile(
     r"\b(?:"
+    r"(?:can|could|would)\s+you\s+(?:please\s+)?"
+    r"(?:save|remember|keep|track|add)\b|"
     r"(?:track|save|add)\s+.+\s+as\s+(?:a\s+)?(?:goal|plan|commitment)|"
+    r"(?:track|save|add)\s+(?:a\s+)?(?:goal|plan)\s+to\b|"
+    r"(?:save|remember|keep)\s+\S.+\s+as\s+(?:my|your|a|an)\s+\w|"
     r"my\s+goal\s+is\b|"
     r"(?:remember|remind)\s+me\s+to\b|"
     r"(?:please\s+)?(?:save|track|add)\s+(?:this|that|it)\b"
-    r")\b",
+    r")",
     re.IGNORECASE,
 )
 

@@ -442,6 +442,18 @@ def test_detects_relationship_person_save_request():
     assert intent.metadata["entity_label"] == "pedro"
 
 
+def test_detects_relationship_save_name_as_my_friend():
+    service = MemoryIntentService()
+
+    intent = service.detect_simple_memory("can you save sabrina as my friend ?")
+
+    assert intent is not None
+    assert intent.content == "User's friend is Sabrina."
+    assert intent.metadata["fact_kind"] == "relationship"
+    assert intent.metadata["entity_label"] == "sabrina"
+    assert intent.metadata["relationship"] == "friend"
+
+
 def test_detects_mother_name_spoken_save_request():
     service = MemoryIntentService()
 

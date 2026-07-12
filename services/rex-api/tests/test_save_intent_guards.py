@@ -29,6 +29,9 @@ def test_advice_questions_are_not_save_turns(message: str) -> None:
         "Remember me to buy adjustable dumbbells up to 50 pounds.",
         "My goal is to save $10,000 for Europe",
         "Track morning workouts as a goal",
+        "can you save sabrina as my friend?",
+        "can you save a plan to pay my bills tomorrow?",
+        "can you remember me to pay cursor tomorrow?",
     ],
 )
 def test_explicit_save_intent_is_not_advice(message: str) -> None:

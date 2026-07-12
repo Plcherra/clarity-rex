@@ -50,7 +50,7 @@ _RELATIVE_TIME_PATTERN = re.compile(
 
 
 def clean_goal_text(value: Any) -> str:
-    return re.sub(r"\s+", " ", str(value or "")).strip(" .")
+    return re.sub(r"\s+", " ", str(value or "")).strip(" .?!;:")
 
 
 def goal_title(text: str) -> str:

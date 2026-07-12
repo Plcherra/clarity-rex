@@ -950,7 +950,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get assistantCompanionSettingsSubtitle =>
-      'Elige cómo Rex sugiere metas, hilos abiertos y memoria en el chat. Solo texto nunca muestra tarjetas de confirmación — Rex pregunta en la conversación.';
+      'Elige cómo Rex sugiere metas, hilos abiertos y memoria en el chat. Los guardados siempre muestran una tarjeta de confirmación antes de almacenar nada.';
 
   @override
   String get assistantCompanionSettingsGearLabel =>
@@ -973,7 +973,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get assistantAutoProposalsModeTextHint =>
-      'Rex pregunta en el chat. Sin tarjetas de confirmación para memoria, metas o hilos abiertos.';
+      'Rex sigue mostrando una tarjeta de confirmación; también menciona el guardado pendiente en el chat.';
 
   @override
   String get assistantAutoProposalsModeCardHint =>

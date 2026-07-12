@@ -39,6 +39,12 @@ _RELATIONSHIP_SAVE_USER_PATTERN = re.compile(
     r"(?P<name>[\w][\w\s.'-]{1,60})",
     re.IGNORECASE | re.UNICODE,
 )
+_RELATIONSHIP_SAVE_NAME_AS_MY_PATTERN = re.compile(
+    r"\b(?:save|remember|keep)\s+(?P<name>[\w][\w\s.'-]{0,40}?)\s+"
+    r"as\s+(?:my|a|an)\s+"
+    rf"(?P<relationship>{_RELATIONSHIP_ROLE_ALT})\b",
+    re.IGNORECASE | re.UNICODE,
+)
 _RELATIONSHIP_NAME_AS_PATTERN = re.compile(
     r"\b(?:save|remember|keep|update|change|set|put)\s+(?:my\s+)?"
     rf"(?P<relationship>{_RELATIONSHIP_ROLE_ALT})(?:'s)?\s+name\s+"
@@ -110,6 +116,8 @@ class MemoryIntentRelationshipMixin:
 
     def _detect_relationship_person(self, message: str) -> Optional[SimpleMemoryIntent]:
         match = _RELATIONSHIP_NAME_AS_PATTERN.search(message)
+        if match is None:
+            match = _RELATIONSHIP_SAVE_NAME_AS_MY_PATTERN.search(message)
         if match is None:
             match = _RELATIONSHIP_SAVE_USER_PATTERN.search(message)
         if match is None:

@@ -1,4 +1,7 @@
-"""Text-only mode must never surface confirm cards to the client."""
+"""Text mode still proposes durable writes with confirm cards.
+
+Confirm cards are the truth path — text mode must not hide them.
+"""
 
 from __future__ import annotations
 
@@ -47,7 +50,7 @@ def test_pending_memory_changes_can_omit_client_cards():
 
 
 @pytest.mark.asyncio
-async def test_text_mode_memory_propose_has_no_write_proposals(monkeypatch):
+async def test_text_mode_memory_propose_still_includes_write_proposals(monkeypatch):
     monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "text")
     from app.config import get_settings
 
@@ -61,10 +64,8 @@ async def test_text_mode_memory_propose_has_no_write_proposals(monkeypatch):
     proposed = await chat_service.send_message("My mom's birthday is June 18")
     changes = proposed["memory_changes"]
     assert changes["confirmation_required"] == 1
-    assert changes.get("write_proposals") == []
-    assert changes.get("text_confirmation_pending") is True
-    assert "say yes" in proposed["response"].casefold()
-    assert "tap confirm" not in proposed["response"].casefold()
+    assert changes.get("write_proposals")
+    assert changes.get("text_confirmation_pending") is not True
 
     saved = await confirm_durable_write(chat_service, proposed)
     assert saved["memory_changes"]["created"] == 1 or saved["memory_changes"].get(
@@ -92,7 +93,7 @@ async def test_card_mode_memory_propose_includes_write_proposals(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_text_mode_relationship_propose_has_no_person_card(monkeypatch):
+async def test_text_mode_relationship_propose_includes_person_card(monkeypatch):
     monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "text")
     from app.config import get_settings
 
@@ -108,6 +109,10 @@ async def test_text_mode_relationship_propose_has_no_person_card(monkeypatch):
     )
     changes = proposed["memory_changes"]
     assert changes["confirmation_required"] == 1
-    assert changes.get("write_proposals") == []
-    assert "person_card" not in str(changes)
+    assert changes.get("write_proposals")
+    assert "person_card" in str(changes).casefold() or any(
+        (proposal.get("write_kind") == "person" or "person" in str(proposal).casefold())
+        for proposal in (changes.get("write_proposals") or [])
+        if isinstance(proposal, dict)
+    )
     get_settings.cache_clear()

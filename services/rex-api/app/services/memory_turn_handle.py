@@ -269,7 +269,7 @@ class MemoryTurnHandleMixin:
 def _should_use_person_card(intent, settings: AssistantProposalSettings) -> bool:
     if str((intent.metadata or {}).get("fact_kind") or "") != "relationship":
         return False
-    return settings.uses_confirm_cards()
+    return settings.auto_proposals_enabled()
 
 
 def _missing_person_field_prompt(person_card: dict) -> str:
