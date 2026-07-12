@@ -143,9 +143,9 @@ final voiceCallThinkingTimeoutProvider = Provider<Duration>(
 
 final voiceCallTranscriptIdleTimeoutProvider = Provider<Duration>(
   // STT transcript-stability endpoint for flutter_streaming (re-armed on each
-  // transcript update). Not a race patch — same class of signal as Deepgram
-  // endpointing / backend live-transcript idle for non-flutter clients.
-  (ref) => const Duration(milliseconds: 1800),
+  // transcript update). Match backend DEEPGRAM_LIVE_TRANSCRIPT_IDLE_MS /
+  // endpointing_ms + 200 (900 + 200 = 1100). Not a race patch.
+  (ref) => const Duration(milliseconds: 1100),
 );
 
 final voiceCallSpeechStartTimeoutProvider = Provider<Duration>(

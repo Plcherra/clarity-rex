@@ -154,6 +154,32 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     final utteranceTranscript =
         (transcript ?? _pendingUtteranceTranscript ?? _transcriptBuffer.visible)
             .trim();
+    if (turnSequence != _streamingTurnSequence ||
+        !identical(_activeStreamingSession, session) ||
+        !state.isCallActive) {
+      return;
+    }
+
+    final writeConfirmation = ref
+        .read(chatProvider.notifier)
+        .writeConfirmationForAffirmation(utteranceTranscript);
+    final readyFinance =
+        _readyFinancialContextForUtterance(utteranceTranscript);
+    final needsFinance = shouldAttachAssistantFinancialContext(
+      utteranceTranscript,
+    );
+
+    // Non-finance (or prefetch already ready): send utterance.end immediately.
+    // Only await a cold finance build when this turn clearly needs money context.
+    if (!needsFinance || readyFinance != null) {
+      _markVoiceTurnUtteranceEnd(turnSequence);
+      session.endUtterance(
+        financialContext: readyFinance,
+        writeConfirmation: writeConfirmation,
+      );
+      return;
+    }
+
     unawaited(
       _financialContextForUtterance(utteranceTranscript).then((
         financialContext,
@@ -166,9 +192,7 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
         _markVoiceTurnUtteranceEnd(turnSequence);
         session.endUtterance(
           financialContext: financialContext,
-          writeConfirmation: ref
-              .read(chatProvider.notifier)
-              .writeConfirmationForAffirmation(utteranceTranscript),
+          writeConfirmation: writeConfirmation,
         );
       }),
     );
@@ -199,6 +223,19 @@ extension VoiceCallControllerStreamingPlayback on VoiceCallController {
     _prefetchedFinancialContext = null;
     _prefetchedFinancialContextTask = null;
     _prefetchedFinancialContextTranscript = null;
+  }
+
+  /// Cached finance context only — returns null if prefetch is still in flight.
+  Map<String, dynamic>? _readyFinancialContextForUtterance(String transcript) {
+    final normalized = transcript.trim();
+    if (normalized.isEmpty ||
+        !shouldAttachAssistantFinancialContext(normalized)) {
+      return null;
+    }
+    if (_prefetchedFinancialContextTranscript == normalized) {
+      return _prefetchedFinancialContext;
+    }
+    return null;
   }
 
   Future<Map<String, dynamic>?> _financialContextForUtterance(

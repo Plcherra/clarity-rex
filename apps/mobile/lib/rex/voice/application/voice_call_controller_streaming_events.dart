@@ -116,38 +116,48 @@ extension VoiceCallControllerStreamingEvents on VoiceCallController {
             }
           case 'transcript.final':
             if (event.speechFinal) {
-              assistantText = '';
-              responseAudioStarted = false;
               final eventTranscript = (event.transcript ?? '').trim();
               final bufferTranscript = _transcriptBuffer.visible.trim();
               final preferredTranscript = VoiceTranscriptBuffer.preferFullest([
                 eventTranscript,
                 bufferTranscript,
               ]).trim();
-              if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
-                if (preferredTranscript.isNotEmpty) {
+              final alreadyFinalized =
+                  _streamingTurnFinalizedSequence == _streamingTurnSequence ||
+                  _streamingUtteranceEndSent ||
+                  _suppressStaleSpeechFinal;
+              // Late speech_final after transcript-idle/VAD finalize must not
+              // reset playback or start a second utterance.end (double talk).
+              if (alreadyFinalized ||
+                  state.phase != VoiceCallPhase.listening) {
+                if (preferredTranscript.isNotEmpty &&
+                    (_streamingTurnFinalizedSequence ==
+                            _streamingTurnSequence ||
+                        state.phase == VoiceCallPhase.thinking ||
+                        state.phase == VoiceCallPhase.speaking)) {
                   _finalizeVoiceTranscriptInChat(
                     finalTranscript: preferredTranscript,
                   );
                 }
-              } else {
-                if (preferredTranscript.isNotEmpty &&
-                    preferredTranscript != bufferTranscript &&
-                    state.phase == VoiceCallPhase.listening) {
-                  updateTranscript(preferredTranscript, isFinal: true);
-                }
-                _endTurnFromLocalEndpoint(
-                  _callGeneration,
-                  preferredTranscript: preferredTranscript,
+                break;
+              }
+              assistantText = '';
+              responseAudioStarted = false;
+              if (preferredTranscript.isNotEmpty &&
+                  preferredTranscript != bufferTranscript) {
+                updateTranscript(preferredTranscript, isFinal: true);
+              }
+              _endTurnFromLocalEndpoint(
+                _callGeneration,
+                preferredTranscript: preferredTranscript,
+              );
+              if (_streamingTurnFinalizedSequence != _streamingTurnSequence &&
+                  preferredTranscript.isNotEmpty) {
+                _finalizeStreamingTurn(
+                  transcript: preferredTranscript,
+                  session: session,
+                  turnSequence: _streamingTurnSequence,
                 );
-                if (_streamingTurnFinalizedSequence != _streamingTurnSequence &&
-                    preferredTranscript.isNotEmpty) {
-                  _finalizeStreamingTurn(
-                    transcript: preferredTranscript,
-                    session: session,
-                    turnSequence: _streamingTurnSequence,
-                  );
-                }
               }
               unawaited(_activeStreamingCaptureService?.cancel());
               unawaited(_preparePlaybackAudioSession());

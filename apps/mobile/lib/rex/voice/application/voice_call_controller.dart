@@ -87,6 +87,9 @@ class VoiceCallController extends Notifier<VoiceCallState>
   var _streamingUtteranceEndSent = false;
   var _streamingTurnSequence = 0;
   int? _streamingTurnFinalizedSequence;
+  /// After a turn is finalized (idle/VAD/speech_final), ignore late speech_final
+  /// until fresh transcript arrives for the next listen cycle.
+  var _suppressStaleSpeechFinal = false;
   var _streamingListenEpoch = 0;
   var _streamingListenEpochInFlight = false;
   Map<String, dynamic>? _prefetchedFinancialContext;

@@ -38,6 +38,9 @@ extension VoiceCallControllerCommands on VoiceCallController {
     } else {
       _transcriptBuffer.updatePartial(transcript);
     }
+    // Fresh STT for this listen cycle — late speech_final from a prior turn
+    // must no longer be suppressed once we have new transcript evidence.
+    _suppressStaleSpeechFinal = false;
 
     state = state.copyWith(
       phase: VoiceCallPhase.listening,
