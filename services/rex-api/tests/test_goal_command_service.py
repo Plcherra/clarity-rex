@@ -82,23 +82,32 @@ async def _run_goal_turn(
 
 
 @pytest.mark.asyncio
-async def test_remind_me_phrase_does_not_short_circuit_goal_command_path():
+async def test_remind_me_phrase_creates_plan_after_confirm(monkeypatch):
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "card")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
     memory_service = FakeMemoryService()
     conversation_id = await memory_service.create_conversation()
     message = "Remind me to send her $200 on the 10th"
     user_message = await _user_message(memory_service, conversation_id, message)
     service = _goal_command_service(memory_service)
 
-    result = await service.handle_turn(
-        message,
+    result = await _run_goal_turn(
+        service,
+        memory_service=memory_service,
+        message=message,
         conversation_id=conversation_id,
         user_message=user_message,
         conversation_history=[user_message],
         time_context=_time_context(),
     )
 
-    assert result is None
-    assert memory_service.created_plans == []
+    assert result is not None
+    assert result["memory_changes"]["created"] == 1
+    plan = memory_service.created_plans[0]
+    assert "send her" in plan["description"].casefold()
+    get_settings.cache_clear()
 
 
 @pytest.mark.asyncio

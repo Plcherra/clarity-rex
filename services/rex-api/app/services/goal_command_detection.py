@@ -55,6 +55,18 @@ _INLINE_GOAL_PATTERNS = (
         re.IGNORECASE,
     ),
 )
+# One-off reminders → Goals confirm card. Recurring habits stay Open Threads.
+_REMEMBER_ME_GOAL_PATTERN = re.compile(
+    r"\b(?:(?:can|could|would)\s+you\s+(?:please\s+)?)?"
+    r"(?:remember|remind)\s+me\s+to\s+(?P<goal>.+)",
+    re.IGNORECASE,
+)
+_HABIT_REMINDER_PATTERNS = (
+    re.compile(r"\b(?:every|each)\s+(?:day|night|morning|week)\b", re.I),
+    re.compile(r"\b(?:night|morning|bedtime)\s+(?:routine|habit)\b", re.I),
+    re.compile(r"\bnew habit\b", re.I),
+    re.compile(r"\bwake up (?:every|each)\b", re.I),
+)
 _PLAN_TIMELINE_PATTERN = re.compile(
     r"\b(?:"
     r"(?:my\s+)?(?:next\s+)?checklist\b|"
@@ -177,16 +189,26 @@ class GoalCommandDetector:
         if _CONTEXTUAL_GOAL_PATTERN.search(message):
             goal_text = recent_user_content(conversation_history)
         else:
-            for pattern in _INLINE_GOAL_PATTERNS:
+            for pattern in (*_INLINE_GOAL_PATTERNS, _REMEMBER_ME_GOAL_PATTERN):
                 match = pattern.search(message)
-                if match:
-                    goal_text = match.group("goal")
-                    break
+                if not match:
+                    continue
+                if (
+                    pattern is _REMEMBER_ME_GOAL_PATTERN
+                    and _is_habit_reminder(message)
+                ):
+                    return None
+                goal_text = match.group("goal")
+                break
         goal_text = clean_goal_text(goal_text)
         if not goal_text:
             return None
 
-        target_text = date_from_text(goal_text, time_context=time_context)
+        target_text = (
+            date_from_text(goal_text, time_context=time_context)
+            or date_from_text(message, time_context=time_context)
+            or relative_date_from_text(message, time_context=time_context)
+        )
         return GoalCommand(
             kind="goal",
             title=goal_title(goal_text),
@@ -329,6 +351,10 @@ class GoalCommandDetector:
             time_context=time_context,
         )
         return commands[0] if len(commands) == 1 else None
+
+
+def _is_habit_reminder(message: str) -> bool:
+    return any(pattern.search(message) for pattern in _HABIT_REMINDER_PATTERNS)
 
 
 def pending_action_payload(pending_action) -> dict | None:

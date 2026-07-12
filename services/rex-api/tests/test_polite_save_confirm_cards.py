@@ -47,12 +47,22 @@ def test_goal_detector_handles_remember_me_to():
         conversation_history=[],
         time_context={"date": "2026-06-01"},
     )
-    # Remind-me phrases are Open Thread territory, not Goals short-circuit.
+    assert len(commands) == 1
+    assert "pay cursor tomorrow" in commands[0].body.casefold()
+
+
+def test_goal_detector_skips_habit_remember_me():
+    detector = GoalCommandDetector()
+    commands = detector.detect_commands(
+        "remember me to wake up at 4am every morning",
+        conversation_history=[],
+        time_context={"date": "2026-06-01"},
+    )
     assert commands == []
 
 
 @pytest.mark.asyncio
-async def test_polite_remember_me_returns_open_thread_or_confirm(monkeypatch):
+async def test_polite_remember_me_returns_goal_confirm_card(monkeypatch):
     monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "card")
     from app.config import get_settings
 
@@ -67,11 +77,11 @@ async def test_polite_remember_me_returns_open_thread_or_confirm(monkeypatch):
         "can you remember me to pay cursor tomorrow?"
     )
     changes = proposed.get("memory_changes") or {}
-    # Must not fake-save; either a confirm card or honest non-success copy.
+    assert changes.get("confirmation_required") == 1
+    assert changes.get("write_proposals")
+    assert changes["write_proposals"][0]["write_kind"] == "plan"
     assert "yes, i'll save" not in proposed["response"].casefold()
     assert "yes, saved" not in proposed["response"].casefold()
-    if changes.get("confirmation_required"):
-        assert changes.get("write_proposals")
     get_settings.cache_clear()
 
 
