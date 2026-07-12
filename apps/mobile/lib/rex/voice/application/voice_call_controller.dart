@@ -94,6 +94,8 @@ class VoiceCallController extends Notifier<VoiceCallState>
   String? _prefetchedFinancialContextTranscript;
   Timer? _thinkingTimeoutTimer;
   Timer? _noSpeechTimeoutTimer;
+  /// Transcript-stability endpoint for flutter_streaming (STT idle → utterance.end).
+  Timer? _listeningEndpointTimer;
   _VoiceTurnTiming? _activeVoiceTurnTiming;
   String? _activeVoiceMessageLocalId;
   String? _pendingUtteranceTranscript;
@@ -113,6 +115,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
       _callGeneration++;
       _cancelThinkingTimeout();
       _cancelNoSpeechTimeout();
+      _cancelListeningEndpointTimeout();
       final captureService = _activeCaptureService;
       final playbackService = _activePlaybackService;
       final interimSpeechToTextService = _activeInterimSpeechToTextService;
@@ -358,6 +361,7 @@ class VoiceCallController extends Notifier<VoiceCallState>
     _callGeneration++;
     _cancelThinkingTimeout();
     _cancelNoSpeechTimeout();
+    _cancelListeningEndpointTimeout();
     unawaited(_stopInterimTranscription());
     if (_isUsingNativeVoice) {
       unawaited(_nativeVoiceSessionService.interrupt());

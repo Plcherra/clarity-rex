@@ -118,6 +118,7 @@ extension VoiceCallControllerChatSync on VoiceCallController {
 
     _streamingTurnFinalizedSequence = turnSequence;
     _pendingUtteranceTranscript = text;
+    _cancelListeningEndpointTimeout();
     _markVoiceTurnFinalize(turnSequence);
     startThinking(finalTranscript: text);
     _sendStreamingUtteranceEndIfNeeded(

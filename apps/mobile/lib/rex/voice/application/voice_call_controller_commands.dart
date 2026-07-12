@@ -46,6 +46,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
       clearError: true,
     );
     _syncInterimVoiceTranscriptToChat(_transcriptBuffer.visible);
+    _armTranscriptIdleEndpointTimeout(_callGeneration);
     _prefetchFinancialContextIfNeeded(_transcriptBuffer.visible);
   }
 
@@ -55,6 +56,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     }
 
     _cancelNoSpeechTimeout();
+    _cancelListeningEndpointTimeout();
     _isAwaitingFollowUpSpeech = false;
     _finalizeVoiceTranscriptInChat();
     _clearVisibleTranscript();
@@ -92,6 +94,7 @@ extension VoiceCallControllerCommands on VoiceCallController {
     }
 
     _cancelNoSpeechTimeout();
+    _cancelListeningEndpointTimeout();
     _isAwaitingFollowUpSpeech = false;
     if (finalTranscript != null && finalTranscript.trim().isNotEmpty) {
       _emptyVoiceTurnRecoveryCount = 0;

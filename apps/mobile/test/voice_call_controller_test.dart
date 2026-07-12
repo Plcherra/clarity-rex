@@ -285,6 +285,77 @@ void main() {
     },
   );
 
+  test(
+    'streaming voice finalizes after transcript idle without local endpoint',
+    () async {
+      final captureService = _HangingStreamingAudioCaptureService();
+      final streamingApi = _FakeStreamingVoiceApi();
+      final container = ProviderContainer(
+        overrides: [
+          microphonePermissionProvider.overrideWithValue(
+            const _GrantedMicrophonePermissionService(),
+          ),
+          voiceAudioSessionServiceProvider.overrideWithValue(
+            const _NoopVoiceAudioSessionService(),
+          ),
+          backgroundVoiceServiceProvider.overrideWithValue(
+            const _NoopBackgroundVoiceService(),
+          ),
+          audioCaptureServiceProvider.overrideWithValue(
+            const _NoopAudioCaptureService(),
+          ),
+          audioPlaybackServiceProvider.overrideWithValue(
+            const _NoopAudioPlaybackService(),
+          ),
+          streamingVoiceEnabledProvider.overrideWithValue(true),
+          nativeIosVoiceEnabledProvider.overrideWithValue(false),
+          streamingVoiceApiProvider.overrideWithValue(streamingApi),
+          streamingAudioCaptureServiceProvider.overrideWithValue(
+            captureService,
+          ),
+          bargeInDetectionServiceProvider.overrideWithValue(
+            const _NoopBargeInDetectionService(),
+          ),
+          voiceCallTranscriptIdleTimeoutProvider.overrideWithValue(
+            const Duration(milliseconds: 40),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(voiceCallProvider.notifier);
+
+      expect(await controller.startCall(), isTrue);
+      await captureService.started.future;
+
+      streamingApi.socket.emit({
+        'event': 'transcript.partial',
+        'transcript': 'Hello Rex how are you',
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.listening);
+      expect(
+        container.read(voiceCallProvider).currentTranscript,
+        'Hello Rex how are you',
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      expect(container.read(voiceCallProvider).phase, VoiceCallPhase.thinking);
+      expect(
+        streamingApi.socket.sentEvents.where(
+          (event) => event == 'utterance.end',
+        ),
+        hasLength(1),
+      );
+      final messages = container.read(chatProvider).messages;
+      expect(messages, isNotEmpty);
+      expect(messages.first.content, 'Hello Rex how are you');
+      expect(messages.first.isVoiceInterim, isFalse);
+    },
+  );
+
   test('unexpected streaming socket close recovers to listening', () async {
     final captureService = _ScriptedStreamingAudioCaptureService();
     final streamingApi = _FakeStreamingVoiceApi();

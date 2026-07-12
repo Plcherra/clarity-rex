@@ -166,6 +166,55 @@ extension VoiceCallControllerTimers on VoiceCallController {
     _noSpeechTimeoutTimer = null;
   }
 
+  /// Re-arm when STT transcript updates. After [voiceCallTranscriptIdleTimeoutProvider]
+  /// of stability with a non-empty transcript, finalize the turn (utterance.end).
+  /// This is Deepgram/STT endpointing parity — not an artificial race timeout.
+  void _armTranscriptIdleEndpointTimeout(int generation) {
+    if (_activeStreamingSession == null ||
+        _transcriptBuffer.visible.trim().isEmpty ||
+        state.phase != VoiceCallPhase.listening ||
+        state.isMuted) {
+      return;
+    }
+    _armListeningEndpointTimeout(
+      generation,
+      ref.read(voiceCallTranscriptIdleTimeoutProvider),
+    );
+  }
+
+  void _armListeningEndpointTimeout(int generation, Duration timeout) {
+    _listeningEndpointTimer?.cancel();
+    if (timeout <= Duration.zero) {
+      return;
+    }
+    _listeningEndpointTimer = Timer(timeout, () {
+      _forceEndStreamingUtterance(generation);
+    });
+  }
+
+  void _cancelListeningEndpointTimeout() {
+    _listeningEndpointTimer?.cancel();
+    _listeningEndpointTimer = null;
+  }
+
+  void _forceEndStreamingUtterance(int generation) {
+    _cancelListeningEndpointTimeout();
+    if (!_isCurrentCall(generation) ||
+        !state.isCallActive ||
+        state.phase != VoiceCallPhase.listening ||
+        state.isMuted) {
+      return;
+    }
+    if (_streamingTurnFinalizedSequence == _streamingTurnSequence) {
+      return;
+    }
+    // Finalize first so a racing capture.cancel() completion cannot treat this
+    // as an empty turn and restart listening.
+    _endTurnFromLocalEndpoint(generation);
+    unawaited(_streamingCaptureService.cancel());
+    unawaited(_stopInterimTranscription());
+  }
+
   void _recoverFromStreamingDisconnect() {
     if (!state.isCallActive) {
       return;
