@@ -75,6 +75,8 @@ apply_vps_public_env() {
 SUPABASE_URL="${SUPABASE_URL:-$(dotenv_value SUPABASE_URL)}"
 SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$(dotenv_value SUPABASE_ANON_KEY)}"
 SUPABASE_AUTH_REDIRECT_URL="${SUPABASE_AUTH_REDIRECT_URL:-$(dotenv_value SUPABASE_AUTH_REDIRECT_URL)}"
+SENTRY_DSN="${SENTRY_DSN:-$(dotenv_value SENTRY_DSN)}"
+SENTRY_ENVIRONMENT="${SENTRY_ENVIRONMENT:-$(dotenv_value SENTRY_ENVIRONMENT)}"
 apply_vps_public_env
 
 if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
@@ -88,6 +90,8 @@ if [ -z "${SUPABASE_AUTH_REDIRECT_URL:-}" ]; then
   SUPABASE_AUTH_REDIRECT_URL="https://goclarity.app/auth/confirmed"
 fi
 
+SENTRY_ENVIRONMENT="${SENTRY_ENVIRONMENT:-production}"
+
 command=(
   flutter build web
   --release
@@ -100,6 +104,13 @@ command=(
   "--dart-define=REX_STREAMING_VOICE_ENABLED=${REX_STREAMING_VOICE_ENABLED}"
   "--dart-define=SUPABASE_AUTH_REDIRECT_URL=${SUPABASE_AUTH_REDIRECT_URL}"
 )
+
+if [ -n "${SENTRY_DSN:-}" ]; then
+  command+=(
+    "--dart-define=SENTRY_DSN=${SENTRY_DSN}"
+    "--dart-define=SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT}"
+  )
+fi
 
 if [ "${1:-}" = "--print" ]; then
   printf 'cd %q\n' "${MOBILE_DIR}"
