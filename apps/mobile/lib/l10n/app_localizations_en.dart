@@ -144,7 +144,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonClose => 'Close';
 
   @override
-  String get commonArchive => 'Archive';
+  String get commonArchive => 'Delete';
 
   @override
   String get commonMerge => 'Merge';
@@ -498,7 +498,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String commonArchivedNamed(String label) {
-    return '$label archived';
+    return '$label deleted';
   }
 
   @override
@@ -1629,7 +1629,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryPageMemoryUpdated => 'Memory updated';
 
   @override
-  String get memoryPageMemoryArchived => 'Memory archived';
+  String get memoryPageMemoryArchived => 'Memory deleted';
 
   @override
   String get memoryPageActionFailed => 'Memory action failed.';
@@ -1730,7 +1730,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryRecordCorrection => 'Correction';
 
   @override
-  String get memoryRecordArchive => 'Archive';
+  String get memoryRecordArchive => 'Delete';
 
   @override
   String get memoryRecordMerge => 'Merge';
@@ -1775,7 +1775,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryRecordDismissed => 'Dismissed';
 
   @override
-  String get memoryRecordArchived => 'Archived';
+  String get memoryRecordArchived => 'Deleted';
 
   @override
   String get memoryRecordLowRisk => 'Low risk';
@@ -1823,11 +1823,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memoryHeaderEmptyTitle => 'No saved information yet';
 
   @override
-  String get memoryArchiveTitle => 'Archive saved information?';
+  String get memoryArchiveTitle => 'Delete saved information?';
 
   @override
   String get memoryArchiveBody =>
-      'This saved information will stop being used in future conversations. It will remain in information history.';
+      'Remove this from Knows? Rex will stop using it in future conversations.';
 
   @override
   String get memoryTileActionsTooltip => 'Memory actions';
@@ -3293,12 +3293,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String memoryArchiveNamedTitle(String label) {
-    return 'Archive $label?';
+    return 'Delete $label?';
   }
 
   @override
   String memoryArchiveStructuredBody(String label) {
-    return 'This $label will stop being used as active context. It will remain in information history.';
+    return 'Remove this $label from Knows? Rex will stop using it as active context.';
   }
 
   @override
@@ -3366,19 +3366,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get accountabilityArchiveOpenThreadTitle => 'Archive open thread?';
+  String get accountabilityArchiveOpenThreadTitle => 'Delete open thread?';
 
   @override
   String accountabilityArchiveOpenThreadBody(String title) {
-    return 'Archive \"$title\"? It will leave your active Goals list.';
+    return 'Delete \"$title\"? It will leave your active Goals list.';
   }
 
   @override
-  String get accountabilityArchiveGoalTitle => 'Archive goal?';
+  String get accountabilityArchiveGoalTitle => 'Delete goal?';
 
   @override
   String accountabilityArchiveGoalBody(String title) {
-    return 'Archive \"$title\"? It will leave your active Goals list.';
+    return 'Delete \"$title\"? It will leave your active Goals list.';
   }
 
   @override
@@ -3386,10 +3386,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Open thread marked missed.';
 
   @override
-  String get accountabilityOpenThreadArchived => 'Open thread archived.';
+  String get accountabilityOpenThreadArchived => 'Open thread deleted.';
 
   @override
-  String get accountabilityGoalArchived => 'Goal archived.';
+  String get accountabilityGoalArchived => 'Goal deleted.';
 
   @override
   String get accountabilityGoalUpdated => 'Goal updated.';
@@ -3607,7 +3607,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memoryErrorArchiveRefresh =>
-      'That memory could not be archived. Refresh Memory and try again.';
+      'That memory could not be deleted. Refresh Memory and try again.';
 
   @override
   String get memoryErrorLoadRefresh =>
@@ -3623,7 +3623,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memoryErrorArchiveFailed =>
-      'Could not archive this memory. Please try again.';
+      'Could not delete this memory. Please try again.';
 
   @override
   String get memoryErrorCreateValidation =>

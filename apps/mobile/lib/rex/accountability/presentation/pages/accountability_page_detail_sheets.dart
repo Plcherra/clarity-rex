@@ -100,7 +100,7 @@ Future<void> _showPlanDetailSheet(
                         await onArchive();
                       },
                       child: Text(
-                        l10n.commonArchive,
+                        l10n.commonDelete,
                         style: TextStyle(color: colors.danger),
                       ),
                     ),

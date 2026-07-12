@@ -216,7 +216,7 @@ const _statusLabels = {
   'completed': 'Completed',
   'resolved': 'Resolved',
   'dismissed': 'Dismissed',
-  'archived': 'Archived',
+  'archived': 'Deleted',
 };
 
 const _riskLevelLabels = {

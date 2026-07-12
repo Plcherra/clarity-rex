@@ -16,7 +16,7 @@ Future<bool> confirmArchiveMemory(BuildContext context) async {
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text(l10n.commonArchive),
+          child: Text(l10n.commonDelete),
         ),
       ],
     ),
@@ -42,7 +42,7 @@ Future<bool> confirmArchiveStructuredMemory(
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text(l10n.commonArchive),
+          child: Text(l10n.commonDelete),
         ),
       ],
     ),

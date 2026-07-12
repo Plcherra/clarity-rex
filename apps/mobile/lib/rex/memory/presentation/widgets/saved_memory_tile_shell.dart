@@ -291,7 +291,7 @@ class _MemoryActionsMenu extends StatelessWidget {
             onEdit();
           case _MemoryAction.addMilestone:
             onAddMilestone?.call();
-          case _MemoryAction.archive:
+          case _MemoryAction.delete:
             onDeactivate?.call();
         }
       },
@@ -313,10 +313,10 @@ class _MemoryActionsMenu extends StatelessWidget {
           ),
         if (onDeactivate != null)
           PopupMenuItem(
-            value: _MemoryAction.archive,
+            value: _MemoryAction.delete,
             child: _MemoryMenuItem(
-              icon: Icons.visibility_off_outlined,
-              label: l10n.commonArchive,
+              icon: Icons.delete_outline_rounded,
+              label: l10n.commonDelete,
             ),
           ),
       ],
@@ -352,4 +352,4 @@ class _MemoryMenuItem extends StatelessWidget {
   }
 }
 
-enum _MemoryAction { edit, addMilestone, archive }
+enum _MemoryAction { edit, addMilestone, delete }

@@ -240,10 +240,10 @@ class _GoalActions extends StatelessWidget {
       color: colors.surfaceSoft,
       icon: Icon(Icons.more_horiz_rounded, color: colors.textMuted, size: 18),
       itemBuilder: (context) => [
-        PopupMenuItem(value: 'archive', child: Text(l10n.commonArchive)),
+        PopupMenuItem(value: 'delete', child: Text(l10n.commonDelete)),
       ],
       onSelected: (value) {
-        if (value == 'archive') {
+        if (value == 'delete') {
           onArchive();
         }
       },
@@ -273,7 +273,7 @@ class _OpenThreadActions extends StatelessWidget {
       itemBuilder: (context) => [
         PopupMenuItem(value: 'edit', child: Text(l10n.commonEdit)),
         PopupMenuItem(value: 'pause', child: Text(l10n.commonPause)),
-        PopupMenuItem(value: 'close', child: Text(l10n.commonArchive)),
+        PopupMenuItem(value: 'close', child: Text(l10n.commonDelete)),
       ],
       onSelected: (value) {
         switch (value) {

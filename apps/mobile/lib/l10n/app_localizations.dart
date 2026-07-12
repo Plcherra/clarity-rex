@@ -347,7 +347,7 @@ abstract class AppLocalizations {
   /// No description provided for @commonArchive.
   ///
   /// In en, this message translates to:
-  /// **'Archive'**
+  /// **'Delete'**
   String get commonArchive;
 
   /// No description provided for @commonMerge.
@@ -983,7 +983,7 @@ abstract class AppLocalizations {
   /// No description provided for @commonArchivedNamed.
   ///
   /// In en, this message translates to:
-  /// **'{label} archived'**
+  /// **'{label} deleted'**
   String commonArchivedNamed(String label);
 
   /// No description provided for @commonCommaSeparated.
@@ -3010,7 +3010,7 @@ abstract class AppLocalizations {
   /// No description provided for @memoryPageMemoryArchived.
   ///
   /// In en, this message translates to:
-  /// **'Memory archived'**
+  /// **'Memory deleted'**
   String get memoryPageMemoryArchived;
 
   /// No description provided for @memoryPageActionFailed.
@@ -3208,7 +3208,7 @@ abstract class AppLocalizations {
   /// No description provided for @memoryRecordArchive.
   ///
   /// In en, this message translates to:
-  /// **'Archive'**
+  /// **'Delete'**
   String get memoryRecordArchive;
 
   /// No description provided for @memoryRecordMerge.
@@ -3298,7 +3298,7 @@ abstract class AppLocalizations {
   /// No description provided for @memoryRecordArchived.
   ///
   /// In en, this message translates to:
-  /// **'Archived'**
+  /// **'Deleted'**
   String get memoryRecordArchived;
 
   /// No description provided for @memoryRecordLowRisk.
@@ -3394,13 +3394,13 @@ abstract class AppLocalizations {
   /// No description provided for @memoryArchiveTitle.
   ///
   /// In en, this message translates to:
-  /// **'Archive saved information?'**
+  /// **'Delete saved information?'**
   String get memoryArchiveTitle;
 
   /// No description provided for @memoryArchiveBody.
   ///
   /// In en, this message translates to:
-  /// **'This saved information will stop being used in future conversations. It will remain in information history.'**
+  /// **'Remove this from Knows? Rex will stop using it in future conversations.'**
   String get memoryArchiveBody;
 
   /// No description provided for @memoryTileActionsTooltip.
@@ -5785,13 +5785,13 @@ abstract class AppLocalizations {
   /// No description provided for @memoryArchiveNamedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Archive {label}?'**
+  /// **'Delete {label}?'**
   String memoryArchiveNamedTitle(String label);
 
   /// No description provided for @memoryArchiveStructuredBody.
   ///
   /// In en, this message translates to:
-  /// **'This {label} will stop being used as active context. It will remain in information history.'**
+  /// **'Remove this {label} from Knows? Rex will stop using it as active context.'**
   String memoryArchiveStructuredBody(String label);
 
   /// No description provided for @memoryDisplayLocation.
@@ -5911,25 +5911,25 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilityArchiveOpenThreadTitle.
   ///
   /// In en, this message translates to:
-  /// **'Archive open thread?'**
+  /// **'Delete open thread?'**
   String get accountabilityArchiveOpenThreadTitle;
 
   /// No description provided for @accountabilityArchiveOpenThreadBody.
   ///
   /// In en, this message translates to:
-  /// **'Archive \"{title}\"? It will leave your active Goals list.'**
+  /// **'Delete \"{title}\"? It will leave your active Goals list.'**
   String accountabilityArchiveOpenThreadBody(String title);
 
   /// No description provided for @accountabilityArchiveGoalTitle.
   ///
   /// In en, this message translates to:
-  /// **'Archive goal?'**
+  /// **'Delete goal?'**
   String get accountabilityArchiveGoalTitle;
 
   /// No description provided for @accountabilityArchiveGoalBody.
   ///
   /// In en, this message translates to:
-  /// **'Archive \"{title}\"? It will leave your active Goals list.'**
+  /// **'Delete \"{title}\"? It will leave your active Goals list.'**
   String accountabilityArchiveGoalBody(String title);
 
   /// No description provided for @accountabilityOpenThreadMarkedMissed.
@@ -5941,13 +5941,13 @@ abstract class AppLocalizations {
   /// No description provided for @accountabilityOpenThreadArchived.
   ///
   /// In en, this message translates to:
-  /// **'Open thread archived.'**
+  /// **'Open thread deleted.'**
   String get accountabilityOpenThreadArchived;
 
   /// No description provided for @accountabilityGoalArchived.
   ///
   /// In en, this message translates to:
-  /// **'Goal archived.'**
+  /// **'Goal deleted.'**
   String get accountabilityGoalArchived;
 
   /// No description provided for @accountabilityGoalUpdated.
@@ -6294,7 +6294,7 @@ abstract class AppLocalizations {
   /// No description provided for @memoryErrorArchiveRefresh.
   ///
   /// In en, this message translates to:
-  /// **'That memory could not be archived. Refresh Memory and try again.'**
+  /// **'That memory could not be deleted. Refresh Memory and try again.'**
   String get memoryErrorArchiveRefresh;
 
   /// No description provided for @memoryErrorLoadRefresh.
@@ -6318,7 +6318,7 @@ abstract class AppLocalizations {
   /// No description provided for @memoryErrorArchiveFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not archive this memory. Please try again.'**
+  /// **'Could not delete this memory. Please try again.'**
   String get memoryErrorArchiveFailed;
 
   /// No description provided for @memoryErrorCreateValidation.

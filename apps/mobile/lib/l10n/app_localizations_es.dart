@@ -146,7 +146,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonClose => 'Cerca';
 
   @override
-  String get commonArchive => 'Archivo';
+  String get commonArchive => 'Borrar';
 
   @override
   String get commonMerge => 'Unir';
@@ -501,7 +501,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String commonArchivedNamed(String label) {
-    return '$label archivado';
+    return '$label borrado';
   }
 
   @override
@@ -1653,7 +1653,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memoryPageMemoryUpdated => 'Memoria actualizada';
 
   @override
-  String get memoryPageMemoryArchived => 'Memoria archivada';
+  String get memoryPageMemoryArchived => 'Memoria borrada';
 
   @override
   String get memoryPageActionFailed => 'La acción de la memoria falló.';
@@ -1754,7 +1754,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memoryRecordCorrection => 'Corrección';
 
   @override
-  String get memoryRecordArchive => 'Archivar';
+  String get memoryRecordArchive => 'Borrar';
 
   @override
   String get memoryRecordMerge => 'Combinar';
@@ -1799,7 +1799,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memoryRecordDismissed => 'Descartado';
 
   @override
-  String get memoryRecordArchived => 'Archivado';
+  String get memoryRecordArchived => 'Borrado';
 
   @override
   String get memoryRecordLowRisk => 'Riesgo bajo';
@@ -1848,11 +1848,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memoryHeaderEmptyTitle => 'Aún no hay información guardada';
 
   @override
-  String get memoryArchiveTitle => '¿Archivar información guardada?';
+  String get memoryArchiveTitle => '¿Borrar información guardada?';
 
   @override
   String get memoryArchiveBody =>
-      'Esta información guardada dejará de usarse en futuras conversaciones. Permanecerá en la historia de la información.';
+      '¿Quitar esto de Knows? Rex dejará de usarlo en futuras conversaciones.';
 
   @override
   String get memoryTileActionsTooltip => 'Acciones de memoria';
@@ -3350,12 +3350,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String memoryArchiveNamedTitle(String label) {
-    return '¿Archivo $label?';
+    return '¿Borrar $label?';
   }
 
   @override
   String memoryArchiveStructuredBody(String label) {
-    return 'Este $label dejará de usarse como contexto activo. Permanecerá en la historia de la información.';
+    return '¿Quitar este $label de Knows? Rex dejará de usarlo como contexto activo.';
   }
 
   @override
@@ -3424,19 +3424,19 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get accountabilityArchiveOpenThreadTitle => '¿Archivar hilo abierto?';
+  String get accountabilityArchiveOpenThreadTitle => '¿Borrar hilo abierto?';
 
   @override
   String accountabilityArchiveOpenThreadBody(String title) {
-    return '¿Archivo \"$title\"? Saldrá de su lista de objetivos activos.';
+    return '¿Borrar \"$title\"? Saldrá de su lista de objetivos activos.';
   }
 
   @override
-  String get accountabilityArchiveGoalTitle => '¿Objetivo del archivo?';
+  String get accountabilityArchiveGoalTitle => '¿Borrar objetivo?';
 
   @override
   String accountabilityArchiveGoalBody(String title) {
-    return '¿Archivo \"$title\"? Saldrá de su lista de objetivos activos.';
+    return '¿Borrar \"$title\"? Saldrá de su lista de objetivos activos.';
   }
 
   @override
@@ -3444,10 +3444,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Hilo abierto marcado como incumplido.';
 
   @override
-  String get accountabilityOpenThreadArchived => 'Hilo abierto archivado.';
+  String get accountabilityOpenThreadArchived => 'Hilo abierto borrado.';
 
   @override
-  String get accountabilityGoalArchived => 'Objetivo archivado.';
+  String get accountabilityGoalArchived => 'Objetivo borrado.';
 
   @override
   String get accountabilityGoalUpdated => 'Objetivo actualizado.';
@@ -3671,7 +3671,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get memoryErrorArchiveRefresh =>
-      'Ese recuerdo no se pudo archivar. Actualiza la memoria y vuelve a intentarlo.';
+      'Ese recuerdo no se pudo borrar. Actualiza la memoria y vuelve a intentarlo.';
 
   @override
   String get memoryErrorLoadRefresh =>
@@ -3687,7 +3687,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get memoryErrorArchiveFailed =>
-      'No se pudo archivar esta memoria. Por favor inténtalo de nuevo.';
+      'No se pudo borrar esta memoria. Por favor inténtalo de nuevo.';
 
   @override
   String get memoryErrorCreateValidation =>

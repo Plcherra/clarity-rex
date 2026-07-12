@@ -83,7 +83,7 @@
   "commonDelete": "Delete",
   "commonRetry": "Retry",
   "commonClose": "Close",
-  "commonArchive": "Archive",
+  "commonArchive": "Delete",
   "commonMerge": "Merge",
   "commonEnable": "Enable",
   "commonDisable": "Disable",
@@ -299,7 +299,7 @@
       }
     }
   },
-  "commonArchivedNamed": "{label} archived",
+  "commonArchivedNamed": "{label} deleted",
   "@commonArchivedNamed": {
     "placeholders": {
       "label": {
@@ -851,7 +851,7 @@
   "memoryPageTitle": "What Clarity Knows",
   "memoryPageRefreshTooltip": "Refresh information",
   "memoryPageMemoryUpdated": "Memory updated",
-  "memoryPageMemoryArchived": "Memory archived",
+  "memoryPageMemoryArchived": "Memory deleted",
   "memoryPageActionFailed": "Memory action failed.",
   "memoryHeaderSearchHint": "Search what Clarity knows",
   "memoryHeaderClearSearchTooltip": "Clear search",
@@ -884,7 +884,7 @@
   "memoryRecordPlan": "Plan",
   "memoryRecordPlanMilestone": "Milestone",
   "memoryRecordCorrection": "Correction",
-  "memoryRecordArchive": "Archive",
+  "memoryRecordArchive": "Delete",
   "memoryRecordMerge": "Merge",
   "memoryRecordGentleDirect": "Gentle reminder",
   "memoryRecordCheckpoint": "Checkpoint",
@@ -899,7 +899,7 @@
   "memoryRecordCompleted": "Completed",
   "memoryRecordResolved": "Resolved",
   "memoryRecordDismissed": "Dismissed",
-  "memoryRecordArchived": "Archived",
+  "memoryRecordArchived": "Deleted",
   "memoryRecordLowRisk": "Low risk",
   "memoryRecordMediumRisk": "Medium risk",
   "memoryRecordHighRisk": "High risk",
@@ -915,8 +915,8 @@
   "memoryHeaderLoading": "Loading memory",
   "memoryHeaderEmptyActiveTitle": "Clarity is still learning",
   "memoryHeaderEmptyTitle": "No saved information yet",
-  "memoryArchiveTitle": "Archive saved information?",
-  "memoryArchiveBody": "This saved information will stop being used in future conversations. It will remain in information history.",
+  "memoryArchiveTitle": "Delete saved information?",
+  "memoryArchiveBody": "Remove this from Knows? Rex will stop using it in future conversations.",
   "memoryTileActionsTooltip": "Memory actions",
   "memoryTileQuickEdit": "Quick edit",
   "memoryTileAddMilestone": "Add milestone",
@@ -1945,7 +1945,7 @@
   "memoryEditTriggerKeywordsLabel": "Trigger keywords",
   "memoryEditDesiredOutcomeLabel": "Desired outcome",
   "memoryEditAliasesLabel": "Aliases",
-  "memoryArchiveNamedTitle": "Archive {label}?",
+  "memoryArchiveNamedTitle": "Delete {label}?",
   "@memoryArchiveNamedTitle": {
     "placeholders": {
       "label": {
@@ -1953,7 +1953,7 @@
       }
     }
   },
-  "memoryArchiveStructuredBody": "This {label} will stop being used as active context. It will remain in information history.",
+  "memoryArchiveStructuredBody": "Remove this {label} from Knows? Rex will stop using it as active context.",
   "@memoryArchiveStructuredBody": {
     "placeholders": {
       "label": {
@@ -1994,8 +1994,8 @@
       }
     }
   },
-  "accountabilityArchiveOpenThreadTitle": "Archive open thread?",
-  "accountabilityArchiveOpenThreadBody": "Archive \"{title}\"? It will leave your active Goals list.",
+  "accountabilityArchiveOpenThreadTitle": "Delete open thread?",
+  "accountabilityArchiveOpenThreadBody": "Delete \"{title}\"? It will leave your active Goals list.",
   "@accountabilityArchiveOpenThreadBody": {
     "placeholders": {
       "title": {
@@ -2003,8 +2003,8 @@
       }
     }
   },
-  "accountabilityArchiveGoalTitle": "Archive goal?",
-  "accountabilityArchiveGoalBody": "Archive \"{title}\"? It will leave your active Goals list.",
+  "accountabilityArchiveGoalTitle": "Delete goal?",
+  "accountabilityArchiveGoalBody": "Delete \"{title}\"? It will leave your active Goals list.",
   "@accountabilityArchiveGoalBody": {
     "placeholders": {
       "title": {
@@ -2013,8 +2013,8 @@
     }
   },
   "accountabilityOpenThreadMarkedMissed": "Open thread marked missed.",
-  "accountabilityOpenThreadArchived": "Open thread archived.",
-  "accountabilityGoalArchived": "Goal archived.",
+  "accountabilityOpenThreadArchived": "Open thread deleted.",
+  "accountabilityGoalArchived": "Goal deleted.",
   "accountabilityGoalUpdated": "Goal updated.",
   "accountabilityOpenThreadUpdated": "Open thread updated.",
   "accountabilityUpdateFailed": "Goals update failed.",
@@ -2207,11 +2207,11 @@
   "memoryErrorSignInAgain": "Please sign in again to manage saved information.",
   "memoryErrorNoLongerAvailable": "That memory is no longer available.",
   "memoryErrorEditValidation": "That memory change could not be saved. Check the fields and try again.",
-  "memoryErrorArchiveRefresh": "That memory could not be archived. Refresh Memory and try again.",
+  "memoryErrorArchiveRefresh": "That memory could not be deleted. Refresh Memory and try again.",
   "memoryErrorLoadRefresh": "Could not load saved information. Refresh and try again.",
   "memoryErrorLoadConnection": "Could not load saved information. Check your connection and try again.",
   "memoryErrorUpdateFailed": "Could not update this memory. Please try again.",
-  "memoryErrorArchiveFailed": "Could not archive this memory. Please try again.",
+  "memoryErrorArchiveFailed": "Could not delete this memory. Please try again.",
   "memoryErrorCreateValidation": "That memory could not be saved. Check the fields and try again.",
   "memoryErrorCreateFailed": "Could not save this memory. Please try again.",
   "serviceErrorGeneric": "Something went wrong. Please try again.",

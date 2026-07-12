@@ -89,7 +89,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     final confirmed = await _confirmArchive(
       title: l10n.accountabilityArchiveOpenThreadTitle,
       body: l10n.accountabilityArchiveOpenThreadBody(thread.title),
-      confirmLabel: l10n.commonArchive,
+      confirmLabel: l10n.commonDelete,
     );
     if (confirmed != true || !mounted) return;
     final saved = await ref
@@ -140,7 +140,7 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
     final confirmed = await _confirmArchive(
       title: l10n.accountabilityArchiveGoalTitle,
       body: l10n.accountabilityArchiveGoalBody(plan.title),
-      confirmLabel: l10n.commonArchive,
+      confirmLabel: l10n.commonDelete,
     );
     if (confirmed != true || !mounted) return;
     final saved = await ref

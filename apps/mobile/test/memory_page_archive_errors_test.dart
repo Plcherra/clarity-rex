@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'memory_page_test_helpers.dart';
 
 void main() {
-  testWidgets('MemoryPage does not archive when confirmation is cancelled', (
+  testWidgets('MemoryPage does not delete when confirmation is cancelled', (
     tester,
   ) async {
     final api = MemoryPageFakeMemoryApi();
@@ -13,13 +13,13 @@ void main() {
     await pumpMemoryPage(tester, api);
 
     await openFirstMemoryActions(tester);
-    await tester.tap(find.text('Archive').last);
+    await tester.tap(find.text('Delete').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('Archive saved information?'), findsOneWidget);
+    expect(find.text('Delete saved information?'), findsOneWidget);
     expect(
       find.text(
-        'This saved information will stop being used in future conversations. It will remain in information history.',
+        'Remove this from Knows? Rex will stop using it in future conversations.',
       ),
       findsOneWidget,
     );
@@ -31,20 +31,20 @@ void main() {
     expect(find.text('Pedro prefers email updates.'), findsOneWidget);
   });
 
-  testWidgets('MemoryPage archives only after confirmation', (tester) async {
+  testWidgets('MemoryPage deletes only after confirmation', (tester) async {
     final api = MemoryPageFakeMemoryApi();
 
     await pumpMemoryPage(tester, api);
 
     await openFirstMemoryActions(tester);
-    await tester.tap(find.text('Archive').last);
+    await tester.tap(find.text('Delete').last);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
 
     expect(api.archivedMemoryIds, ['memory-2']);
     expect(find.text('Pedro is building Clarity.'), findsNothing);
-    expect(find.text('Memory archived'), findsOneWidget);
+    expect(find.text('Memory deleted'), findsOneWidget);
   });
 
   testWidgets('MemoryPage shows retryable copy for load failures', (
@@ -82,9 +82,9 @@ void main() {
     await pumpMemoryPage(tester, api);
 
     await openFirstMemoryActions(tester);
-    await tester.tap(find.text('Archive').last);
+    await tester.tap(find.text('Delete').last);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
 
     expect(find.text('That memory is no longer available.'), findsWidgets);
