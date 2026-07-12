@@ -9,48 +9,26 @@ PODS:
   - CwlCatchException (2.2.1):
     - CwlCatchExceptionSupport (~> 2.2.1)
   - CwlCatchExceptionSupport (2.2.1)
-  - DKImagePickerController/Core (4.3.9):
-    - DKImagePickerController/ImageDataManager
-    - DKImagePickerController/Resource
-  - DKImagePickerController/ImageDataManager (4.3.9)
-  - DKImagePickerController/PhotoGallery (4.3.9):
-    - DKImagePickerController/Core
-    - DKPhotoGallery
-  - DKImagePickerController/Resource (4.3.9)
-  - DKPhotoGallery (0.0.19):
-    - DKPhotoGallery/Core (= 0.0.19)
-    - DKPhotoGallery/Model (= 0.0.19)
-    - DKPhotoGallery/Preview (= 0.0.19)
-    - DKPhotoGallery/Resource (= 0.0.19)
-    - SDWebImage
-    - SwiftyGif
-  - DKPhotoGallery/Core (0.0.19):
-    - DKPhotoGallery/Model
-    - DKPhotoGallery/Preview
-    - SDWebImage
-    - SwiftyGif
-  - DKPhotoGallery/Model (0.0.19):
-    - SDWebImage
-    - SwiftyGif
-  - DKPhotoGallery/Preview (0.0.19):
-    - DKPhotoGallery/Model
-    - DKPhotoGallery/Resource
-    - SDWebImage
-    - SwiftyGif
-  - DKPhotoGallery/Resource (0.0.19):
-    - SDWebImage
-    - SwiftyGif
-  - file_picker (0.0.1):
-    - DKImagePickerController/PhotoGallery
+  - device_info_plus (0.0.1):
     - Flutter
+  - file_picker (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - Flutter (1.0.0)
   - image_picker_ios (0.0.1):
     - Flutter
-  - record_ios (1.2.1):
+  - package_info_plus (0.4.5):
     - Flutter
-  - SDWebImage (5.21.7):
-    - SDWebImage/Core (= 5.21.7)
-  - SDWebImage/Core (5.21.7)
+  - passkeys_darwin (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - record_ios (2.0.0):
+    - Flutter
+  - Sentry/HybridSDK (8.58.3)
+  - sentry_flutter (9.24.0):
+    - Flutter
+    - FlutterMacOS
+    - Sentry/HybridSDK (= 8.58.3)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -58,7 +36,8 @@ PODS:
     - CwlCatchException
     - Flutter
     - FlutterMacOS
-  - SwiftyGif (5.4.5)
+  - ua_client_hints (1.7.0):
+    - Flutter
   - url_launcher_ios (0.0.1):
     - Flutter
 
@@ -66,22 +45,24 @@ DEPENDENCIES:
   - app_links (from `.symlinks/plugins/app_links/ios`)
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - audioplayers_darwin (from `.symlinks/plugins/audioplayers_darwin/darwin`)
-  - file_picker (from `.symlinks/plugins/file_picker/ios`)
+  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
+  - file_picker (from `.symlinks/plugins/file_picker/darwin`)
   - Flutter (from `Flutter`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
+  - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
+  - passkeys_darwin (from `.symlinks/plugins/passkeys_darwin/darwin`)
   - record_ios (from `.symlinks/plugins/record_ios/ios`)
+  - sentry_flutter (from `.symlinks/plugins/sentry_flutter/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - speech_to_text (from `.symlinks/plugins/speech_to_text/darwin`)
+  - ua_client_hints (from `.symlinks/plugins/ua_client_hints/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
 SPEC REPOS:
   trunk:
     - CwlCatchException
     - CwlCatchExceptionSupport
-    - DKImagePickerController
-    - DKPhotoGallery
-    - SDWebImage
-    - SwiftyGif
+    - Sentry
 
 EXTERNAL SOURCES:
   app_links:
@@ -90,18 +71,28 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/audio_session/ios"
   audioplayers_darwin:
     :path: ".symlinks/plugins/audioplayers_darwin/darwin"
+  device_info_plus:
+    :path: ".symlinks/plugins/device_info_plus/ios"
   file_picker:
-    :path: ".symlinks/plugins/file_picker/ios"
+    :path: ".symlinks/plugins/file_picker/darwin"
   Flutter:
     :path: Flutter
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
+  package_info_plus:
+    :path: ".symlinks/plugins/package_info_plus/ios"
+  passkeys_darwin:
+    :path: ".symlinks/plugins/passkeys_darwin/darwin"
   record_ios:
     :path: ".symlinks/plugins/record_ios/ios"
+  sentry_flutter:
+    :path: ".symlinks/plugins/sentry_flutter/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   speech_to_text:
     :path: ".symlinks/plugins/speech_to_text/darwin"
+  ua_client_hints:
+    :path: ".symlinks/plugins/ua_client_hints/ios"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
 
@@ -111,16 +102,18 @@ SPEC CHECKSUMS:
   audioplayers_darwin: 835ced6edd4c9fc8ebb0a7cc9e294a91d99917d5
   CwlCatchException: 7acc161b299a6de7f0a46a6ed741eae2c8b4d75a
   CwlCatchExceptionSupport: 54ccab8d8c78907b57f99717fb19d4cc3bce02dc
-  DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
-  DKPhotoGallery: b3834fecb755ee09a593d7c9e389d8b5d6deed60
-  file_picker: a0560bc09d61de87f12d246fc47d2119e6ef37be
+  device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
+  file_picker: 70164d9778c42c47218d6cd79ce435de0856b11a
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
-  record_ios: 980fd386a97a35987d0fce3dfda4b26a38c90f4c
-  SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
+  package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
+  passkeys_darwin: 395f63bb4dbfe81344ada36400c391e86fc395ea
+  record_ios: 390a30c7caaf8b5d0fb1cb1d2fd5064b48b4520c
+  Sentry: 108fdbb76299c4189af12246bf0308c09c278922
+  sentry_flutter: 8528594bf73819ef3f40c2e218e93554fc2719e6
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   speech_to_text: 3b313d98516d3d0406cea424782ec25470c59d19
-  SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
+  ua_client_hints: 6f8942ec0651883e0959cf255cdeaf8f93cf69e3
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
 
 PODFILE CHECKSUM: d71a8f9d234bf288cee64b372c30c196c8075224
