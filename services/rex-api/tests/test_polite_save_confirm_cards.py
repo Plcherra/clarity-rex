@@ -129,3 +129,42 @@ async def test_polite_plan_save_returns_confirm_card(monkeypatch):
     assert changes["confirmation_required"] == 1
     assert changes.get("write_proposals")
     get_settings.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_remember_that_after_person_save_does_not_replay_person(monkeypatch):
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "card")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    memory_service = FakeMemoryService()
+    chat_service = ChatService(
+        FakeAIService(response="Sure."),
+        FileService(),
+        memory_service,
+        time_context_service=_fixed_time_context_service(),
+    )
+    first = await chat_service.send_message("save Alex as my friend in memory")
+    conversation_id = first["conversation_id"]
+    proposal = first["memory_changes"]["write_proposals"][0]
+    await chat_service.send_message(
+        "Yes",
+        conversation_id=conversation_id,
+        write_confirmation={"proposal_id": proposal["id"]},
+    )
+    await chat_service.send_message(
+        "what if I start waking up around 4am?",
+        conversation_id=conversation_id,
+    )
+    follow_up = await chat_service.send_message(
+        "can you remember me that?",
+        conversation_id=conversation_id,
+    )
+    changes = follow_up["memory_changes"]
+    proposals = changes.get("write_proposals") or []
+    assert changes.get("confirmation_required") == 1
+    assert proposals
+    assert proposals[0]["write_kind"] == "open_thread"
+    assert "Alex" not in str(proposals)
+    assert "friend" not in follow_up["response"].casefold()
+    get_settings.cache_clear()

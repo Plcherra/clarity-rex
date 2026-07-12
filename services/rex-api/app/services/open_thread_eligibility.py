@@ -95,7 +95,11 @@ ONE_OFF_COMMITMENT_PATTERNS = (
         r"\b(?:gotta|have to|need to)\s+wake\b.+\b(?:tomorrow|tonight|today|this morning)\b",
         re.I,
     ),
-    re.compile(r"\bwake up around \d", re.I),
+    # One-shot urgency only — "start waking up around 4am" is habit territory.
+    re.compile(
+        r"\b(?:gotta|have to|need to|got to)\s+wake(?:\s+up)?\s+around\s+\d",
+        re.I,
+    ),
     re.compile(r"\b(?:tomorrow|tonight).+\b(?:wake|get up|be up)\b", re.I),
     re.compile(r"\bjust (?:starting|trying) to get (?:some )?sleep\b", re.I),
 )
@@ -105,6 +109,7 @@ HABIT_THREAD_PATTERNS = (
     re.compile(r"\bchange my (?:sleep )?schedule\b", re.I),
     re.compile(r"\bwish I could wake\b.+\b(?:every|each)\b", re.I),
     re.compile(r"\bwake up (?:every|each)\b", re.I),
+    re.compile(r"\bstart\s+wak(?:ing|e)\b", re.I),
     re.compile(r"\bnew habit\b", re.I),
     re.compile(r"\b(?:night|morning|bedtime)\s+(?:routine|habit)\b", re.I),
 )
@@ -200,9 +205,11 @@ def should_propose_open_thread_confirm_card(
     conversation_history: Optional[list[dict]] = None,
 ) -> bool:
     """Clear plans and routines get a confirm card; vaguer topics keep the text offer."""
+    context = _combined_user_context(message, conversation_history)
+    if has_habit_thread_signal(context):
+        return True
     if is_vague_thread_topic(message, conversation_history=conversation_history):
         return False
-    context = _combined_user_context(message, conversation_history)
     return has_strong_actionable_plan_signal(context)
 
 
@@ -254,6 +261,9 @@ def has_specific_actionable_continuity(
     conversation_history: Optional[list[dict]] = None,
 ) -> bool:
     context = _combined_user_context(message, conversation_history)
+    # Habit continuity wins even when the current turn is a short "remember that".
+    if has_habit_thread_signal(context):
+        return True
     if is_vague_thread_topic(message, conversation_history=conversation_history):
         return False
     if has_companion_follow_up_signal(message):

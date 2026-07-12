@@ -260,46 +260,6 @@ class MemoryIntentFactMixin:
                 return intent
         return None
 
-    def _detect_contextual_save_proposal_memory(
-        self,
-        message: str,
-        *,
-        conversation_history: list[dict],
-        time_context: Optional[dict] = None,
-    ) -> Optional[SimpleMemoryIntent]:
-        if not self.is_contextual_memory_save_request(message):
-            return None
-
-        normalized = self._normalize_reply(message)
-        if re.search(
-            r"\b(?:save|remember|keep)\b",
-            normalized,
-        ) and re.search(r"\b(?:pc|computer|laptop|device|model)\b", normalized):
-            intent = self._intent_from_conversation_history(
-                conversation_history,
-                time_context=time_context,
-            )
-            if intent is not None:
-                return intent
-
-        for item in reversed(conversation_history[-8:]):
-            if item.get("role") != "assistant":
-                continue
-            content = str(item.get("content") or "")
-            if not self._assistant_offered_save(content):
-                continue
-            intent = self._intent_from_conversation_history(
-                [item],
-                time_context=time_context,
-            )
-            if intent is not None:
-                return intent
-
-        return self._intent_from_conversation_history(
-            conversation_history,
-            time_context=time_context,
-        )
-
     def _detect_contextual_location_memory(
         self,
         message: str,

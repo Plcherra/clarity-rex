@@ -27,6 +27,47 @@ def test_detects_birthday_with_current_month_context():
     )
 
 
+def test_contextual_remember_that_ignores_stale_person_save():
+    """Bare 'remember that' must use the latest topic, not an older person save."""
+    service = MemoryIntentService()
+    history = [
+        {"role": "user", "content": "save Alex as my friend in memory"},
+        {
+            "role": "assistant",
+            "content": "I can save your friend (Alex) to Clarity Knows.",
+        },
+        {"role": "user", "content": "what if I start waking up around 4am?"},
+        {
+            "role": "assistant",
+            "content": "Waking up at 4am can give you several extra focused hours.",
+        },
+    ]
+
+    intent = service.detect_contextual_memory(
+        "can you remember me that?",
+        conversation_history=history,
+    )
+
+    assert intent is None
+
+
+def test_contextual_save_that_still_uses_latest_person_topic():
+    service = MemoryIntentService()
+    history = [
+        {"role": "user", "content": "save Alex as my friend in memory"},
+        {"role": "assistant", "content": "Tap confirm when you are ready."},
+    ]
+
+    intent = service.detect_contextual_memory(
+        "save that",
+        conversation_history=history,
+    )
+
+    assert intent is not None
+    assert "Alex" in intent.content
+    assert intent.metadata.get("relationship") == "friend"
+
+
 def test_detects_birthday_with_spelled_out_ordinal():
     service = MemoryIntentService()
 
