@@ -55,4 +55,47 @@ void main() {
 
     expect(confirmed, isTrue);
   });
+
+  testWidgets('shows pending clarity actions for text chat without voice', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapWithL10n(
+        Scaffold(
+          body: ChatTranscript(
+            messages: const [
+              ChatMessage(
+                id: 'assistant-1',
+                role: ChatMessageRole.assistant,
+                content: 'Save Marcella as your friend?',
+                clarityActions: [
+                  ClarityActionCard(
+                    id: 'person-save-1',
+                    action: 'save_person',
+                    writeKind: 'person',
+                    payload: const {},
+                    confirmationText: 'Save Marcella as your friend?',
+                    riskLevel: 'medium',
+                    status: 'pending',
+                    title: 'Marcella',
+                    body: "User's friend is Marcella.",
+                    editableFields: const ['title', 'body'],
+                  ),
+                ],
+              ),
+            ],
+            errorMessage: null,
+            scrollController: ScrollController(),
+            onPromptSelected: (_) {},
+            onConfirmClarityAction: (_) {},
+            onDismissClarityAction: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text(l10n.commonConfirm), findsOneWidget);
+    expect(find.text(l10n.commonDismiss), findsOneWidget);
+    expect(find.text('Save to Clarity Knows'), findsOneWidget);
+  });
 }

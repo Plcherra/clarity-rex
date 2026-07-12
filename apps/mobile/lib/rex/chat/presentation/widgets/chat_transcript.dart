@@ -46,9 +46,8 @@ class ChatTranscript extends StatelessWidget {
     final hasMessages = messages.isNotEmpty;
     final showVoiceTranscript =
         voiceState != null && !voiceState!.isIdle;
-    final pendingVoiceActions = showVoiceTranscript
-        ? pendingClarityActions(messages)
-        : const <ClarityActionCard>[];
+    // Text + voice: pending durable writes must stay visible above the composer.
+    final pendingActions = pendingClarityActions(messages);
     final baseBottomPadding = MediaQuery.viewInsetsOf(context).bottom > 0
         ? RexUiTokens.space12
         : RexUiTokens.space24;
@@ -125,9 +124,9 @@ class ChatTranscript extends StatelessWidget {
                       );
                     },
                   ),
-                if (pendingVoiceActions.isNotEmpty) ...[
+                if (pendingActions.isNotEmpty) ...[
                   ClarityActionCardsStrip(
-                    actions: pendingVoiceActions,
+                    actions: pendingActions,
                     onConfirm: onConfirmClarityAction,
                     onDismiss: onDismissClarityAction,
                   ),

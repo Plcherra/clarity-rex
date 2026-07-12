@@ -61,7 +61,8 @@ class _ChatPageState extends ConsumerState<ChatPage>
     if (!mounted || pending.isEmpty) {
       return;
     }
-    // Wide chat already shows an inline confirm strip — skip the modal.
+    // Wide layouts use the inline confirm strip in ChatTranscript.
+    // Compact layouts also get a modal so Confirm/Dismiss stay obvious.
     if (isClarityWideLayout(context)) {
       return;
     }
