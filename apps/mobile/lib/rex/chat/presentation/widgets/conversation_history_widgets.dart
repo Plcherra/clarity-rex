@@ -496,12 +496,12 @@ String _customDateFilterChipLabel(
 String conversationTitle(AppLocalizations l10n, Conversation conversation) {
   final title = conversation.title?.trim();
   if (title != null && title.isNotEmpty) {
-    return title;
+    return clampConversationTitle(title);
   }
 
   final preview = conversation.lastMessage?.content.trim();
   if (preview != null && preview.isNotEmpty) {
-    return preview;
+    return clampConversationTitle(preview);
   }
 
   return l10n.conversationHistoryNewConversation;
@@ -513,15 +513,35 @@ String conversationSearchResultTitle(
 ) {
   final title = result.conversationTitle?.trim();
   if (title != null && title.isNotEmpty) {
-    return title;
+    return clampConversationTitle(title);
   }
 
   final message = result.message?.content.trim();
   if (message != null && message.isNotEmpty) {
-    return message;
+    return clampConversationTitle(message);
   }
 
   return l10n.commonConversation;
+}
+
+/// Hard display/storage cap for chat titles in the sidebar and rename flow.
+const int kConversationTitleMaxLength = 48;
+
+String clampConversationTitle(
+  String value, {
+  int maxLength = kConversationTitleMaxLength,
+}) {
+  final cleaned = value.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (cleaned.isEmpty || cleaned.length <= maxLength) {
+    return cleaned;
+  }
+
+  final hard = cleaned.substring(0, maxLength - 1);
+  final breakAt = hard.lastIndexOf(' ');
+  final truncated = breakAt > maxLength ~/ 2
+      ? hard.substring(0, breakAt)
+      : hard;
+  return '${truncated.replaceAll(RegExp(r'[.,;:\s]+$'), '')}…';
 }
 
 String timestampLabel(AppLocalizations l10n, DateTime? timestamp) {

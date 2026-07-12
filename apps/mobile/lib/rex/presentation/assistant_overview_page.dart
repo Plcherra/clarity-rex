@@ -4,12 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/layout/clarity_breakpoints.dart';
 import '../../core/l10n/app_l10n.dart';
 import '../../theme/clarity_colors.dart';
-import '../../widgets/clarity_card.dart';
 import '../accountability/application/accountability_controller.dart';
 import '../accountability/data/accountability_models.dart';
 import '../chat/presentation/pages/conversation_list_page.dart';
 import '../memory/application/memory_controller.dart';
-import '../presentation/rex_ui_tokens.dart';
+import 'assistant_overview_widgets.dart';
 
 /// Companion overview: rules, patterns, threads, and goals — not finance charts.
 class AssistantOverviewPage extends ConsumerStatefulWidget {
@@ -62,6 +61,8 @@ class _AssistantOverviewPageState extends ConsumerState<AssistantOverviewPage> {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
     final wide = isClarityWideLayout(context);
+    final loading = accountability.isLoading && overview == null;
+
     final ruleLines = overview == null
         ? memory.rules
             .where((rule) => rule.active)
@@ -92,6 +93,82 @@ class _AssistantOverviewPageState extends ConsumerState<AssistantOverviewPage> {
       ...?overview?.ruleRisks,
     ];
 
+    final attentionItems = attention
+        .take(5)
+        .map(
+          (signal) => (
+            title: signal.title,
+            subtitle: signal.summary.isNotEmpty
+                ? signal.summary
+                : (signal.reason.isNotEmpty ? signal.reason : null),
+          ),
+        )
+        .toList(growable: false);
+    final ruleItems = ruleLines.take(5).toList(growable: false);
+    final threadItems = threads
+        .take(5)
+        .map(
+          (thread) => (
+            title: thread.title,
+            subtitle: thread.summary ?? thread.status,
+          ),
+        )
+        .toList(growable: false);
+    final goalItems = plans
+        .take(5)
+        .map(
+          (plan) => (
+            title: plan.title,
+            subtitle:
+                plan.description ?? plan.desiredOutcome ?? plan.status,
+          ),
+        )
+        .toList(growable: false);
+
+    final attentionCard = OverviewSectionCard(
+      title: l10n.assistantOverviewAttentionTitle,
+      icon: Icons.visibility_outlined,
+      count: attention.length,
+      highlighted: attention.isNotEmpty,
+      child: OverviewLineList(
+        items: attentionItems,
+        emptyText: l10n.assistantOverviewAttentionEmpty,
+      ),
+    );
+    final rulesCard = OverviewSectionCard(
+      title: l10n.assistantOverviewRulesTitle,
+      icon: Icons.rule_folder_outlined,
+      count: ruleLines.length,
+      actionLabel: l10n.assistantTabKnows,
+      onAction: widget.onOpenKnows,
+      child: OverviewLineList(
+        items: ruleItems,
+        emptyText: l10n.assistantOverviewRulesEmpty,
+      ),
+    );
+    final threadsCard = OverviewSectionCard(
+      title: l10n.assistantOverviewThreadsTitle,
+      icon: Icons.loop_outlined,
+      count: threads.length,
+      actionLabel: l10n.assistantTabGoals,
+      onAction: widget.onOpenGoals,
+      child: OverviewLineList(
+        items: threadItems,
+        emptyText: l10n.assistantOverviewThreadsEmpty,
+      ),
+    );
+    final goalsCard = OverviewSectionCard(
+      title: l10n.assistantOverviewGoalsTitle,
+      icon: Icons.flag_outlined,
+      count: plans.length,
+      actionLabel: l10n.assistantTabGoals,
+      onAction: widget.onOpenGoals,
+      child: OverviewLineList(
+        items: goalItems,
+        emptyText: l10n.assistantOverviewGoalsEmpty,
+      ),
+    );
+
     return RefreshIndicator(
       onRefresh: () async {
         await Future.wait([
@@ -100,12 +177,13 @@ class _AssistantOverviewPageState extends ConsumerState<AssistantOverviewPage> {
         ]);
       },
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+        padding: EdgeInsets.fromLTRB(wide ? 28 : 20, 8, wide ? 28 : 20, 28),
         children: [
           Text(
             l10n.assistantOverviewTitle,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
             ),
           ),
           const SizedBox(height: 6),
@@ -113,201 +191,83 @@ class _AssistantOverviewPageState extends ConsumerState<AssistantOverviewPage> {
             l10n.assistantOverviewSubtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colors.textSecondary,
-              height: 1.35,
+              height: 1.4,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           if (!wide) ...[
-            FilledButton.tonalIcon(
-              onPressed: _openChats,
-              icon: const Icon(Icons.forum_outlined),
-              label: Text(l10n.assistantOverviewBrowseChats),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonalIcon(
+                onPressed: _openChats,
+                icon: const Icon(Icons.forum_outlined, size: 18),
+                label: Text(l10n.assistantOverviewBrowseChats),
+              ),
             ),
             const SizedBox(height: 16),
           ],
-          _OverviewSection(
-            title: l10n.assistantOverviewAttentionTitle,
-            child: attention.isEmpty
-                ? _OverviewEmpty(text: l10n.assistantOverviewAttentionEmpty)
-                : Column(
-                    children: [
-                      for (final signal in attention.take(5)) ...[
-                        _OverviewLine(
-                          title: signal.title,
-                          subtitle: signal.summary.isNotEmpty
-                              ? signal.summary
-                              : signal.reason,
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 14),
-          _OverviewSection(
-            title: l10n.assistantOverviewRulesTitle,
-            actionLabel: l10n.assistantTabKnows,
-            onAction: widget.onOpenKnows,
-            child: ruleLines.isEmpty
-                ? _OverviewEmpty(text: l10n.assistantOverviewRulesEmpty)
-                : Column(
-                    children: [
-                      for (final rule in ruleLines.take(5)) ...[
-                        _OverviewLine(
-                          title: rule.title,
-                          subtitle: rule.subtitle,
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 14),
-          _OverviewSection(
-            title: l10n.assistantOverviewThreadsTitle,
-            actionLabel: l10n.assistantTabGoals,
-            onAction: widget.onOpenGoals,
-            child: threads.isEmpty
-                ? _OverviewEmpty(text: l10n.assistantOverviewThreadsEmpty)
-                : Column(
-                    children: [
-                      for (final thread in threads.take(5)) ...[
-                        _OverviewLine(
-                          title: thread.title,
-                          subtitle: thread.summary ?? thread.status,
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 14),
-          _OverviewSection(
-            title: l10n.assistantOverviewGoalsTitle,
-            actionLabel: l10n.assistantTabGoals,
-            onAction: widget.onOpenGoals,
-            child: plans.isEmpty
-                ? _OverviewEmpty(text: l10n.assistantOverviewGoalsEmpty)
-                : Column(
-                    children: [
-                      for (final plan in plans.take(5)) ...[
-                        _OverviewLine(
-                          title: plan.title,
-                          subtitle: plan.description ??
-                              plan.desiredOutcome ??
-                              plan.status,
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                    ],
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OverviewSection extends StatelessWidget {
-  const _OverviewSection({
-    required this.title,
-    required this.child,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  final String title;
-  final Widget child;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ClarityCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+          if (loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 48),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else ...[
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                OverviewStatChip(
+                  label: l10n.assistantOverviewAttentionTitle,
+                  count: attention.length,
+                  icon: Icons.visibility_outlined,
+                  emphasized: attention.isNotEmpty,
                 ),
-              ),
-              if (actionLabel != null && onAction != null)
-                TextButton(
-                  onPressed: onAction,
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(actionLabel!),
+                OverviewStatChip(
+                  label: l10n.assistantOverviewRulesTitle,
+                  count: ruleLines.length,
+                  icon: Icons.rule_folder_outlined,
                 ),
-            ],
-          ),
-          const SizedBox(height: RexUiTokens.space12),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _OverviewLine extends StatelessWidget {
-  const _OverviewLine({required this.title, this.subtitle});
-
-  final String title;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.clarityColors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-          const SizedBox(height: 2),
-          Text(
-            subtitle!,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colors.textSecondary,
-              height: 1.3,
+                OverviewStatChip(
+                  label: l10n.assistantOverviewThreadsTitle,
+                  count: threads.length,
+                  icon: Icons.loop_outlined,
+                ),
+                OverviewStatChip(
+                  label: l10n.assistantOverviewGoalsTitle,
+                  count: plans.length,
+                  icon: Icons.flag_outlined,
+                ),
+              ],
             ),
-          ),
+            const SizedBox(height: 18),
+            if (wide)
+              Column(
+                children: [
+                  attentionCard,
+                  const SizedBox(height: 14),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: rulesCard),
+                      const SizedBox(width: 14),
+                      Expanded(child: threadsCard),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  goalsCard,
+                ],
+              )
+            else ...[
+              attentionCard,
+              const SizedBox(height: 12),
+              rulesCard,
+              const SizedBox(height: 12),
+              threadsCard,
+              const SizedBox(height: 12),
+              goalsCard,
+            ],
+          ],
         ],
-      ],
-    );
-  }
-}
-
-class _OverviewEmpty extends StatelessWidget {
-  const _OverviewEmpty({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: context.clarityColors.textSecondary,
-        height: 1.35,
       ),
     );
   }

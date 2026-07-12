@@ -107,7 +107,7 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
               controller: controller,
               autofocus: true,
               textInputAction: TextInputAction.done,
-              maxLength: 120,
+              maxLength: kConversationTitleMaxLength,
               decoration: InputDecoration(
                 labelText: l10n.conversationListRenameHint,
                 border: const OutlineInputBorder(),

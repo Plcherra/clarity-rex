@@ -2,7 +2,10 @@ from typing import Optional
 
 from app.services.chat_embedding_repository import ChatEmbeddingRepository
 from app.services.chat_search_repository import ChatSearchRepository
-from app.services.conversation_title import derive_conversation_title
+from app.services.conversation_title import (
+    clamp_conversation_title,
+    derive_conversation_title,
+)
 from app.services.memory_errors import MemoryServiceError
 
 
@@ -122,7 +125,7 @@ class ConversationRepository:
         if not await self.conversation_exists(conversation_id):
             return None
 
-        cleaned = " ".join((title or "").split()).strip()
+        cleaned = clamp_conversation_title(title, empty_fallback="")
         if not cleaned:
             raise MemoryServiceError(
                 "Conversation title cannot be empty.",

@@ -6,6 +6,7 @@ import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart';
 import 'package:clarity/rex/chat/data/chat_models.dart';
 import 'package:clarity/rex/chat/data/conversation_api.dart';
+import 'package:clarity/rex/chat/presentation/widgets/conversation_history_widgets.dart';
 
 final conversationListProvider =
     NotifierProvider<ConversationListController, ConversationListState>(
@@ -225,7 +226,7 @@ class ConversationListController extends Notifier<ConversationListState> {
     required String conversationId,
     required String title,
   }) async {
-    final trimmed = title.trim();
+    final trimmed = clampConversationTitle(title);
     if (trimmed.isEmpty) {
       return false;
     }

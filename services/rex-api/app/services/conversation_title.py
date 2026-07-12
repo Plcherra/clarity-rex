@@ -2,18 +2,28 @@
 
 from __future__ import annotations
 
-_DEFAULT_TITLE_MAX_LENGTH = 60
+CONVERSATION_TITLE_MAX_LENGTH = 48
 
 
 def derive_conversation_title(
     content: str,
     *,
-    max_length: int = _DEFAULT_TITLE_MAX_LENGTH,
+    max_length: int = CONVERSATION_TITLE_MAX_LENGTH,
 ) -> str:
     """Build a compact title from the first user message body."""
+    return clamp_conversation_title(content, max_length=max_length)
+
+
+def clamp_conversation_title(
+    content: str,
+    *,
+    max_length: int = CONVERSATION_TITLE_MAX_LENGTH,
+    empty_fallback: str = "New conversation",
+) -> str:
+    """Normalize and hard-cap a conversation title for storage/display."""
     text = " ".join((content or "").split()).strip()
     if not text:
-        return "New conversation"
+        return empty_fallback
     if len(text) <= max_length:
         return text
 

@@ -19,7 +19,7 @@ class ConversationResponse(BaseModel):
 
 
 class ConversationTitleUpdateRequest(BaseModel):
-    title: str = Field(min_length=1, max_length=120)
+    title: str = Field(min_length=1, max_length=48)
 
 
 class ConversationSearchResultResponse(BaseModel):

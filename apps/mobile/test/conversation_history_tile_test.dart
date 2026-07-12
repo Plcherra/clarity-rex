@@ -26,6 +26,14 @@ void main() {
     expect(conversationTitle(l10n, conversation), 'Budget check-in');
   });
 
+  test('clampConversationTitle hard-caps long titles', () {
+    final long =
+        'This is a very long conversation title that should not crowd the sidebar forever and ever';
+    final capped = clampConversationTitle(long);
+    expect(capped.length, lessThanOrEqualTo(kConversationTitleMaxLength));
+    expect(capped.endsWith('…'), isTrue);
+  });
+
   testWidgets('compact conversation tile shows title without preview body', (
     tester,
   ) async {
