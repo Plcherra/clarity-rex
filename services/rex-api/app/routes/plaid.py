@@ -23,6 +23,10 @@ from app.services.plaid_sync_service import (
     PlaidSyncService,
     PlaidSyncServiceError,
 )
+from app.services.product_events import (
+    emit_plaid_exchange_result,
+    emit_plaid_sync_degraded,
+)
 
 router = APIRouter(prefix="/plaid", tags=["plaid"])
 logger = logging.getLogger(__name__)
@@ -189,16 +193,25 @@ async def exchange_public_token(
             institution_name=request.institution_name,
         )
     except PlaidConfigurationError as error:
+        emit_plaid_exchange_result(result="config_error", status_code=503)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Plaid is not configured. Add backend Plaid credentials before connecting banks.",
         ) from error
     except PlaidApiClientError as error:
+        emit_plaid_exchange_result(
+            result="api_error",
+            status_code=error.status_code,
+        )
         raise HTTPException(
             status_code=error.status_code,
             detail=error.detail,
         ) from error
     except PlaidSyncServiceError as error:
+        emit_plaid_exchange_result(
+            result="sync_error",
+            status_code=error.status_code,
+        )
         raise HTTPException(
             status_code=error.status_code,
             detail=error.detail,
@@ -211,6 +224,10 @@ async def exchange_public_token(
         sync_result = await plaid_sync_service.sync_item(result.plaid_item_record_id)
     except (PlaidApiClientError, PlaidSyncServiceError) as error:
         sync_status = "degraded"
+        emit_plaid_sync_degraded(
+            error_class=error.__class__.__name__,
+            status_code=getattr(error, "status_code", None),
+        )
         logger.warning(
             "Plaid initial sync deferred user=%s item=%s error_type=%s status=%s detail=%s",
             _safe_user_label(current_user.id),
@@ -265,6 +282,10 @@ async def exchange_public_token(
         response.transactions_added,
         response.transactions_modified,
         response.transactions_removed,
+    )
+    emit_plaid_exchange_result(
+        result="ok",
+        sync_status=sync_status,
     )
     return response
 

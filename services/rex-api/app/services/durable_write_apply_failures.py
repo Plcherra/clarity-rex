@@ -6,6 +6,8 @@ import json
 import logging
 from typing import Any, Optional
 
+from app.services.product_events import emit_durable_write_apply_failed
+
 LOGGER = logging.getLogger("rex.durable_write")
 
 # Keep client/ops reasons short and free of user content or secrets.
@@ -56,6 +58,11 @@ def log_durable_write_apply_failure(
     LOGGER.warning(
         "durable_write_apply_failed %s",
         json.dumps(payload, sort_keys=True),
+    )
+    emit_durable_write_apply_failed(
+        snapshot_type=snapshot_type,
+        reason=reason,
+        error_class=type(error).__name__ if error is not None else None,
     )
 
 

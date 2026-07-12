@@ -121,6 +121,9 @@ class VoiceStreamSession(
         status_code: int = 400,
         code: str = "voice_stream_error",
     ) -> None:
+        from app.services.product_events import emit_voice_stream_error
+
+        emit_voice_stream_error(code=code, status_code=status_code)
         await self._send_event(
             "error",
             code=code,

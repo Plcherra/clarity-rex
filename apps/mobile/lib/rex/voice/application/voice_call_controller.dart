@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clarity/core/l10n/app_locale.dart';
 import 'package:clarity/core/l10n/app_localizations_lookup.dart';
 import 'package:clarity/core/l10n/friendly_service_error.dart';
+import 'package:clarity/core/observability/clarity_product_events.dart';
 import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/features/profile/application/locale_controller.dart';
 import 'package:clarity/l10n/app_localizations.dart';

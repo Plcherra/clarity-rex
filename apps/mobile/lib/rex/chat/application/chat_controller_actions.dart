@@ -110,6 +110,10 @@ extension ChatControllerActions on ChatController {
       writeConfirmation: _writeConfirmationPayload(action),
     );
     if (response == null) {
+      ClarityProductEvents.writeConfirmationResult(
+        result: 'failed',
+        actionType: action.action,
+      );
       _updateClarityAction(
         action.id,
         (current) => current.copyWith(
@@ -140,9 +144,19 @@ extension ChatControllerActions on ChatController {
       }
     }
     if (terminalEvidence != null) {
+      ClarityProductEvents.writeConfirmationResult(
+        result: terminalEvidence.isApplied
+            ? 'applied'
+            : (terminalEvidence.isDismissed ? 'rejected' : 'failed'),
+        actionType: terminalEvidence.action,
+      );
       _updateClarityAction(actionId, (_) => terminalEvidence!);
       return;
     }
+    ClarityProductEvents.writeConfirmationResult(
+      result: 'failed',
+      actionType: 'unknown',
+    );
     _updateClarityAction(
       actionId,
       (current) => current.copyWith(

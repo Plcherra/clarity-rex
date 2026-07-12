@@ -10,6 +10,7 @@ from app.services.memory_discipline_list_loader import (
     DisciplineContextLoadError,
     safe_discipline_list,
 )
+from app.services.product_events import product_event_counts, reset_product_event_counts
 
 
 class _Repo:
@@ -68,6 +69,7 @@ async def test_safe_discipline_list_typeerror_falls_back_to_limit_only():
 @pytest.mark.asyncio
 async def test_safe_discipline_list_fails_closed_and_logs(caplog):
     repo = _Repo()
+    reset_product_event_counts()
 
     with caplog.at_level(logging.WARNING, logger="rex.memory.failure"):
         with pytest.raises(DisciplineContextLoadError) as exc_info:
@@ -78,11 +80,13 @@ async def test_safe_discipline_list_fails_closed_and_logs(caplog):
     assert "discipline_context_unavailable:list_broken" in str(exc_info.value)
     assert "discipline_list_failed" in caplog.text
     assert "RuntimeError" in caplog.text
+    assert product_event_counts()["discipline_list_degraded"] == 1
 
 
 @pytest.mark.asyncio
 async def test_safe_discipline_list_can_fail_open_when_requested():
     repo = _Repo()
+    reset_product_event_counts()
 
     rows = await safe_discipline_list(
         repo,
@@ -92,3 +96,4 @@ async def test_safe_discipline_list_can_fail_open_when_requested():
     )
 
     assert rows == []
+    assert product_event_counts()["discipline_list_degraded"] == 1

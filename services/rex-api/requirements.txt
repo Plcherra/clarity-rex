@@ -10,6 +10,7 @@ requests
 pytest
 pytest-asyncio
 pytest-timeout
+sentry-sdk[fastapi]
 tzdata
 uvicorn[standard]
 websockets

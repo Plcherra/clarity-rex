@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from app.services.durable_write_proposal import DurableWriteProposal
+from app.services.product_events import emit_write_confirmation_result
 
 
 def pending_memory_changes(
@@ -66,6 +67,7 @@ def applied_memory_changes(
         ]
     else:
         card["result"] = [_applied_record_result(proposal, record=record, merged=merged)]
+    _emit_confirmation_result(proposal, result="applied")
     return _envelope(
         created=created,
         updated=updated,
@@ -79,6 +81,7 @@ def applied_memory_changes(
 
 def rejected_memory_changes(*, proposal: DurableWriteProposal) -> dict[str, Any]:
     card = proposal.to_client_dict(status="dismissed")
+    _emit_confirmation_result(proposal, result="rejected")
     return _envelope(
         skipped=1,
         confirmation_required=0,
@@ -96,6 +99,7 @@ def failed_memory_changes(
     # Structured ops/client signal — no user content or secrets.
     card["error_message"] = safe_reason
     card["failure_reason"] = safe_reason
+    _emit_confirmation_result(proposal, result="failed")
     return _envelope(
         confirmation_required=0,
         proposals=[card],
@@ -155,3 +159,12 @@ def _applied_record_result(
         "action": action,
         "write_kind": proposal.write_kind,
     }
+
+
+def _emit_confirmation_result(proposal: DurableWriteProposal, *, result: str) -> None:
+    snapshot_type = str(proposal.apply_snapshot.get("type") or "") or "unknown"
+    emit_write_confirmation_result(
+        result=result,
+        action_type=snapshot_type,
+        write_kind=proposal.write_kind,
+    )

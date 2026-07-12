@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../observability/clarity_product_events.dart';
 import 'rex_auth_headers.dart';
 import 'rex_config.dart';
 
@@ -58,40 +59,55 @@ final class RexApiClient {
   }
 
   Future<http.Response> get(String path, {Map<String, String>? query}) {
-    return _withTimeout(
-      _httpClient.get(uri(path, query), headers: _authHeaders.headers()),
+    return _observeResponse(
+      path,
+      _withTimeout(
+        _httpClient.get(uri(path, query), headers: _authHeaders.headers()),
+      ),
     );
   }
 
   Future<http.Response> postJson(String path, Map<String, dynamic> body) {
-    return _withTimeout(
-      _httpClient.post(
-        uri(path),
-        headers: _authHeaders.headers({'Content-Type': 'application/json'}),
-        body: jsonEncode(body),
+    return _observeResponse(
+      path,
+      _withTimeout(
+        _httpClient.post(
+          uri(path),
+          headers: _authHeaders.headers({'Content-Type': 'application/json'}),
+          body: jsonEncode(body),
+        ),
       ),
     );
   }
 
   Future<http.Response> post(String path) {
-    return _withTimeout(
-      _httpClient.post(uri(path), headers: _authHeaders.headers()),
+    return _observeResponse(
+      path,
+      _withTimeout(
+        _httpClient.post(uri(path), headers: _authHeaders.headers()),
+      ),
     );
   }
 
   Future<http.Response> patchJson(String path, Map<String, dynamic> body) {
-    return _withTimeout(
-      _httpClient.patch(
-        uri(path),
-        headers: _authHeaders.headers({'Content-Type': 'application/json'}),
-        body: jsonEncode(body),
+    return _observeResponse(
+      path,
+      _withTimeout(
+        _httpClient.patch(
+          uri(path),
+          headers: _authHeaders.headers({'Content-Type': 'application/json'}),
+          body: jsonEncode(body),
+        ),
       ),
     );
   }
 
   Future<http.Response> delete(String path) {
-    return _withTimeout(
-      _httpClient.delete(uri(path), headers: _authHeaders.headers()),
+    return _observeResponse(
+      path,
+      _withTimeout(
+        _httpClient.delete(uri(path), headers: _authHeaders.headers()),
+      ),
     );
   }
 
@@ -102,5 +118,19 @@ final class RexApiClient {
 
   Future<T> _withTimeout<T>(Future<T> request) {
     return request.timeout(_requestTimeout);
+  }
+
+  Future<http.Response> _observeResponse(
+    String path,
+    Future<http.Response> request,
+  ) async {
+    final response = await request;
+    if (response.statusCode >= 500) {
+      ClarityProductEvents.api5xx(
+        statusCode: response.statusCode,
+        path: path,
+      );
+    }
+    return response;
   }
 }

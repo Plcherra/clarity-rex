@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.services.memory_failure_reporting import log_memory_failure
+from app.services.product_events import emit_discipline_list_degraded
 
 
 class DisciplineContextLoadError(Exception):
@@ -42,6 +43,11 @@ async def safe_discipline_list(
             "discipline_list_failed",
             operation=method_name,
             error=exc,
+        )
+        emit_discipline_list_degraded(
+            operation=method_name,
+            error_class=type(exc).__name__,
+            fail_closed=fail_closed,
         )
         if fail_closed:
             raise DisciplineContextLoadError(method_name, exc) from exc

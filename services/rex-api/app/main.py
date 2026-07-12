@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
 import logging
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.auth.supabase_auth import get_current_user
 from app.config import get_settings
@@ -28,6 +29,8 @@ from app.routes.voice import router as voice_router
 from app.routes.voice_stream import router as voice_stream_router
 from app.services.http_client import shutdown_http_client, startup_http_client
 from app.services.plaid_config import get_plaid_config_status
+from app.services.product_events import emit_api_5xx
+from app.services.sentry_setup import capture_exception, init_sentry
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +60,10 @@ async def lifespan(app: FastAPI):
         await shutdown_http_client()
 
 
-app = FastAPI(title="Clarity API", lifespan=lifespan)
 settings = get_settings()
+init_sentry(settings)
+
+app = FastAPI(title="Clarity API", lifespan=lifespan)
 
 if settings.cors_origins:
     app.add_middleware(
@@ -68,6 +73,37 @@ if settings.cors_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+
+@app.middleware("http")
+async def observability_http_middleware(request: Request, call_next):
+    try:
+        response = await call_next(request)
+    except Exception as error:
+        emit_api_5xx(
+            status_code=500,
+            method=request.method,
+            path=request.url.path,
+        )
+        capture_exception(error)
+        logger.exception(
+            "unhandled_request_error method=%s path=%s error_class=%s",
+            request.method,
+            request.url.path,
+            type(error).__name__,
+        )
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error."},
+        )
+
+    if response.status_code >= 500:
+        emit_api_5xx(
+            status_code=response.status_code,
+            method=request.method,
+            path=request.url.path,
+        )
+    return response
 
 
 @app.get("/")
@@ -125,6 +161,11 @@ def readiness_check() -> dict:
             "volume_gain_db": settings.google_tts_volume_gain_db,
         },
         "plaid": plaid_status.to_readiness(),
+        "sentry": {
+            "configured": bool((settings.sentry_dsn or "").strip()),
+            "required_for_ready": False,
+            "required": [],
+        },
         "time": {
             "configured": bool(settings.app_timezone),
             "timezone": settings.app_timezone,

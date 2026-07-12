@@ -4,10 +4,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../l10n/app_localizations.dart';
 import '../core/l10n/app_l10n.dart';
 import '../core/l10n/clarity_material_app.dart';
+import '../core/observability/clarity_crash_reporting.dart';
 import '../core/rex/rex_config.dart';
 import '../core/supabase/supabase_service.dart';
 import '../core/l10n/app_locale.dart';
-import '../features/profile/application/locale_controller.dart';
 import '../features/profile/application/theme_mode_controller.dart';
 import '../screens/splash/clarity_splash_screen.dart';
 import '../widgets/clarity_diamond_loader.dart';
@@ -15,17 +15,11 @@ import 'app.dart';
 import 'app_composition.dart';
 
 Future<void> bootstrap() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    debugPrint('[Clarity][FlutterError] ${details.exceptionAsString()}');
-    if (details.stack != null) {
-      debugPrintStack(stackTrace: details.stack);
-    }
-  };
-
-  runApp(const ClarityBootApp());
+  await ClarityCrashReporting.run(
+    appRunner: () async {
+      runApp(const ClarityBootApp());
+    },
+  );
 }
 
 final class ClarityBootApp extends StatefulWidget {
@@ -50,6 +44,7 @@ final class _ClarityBootAppState extends State<ClarityBootApp> {
   Future<AppComposition> _boot() async {
     await _themeModeController.load();
     await _localeController.load(deviceLocale: AppLocale.readDeviceLocale());
+    // dotenv already loaded in ClarityCrashReporting.run; reload is safe/idempotent.
     await dotenv.load(fileName: '.env', isOptional: true);
     _logReleaseConfig();
     await SupabaseService.initializeFromEnv();

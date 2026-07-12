@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     app_environment: str = "development"
     app_timezone: str = "America/New_York"
     cors_allowed_origins: str = ""
+    sentry_dsn: Optional[str] = None
+    sentry_traces_sample_rate: float = 0.1
 
     grok_api_key: Optional[str] = None
     grok_base_url: str = "https://api.x.ai/v1"

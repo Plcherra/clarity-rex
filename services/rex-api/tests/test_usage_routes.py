@@ -36,6 +36,7 @@ class FakeOwnerUsageTrackingService(FakeUsageTrackingService):
             "users": [
                 {
                     "user_id": "user-1",
+                    "email": "user.one@example.com",
                     "month_voice_seconds": 240,
                     "month_llm_calls": 7,
                     "month_stt_seconds": 210,
@@ -82,7 +83,24 @@ def test_owner_usage_route_returns_all_users_for_owner():
         response = client.get("/usage/admin/users")
 
     assert response.status_code == 200
-    assert response.json()["users"][0]["user_id"] == "user-1"
+    body = response.json()
+    assert body["users"][0]["user_id"] == "user-1"
+    assert body["emails_redacted"] is True
+    assert body["users"][0]["email"] == "u***e@example.com"
+    assert "user.one@example.com" not in response.text
+
+
+def test_owner_usage_route_can_include_full_emails_for_owner():
+    app.dependency_overrides[get_usage_tracking_service] = (
+        lambda: FakeOwnerUsageTrackingService()
+    )
+    with TestClient(app) as client:
+        response = client.get("/usage/admin/users?include_emails=true")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["emails_redacted"] is False
+    assert body["users"][0]["email"] == "user.one@example.com"
 
 
 def test_owner_access_route():

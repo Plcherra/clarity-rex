@@ -16,6 +16,9 @@ extension VoiceCallControllerL10n on VoiceCallController {
   }
 
   void failVoiceApi(Object error) {
+    ClarityProductEvents.voiceStreamError(
+      code: error.runtimeType.toString(),
+    );
     fail(friendlyVoiceApiError(voiceL10n, error));
   }
 

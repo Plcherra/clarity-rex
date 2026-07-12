@@ -4,6 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.auth.supabase_auth import AuthenticatedUser, get_current_user
 from app.dependencies import get_usage_tracking_service
+from app.services.owner_usage_privacy import (
+    log_owner_usage_access,
+    redact_email,
+    redact_owner_users,
+)
 from app.services.usage_admin_period import resolve_usage_admin_period
 from app.services.usage_tracking_service import UsageTrackingService
 
@@ -51,6 +56,11 @@ async def get_owner_access(
     usage_tracking_service: UsageTrackingService = Depends(get_usage_tracking_service),
 ) -> dict:
     authorized = await usage_tracking_service.is_usage_owner(current_user.id)
+    log_owner_usage_access(
+        endpoint="/usage/admin/access",
+        requester_user_id=current_user.id,
+        authorized=authorized,
+    )
     return {"authorized": authorized}
 
 
@@ -71,7 +81,13 @@ async def get_owner_platform_summary(
         month=month,
         day=day,
     )
-    if not result.get("authorized"):
+    authorized = bool(result.get("authorized"))
+    log_owner_usage_access(
+        endpoint="/usage/admin/summary",
+        requester_user_id=current_user.id,
+        authorized=authorized,
+    )
+    if not authorized:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Owner usage access required.",
@@ -87,6 +103,13 @@ async def get_all_user_usage(
     year: int | None = Query(default=None),
     month: int | None = Query(default=None, ge=1, le=12),
     day: date | None = Query(default=None),
+    include_emails: bool = Query(
+        default=False,
+        description=(
+            "When true, return full emails for authorized owners. "
+            "Default redacts emails. MFA on the owner account is an ops requirement."
+        ),
+    ),
 ) -> dict:
     _resolve_admin_period(period=period, year=year, month=month, day=day)
     result = await usage_tracking_service.get_owner_usage(
@@ -96,17 +119,28 @@ async def get_all_user_usage(
         month=month,
         day=day,
     )
-    if not result["authorized"]:
+    authorized = bool(result.get("authorized"))
+    log_owner_usage_access(
+        endpoint="/usage/admin/users",
+        requester_user_id=current_user.id,
+        authorized=authorized,
+        include_emails=include_emails,
+    )
+    if not authorized:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Owner usage access required.",
         )
+    users = result["users"]
+    if not include_emails:
+        users = redact_owner_users(users)
     return {
-        "users": result["users"],
+        "users": users,
         "period": result.get("period"),
         "start_date": result.get("start_date"),
         "end_date": result.get("end_date"),
         "registered_user_count": result.get("registered_user_count", 0),
+        "emails_redacted": not include_emails,
     }
 
 
@@ -119,6 +153,7 @@ async def get_owner_user_daily_usage(
     year: int | None = Query(default=None),
     month: int | None = Query(default=None, ge=1, le=12),
     day: date | None = Query(default=None),
+    include_emails: bool = Query(default=False),
     current_user: AuthenticatedUser = Depends(get_current_user),
     usage_tracking_service: UsageTrackingService = Depends(get_usage_tracking_service),
 ) -> dict:
@@ -141,11 +176,27 @@ async def get_owner_user_daily_usage(
         start_date=start,
         end_date=end,
     )
-    if not result["authorized"]:
+    authorized = bool(result.get("authorized"))
+    log_owner_usage_access(
+        endpoint="/usage/admin/users/{user_id}/daily",
+        requester_user_id=current_user.id,
+        authorized=authorized,
+        include_emails=include_emails,
+    )
+    if not authorized:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Owner usage access required.",
         )
+    if not include_emails and "email" in result:
+        result = dict(result)
+        result["email"] = redact_email(
+            result.get("email") if isinstance(result.get("email"), str) else None
+        )
+        result["emails_redacted"] = True
+    else:
+        result = dict(result)
+        result["emails_redacted"] = False
     result["period"] = period
     result["start_date"] = start.isoformat()
     result["end_date"] = end.isoformat()
