@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/l10n/clarity_locale_catalog.dart';
+import '../../../core/layout/clarity_native_layout.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
 import '../application/locale_controller.dart';
@@ -21,7 +22,9 @@ final class ProfileHeader extends StatelessWidget {
     final initial = name.trim().isEmpty ? 'C' : name.trim()[0].toUpperCase();
 
     return ClarityCard(
-      padding: const EdgeInsets.all(20),
+      padding: ClarityNativeLayout.active(context)
+          ? ClarityNativeLayout.cardPadding(context)
+          : const EdgeInsets.all(20),
       backgroundColor: colors.surface.withValues(alpha: 0.72),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +159,9 @@ final class ProfileActionTile extends StatelessWidget {
         onTap: onTap,
         mouseCursor: SystemMouseCursors.click,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 13, 10, 13),
+          padding: ClarityNativeLayout.active(context)
+              ? ClarityNativeLayout.listRowPadding(context)
+              : const EdgeInsets.fromLTRB(14, 13, 10, 13),
           child: Row(
             children: [
               DecoratedBox(
@@ -247,7 +252,9 @@ final class ProfileThemeInlineControl extends StatelessWidget {
         return ProfileActionGroup(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+              padding: ClarityNativeLayout.active(context)
+                  ? ClarityNativeLayout.cardPadding(context)
+                  : const EdgeInsets.fromLTRB(14, 14, 14, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -310,7 +317,9 @@ final class ProfileLanguageInlineControl extends StatelessWidget {
         return ProfileActionGroup(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+              padding: ClarityNativeLayout.active(context)
+                  ? ClarityNativeLayout.cardPadding(context)
+                  : const EdgeInsets.fromLTRB(14, 14, 14, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

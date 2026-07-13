@@ -5,7 +5,7 @@
 **Canon:** `MASTER_PLAN.md` · `CLARITY_RULES.md` · `PROJECT_STRUCTURE.md`  
 **Related:** [`02_Chat_and_Knows_UI_Upgrade.md`](02_Chat_and_Knows_UI_Upgrade.md) Phase F3 (re-smoke notes updated in **Phase F** of this file only).
 
-**Status:** Phase A–D done (tokens + finance full-bleed + Chats dense list + composer/transcript). Phases E–F remaining — do not ship “redesigned phone UI” claims until Phase F passes.
+**Status:** Phase A–E done (tokens + finance + Chats + composer + Knows/Goals/Overview/Profile gutters). Phase F remaining — do not ship “redesigned phone UI” claims until Phase F passes.
 
 ---
 
@@ -246,16 +246,16 @@ Work **A → F**. One PR/commit theme per phase. Stop and re-smoke iPhone after 
 
 **Primary files:**
 
-- `memory_page.dart`, `memory_page_header_widgets.dart`, `saved_memory_tile_shell` (pads only)
-- `accountability_page_shared.dart` (+ Goals pages as needed)
-- `assistant_overview_page.dart`, `assistant_top_surface.dart`
-- `profile_screen.dart`, `profile_screen_sections.dart`
+- `memory_page.dart` (+ extract `memory_page_actions.dart`), `memory_page_header_widgets.dart`, `saved_memory_tile_shell` (outer pads)
+- `accountability_page.dart` / `accountability_page_shared.dart` (+ Goals form moved into shared)
+- `assistant_overview_page.dart`, `assistant_overview_widgets.dart`, `assistant_top_surface.dart`
+- `profile_screen.dart`, `profile_screen_widgets.dart`, `usage_summary_screen.dart`
 
 **Acceptance E:**
 
-- [ ] Same spacing/type scale as finance + chats on phone
-- [ ] No louder color fills; calm surfaces
-- [ ] Wide unchanged
+- [x] Same spacing/type scale as finance + chats on phone
+- [x] No louder color fills; calm surfaces
+- [x] Wide unchanged
 
 ---
 
@@ -307,7 +307,7 @@ After F3 looks right → resume plan 02 C4 screenshots / A116; then plan 05 devi
 | **B** | Finance full-bleed (Dashboard → Accounts → Budgets) | **DONE** (2026-07-12) — pageGutter + single chart chrome; Accounts/Budgets tokens |
 | **C** | Chats dense list + search align + title clamp | **DONE** (2026-07-12) — native dense title+1-line preview via `ClarityNativeLayout.active`; search H pad == list row; wide sidebar unchanged; Chats sub-tab kept |
 | **D** | Composer + transcript (no fill) | **DONE** (2026-07-12) — kill pill fill; native minHeight 46 + fieldPadV 10; chrome H == pageGutter; transcript pad uses pageGutter; confirm stays inline |
-| **E** | Knows / Goals / Overview / Profile | **TODO** |
+| **E** | Knows / Goals / Overview / Profile | **DONE** (2026-07-12) — pageGutter + list/card tokens on native; wide pads preserved; memory/accountability extracts |
 | **F** | Tests + plan 02 F3 notes + iPhone re-smoke | **TODO** |
 
 ---

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/layout/clarity_breakpoints.dart';
+import '../../core/layout/clarity_native_layout.dart';
 import '../../core/l10n/app_l10n.dart';
 import '../../theme/clarity_colors.dart';
 import '../accountability/application/accountability_controller.dart';
@@ -177,7 +178,18 @@ class _AssistantOverviewPageState extends ConsumerState<AssistantOverviewPage> {
         ]);
       },
       child: ListView(
-        padding: EdgeInsets.fromLTRB(wide ? 28 : 20, 8, wide ? 28 : 20, 28),
+        padding: EdgeInsets.fromLTRB(
+          ClarityNativeLayout.active(context)
+              ? ClarityNativeLayout.pageGutter(context)
+              : (wide ? 28 : 20),
+          8,
+          ClarityNativeLayout.active(context)
+              ? ClarityNativeLayout.pageGutter(context)
+              : (wide ? 28 : 20),
+          ClarityNativeLayout.active(context)
+              ? ClarityNativeLayout.pageGutter(context) + 18
+              : 28,
+        ),
         children: [
           Text(
             l10n.assistantOverviewTitle,
@@ -186,7 +198,7 @@ class _AssistantOverviewPageState extends ConsumerState<AssistantOverviewPage> {
               letterSpacing: -0.2,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: ClarityNativeLayout.active(context) ? 4 : 6),
           Text(
             l10n.assistantOverviewSubtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -194,7 +206,11 @@ class _AssistantOverviewPageState extends ConsumerState<AssistantOverviewPage> {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(
+            height: ClarityNativeLayout.active(context)
+                ? ClarityNativeLayout.sectionGap(context)
+                : 18,
+          ),
           if (!wide) ...[
             Align(
               alignment: Alignment.centerLeft,
@@ -244,7 +260,11 @@ class _AssistantOverviewPageState extends ConsumerState<AssistantOverviewPage> {
               Column(
                 children: [
                   attentionCard,
-                  const SizedBox(height: 14),
+                  SizedBox(
+                    height: ClarityNativeLayout.active(context)
+                        ? ClarityNativeLayout.sectionGap(context)
+                        : 14,
+                  ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -253,17 +273,33 @@ class _AssistantOverviewPageState extends ConsumerState<AssistantOverviewPage> {
                       Expanded(child: threadsCard),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(
+                    height: ClarityNativeLayout.active(context)
+                        ? ClarityNativeLayout.sectionGap(context)
+                        : 14,
+                  ),
                   goalsCard,
                 ],
               )
             else ...[
               attentionCard,
-              const SizedBox(height: 12),
+              SizedBox(
+                height: ClarityNativeLayout.active(context)
+                    ? ClarityNativeLayout.sectionGap(context)
+                    : 12,
+              ),
               rulesCard,
-              const SizedBox(height: 12),
+              SizedBox(
+                height: ClarityNativeLayout.active(context)
+                    ? ClarityNativeLayout.sectionGap(context)
+                    : 12,
+              ),
               threadsCard,
-              const SizedBox(height: 12),
+              SizedBox(
+                height: ClarityNativeLayout.active(context)
+                    ? ClarityNativeLayout.sectionGap(context)
+                    : 12,
+              ),
               goalsCard,
             ],
           ],

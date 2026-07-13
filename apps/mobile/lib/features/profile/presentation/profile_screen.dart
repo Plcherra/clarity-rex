@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/layout/clarity_adaptive_overlay.dart';
 import '../../../core/layout/clarity_breakpoints.dart';
+import '../../../core/layout/clarity_native_layout.dart';
 import '../../../core/layout/web_centered_dialog.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/l10n/clarity_locale_catalog.dart';
@@ -54,7 +55,13 @@ final class ProfileScreen extends StatelessWidget {
           listenable: themeModeController,
           builder: (context, _) {
             return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              padding: ClarityNativeLayout.active(context)
+                  ? ClarityNativeLayout.pagePadding(
+                      context,
+                      top: 16,
+                      bottom: 20,
+                    )
+                  : const EdgeInsets.fromLTRB(20, 16, 20, 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +106,13 @@ final class ProfileScreen extends StatelessWidget {
           listenable: localeController,
           builder: (context, _) {
             return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              padding: ClarityNativeLayout.active(context)
+                  ? ClarityNativeLayout.pagePadding(
+                      context,
+                      top: 16,
+                      bottom: 20,
+                    )
+                  : const EdgeInsets.fromLTRB(20, 16, 20, 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,7 +272,13 @@ final class ProfileScreen extends StatelessWidget {
           body: Scrollbar(
             thumbVisibility: desktop,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+              padding: ClarityNativeLayout.active(context)
+                  ? ClarityNativeLayout.pagePadding(
+                      context,
+                      top: 8,
+                      bottom: 28,
+                    )
+                  : const EdgeInsets.fromLTRB(20, 8, 20, 28),
               children: [
                 ProfileHeader(
                   name: name == null || name.isEmpty

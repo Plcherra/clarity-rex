@@ -11,6 +11,7 @@ import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/theme/clarity_colors.dart';
 import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
 import 'package:clarity/core/layout/clarity_breakpoints.dart';
+import 'package:clarity/core/layout/clarity_native_layout.dart';
 import 'package:clarity/theme/clarity_sheet_insets.dart';
 import 'package:clarity/widgets/clarity_path_loader.dart';
 
@@ -239,9 +240,13 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
             slivers: [
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(
-                  RexUiTokens.space16,
+                  ClarityNativeLayout.active(context)
+                      ? ClarityNativeLayout.pageGutter(context)
+                      : RexUiTokens.space16,
                   RexUiTokens.space8,
-                  RexUiTokens.space16,
+                  ClarityNativeLayout.active(context)
+                      ? ClarityNativeLayout.pageGutter(context)
+                      : RexUiTokens.space16,
                   clarityScrollBottomClearance(context),
                 ),
                 sliver: SliverList(
@@ -309,103 +314,6 @@ class _AccountabilityPageState extends ConsumerState<AccountabilityPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _GoalFormResult {
-  const _GoalFormResult({required this.primary, required this.detail});
-
-  final String primary;
-  final String detail;
-}
-
-class _GoalFormDialog extends StatefulWidget {
-  const _GoalFormDialog({
-    required this.title,
-    required this.primaryLabel,
-    required this.detailLabel,
-    required this.primaryHint,
-    required this.detailHint,
-    this.initialPrimary = '',
-    this.initialDetail = '',
-  });
-
-  final String title;
-  final String primaryLabel;
-  final String detailLabel;
-  final String primaryHint;
-  final String detailHint;
-  final String initialPrimary;
-  final String initialDetail;
-
-  @override
-  State<_GoalFormDialog> createState() => _GoalFormDialogState();
-}
-
-class _GoalFormDialogState extends State<_GoalFormDialog> {
-  late final TextEditingController _primaryController;
-  late final TextEditingController _detailController;
-
-  @override
-  void initState() {
-    super.initState();
-    _primaryController = TextEditingController(text: widget.initialPrimary);
-    _detailController = TextEditingController(text: widget.initialDetail);
-  }
-
-  @override
-  void dispose() {
-    _primaryController.dispose();
-    _detailController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final primary = _primaryController.text.trim();
-    if (primary.isEmpty) {
-      return;
-    }
-    Navigator.of(context).pop(
-      _GoalFormResult(primary: primary, detail: _detailController.text.trim()),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _primaryController,
-            autofocus: true,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: widget.primaryLabel,
-              hintText: widget.primaryHint,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _detailController,
-            minLines: 2,
-            maxLines: 4,
-            decoration: InputDecoration(
-              labelText: widget.detailLabel,
-              hintText: widget.detailHint,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.l10n.commonCancel),
-        ),
-        FilledButton(onPressed: _submit, child: Text(context.l10n.commonSave)),
-      ],
     );
   }
 }

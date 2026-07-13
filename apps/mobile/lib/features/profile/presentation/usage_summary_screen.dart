@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../core/l10n/app_l10n.dart';
+import '../../../core/layout/clarity_native_layout.dart';
 import '../../../core/supabase/supabase_service.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
@@ -84,7 +85,13 @@ final class _UsageSummaryScreenState extends State<UsageSummaryScreen> {
           return RefreshIndicator(
             onRefresh: _controller.load,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              padding: ClarityNativeLayout.active(context)
+                  ? ClarityNativeLayout.pagePadding(
+                      context,
+                      top: 12,
+                      bottom: 28,
+                    )
+                  : const EdgeInsets.fromLTRB(20, 12, 20, 28),
               children: [
                 _UsageHeader(
                   totalMinutes: _minutes(totals.monthVoiceSeconds),
@@ -156,7 +163,9 @@ final class _UsageStatTile extends StatelessWidget {
     final cs = theme.colorScheme;
     final colors = context.clarityColors;
     return ClarityCard(
-      padding: const EdgeInsets.all(18),
+      padding: ClarityNativeLayout.active(context)
+          ? ClarityNativeLayout.cardPadding(context)
+          : const EdgeInsets.all(18),
       backgroundColor: colors.surface.withValues(alpha: 0.66),
       child: Row(
         children: [
@@ -223,7 +232,9 @@ final class _UsageHeader extends StatelessWidget {
     final cs = theme.colorScheme;
     final colors = context.clarityColors;
     return ClarityCard(
-      padding: const EdgeInsets.all(20),
+      padding: ClarityNativeLayout.active(context)
+          ? ClarityNativeLayout.cardPadding(context)
+          : const EdgeInsets.all(20),
       backgroundColor: colors.surface.withValues(alpha: 0.72),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +280,9 @@ final class _UsageError extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: ClarityNativeLayout.active(context)
+            ? ClarityNativeLayout.pagePadding(context)
+            : const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/app_l10n.dart';
+import '../../../../core/layout/clarity_native_layout.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:clarity/rex/memory/presentation/memory_display_helpers.dart';
 import 'package:clarity/rex/memory/presentation/widgets/memory_meta_chip.dart';
@@ -119,11 +120,19 @@ class SavedMemoryTileShell extends StatelessWidget {
         (supplementalLabels.isNotEmpty || supplementalWidgets.isNotEmpty);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        RexUiTokens.space16,
-        RexUiTokens.space2,
-        RexUiTokens.space16,
-        RexUiTokens.space2,
+      padding: EdgeInsets.fromLTRB(
+        ClarityNativeLayout.active(context)
+            ? ClarityNativeLayout.listRowPadding(context).left
+            : RexUiTokens.space16,
+        ClarityNativeLayout.active(context)
+            ? ClarityNativeLayout.listRowGap(context)
+            : RexUiTokens.space2,
+        ClarityNativeLayout.active(context)
+            ? ClarityNativeLayout.listRowPadding(context).right
+            : RexUiTokens.space16,
+        ClarityNativeLayout.active(context)
+            ? ClarityNativeLayout.listRowGap(context)
+            : RexUiTokens.space2,
       ),
       child: Semantics(
         button: true,

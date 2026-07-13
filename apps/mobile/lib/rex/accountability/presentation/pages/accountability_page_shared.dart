@@ -73,11 +73,13 @@ class _Section extends StatelessWidget {
       children: [
         Text(
           title,
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: colors.textSecondary,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
-          ),
+          style: ClarityNativeLayout.active(context)
+              ? ClarityNativeLayout.sectionLabel(context)
+              : theme.textTheme.labelLarge?.copyWith(
+                  color: colors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                ),
         ),
         const SizedBox(height: RexUiTokens.space4),
         if (children.isEmpty)
@@ -153,7 +155,9 @@ class _EmptyAccountabilityState extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(compact ? RexUiTokens.space12 : 20),
+        padding: ClarityNativeLayout.active(context)
+            ? ClarityNativeLayout.pagePadding(context)
+            : EdgeInsets.all(compact ? RexUiTokens.space12 : 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -206,7 +210,9 @@ class _ErrorBanner extends StatelessWidget {
       child: RexSurface(
         color: colors.danger.withValues(alpha: 0.12),
         borderColor: colors.danger.withValues(alpha: 0.34),
-        padding: const EdgeInsets.all(RexUiTokens.space12),
+        padding: ClarityNativeLayout.active(context)
+            ? ClarityNativeLayout.cardPadding(context)
+            : const EdgeInsets.all(RexUiTokens.space12),
         child: Row(
           children: [
             Icon(
@@ -237,4 +243,101 @@ String _shortDate(DateTime dateTime) {
 
 String _dueDateLabel(AppLocalizations l10n, DateTime dateTime) {
   return l10n.commonDueDateValue(_shortDate(dateTime));
+}
+
+class _GoalFormResult {
+  const _GoalFormResult({required this.primary, required this.detail});
+
+  final String primary;
+  final String detail;
+}
+
+class _GoalFormDialog extends StatefulWidget {
+  const _GoalFormDialog({
+    required this.title,
+    required this.primaryLabel,
+    required this.detailLabel,
+    required this.primaryHint,
+    required this.detailHint,
+    this.initialPrimary = '',
+    this.initialDetail = '',
+  });
+
+  final String title;
+  final String primaryLabel;
+  final String detailLabel;
+  final String primaryHint;
+  final String detailHint;
+  final String initialPrimary;
+  final String initialDetail;
+
+  @override
+  State<_GoalFormDialog> createState() => _GoalFormDialogState();
+}
+
+class _GoalFormDialogState extends State<_GoalFormDialog> {
+  late final TextEditingController _primaryController;
+  late final TextEditingController _detailController;
+
+  @override
+  void initState() {
+    super.initState();
+    _primaryController = TextEditingController(text: widget.initialPrimary);
+    _detailController = TextEditingController(text: widget.initialDetail);
+  }
+
+  @override
+  void dispose() {
+    _primaryController.dispose();
+    _detailController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final primary = _primaryController.text.trim();
+    if (primary.isEmpty) {
+      return;
+    }
+    Navigator.of(context).pop(
+      _GoalFormResult(primary: primary, detail: _detailController.text.trim()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _primaryController,
+            autofocus: true,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: widget.primaryLabel,
+              hintText: widget.primaryHint,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _detailController,
+            minLines: 2,
+            maxLines: 4,
+            decoration: InputDecoration(
+              labelText: widget.detailLabel,
+              hintText: widget.detailHint,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(context.l10n.commonCancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(context.l10n.commonSave)),
+      ],
+    );
+  }
 }

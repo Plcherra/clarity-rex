@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/layout/clarity_breakpoints.dart';
+import '../../core/layout/clarity_native_layout.dart';
 import '../../core/l10n/app_l10n.dart';
 import '../../features/profile/application/profile_controller.dart';
 import '../../theme/clarity_colors.dart';
@@ -32,7 +33,11 @@ class AssistantTopSurface extends StatelessWidget {
     final compact = RexUiTokens.isCompactChrome(context);
     final nativeCompact = RexUiTokens.isNativeCompactChrome(context);
     final showTitle = RexUiTokens.showsAssistantPageTitle(context);
-    final horizontal = compact ? RexUiTokens.space8 : RexUiTokens.space16;
+    final horizontal = nativeCompact
+        ? ClarityNativeLayout.pageGutter(context)
+        : compact
+        ? RexUiTokens.space8
+        : RexUiTokens.space16;
     final top = nativeCompact
         ? RexUiTokens.space4
         : compact

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/layout/clarity_native_layout.dart';
 import '../../theme/clarity_colors.dart';
 import '../../widgets/clarity_card.dart';
 import 'rex_ui_tokens.dart';
@@ -37,7 +38,12 @@ class OverviewStatChip extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: ClarityNativeLayout.active(context)
+            ? EdgeInsets.symmetric(
+                horizontal: ClarityNativeLayout.cardPadding(context).left,
+                vertical: ClarityNativeLayout.cardPadding(context).top,
+              )
+            : const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -100,7 +106,9 @@ class OverviewSectionCard extends StatelessWidget {
 
     return ClarityCard(
       highlighted: highlighted,
-      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+      padding: ClarityNativeLayout.active(context)
+          ? ClarityNativeLayout.cardPadding(context)
+          : const EdgeInsets.fromLTRB(16, 14, 12, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
