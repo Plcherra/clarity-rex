@@ -153,13 +153,13 @@ npm run build
 
 | # | Check | Pass |
 | --- | --- | :---: |
-| 16 | Notch / Dynamic Island / home indicator: chat send, attach sheet, Knows edit, voice panel not clipped | ☐ re-smoke after compact density |
-| 17 | Assistant tabs + header feel denser; back swipe still works | ☐ re-smoke (header denser on compact) |
-| 18 | Sheets: drag-to-dismiss + grabber; confirm/dismiss light haptic | ☐ |
-| 19 | Foreground voice chrome matches chat density | ☐ |
+| 16 | Notch / Dynamic Island / home indicator: chat send, attach sheet, Knows edit, voice panel not clipped | ☐ re-smoke after iPhone native chrome |
+| 17 | Assistant tabs without page title; back swipe still works; Chats tab present | ☐ re-smoke |
+| 18 | Sheets: drag-to-dismiss + grabber; confirm/dismiss light haptic; **inline confirm strip only** (no auto dialog) | ☐ |
+| 19 | Foreground voice chrome matches chat density; filled pill composer | ☐ |
 | 20 | Do **not** expect background walk-and-talk (file 07) | ☐ noted |
 
-**Re-smoke after this density ship (device):** F1 #8 Title field ≈ Details size; F3 #16–17 header/composer not clipped. Then C4 screenshots → A116.
+**Re-smoke after iPhone native-chrome ship (device):** F3 #16–19; Chats tab still works; confirm strip unclipped; bottom nav selected-label only. Then C4 screenshots → A116. Proceed to **plan 05 device smoke** after F3 looks right.
 
 ## F4 — Flutter web `/app/`
 
@@ -208,11 +208,12 @@ npm run build
 
 ## Suggested next steps
 
-1. Re-smoke **F1 #8** on iOS after compact confirm title/density (Title field should match Details size).
-2. Re-smoke **Chats access (compact):** Assistant sub-tab order `Chats | Chat | Knows | Goals | Overview`; open a chat from Chats → transcript; Overview → Browse chats still works. **Wide `/app/`:** no Chats sub-tab; sidebar still owns history.
-3. Complete **F3** iOS notch/sheet/voice chrome checks on device (confirm strip / composer unclipped under denser header + five Assistant tabs).
-4. Smoke **F2** Android + **F4** `/app/` when claiming those surfaces.
-5. **C4/A116** screenshot refresh after density looks right — do not claim redesign screenshots until then.
-6. Optional later: Knows-vs-Goals propose routing (parking lot).
+1. **iPhone native-chrome re-smoke (F3 #16–19):** no Assistant page title; selected-only bottom nav labels; filled composer; inline confirm only; Chats → chat still works.
+2. Re-smoke **F1 #8** Title field ≈ Details size on confirm strip.
+3. Smoke **F2** Android (shared native-compact helpers also apply) when claiming Android.
+4. **F4 `/app/`** remains the good baseline — do not regress wide layout.
+5. **C4/A116** screenshot refresh after iPhone chrome looks right.
+6. After F3 looks good → **plan 05 device smoke** (confirm retry / network-kill / voice recovery).
+7. Optional later: Knows-vs-Goals propose routing (parking lot).
 
-**Mobile density track (post-F1 iOS):** compact confirm/composer tokens + denser Assistant header + compact-only **Chats** Assistant sub-tab + denser Dashboard/Accounts card titles. Wide `/app/` keeps prior roomier defaults and sidebar conversation list (no duplicate Chats tab).
+**Mobile density track:** densified confirm/composer tokens + **native-compact chrome** (`!kIsWeb && isCompactChrome`): hide Assistant title, selected-label bottom nav, pill composer, no transcript scrollbar, smaller bubble inset, no auto confirm dialog, 16px dashboard gutters. Wide `/app/` unchanged.

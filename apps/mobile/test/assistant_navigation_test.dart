@@ -247,7 +247,8 @@ void main() {
       );
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Assistant'), findsOneWidget);
+      // Native compact hides the redundant Assistant page title.
+      expect(find.text('Assistant'), findsNothing);
       expect(find.byType(TextField), findsOneWidget);
       for (final tab in compactTabs) {
         expect(find.byKey(tab.key), findsOneWidget);

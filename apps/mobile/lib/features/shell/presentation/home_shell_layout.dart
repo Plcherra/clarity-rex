@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -32,13 +33,29 @@ class HomeShellAdaptiveScaffold extends StatelessWidget {
     final compact = isHomeShellCompactWidth(context);
 
     if (compact) {
+      final navigationBar = NavigationBar(
+        selectedIndex: selectedIndex,
+        onDestinationSelected: onDestinationSelected,
+        destinations: destinations,
+      );
+      // Native phone: selected-label only. Narrow web keeps always-show labels.
+      if (!kIsWeb) {
+        return Scaffold(
+          body: body,
+          bottomNavigationBar: Theme(
+            data: Theme.of(context).copyWith(
+              navigationBarTheme: Theme.of(context).navigationBarTheme.copyWith(
+                labelBehavior:
+                    NavigationDestinationLabelBehavior.onlyShowSelected,
+              ),
+            ),
+            child: navigationBar,
+          ),
+        );
+      }
       return Scaffold(
         body: body,
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: selectedIndex,
-          onDestinationSelected: onDestinationSelected,
-          destinations: destinations,
-        ),
+        bottomNavigationBar: navigationBar,
       );
     }
 

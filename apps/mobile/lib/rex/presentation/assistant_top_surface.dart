@@ -30,27 +30,40 @@ class AssistantTopSurface extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final compact = RexUiTokens.isCompactChrome(context);
+    final nativeCompact = RexUiTokens.isNativeCompactChrome(context);
+    final showTitle = RexUiTokens.showsAssistantPageTitle(context);
     final horizontal = compact ? RexUiTokens.space8 : RexUiTokens.space16;
-    final top = compact ? RexUiTokens.space8 : RexUiTokens.space20;
+    final top = nativeCompact
+        ? RexUiTokens.space4
+        : compact
+        ? RexUiTokens.space8
+        : RexUiTokens.space20;
     final titleGap = compact ? RexUiTokens.space8 : RexUiTokens.space12;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(horizontal, top, horizontal, RexUiTokens.space8),
+      padding: EdgeInsets.fromLTRB(
+        horizontal,
+        top,
+        horizontal,
+        RexUiTokens.space8,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            context.l10n.navAssistant,
-            style: (compact
-                    ? theme.textTheme.titleMedium
-                    : theme.textTheme.titleLarge)
-                ?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: scheme.onSurface,
-              height: 1.1,
+          if (showTitle) ...[
+            Text(
+              context.l10n.navAssistant,
+              style: (compact
+                      ? theme.textTheme.titleMedium
+                      : theme.textTheme.titleLarge)
+                  ?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurface,
+                height: 1.1,
+              ),
             ),
-          ),
-          SizedBox(height: titleGap),
+            SizedBox(height: titleGap),
+          ],
           AssistantTabNavigation(
             controller: controller,
             tabs: tabs,
@@ -167,6 +180,7 @@ class AssistantTabItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final compact = RexUiTokens.isCompactChrome(context);
+    final nativeCompact = RexUiTokens.isNativeCompactChrome(context);
 
     return Semantics(
       label: tab.semanticLabelFor(context),
@@ -187,7 +201,8 @@ class AssistantTabItem extends StatelessWidget {
                   overflow: TextOverflow.visible,
                   style: theme.textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    fontSize: compact ? 11 : null,
+                    // Native phone: keep theme labelSmall (avoid forced 11px crush).
+                    fontSize: compact && !nativeCompact ? 11 : null,
                   ),
                 ),
               ),

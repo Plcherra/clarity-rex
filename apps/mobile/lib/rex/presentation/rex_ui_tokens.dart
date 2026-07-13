@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/layout/clarity_breakpoints.dart';
@@ -35,6 +36,7 @@ class RexUiTokens {
   static const bubblePaddingV = ClaritySpacing.sm;
   static const messageGap = ClaritySpacing.sm;
   static const bubbleSideInset = 36.0;
+  static const bubbleSideInsetNativeCompact = 16.0;
 
   /// Knows list row density (shared tile shell).
   static const memoryTilePaddingH = ClaritySpacing.sm;
@@ -63,6 +65,38 @@ class RexUiTokens {
   /// Phone / narrow width — denser confirm + composer without affecting wide `/app/`.
   static bool isCompactChrome(BuildContext context) {
     return !isClarityDesktopLayout(context);
+  }
+
+  /// Native phone compact (iOS/Android) — not Flutter web, even when narrow.
+  static bool isNativeCompactChrome(BuildContext context) {
+    return !kIsWeb && isCompactChrome(context);
+  }
+
+  static double bubbleSideInsetOf(BuildContext context) {
+    return isNativeCompactChrome(context)
+        ? bubbleSideInsetNativeCompact
+        : bubbleSideInset;
+  }
+
+  static bool usesFilledComposerField(BuildContext context) {
+    return isNativeCompactChrome(context);
+  }
+
+  static bool showsTranscriptScrollbar(BuildContext context) {
+    return !isNativeCompactChrome(context);
+  }
+
+  static bool showsAssistantPageTitle(BuildContext context) {
+    return !isNativeCompactChrome(context);
+  }
+
+  static bool autoOpensConfirmDialog(BuildContext context) {
+    // Wide layouts use the inline strip only; native compact also stays inline.
+    // Narrow web keeps the modal so Confirm/Dismiss stay obvious on small browsers.
+    if (isClarityWideLayout(context)) {
+      return false;
+    }
+    return !isNativeCompactChrome(context);
   }
 
   static double confirmCardPaddingOf(BuildContext context) {

@@ -52,15 +52,13 @@ class ChatTranscript extends StatelessWidget {
         ? RexUiTokens.space12
         : RexUiTokens.space24;
 
-    return Scrollbar(
+    final scrollView = CustomScrollView(
       controller: scrollController,
-      child: CustomScrollView(
-        controller: scrollController,
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        slivers: [
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      slivers: [
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
               RexUiTokens.space16,
@@ -147,7 +145,14 @@ class ChatTranscript extends StatelessWidget {
             child: SizedBox.shrink(),
           ),
         ],
-      ),
+    );
+
+    if (!RexUiTokens.showsTranscriptScrollbar(context)) {
+      return scrollView;
+    }
+    return Scrollbar(
+      controller: scrollController,
+      child: scrollView,
     );
   }
 }

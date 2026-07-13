@@ -162,7 +162,7 @@ class _DashboardScrollBodyState extends State<_DashboardScrollBody> {
                 : const BouncingScrollPhysics(),
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                padding: EdgeInsets.fromLTRB(desktop ? 24 : 16, 0, desktop ? 24 : 16, 40),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     if (widget.title.trim().isNotEmpty) ...[

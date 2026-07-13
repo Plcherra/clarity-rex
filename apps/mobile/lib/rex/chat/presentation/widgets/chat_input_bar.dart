@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/core/platform/app_capabilities.dart';
+import 'package:clarity/l10n/app_localizations.dart';
 import 'package:clarity/rex/chat/domain/chat_attachment.dart';
 import 'package:clarity/rex/chat/presentation/widgets/chat_attachment_image.dart';
 import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
@@ -154,43 +155,32 @@ class _ChatInputBarState extends State<ChatInputBar> {
                     isActive: widget.isVoiceCallActive,
                   ),
                   Expanded(
-                    child: TextField(
-                      focusNode: _composerFocusNode,
-                      controller: widget.controller,
-                      minLines: 1,
-                      maxLines: 7,
-                      keyboardType: TextInputType.multiline,
-                      textInputAction: TextInputAction.newline,
-                      textCapitalization: TextCapitalization.sentences,
-                      cursorColor: colors.accent,
-                      decoration: InputDecoration(
-                        hintText: l10n.chatInputMessageHint,
-                        filled: false,
-                        fillColor: Colors.transparent,
-                        border: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        disabledBorder: InputBorder.none,
-                        errorBorder: InputBorder.none,
-                        focusedErrorBorder: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: RexUiTokens.space8,
-                          vertical: RexUiTokens.composerFieldPaddingVOf(
+                    child: RexUiTokens.usesFilledComposerField(context)
+                        ? DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: colors.surfaceElevated.withValues(
+                                alpha: 0.92,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                RexUiTokens.radiusPill,
+                              ),
+                              border: Border.all(
+                                color: colors.border.withValues(alpha: 0.45),
+                              ),
+                            ),
+                            child: _composerTextField(
+                              context,
+                              theme: theme,
+                              colors: colors,
+                              l10n: l10n,
+                            ),
+                          )
+                        : _composerTextField(
                             context,
+                            theme: theme,
+                            colors: colors,
+                            l10n: l10n,
                           ),
-                        ),
-                        hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.textMuted.withValues(
-                            alpha: 0.7,
-                          ),
-                        ),
-                      ),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colors.textPrimary,
-                        height: 1.35,
-                      ),
-                    ),
                   ),
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: widget.controller,
@@ -216,6 +206,47 @@ class _ChatInputBarState extends State<ChatInputBar> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _composerTextField(
+    BuildContext context, {
+    required ThemeData theme,
+    required ClarityColorTokens colors,
+    required AppLocalizations l10n,
+  }) {
+    return TextField(
+      focusNode: _composerFocusNode,
+      controller: widget.controller,
+      minLines: 1,
+      maxLines: 7,
+      keyboardType: TextInputType.multiline,
+      textInputAction: TextInputAction.newline,
+      textCapitalization: TextCapitalization.sentences,
+      cursorColor: colors.accent,
+      decoration: InputDecoration(
+        hintText: l10n.chatInputMessageHint,
+        filled: false,
+        fillColor: Colors.transparent,
+        border: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: RexUiTokens.space8,
+          vertical: RexUiTokens.composerFieldPaddingVOf(context),
+        ),
+        hintStyle: theme.textTheme.bodyMedium?.copyWith(
+          color: colors.textMuted.withValues(alpha: 0.7),
+        ),
+      ),
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: colors.textPrimary,
+        height: 1.35,
       ),
     );
   }

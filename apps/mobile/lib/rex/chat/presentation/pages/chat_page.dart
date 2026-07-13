@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
-import 'package:clarity/core/layout/clarity_breakpoints.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/features/dashboard/application/dashboard_deep_link_navigation.dart';
@@ -17,6 +16,7 @@ import 'package:clarity/rex/chat/presentation/widgets/clarity_action_cards_strip
 import 'package:clarity/rex/chat/presentation/widgets/inline_voice_call_panel.dart';
 import 'package:clarity/rex/presentation/assistant_chat_visible_provider.dart';
 import 'package:clarity/rex/presentation/rex_surfaces.dart';
+import 'package:clarity/rex/presentation/rex_ui_tokens.dart';
 import 'package:clarity/rex/voice/application/voice_call_controller.dart';
 import 'package:clarity/rex/voice/domain/voice_call_state.dart';
 import 'package:clarity/theme/clarity_colors.dart';
@@ -61,9 +61,9 @@ class _ChatPageState extends ConsumerState<ChatPage>
     if (!mounted || pending.isEmpty) {
       return;
     }
-    // Wide layouts use the inline confirm strip in ChatTranscript.
-    // Compact layouts also get a modal so Confirm/Dismiss stay obvious.
-    if (isClarityWideLayout(context)) {
+    // Wide + native compact: inline confirm strip only.
+    // Narrow web keeps a modal so Confirm/Dismiss stay obvious.
+    if (!RexUiTokens.autoOpensConfirmDialog(context)) {
       return;
     }
     final action = pending.first;

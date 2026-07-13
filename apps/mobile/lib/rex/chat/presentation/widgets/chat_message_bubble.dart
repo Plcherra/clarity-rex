@@ -76,8 +76,8 @@ class ChatMessageBubble extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: isUser ? RexUiTokens.bubbleSideInset : 0,
-        right: isUser ? 0 : RexUiTokens.bubbleSideInset,
+        left: isUser ? RexUiTokens.bubbleSideInsetOf(context) : 0,
+        right: isUser ? 0 : RexUiTokens.bubbleSideInsetOf(context),
         bottom: 1,
       ),
       child: Row(

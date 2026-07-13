@@ -59,4 +59,67 @@ void main() {
     expect(cardPadding, RexUiTokens.confirmCardPadding);
     expect(buttonHeight, RexUiTokens.confirmButtonHeight);
   });
+
+  testWidgets('native compact tokens prefer phone chrome', (tester) async {
+    late bool nativeCompact;
+    late double bubbleInset;
+    late bool showTitle;
+    late bool showScrollbar;
+    late bool filledComposer;
+    late bool autoDialog;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(390, 844)),
+          child: Builder(
+            builder: (context) {
+              nativeCompact = RexUiTokens.isNativeCompactChrome(context);
+              bubbleInset = RexUiTokens.bubbleSideInsetOf(context);
+              showTitle = RexUiTokens.showsAssistantPageTitle(context);
+              showScrollbar = RexUiTokens.showsTranscriptScrollbar(context);
+              filledComposer = RexUiTokens.usesFilledComposerField(context);
+              autoDialog = RexUiTokens.autoOpensConfirmDialog(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(nativeCompact, isTrue);
+    expect(bubbleInset, RexUiTokens.bubbleSideInsetNativeCompact);
+    expect(showTitle, isFalse);
+    expect(showScrollbar, isFalse);
+    expect(filledComposer, isTrue);
+    expect(autoDialog, isFalse);
+  });
+
+  testWidgets('wide layout keeps web-style assistant title and bubble inset', (
+    tester,
+  ) async {
+    late double bubbleInset;
+    late bool showTitle;
+    late bool autoDialog;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(1280, 900)),
+          child: Builder(
+            builder: (context) {
+              bubbleInset = RexUiTokens.bubbleSideInsetOf(context);
+              showTitle = RexUiTokens.showsAssistantPageTitle(context);
+              autoDialog = RexUiTokens.autoOpensConfirmDialog(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(bubbleInset, RexUiTokens.bubbleSideInset);
+    expect(showTitle, isTrue);
+    expect(autoDialog, isFalse);
+  });
 }
