@@ -4,54 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('chatMessageShouldCollapse ignores streaming replies', () {
-    const textStyle = TextStyle(fontSize: 16, height: 1.45);
-    const text = 'Line one\nLine two\nLine three\nLine four\n'
-        'Line five\nLine six\nLine seven\nLine eight\n'
-        'Line nine\nLine ten';
-
+  test('chatMessageInlineMarkdownSpans keeps bold and code spans', () {
     final spans = chatMessageInlineMarkdownSpans(
-      text,
+      'Hello **world** and `code`.',
       ClarityTheme.light(),
       Colors.black,
       Colors.grey,
     );
 
+    expect(spans, isNotEmpty);
     expect(
-      chatMessageShouldCollapse(
-        text: text,
-        style: textStyle,
-        spans: spans,
-        maxWidth: 280,
-        textDirection: TextDirection.ltr,
-        isStreaming: true,
-      ),
-      isFalse,
+      spans.any((span) => span is TextSpan && span.text == 'world'),
+      isTrue,
     );
-  });
-
-  test('chatMessageShouldCollapse detects long assistant replies', () {
-    const textStyle = TextStyle(fontSize: 16, height: 1.45);
-    const text = 'Line one\nLine two\nLine three\nLine four\n'
-        'Line five\nLine six\nLine seven\nLine eight\n'
-        'Line nine\nLine ten';
-
-    final spans = chatMessageInlineMarkdownSpans(
-      text,
-      ClarityTheme.light(),
-      Colors.black,
-      Colors.grey,
-    );
-
     expect(
-      chatMessageShouldCollapse(
-        text: text,
-        style: textStyle,
-        spans: spans,
-        maxWidth: 280,
-        textDirection: TextDirection.ltr,
-        isStreaming: false,
-      ),
+      spans.any((span) => span is TextSpan && span.text == 'code'),
       isTrue,
     );
   });

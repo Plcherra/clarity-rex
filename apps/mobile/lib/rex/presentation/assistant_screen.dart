@@ -154,6 +154,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
                           _AssistantTabContent(
                             tab: tab,
                             wideSplit: wide,
+                            profileController: widget.profileController,
                             onConversationSelected: _openChatTab,
                             onOpenKnows: _openKnowsTab,
                             onOpenGoals: _openGoalsTab,
@@ -175,6 +176,7 @@ class _AssistantTabContent extends StatelessWidget {
   const _AssistantTabContent({
     required this.tab,
     required this.wideSplit,
+    required this.profileController,
     required this.onConversationSelected,
     required this.onOpenKnows,
     required this.onOpenGoals,
@@ -182,6 +184,7 @@ class _AssistantTabContent extends StatelessWidget {
 
   final AssistantTab tab;
   final bool wideSplit;
+  final ProfileController profileController;
   final VoidCallback onConversationSelected;
   final VoidCallback onOpenKnows;
   final VoidCallback onOpenGoals;
@@ -194,8 +197,14 @@ class _AssistantTabContent extends StatelessWidget {
         onConversationSelected: onConversationSelected,
       ),
       AssistantTab.chat => wideSplit
-          ? _AssistantChatSplit(onConversationSelected: onConversationSelected)
-          : const ChatPage(showAppBar: false),
+          ? _AssistantChatSplit(
+              onConversationSelected: onConversationSelected,
+              profileController: profileController,
+            )
+          : ChatPage(
+              showAppBar: false,
+              profileController: profileController,
+            ),
       AssistantTab.memory => const MemoryPage(showAppBar: false),
       AssistantTab.goals => const AccountabilityPage(showAppBar: false),
       AssistantTab.overview => AssistantOverviewPage(
@@ -209,9 +218,13 @@ class _AssistantTabContent extends StatelessWidget {
 }
 
 class _AssistantChatSplit extends StatefulWidget {
-  const _AssistantChatSplit({required this.onConversationSelected});
+  const _AssistantChatSplit({
+    required this.onConversationSelected,
+    required this.profileController,
+  });
 
   final VoidCallback onConversationSelected;
+  final ProfileController profileController;
 
   @override
   State<_AssistantChatSplit> createState() => _AssistantChatSplitState();
@@ -322,8 +335,11 @@ class _AssistantChatSplitState extends State<_AssistantChatSplit> {
                   ),
                 ),
               ),
-            const Expanded(
-              child: ChatPage(showAppBar: false),
+            Expanded(
+              child: ChatPage(
+                showAppBar: false,
+                profileController: widget.profileController,
+              ),
             ),
           ],
         );

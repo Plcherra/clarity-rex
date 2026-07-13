@@ -14,6 +14,7 @@ from app.services.grok_prompt_logging import log_grok_prompt_messages
 from app.services.chat_turn_orchestrator_short_circuit import try_short_circuit_turn
 from app.services.chat_turn_orchestrator_support import (
     annotate_pending_action,
+    annotate_proposal_settings,
     brain_messages,
     financial_context_for_prompt,
     finish_short_circuit,
@@ -135,6 +136,7 @@ class ChatTurnOrchestrator:
             conversation_id=conversation_id,
             intent=intent_decision.intent.value,
         )
+        annotate_proposal_settings(turn_trace, turn_context)
         pending_action = await load_pending_action(self.memory_service, conversation_id)
         annotate_pending_action(turn_trace, pending_action)
         short_circuit = await try_short_circuit_turn(
@@ -194,6 +196,12 @@ class ChatTurnOrchestrator:
             turn_trace,
             turn_started_at,
             "llm",
+            turn_result={
+                "memory_changes": self.clarity_action_parser.with_memory_changes(
+                    None,
+                    clarity_action_proposals,
+                ),
+            },
         )
         assistant_message = await self.memory_service.save_message(
             conversation_id,
@@ -262,6 +270,7 @@ class ChatTurnOrchestrator:
             conversation_id=conversation_id,
             intent=intent_decision.intent.value,
         )
+        annotate_proposal_settings(turn_trace, turn_context)
         yield {"event": "conversation", "conversation_id": conversation_id}
         if include_turn_trace:
             yield turn_trace_event(intent_decision, channel)
@@ -403,6 +412,12 @@ class ChatTurnOrchestrator:
             turn_trace,
             turn_started_at,
             "llm",
+            turn_result={
+                "memory_changes": self.clarity_action_parser.with_memory_changes(
+                    None,
+                    clarity_action_proposals,
+                ),
+            },
         )
         await self.memory_service.save_message(
             conversation_id,

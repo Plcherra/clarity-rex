@@ -75,6 +75,7 @@ async def _finish_resolution_short_circuit(
         turn_trace,
         turn_started_at,
         route,
+        turn_result=turn_result,
     )
     return turn_result
 
@@ -113,6 +114,7 @@ async def _finish_short_circuit_turn(
         turn_trace,
         turn_started_at,
         route,
+        turn_result=turn_result,
     )
     return turn_result
 
@@ -195,6 +197,7 @@ async def try_short_circuit_turn(
             turn_trace,
             turn_started_at,
             "conversational_plan",
+            turn_result=conversational_plan_turn,
         )
         return conversational_plan_turn
 
@@ -212,6 +215,7 @@ async def try_short_circuit_turn(
             turn_trace,
             turn_started_at,
             "plan_target_date",
+            turn_result=plan_date_turn,
         )
         return plan_date_turn
 
@@ -252,6 +256,7 @@ async def try_short_circuit_turn(
             turn_trace,
             turn_started_at,
             "goal_command",
+            turn_result=goal_command_turn,
         )
         return goal_command_turn
 
@@ -320,6 +325,7 @@ async def try_short_circuit_turn(
             turn_trace,
             turn_started_at,
             "durable_write_pending",
+            turn_result=pending_write_reminder,
         )
         return pending_write_reminder
 

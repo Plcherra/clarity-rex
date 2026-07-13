@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../../../core/layout/clarity_adaptive_overlay.dart';
@@ -118,13 +116,11 @@ class _AssistantProposalSettingsSheetState
                   },
                   onSelectionChanged: loading
                       ? null
-                      : (selection) {
+                      : (selection) async {
                           final style = selection.first;
-                          unawaited(
-                            _save(
-                              settings.copyWith(
-                                responseStyle: style.storageValue,
-                              ),
+                          await _save(
+                            settings.copyWith(
+                              responseStyle: style.storageValue,
                             ),
                           );
                         },
@@ -137,11 +133,11 @@ class _AssistantProposalSettingsSheetState
                   value: settings.financeEditsEnabled,
                   onChanged: loading
                       ? null
-                      : (enabled) => unawaited(
-                          _save(
+                      : (enabled) async {
+                          await _save(
                             settings.copyWith(financeEditsEnabled: enabled),
-                          ),
-                        ),
+                          );
+                        },
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -169,11 +165,9 @@ class _AssistantProposalSettingsSheetState
                   selected: {AssistantProposalModeValue.fromStorage(settings.mode)},
                   onSelectionChanged: loading
                       ? null
-                      : (selection) {
+                      : (selection) async {
                           final mode = selection.first;
-                          unawaited(
-                            _save(settings.copyWith(mode: mode.storageValue)),
-                          );
+                          await _save(settings.copyWith(mode: mode.storageValue));
                         },
                 ),
                 const SizedBox(height: 10),
@@ -195,9 +189,9 @@ class _AssistantProposalSettingsSheetState
                     value: settings.threads,
                     onChanged: loading
                         ? null
-                        : (enabled) => unawaited(
-                            _save(settings.copyWith(threads: enabled)),
-                          ),
+                        : (enabled) async {
+                            await _save(settings.copyWith(threads: enabled));
+                          },
                   ),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
@@ -205,9 +199,9 @@ class _AssistantProposalSettingsSheetState
                     value: settings.goals,
                     onChanged: loading
                         ? null
-                        : (enabled) => unawaited(
-                            _save(settings.copyWith(goals: enabled)),
-                          ),
+                        : (enabled) async {
+                            await _save(settings.copyWith(goals: enabled));
+                          },
                   ),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
@@ -215,9 +209,9 @@ class _AssistantProposalSettingsSheetState
                     value: settings.memory,
                     onChanged: loading
                         ? null
-                        : (enabled) => unawaited(
-                            _save(settings.copyWith(memory: enabled)),
-                          ),
+                        : (enabled) async {
+                            await _save(settings.copyWith(memory: enabled));
+                          },
                   ),
                 ],
               ],

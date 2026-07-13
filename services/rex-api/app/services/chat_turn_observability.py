@@ -5,8 +5,20 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 from uuid import uuid4
+
+
+SETTINGS_LOAD_OK = "ok"
+SETTINGS_LOAD_FAIL_CLOSED = "fail_closed"
+SETTINGS_LOAD_MISSING_AUTH = "missing_auth"
+SETTINGS_LOAD_EMPTY_PROFILE = "empty_profile"
+
+DURABLE_APPLY_NONE = "none"
+DURABLE_APPLY_PENDING = "pending"
+DURABLE_APPLY_APPLIED = "applied"
+DURABLE_APPLY_REJECTED = "rejected"
+DURABLE_APPLY_SKIPPED = "skipped"
 
 
 @dataclass
@@ -19,6 +31,14 @@ class ChatTurnTrace:
     resolver_target: Optional[str] = None
     truth_guard_rewrites: list[str] = field(default_factory=list)
     duration_ms: Optional[int] = None
+    profile_mode: Optional[str] = None
+    env_mode: Optional[str] = None
+    effective_mode: Optional[str] = None
+    settings_load_status: Optional[str] = None
+    enabled_proposal_kinds: list[str] = field(default_factory=list)
+    proposal_kind: Optional[str] = None
+    write_proposals_count: int = 0
+    durable_apply_status: str = DURABLE_APPLY_NONE
 
     def record_handler(self, handler: str) -> None:
         self.handler = handler
@@ -38,11 +58,40 @@ class ChatTurnTrace:
         if guard_name not in self.truth_guard_rewrites:
             self.truth_guard_rewrites.append(guard_name)
 
+    def record_proposal_settings(
+        self,
+        *,
+        profile_mode: Optional[str],
+        env_mode: Optional[str],
+        effective_mode: str,
+        settings_load_status: str,
+        enabled_proposal_kinds: list[str],
+    ) -> None:
+        self.profile_mode = profile_mode
+        self.env_mode = env_mode
+        self.effective_mode = effective_mode
+        self.settings_load_status = settings_load_status
+        self.enabled_proposal_kinds = list(enabled_proposal_kinds)
+
+    def record_proposal_outcome(
+        self,
+        *,
+        proposal_kind: Optional[str] = None,
+        write_proposals_count: int = 0,
+        durable_apply_status: str = DURABLE_APPLY_NONE,
+    ) -> None:
+        if proposal_kind:
+            self.proposal_kind = proposal_kind
+        self.write_proposals_count = max(0, int(write_proposals_count))
+        self.durable_apply_status = durable_apply_status
+
     def metadata(self) -> dict:
-        payload = {
+        payload: dict[str, Any] = {
             "conversation_id": self.conversation_id,
             "intent": self.intent,
             "handler": self.handler,
+            "write_proposals_count": self.write_proposals_count,
+            "durable_apply_status": self.durable_apply_status,
         }
         if self.pending_action_type:
             payload["pending_action_type"] = self.pending_action_type
@@ -54,6 +103,18 @@ class ChatTurnTrace:
             payload["truth_guard_rewrites"] = list(self.truth_guard_rewrites)
         if self.duration_ms is not None:
             payload["duration_ms"] = self.duration_ms
+        if self.profile_mode is not None:
+            payload["profile_mode"] = self.profile_mode
+        if self.env_mode is not None:
+            payload["env_mode"] = self.env_mode
+        if self.effective_mode is not None:
+            payload["effective_mode"] = self.effective_mode
+        if self.settings_load_status is not None:
+            payload["settings_load_status"] = self.settings_load_status
+        if self.enabled_proposal_kinds:
+            payload["enabled_proposal_kinds"] = list(self.enabled_proposal_kinds)
+        if self.proposal_kind:
+            payload["proposal_kind"] = self.proposal_kind
         return payload
 
 

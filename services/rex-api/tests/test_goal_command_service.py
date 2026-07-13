@@ -467,3 +467,33 @@ async def test_list_goals_question_returns_saved_goals_without_llm():
     assert "Active goals:" in result["response"]
     assert "Buy RAM" in result["response"]
     assert result["memory_changes"] == {}
+
+
+@pytest.mark.asyncio
+async def test_explicit_goal_command_still_works_when_auto_suggestions_off(
+    monkeypatch,
+):
+    """Off disables autos only — explicit save-as-goal must still propose."""
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "off")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    memory_service = FakeMemoryService()
+    conversation_id = await memory_service.create_conversation()
+    message = "Save waking up at 4am every day as a goal"
+    user_message = await _user_message(memory_service, conversation_id, message)
+    service = _goal_command_service(memory_service)
+
+    result = await service.handle_turn(
+        message,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        conversation_history=[user_message],
+        time_context=_time_context(),
+    )
+
+    assert result is not None
+    memory_changes = result.get("memory_changes") or {}
+    proposals = memory_changes.get("write_proposals") or []
+    assert memory_changes.get("confirmation_required", 0) >= 1 or proposals
+    get_settings.cache_clear()

@@ -52,14 +52,77 @@ def annotate_pending_action(turn_trace: ChatTurnTrace, pending_action) -> None:
     )
 
 
+def annotate_proposal_settings(turn_trace: ChatTurnTrace, turn_context) -> None:
+    resolution = getattr(turn_context, "proposal_settings_resolution", None)
+    settings = getattr(turn_context, "proposal_settings", None)
+    if resolution is None and settings is None:
+        return
+    if resolution is not None:
+        turn_trace.record_proposal_settings(
+            profile_mode=resolution.profile_mode,
+            env_mode=resolution.env_mode,
+            effective_mode=resolution.effective_mode,
+            settings_load_status=resolution.settings_load_status,
+            enabled_proposal_kinds=resolution.settings.enabled_kinds(),
+        )
+        return
+    turn_trace.record_proposal_settings(
+        profile_mode=None,
+        env_mode=None,
+        effective_mode=settings.mode,
+        settings_load_status="unknown",
+        enabled_proposal_kinds=settings.enabled_kinds(),
+    )
+
+
+def annotate_proposal_outcome(turn_trace: ChatTurnTrace, turn_result: Optional[dict]) -> None:
+    from app.services.chat_turn_observability import (
+        DURABLE_APPLY_APPLIED,
+        DURABLE_APPLY_NONE,
+        DURABLE_APPLY_PENDING,
+        DURABLE_APPLY_REJECTED,
+        DURABLE_APPLY_SKIPPED,
+    )
+
+    if not isinstance(turn_result, dict):
+        return
+    memory_changes = turn_result.get("memory_changes") or {}
+    proposals = memory_changes.get("write_proposals") or []
+    proposal_kind = None
+    if proposals and isinstance(proposals[0], dict):
+        proposal_kind = str(proposals[0].get("write_kind") or "").strip() or None
+
+    applied = int(memory_changes.get("applied") or 0)
+    skipped = int(memory_changes.get("skipped") or 0)
+    confirmation_required = int(memory_changes.get("confirmation_required") or 0)
+    if applied > 0:
+        status = DURABLE_APPLY_APPLIED
+    elif skipped > 0:
+        status = DURABLE_APPLY_REJECTED
+    elif confirmation_required > 0 or proposals:
+        status = DURABLE_APPLY_PENDING
+    elif memory_changes.get("skipped_reason"):
+        status = DURABLE_APPLY_SKIPPED
+    else:
+        status = DURABLE_APPLY_NONE
+
+    turn_trace.record_proposal_outcome(
+        proposal_kind=proposal_kind,
+        write_proposals_count=len(proposals),
+        durable_apply_status=status,
+    )
+
+
 def finish_short_circuit(
     turn_observer: ChatTurnObserver,
     usage_recorder: ChatUsageRecorder,
     turn_trace: ChatTurnTrace,
     started_at: float,
     handler: str,
+    turn_result: Optional[dict] = None,
 ) -> None:
     turn_trace.record_handler(handler)
+    annotate_proposal_outcome(turn_trace, turn_result)
     log_turn_trace(turn_observer, usage_recorder, turn_trace, started_at)
 
 

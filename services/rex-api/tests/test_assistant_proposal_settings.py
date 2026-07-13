@@ -6,22 +6,35 @@ from app.services.assistant_proposal_settings import (
     PROPOSAL_KIND_MEMORY,
     PROPOSAL_KIND_THREADS,
     RESPONSE_STYLE_BALANCED,
+    SETTINGS_LOAD_EMPTY_PROFILE,
     AssistantProposalSettings,
     fail_closed_proposal_settings,
     parse_assistant_settings,
     resolve_assistant_proposal_settings,
+    resolve_proposal_settings_resolution,
 )
 
 
-def test_parse_assistant_settings_defaults_to_card_mode() -> None:
+def test_parse_assistant_settings_defaults_to_off_mode() -> None:
     settings = parse_assistant_settings({})
-    assert settings.mode == AUTO_PROPOSALS_CARD
+    assert settings.mode == AUTO_PROPOSALS_OFF
     assert settings.threads is True
     assert settings.goals is True
     assert settings.memory is True
     assert settings.response_style == RESPONSE_STYLE_BALANCED
     assert settings.finance_edits_enabled is True
-    assert settings.uses_confirm_cards() is True
+    assert settings.auto_proposals_enabled() is False
+    assert settings.uses_confirm_cards() is False
+
+
+def test_parse_assistant_settings_missing_mode_key_is_off() -> None:
+    settings = parse_assistant_settings({"response_style": "concise"})
+    assert settings.mode == AUTO_PROPOSALS_OFF
+
+
+def test_parse_assistant_settings_invalid_mode_is_off() -> None:
+    settings = parse_assistant_settings({"auto_proposals_mode": "maybe"})
+    assert settings.mode == AUTO_PROPOSALS_OFF
 
 
 def test_parse_assistant_settings_finance_edits_disabled() -> None:
@@ -86,7 +99,23 @@ def test_env_override_auto_proposals_mode(monkeypatch) -> None:
     get_settings.cache_clear()
 
 
-def test_env_card_does_not_override_profile_off(monkeypatch) -> None:
+def test_env_can_override_empty_profile_default_off(monkeypatch) -> None:
+    """Empty profile defaults Off, but env still works for ops/tests."""
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "card")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    resolution = resolve_proposal_settings_resolution(
+        {},
+        settings=get_settings(),
+    )
+    assert resolution.profile_mode is None
+    assert resolution.settings_load_status == SETTINGS_LOAD_EMPTY_PROFILE
+    assert resolution.effective_mode == AUTO_PROPOSALS_CARD
+    get_settings.cache_clear()
+
+
+def test_env_card_does_not_override_explicit_profile_off(monkeypatch) -> None:
     monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "card")
     from app.config import get_settings
 

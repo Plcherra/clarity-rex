@@ -4,6 +4,7 @@ import 'package:clarity/core/layout/clarity_adaptive_overlay.dart';
 import 'package:clarity/core/l10n/app_l10n.dart';
 import 'package:clarity/core/platform/app_capabilities.dart';
 import 'package:clarity/features/dashboard/application/dashboard_deep_link_navigation.dart';
+import 'package:clarity/features/profile/application/profile_controller.dart';
 import 'package:clarity/rex/assistant_providers.dart';
 import 'package:clarity/rex/chat/application/chat_controller.dart'
     show ChatState;
@@ -28,9 +29,14 @@ import 'package:image_picker/image_picker.dart';
 
 /// Main chat surface: empty thread UI + composer.
 class ChatPage extends ConsumerStatefulWidget {
-  const ChatPage({super.key, this.showAppBar = true});
+  const ChatPage({
+    super.key,
+    this.showAppBar = true,
+    this.profileController,
+  });
 
   final bool showAppBar;
+  final ProfileController? profileController;
 
   @override
   ConsumerState<ChatPage> createState() => _ChatPageState();
@@ -165,6 +171,9 @@ class _ChatPageState extends ConsumerState<ChatPage>
   bool get wantKeepAlive => true;
 
   Future<void> _onSendTapped() async {
+    if (widget.profileController?.isUpdatingAssistantSettings ?? false) {
+      return;
+    }
     if (_attachmentError != null) {
       _showSnackBar(_attachmentError!);
       return;
@@ -381,6 +390,9 @@ class _ChatPageState extends ConsumerState<ChatPage>
   }
 
   Future<void> _startVoiceCall() async {
+    if (widget.profileController?.isUpdatingAssistantSettings ?? false) {
+      return;
+    }
     FocusScope.of(context).unfocus();
     final voice = ref.read(voiceCallProvider);
     if (voice.isCallActive) {
@@ -467,81 +479,98 @@ class _ChatPageState extends ConsumerState<ChatPage>
             ? l10n.chatInputVoiceWebTooltip
             : l10n.chatInputStartVoiceModeTooltip);
 
-    return RexScaffold(
-      appBar: widget.showAppBar
-          ? AppBar(
-              title: Text(currentConversation?.title ?? l10n.chatPageDefaultTitle),
-              actions: [
-                IconButton(
-                  onPressed: _startVoiceCall,
-                  icon: Icon(
-                    voiceCall.isCallActive
-                        ? Icons.graphic_eq_rounded
-                        : Icons.call_rounded,
-                  ),
-                  tooltip: voiceTooltip,
+    Widget buildScaffold({required bool settingsUpdating}) {
+      return RexScaffold(
+        appBar: widget.showAppBar
+            ? AppBar(
+                title: Text(
+                  currentConversation?.title ?? l10n.chatPageDefaultTitle,
                 ),
-              ],
-            )
-          : null,
-      resizeToAvoidBottomInset: true,
-      // Top inset: AssistantScreen / AppBar. Bottom inset: ChatInputBar only
-      // (avoids double home-indicator padding on notched iPhones).
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: Column(
-          children: [
-            Expanded(
-              child: ChatTranscript(
-                messages: chat.messages,
-                errorMessage: chat.errorMessage,
-                scrollController: _scrollController,
-                voiceState: voiceCall.isIdle ? null : voiceCall,
-                onPromptSelected: (prompt) {
-                  _messageController.text = prompt;
-                  _messageController.selection = TextSelection.collapsed(
-                    offset: prompt.length,
-                  );
-                },
-                onConfirmClarityAction: (action) => ref
-                    .read(chatProvider.notifier)
-                    .executeClarityAction(action),
-                onDismissClarityAction: (action) => ref
-                    .read(chatProvider.notifier)
-                    .dismissClarityAction(action),
-                onDashboardLinkTap: (anchor) => ref
-                    .read(dashboardDeepLinkRequestProvider.notifier)
-                    .request(anchor),
+                actions: [
+                  IconButton(
+                    onPressed: settingsUpdating ? null : _startVoiceCall,
+                    icon: Icon(
+                      voiceCall.isCallActive
+                          ? Icons.graphic_eq_rounded
+                          : Icons.call_rounded,
+                    ),
+                    tooltip: voiceTooltip,
+                  ),
+                ],
+              )
+            : null,
+        resizeToAvoidBottomInset: true,
+        // Top inset: AssistantScreen / AppBar. Bottom inset: ChatInputBar only
+        // (avoids double home-indicator padding on notched iPhones).
+        body: SafeArea(
+          top: false,
+          bottom: false,
+          child: Column(
+            children: [
+              Expanded(
+                child: ChatTranscript(
+                  messages: chat.messages,
+                  errorMessage: chat.errorMessage,
+                  scrollController: _scrollController,
+                  voiceState: voiceCall.isIdle ? null : voiceCall,
+                  onPromptSelected: (prompt) {
+                    _messageController.text = prompt;
+                    _messageController.selection = TextSelection.collapsed(
+                      offset: prompt.length,
+                    );
+                  },
+                  onConfirmClarityAction: (action) => ref
+                      .read(chatProvider.notifier)
+                      .executeClarityAction(action),
+                  onDismissClarityAction: (action) => ref
+                      .read(chatProvider.notifier)
+                      .dismissClarityAction(action),
+                  onDashboardLinkTap: (anchor) => ref
+                      .read(dashboardDeepLinkRequestProvider.notifier)
+                      .request(anchor),
+                ),
               ),
-            ),
-            if (voiceSupported && !voiceCall.isIdle)
-              InlineVoiceCallPanel(
-                state: voiceCall,
-                onRetry: _startVoiceCall,
-                onEnd: () async => voiceController.endCall(),
-                onToggleMute: voiceController.toggleMuted,
-                onOpenSettings: _openVoiceMicSettings,
+              if (voiceSupported && !voiceCall.isIdle)
+                InlineVoiceCallPanel(
+                  state: voiceCall,
+                  onRetry: _startVoiceCall,
+                  onEnd: () async => voiceController.endCall(),
+                  onToggleMute: voiceController.toggleMuted,
+                  onOpenSettings: _openVoiceMicSettings,
+                ),
+              ChatInputBar(
+                controller: _messageController,
+                onSend: chat.isLoading ||
+                        _attachmentError != null ||
+                        settingsUpdating
+                    ? null
+                    : _onSendTapped,
+                onPickAttachment: _pickAttachment,
+                onRemoveAttachment: _removeAttachment,
+                onStartVoice: settingsUpdating ? null : _startVoiceCall,
+                voiceTooltip: voiceTooltip,
+                isVoiceCallActive: voiceCall.isCallActive,
+                attachment: _attachment,
+                attachmentPreviewBytes: _attachmentPreviewBytes,
+                attachmentName: _attachmentName,
+                attachmentSize: _attachmentSize,
+                attachmentError: _attachmentError,
+                isLoading: chat.isLoading || settingsUpdating,
               ),
-            ChatInputBar(
-              controller: _messageController,
-              onSend: chat.isLoading || _attachmentError != null
-                  ? null
-                  : _onSendTapped,
-              onPickAttachment: _pickAttachment,
-              onRemoveAttachment: _removeAttachment,
-              onStartVoice: _startVoiceCall,
-              voiceTooltip: voiceTooltip,
-              isVoiceCallActive: voiceCall.isCallActive,
-              attachment: _attachment,
-              attachmentPreviewBytes: _attachmentPreviewBytes,
-              attachmentName: _attachmentName,
-              attachmentSize: _attachmentSize,
-              attachmentError: _attachmentError,
-              isLoading: chat.isLoading,
-            ),
-          ],
+            ],
+          ),
         ),
+      );
+    }
+
+    final profileController = widget.profileController;
+    if (profileController == null) {
+      return buildScaffold(settingsUpdating: false);
+    }
+    return ListenableBuilder(
+      listenable: profileController,
+      builder: (context, _) => buildScaffold(
+        settingsUpdating: profileController.isUpdatingAssistantSettings,
       ),
     );
   }

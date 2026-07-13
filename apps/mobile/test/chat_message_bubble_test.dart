@@ -46,30 +46,9 @@ void main() {
     expect(decoration.border, isNull);
   });
 
-  testWidgets('long assistant replies collapse with Show more', (tester) async {
-    final longText = List.generate(
-      12,
-      (index) => 'Assistant insight line ${index + 1} with enough words to wrap.',
-    ).join('\n');
-
-    await tester.pumpWidget(
-      wrapWithL10nScaffold(
-        SizedBox(
-          width: 320,
-          child: ChatMessageBubble(text: longText),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Show more'), findsOneWidget);
-    expect(find.text('Show less'), findsNothing);
-  });
-
-  testWidgets('Show more expands the assistant reply', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(480, 1400));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
+  testWidgets('long assistant replies show full text without Show more', (
+    tester,
+  ) async {
     final longText = List.generate(
       12,
       (index) => 'Assistant insight line ${index + 1} with enough words to wrap.',
@@ -87,30 +66,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Show more'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Show less'), findsOneWidget);
+    expect(find.text('Show more'), findsNothing);
+    expect(find.text('Show less'), findsNothing);
     expect(find.textContaining('Assistant insight line 12'), findsOneWidget);
   });
 
-  testWidgets('short assistant replies do not show Show more', (tester) async {
-    await tester.pumpWidget(
-      wrapWithL10nScaffold(
-        const SizedBox(
-          width: 320,
-          child: ChatMessageBubble(text: 'Short Rex reply.'),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Show more'), findsNothing);
-  });
-
-  testWidgets('streaming assistant replies stay expanded while streaming', (
-    tester,
-  ) async {
+  testWidgets('streaming assistant replies show full text', (tester) async {
     await tester.binding.setSurfaceSize(const Size(480, 1400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -135,6 +96,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Show more'), findsNothing);
+    expect(find.textContaining('Streaming insight line 12'), findsOneWidget);
   });
 }
 

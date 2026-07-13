@@ -36,6 +36,8 @@ final class ProfileController extends ChangeNotifier {
 
   ProfileRecord? profile;
   bool isLoading = false;
+  /// True while companion Auto Suggestions mode/settings are persisting.
+  bool isUpdatingAssistantSettings = false;
   String? errorMessage;
   String? _cachedOnboardingName;
 
@@ -199,6 +201,7 @@ final class ProfileController extends ChangeNotifier {
       return;
     }
     isLoading = true;
+    isUpdatingAssistantSettings = true;
     errorMessage = null;
     notifyListeners();
 
@@ -210,6 +213,7 @@ final class ProfileController extends ChangeNotifier {
       rethrow;
     } finally {
       isLoading = false;
+      isUpdatingAssistantSettings = false;
       notifyListeners();
     }
   }

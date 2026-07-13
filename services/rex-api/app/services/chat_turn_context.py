@@ -4,9 +4,9 @@ from typing import Optional, Protocol
 from fastapi import UploadFile
 
 from app.services.assistant_proposal_settings import (
+    SETTINGS_LOAD_MISSING_AUTH,
     AssistantProposalSettings,
-    fail_closed_proposal_settings,
-    resolve_assistant_proposal_settings,
+    ProposalSettingsResolution,
 )
 from app.services.assistant_settings_repository import AssistantSettingsRepository
 from app.services.chat_context_service import ChatContextService
@@ -104,6 +104,7 @@ class ChatTurnContext:
     accountability_signals: list
     user_message: dict
     proposal_settings: AssistantProposalSettings
+    proposal_settings_resolution: ProposalSettingsResolution
 
 
 class ChatTurnContextService:
@@ -168,7 +169,7 @@ class ChatTurnContextService:
             message_for_storage,
         )
 
-        proposal_settings = await self._load_proposal_settings()
+        resolution = await self._load_proposal_settings_resolution()
 
         return ChatTurnContext(
             conversation_id=conversation_id,
@@ -180,10 +181,11 @@ class ChatTurnContextService:
             time_context=time_context,
             accountability_signals=accountability_signals,
             user_message=user_message,
-            proposal_settings=proposal_settings,
+            proposal_settings=resolution.settings,
+            proposal_settings_resolution=resolution,
         )
 
-    async def _load_proposal_settings(self) -> AssistantProposalSettings:
+    async def _load_proposal_settings_resolution(self) -> ProposalSettingsResolution:
         user_id = getattr(self.memory_service, "user_id", None)
         access_token = getattr(self.memory_service, "access_token", None)
         if user_id and access_token:
@@ -191,10 +193,16 @@ class ChatTurnContextService:
                 user_id=user_id,
                 access_token=access_token,
             )
-            return await repository.fetch_proposal_settings()
-        # Tests / missing auth: empty profile + optional env override (not Card invent
-        # from a load failure — that path is fail-closed in the repository).
-        return resolve_assistant_proposal_settings({})
+            return await repository.fetch_proposal_settings_resolution()
+        # Missing auth: fail closed for autos. Tests set REX_AUTO_PROPOSALS_MODE.
+        from app.services.assistant_proposal_settings import (
+            resolve_proposal_settings_resolution,
+        )
+
+        return resolve_proposal_settings_resolution(
+            {},
+            settings_load_status=SETTINGS_LOAD_MISSING_AUTH,
+        )
 
     async def existing_conversation_id(
         self,

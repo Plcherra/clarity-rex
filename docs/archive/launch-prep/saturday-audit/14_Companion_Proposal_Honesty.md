@@ -54,8 +54,9 @@
 | Piece | Location | Notes |
 | --- | --- | --- |
 | Modes | `assistant_proposal_settings.py` | `off` / `text` / `card` |
-| Profile load | `assistant_settings_repository.py` | Load fail → **Off** (fail-closed); empty profile still defaults to card via parse |
-| Env override | `resolve_assistant_proposal_settings` | Env may force Off; **never** forces Card/Text over profile Off; leave unset in prod |
+| Profile load | `assistant_settings_repository.py` | Load fail → **Off** (fail-closed); empty/`{}`/missing mode → **Off** (never silent Card). Explicit profile Off beats env Card/Text; env may override empty default for ops/tests |
+| Env override | `resolve_assistant_proposal_settings` | Env may force Off; **never** forces Card/Text over **explicit** profile Off; leave unset in prod |
+| Explicit vs auto | `allows_kind` | Gates **automatic** proposals only. Explicit commands (`goal_command_service`, “remember…”, “track this”) remain available under Off and still require confirmed writes |
 | Mobile save | `assistant_proposal_settings_sheet.dart` → `profiles.assistant_settings` | Persists + reloads Off |
 | Threads | `open_thread_turn_service.py` | Gates `allows_kind(threads)`; missing settings → fail-closed Off |
 | Goals | `conversational_plan_service.py` | Gates `allows_kind(goals)`; missing settings → fail-closed Off |
@@ -204,16 +205,20 @@ Device smoke: Auto suggestions = Off still produced confirm cards / asks.
 ### Phase B fix summary
 
 - Fail-closed on profile load error → Off (`fail_closed_proposal_settings`)
-- Env never forces Card/Text over profile Off; env Off remains kill-switch; leave unset in prod (`.env.example`)
-- Gate memory auto proposes when `!allows_kind(memory)`; service fallbacks use fail-closed Off instead of Card
+- Empty/`{}`/missing `auto_proposals_mode` → **Off** (never silent Card)
+- Explicit profile Off wins over env Card/Text; env may override empty default (ops/tests); env Off kill-switch remains
+- Gate **automatic** proposes with `allows_kind`; **explicit** commands stay available under Off
 - Off skips pending-write reminder ask/cards
-- Tests: Off habit/sleep/goal-ish → no offer phrase, no `write_proposals`; profile Off wins over env Card
+- Phase 0: per-turn proposal observability; await settings save + block chat/voice while persisting; remove Show more UI
+- Tests: Off habit/sleep/goal-ish → no ask/card; profile Off wins over env Card; explicit goal under Off; Off→Text→Card consecutive turns
 
 **Acceptance B:**
 
 - [x] Off + lifestyle / goal chat → **no ask, no card** (pytest matrix)
 - [ ] Wide `/app/` same (manual smoke)
 - [x] Matrix tests green for Off
+- [x] Explicit goal command still proposes under Off
+- [x] Off → Text → Card consecutive-turn resolution
 
 ---
 

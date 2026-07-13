@@ -7,9 +7,13 @@ from typing import Any, Optional
 
 from app.config import Settings, get_settings
 from app.services.assistant_proposal_settings import (
+    SETTINGS_LOAD_EMPTY_PROFILE,
+    SETTINGS_LOAD_FAIL_CLOSED,
+    SETTINGS_LOAD_OK,
     AssistantProposalSettings,
-    fail_closed_proposal_settings,
-    resolve_assistant_proposal_settings,
+    ProposalSettingsResolution,
+    fail_closed_resolution,
+    resolve_proposal_settings_resolution,
 )
 from app.services.memory_service import MemoryServiceError
 from app.services.supabase_memory_transport import SupabaseMemoryTransport
@@ -30,6 +34,9 @@ class AssistantSettingsRepository(SupabaseMemoryTransport):
         self.settings = settings or get_settings()
 
     async def fetch_proposal_settings(self) -> AssistantProposalSettings:
+        return (await self.fetch_proposal_settings_resolution()).settings
+
+    async def fetch_proposal_settings_resolution(self) -> ProposalSettingsResolution:
         try:
             rows = await self._list_records(
                 "profiles",
@@ -43,19 +50,42 @@ class AssistantSettingsRepository(SupabaseMemoryTransport):
                 self.user_id,
                 error,
             )
-            # Fail closed: never invent Card autos when profile load fails.
-            return fail_closed_proposal_settings()
+            return fail_closed_resolution(
+                settings_load_status=SETTINGS_LOAD_FAIL_CLOSED,
+                settings=self.settings,
+            )
         except Exception as error:
             LOGGER.warning(
                 "assistant_settings_load_failed user_id=%s error_class=%s",
                 self.user_id,
                 error.__class__.__name__,
             )
-            return fail_closed_proposal_settings()
+            return fail_closed_resolution(
+                settings_load_status=SETTINGS_LOAD_FAIL_CLOSED,
+                settings=self.settings,
+            )
 
         profile_settings: dict[str, Any] = {}
         if rows:
             raw = rows[0].get("assistant_settings")
             if isinstance(raw, dict):
                 profile_settings = raw
-        return resolve_assistant_proposal_settings(profile_settings)
+
+        if not profile_settings:
+            return resolve_proposal_settings_resolution(
+                {},
+                settings=self.settings,
+                settings_load_status=SETTINGS_LOAD_EMPTY_PROFILE,
+            )
+
+        mode = profile_settings.get("auto_proposals_mode")
+        load_status = (
+            SETTINGS_LOAD_OK
+            if isinstance(mode, str) and mode.strip()
+            else SETTINGS_LOAD_EMPTY_PROFILE
+        )
+        return resolve_proposal_settings_resolution(
+            profile_settings,
+            settings=self.settings,
+            settings_load_status=load_status,
+        )
