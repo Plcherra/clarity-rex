@@ -56,6 +56,9 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
   int _manageCategoriesRequest = 0;
   DashboardInsightAnchor? _pendingDashboardAnchor;
   int _handledDashboardDeepLinkToken = 0;
+  /// Tracks prior lifecycle so screenshot/Control Center (inactive→resumed)
+  /// does not hard-reload finance like a true background return.
+  AppLifecycleState? _lastLifecycleState;
 
   @override
   void initState() {
@@ -77,7 +80,14 @@ class _HomeShellState extends ConsumerState<HomeShell> with WidgetsBindingObserv
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    final previous = _lastLifecycleState;
+    _lastLifecycleState = state;
+    // iOS screenshots briefly go inactive→resumed without pausing. Only refresh
+    // after a real background (paused/hidden) so Dashboard does not flash-load.
+    final returningFromBackground =
+        previous == AppLifecycleState.paused ||
+        previous == AppLifecycleState.hidden;
+    if (state == AppLifecycleState.resumed && returningFromBackground) {
       widget.ui.notifyAll();
     }
   }

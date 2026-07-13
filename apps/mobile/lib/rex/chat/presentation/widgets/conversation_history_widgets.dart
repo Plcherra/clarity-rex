@@ -86,6 +86,7 @@ class ConversationSearchResultTile extends StatelessWidget {
       l10n,
       result,
       maxLength: maxChars,
+      ellipsis: !native,
     );
     final timestamp = timestampLabel(
       l10n,
@@ -96,6 +97,7 @@ class ConversationSearchResultTile extends StatelessWidget {
     final horizontal = native ? listPad.left : RexUiTokens.space16;
     final vertical = native ? listPad.top : RexUiTokens.space12;
     final previewLines = ClarityNativeLayout.listPreviewMaxLines(context);
+    final showPreview = previewLines > 0;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -136,7 +138,10 @@ class ConversationSearchResultTile extends StatelessWidget {
                           child: Text(
                             title,
                             maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                            overflow: native
+                                ? TextOverflow.fade
+                                : TextOverflow.ellipsis,
                             style: native
                                 ? ClarityNativeLayout.listTitle(context)
                                 : theme.textTheme.titleSmall?.copyWith(
@@ -160,22 +165,24 @@ class ConversationSearchResultTile extends StatelessWidget {
                         ),
                       ],
                     ),
-                    SizedBox(height: native ? 2 : RexUiTokens.space8),
-                    Text(
-                      result.preview.trim().isEmpty
-                          ? l10n.conversationHistoryMatchedConversation
-                          : result.preview,
-                      maxLines: previewLines,
-                      overflow: TextOverflow.ellipsis,
-                      style: native
-                          ? ClarityNativeLayout.listPreview(
-                              context,
-                            )?.copyWith(height: 1.25)
-                          : theme.textTheme.bodyMedium?.copyWith(
-                              color: colors.textSecondary,
-                              height: 1.35,
-                            ),
-                    ),
+                    if (showPreview) ...[
+                      SizedBox(height: native ? 2 : RexUiTokens.space8),
+                      Text(
+                        result.preview.trim().isEmpty
+                            ? l10n.conversationHistoryMatchedConversation
+                            : result.preview,
+                        maxLines: previewLines,
+                        overflow: TextOverflow.ellipsis,
+                        style: native
+                            ? ClarityNativeLayout.listPreview(
+                                context,
+                              )?.copyWith(height: 1.25)
+                            : theme.textTheme.bodyMedium?.copyWith(
+                                color: colors.textSecondary,
+                                height: 1.35,
+                              ),
+                      ),
+                    ],
                   ],
                 ),
               ),

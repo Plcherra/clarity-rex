@@ -188,15 +188,18 @@ final class ProfileActionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: theme.textTheme.titleSmall?.copyWith(
+                      style: (ClarityNativeLayout.active(context)
+                              ? theme.textTheme.bodyMedium
+                              : theme.textTheme.titleSmall)
+                          ?.copyWith(
                         color: color,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      maxLines: 2,
+                      maxLines: ClarityNativeLayout.active(context) ? 1 : 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: destructive

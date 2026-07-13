@@ -50,8 +50,11 @@ class _ConversationHistoryTileState extends State<ConversationHistoryTile> {
     final sidebarCompact = widget.compact;
     // Dense rows: phone native compact OR desktop sidebar — not card tiles.
     final dense = native || sidebarCompact;
-    // Phone: title + one preview line. Sidebar stays title-only.
-    final showPreview = native && !sidebarCompact;
+    // Phone: title-only (Knows/Goals density). Sidebar stays title-only.
+    final showPreview =
+        native &&
+        !sidebarCompact &&
+        ClarityNativeLayout.listPreviewMaxLines(context) > 0;
     final showGlyph = !dense;
     final showActions = !dense || _hovered || _menuOpen;
 
@@ -60,6 +63,8 @@ class _ConversationHistoryTileState extends State<ConversationHistoryTile> {
       l10n,
       widget.conversation,
       maxLength: maxChars,
+      // Soft clamp without "…" — TextOverflow.fade handles residual overflow.
+      ellipsis: !native,
     );
     final preview = conversationPreview(l10n, widget.conversation);
     final previewLines = ClarityNativeLayout.listPreviewMaxLines(context);
@@ -126,6 +131,7 @@ class _ConversationHistoryTileState extends State<ConversationHistoryTile> {
                             title: title,
                             timestamp: stamp,
                             isSelected: widget.isSelected,
+                            softOverflow: native,
                           )
                         : _CardContent(
                             title: title,
@@ -225,16 +231,28 @@ class _SidebarCompactContent extends StatelessWidget {
     required this.title,
     required this.timestamp,
     required this.isSelected,
+    this.softOverflow = false,
   });
 
   final String title;
   final String timestamp;
   final bool isSelected;
+  final bool softOverflow;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final titleStyle = softOverflow
+        ? ClarityNativeLayout.listTitle(
+            context,
+            selected: isSelected,
+          )?.copyWith(height: 1.2)
+        : theme.textTheme.bodyMedium?.copyWith(
+            color: colors.textPrimary,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            height: 1.2,
+          );
 
     return Row(
       children: [
@@ -242,25 +260,25 @@ class _SidebarCompactContent extends StatelessWidget {
           child: Text(
             title,
             maxLines: 1,
+            softWrap: false,
+            overflow:
+                softOverflow ? TextOverflow.fade : TextOverflow.ellipsis,
+            style: titleStyle,
+          ),
+        ),
+        if (timestamp.isNotEmpty) ...[
+          const SizedBox(width: RexUiTokens.space8),
+          Text(
+            timestamp,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.textPrimary,
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              height: 1.2,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colors.textMuted,
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
             ),
           ),
-        ),
-        const SizedBox(width: RexUiTokens.space8),
-        Text(
-          timestamp,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: colors.textMuted,
-            fontWeight: FontWeight.w600,
-            fontSize: 11,
-          ),
-        ),
+        ],
       ],
     );
   }

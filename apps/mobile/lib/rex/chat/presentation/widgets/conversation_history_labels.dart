@@ -9,33 +9,45 @@ const int kConversationTitleMaxLength = 48;
 String clampConversationTitle(
   String value, {
   int maxLength = kConversationTitleMaxLength,
+  bool ellipsis = true,
 }) {
   final cleaned = value.trim().replaceAll(RegExp(r'\s+'), ' ');
   if (cleaned.isEmpty || cleaned.length <= maxLength) {
     return cleaned;
   }
 
-  final hard = cleaned.substring(0, maxLength - 1);
+  final reserve = ellipsis ? 1 : 0;
+  final hard = cleaned.substring(0, maxLength - reserve);
   final breakAt = hard.lastIndexOf(' ');
   final truncated = breakAt > maxLength ~/ 2
       ? hard.substring(0, breakAt)
       : hard;
-  return '${truncated.replaceAll(RegExp(r'[.,;:\s]+$'), '')}…';
+  final trimmed = truncated.replaceAll(RegExp(r'[.,;:\s]+$'), '');
+  return ellipsis ? '$trimmed…' : trimmed;
 }
 
 String conversationTitle(
   AppLocalizations l10n,
   Conversation conversation, {
   int maxLength = kConversationTitleMaxLength,
+  bool ellipsis = true,
 }) {
   final title = conversation.title?.trim();
   if (title != null && title.isNotEmpty) {
-    return clampConversationTitle(title, maxLength: maxLength);
+    return clampConversationTitle(
+      title,
+      maxLength: maxLength,
+      ellipsis: ellipsis,
+    );
   }
 
   final preview = conversation.lastMessage?.content.trim();
   if (preview != null && preview.isNotEmpty) {
-    return clampConversationTitle(preview, maxLength: maxLength);
+    return clampConversationTitle(
+      preview,
+      maxLength: maxLength,
+      ellipsis: ellipsis,
+    );
   }
 
   return l10n.conversationHistoryNewConversation;
@@ -45,15 +57,24 @@ String conversationSearchResultTitle(
   AppLocalizations l10n,
   ConversationSearchResult result, {
   int maxLength = kConversationTitleMaxLength,
+  bool ellipsis = true,
 }) {
   final title = result.conversationTitle?.trim();
   if (title != null && title.isNotEmpty) {
-    return clampConversationTitle(title, maxLength: maxLength);
+    return clampConversationTitle(
+      title,
+      maxLength: maxLength,
+      ellipsis: ellipsis,
+    );
   }
 
   final message = result.message?.content.trim();
   if (message != null && message.isNotEmpty) {
-    return clampConversationTitle(message, maxLength: maxLength);
+    return clampConversationTitle(
+      message,
+      maxLength: maxLength,
+      ellipsis: ellipsis,
+    );
   }
 
   return l10n.commonConversation;

@@ -210,7 +210,7 @@ void main() {
 
     expect(pageGutterNative, 10);
     expect(pageGutterWide, clarityDesktopContentGutter);
-    expect(titleCharsNative, 40);
-    expect(previewLinesNative, 1);
+    expect(titleCharsNative, 28);
+    expect(previewLinesNative, 0);
   });
 }

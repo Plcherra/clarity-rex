@@ -21,8 +21,10 @@ abstract final class ClarityNativeLayout {
   static const double _listRowPaddingH = 10;
   static const double _listRowPaddingV = 8;
   static const double _listRowGap = 0;
-  static const int _listTitleMaxChars = 40;
-  static const int _listPreviewMaxLines = 1;
+  /// Short enough for phone Chats title-only rows without ellipsis clutter.
+  static const int _listTitleMaxChars = 28;
+  /// Phone Chats: title-only (0). Other list surfaces may still show 1 line.
+  static const int _listPreviewMaxLines = 0;
   static const double _composerFieldMinHeight = 46;
   static const double _composerFieldPaddingV = 10;
   /// Matches [pageGutter] / list row H so composer aligns with Chats list.

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/l10n/app_l10n.dart';
+import '../../../core/layout/clarity_native_layout.dart';
 import 'package:clarity/features/usage_admin/presentation/owner_usage_profile_entry.dart';
 import '../application/locale_controller.dart';
 import '../application/profile_controller.dart';
@@ -142,6 +143,9 @@ class ProfileDesktopSections extends StatelessWidget {
 }
 
 /// Compact single-column profile settings body.
+///
+/// Phone layout: fewer section headers (no label that repeats the only row
+/// title), one Preferences group for appearance/language/insights.
 class ProfileCompactSections extends StatelessWidget {
   const ProfileCompactSections({
     super.key,
@@ -172,6 +176,10 @@ class ProfileCompactSections extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final profile = profileController.profile;
+    final sectionGap = ClarityNativeLayout.active(context)
+        ? ClarityNativeLayout.sectionGap(context)
+        : 18.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -195,7 +203,7 @@ class ProfileCompactSections extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: sectionGap),
         ProfileSectionLabel(l10n.profileRexVoiceSection),
         const SizedBox(height: 8),
         ProfileActionGroup(
@@ -209,15 +217,15 @@ class ProfileCompactSections extends StatelessWidget {
           ],
         ),
         const OwnerUsageProfileEntry(),
-        const SizedBox(height: 18),
-        ProfileSectionLabel(l10n.profileAppearance),
+        SizedBox(height: sectionGap),
+        ProfileSectionLabel(l10n.commonPreferences),
         const SizedBox(height: 8),
-        ListenableBuilder(
-          listenable: themeModeController,
-          builder: (context, _) {
-            return ProfileActionGroup(
-              children: [
-                ProfileActionTile(
+        ProfileActionGroup(
+          children: [
+            ListenableBuilder(
+              listenable: themeModeController,
+              builder: (context, _) {
+                return ProfileActionTile(
                   icon: Icons.contrast_rounded,
                   title: l10n.profileAppearance,
                   subtitle: profileThemeModeLabel(
@@ -225,16 +233,20 @@ class ProfileCompactSections extends StatelessWidget {
                     themeModeController.themeMode,
                   ),
                   onTap: onOpenAppearance,
-                ),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 18),
-        ProfileSectionLabel(l10n.profileProactiveInsightsTitle),
-        const SizedBox(height: 8),
-        ProfileActionGroup(
-          children: [
+                );
+              },
+            ),
+            ListenableBuilder(
+              listenable: localeController,
+              builder: (context, _) {
+                return ProfileActionTile(
+                  icon: Icons.translate_rounded,
+                  title: l10n.profileLanguage,
+                  subtitle: localeController.label,
+                  onTap: onOpenLanguage,
+                );
+              },
+            ),
             ProfileProactiveInsightsTile(
               enabled: profile?.proactiveInsightsEnabled ?? false,
               isLoading: profileController.isLoading,
@@ -257,28 +269,8 @@ class ProfileCompactSections extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 18),
-        ProfileSectionLabel(l10n.profileLanguage),
-        const SizedBox(height: 8),
-        ListenableBuilder(
-          listenable: localeController,
-          builder: (context, _) {
-            return ProfileActionGroup(
-              children: [
-                ProfileActionTile(
-                  icon: Icons.translate_rounded,
-                  title: l10n.profileLanguage,
-                  subtitle: localeController.label,
-                  onTap: onOpenLanguage,
-                ),
-              ],
-            );
-          },
-        ),
         if (onSignOut != null) ...[
-          const SizedBox(height: 18),
-          ProfileSectionLabel(l10n.profileSessionSection),
-          const SizedBox(height: 8),
+          SizedBox(height: sectionGap),
           ProfileActionGroup(
             children: [
               ProfileActionTile(
@@ -311,14 +303,32 @@ class ProfileProactiveInsightsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final native = ClarityNativeLayout.active(context);
+    final pad = native
+        ? ClarityNativeLayout.listRowPadding(context)
+        : const EdgeInsets.symmetric(horizontal: 16);
+
     return SwitchListTile.adaptive(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      contentPadding: pad,
       secondary: Icon(
         Icons.notifications_active_outlined,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72),
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
       ),
-      title: Text(l10n.profileProactiveInsightsTitle),
-      subtitle: Text(l10n.profileProactiveInsightsSubtitle),
+      title: Text(
+        l10n.profileProactiveInsightsTitle,
+        style: (native ? theme.textTheme.bodyMedium : theme.textTheme.titleSmall)
+            ?.copyWith(fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text(
+        l10n.profileProactiveInsightsSubtitle,
+        maxLines: native ? 2 : 4,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          height: 1.25,
+        ),
+      ),
       value: enabled,
       onChanged: isLoading ? null : onChanged,
     );

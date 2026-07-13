@@ -206,15 +206,29 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                               ),
                         ),
                       ),
-                      FilledButton.tonalIcon(
-                        onPressed: state.isLoading ? null : _newConversation,
-                        icon: const Icon(Icons.add_rounded, size: 18),
-                        label: Text(l10n.conversationListNewChat),
-                        style: FilledButton.styleFrom(
+                      if (native)
+                        IconButton(
+                          onPressed:
+                              state.isLoading ? null : _newConversation,
+                          tooltip: l10n.conversationListNewConversationTooltip,
                           visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          iconSize: 22,
+                          color: colors.accent,
+                          icon: const Icon(Icons.add_rounded),
+                        )
+                      else
+                        FilledButton.tonalIcon(
+                          onPressed:
+                              state.isLoading ? null : _newConversation,
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: Text(l10n.conversationListNewChat),
+                          style: FilledButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                            ),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -240,7 +254,11 @@ class _ConversationListPageState extends ConsumerState<ConversationListPage>
                       onSubmitted: _submitSearch,
                       onClear: _clearSearch,
                     ),
-                    const SizedBox(height: RexUiTokens.space12),
+                    SizedBox(
+                      height: native
+                          ? RexUiTokens.space8
+                          : RexUiTokens.space12,
+                    ),
                     ConversationListDateFilters(
                       filter: state.dateFilter,
                       onFilterChanged: _setDateFilter,

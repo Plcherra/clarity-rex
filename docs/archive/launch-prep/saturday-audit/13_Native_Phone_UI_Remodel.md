@@ -308,7 +308,17 @@ After F3 looks right → resume plan 02 C4 screenshots / A116; then plan 05 devi
 | **C** | Chats dense list + search align + title clamp | **DONE** (2026-07-12) — native dense title+1-line preview via `ClarityNativeLayout.active`; search H pad == list row; wide sidebar unchanged; Chats sub-tab kept |
 | **D** | Composer + transcript (no fill) | **DONE** (2026-07-12) — kill pill fill; native minHeight 46 + fieldPadV 10; chrome H == pageGutter; transcript pad uses pageGutter; confirm stays inline |
 | **E** | Knows / Goals / Overview / Profile | **DONE** (2026-07-12) — pageGutter + list/card tokens on native; wide pads preserved; memory/accountability extracts |
-| **F** | Tests + plan 02 F3 notes + iPhone re-smoke | **TODO** |
+| **F** | Tests + plan 02 F3 notes + iPhone re-smoke | **TODO** (device smoke in progress) |
+| **G** | Smoke follow-ups (screenshot refresh, Chats chrome, Profile) | **IN PROGRESS** (2026-07-13) |
+
+### Phase G — Smoke follow-ups (from device feedback)
+
+| Step | Work | Status |
+| --- | --- | --- |
+| G1 | Dashboard: do not reload on screenshot (`inactive→resumed`); only refresh after `paused`/`hidden` | DONE |
+| G2 | Chats: Knows-like search/chips; `+` icon not big New chat; title-only rows; shorter titles (28, no `…`) | DONE |
+| G3 | Profile: fewer duplicate section headers; Preferences group; calmer tiles | DONE |
+| G4 | Re-smoke G1–G3 on iPhone; then finish Phase F docs | TODO |
 
 ---
 

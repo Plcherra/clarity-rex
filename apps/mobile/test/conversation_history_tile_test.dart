@@ -37,11 +37,19 @@ void main() {
     expect(capped.endsWith('…'), isTrue);
   });
 
+  test('clampConversationTitle can omit ellipsis for phone display', () {
+    final long =
+        'This is a very long conversation title that should not crowd the sidebar forever and ever';
+    final capped = clampConversationTitle(long, maxLength: 28, ellipsis: false);
+    expect(capped.length, lessThanOrEqualTo(28));
+    expect(capped.endsWith('…'), isFalse);
+  });
+
   test('clampConversationTitle respects native listTitleMaxChars', () {
     final long =
         'This is a very long conversation title that should not crowd the sidebar forever and ever';
-    final capped = clampConversationTitle(long, maxLength: 40);
-    expect(capped.length, lessThanOrEqualTo(40));
+    final capped = clampConversationTitle(long, maxLength: 28);
+    expect(capped.length, lessThanOrEqualTo(28));
     expect(capped.endsWith('…'), isTrue);
   });
 
@@ -98,7 +106,7 @@ void main() {
     expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
   });
 
-  testWidgets('native compact tile is dense with one-line preview, no glyph', (
+  testWidgets('native compact tile is title-only dense, no glyph', (
     tester,
   ) async {
     expect(kIsWeb, isFalse);
@@ -149,17 +157,12 @@ void main() {
       ),
     );
 
-    expect(titleMaxChars, 40);
-    expect(previewMaxLines, 1);
+    expect(titleMaxChars, 28);
+    expect(previewMaxLines, 0);
     expect(listPadH, 10);
     expect(find.text('Night routine'), findsOneWidget);
-    expect(find.text('Help me think through tonight.'), findsOneWidget);
+    expect(find.text('Help me think through tonight.'), findsNothing);
     expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsNothing);
-
-    final preview = tester.widget<Text>(
-      find.text('Help me think through tonight.'),
-    );
-    expect(preview.maxLines, 1);
   });
 
   testWidgets('wide card tile keeps glyph and two-line preview', (tester) async {

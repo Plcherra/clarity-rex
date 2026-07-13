@@ -40,28 +40,53 @@ class ConversationListSearchField extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
     final l10n = context.l10n;
+    final native = ClarityNativeLayout.active(context);
+    final textStyle = (native ? theme.textTheme.bodySmall : theme.textTheme.bodyLarge)
+        ?.copyWith(color: colors.textPrimary);
+    final hintStyle = (native ? theme.textTheme.bodySmall : theme.textTheme.bodyLarge)
+        ?.copyWith(color: colors.textMuted);
+
     return TextField(
       controller: controller,
       onSubmitted: onSubmitted,
       textInputAction: TextInputAction.search,
-      style: theme.textTheme.bodyLarge?.copyWith(color: colors.textPrimary),
+      style: textStyle,
+      cursorColor: colors.accent,
       decoration: InputDecoration(
         hintText: l10n.conversationListSearchHint,
-        hintStyle: theme.textTheme.bodyLarge?.copyWith(color: colors.textMuted),
-        prefixIcon: Icon(Icons.search_rounded, color: colors.textSecondary),
+        hintStyle: hintStyle,
+        prefixIcon: Icon(
+          Icons.search_rounded,
+          size: native ? 18 : 24,
+          color: colors.textSecondary,
+        ),
+        prefixIconConstraints: native
+            ? const BoxConstraints(minWidth: 36, minHeight: 36)
+            : null,
         suffixIcon: isSearching
-            ? const Padding(
-                padding: EdgeInsets.all(14),
-                child: ClarityInlineLoader(size: 18, strokeWidth: 2),
+            ? Padding(
+                padding: EdgeInsets.all(native ? 10 : 14),
+                child: const ClarityInlineLoader(size: 18, strokeWidth: 2),
               )
             : IconButton(
                 tooltip: l10n.conversationListClearSearchTooltip,
                 onPressed: onClear,
+                iconSize: native ? 18 : 24,
+                visualDensity: native
+                    ? VisualDensity.compact
+                    : VisualDensity.standard,
                 icon: const Icon(Icons.close_rounded),
                 color: colors.textSecondary,
               ),
         filled: true,
         fillColor: colors.surface,
+        isDense: native,
+        contentPadding: native
+            ? const EdgeInsets.symmetric(
+                horizontal: RexUiTokens.space8,
+                vertical: RexUiTokens.space4,
+              )
+            : null,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
           borderSide: BorderSide.none,
@@ -241,21 +266,35 @@ class ConversationListFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.clarityColors;
+    final native = ClarityNativeLayout.active(context);
     final foreground = selected
         ? (theme.brightness == Brightness.dark ? Colors.black : Colors.white)
         : colors.textSecondary;
     return Padding(
       padding: const EdgeInsets.only(right: RexUiTokens.space8),
       child: ActionChip(
-        avatar: icon == null ? null : Icon(icon, size: 16, color: foreground),
+        avatar: icon == null
+            ? null
+            : Icon(icon, size: native ? 14 : 16, color: foreground),
         label: Text(label),
-        labelStyle: theme.textTheme.labelLarge?.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w800,
-        ),
+        labelStyle: (native ? theme.textTheme.labelSmall : theme.textTheme.labelLarge)
+            ?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w800,
+            ),
         backgroundColor: selected
             ? colors.accent
             : colors.surfaceElevated.withValues(alpha: 0.72),
+        visualDensity: native
+            ? const VisualDensity(horizontal: 0, vertical: -2)
+            : VisualDensity.standard,
+        materialTapTargetSize: native
+            ? MaterialTapTargetSize.shrinkWrap
+            : MaterialTapTargetSize.padded,
+        labelPadding: native
+            ? const EdgeInsets.symmetric(horizontal: 8)
+            : null,
+        padding: native ? EdgeInsets.zero : null,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(RexUiTokens.radiusPill),
         ),
