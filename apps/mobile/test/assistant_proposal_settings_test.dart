@@ -40,9 +40,17 @@ void main() {
     expect(settings.financeEditsEnabled, isTrue);
   });
 
-  test('round-trips finance edits toggle', () {
-    const original = AssistantProposalSettings(financeEditsEnabled: false);
+  test('round-trips off mode profile json', () {
+    const original = AssistantProposalSettings(
+      mode: AssistantProposalSettings.off,
+      threads: true,
+      goals: true,
+      memory: true,
+    );
     final restored = AssistantProposalSettings.fromJson(original.toJson());
-    expect(restored.financeEditsEnabled, isFalse);
+    expect(restored.mode, AssistantProposalSettings.off);
+    expect(restored.enabled, isFalse);
+    expect(restored.usesConfirmCards, isFalse);
+    expect(restored.toJson()['auto_proposals_mode'], 'off');
   });
 }

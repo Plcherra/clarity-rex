@@ -7,6 +7,7 @@ from typing import Optional
 from app.services.assistant_proposal_settings import (
     AssistantProposalSettings,
     PROPOSAL_KIND_MEMORY,
+    fail_closed_proposal_settings,
 )
 
 
@@ -22,7 +23,7 @@ class MemoryTurnHandleMixin:
         pending_action=None,
         proposal_settings: Optional[AssistantProposalSettings] = None,
     ) -> Optional[dict]:
-        settings = proposal_settings or AssistantProposalSettings()
+        settings = proposal_settings or fail_closed_proposal_settings()
         allow_auto_memory = settings.allows_kind(PROPOSAL_KIND_MEMORY)
         correction_turn = await self._try_apply_direct_correction(
             message,
@@ -62,6 +63,9 @@ class MemoryTurnHandleMixin:
                         conversation_id=conversation_id,
                         user_message=user_message,
                     )
+                if not allow_auto_memory:
+                    # Off: no ask, no card — including contextual "yes save that".
+                    return None
                 if self.memory_intent_service.is_contextual_memory_save_request(
                     message
                 ):
@@ -73,8 +77,6 @@ class MemoryTurnHandleMixin:
                         proposal_settings=settings,
                         explicit_request=True,
                     )
-                if not allow_auto_memory:
-                    return None
             elif self.memory_intent_service.needs_contextual_location_clarification(
                 message,
                 conversation_history=conversation_history,
@@ -84,6 +86,10 @@ class MemoryTurnHandleMixin:
                     user_message=user_message,
                 )
         if intent is None:
+            return None
+
+        if not allow_auto_memory:
+            # Off / disabled memory kind: never auto-propose simple facts.
             return None
 
         relationship_gate = await self._gate_relationship_person_intent(

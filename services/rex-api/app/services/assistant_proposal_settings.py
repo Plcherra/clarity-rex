@@ -67,6 +67,11 @@ class AssistantProposalSettings:
         }
 
 
+def fail_closed_proposal_settings() -> AssistantProposalSettings:
+    """Autos Off when settings cannot be loaded — never fail open to Card."""
+    return AssistantProposalSettings(mode=AUTO_PROPOSALS_OFF)
+
+
 def _coerce_bool(value: Any, *, default: bool) -> bool:
     if isinstance(value, bool):
         return value
@@ -105,28 +110,39 @@ def resolve_assistant_proposal_settings(
     *,
     settings: Optional[Settings] = None,
 ) -> AssistantProposalSettings:
+    """Resolve profile mode, then optional env override.
+
+    Policy: profile Off always wins over env Card/Text. Env may force Off
+    (kill-switch). Leave ``REX_AUTO_PROPOSALS_MODE`` unset in production so
+    the user profile is the source of truth.
+    """
     resolved = parse_assistant_settings(profile_settings)
     env = settings or get_settings()
     env_mode = (env.rex_auto_proposals_mode or "").strip().lower()
-    if env_mode in _VALID_MODES:
-        resolved = AssistantProposalSettings(
-            mode=env_mode,
-            threads=(
-                env.rex_auto_proposals_threads
-                if env.rex_auto_proposals_threads is not None
-                else resolved.threads
-            ),
-            goals=(
-                env.rex_auto_proposals_goals
-                if env.rex_auto_proposals_goals is not None
-                else resolved.goals
-            ),
-            memory=(
-                env.rex_auto_proposals_memory
-                if env.rex_auto_proposals_memory is not None
-                else resolved.memory
-            ),
-            response_style=resolved.response_style,
-            finance_edits_enabled=resolved.finance_edits_enabled,
-        )
-    return resolved
+    if env_mode not in _VALID_MODES:
+        return resolved
+
+    # Never force Card/Text over an explicit user Off.
+    if resolved.mode == AUTO_PROPOSALS_OFF and env_mode != AUTO_PROPOSALS_OFF:
+        return resolved
+
+    return AssistantProposalSettings(
+        mode=env_mode,
+        threads=(
+            env.rex_auto_proposals_threads
+            if env.rex_auto_proposals_threads is not None
+            else resolved.threads
+        ),
+        goals=(
+            env.rex_auto_proposals_goals
+            if env.rex_auto_proposals_goals is not None
+            else resolved.goals
+        ),
+        memory=(
+            env.rex_auto_proposals_memory
+            if env.rex_auto_proposals_memory is not None
+            else resolved.memory
+        ),
+        response_style=resolved.response_style,
+        finance_edits_enabled=resolved.finance_edits_enabled,
+    )

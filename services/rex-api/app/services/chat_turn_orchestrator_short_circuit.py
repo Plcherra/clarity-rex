@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.chat_turn_observability import ChatTurnTrace
 from app.services.chat_turn_orchestrator_support import (
     finish_short_circuit,
@@ -371,7 +370,12 @@ async def _try_remind_pending_durable_write(
     if proposal.write_kind == "delete":
         return None
 
-    settings = proposal_settings or AssistantProposalSettings()
+    from app.services.assistant_proposal_settings import fail_closed_proposal_settings
+
+    settings = proposal_settings or fail_closed_proposal_settings()
+    # Off: no ask and no card — including reminders for stale pending autos.
+    if not settings.auto_proposals_enabled():
+        return None
     show_cards = settings.auto_proposals_enabled()
     if show_cards:
         reminder = (

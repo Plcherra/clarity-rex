@@ -21,6 +21,7 @@ from app.services.open_thread_eligibility import (
 from app.services.assistant_proposal_settings import (
     AssistantProposalSettings,
     PROPOSAL_KIND_THREADS,
+    fail_closed_proposal_settings,
 )
 
 
@@ -52,7 +53,7 @@ class OpenThreadTurnService:
         pending_action: Any = None,
         proposal_settings: Optional[AssistantProposalSettings] = None,
     ) -> Optional[dict]:
-        settings = proposal_settings or AssistantProposalSettings()
+        settings = proposal_settings or fail_closed_proposal_settings()
         if pending_action is not None:
             pending = (
                 pending_action

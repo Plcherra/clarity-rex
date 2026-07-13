@@ -13,7 +13,9 @@ Work files **in this sequence**. Within each file, work phases top-to-bottom.
 | Order | File | Theme | Why first / later |
 | ---: | --- | --- | --- |
 | 1 | [`01_Data_Integrity_and_Truth.md`](01_Data_Integrity_and_Truth.md) | Truth rule, confirm cards, duplicates, audit integrity | Safety + data integrity first |
+| 1b | [`14_Companion_Proposal_Honesty.md`](14_Companion_Proposal_Honesty.md) | Auto suggestions Off, ask-before-card, Goal/thread titles | Companion trust — right after confirm honesty; before polish claims |
 | 2 | [`02_Chat_and_Knows_UI_Upgrade.md`](02_Chat_and_Knows_UI_Upgrade.md) | Cross-platform UI: shared density/canon, Android, iOS, web marketing + `/app/` | Product feel after truth; platform honesty |
+| 2b | [`13_Native_Phone_UI_Remodel.md`](13_Native_Phone_UI_Remodel.md) | Native phone full-bleed / density | Phone feel; does not replace 14 |
 | 3 | [`03_Observability_and_Crash_Reporting.md`](03_Observability_and_Crash_Reporting.md) | Sentry / crash + critical events | Blind launch is unacceptable |
 | 4 | [`04_Production_Security_and_Config.md`](04_Production_Security_and_Config.md) | Auth bypass, secrets, logging, JWT, validation | Misconfig = catastrophic |
 | 5 | [`05_Reliability_and_Error_Handling.md`](05_Reliability_and_Error_Handling.md) | Offline confirm, stream failures, retries | User trust under bad networks |
@@ -35,6 +37,8 @@ Work files **in this sequence**. Within each file, work phases top-to-bottom.
 | **Do not claim** | Spanish parity, enterprise offline reliability, voice-while-walking on iOS, full web/desktop parity, file → Knows import (unless 08 done) |
 | **Defer** | Files 09–11 polish and refactor unless Spanish/web are launch marketing claims; file 08 unless marketing “import notes into Knows” |
 | **UI polish (02)** | A–E code largely landed (D marketing honesty done; A116 screenshot refresh open). Run Phase F smoke before claiming polish. Not a blocker for truth/security |
+| **Phone remodel (13)** | A–E + G smoke tweaks landed; F close-out optional. Does **not** fix Auto suggestions Off / proposal spam |
+| **Companion proposals (14)** | Off means Off, ask-before-card, clean Goal/thread titles — do before claiming calm companion behavior |
 | **File import (08)** | Not a Saturday must-pass; place after voice so confirm/truth stack is stable; before Spanish so new copy is localized |
 
 ---

@@ -27,6 +27,7 @@ from app.services.save_intent_guards import user_declined_plan_save_recently
 from app.services.assistant_proposal_settings import (
     AssistantProposalSettings,
     PROPOSAL_KIND_GOALS,
+    fail_closed_proposal_settings,
 )
 
 
@@ -57,7 +58,7 @@ class ConversationalPlanService:
         pending_action=None,
         proposal_settings: Optional[AssistantProposalSettings] = None,
     ) -> Optional[dict]:
-        settings = proposal_settings or AssistantProposalSettings()
+        settings = proposal_settings or fail_closed_proposal_settings()
         if not settings.allows_kind(PROPOSAL_KIND_GOALS):
             return None
 

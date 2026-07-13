@@ -182,6 +182,7 @@ async def test_open_thread_turn_service_offers_once_for_eligible_companion_topic
             "content": "I'm working on my citizenship application and it has been really stressful lately.",
         },
         conversation_history=[],
+        proposal_settings=AssistantProposalSettings(mode="text"),
     )
 
     assert result is not None
@@ -328,6 +329,7 @@ async def test_open_thread_turn_service_offers_close_or_replace_at_cap():
             "content": "I've been trying to figure out a better morning routine lately.",
         },
         conversation_history=[],
+        proposal_settings=AssistantProposalSettings(mode="text"),
     )
 
     assert result is not None

@@ -7,6 +7,7 @@ from app.services.assistant_proposal_settings import (
     PROPOSAL_KIND_THREADS,
     RESPONSE_STYLE_BALANCED,
     AssistantProposalSettings,
+    fail_closed_proposal_settings,
     parse_assistant_settings,
     resolve_assistant_proposal_settings,
 )
@@ -62,6 +63,14 @@ def test_allows_kind_respects_mode_and_toggles() -> None:
 
     off = AssistantProposalSettings(mode=AUTO_PROPOSALS_OFF)
     assert not off.allows_kind(PROPOSAL_KIND_THREADS)
+    assert not off.auto_proposals_enabled()
+
+
+def test_fail_closed_proposal_settings_is_off() -> None:
+    settings = fail_closed_proposal_settings()
+    assert settings.mode == AUTO_PROPOSALS_OFF
+    assert not settings.auto_proposals_enabled()
+    assert not settings.allows_kind(PROPOSAL_KIND_MEMORY)
 
 
 def test_env_override_auto_proposals_mode(monkeypatch) -> None:
@@ -74,4 +83,31 @@ def test_env_override_auto_proposals_mode(monkeypatch) -> None:
         settings=get_settings(),
     )
     assert settings.mode == AUTO_PROPOSALS_CARD
+    get_settings.cache_clear()
+
+
+def test_env_card_does_not_override_profile_off(monkeypatch) -> None:
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "card")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    settings = resolve_assistant_proposal_settings(
+        {"auto_proposals_mode": "off"},
+        settings=get_settings(),
+    )
+    assert settings.mode == AUTO_PROPOSALS_OFF
+    assert not settings.auto_proposals_enabled()
+    get_settings.cache_clear()
+
+
+def test_env_off_kill_switch_overrides_profile_card(monkeypatch) -> None:
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "off")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    settings = resolve_assistant_proposal_settings(
+        {"auto_proposals_mode": "card"},
+        settings=get_settings(),
+    )
+    assert settings.mode == AUTO_PROPOSALS_OFF
     get_settings.cache_clear()

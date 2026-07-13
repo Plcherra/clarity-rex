@@ -26,7 +26,8 @@ class Settings(BaseSettings):
     grok_timeout_seconds: int = 120
     rex_log_grok_prompt: bool = False
 
-    # Auto save/track proposals (dev override only): off | text | card
+    # Auto save/track proposals (dev/ops override only): off | text | card
+    # Leave unset in production. Profile Off always wins over env Card/Text.
     rex_auto_proposals_mode: Optional[str] = None
     rex_auto_proposals_threads: Optional[bool] = None
     rex_auto_proposals_goals: Optional[bool] = None

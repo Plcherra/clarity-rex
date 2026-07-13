@@ -114,7 +114,7 @@ async def get_pending_write_proposal(
         }
 
     from app.services.assistant_settings_repository import AssistantSettingsRepository
-    from app.services.assistant_proposal_settings import resolve_assistant_proposal_settings
+    from app.services.assistant_proposal_settings import fail_closed_proposal_settings
 
     user_id = getattr(memory_service, "user_id", None)
     access_token = getattr(memory_service, "access_token", None)
@@ -125,9 +125,9 @@ async def get_pending_write_proposal(
                 access_token=access_token,
             ).fetch_proposal_settings()
         except Exception:
-            settings = resolve_assistant_proposal_settings({})
+            settings = fail_closed_proposal_settings()
     else:
-        settings = resolve_assistant_proposal_settings({})
+        settings = fail_closed_proposal_settings()
 
     return pending_memory_changes(
         proposal=proposal,

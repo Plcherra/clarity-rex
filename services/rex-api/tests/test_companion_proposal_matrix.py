@@ -76,6 +76,66 @@ async def test_off_mode_skips_thread_offer_for_habit_message(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_off_mode_skips_plan_and_thread_for_goalish_and_sleep(monkeypatch):
+    """Phase B: Off → no ask phrase, no write_proposals on habit/goal-ish turns."""
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "off")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    chat_service = _chat_service(FakeMemoryService())
+
+    sleep = await chat_service.send_message(SLEEP_VENT)
+    assert THREAD_OFFER_PHRASE not in sleep["response"]
+    assert not ((sleep.get("memory_changes") or {}).get("write_proposals") or [])
+
+    habit = await chat_service.send_message(HABIT_THREAD)
+    assert THREAD_OFFER_PHRASE not in habit["response"]
+    assert not ((habit.get("memory_changes") or {}).get("write_proposals") or [])
+
+    goalish = await chat_service.send_message(
+        "I'm working on reaching $5k monthly income with location independent "
+        "work to support relocating to Europe."
+    )
+    assert THREAD_OFFER_PHRASE not in goalish["response"]
+    assert not ((goalish.get("memory_changes") or {}).get("write_proposals") or [])
+    assert "Want me to" not in goalish["response"]
+    get_settings.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_profile_off_wins_over_env_card_on_habit_turn(monkeypatch):
+    """Round-trip honesty: user Off must not be wiped by env Card."""
+    monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "card")
+    from app.config import get_settings
+    from app.services.assistant_proposal_settings import resolve_assistant_proposal_settings
+
+    get_settings.cache_clear()
+    effective = resolve_assistant_proposal_settings(
+        {"auto_proposals_mode": "off"},
+        settings=get_settings(),
+    )
+    assert effective.mode == "off"
+
+    memory = FakeTurnMemoryService()
+    store = FakeOpenThreadStore()
+    threads = OpenThreadService(store)
+    service = OpenThreadTurnService(
+        memory,
+        open_thread_service=threads,
+        durable_write_service=FakeDurableWriteService(),
+    )
+    result = await service.handle_turn(
+        HABIT_THREAD,
+        conversation_id="conversation-1",
+        user_message={"id": "user-1", "content": HABIT_THREAD},
+        conversation_history=[],
+        proposal_settings=effective,
+    )
+    assert result is None
+    get_settings.cache_clear()
+
+
+@pytest.mark.asyncio
 async def test_text_mode_offers_thread_for_habit_not_sleep_vent(monkeypatch):
     monkeypatch.setenv("REX_AUTO_PROPOSALS_MODE", "text")
     from app.config import get_settings

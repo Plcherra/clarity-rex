@@ -8,6 +8,7 @@ from typing import Any, Optional
 from app.config import Settings, get_settings
 from app.services.assistant_proposal_settings import (
     AssistantProposalSettings,
+    fail_closed_proposal_settings,
     resolve_assistant_proposal_settings,
 )
 from app.services.memory_service import MemoryServiceError
@@ -42,14 +43,15 @@ class AssistantSettingsRepository(SupabaseMemoryTransport):
                 self.user_id,
                 error,
             )
-            return resolve_assistant_proposal_settings({})
+            # Fail closed: never invent Card autos when profile load fails.
+            return fail_closed_proposal_settings()
         except Exception as error:
             LOGGER.warning(
                 "assistant_settings_load_failed user_id=%s error_class=%s",
                 self.user_id,
                 error.__class__.__name__,
             )
-            return resolve_assistant_proposal_settings({})
+            return fail_closed_proposal_settings()
 
         profile_settings: dict[str, Any] = {}
         if rows:

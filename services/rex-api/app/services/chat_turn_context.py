@@ -5,6 +5,7 @@ from fastapi import UploadFile
 
 from app.services.assistant_proposal_settings import (
     AssistantProposalSettings,
+    fail_closed_proposal_settings,
     resolve_assistant_proposal_settings,
 )
 from app.services.assistant_settings_repository import AssistantSettingsRepository
@@ -191,6 +192,8 @@ class ChatTurnContextService:
                 access_token=access_token,
             )
             return await repository.fetch_proposal_settings()
+        # Tests / missing auth: empty profile + optional env override (not Card invent
+        # from a load failure — that path is fail-closed in the repository).
         return resolve_assistant_proposal_settings({})
 
     async def existing_conversation_id(

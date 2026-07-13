@@ -7,6 +7,7 @@ from typing import Any, Optional
 from app.models.memory_discipline import MemoryDisciplineDecision
 from app.services.assistant_proposal_settings import (
     AssistantProposalSettings,
+    fail_closed_proposal_settings,
     resolve_assistant_proposal_settings,
 )
 from app.services.conversation_pending_action import (
@@ -403,7 +404,7 @@ class DurableWriteService:
                 )
                 return await repository.fetch_proposal_settings()
             except Exception:
-                pass
+                return fail_closed_proposal_settings()
         return resolve_assistant_proposal_settings({})
 
     async def _related_person_context(self, intent: SimpleMemoryIntent) -> dict:
