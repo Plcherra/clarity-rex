@@ -75,24 +75,28 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
     final colors = context.clarityColors;
     final l10n = context.l10n;
     final isHighRisk = action.riskLevel == 'high';
-    final borderColor = action.isFailed || isHighRisk
-        ? scheme.error.withValues(alpha: 0.46)
-        : scheme.primary.withValues(alpha: 0.42);
     final canEditTitle = action.editableFields.contains('title');
     final canEditBody = action.editableFields.contains('body');
     final isDeleteAction =
         action.writeKind == 'delete' || action.action == 'delete_record';
     final isPendingProposal =
         action.isPending && action.hasEditableFields && !action.isApplying;
+    final borderAlpha = RexUiTokens.confirmBorderAlphaOf(context);
+    final borderWidth = RexUiTokens.confirmBorderWidthOf(context);
+    final cardPadding = RexUiTokens.confirmCardPaddingOf(context);
+    final buttonHeight = RexUiTokens.confirmButtonHeightOf(context);
+    final borderColor = action.isFailed || isHighRisk
+        ? scheme.error.withValues(alpha: borderAlpha + 0.04)
+        : scheme.primary.withValues(alpha: borderAlpha);
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surfaceElevated.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(RexUiTokens.confirmCardRadius),
-        border: Border.all(color: borderColor),
+        border: Border.all(color: borderColor, width: borderWidth),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(RexUiTokens.confirmCardPadding),
+        padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -159,12 +163,15 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
               TextField(
                 controller: _titleController,
                 enabled: !action.isApplying,
-                style: theme.textTheme.titleSmall,
+                style: RexUiTokens.confirmTitleFieldStyle(context),
                 decoration: InputDecoration(
                   labelText: 'Title',
                   isDense: true,
                   filled: true,
                   fillColor: colors.surfaceSoft.withValues(alpha: 0.72),
+                  contentPadding: RexUiTokens.confirmFieldContentPadding(
+                    context,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                       RexUiTokens.radiusSmall,
@@ -180,13 +187,16 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                 enabled: !action.isApplying,
                 minLines: 2,
                 maxLines: 4,
-                style: theme.textTheme.bodyMedium,
+                style: RexUiTokens.confirmBodyFieldStyle(context),
                 decoration: InputDecoration(
                   labelText: 'Details (optional)',
                   alignLabelWithHint: true,
                   isDense: true,
                   filled: true,
                   fillColor: colors.surfaceSoft.withValues(alpha: 0.72),
+                  contentPadding: RexUiTokens.confirmFieldContentPadding(
+                    context,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                       RexUiTokens.radiusSmall,
@@ -250,9 +260,7 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                                     : l10n.commonConfirm),
                         ),
                         style: FilledButton.styleFrom(
-                          minimumSize: const Size.fromHeight(
-                            RexUiTokens.confirmButtonHeight,
-                          ),
+                          minimumSize: Size.fromHeight(buttonHeight),
                           backgroundColor:
                               isDeleteAction ? scheme.error : null,
                           foregroundColor:
@@ -282,9 +290,7 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                           isDeleteAction ? 'Keep it' : l10n.commonDismiss,
                         ),
                         style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(
-                            RexUiTokens.confirmButtonHeight,
-                          ),
+                          minimumSize: Size.fromHeight(buttonHeight),
                           textStyle: theme.textTheme.labelLarge?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),

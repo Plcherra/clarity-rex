@@ -162,18 +162,22 @@ class _ClarityPersonConfirmCardState extends State<ClarityPersonConfirmCard> {
     final l10n = context.l10n;
     final canSave = _filledCount >= 2 && !action.isApplying;
     final mergeHint = widget.action.personCard?.mergeHint?.trim();
+    final borderAlpha = RexUiTokens.confirmBorderAlphaOf(context);
+    final borderWidth = RexUiTokens.confirmBorderWidthOf(context);
+    final cardPadding = RexUiTokens.confirmCardPaddingOf(context);
+    final buttonHeight = RexUiTokens.confirmButtonHeightOf(context);
     final borderColor = action.isFailed
-        ? scheme.error.withValues(alpha: 0.46)
-        : scheme.primary.withValues(alpha: 0.42);
+        ? scheme.error.withValues(alpha: borderAlpha + 0.04)
+        : scheme.primary.withValues(alpha: borderAlpha);
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surfaceElevated.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(RexUiTokens.confirmCardRadius),
-        border: Border.all(color: borderColor),
+        border: Border.all(color: borderColor, width: borderWidth),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(RexUiTokens.confirmCardPadding),
+        padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -263,9 +267,7 @@ class _ClarityPersonConfirmCardState extends State<ClarityPersonConfirmCard> {
                         action.canRetry ? l10n.commonRetry : l10n.commonConfirm,
                       ),
                       style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(
-                          RexUiTokens.confirmButtonHeight,
-                        ),
+                        minimumSize: Size.fromHeight(buttonHeight),
                       ),
                     ),
                   ),
@@ -283,9 +285,7 @@ class _ClarityPersonConfirmCardState extends State<ClarityPersonConfirmCard> {
                       icon: const Icon(Icons.close_rounded, size: 18),
                       label: Text(l10n.commonDismiss),
                       style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(
-                          RexUiTokens.confirmButtonHeight,
-                        ),
+                        minimumSize: Size.fromHeight(buttonHeight),
                       ),
                     ),
                   ),
@@ -321,11 +321,13 @@ class _PersonField extends StatelessWidget {
       enabled: enabled,
       minLines: minLines,
       maxLines: maxLines,
+      style: RexUiTokens.confirmTitleFieldStyle(context),
       decoration: InputDecoration(
         labelText: label,
         isDense: true,
         filled: true,
         fillColor: colors.surfaceSoft.withValues(alpha: 0.72),
+        contentPadding: RexUiTokens.confirmFieldContentPadding(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(RexUiTokens.radiusSmall),
         ),

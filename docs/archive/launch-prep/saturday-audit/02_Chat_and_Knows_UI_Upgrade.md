@@ -15,7 +15,7 @@
 | **C** | iOS polish | **DONE** code (C1–C3); **C4** screenshots open |
 | **D** | Web marketing (`apps/web`) | **DONE** copy/layout/honesty (A111–A115); **A116** screenshot refresh still open (B4/C4) |
 | **E** | Flutter web `/app/` | **DONE** code (E1/E3/E4); **E2** needs browser smoke in F |
-| **F** | Cross-platform verify | **OPEN** — F0 automated below; device/browser checks for you |
+| **F** | Cross-platform verify | **PARTIAL** — F0 done; **F1 iOS device smoke pass** (2026-07-12) with title-field follow-up; Android/web/F3 still open |
 
 **Claim rule:** Do not market “redesigned on every platform” until Phase F is checked for the platforms named in the claim.
 
@@ -126,16 +126,18 @@ npm run build
 
 | # | Check | Android | iOS | `/app/` |
 | --- | --- | :---: | :---: | :---: |
-| 1 | Knows has **no** Goals / plans group or plan tiles | ☐ | ☐ | ☐ |
-| 2 | Knows empty copy does **not** mention goals | ☐ | ☐ | ☐ |
-| 3 | Goals tab still shows plans + Open Threads | ☐ | ☐ | ☐ |
-| 4 | Chat: soft user bubbles; readable light **and** dark | ☐ | ☐ | ☐ |
-| 5 | Chat: bubbles not overly padded; transcript feels dense but readable | ☐ | ☐ | ☐ |
-| 6 | Knows rows: title + optional one line + type; no importance/date chrome in list | ☐ | ☐ | ☐ |
-| 7 | Importance only on goals/plans/rules (not people/facts/preferences); dates OK where shown | ☐ | ☐ | ☐ |
-| 8 | Confirm card: slim, no heavy shadow; Confirm/Dismiss obvious | ☐ | ☐ | ☐ |
-| 9 | Confirm → item appears in Knows or Goals; Rex does not claim saved before confirm | ☐ | ☐ | ☐ |
-| 10 | Goals tiles match Knows density (not card-heavy) | ☐ | ☐ | ☐ |
+| 1 | Knows has **no** Goals / plans group or plan tiles | ☐ | ☑ | ☐ |
+| 2 | Knows empty copy does **not** mention goals | ☐ | ☑ | ☐ |
+| 3 | Goals tab still shows plans + Open Threads | ☐ | ☑ | ☐ |
+| 4 | Chat: soft user bubbles; readable light **and** dark | ☐ | ☑ | ☐ |
+| 5 | Chat: bubbles not overly padded; transcript feels dense but readable | ☐ | ☑ | ☐ |
+| 6 | Knows rows: title + optional one line + type; no importance/date chrome in list | ☐ | ☑ | ☐ |
+| 7 | Importance only on goals/plans/rules (not people/facts/preferences); dates OK where shown | ☐ | ☑ | ☐ |
+| 8 | Confirm card: slim, no heavy shadow; Confirm/Dismiss obvious | ☐ | ☑* | ☐ |
+| 9 | Confirm → item appears in Knows or Goals; Rex does not claim saved before confirm | ☐ | ☑ | ☐ |
+| 10 | Goals tiles match Knows density (not card-heavy) | ☐ | ☑ | ☐ |
+
+\*iOS F1 device smoke 2026-07-12: pass. Editable Title field was oversized (`titleSmall`) — fixed in compact confirm density follow-up. Known non-blockers: Knows vs Goals/Thread propose routing; Assistant still felt web-heavy → compact M1/M2 density track.
 
 ## F2 — Android-only
 
@@ -151,11 +153,13 @@ npm run build
 
 | # | Check | Pass |
 | --- | --- | :---: |
-| 16 | Notch / Dynamic Island / home indicator: chat send, attach sheet, Knows edit, voice panel not clipped | ☐ |
-| 17 | Assistant tabs + header feel denser; back swipe still works | ☐ |
+| 16 | Notch / Dynamic Island / home indicator: chat send, attach sheet, Knows edit, voice panel not clipped | ☐ re-smoke after compact density |
+| 17 | Assistant tabs + header feel denser; back swipe still works | ☐ re-smoke (header denser on compact) |
 | 18 | Sheets: drag-to-dismiss + grabber; confirm/dismiss light haptic | ☐ |
 | 19 | Foreground voice chrome matches chat density | ☐ |
 | 20 | Do **not** expect background walk-and-talk (file 07) | ☐ noted |
+
+**Re-smoke after this density ship (device):** F1 #8 Title field ≈ Details size; F3 #16–17 header/composer not clipped. Then C4 screenshots → A116.
 
 ## F4 — Flutter web `/app/`
 
@@ -204,10 +208,10 @@ npm run build
 
 ## Suggested next steps
 
-1. Run **F0** Flutter tests locally if not already  
-2. Smoke **F5** on `npm run preview` (or deployed landing) — Phase D checks  
-3. Smoke **F1** + **F4** on one mobile build and `/app/`  
-4. Device **F2** / **F3** for platforms you ship  
-5. **B4/C4 → A116** screenshot refresh before any “redesigned landing” claim  
+1. Re-smoke **F1 #8** on iOS after compact confirm title/density (Title field should match Details size).
+2. Complete **F3** iOS notch/sheet/voice chrome checks on device.
+3. Smoke **F2** Android + **F4** `/app/` when claiming those surfaces.
+4. **C4/A116** screenshot refresh after density looks right — do not claim redesign screenshots until then.
+5. Optional later: Knows-vs-Goals propose routing (parking lot); finance mobile density is out of this Assistant track.
 
-**Claim rule:** Do not market “redesigned on every platform” until the F tables above are checked for those platforms.
+**Mobile density track (post-F1 iOS):** compact confirm/composer tokens + denser Assistant header landed in `RexUiTokens` / confirm cards / `assistant_top_surface.dart`. Wide `/app/` keeps prior roomier defaults.

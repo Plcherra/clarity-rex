@@ -103,14 +103,14 @@ class _ChatInputBarState extends State<ChatInputBar> {
       child: SafeArea(
         top: false,
         // Owns bottom safe area for chat (home indicator / gesture inset).
-        minimum: const EdgeInsets.only(
-          bottom: RexUiTokens.composerPaddingBottom,
+        minimum: EdgeInsets.only(
+          bottom: RexUiTokens.composerPaddingBottomOf(context),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            RexUiTokens.composerPaddingH,
-            RexUiTokens.composerPaddingTop,
-            RexUiTokens.composerPaddingH,
+          padding: EdgeInsets.fromLTRB(
+            RexUiTokens.composerPaddingHOf(context),
+            RexUiTokens.composerPaddingTopOf(context),
+            RexUiTokens.composerPaddingHOf(context),
             0,
           ),
           child: Column(
@@ -174,9 +174,11 @@ class _ChatInputBarState extends State<ChatInputBar> {
                         errorBorder: InputBorder.none,
                         focusedErrorBorder: InputBorder.none,
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
+                        contentPadding: EdgeInsets.symmetric(
                           horizontal: RexUiTokens.space8,
-                          vertical: RexUiTokens.composerFieldPaddingV,
+                          vertical: RexUiTokens.composerFieldPaddingVOf(
+                            context,
+                          ),
                         ),
                         hintStyle: theme.textTheme.bodyMedium?.copyWith(
                           color: colors.textMuted.withValues(
@@ -250,6 +252,7 @@ class _ComposerIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.clarityColors;
     final enabled = onPressed != null;
+    final iconSize = RexUiTokens.composerIconSizeOf(context);
     final foreground = isActive && enabled
         ? colors.accent
         : enabled
@@ -269,8 +272,8 @@ class _ComposerIconButton extends StatelessWidget {
           : Icon(icon, size: 22),
       tooltip: tooltip,
       style: IconButton.styleFrom(
-        minimumSize: const Size.square(RexUiTokens.composerIconSize),
-        fixedSize: const Size.square(RexUiTokens.composerIconSize),
+        minimumSize: Size.square(iconSize),
+        fixedSize: Size.square(iconSize),
         padding: EdgeInsets.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         backgroundColor: softFill,

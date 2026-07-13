@@ -14,12 +14,8 @@ import 'assistant_chat_visible_provider.dart';
 import '../../theme/clarity_colors.dart';
 import 'assistant_overview_page.dart';
 import 'assistant_tab.dart';
+import 'assistant_top_surface.dart';
 import 'rex_surfaces.dart';
-import 'rex_ui_tokens.dart';
-import 'widgets/assistant_proposal_settings_sheet.dart';
-
-const _assistantCompactWidth = 360.0;
-const _assistantTabHeight = 44.0;
 
 class AssistantScreen extends ConsumerStatefulWidget {
   const AssistantScreen({super.key, required this.profileController});
@@ -93,8 +89,6 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       _updateAssistantChatVisibility();
     });
 
-    final isCompactWidth =
-        MediaQuery.sizeOf(context).width < _assistantCompactWidth;
     final wide = isClarityWideLayout(context);
 
     return RexTheme(
@@ -109,9 +103,8 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
               bottom: false,
               child: Column(
                 children: [
-                  _AssistantTopSurface(
+                  AssistantTopSurface(
                     controller: _tabController,
-                    isCompactWidth: isCompactWidth,
                     profileController: widget.profileController,
                   ),
                   Expanded(
@@ -134,181 +127,6 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _AssistantTopSurface extends StatelessWidget {
-  const _AssistantTopSurface({
-    required this.controller,
-    required this.isCompactWidth,
-    required this.profileController,
-  });
-
-  final TabController controller;
-  final bool isCompactWidth;
-  final ProfileController profileController;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        isCompactWidth ? RexUiTokens.space12 : RexUiTokens.space16,
-        RexUiTokens.space20,
-        isCompactWidth ? RexUiTokens.space12 : RexUiTokens.space16,
-        RexUiTokens.space8,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.l10n.navAssistant,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: scheme.onSurface,
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: RexUiTokens.space12),
-          _AssistantTabNavigation(
-            controller: controller,
-            isCompactWidth: isCompactWidth,
-            profileController: profileController,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AssistantTabNavigation extends StatelessWidget {
-  const _AssistantTabNavigation({
-    required this.controller,
-    required this.isCompactWidth,
-    required this.profileController,
-  });
-
-  final TabController controller;
-  final bool isCompactWidth;
-  final ProfileController profileController;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final colors = context.clarityColors;
-    final l10n = context.l10n;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: TabBar(
-            controller: controller,
-            dividerColor: Colors.transparent,
-            indicatorSize: TabBarIndicatorSize.label,
-            indicator: UnderlineTabIndicator(
-              borderSide: BorderSide(color: colors.accent, width: 2),
-              insets: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-            labelColor: scheme.onSurface,
-            unselectedLabelColor: colors.textMuted,
-            labelStyle: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-            unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-            labelPadding: const EdgeInsets.symmetric(horizontal: 2),
-            tabs: [
-              for (final tab in AssistantTab.values)
-                Tab(
-                  key: tab.key,
-                  height: _assistantTabHeight,
-                  child: _AssistantTabItem(tab: tab),
-                ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: _assistantTabHeight,
-          width: 52,
-          child: Tooltip(
-            message: l10n.assistantCompanionSettingsGearLabel,
-            child: InkWell(
-              onTap: () => showAssistantProposalSettingsSheet(
-                context: context,
-                profileController: profileController,
-              ),
-              mouseCursor: SystemMouseCursors.click,
-              borderRadius: BorderRadius.circular(RexUiTokens.radiusSmall),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.tune_rounded,
-                    size: 20,
-                    color: scheme.onSurface.withValues(alpha: 0.78),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    l10n.assistantCompanionSettingsTabLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: colors.textMuted,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AssistantTabItem extends StatelessWidget {
-  const _AssistantTabItem({required this.tab});
-
-  final AssistantTab tab;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Semantics(
-      label: tab.semanticLabelFor(context),
-      button: true,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(tab.icon, size: 20),
-            const SizedBox(height: 2),
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  tab.labelFor(context),
-                  maxLines: 1,
-                  overflow: TextOverflow.visible,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
