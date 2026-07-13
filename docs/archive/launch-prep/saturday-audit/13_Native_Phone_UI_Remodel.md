@@ -5,7 +5,7 @@
 **Canon:** `MASTER_PLAN.md` · `CLARITY_RULES.md` · `PROJECT_STRUCTURE.md`  
 **Related:** [`02_Chat_and_Knows_UI_Upgrade.md`](02_Chat_and_Knows_UI_Upgrade.md) Phase F3 (re-smoke notes updated in **Phase F** of this file only).
 
-**Status:** Phase A–B done (tokens + finance full-bleed). Phases C–F remaining — do not ship “redesigned phone UI” claims until Phase F passes.
+**Status:** Phase A–C done (tokens + finance full-bleed + Chats dense list). Phases D–F remaining — do not ship “redesigned phone UI” claims until Phase F passes.
 
 ---
 
@@ -200,16 +200,16 @@ Work **A → F**. One PR/commit theme per phase. Stop and re-smoke iPhone after 
 
 **Primary files:**
 
-- `conversation_list_page.dart`
-- `conversation_history_widgets.dart` (`ConversationHistoryTile`, search tiles, `clampConversationTitle`)
+- `conversation_list_page.dart` (+ extracts `conversation_list_chrome.dart`, `conversation_list_actions.dart`)
+- `conversation_history_widgets.dart` (+ extracts `conversation_history_tile.dart`, `conversation_history_labels.dart`, `conversation_history_filters.dart`)
 - Existing tests: `conversation_history_tile_test.dart`, `conversation_history_widgets_test.dart`
 
 **Acceptance C:**
 
-- [ ] Density comparable to Cursor sidebar (tight rows)
-- [ ] Titles never overwhelm (maxChars + ellipsis)
-- [ ] Search aligned with list
-- [ ] Wide sidebar unchanged
+- [x] Density comparable to Cursor sidebar (tight rows)
+- [x] Titles never overwhelm (maxChars + ellipsis)
+- [x] Search aligned with list
+- [x] Wide sidebar unchanged
 
 ---
 
@@ -305,7 +305,7 @@ After F3 looks right → resume plan 02 C4 screenshots / A116; then plan 05 devi
 | --- | --- | --- |
 | **A** | Native layout tokens + shell gutter 0 | **DONE** (2026-07-12) — `ClarityNativeLayout` + shell gutter 0 on native compact; wide/web unchanged |
 | **B** | Finance full-bleed (Dashboard → Accounts → Budgets) | **DONE** (2026-07-12) — pageGutter + single chart chrome; Accounts/Budgets tokens |
-| **C** | Chats dense list + search align + title clamp | **TODO** |
+| **C** | Chats dense list + search align + title clamp | **DONE** (2026-07-12) — native dense title+1-line preview via `ClarityNativeLayout.active`; search H pad == list row; wide sidebar unchanged; Chats sub-tab kept |
 | **D** | Composer + transcript (no fill) | **TODO** |
 | **E** | Knows / Goals / Overview / Profile | **TODO** |
 | **F** | Tests + plan 02 F3 notes + iPhone re-smoke | **TODO** |
