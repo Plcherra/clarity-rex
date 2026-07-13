@@ -95,7 +95,13 @@ class _BudgetsScaffold extends StatelessWidget {
           behavior: HitTestBehavior.translucent,
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            padding: ClarityNativeLayout.active(context)
+                ? ClarityNativeLayout.pagePadding(
+                    context,
+                    top: 12,
+                    bottom: 12,
+                  )
+                : const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: ListenableBuilder(
               listenable: dataNotifier,
               builder: (context, _) {
@@ -185,6 +191,8 @@ class _BudgetsLoadedContent extends StatelessWidget {
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final desktop = isClarityDesktopLayout(context);
+    final native = ClarityNativeLayout.active(context);
+    final cardPad = ClarityNativeLayout.cardPadding(context);
     final header = BudgetsHeader(
       selectedType: selectedType,
       selectedPeriodKey: selectedPeriodKey,
@@ -217,7 +225,12 @@ class _BudgetsLoadedContent extends StatelessWidget {
       ),
     );
     final chart = ClarityCard(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      padding: native
+          ? cardPad
+          : const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      borderRadius: native
+          ? BorderRadius.circular(ClarityNativeLayout.cardRadius(context))
+          : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -281,6 +294,11 @@ class _BudgetsLoadedContent extends StatelessWidget {
             const SizedBox(height: 10),
             ClarityCard(
               padding: EdgeInsets.zero,
+              borderRadius: native
+                  ? BorderRadius.circular(
+                      ClarityNativeLayout.cardRadius(context),
+                    )
+                  : null,
               child: Theme(
                 data: Theme.of(context).copyWith(
                   dividerColor: Colors.transparent,
@@ -289,8 +307,18 @@ class _BudgetsLoadedContent extends StatelessWidget {
                   ),
                 ),
                 child: ExpansionTile(
-                  tilePadding: const EdgeInsets.fromLTRB(16, 2, 8, 2),
-                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  // Native: one inset layer — page pad already applied; avoid +16.
+                  tilePadding: native
+                      ? EdgeInsets.fromLTRB(cardPad.left, 2, 8, 2)
+                      : const EdgeInsets.fromLTRB(16, 2, 8, 2),
+                  childrenPadding: native
+                      ? EdgeInsets.fromLTRB(
+                          cardPad.left,
+                          0,
+                          cardPad.right,
+                          cardPad.bottom,
+                        )
+                      : const EdgeInsets.fromLTRB(16, 0, 16, 14),
                   initiallyExpanded: false,
                   iconColor: Theme.of(context).colorScheme.onSurface.withValues(
                     alpha: 0.56,
@@ -316,68 +344,6 @@ class _BudgetsLoadedContent extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _BudgetSummaryStrip extends StatelessWidget {
-  const _BudgetSummaryStrip({required this.metrics});
-
-  final BudgetsPresentationMetrics metrics;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final l10n = context.l10n;
-    return ClarityCard(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.24),
-      borderColor: cs.outline.withValues(alpha: 0.18),
-      child: Row(
-        children: [
-          Expanded(
-            child: _SummaryMetric(
-              label: l10n.commonBudgeted,
-              value: formatMoney(metrics.performance.totalBudgeted),
-              valueColor: cs.onSurface,
-              alignment: CrossAxisAlignment.start,
-            ),
-          ),
-          _SummaryDivider(color: cs.outline.withValues(alpha: 0.10)),
-          Expanded(
-            child: _SummaryMetric(
-              label: l10n.commonSpent,
-              value: formatMoney(metrics.performance.totalSpent),
-              valueColor: cs.onSurface,
-              alignment: CrossAxisAlignment.center,
-            ),
-          ),
-          _SummaryDivider(color: cs.outline.withValues(alpha: 0.10)),
-          Expanded(
-            child: _SummaryMetric(
-              label: metrics.totalOver > 0 ? l10n.commonOver : l10n.commonLeft,
-              value: metrics.totalOver > 0
-                  ? formatMoney(metrics.totalOver)
-                  : formatMoney(metrics.totalRemaining),
-              valueColor: metrics.totalOver > 0
-                  ? ClarityColors.financeNegative
-                  : ClarityColors.financePositive,
-              alignment: CrossAxisAlignment.end,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryDivider extends StatelessWidget {
-  const _SummaryDivider({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(width: 1, height: 28, color: color);
   }
 }
 
@@ -420,46 +386,4 @@ class _BudgetScreenData {
   final List<BudgetCategoryRow> rows;
   final BudgetsPresentationMetrics metrics;
   final List<BudgetCategoryListItemData> categoryItems;
-}
-
-class _SummaryMetric extends StatelessWidget {
-  const _SummaryMetric({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-    required this.alignment,
-  });
-
-  final String label;
-  final String value;
-  final Color valueColor;
-  final CrossAxisAlignment alignment;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return Column(
-      crossAxisAlignment: alignment,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: cs.onSurface.withValues(alpha: 0.54),
-            letterSpacing: 0.2,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: valueColor,
-          ),
-        ),
-      ],
-    );
-  }
 }

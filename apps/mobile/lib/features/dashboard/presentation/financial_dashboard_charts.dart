@@ -13,6 +13,10 @@ class _DashboardChartPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Native: flat — single chrome lives on the collapsible group card.
+    if (ClarityNativeLayout.active(context)) {
+      return SizedBox(width: double.infinity, child: child);
+    }
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
@@ -47,10 +51,16 @@ class _DashboardCollapsibleChartGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final native = ClarityNativeLayout.active(context);
+    final cardPad = ClarityNativeLayout.cardPadding(context);
+    final radius = BorderRadius.circular(_dashboardCardRadiusOf(context));
 
     if (alwaysExpanded) {
       return ClarityCard(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
+        padding: native
+            ? cardPad
+            : const EdgeInsets.fromLTRB(20, 16, 20, 18),
+        borderRadius: native ? radius : null,
         backgroundColor: _dashboardPanel(context),
         borderColor: _dashboardOutline(context),
         child: Column(
@@ -71,7 +81,7 @@ class _DashboardCollapsibleChartGroup extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 14),
+            SizedBox(height: native ? 10 : 14),
             ...children,
           ],
         ),
@@ -80,6 +90,7 @@ class _DashboardCollapsibleChartGroup extends StatelessWidget {
 
     return ClarityCard(
       padding: EdgeInsets.zero,
+      borderRadius: native ? radius : null,
       backgroundColor: _dashboardPanel(context),
       borderColor: _dashboardOutline(context),
       child: Theme(
@@ -89,8 +100,17 @@ class _DashboardCollapsibleChartGroup extends StatelessWidget {
         ),
         child: ExpansionTile(
           controller: controller,
-          tilePadding: const EdgeInsets.fromLTRB(20, 2, 12, 2),
-          childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+          tilePadding: native
+              ? EdgeInsets.fromLTRB(cardPad.left, 2, 8, 2)
+              : const EdgeInsets.fromLTRB(20, 2, 12, 2),
+          childrenPadding: native
+              ? EdgeInsets.fromLTRB(
+                  cardPad.left,
+                  0,
+                  cardPad.right,
+                  cardPad.bottom,
+                )
+              : const EdgeInsets.fromLTRB(20, 0, 20, 18),
           initiallyExpanded: initiallyExpanded,
           iconColor: cs.onSurface.withValues(alpha: 0.56),
           collapsedIconColor: cs.onSurface.withValues(alpha: 0.56),
@@ -131,6 +151,7 @@ class _DashboardChartSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final native = ClarityNativeLayout.active(context);
     return Column(
       key: sectionKey,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +161,7 @@ class _DashboardChartSection extends StatelessWidget {
           const SizedBox(height: 4),
           _SectionSubtitle(theme: theme, subtitle: subtitle!),
         ],
-        const SizedBox(height: 16),
+        SizedBox(height: native ? 10 : 16),
         _DashboardChartPanel(child: child),
       ],
     );

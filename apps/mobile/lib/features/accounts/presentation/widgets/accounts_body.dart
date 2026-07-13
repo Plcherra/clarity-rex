@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/ui_dependencies.dart';
 import '../../../../core/layout/clarity_breakpoints.dart';
+import '../../../../core/layout/clarity_native_layout.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import '../../../../core/models/models.dart';
 import '../../../../widgets/clarity_diamond_loader.dart';
@@ -107,7 +108,13 @@ class AccountsBody extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                padding: ClarityNativeLayout.active(context)
+                    ? ClarityNativeLayout.pagePadding(
+                        context,
+                        top: 12,
+                        bottom: 28,
+                      )
+                    : const EdgeInsets.fromLTRB(20, 12, 20, 28),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     if (accountNotice != null) ...[
@@ -124,7 +131,9 @@ class AccountsBody extends StatelessWidget {
               ),
               if (desktop)
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                  padding: ClarityNativeLayout.active(context)
+                      ? ClarityNativeLayout.pagePadding(context, bottom: 28)
+                      : const EdgeInsets.fromLTRB(20, 0, 20, 28),
                   sliver: SliverGrid(
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -141,7 +150,9 @@ class AccountsBody extends StatelessWidget {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                  padding: ClarityNativeLayout.active(context)
+                      ? ClarityNativeLayout.pagePadding(context, bottom: 28)
+                      : const EdgeInsets.fromLTRB(20, 0, 20, 28),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {

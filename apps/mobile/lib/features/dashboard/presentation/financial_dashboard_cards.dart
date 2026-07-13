@@ -13,10 +13,13 @@ class _BudgetPerformanceCard extends StatelessWidget {
     if (performance.budgetedCategoryCount == 0) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+        padding: _dashboardCardPaddingOf(
+          context,
+          const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+        ),
         decoration: BoxDecoration(
           color: _dashboardPanel(context),
-          borderRadius: BorderRadius.circular(_cardRadius),
+          borderRadius: BorderRadius.circular(_dashboardCardRadiusOf(context)),
           border: Border.all(color: _dashboardOutline(context)),
         ),
         child: Text(
@@ -30,10 +33,13 @@ class _BudgetPerformanceCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 18, 22, 20),
+      padding: _dashboardCardPaddingOf(
+        context,
+        const EdgeInsets.fromLTRB(22, 18, 22, 20),
+      ),
       decoration: BoxDecoration(
         color: _dashboardPanel(context),
-        borderRadius: BorderRadius.circular(_cardRadius),
+        borderRadius: BorderRadius.circular(_dashboardCardRadiusOf(context)),
         border: Border.all(color: _dashboardOutline(context)),
       ),
       child: Column(
@@ -183,10 +189,13 @@ class _AccountHealthCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      padding: _dashboardCardPaddingOf(
+        context,
+        const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      ),
       decoration: BoxDecoration(
         color: _dashboardPanel(context),
-        borderRadius: BorderRadius.circular(_cardRadius),
+        borderRadius: BorderRadius.circular(_dashboardCardRadiusOf(context)),
         border: Border.all(color: _dashboardOutline(context)),
         boxShadow: _dashboardShadow(),
       ),
@@ -270,9 +279,14 @@ class _DashboardBudgetChartPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = context.l10n;
+    final native = ClarityNativeLayout.active(context);
+    final cardPad = ClarityNativeLayout.cardPadding(context);
 
     return ClarityCard(
       padding: EdgeInsets.zero,
+      borderRadius: native
+          ? BorderRadius.circular(ClarityNativeLayout.cardRadius(context))
+          : null,
       backgroundColor: _dashboardPanel(context),
       borderColor: _dashboardOutline(context),
       child: Theme(
@@ -281,8 +295,17 @@ class _DashboardBudgetChartPanel extends StatelessWidget {
           splashColor: cs.primary.withValues(alpha: 0.08),
         ),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.fromLTRB(20, 2, 12, 2),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          tilePadding: native
+              ? EdgeInsets.fromLTRB(cardPad.left, 2, 8, 2)
+              : const EdgeInsets.fromLTRB(20, 2, 12, 2),
+          childrenPadding: native
+              ? EdgeInsets.fromLTRB(
+                  cardPad.left,
+                  0,
+                  cardPad.right,
+                  cardPad.bottom,
+                )
+              : const EdgeInsets.fromLTRB(16, 0, 16, 18),
           initiallyExpanded: false,
           iconColor: cs.onSurface.withValues(alpha: 0.56),
           collapsedIconColor: cs.onSurface.withValues(alpha: 0.56),

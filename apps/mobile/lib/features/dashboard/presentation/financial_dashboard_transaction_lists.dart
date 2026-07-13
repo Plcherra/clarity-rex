@@ -36,11 +36,14 @@ class _CategoryGroupCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: _dashboardPanel(context),
-        borderRadius: BorderRadius.circular(_cardRadius),
+        borderRadius: BorderRadius.circular(_dashboardCardRadiusOf(context)),
         border: Border.all(color: _dashboardOutline(context)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        padding: _dashboardCardPaddingOf(
+          context,
+          const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        ),
         child: Row(
           children: [
             Container(
@@ -120,10 +123,13 @@ class _InlineEmptyState extends StatelessWidget {
     final cs = theme.colorScheme;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      padding: _dashboardCardPaddingOf(
+        context,
+        const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      ),
       decoration: BoxDecoration(
         color: _dashboardPanel(context),
-        borderRadius: BorderRadius.circular(_cardRadius),
+        borderRadius: BorderRadius.circular(_dashboardCardRadiusOf(context)),
         border: Border.all(color: _dashboardOutline(context)),
       ),
       child: Column(

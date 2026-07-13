@@ -16,18 +16,20 @@ class _FinancialOverviewCard extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = context.l10n;
-    final compact = !isClarityDesktopLayout(context);
+    final native = ClarityNativeLayout.active(context);
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        compact ? 16 : 20,
-        compact ? 14 : 18,
-        compact ? 16 : 20,
-        compact ? 16 : 20,
-      ),
+      padding: native
+          ? ClarityNativeLayout.cardPadding(context)
+          : EdgeInsets.fromLTRB(
+              !isClarityDesktopLayout(context) ? 16 : 20,
+              !isClarityDesktopLayout(context) ? 14 : 18,
+              !isClarityDesktopLayout(context) ? 16 : 20,
+              !isClarityDesktopLayout(context) ? 16 : 20,
+            ),
       decoration: BoxDecoration(
         color: _dashboardPanel(context),
-        borderRadius: BorderRadius.circular(_cardRadius),
+        borderRadius: BorderRadius.circular(_dashboardCardRadiusOf(context)),
         border: Border.all(color: _dashboardOutline(context)),
         boxShadow: _dashboardShadow(),
       ),
@@ -210,10 +212,13 @@ class _MonthlyGroupsList extends StatelessWidget {
     if (groups.isEmpty) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        padding: _dashboardCardPaddingOf(
+          context,
+          const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        ),
         decoration: BoxDecoration(
           color: _dashboardPanel(context),
-          borderRadius: BorderRadius.circular(_cardRadius),
+          borderRadius: BorderRadius.circular(_dashboardCardRadiusOf(context)),
           border: Border.all(color: _dashboardOutline(context)),
         ),
         child: Text(
@@ -258,6 +263,8 @@ class _MonthCard extends StatelessWidget {
     final cs = theme.colorScheme;
     final l10n = context.l10n;
     final compact = !isClarityDesktopLayout(context);
+    final native = ClarityNativeLayout.active(context);
+    final radius = _dashboardCardRadiusOf(context);
     final label = formatYearMonthLabel(group.yearMonth);
     final totalColor = group.totalAmount < 0
         ? ClarityColors.financeNegative
@@ -267,7 +274,7 @@ class _MonthCard extends StatelessWidget {
 
     return Material(
       color: cs.surface,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(native ? radius : 22),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
@@ -283,14 +290,16 @@ class _MonthCard extends StatelessWidget {
         },
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(_cardRadius),
+            borderRadius: BorderRadius.circular(radius),
             border: Border.all(color: _dashboardOutline(context)),
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? 16 : 22,
-              vertical: compact ? 14 : 20,
-            ),
+            padding: native
+                ? ClarityNativeLayout.cardPadding(context)
+                : EdgeInsets.symmetric(
+                    horizontal: compact ? 16 : 22,
+                    vertical: compact ? 14 : 20,
+                  ),
             child: Row(
               children: [
                 Expanded(

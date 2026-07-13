@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/layout/clarity_native_layout.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
@@ -29,9 +30,14 @@ class BudgetCategoryList extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = context.l10n;
+    final native = ClarityNativeLayout.active(context);
+    final cardPad = ClarityNativeLayout.cardPadding(context);
 
     return ClarityCard(
       padding: EdgeInsets.zero,
+      borderRadius: native
+          ? BorderRadius.circular(ClarityNativeLayout.cardRadius(context))
+          : null,
       backgroundColor: cs.surface,
       borderColor: cs.outline.withValues(alpha: 0.24),
       child: Theme(
@@ -40,7 +46,9 @@ class BudgetCategoryList extends StatelessWidget {
           splashColor: cs.primary.withValues(alpha: 0.08),
         ),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.fromLTRB(16, 2, 8, 2),
+          tilePadding: native
+              ? EdgeInsets.fromLTRB(cardPad.left, 2, 8, 2)
+              : const EdgeInsets.fromLTRB(16, 2, 8, 2),
           childrenPadding: EdgeInsets.zero,
           initiallyExpanded: true,
           iconColor: cs.onSurface.withValues(alpha: 0.56),
@@ -61,7 +69,14 @@ class BudgetCategoryList extends StatelessWidget {
             Divider(height: 1, color: cs.outline.withValues(alpha: 0.08)),
             if (items.isEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                padding: native
+                    ? EdgeInsets.fromLTRB(
+                        cardPad.left,
+                        16,
+                        cardPad.right,
+                        16,
+                      )
+                    : const EdgeInsets.fromLTRB(16, 20, 16, 20),
                 child: Text(
                   l10n.budgetCategoryListEmpty,
                   style: theme.textTheme.bodySmall?.copyWith(

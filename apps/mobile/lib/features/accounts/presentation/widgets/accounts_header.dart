@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/ui_dependencies.dart';
 import '../../../../core/formatting/formatting.dart';
 import '../../../../core/layout/clarity_breakpoints.dart';
+import '../../../../core/layout/clarity_native_layout.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import '../../../../theme/clarity_colors.dart';
 import '../../../../widgets/clarity_card.dart';
@@ -36,8 +37,14 @@ class AccountsSummaryCard extends StatelessWidget {
     );
     final netCashFlowTotal = incomeTotal - spendingTotal;
     final l10n = context.l10n;
+    final native = ClarityNativeLayout.active(context);
     return ClarityCard(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: native
+          ? ClarityNativeLayout.cardPadding(context)
+          : const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      borderRadius: native
+          ? BorderRadius.circular(ClarityNativeLayout.cardRadius(context))
+          : null,
       backgroundColor: colors.surface.withValues(alpha: 0.72),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

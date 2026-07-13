@@ -7,6 +7,7 @@ import '../../../l10n/app_localizations.dart';
 import '../domain/budget_models.dart';
 import '../../../core/layout/clarity_adaptive_overlay.dart';
 import '../../../core/layout/clarity_breakpoints.dart';
+import '../../../core/layout/clarity_native_layout.dart';
 import '../../../theme/clarity_colors.dart';
 import '../../../widgets/clarity_card.dart';
 import '../../../widgets/clarity_diamond_loader.dart';
@@ -17,6 +18,7 @@ import 'category_management_sheet.dart';
 import '../../dashboard/presentation/charts/finance_charts.dart';
 
 part 'budgets_screen_widgets.dart';
+part 'budgets_screen_summary.dart';
 
 /// Monthly budgets per category (picker list). Hidden categories are omitted here;
 /// their persisted amounts remain until edited elsewhere (Rule A).

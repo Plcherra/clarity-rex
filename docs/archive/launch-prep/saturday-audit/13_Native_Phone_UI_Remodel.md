@@ -5,7 +5,7 @@
 **Canon:** `MASTER_PLAN.md` · `CLARITY_RULES.md` · `PROJECT_STRUCTURE.md`  
 **Related:** [`02_Chat_and_Knows_UI_Upgrade.md`](02_Chat_and_Knows_UI_Upgrade.md) Phase F3 (re-smoke notes updated in **Phase F** of this file only).
 
-**Status:** Phase A done (native layout tokens + shell gutter). Phases B–F remaining — do not ship “redesigned phone UI” claims until Phase F passes.
+**Status:** Phase A–B done (tokens + finance full-bleed). Phases C–F remaining — do not ship “redesigned phone UI” claims until Phase F passes.
 
 ---
 
@@ -182,10 +182,10 @@ Work **A → F**. One PR/commit theme per phase. Stop and re-smoke iPhone after 
 
 **Acceptance B:**
 
-- [ ] iPhone: chart modules use near-full phone width (≈ pageGutter 8–12 only; no ~80px side void)
-- [ ] Single visual chrome layer around charts on phone
-- [ ] Wide `/app/` dashboard screenshots/tests unchanged
-- [ ] No IA / nav changes
+- [x] iPhone: chart modules use near-full phone width (≈ pageGutter 8–12 only; no ~80px side void)
+- [x] Single visual chrome layer around charts on phone
+- [x] Wide `/app/` dashboard screenshots/tests unchanged
+- [x] No IA / nav changes
 
 ---
 
@@ -304,7 +304,7 @@ After F3 looks right → resume plan 02 C4 screenshots / A116; then plan 05 devi
 | Phase | Scope | Status |
 | --- | --- | --- |
 | **A** | Native layout tokens + shell gutter 0 | **DONE** (2026-07-12) — `ClarityNativeLayout` + shell gutter 0 on native compact; wide/web unchanged |
-| **B** | Finance full-bleed (Dashboard → Accounts → Budgets) | **TODO** |
+| **B** | Finance full-bleed (Dashboard → Accounts → Budgets) | **DONE** (2026-07-12) — pageGutter + single chart chrome; Accounts/Budgets tokens |
 | **C** | Chats dense list + search align + title clamp | **TODO** |
 | **D** | Composer + transcript (no fill) | **TODO** |
 | **E** | Knows / Goals / Overview / Profile | **TODO** |

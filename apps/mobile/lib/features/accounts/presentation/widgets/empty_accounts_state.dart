@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/layout/clarity_native_layout.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import 'connect_bank_setup_card.dart';
 
@@ -19,7 +20,11 @@ class EmptyAccountsState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
+        padding: ClarityNativeLayout.active(context)
+            ? EdgeInsets.symmetric(
+                horizontal: ClarityNativeLayout.pageGutter(context),
+              )
+            : const EdgeInsets.symmetric(horizontal: 28),
         child: ConnectBankSetupCard(
           title: context.l10n.accountsEmptyTitle,
           body: context.l10n.accountsEmptyBody,

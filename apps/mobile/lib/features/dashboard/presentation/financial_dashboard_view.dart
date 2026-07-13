@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
 import '../../../core/layout/clarity_breakpoints.dart';
+import '../../../core/layout/clarity_native_layout.dart';
 import '../../../core/layout/finance_content_constraints.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/platform/app_capabilities.dart';
@@ -31,12 +32,31 @@ part 'financial_dashboard_transactions.dart';
 part 'financial_dashboard_transaction_controls.dart';
 part 'financial_dashboard_transaction_lists.dart';
 part 'financial_dashboard_shell.dart';
+part 'financial_dashboard_shell_bodies.dart';
 part 'financial_dashboard_summary_sections.dart';
 part 'financial_dashboard_cards.dart';
 part 'financial_dashboard_charts.dart';
 
-const double _sectionGap = 20.0;
 const double _cardRadius = ClarityRadius.card;
+
+double _dashboardSectionGap(BuildContext context) {
+  return ClarityNativeLayout.sectionGap(context);
+}
+
+double _dashboardCardRadiusOf(BuildContext context) {
+  return ClarityNativeLayout.active(context)
+      ? ClarityNativeLayout.cardRadius(context)
+      : _cardRadius;
+}
+
+EdgeInsets _dashboardCardPaddingOf(
+  BuildContext context,
+  EdgeInsets desktop,
+) {
+  return ClarityNativeLayout.active(context)
+      ? ClarityNativeLayout.cardPadding(context)
+      : desktop;
+}
 String _monthShort(AppLocalizations l10n, int month) {
   return switch (month) {
     1 => l10n.commonMonthShortJan,
