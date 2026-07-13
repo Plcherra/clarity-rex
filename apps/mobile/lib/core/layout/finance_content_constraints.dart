@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'clarity_breakpoints.dart';
+import 'clarity_native_layout.dart';
 
 /// Breakpoint below which the shell uses a full-width bottom [NavigationBar].
 const double homeShellCompactBreakpoint = clarityLayoutMediumBreakpoint;
@@ -13,6 +14,9 @@ bool isHomeShellCompactWidth(BuildContext context) {
 }
 
 /// Centers [child] with a surface-specific max width, filling most of the viewport.
+///
+/// On native compact phone, [ClarityNativeLayout.shellContentGutter] is 0 so
+/// content is full-bleed. Wide `/app/` and narrow web keep the 24px gutter.
 class ShellContentConstraints extends StatelessWidget {
   const ShellContentConstraints({
     super.key,
@@ -25,7 +29,11 @@ class ShellContentConstraints extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = clarityClampedContentWidth(context, maxWidth);
+    final width = clarityClampedContentWidth(
+      context,
+      maxWidth,
+      gutter: ClarityNativeLayout.shellContentGutter(context),
+    );
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(

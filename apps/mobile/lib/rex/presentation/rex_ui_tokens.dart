@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/layout/clarity_breakpoints.dart';
+import '../../core/layout/clarity_native_layout.dart';
 import '../../theme/clarity_colors.dart';
 import '../../theme/clarity_radius.dart';
 import '../../theme/clarity_spacing.dart';
@@ -69,7 +69,7 @@ class RexUiTokens {
 
   /// Native phone compact (iOS/Android) — not Flutter web, even when narrow.
   static bool isNativeCompactChrome(BuildContext context) {
-    return !kIsWeb && isCompactChrome(context);
+    return ClarityNativeLayout.active(context);
   }
 
   static double bubbleSideInsetOf(BuildContext context) {
