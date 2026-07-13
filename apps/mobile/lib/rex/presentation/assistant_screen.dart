@@ -28,17 +28,44 @@ class AssistantScreen extends ConsumerStatefulWidget {
 
 class _AssistantScreenState extends ConsumerState<AssistantScreen>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+  TabController? _tabController;
+  List<AssistantTab> _tabs = const [];
+  String _selectedTabId = AssistantTab.chat.id;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncTabController(assistantTabsOf(context));
+  }
+
+  void _syncTabController(List<AssistantTab> tabs) {
+    final same =
+        tabs.length == _tabs.length &&
+        List.generate(tabs.length, (i) => tabs[i] == _tabs[i]).every((v) => v);
+    if (same && _tabController != null) {
+      return;
+    }
+
+    final previousId = _selectedTabId;
+    final old = _tabController;
+    if (old != null) {
+      old.removeListener(_handleAssistantTabChanged);
+      old.dispose();
+    }
+
+    final initialIndex = math.max(0, tabs.indexWhere((t) => t.id == previousId));
+    final safeIndex = initialIndex >= 0 && initialIndex < tabs.length
+        ? initialIndex
+        : math.max(0, tabs.indexOf(AssistantTab.chat));
+
+    _tabs = List<AssistantTab>.unmodifiable(tabs);
     _tabController = TabController(
-      length: AssistantTab.values.length,
+      length: _tabs.length,
       vsync: this,
-      initialIndex: AssistantTab.chat.index,
-    );
-    _tabController.addListener(_handleAssistantTabChanged);
+      initialIndex: safeIndex.clamp(0, _tabs.length - 1),
+    )..addListener(_handleAssistantTabChanged);
+    _selectedTabId = _tabs[_tabController!.index].id;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _updateAssistantChatVisibility();
@@ -46,48 +73,59 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
   }
 
   void _handleAssistantTabChanged() {
-    if (_tabController.indexIsChanging) {
+    final controller = _tabController;
+    if (controller == null || controller.indexIsChanging) {
       return;
     }
+    _selectedTabId = _tabs[controller.index].id;
     _updateAssistantChatVisibility();
   }
 
   void _updateAssistantChatVisibility() {
+    final controller = _tabController;
+    if (controller == null || _tabs.isEmpty) {
+      return;
+    }
+    final tab = _tabs[controller.index];
     ref.read(assistantChatVisibleProvider.notifier).setVisible(
-      _tabController.index == AssistantTab.chat.index,
+      tab == AssistantTab.chat,
     );
   }
 
   @override
   void dispose() {
-    _tabController.removeListener(_handleAssistantTabChanged);
-    _tabController.dispose();
+    _tabController?.removeListener(_handleAssistantTabChanged);
+    _tabController?.dispose();
     super.dispose();
   }
 
-  void _openChatTab() {
-    _tabController.animateTo(AssistantTab.chat.index);
+  void _openTab(AssistantTab tab) {
+    final controller = _tabController;
+    if (controller == null) return;
+    final index = _tabs.indexOf(tab);
+    if (index < 0) return;
+    controller.animateTo(index);
   }
 
-  void _openKnowsTab() {
-    _tabController.animateTo(AssistantTab.memory.index);
-  }
+  void _openChatTab() => _openTab(AssistantTab.chat);
 
-  void _openGoalsTab() {
-    _tabController.animateTo(AssistantTab.goals.index);
-  }
+  void _openKnowsTab() => _openTab(AssistantTab.memory);
+
+  void _openGoalsTab() => _openTab(AssistantTab.goals);
 
   @override
   Widget build(BuildContext context) {
     ref.listen<int>(assistantChatTabRequestProvider, (previous, next) {
-      if (_tabController.index == AssistantTab.chat.index) {
-        return;
-      }
-      _tabController.animateTo(AssistantTab.chat.index);
+      _openChatTab();
     });
     ref.listen<int>(assistantChatVisibilityResyncProvider, (previous, next) {
       _updateAssistantChatVisibility();
     });
+
+    final controller = _tabController;
+    if (controller == null || _tabs.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     final wide = isClarityWideLayout(context);
 
@@ -104,14 +142,15 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
               child: Column(
                 children: [
                   AssistantTopSurface(
-                    controller: _tabController,
+                    controller: controller,
+                    tabs: _tabs,
                     profileController: widget.profileController,
                   ),
                   Expanded(
                     child: TabBarView(
-                      controller: _tabController,
+                      controller: controller,
                       children: [
-                        for (final tab in AssistantTab.values)
+                        for (final tab in _tabs)
                           _AssistantTabContent(
                             tab: tab,
                             wideSplit: wide,
@@ -150,6 +189,10 @@ class _AssistantTabContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (tab) {
+      AssistantTab.chats => ConversationListPage(
+        showAppBar: false,
+        onConversationSelected: onConversationSelected,
+      ),
       AssistantTab.chat => wideSplit
           ? _AssistantChatSplit(onConversationSelected: onConversationSelected)
           : const ChatPage(showAppBar: false),

@@ -16,9 +16,15 @@ class _FinancialOverviewCard extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = context.l10n;
+    final compact = !isClarityDesktopLayout(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 16 : 20,
+        compact ? 14 : 18,
+        compact ? 16 : 20,
+        compact ? 16 : 20,
+      ),
       decoration: BoxDecoration(
         color: _dashboardPanel(context),
         borderRadius: BorderRadius.circular(_cardRadius),
@@ -43,7 +49,10 @@ class _FinancialOverviewCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               formatMoney(snapshot.totalBalance),
-              style: theme.textTheme.displaySmall?.copyWith(
+              style: (!isClarityDesktopLayout(context)
+                      ? theme.textTheme.headlineMedium
+                      : theme.textTheme.displaySmall)
+                  ?.copyWith(
                 fontWeight: FontWeight.w700,
                 height: 1.02,
                 color: _balanceColor(context, snapshot.totalBalance),
@@ -248,6 +257,7 @@ class _MonthCard extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final l10n = context.l10n;
+    final compact = !isClarityDesktopLayout(context);
     final label = formatYearMonthLabel(group.yearMonth);
     final totalColor = group.totalAmount < 0
         ? ClarityColors.financeNegative
@@ -277,7 +287,10 @@ class _MonthCard extends StatelessWidget {
             border: Border.all(color: _dashboardOutline(context)),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 16 : 22,
+              vertical: compact ? 14 : 20,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -286,7 +299,10 @@ class _MonthCard extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: theme.textTheme.titleMedium?.copyWith(
+                        style: (compact
+                                ? theme.textTheme.titleSmall
+                                : theme.textTheme.titleMedium)
+                            ?.copyWith(
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0,
                         ),
@@ -310,7 +326,10 @@ class _MonthCard extends StatelessWidget {
                   children: [
                     Text(
                       formatMoney(group.totalAmount),
-                      style: theme.textTheme.titleLarge?.copyWith(
+                      style: (compact
+                              ? theme.textTheme.titleMedium
+                              : theme.textTheme.titleLarge)
+                          ?.copyWith(
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0,
                         color: totalColor,
@@ -348,9 +367,13 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = !isClarityDesktopLayout(context);
     return Text(
       title,
-      style: theme.textTheme.titleMedium?.copyWith(
+      style: (compact
+              ? theme.textTheme.titleSmall
+              : theme.textTheme.titleMedium)
+          ?.copyWith(
         fontWeight: FontWeight.w600,
         letterSpacing: 0,
         color: theme.colorScheme.onSurface.withValues(alpha: 0.82),

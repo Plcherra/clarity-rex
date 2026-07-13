@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/ui_dependencies.dart';
+import '../../../core/layout/clarity_breakpoints.dart';
 import '../../../core/layout/finance_content_constraints.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../transactions/domain/bank_statement_monthly.dart';
@@ -294,7 +295,10 @@ class _MonthDetailBody extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 formatMoney(monthTotal),
-                style: theme.textTheme.headlineMedium?.copyWith(
+                style: (!isClarityDesktopLayout(context)
+                        ? theme.textTheme.titleLarge
+                        : theme.textTheme.headlineMedium)
+                    ?.copyWith(
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.5,
                   color: totalColor,

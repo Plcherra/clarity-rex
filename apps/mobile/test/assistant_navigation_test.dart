@@ -21,20 +21,65 @@ import 'package:flutter_test/flutter_test.dart';
 import 'helpers/assistant_test_harness.dart';
 import 'helpers/l10n_test_wrapper.dart';
 
+void _setViewSize(WidgetTester tester, Size size) {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
+}
+
 void main() {
-  testWidgets('Assistant navigation renders the four tabs in contract order', (
+  test('compact vs wide assistant tab sets', () {
+    expect(
+      assistantTabsForLayout(compact: true),
+      [
+        AssistantTab.chats,
+        AssistantTab.chat,
+        AssistantTab.memory,
+        AssistantTab.goals,
+        AssistantTab.overview,
+      ],
+    );
+    expect(
+      assistantTabsForLayout(compact: false),
+      [
+        AssistantTab.chat,
+        AssistantTab.memory,
+        AssistantTab.goals,
+        AssistantTab.overview,
+      ],
+    );
+  });
+
+  testWidgets('wide Assistant navigation omits Chats sub-tab', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    _setViewSize(tester, const Size(1200, 900));
+    await _pumpAssistantNavigation(tester);
+
+    final expected = assistantTabsForLayout(compact: false);
+    final tabs = tester.widgetList<Tab>(find.byType(Tab)).toList();
+
+    expect(tabs.map((tab) => tab.key), expected.map((tab) => tab.key));
+    for (final tab in expected) {
+      expect(find.text(tab.label(l10n)), findsOneWidget);
+    }
+    expect(find.byKey(AssistantTab.chats.key), findsNothing);
+  });
+
+  testWidgets('compact Assistant navigation includes Chats first', (
     tester,
   ) async {
     final l10n = lookupAppLocalizations(const Locale('en'));
+    _setViewSize(tester, const Size(390, 844));
     await _pumpAssistantNavigation(tester);
 
+    final expected = assistantTabsForLayout(compact: true);
     final tabs = tester.widgetList<Tab>(find.byType(Tab)).toList();
 
-    expect(
-      tabs.map((tab) => tab.key),
-      AssistantTab.values.map((tab) => tab.key),
-    );
-    for (final tab in AssistantTab.values) {
+    expect(tabs.map((tab) => tab.key), expected.map((tab) => tab.key));
+    for (final tab in expected) {
       expect(find.text(tab.label(l10n)), findsOneWidget);
       final tabSemantics = tester.widgetList<Semantics>(
         find.descendant(
@@ -54,6 +99,7 @@ void main() {
   testWidgets('Assistant navigation changes selected tab for every section', (
     tester,
   ) async {
+    _setViewSize(tester, const Size(1200, 900));
     final voiceController = _FakeVoiceCallController();
     await _pumpAssistantNavigation(tester, voiceController: voiceController);
 
@@ -61,25 +107,27 @@ void main() {
       return tester.widget<TabBar>(find.byType(TabBar)).controller!;
     }
 
-    expect(controller().index, AssistantTab.chat.index);
+    final tabs = assistantTabsForLayout(compact: false);
+    expect(controller().index, tabs.indexOf(AssistantTab.chat));
 
-    for (final tab in AssistantTab.values) {
+    for (final tab in tabs) {
       await tester.tap(find.byKey(tab.key));
       await tester.pumpAndSettle();
 
-      expect(controller().index, tab.index);
+      expect(controller().index, tabs.indexOf(tab));
     }
 
     expect(voiceController.startCount, 0);
   });
 
   testWidgets(
-    'Assistant navigation keeps Overview as a tab, not a Chats tab',
+    'Assistant navigation keeps Overview as a tab on wide layout',
     (tester) async {
+      _setViewSize(tester, const Size(1200, 900));
       await _pumpAssistantNavigation(tester);
 
       expect(find.byKey(AssistantTab.overview.key), findsOneWidget);
-      expect(find.byKey(const ValueKey<String>('assistant-tab-chats')), findsNothing);
+      expect(find.byKey(AssistantTab.chats.key), findsNothing);
       expect(find.byTooltip('Conversations'), findsNothing);
 
       await tester.tap(find.byKey(AssistantTab.overview.key));
@@ -91,8 +139,51 @@ void main() {
   );
 
   testWidgets(
+    'compact Chats tab selection opens Chat with loaded conversation',
+    (tester) async {
+      _setViewSize(tester, const Size(390, 844));
+
+      final conversationApi = _FakeConversationApi(
+        conversations: [
+          Conversation(
+            id: 'conversation-budget',
+            title: 'Budget check-in',
+            timestamp: DateTime.utc(2026, 6, 1),
+          ),
+        ],
+        messagesById: {
+          'conversation-budget': [
+            ChatMessage(
+              id: 'msg-1',
+              role: ChatMessageRole.assistant,
+              content: 'Loaded from history',
+              timestamp: DateTime.utc(2026, 6, 2),
+            ),
+          ],
+        },
+      );
+      await _pumpAssistantNavigation(tester, conversationApi: conversationApi);
+
+      await tester.tap(find.byKey(AssistantTab.chats.key));
+      await tester.pumpAndSettle();
+      expect(find.text('Budget check-in'), findsOneWidget);
+
+      await tester.tap(find.text('Budget check-in'));
+      await tester.pumpAndSettle();
+
+      final tabs = assistantTabsForLayout(compact: true);
+      final controller =
+          tester.widget<TabBar>(find.byType(TabBar)).controller!;
+      expect(controller.index, tabs.indexOf(AssistantTab.chat));
+      expect(find.text('Loaded from history'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'Chats search from Overview submits backend query and renders results',
     (tester) async {
+      // Medium desktop: no compact Chats tab, no wide chat sidebar split.
+      _setViewSize(tester, const Size(900, 800));
       final conversationApi = _FakeConversationApi(
         searchResults: [
           ConversationSearchResult(
@@ -142,12 +233,12 @@ void main() {
   testWidgets('Assistant shell fits common iPhone safe-area widths', (
     tester,
   ) async {
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
     const sizes = [Size(320, 568), Size(390, 844), Size(430, 932)];
+    final compactTabs = assistantTabsForLayout(compact: true);
 
     for (final (index, size) in sizes.indexed) {
-      await tester.binding.setSurfaceSize(size);
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
       final voiceController = _FakeVoiceCallController();
       await _pumpAssistantNavigation(
         tester,
@@ -158,7 +249,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Assistant'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
-      for (final tab in AssistantTab.values) {
+      for (final tab in compactTabs) {
         expect(find.byKey(tab.key), findsOneWidget);
       }
 
@@ -173,6 +264,11 @@ void main() {
         expect(tester.takeException(), isNull);
       }
     }
+
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
   });
 }
 
@@ -209,19 +305,25 @@ Future<void> _pumpAssistantNavigation(
 }
 
 class _FakeConversationApi extends ConversationApi {
-  _FakeConversationApi({this.searchResults = const []});
+  _FakeConversationApi({
+    this.searchResults = const [],
+    this.conversations = const [],
+    this.messagesById = const {},
+  });
 
   final List<ConversationSearchResult> searchResults;
+  final List<Conversation> conversations;
+  final Map<String, List<ChatMessage>> messagesById;
   final List<String> searchQueries = [];
 
   @override
-  Future<List<Conversation>> getConversations() async => const [];
+  Future<List<Conversation>> getConversations() async => conversations;
 
   @override
   Future<List<ChatMessage>> getConversationMessages(
     String conversationId,
   ) async {
-    return const [];
+    return messagesById[conversationId] ?? const [];
   }
 
   @override

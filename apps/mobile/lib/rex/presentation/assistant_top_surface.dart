@@ -17,10 +17,12 @@ class AssistantTopSurface extends StatelessWidget {
   const AssistantTopSurface({
     super.key,
     required this.controller,
+    required this.tabs,
     required this.profileController,
   });
 
   final TabController controller;
+  final List<AssistantTab> tabs;
   final ProfileController profileController;
 
   @override
@@ -51,6 +53,7 @@ class AssistantTopSurface extends StatelessWidget {
           SizedBox(height: titleGap),
           AssistantTabNavigation(
             controller: controller,
+            tabs: tabs,
             profileController: profileController,
           ),
         ],
@@ -63,10 +66,12 @@ class AssistantTabNavigation extends StatelessWidget {
   const AssistantTabNavigation({
     super.key,
     required this.controller,
+    required this.tabs,
     required this.profileController,
   });
 
   final TabController controller;
+  final List<AssistantTab> tabs;
   final ProfileController profileController;
 
   @override
@@ -101,7 +106,7 @@ class AssistantTabNavigation extends StatelessWidget {
             ),
             labelPadding: const EdgeInsets.symmetric(horizontal: 2),
             tabs: [
-              for (final tab in AssistantTab.values)
+              for (final tab in tabs)
                 Tab(
                   key: tab.key,
                   height: tabHeight,

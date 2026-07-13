@@ -209,9 +209,10 @@ npm run build
 ## Suggested next steps
 
 1. Re-smoke **F1 #8** on iOS after compact confirm title/density (Title field should match Details size).
-2. Complete **F3** iOS notch/sheet/voice chrome checks on device.
-3. Smoke **F2** Android + **F4** `/app/` when claiming those surfaces.
-4. **C4/A116** screenshot refresh after density looks right — do not claim redesign screenshots until then.
-5. Optional later: Knows-vs-Goals propose routing (parking lot); finance mobile density is out of this Assistant track.
+2. Re-smoke **Chats access (compact):** Assistant sub-tab order `Chats | Chat | Knows | Goals | Overview`; open a chat from Chats → transcript; Overview → Browse chats still works. **Wide `/app/`:** no Chats sub-tab; sidebar still owns history.
+3. Complete **F3** iOS notch/sheet/voice chrome checks on device (confirm strip / composer unclipped under denser header + five Assistant tabs).
+4. Smoke **F2** Android + **F4** `/app/` when claiming those surfaces.
+5. **C4/A116** screenshot refresh after density looks right — do not claim redesign screenshots until then.
+6. Optional later: Knows-vs-Goals propose routing (parking lot).
 
-**Mobile density track (post-F1 iOS):** compact confirm/composer tokens + denser Assistant header landed in `RexUiTokens` / confirm cards / `assistant_top_surface.dart`. Wide `/app/` keeps prior roomier defaults.
+**Mobile density track (post-F1 iOS):** compact confirm/composer tokens + denser Assistant header + compact-only **Chats** Assistant sub-tab + denser Dashboard/Accounts card titles. Wide `/app/` keeps prior roomier defaults and sidebar conversation list (no duplicate Chats tab).

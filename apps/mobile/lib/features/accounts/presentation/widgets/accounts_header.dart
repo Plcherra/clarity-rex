@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../app/ui_dependencies.dart';
 import '../../../../core/formatting/formatting.dart';
+import '../../../../core/layout/clarity_breakpoints.dart';
 import '../../../../core/l10n/app_l10n.dart';
 import '../../../../theme/clarity_colors.dart';
 import '../../../../widgets/clarity_card.dart';
@@ -60,7 +61,10 @@ class AccountsSummaryCard extends StatelessWidget {
                       totalBalance == null
                           ? l10n.commonUnavailable
                           : formatMoney(totalBalance),
-                      style: theme.textTheme.headlineSmall?.copyWith(
+                      style: (!isClarityDesktopLayout(context)
+                              ? theme.textTheme.titleLarge
+                              : theme.textTheme.headlineSmall)
+                          ?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: totalBalance == null
                             ? cs.onSurface.withValues(alpha: 0.46)

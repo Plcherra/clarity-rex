@@ -35,23 +35,34 @@ void main() {
   test('assistant tab contract is stable and ordered', () {
     final l10n = lookupAppLocalizations(const Locale('en'));
     expect(AssistantTab.values.map((tab) => tab.id), [
+      'chats',
       'chat',
       'memory',
       'goals',
       'overview',
     ]);
     expect(AssistantTab.values.map((tab) => tab.label(l10n)), [
+      'Chats',
       'Chat',
       'Knows',
       'Goals',
       'Overview',
     ]);
     expect(AssistantTab.values.map((tab) => tab.semanticLabel(l10n)), [
+      'Assistant Chats tab',
       'Assistant Chat tab',
       'Assistant Knows tab',
       'Assistant Goals tab',
       'Assistant Overview tab',
     ]);
+    expect(
+      assistantTabsForLayout(compact: true).map((tab) => tab.id),
+      ['chats', 'chat', 'memory', 'goals', 'overview'],
+    );
+    expect(
+      assistantTabsForLayout(compact: false).map((tab) => tab.id),
+      ['chat', 'memory', 'goals', 'overview'],
+    );
   });
 
   testWidgets('signed out users see auth screen', (tester) async {
@@ -237,13 +248,15 @@ void main() {
     expect(find.byTooltip('Conversations'), findsNothing);
     expect(find.byTooltip('Knows'), findsNothing);
     expect(find.byTooltip('Accountability'), findsNothing);
-    for (final tab in AssistantTab.values) {
+    // Default test surface is desktop-width: no compact Chats sub-tab.
+    for (final tab in assistantTabsForLayout(compact: false)) {
       expect(find.byKey(tab.key), findsOneWidget);
       expect(
         find.text(tab.label(lookupAppLocalizations(const Locale('en')))),
         findsOneWidget,
       );
     }
+    expect(find.byKey(AssistantTab.chats.key), findsNothing);
     expect(find.text('Voice'), findsNothing);
   });
 
