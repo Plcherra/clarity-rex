@@ -69,8 +69,10 @@ class Settings(BaseSettings):
     deepgram_language: str = "en-US"
     deepgram_base_url: str = "https://api.deepgram.com/v1"
     deepgram_timeout_seconds: int = 60
-    deepgram_endpointing_ms: int = 900
-    deepgram_live_transcript_idle_ms: int = 1100
+    # Conversational endpointing: tolerate breath/think pauses (~1.5s) without
+    # leaving listening stuck. Finish still lands ~1.6–1.8s after last speech.
+    deepgram_endpointing_ms: int = 1600
+    deepgram_live_transcript_idle_ms: int = 1800
 
     google_tts_project_id: Optional[str] = None
     google_tts_credentials_json: Optional[str] = None

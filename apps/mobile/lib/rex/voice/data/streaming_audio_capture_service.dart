@@ -147,8 +147,10 @@ class PackageBargeInDetectionService implements BargeInDetectionService {
 
 class PackageStreamingAudioCaptureService
     implements StreamingAudioCaptureService {
+  // Match conversational STT endpointing (~1.6–1.7s): allow breath pauses,
+  // still hand off soon after the user actually stops.
   static const _maximumStreamingSilenceAfterSpeech = Duration(
-    milliseconds: 900,
+    milliseconds: 1700,
   );
   static const _minimumStreamingSpeechDuration = Duration(milliseconds: 260);
   static const _streamingSpeechStartThresholdDb = -50.0;
@@ -279,8 +281,8 @@ class PackageStreamingAudioCaptureService
   }
 
   VoiceCaptureConfig _streamingEndpointConfig(VoiceCaptureConfig config) {
-    // Live PCM chunks are bursty on mobile, but calls should feel responsive.
-    // Cap endpoint silence so voice mode can hand off to STT quickly.
+    // Live PCM is bursty; keep a conversational silence window so breath
+    // pauses do not cut the turn, while finished speech still hands off soon.
     return VoiceCaptureConfig(
       amplitudeInterval: config.amplitudeInterval,
       speechStartThresholdDb: min(

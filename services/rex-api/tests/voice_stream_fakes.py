@@ -241,8 +241,8 @@ class FakeLiveTranscription:
 
 class FakeLiveDeepgramStreamingService:
     settings = SimpleNamespace(
-        deepgram_endpointing_ms=900,
-        deepgram_live_transcript_idle_ms=1100,
+        deepgram_endpointing_ms=1600,
+        deepgram_live_transcript_idle_ms=1800,
     )
 
 
