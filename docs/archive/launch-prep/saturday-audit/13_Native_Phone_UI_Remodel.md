@@ -5,7 +5,7 @@
 **Canon:** `MASTER_PLAN.md` · `CLARITY_RULES.md` · `PROJECT_STRUCTURE.md`  
 **Related:** [`02_Chat_and_Knows_UI_Upgrade.md`](02_Chat_and_Knows_UI_Upgrade.md) Phase F3 (re-smoke notes updated in **Phase F** of this file only).
 
-**Status:** Phase A–C done (tokens + finance full-bleed + Chats dense list). Phases D–F remaining — do not ship “redesigned phone UI” claims until Phase F passes.
+**Status:** Phase A–D done (tokens + finance full-bleed + Chats dense list + composer/transcript). Phases E–F remaining — do not ship “redesigned phone UI” claims until Phase F passes.
 
 ---
 
@@ -224,14 +224,14 @@ Work **A → F**. One PR/commit theme per phase. Stop and re-smoke iPhone after 
 
 **Primary files:**
 
-- `rex_ui_tokens.dart`, `chat_input_bar.dart`, `chat_transcript.dart`
+- `rex_ui_tokens.dart`, `chat_input_bar.dart` (+ extract `chat_input_bar_attachment.dart`), `chat_transcript.dart`
 - Tests: `chat_input_bar_test.dart`, `rex_ui_tokens_compact_test.dart`
 
 **Acceptance D:**
 
-- [ ] Composer comfortable to type; no inner fill/shadow on phone
-- [ ] Wide web composer unchanged
-- [ ] Confirm strip still inline on native (no auto dialog regression)
+- [x] Composer comfortable to type; no inner fill/shadow on phone
+- [x] Wide web composer unchanged
+- [x] Confirm strip still inline on native (no auto dialog regression)
 
 ---
 
@@ -306,7 +306,7 @@ After F3 looks right → resume plan 02 C4 screenshots / A116; then plan 05 devi
 | **A** | Native layout tokens + shell gutter 0 | **DONE** (2026-07-12) — `ClarityNativeLayout` + shell gutter 0 on native compact; wide/web unchanged |
 | **B** | Finance full-bleed (Dashboard → Accounts → Budgets) | **DONE** (2026-07-12) — pageGutter + single chart chrome; Accounts/Budgets tokens |
 | **C** | Chats dense list + search align + title clamp | **DONE** (2026-07-12) — native dense title+1-line preview via `ClarityNativeLayout.active`; search H pad == list row; wide sidebar unchanged; Chats sub-tab kept |
-| **D** | Composer + transcript (no fill) | **TODO** |
+| **D** | Composer + transcript (no fill) | **DONE** (2026-07-12) — kill pill fill; native minHeight 46 + fieldPadV 10; chrome H == pageGutter; transcript pad uses pageGutter; confirm stays inline |
 | **E** | Knows / Goals / Overview / Profile | **TODO** |
 | **F** | Tests + plan 02 F3 notes + iPhone re-smoke | **TODO** |
 

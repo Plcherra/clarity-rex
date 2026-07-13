@@ -25,7 +25,8 @@ abstract final class ClarityNativeLayout {
   static const int _listPreviewMaxLines = 1;
   static const double _composerFieldMinHeight = 46;
   static const double _composerFieldPaddingV = 10;
-  static const double _composerChromePadH = 8;
+  /// Matches [pageGutter] / list row H so composer aligns with Chats list.
+  static const double _composerChromePadH = 10;
 
   /// Same gate as [RexUiTokens.isNativeCompactChrome] — single source in core.
   static bool active(BuildContext context) {

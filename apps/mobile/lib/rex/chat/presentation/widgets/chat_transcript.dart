@@ -51,6 +51,7 @@ class ChatTranscript extends StatelessWidget {
     final baseBottomPadding = MediaQuery.viewInsetsOf(context).bottom > 0
         ? RexUiTokens.space12
         : RexUiTokens.space24;
+    final transcriptPadH = RexUiTokens.transcriptPaddingHOf(context);
 
     final scrollView = CustomScrollView(
       controller: scrollController,
@@ -61,9 +62,9 @@ class ChatTranscript extends StatelessWidget {
       slivers: [
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
-              RexUiTokens.space16,
+              transcriptPadH,
               RexUiTokens.space8,
-              RexUiTokens.space16,
+              transcriptPadH,
               baseBottomPadding,
             ),
             sliver: SliverList(
@@ -239,9 +240,9 @@ class _VoiceProcessingIndicatorState extends State<_VoiceProcessingIndicator> {
         : l10n.voicePanelThoughtFor(elapsed);
 
     return Padding(
-      padding: const EdgeInsets.only(
+      padding: EdgeInsets.only(
         top: RexUiTokens.space2,
-        left: RexUiTokens.bubbleSideInset,
+        left: RexUiTokens.bubbleSideInsetOf(context),
       ),
       child: Row(
         children: [

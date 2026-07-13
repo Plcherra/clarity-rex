@@ -161,4 +161,92 @@ void main() {
 
     expect(sent, isFalse);
   });
+
+  testWidgets('native compact composer has no pill fill and comfortable height', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      wrapWithL10n(
+        Scaffold(
+          body: Align(
+            alignment: Alignment.bottomCenter,
+            child: ChatInputBar(controller: controller),
+          ),
+        ),
+      ),
+    );
+
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.decoration?.filled, isFalse);
+    expect(field.decoration?.fillColor, Colors.transparent);
+
+    // No elevated pill DecoratedBox wrapping the field on native.
+    expect(
+      find.descendant(
+        of: find.byType(ChatInputBar),
+        matching: find.byType(DecoratedBox),
+      ),
+      findsNothing,
+    );
+
+    final constrained = tester.widgetList<ConstrainedBox>(
+      find.descendant(
+        of: find.byType(ChatInputBar),
+        matching: find.byType(ConstrainedBox),
+      ),
+    );
+    expect(
+      constrained.any((box) => box.constraints.minHeight == 46),
+      isTrue,
+    );
+  });
+
+  testWidgets('wide composer stays unfilled without native min-height wrap', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      wrapWithL10n(
+        Scaffold(
+          body: Align(
+            alignment: Alignment.bottomCenter,
+            child: ChatInputBar(controller: controller),
+          ),
+        ),
+      ),
+    );
+
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.decoration?.filled, isFalse);
+
+    final constrained = tester.widgetList<ConstrainedBox>(
+      find.descendant(
+        of: find.byType(ChatInputBar),
+        matching: find.byType(ConstrainedBox),
+      ),
+    );
+    expect(
+      constrained.any((box) => box.constraints.minHeight == 46),
+      isFalse,
+    );
+  });
 }

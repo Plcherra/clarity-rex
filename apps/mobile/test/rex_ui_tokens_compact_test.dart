@@ -91,8 +91,71 @@ void main() {
     expect(bubbleInset, RexUiTokens.bubbleSideInsetNativeCompact);
     expect(showTitle, isFalse);
     expect(showScrollbar, isFalse);
-    expect(filledComposer, isTrue);
+    expect(filledComposer, isFalse);
     expect(autoDialog, isFalse);
+  });
+
+  testWidgets('native composer tokens raise type height without fill', (
+    tester,
+  ) async {
+    late bool filledComposer;
+    late double fieldPadV;
+    late double chromePadH;
+    late double minHeight;
+    late double transcriptPadH;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(390, 844)),
+          child: Builder(
+            builder: (context) {
+              filledComposer = RexUiTokens.usesFilledComposerField(context);
+              fieldPadV = RexUiTokens.composerFieldPaddingVOf(context);
+              chromePadH = RexUiTokens.composerPaddingHOf(context);
+              minHeight = RexUiTokens.composerFieldMinHeightOf(context);
+              transcriptPadH = RexUiTokens.transcriptPaddingHOf(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(filledComposer, isFalse);
+    expect(fieldPadV, 10);
+    expect(chromePadH, 10);
+    expect(minHeight, greaterThanOrEqualTo(44));
+    expect(transcriptPadH, 10);
+  });
+
+  testWidgets('wide composer padding tokens stay unchanged', (tester) async {
+    late bool filledComposer;
+    late double fieldPadV;
+    late double chromePadH;
+    late double transcriptPadH;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(1280, 900)),
+          child: Builder(
+            builder: (context) {
+              filledComposer = RexUiTokens.usesFilledComposerField(context);
+              fieldPadV = RexUiTokens.composerFieldPaddingVOf(context);
+              chromePadH = RexUiTokens.composerPaddingHOf(context);
+              transcriptPadH = RexUiTokens.transcriptPaddingHOf(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(filledComposer, isFalse);
+    expect(fieldPadV, RexUiTokens.composerFieldPaddingV);
+    expect(chromePadH, RexUiTokens.composerPaddingH);
+    expect(transcriptPadH, RexUiTokens.space16);
   });
 
   testWidgets('wide layout keeps web-style assistant title and bubble inset', (

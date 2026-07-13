@@ -79,7 +79,8 @@ class RexUiTokens {
   }
 
   static bool usesFilledComposerField(BuildContext context) {
-    return isNativeCompactChrome(context);
+    // Phase D: no elevated pill fill on native; TextField stays filled:false.
+    return ClarityNativeLayout.composerFieldFill(context);
   }
 
   static bool showsTranscriptScrollbar(BuildContext context) {
@@ -140,6 +141,9 @@ class RexUiTokens {
   }
 
   static double composerPaddingHOf(BuildContext context) {
+    if (ClarityNativeLayout.active(context)) {
+      return ClarityNativeLayout.composerChromePadH(context);
+    }
     return isCompactChrome(context) ? ClaritySpacing.xs : composerPaddingH;
   }
 
@@ -152,11 +156,26 @@ class RexUiTokens {
   }
 
   static double composerFieldPaddingVOf(BuildContext context) {
+    if (ClarityNativeLayout.active(context)) {
+      return ClarityNativeLayout.composerFieldPaddingV(context);
+    }
     return isCompactChrome(context) ? ClaritySpacing.xs : composerFieldPaddingV;
+  }
+
+  static double composerFieldMinHeightOf(BuildContext context) {
+    return ClarityNativeLayout.composerFieldMinHeight(context);
   }
 
   static double composerIconSizeOf(BuildContext context) {
     return isCompactChrome(context) ? 36.0 : composerIconSize;
+  }
+
+  /// Transcript list outer horizontal inset — matches page gutter on native.
+  static double transcriptPaddingHOf(BuildContext context) {
+    if (ClarityNativeLayout.active(context)) {
+      return ClarityNativeLayout.pageGutter(context);
+    }
+    return space16;
   }
 
   static ThemeData theme(BuildContext context) => Theme.of(context);
