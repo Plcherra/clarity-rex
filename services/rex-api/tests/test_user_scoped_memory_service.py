@@ -56,6 +56,38 @@ async def test_memory_service_uses_user_token_and_scopes_reads(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_memory_service_scopes_profiles_by_id_not_user_id(monkeypatch):
+    """profiles.id is the auth uid; injecting user_id breaks settings load."""
+    calls = []
+
+    async def fake_request(method, url, headers=None, json=None):
+        calls.append({"method": method, "url": url})
+        return FakeSupabaseRestResponse()
+
+    monkeypatch.setattr(transport_module, "request_with_retries", fake_request)
+    service = SupabaseMemoryService(
+        settings=Settings(
+            supabase_url="https://example.supabase.co",
+            supabase_anon_key="anon-key",
+            supabase_service_role_key="service-key",
+            _env_file=None,
+        ),
+        user_id="user-123",
+        access_token="access-token",
+    )
+
+    await service._list_records(
+        "profiles",
+        select="assistant_settings",
+        filters={"id": "user-123"},
+        limit=1,
+    )
+
+    assert "id=eq.user-123" in calls[0]["url"]
+    assert "user_id=" not in calls[0]["url"]
+
+
+@pytest.mark.asyncio
 async def test_memory_service_attaches_user_id_to_inserts(monkeypatch):
     calls = []
 

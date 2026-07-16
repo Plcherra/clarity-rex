@@ -151,7 +151,7 @@ class SupabaseMemoryTransport:
         if not rest_url or not api_key or not auth_token:
             raise MemoryServiceError("Supabase memory is not configured.")
 
-        scoped_query = self._scoped_query(method, query)
+        scoped_query = self._scoped_query(method, query, table=table)
         url = f"{rest_url}/{quote(table)}"
         if scoped_query:
             url = f"{url}?{urlencode(scoped_query)}"
@@ -261,10 +261,24 @@ class SupabaseMemoryTransport:
         self,
         method: str,
         query: Optional[dict[str, str]],
+        *,
+        table: str = "",
     ) -> Optional[dict[str, str]]:
+        """Scope reads/updates to the authenticated user.
+
+        Most tables use ``user_id``. ``profiles`` is keyed by ``id`` (auth uid)
+        and has no ``user_id`` column — injecting ``user_id`` fails the query
+        and fail-closes assistant settings to Off.
+        """
         if self.user_id is None or method.upper() == "POST":
             return query
-        return {**(query or {}), "user_id": f"eq.{self.user_id}"}
+        scoped = dict(query or {})
+        if table == "profiles":
+            scoped["id"] = f"eq.{self.user_id}"
+            scoped.pop("user_id", None)
+            return scoped
+        scoped["user_id"] = f"eq.{self.user_id}"
+        return scoped
 
     def _write_payload(self, payload: dict[str, object]) -> dict[str, object]:
         return {
