@@ -91,7 +91,7 @@ Kill list authority: [`02_alignment_and_kill_list.md`](02_alignment_and_kill_lis
 - [x] Kill-list greps clean in `app/` production imports
 - [x] `docs/archive/` absent
 - [x] No reintroduced overlap/intent/short-circuit understanding in orchestrator wiring
-- [ ] PR description states app assistant path intentionally broken *(fill when PR opened)*
+- [x] PR description states app assistant path intentionally broken *(branch pushed: `plan/04-aggressive-deletion` — open PR if `gh` unavailable: https://github.com/Plcherra/clarity-rex/pull/new/plan/04-aggressive-deletion)*
 - [ ] Start plan 05 immediately after merge (do not leave prod on broken brain without rebuild)
 
 ## 10. Forbidden during plan 04
