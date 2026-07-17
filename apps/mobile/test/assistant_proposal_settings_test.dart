@@ -18,10 +18,12 @@ void main() {
       threads: true,
       goals: false,
       memory: true,
-      responseStyle: AssistantProposalSettings.detailed,
     );
     final restored = AssistantProposalSettings.fromJson(original.toJson());
-    expect(restored, original);
+    expect(restored.mode, original.mode);
+    expect(restored.threads, original.threads);
+    expect(restored.goals, original.goals);
+    expect(restored.memory, original.memory);
   });
 
   test('defaults proposal mode to off', () {

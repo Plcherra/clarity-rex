@@ -61,7 +61,7 @@ final class AssistantProposalSettings {
     'auto_proposals_threads': threads,
     'auto_proposals_goals': goals,
     'auto_proposals_memory': memory,
-    'response_style': responseStyle,
+    // response_style removed — reply-length control deleted from product.
     'finance_edits_enabled': financeEditsEnabled,
   };
 

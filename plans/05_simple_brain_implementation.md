@@ -1,7 +1,7 @@
 # 05 — Simple brain implementation
 
-**Status:** execution plan. Run after plan 04 deletion gate.  
-**Depends on:** [`04_aggressive_deletion.md`](04_aggressive_deletion.md)  
+**Status:** Phase A in progress (2026-07-17) on `plan/04-aggressive-deletion`.  
+**Depends on:** [`04_aggressive_deletion.md`](04_aggressive_deletion.md) (complete)  
 **Vision reference:** [`01_vision_gap_and_token_budget.md`](01_vision_gap_and_token_budget.md)
 
 ## 1. Goal
@@ -131,17 +131,17 @@ Confirm cards and Truth remain mandatory for durable writes.
 
 ### Phase A — Skeleton pipeline
 
-- [ ] Thin orchestrator: load settings + recent messages + thread titles
-- [ ] Tiny system prompt (Truth + Off/Text/Card + capability names) — no persona essay, **no reply-length block**
-- [ ] Grok `just_chat` round-trip saves assistant message
-- [ ] Truth still runs
-- [ ] Strip `response_style` from prompt path / profile settings UI (or ignore field)
+- [x] Thin orchestrator: load settings + recent messages + thread titles
+- [x] Tiny system prompt (Truth + Off/Text/Card + capability names) — no persona essay, **no reply-length block**
+- [x] Grok `just_chat` round-trip saves assistant message
+- [x] Truth still runs
+- [x] Strip `response_style` from prompt path / profile settings UI (or ignore field)
 
 **Manual tests:**
 
 - [ ] Chat: “hey” → natural Grok reply (length not forced short)
 - [ ] Voice path: same brain → **Google TTS** plays reply
-- [ ] Base prompt size sanity: rough estimate under ~1k for empty-ish thread
+- [ ] Base prompt size sanity: rough estimate under ~1k for empty-ish thread *(unit estimate in `test_tiny_system_prompt.py`)*
 
 ### Phase B — Unsupported + gate plumbing
 

@@ -1,6 +1,6 @@
 # 04 — Aggressive deletion (break-OK)
 
-**Status:** Phases A–F executed on `plan/04-aggressive-deletion` (2026-07-17). Phase G — PR + start plan 05 immediately after merge.  
+**Status:** Complete (2026-07-17). Kill list deleted; reply-length UI/prompt stripped; plan 05 Phase A started on same branch.  
 **Depends on:** [`03_canon_update.md`](03_canon_update.md) (merged)  
 **Next:** [`05_simple_brain_implementation.md`](05_simple_brain_implementation.md)
 
@@ -92,7 +92,7 @@ Kill list authority: [`02_alignment_and_kill_list.md`](02_alignment_and_kill_lis
 - [x] `docs/archive/` absent
 - [x] No reintroduced overlap/intent/short-circuit understanding in orchestrator wiring
 - [x] PR description states app assistant path intentionally broken *(branch pushed: `plan/04-aggressive-deletion` — open PR if `gh` unavailable: https://github.com/Plcherra/clarity-rex/pull/new/plan/04-aggressive-deletion)*
-- [ ] Start plan 05 immediately after merge (do not leave prod on broken brain without rebuild)
+- [x] Start plan 05 immediately after merge (do not leave prod on broken brain without rebuild) *(Phase A started on this branch)*
 
 ## 10. Forbidden during plan 04
 

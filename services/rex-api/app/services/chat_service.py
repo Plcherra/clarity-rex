@@ -24,9 +24,9 @@ from app.services.file_service import FileService
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.open_thread_service import OpenThreadService
 from app.services.plan_service import PlanService
+from app.services.grok_turn_brain import GrokTurnBrain
 from app.services.prompt_service import PromptService
 from app.services.rex_channel import RexBrainChannel
-from app.services.simple_rex_brain import SimpleRexBrain
 from app.services.time_context_service import TimeContextService
 from app.services.usage_tracking_service import UsageTrackingService
 
@@ -42,7 +42,7 @@ class ChatService(ChatVoiceMetadataMixin):
         accountability_service: Optional[AccountabilityService] = None,
         chat_context_service: Optional[ChatContextService] = None,
         clarity_action_parser: Optional[ClarityActionParser] = None,
-        simple_rex_brain: Optional[SimpleRexBrain] = None,
+        grok_turn_brain: Optional[GrokTurnBrain] = None,
         usage_tracking_service: Optional[UsageTrackingService] = None,
     ) -> None:
         self.ai_service = ai_service
@@ -67,9 +67,7 @@ class ChatService(ChatVoiceMetadataMixin):
             time_context_service=self.time_context_service,
             accountability_service=self.accountability_service,
         )
-        self.simple_rex_brain = simple_rex_brain or SimpleRexBrain(
-            chat_context_service=self.chat_context_service,
-        )
+        self.grok_turn_brain = grok_turn_brain or GrokTurnBrain(ai_service=ai_service)
         self.chat_turn_context_service = ChatTurnContextService(
             file_service=file_service,
             memory_service=memory_service,
@@ -85,13 +83,13 @@ class ChatService(ChatVoiceMetadataMixin):
         self.turn_orchestrator = ChatTurnOrchestrator(
             ai_service=ai_service,
             memory_service=memory_service,
-            simple_rex_brain=self.simple_rex_brain,
             chat_turn_context_service=self.chat_turn_context_service,
             durable_write_service=self.durable_write_service,
             clarity_action_parser=self.clarity_action_parser,
             financial_guard=self.financial_guard,
             truth_service=self.truth_service,
             usage_recorder=self.usage_recorder,
+            grok_turn_brain=self.grok_turn_brain,
         )
 
     async def send_message(

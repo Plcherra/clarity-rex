@@ -77,12 +77,12 @@ class AssistantProposalSettings:
         return kinds
 
     def to_profile_dict(self) -> dict[str, Any]:
+        # response_style intentionally omitted — reply-length control removed.
         return {
             "auto_proposals_mode": self.mode,
             "auto_proposals_threads": self.threads,
             "auto_proposals_goals": self.goals,
             "auto_proposals_memory": self.memory,
-            "response_style": self.response_style,
             "finance_edits_enabled": self.finance_edits_enabled,
         }
 

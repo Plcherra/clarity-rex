@@ -43,7 +43,6 @@ class PromptService(
         financial_context: Optional[dict] = None,
         max_context_characters: Optional[int] = None,
         locale: Optional[str] = None,
-        response_style: Optional[str] = None,
     ) -> list[dict]:
         messages = [
             *self._message_history(recent_messages or []),
@@ -59,7 +58,6 @@ class PromptService(
             time_context=time_context,
             financial_context=financial_context,
             locale=locale,
-            response_style=response_style,
         )
         if not system_sections:
             return messages
@@ -93,7 +91,6 @@ class PromptService(
         time_context: Optional[dict],
         financial_context: Optional[dict],
         locale: Optional[str] = None,
-        response_style: Optional[str] = None,
     ) -> list[str]:
         sections: list[str] = []
 

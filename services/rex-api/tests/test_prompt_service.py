@@ -17,17 +17,18 @@ def test_prompt_service_casual_turn_has_no_system_message():
     assert messages == [{"role": "user", "content": "Hello Rex"}]
 
 
-def test_prompt_service_includes_response_style_section():
+def test_prompt_service_has_no_response_style_section():
     service = PromptService()
 
     messages = service.build_messages(
         user_message="What should I do with my paycheck?",
-        response_style="concise",
     )
 
-    assert messages[0]["role"] == "system"
-    assert "Response style: concise" in messages[0]["content"]
-    assert "Saved memory" in messages[0]["content"]
+    joined = "\n".join(
+        str(item.get("content") or "") for item in messages if item.get("role") == "system"
+    )
+    assert "Response style:" not in joined
+    assert "concise" not in joined.lower()
 
 
 def test_prompt_service_sanitizes_recent_message_history():

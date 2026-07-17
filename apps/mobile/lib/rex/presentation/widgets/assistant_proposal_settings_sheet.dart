@@ -89,43 +89,6 @@ class _AssistantProposalSettingsSheetState
                   ),
                 ),
                 const SizedBox(height: 18),
-                Text(
-                  l10n.assistantResponseStyleLabel,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SegmentedButton<AssistantResponseStyle>(
-                  segments: [
-                    ButtonSegment(
-                      value: AssistantResponseStyle.concise,
-                      label: Text(l10n.assistantResponseStyleConcise),
-                    ),
-                    ButtonSegment(
-                      value: AssistantResponseStyle.balanced,
-                      label: Text(l10n.assistantResponseStyleBalanced),
-                    ),
-                    ButtonSegment(
-                      value: AssistantResponseStyle.detailed,
-                      label: Text(l10n.assistantResponseStyleDetailed),
-                    ),
-                  ],
-                  selected: {
-                    AssistantResponseStyleValue.fromStorage(settings.responseStyle),
-                  },
-                  onSelectionChanged: loading
-                      ? null
-                      : (selection) async {
-                          final style = selection.first;
-                          await _save(
-                            settings.copyWith(
-                              responseStyle: style.storageValue,
-                            ),
-                          );
-                        },
-                ),
-                const SizedBox(height: 20),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: Text(l10n.assistantFinanceEditsEnabledLabel),

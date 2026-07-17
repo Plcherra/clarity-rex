@@ -4,7 +4,6 @@ from typing import Optional
 from app.services.chat_context_recall import ChatContextRecallPolicy
 from app.services.recall_intent_helper import MEMORY_INVENTORY_QUERY
 from app.services.rex_channel import RexBrainChannel
-from app.services.rex_channel import RexBrainChannel
 
 
 @dataclass(frozen=True)
