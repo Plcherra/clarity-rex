@@ -23,6 +23,10 @@ from app.services.assistant_proposal_settings import (
     PROPOSAL_KIND_THREADS,
     fail_closed_proposal_settings,
 )
+from app.services.open_thread_turn_update import (
+    try_handle_explicit_or_overlap_update,
+    try_handle_update_consent,
+)
 
 
 THREAD_OFFER_PHRASE = "Want me to keep track of this and check in later?"
@@ -80,10 +84,25 @@ class OpenThreadTurnService:
                 response="Okay, I won't track that as an open thread.",
             )
 
-        if is_explicit_track_consent(message) or self._recent_offer_pending(
+        is_consent = is_explicit_track_consent(message) or self._recent_offer_pending(
             offer_state,
             message,
-        ):
+        )
+        update_consent = await try_handle_update_consent(
+            message=message,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            conversation_history=conversation_history,
+            settings=settings,
+            open_thread_service=self.open_thread_service,
+            durable_write_service=self.durable_write_service,
+            memory_service=self.memory_service,
+            is_consent=is_consent or self._bare_yes(message),
+        )
+        if update_consent is not None:
+            return update_consent
+
+        if is_consent:
             topic_message = str(offer_state.get("topic_message") or "").strip()
             if not topic_message:
                 topic_message = message
@@ -114,6 +133,22 @@ class OpenThreadTurnService:
 
         if offer_state.get("offered") or offer_state.get("declined"):
             return None
+
+        # Explicit update commands (any mode) + auto Text/Card overlap updates.
+        update_turn = await try_handle_explicit_or_overlap_update(
+            message=message,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            conversation_history=conversation_history,
+            settings=settings,
+            open_thread_service=self.open_thread_service,
+            durable_write_service=self.durable_write_service,
+            memory_service=self.memory_service,
+            already_offered=bool(offer_state.get("offered")),
+            already_declined=bool(offer_state.get("declined")),
+        )
+        if update_turn is not None:
+            return update_turn
 
         if not settings.allows_kind(PROPOSAL_KIND_THREADS):
             return None
@@ -206,6 +241,10 @@ class OpenThreadTurnService:
     def _recent_offer_pending(self, offer_state: dict, message: str) -> bool:
         if not offer_state.get("offered") or offer_state.get("declined"):
             return False
+        return self._bare_yes(message)
+
+    @staticmethod
+    def _bare_yes(message: str) -> bool:
         normalized = message.strip().casefold()
         return normalized in {"yes", "yeah", "yep", "sure", "ok", "okay", "please"}
 

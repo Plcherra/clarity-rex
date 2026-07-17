@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any, Optional
 
-from app.services.memory_discipline_similarity import token_overlap_score
+from app.services.open_thread_overlap import topic_overlaps_existing_context
 
 CASUAL_ONLY_PATTERNS = (
     re.compile(r"^\s*(hey|hi|hello|thanks|thank you|ok|okay|lol|haha|yep|nope)\s*[!.?]*\s*$", re.I),
@@ -530,38 +530,3 @@ def _has_topic_noun(text: str) -> bool:
         )
     )
 
-
-def _context_text_fields(record: dict[str, Any]) -> list[str]:
-    fields: list[str] = []
-    for key in ("title", "summary", "description", "content", "display_name"):
-        value = record.get(key)
-        if isinstance(value, str) and value.strip():
-            fields.append(value.strip())
-    return fields
-
-
-def topic_overlaps_existing_context(
-    message: str,
-    *,
-    active_threads: list[dict[str, Any]],
-    active_plans: list[dict[str, Any]],
-    saved_memories: list[dict[str, Any]],
-    active_entities: list[dict[str, Any]],
-    threshold: float = 0.45,
-) -> bool:
-    candidates: list[str] = []
-    for collection in (
-        active_threads,
-        active_plans,
-        saved_memories,
-        active_entities,
-    ):
-        for record in collection:
-            if not isinstance(record, dict):
-                continue
-            candidates.extend(_context_text_fields(record))
-
-    for candidate in candidates:
-        if token_overlap_score(message, candidate) >= threshold:
-            return True
-    return False

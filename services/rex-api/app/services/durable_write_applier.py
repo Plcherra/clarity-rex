@@ -24,7 +24,7 @@ from app.services.memory_discipline_writes import (
 )
 from app.services.memory_persist_orchestrator import MemoryPersistOrchestrator
 from app.services.open_thread_service import OpenThreadService
-from app.models.open_thread import OpenThreadCreateRequest
+from app.models.open_thread import OpenThreadCreateRequest, OpenThreadUpdateRequest
 from app.services.plan_errors import PlanServiceError
 from app.services.plan_merge_service import normalize_text
 from app.services.plan_service import PlanService
@@ -96,6 +96,11 @@ class DurableWriteApplier:
                 snapshot,
                 conversation_id=conversation_id,
                 source_message_id=source_message_id,
+            )
+        if snapshot_type == "open_thread_update":
+            return await self._apply_open_thread_update(
+                snapshot,
+                conversation_id=conversation_id,
             )
         if snapshot_type == "bulk_plan_target_date":
             return await self._apply_bulk_plan_target_date(snapshot)
@@ -270,6 +275,45 @@ class DurableWriteApplier:
                 conversation_id=conversation_id,
             )
         return {"applied": True, "record": record, "merged": False}
+
+    async def _apply_open_thread_update(
+        self,
+        snapshot: dict[str, Any],
+        *,
+        conversation_id: str,
+    ) -> dict[str, Any]:
+        payload = dict(snapshot.get("payload") or {})
+        thread_id = str(payload.get("thread_id") or "").strip()
+        if not thread_id:
+            return apply_failure_result(
+                snapshot_type="open_thread_update",
+                detail="missing_thread_id",
+                conversation_id=conversation_id,
+            )
+        metadata = dict(payload.get("metadata") or {})
+        metadata.setdefault("source", "durable_write_confirmed")
+        try:
+            record = await self.open_thread_service.update_thread(
+                thread_id,
+                OpenThreadUpdateRequest(
+                    title=str(payload.get("title") or "") or None,
+                    summary=payload.get("summary"),
+                    metadata=metadata,
+                ),
+            )
+        except Exception as exc:
+            return apply_failure_result(
+                snapshot_type="open_thread_update",
+                error=exc,
+                conversation_id=conversation_id,
+            )
+        if not isinstance(record, dict) or not record.get("id"):
+            return apply_failure_result(
+                snapshot_type="open_thread_update",
+                detail="missing_record",
+                conversation_id=conversation_id,
+            )
+        return {"applied": True, "record": record, "merged": True}
 
     async def _apply_bulk_plan_target_date(
         self,

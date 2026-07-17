@@ -122,7 +122,11 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: RexUiTokens.space12),
+              SizedBox(
+                height: action.writeKind == 'open_thread'
+                    ? RexUiTokens.space8
+                    : RexUiTokens.space12,
+              ),
             ] else ...[
               if (financeActionHeadline(action) case final headline?) ...[
                 Text(
@@ -163,9 +167,12 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
               TextField(
                 controller: _titleController,
                 enabled: !action.isApplying,
+                maxLines: action.writeKind == 'open_thread' ? 2 : null,
                 style: RexUiTokens.confirmTitleFieldStyle(context),
                 decoration: InputDecoration(
-                  labelText: 'Title',
+                  labelText: action.writeKind == 'open_thread'
+                      ? 'Thread title'
+                      : 'Title',
                   isDense: true,
                   filled: true,
                   fillColor: colors.surfaceSoft.withValues(alpha: 0.72),
@@ -180,7 +187,8 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                 ),
               ),
             ],
-            if (canEditBody) ...[
+            // Open-thread cards omit Details — title is enough to confirm.
+            if (canEditBody && action.writeKind != 'open_thread') ...[
               const SizedBox(height: RexUiTokens.space8),
               TextField(
                 controller: _bodyController,
@@ -321,6 +329,11 @@ String pendingProposalHeadline(ClarityActionCard action) {
   }
   switch (action.writeKind) {
     case 'open_thread':
+      final prior = (action.targetLabel ?? '').trim();
+      if (prior.isNotEmpty ||
+          action.confirmationText.toLowerCase().startsWith('update open thread')) {
+        return 'Update in Goals';
+      }
       return 'Track in Goals';
     case 'plan':
     case 'milestone':

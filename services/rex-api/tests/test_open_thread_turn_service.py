@@ -73,6 +73,8 @@ class FakeDurableWriteService:
     def __init__(self) -> None:
         self.proposals: list[dict] = []
         self.applied_consents: list[dict] = []
+        self.update_proposals: list[dict] = []
+        self.applied_updates: list[dict] = []
 
     async def propose_open_thread(self, **kwargs):
         self.proposals.append(kwargs)
@@ -102,6 +104,39 @@ class FakeDurableWriteService:
             "memory_changes": {
                 "confirmation_required": 0,
                 "created": 1,
+                "write_proposals": [],
+            },
+        }
+
+    async def propose_open_thread_update(self, **kwargs):
+        self.update_proposals.append(kwargs)
+        return {
+            "response": (
+                f'Update open thread "{kwargs.get("existing_title")}" to:\n'
+                f'{kwargs["title"]}'
+            ),
+            "conversation_id": kwargs["conversation_id"],
+            "memory_changes": {
+                "confirmation_required": 1,
+                "write_proposals": [
+                    {
+                        "id": "open-thread-update-1",
+                        "write_kind": "open_thread",
+                        "title": kwargs["title"],
+                        "target_label": kwargs.get("existing_title"),
+                    }
+                ],
+            },
+        }
+
+    async def apply_open_thread_update_consent(self, **kwargs):
+        self.applied_updates.append(kwargs)
+        return {
+            "response": f'Updated open thread to "{kwargs["title"]}" in Goals.',
+            "conversation_id": kwargs["conversation_id"],
+            "memory_changes": {
+                "confirmation_required": 0,
+                "updated": 1,
                 "write_proposals": [],
             },
         }
@@ -340,6 +375,7 @@ async def test_open_thread_turn_service_offers_close_or_replace_at_cap():
 
 @pytest.mark.asyncio
 async def test_open_thread_turn_service_skips_offer_when_thread_topic_overlaps():
+    """Off mode: overlapping topic must not auto-suggest create or update."""
     memory = FakeTurnMemoryServiceWithContext()
     store = FakeOpenThreadStore()
     threads = OpenThreadService(store)
@@ -349,10 +385,11 @@ async def test_open_thread_turn_service_skips_offer_when_thread_topic_overlaps()
             summary="ongoing fitness",
         )
     )
+    durable = FakeDurableWriteService()
     service = OpenThreadTurnService(
         memory,
         open_thread_service=threads,
-        durable_write_service=FakeDurableWriteService(),
+        durable_write_service=durable,
     )
 
     result = await service.handle_turn(
@@ -363,9 +400,144 @@ async def test_open_thread_turn_service_skips_offer_when_thread_topic_overlaps()
             "content": "I've been trying to rebuild my workout habit this month.",
         },
         conversation_history=[],
+        proposal_settings=AssistantProposalSettings(mode="off"),
     )
 
     assert result is None
+    assert durable.update_proposals == []
+    assert durable.proposals == []
+
+
+SLEEP_THREAD_TITLE = "Sleep Schedule and Wake Up Everyday At 3am"
+SLEEP_THREAD_SUMMARY = "wake up every day at 3am"
+WAKE_6AM_MESSAGE = (
+    "I want to change my sleep schedule and wake up every day at 6am instead."
+)
+
+
+async def _service_with_sleep_thread():
+    memory = FakeTurnMemoryService()
+    store = FakeOpenThreadStore()
+    threads = OpenThreadService(store)
+    created = await threads.create_thread(
+        OpenThreadCreateRequest(
+            title=SLEEP_THREAD_TITLE,
+            summary=SLEEP_THREAD_SUMMARY,
+        )
+    )
+    durable = FakeDurableWriteService()
+    service = OpenThreadTurnService(
+        memory,
+        open_thread_service=threads,
+        durable_write_service=durable,
+    )
+    return service, durable, created
+
+
+@pytest.mark.asyncio
+async def test_overlap_text_mode_asks_to_update_existing_thread():
+    from app.services.open_thread_turn_update import THREAD_UPDATE_ASK_MARKER
+
+    service, durable, created = await _service_with_sleep_thread()
+    result = await service.handle_turn(
+        WAKE_6AM_MESSAGE,
+        conversation_id="conversation-1",
+        user_message={"id": "user-1", "content": WAKE_6AM_MESSAGE},
+        conversation_history=[],
+        proposal_settings=AssistantProposalSettings(mode="text"),
+    )
+
+    assert result is not None
+    assert THREAD_UPDATE_ASK_MARKER in result["response"]
+    assert "3am" in result["response"].lower() or SLEEP_THREAD_TITLE in result["response"]
+    assert result["memory_changes"]["confirmation_required"] == 0
+    assert not result["memory_changes"].get("write_proposals")
+    assert durable.update_proposals == []
+    assert durable.proposals == []
+    assert created["id"]
+
+
+@pytest.mark.asyncio
+async def test_overlap_card_mode_proposes_thread_update():
+    service, durable, created = await _service_with_sleep_thread()
+    result = await service.handle_turn(
+        WAKE_6AM_MESSAGE,
+        conversation_id="conversation-1",
+        user_message={"id": "user-1", "content": WAKE_6AM_MESSAGE},
+        conversation_history=[],
+        proposal_settings=AssistantProposalSettings(mode="card"),
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["confirmation_required"] == 1
+    assert result["memory_changes"]["write_proposals"][0]["write_kind"] == "open_thread"
+    assert durable.update_proposals
+    assert durable.update_proposals[0]["thread_id"] == created["id"]
+    assert durable.proposals == []
+
+
+@pytest.mark.asyncio
+async def test_overlap_off_mode_does_not_auto_suggest_update():
+    service, durable, _created = await _service_with_sleep_thread()
+    result = await service.handle_turn(
+        WAKE_6AM_MESSAGE,
+        conversation_id="conversation-1",
+        user_message={"id": "user-1", "content": WAKE_6AM_MESSAGE},
+        conversation_history=[],
+        proposal_settings=AssistantProposalSettings(mode="off"),
+    )
+
+    assert result is None
+    assert durable.update_proposals == []
+    assert durable.applied_updates == []
+    assert durable.proposals == []
+
+
+@pytest.mark.asyncio
+async def test_explicit_update_works_under_off_mode():
+    service, durable, created = await _service_with_sleep_thread()
+    message = "update my 3am thread to 5am instead"
+    result = await service.handle_turn(
+        message,
+        conversation_id="conversation-1",
+        user_message={"id": "user-1", "content": message},
+        conversation_history=[],
+        proposal_settings=AssistantProposalSettings(mode="off"),
+    )
+
+    assert result is not None
+    assert result["memory_changes"]["confirmation_required"] == 1
+    assert durable.update_proposals
+    assert durable.update_proposals[0]["thread_id"] == created["id"]
+    assert durable.proposals == []
+
+
+@pytest.mark.asyncio
+async def test_text_yes_after_update_ask_applies_update():
+    from app.services.open_thread_turn_update import build_thread_update_ask
+
+    service, durable, created = await _service_with_sleep_thread()
+    ask = build_thread_update_ask(
+        existing_title=SLEEP_THREAD_TITLE,
+        new_title="Wake Up Everyday At 6am",
+    )
+    history = [
+        {"role": "user", "content": WAKE_6AM_MESSAGE},
+        {"role": "assistant", "content": ask},
+    ]
+    result = await service.handle_turn(
+        "Yes",
+        conversation_id="conversation-1",
+        user_message={"id": "user-2", "content": "Yes"},
+        conversation_history=history,
+        proposal_settings=AssistantProposalSettings(mode="text"),
+    )
+
+    assert result is not None
+    assert result["memory_changes"].get("updated") == 1
+    assert durable.applied_updates
+    assert durable.applied_updates[0]["thread_id"] == created["id"]
+    assert durable.update_proposals == []
 
 
 @pytest.mark.asyncio

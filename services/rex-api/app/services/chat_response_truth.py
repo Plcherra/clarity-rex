@@ -15,6 +15,9 @@ from app.services.action_truth_policy import (
     safe_unexecuted_saved_memory_claim_response,
     safe_unsupported_action_response,
 )
+from app.services.action_truth_thread_mutation import (
+    safe_unexecuted_thread_or_goal_mutation_response,
+)
 from app.services.chat_turn_observability import ChatTurnTrace
 from app.services.rex_intent_router import RexIntent
 
@@ -174,6 +177,14 @@ class ChatResponseTruthService:
         updated = safe_unexecuted_saved_memory_claim_response(response)
         response = _apply_truth_guard(
             "unexecuted_saved_memory_claim",
+            response,
+            updated,
+            turn_trace,
+        )
+        # Any intent: block fake thread/goal "updated/switching" claims.
+        updated = safe_unexecuted_thread_or_goal_mutation_response(response)
+        response = _apply_truth_guard(
+            "unexecuted_thread_or_goal_mutation",
             response,
             updated,
             turn_trace,

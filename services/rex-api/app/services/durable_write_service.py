@@ -22,6 +22,7 @@ from app.services.durable_write_builders import (
     proposal_from_goal_command,
     proposal_from_memory_update,
     proposal_from_open_thread,
+    proposal_from_open_thread_update,
     proposal_from_record_delete,
     proposal_from_simple_memory,
 )
@@ -213,6 +214,61 @@ class DurableWriteService:
         proposal = proposal_from_open_thread(
             title=title,
             summary=summary,
+            conversation_id=conversation_id,
+            source_message_id=str(user_message.get("id") or "") or None,
+        )
+        pending = pending_action_for_durable_write(proposal=proposal)
+        return await self._apply(
+            proposal,
+            pending=pending,
+            conversation_id=conversation_id,
+            user_message=user_message,
+        )
+
+    async def propose_open_thread_update(
+        self,
+        *,
+        thread_id: str,
+        title: str,
+        summary: str | None,
+        existing_title: str | None,
+        conversation_id: str,
+        user_message: dict,
+        response: str | None = None,
+        conversation_messages: Optional[list[dict]] = None,
+    ) -> dict:
+        proposal = proposal_from_open_thread_update(
+            thread_id=thread_id,
+            title=title,
+            summary=summary,
+            existing_title=existing_title,
+            conversation_id=conversation_id,
+            source_message_id=str(user_message.get("id") or "") or None,
+        )
+        return await self._propose(
+            proposal,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response=response,
+            conversation_messages=conversation_messages,
+        )
+
+    async def apply_open_thread_update_consent(
+        self,
+        *,
+        thread_id: str,
+        title: str,
+        summary: str | None,
+        conversation_id: str,
+        user_message: dict,
+        conversation_messages: Optional[list[dict]] = None,
+        existing_title: str | None = None,
+    ) -> dict:
+        proposal = proposal_from_open_thread_update(
+            thread_id=thread_id,
+            title=title,
+            summary=summary,
+            existing_title=existing_title,
             conversation_id=conversation_id,
             source_message_id=str(user_message.get("id") or "") or None,
         )
@@ -537,6 +593,11 @@ def _saved_response(
     if proposal.write_kind == "plan":
         return f"Saved plan in Goals: {proposal.title}"
     if proposal.write_kind == "open_thread":
+        if str(proposal.apply_snapshot.get("type") or "") == "open_thread_update":
+            return (
+                f"Updated open thread in Goals: {proposal.title}. "
+                "This is companion follow-up — not saved memory."
+            )
         return (
             f"Tracking as an open thread in Goals: {proposal.title}. "
             "This is companion follow-up — not saved memory."

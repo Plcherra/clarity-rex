@@ -74,6 +74,13 @@ class DurableWriteProposal:
             target = self.target_label or "your plan"
             return f"Save as a milestone under {target}?\n{self.title}"
         if self.write_kind == "open_thread":
+            if str(self.apply_snapshot.get("type") or "") == "open_thread_update":
+                prior = self.target_label or "that open thread"
+                return (
+                    f'Update open thread "{prior}" to:\n'
+                    f"{self.title}\n"
+                    "This stays companion follow-up — not saved memory."
+                )
             return (
                 "Track as an open thread in Goals?\n"
                 f"{self.title}\n"
