@@ -54,6 +54,7 @@ apps/mobile/          Flutter app
 
 services/rex-api/     FastAPI backend — chat, voice, memory, Plaid sync, prompts
 supabase/             Migrations, Edge Functions, auth templates
+plans/                Execution plans only (01→05) — not product/engineering law
 ```
 
 **Separation rule:**
@@ -61,6 +62,10 @@ supabase/             Migrations, Edge Functions, auth templates
 - All assistant code lives under `apps/mobile/lib/rex/`.
 - They share data models from `apps/mobile/lib/core/`.
 - Do not mix assistant code inside features or financial code inside `rex/`.
+
+### Execution plans (`plans/`)
+
+The **only** execution track for the assistant brain redesign is `plans/01`–`plans/05` (see `plans/README.md`). Order is strict: 01 → 02 → 03 → 04 → 05. Do not add competing plan docs under `docs/`. Product and engineering law remain the three hearts in `docs/` only.
 
 ## 3. Feature-First Module Pattern
 
@@ -112,7 +117,7 @@ Presentation depends on application/domain, never the reverse.
 | Area | Modules |
 | --- | --- |
 | Backend usage tracking | `usage_tracking_service.py` (orchestrator), `usage_tracking_transport.py`, `usage_tracking_owner_queries.py` |
-| Backend assistant turn | `chat_turn_orchestrator.py`, `chat_turn_orchestrator_support.py`, `chat_turn_orchestrator_short_circuit.py` |
+| Backend assistant turn | `chat_turn_orchestrator.py`, `chat_turn_orchestrator_support.py` (short-circuit understanding layer is kill-listed — see `plans/02`) |
 | Backend recall | `chat_recall_search.py`, `chat_recall_search_runners.py`, `recall_intent_helper.py`, `recall_intent_detection.py`, `recall_intent_query.py` |
 | Backend memory corrections | `memory_correction_service.py`, `memory_correction_apply.py` |
 | Mobile chat | `chat_controller.dart`, `chat_controller_send.dart`, `chat_controller_actions.dart`, `chat_controller_context.dart` |
@@ -130,36 +135,67 @@ Presentation depends on application/domain, never the reverse.
 - Plaid tokens must remain backend-owned.
 - All user data must be properly scoped to the authenticated user.
 
-## 6. Assistant Production Path
+## 6. Assistant Production Path (target)
 
-One production pipeline for chat and voice. Grok does reasoning; the backend loads context, proposes/applies durable writes, and runs a light truth check.
+One production pipeline for chat and voice. **Grok is the LLM brain** every turn. The backend is the **body** — it executes capabilities, applies confirm gates, and enforces Truth. Spoken replies use **Google TTS** (not Grok speech). No long persona prompt. No reply-length setting.
 
 ```text
-User message (chat or voice)
-  → ChatService
-  → ChatTurnOrchestrator
-      → pending confirm/reject?     → DurableWriteApplier.apply / reject
-      → save intent?                → DurableWriteService.propose → write_proposals
-      → thread proposal/confirm?    → OpenThreadService (write)
-      → substantive turn?           → load active open threads → prompt (labeled)
-      → recall intent?              → ChatRecallService (read-only excerpts)
-      → inventory intent?           → SavedKnowledgeOverviewService → prompt
-      → else                        → SimpleRexBrain + Grok
-      → light truth check           → response
-  → Rex response
+Chat/Voice → ChatService → Orchestrator
+  → tiny system (Truth + Off/Text/Card + capability NAMES)
+  → thin state (recent turns + open thread titles if any)
+  → Grok (LLM brain) → structured action(s) | just_chat | unsupported
+  → fetch capability if needed (finance / person / recall)
+  → Auto Suggestions gate → body execute → Truth → reply
+  → Voice: Google TTS speaks the reply
 ```
 
-**Key backend files:**
+```mermaid
+flowchart TD
+  entry[Chat_or_Voice]
+  tiny[Tiny_system_and_thin_state]
+  grok[Grok_LLM_brain]
+  fetch[Fetch_if_needed]
+  gate[Auto_Suggestions_gate]
+  body[Body_execute]
+  truth[Truth]
+  entry --> tiny --> grok --> fetch --> gate --> body --> truth
+```
 
-| Role | File |
+### Token / prompt rules
+
+| Piece | Guide |
 | --- | --- |
-| Main orchestrator | `services/rex-api/app/services/chat_service.py` |
-| Turn routing | `services/rex-api/app/services/chat_turn_orchestrator.py` |
-| Production brain surface | `services/rex-api/app/services/simple_rex_brain.py` |
-| Intent classification | `services/rex-api/app/services/rex_intent_router.py` |
-| Prompt context facade | `services/rex-api/app/services/chat_context_service.py` |
-| Prompt assembly | `services/rex-api/app/services/prompt_service.py` |
-| Truth guard | `services/rex-api/app/services/action_truth_policy.py` |
+| Capability **names** only | Short identifiers — not manuals |
+| Truth + Off/Text/Card + kind flags | Small fixed rules |
+| Recent chat + open thread **titles** (≤5) | Thin state |
+| **Base total** | Aim **&lt; ~1k** input tokens |
+| Fetch / tool packs | Extra only when the situation needs them |
+
+Do **not** always-on dump full Knows or full finance into every base turn.
+
+### Brain vs body
+
+| Role | Keep (body / policy / transport) |
+| --- | --- |
+| Entry | `chat_service.py`, chat/voice routes |
+| Durable writes | `durable_write_*.py` (incl. milestone kinds) |
+| Open thread **storage** | `open_thread_service.py`, repository, `/open-threads` |
+| Finance body | `ClarityControlService`, `/clarity/actions`, action parser as executor |
+| Proposal settings | Off/Text/Card + kinds + finance edits (not reply length) |
+| Truth | `chat_response_truth.py`, `action_truth_policy.py` |
+| Recall engine | `chat_recall_service.py`, search ranking/repo |
+| Prompt assembly | `prompt_service.py` (rewired for names + thin state + fetch packs) |
+| Grok I/O | AI generate/stream |
+
+| Forbidden as understanding (kill list — `plans/02`) | Examples |
+| --- | --- |
+| Heuristic intent / classify authority | `rex_intent_router.py`, `rex_intent_*.py` as turn authority |
+| Pre-Grok short-circuit understanding | `chat_turn_orchestrator_short_circuit.py` understanding branches |
+| Open-thread offer/overlap detectors | `open_thread_eligibility.py`, `open_thread_overlap.py` as understanding |
+| Memory / goal / plan phrase brains | `memory_turn_*`, `memory_intent_*`, `goal_command_service.py`, `conversational_plan_*` short-circuit paths |
+| Reply-length reshaping | `prompt_response_style.py`, `assistant_response_style.py`, Profile Reply length UI |
+
+**Transitional note:** until plans 04–05 land, some kill-listed modules may still exist in the tree. Do not extend them. Prefer deletion (04) and simple Grok + body handlers (05) over shims.
 
 **Key mobile files:**
 
@@ -170,15 +206,14 @@ User message (chat or voice)
 | Finance context (assistant) | `apps/mobile/lib/features/finance/application/assistant_financial_context_*.dart` |
 | Knows | `apps/mobile/lib/rex/memory/application/memory_controller.dart` |
 | HTTP client | `apps/mobile/lib/core/rex/rex_api_client.dart` |
-| Confirm cards | `apps/mobile/lib/rex/chat/presentation/widgets/clarity_action_cards_strip.dart` (relationship + social-event cards; voice uses same `write_proposals`) |
-
-**Legacy brain modules deleted (July 2026):** `rex_brain*.py` experiment modules and their tests were removed. Debug production assistant behavior only in `SimpleRexBrain`, `ChatTurnOrchestrator`, and `ChatService`.
+| Confirm cards | `apps/mobile/lib/rex/chat/presentation/widgets/clarity_action_cards_strip.dart` (voice uses same `write_proposals`) |
+| Companion settings | Auto Suggestions Off/Text/Card + kinds + finance edits — **no** reply-length control |
 
 ## 7. Memory and Recall Wiring
 
 ### Write-path invariants
 
-1. One production pipeline (`SimpleRexBrain` + `ChatTurnOrchestrator`) for chat and voice.
+1. One production pipeline for chat and voice: Grok as LLM brain + body capability handlers (`ChatService` / orchestrator entry).
 2. Durable writes: `DurableWriteProposal` → pending action → confirm card → frozen `apply_snapshot`.
 3. Mobile receives `write_proposals` only (no hidden discipline metadata).
 4. After confirm, item is visible in Knows or Goals without manual refresh.
@@ -236,8 +271,8 @@ Canonical tables/services (land with social-intelligence phases; keep modules un
 
 | Area | Backend | Mobile |
 | --- | --- | --- |
-| Chat turn | `ChatService`, `ChatTurnOrchestrator`, `SimpleRexBrain` | `ChatController`, `ChatApi` |
-| Voice turn | same `ChatService` / orchestrator path | `VoiceCallController*`, same `write_proposals` confirm |
+| Chat turn | `ChatService`, orchestrator → Grok + body handlers | `ChatController`, `ChatApi` |
+| Voice turn | same entry path; Google TTS for speech out | `VoiceCallController*`, same `write_proposals` confirm |
 | Saved flat memory | `/memory`, `long_term_memory_repository.py`, `memory_write_service.py` | `MemoryApi`, `MemoryPage` |
 | Structured memory | `/entities`, `/rules`, `/plans` | `memory_structured_api.dart`, Knows tiles |
 | Person/entity cards | `entity_service.py` | person memory models, saved memory group list |
@@ -255,13 +290,12 @@ Canonical tables/services (land with social-intelligence phases; keep modules un
 
 | Role | File |
 | --- | --- |
-| Recall intent | `recall_intent_helper.py` |
-| Chat search fetch | `chat_recall_service.py` |
+| Chat search fetch (body) | `chat_recall_service.py` |
 | Chat search ranking | `chat_search_ranking.py` |
 | User-scoped storage | `conversation_repository.py` |
 | Social neighborhood | `social_neighborhood_service.py` |
 
-Prompt modules label old chat hits as `Chat history, not saved memory`. Social neighborhood is labeled as saved knowledge (Connections / Shared history), never as chat history. `action_truth_policy.py` handles degraded, filtered, partial, and empty recall fallbacks — and must not treat unconfirmed or Knows-invisible social facts as remembered.
+Target trigger: Grok requests `search_chats` (or equivalent) — not a competing heuristic recall brain. Prompt modules label old chat hits as `Chat history, not saved memory`. Social neighborhood is labeled as saved knowledge (Connections / Shared history), never as chat history. `action_truth_policy.py` handles degraded, filtered, partial, and empty recall fallbacks — and must not treat unconfirmed or Knows-invisible social facts as remembered.
 
 ### Knows manual create
 
@@ -273,9 +307,11 @@ Prompt modules label old chat hits as `Chat history, not saved memory`. Social n
 
 ### Duplicate suppression
 
-When a flat long-term memory is fully covered by a structured person card, archive the flat memory instead of showing a second active Knows item.
+When a flat long-term memory is fully covered by a structured person card, **delete** the duplicate flat memory — do not archive it as a soft hide.
 
-When a relationship edge fully covers a prior flat “X is my Y” fact, prefer the Connection in Knows/prompt and avoid duplicate active flats for the same link.
+When a relationship edge fully covers a prior flat “X is my Y” fact, prefer the Connection in Knows/prompt and **delete** duplicate active flats for the same link.
+
+True duplicates of goals or related info follow the same rule: delete, do not archive.
 
 ### Memory corrections
 
@@ -307,22 +343,12 @@ Do **not** add ops scripts that create `entity_relationships` or shared-history 
 
 Goals tab overview returns `{ plans, open_threads }`.
 
-**Backend modules:**
-- `open_thread_service.py`, `open_thread_repository.py`, `open_thread_turn_service.py`
-- `open_thread_context_loader.py`, `open_thread_eligibility.py`
-- `prompt_open_threads_context.py` — capped, labeled prompt section
+**Body (keep):**
+- `open_thread_service.py`, `open_thread_repository.py`
 - `GET/PATCH/POST /open-threads` (user-scoped)
+- Prompt: open thread **titles** only on the thin base turn (full detail via fetch/capability when needed)
 
-**Flow:**
-
-```text
-ChatTurnOrchestrator
-  → thread proposal / confirm? → OpenThreadService (write)
-  → fetch active threads (read) → prompt block
-  → recall? → ChatRecallService (unchanged)
-  → saved memory? → existing paths (unchanged)
-  → Grok
-```
+**Target flow:** Grok proposes `create_open_thread` / update / delete → Auto Suggestions gate → body CRUD → Truth. No regex offer/overlap detectors as understanding (kill-listed in `plans/02`).
 
 Open Threads are not included in `SavedKnowledgeOverviewService` / Knows.
 
@@ -359,11 +385,11 @@ Writes must stay user-scoped through Supabase Auth and RLS. Validate before writ
 
 ### Assistant financial context
 
-Mobile builds a summary via `apps/mobile/lib/rex/data/financial_context_service.dart` and sends it only on clearly financial turns.
+Target: finance insights and packs enter the prompt via **fetch capabilities** (`fetch_spend_insight`, `fetch_account_summary`, and similar) when needed — not as an always-on dump on every turn.
 
-Backend: `chat_financial_guard.py` gates financial context to finance intent. Prompt formatter: `prompt_financial_context.py`.
+Catalog must match manual UI: categorize, category/budget CRUD, Plaid, CSV import. **No** `create_transaction` when users cannot create transactions outside Plaid/CSV.
 
-The assistant does not independently fetch finance records today.
+Mobile may still build a summary for finance turns during the transition; do not expand always-on finance injection. Prompt formatter: `prompt_financial_context.py` (rewire toward fetch packs in plan 05).
 
 ### Assistant financial action writes
 
@@ -389,7 +415,7 @@ Voice uses the same `ChatService` / `ChatTurnOrchestrator` path as chat.
 Mobile inline voice panel
   → WebSocket `/voice/stream`
   → Deepgram streaming STT
-  → ChatService / SimpleRexBrain
+  → ChatService / orchestrator → Grok + body
   → Google TTS
   → Mobile streaming audio playback
 ```
@@ -421,26 +447,44 @@ Native iOS voice bridge is experimental and must not become a second assistant p
 - Transaction review: production surface from Dashboard app bar (global and account-scoped).
 - Knows, Goals (plans + Open Threads), Chats, Voice: under `apps/mobile/lib/rex/`.
 
-## 12. Where to Look First
+## 12. Environments (light)
+
+| Env | API | Secrets | Notes |
+| --- | --- | --- | --- |
+| Local | localhost rex-api | `services/rex-api/.env`, mobile `.env` | Dev |
+| Prod VPS | `/opt/clarity/current` | `/opt/clarity/shared/rex-api.env` | Canonical prod; Auto Suggestions from **profile**, not an env override that wipes Off |
+
+Staging / multi-region / auto-CD are out of scope until after the brain cutover (`plans/05`) unless already required for an emergency. Restart today via `scripts/vps_restart_rex_api.sh`.
+
+## 13. CI
+
+`.github/workflows/ci.yml` runs Flutter checks, pytest, and docs canon (`scripts/verify_docs_canon.sh`). Keep CI green for body/ops; expect plan 04 to go red on deleted brain modules until plan 05 restores the simple path. Auto-deploy CD is nice later — not required for cutover.
+
+## 14. Where to Look First
 
 | Question | Start here |
 | --- | --- |
 | What is Clarity? | `docs/MASTER_PLAN.md` |
 | What must the assistant do? | `docs/CLARITY_RULES.md` |
-| Where is the code? | This file |
+| Where is the code / body map? | This file §6 |
+| Brain redesign execution | `plans/README.md` then `plans/01`–`05` in order |
 | Finance read model | `financial_read_model_service.dart` |
-| Chat turn | `chat_service.py`, `chat_turn_orchestrator.py` |
+| Chat / voice turn (entry) | `chat_service.py`, `chat_turn_orchestrator.py` → Grok + body |
 | Memory writes | `memory_write_service.py`, `DurableWriteService` |
 | Connections / shared history | `entity_relationship_service.py`, `entity_event_participants`, Knows Connections UI |
-| Social neighborhood | `social_neighborhood_service.py`, `prompt_social_neighborhood_context.py` |
-| Open Threads | `open_thread_service.py`, `/open-threads` |
+| Social neighborhood | `social_neighborhood_service.py`, `prompt_social_neighborhood_context.py` (only after Knows UI) |
+| Open Threads (storage) | `open_thread_service.py`, `/open-threads` |
 | Plaid sync | `services/rex-api` Plaid routes and sync services |
 
-## 13. Documentation Policy
+## 15. Documentation Policy
 
-**Canon:** only three documents in `docs/` root — `MASTER_PLAN.md`, `CLARITY_RULES.md`, `PROJECT_STRUCTURE.md`.
+**Canon:** only three documents under `docs/` — exactly:
+
+- `docs/MASTER_PLAN.md`
+- `docs/CLARITY_RULES.md`
+- `docs/PROJECT_STRUCTURE.md`
 
 - Do not add new planning, architecture, or feature docs under `docs/`.
-- Archived non-canon material may live under `docs/archive/` only.
-- Historical execution trackers live under `docs/archive/` only — not canon.
-- CI runs `scripts/verify_docs_canon.sh` to block new non-canon files under `docs/`.
+- **No** `docs/archive/` allowance — competing or historical plan material is deleted (plan 04), not archived under `docs/`.
+- Execution plans live only under `plans/`.
+- CI runs `scripts/verify_docs_canon.sh` to block any new path under `docs/` other than the three hearts.

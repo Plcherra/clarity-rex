@@ -21,7 +21,15 @@ Kill list authority: [`02_alignment_and_kill_list.md`](02_alignment_and_kill_lis
 | Grep | Kill-list understanding modules/symbols gone or unreachable |
 | Shims | No new “temporary” detectors |
 | Chat | **May fail** until plan 05 |
+| CI | **May be red** (pytest/Flutter) until plan 05 — expected, not a reason to restore detectors |
 | Body libs | Durable write, OpenThreadService, ClarityControl, Truth, settings still importable |
+| Deploy | Do **not** leave prod users on a half-deleted brain; merge 04 only when 05 follows immediately (or keep prod on last green until 05 ships) |
+
+### Platform notes
+
+- **CI red = OK** during 04. Do not “fix” CI by re-adding eligibility/intent.
+- **CD / staging** — not required for deletion.
+- **VPS** — optional: pause prod deploy until 05 Phase I if cutover is atomic.
 
 ## 3. Phase A — Delete competing plan docs
 
@@ -83,13 +91,14 @@ Remove understanding/offer detection; keep storage service.
 
 **Manual test:** starting API does not import deleted modules; one `/chat` call may 500 — acceptable.
 
-## 7. Phase E — Strip always-on heavy context
+## 7. Phase E — Strip always-on heavy context + reply length
 
 - [ ] Remove paths that auto-inject large LTM / full finance / full inventory every turn without a fetch action
 - [ ] Leave hooks/comments pointing to plan 05 fetch capabilities
+- [ ] Strip or gut `response_style` / `prompt_response_style` injection (plan 02 §5.7) — full UI removal can finish in plan 05 Phase A/B
 - [ ] Do not replace with new detectors
 
-**Manual test:** prompt assembly code path no longer pulls full finance by default (grep call sites).
+**Manual test:** prompt assembly no longer pulls full finance by default; no `response_style_prompt` on the hot path (or dead code deleted).
 
 ## 8. Phase F — Test / CI cleanup
 

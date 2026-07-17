@@ -1,12 +1,18 @@
 # 02 — Alignment and kill list
 
-**Status:** execution plan. Run after plan 01 gate.  
-**Depends on:** [`01_vision_gap_and_token_budget.md`](01_vision_gap_and_token_budget.md)  
+**Status:** Phases A–D complete (2026-07-17). Kill list frozen; proceed to plan 03.  
+**Depends on:** [`01_vision_gap_and_token_budget.md`](01_vision_gap_and_token_budget.md) (gate accepted)  
 **Next:** [`03_canon_update.md`](03_canon_update.md)
 
 ## 1. Purpose
 
 Decide what **keeps**, **parks**, or **dies** before aggressive deletion (plan 04) and rebuild (plan 05). Prefer mismatch removal over living with two brains.
+
+### Platform notes
+
+- **CI scripts / VPS helpers / usage tracking transport** — KEEP (body/ops). Not understanding brains.
+- **Staging CD / infra optimization projects** — park; do not block kill list.
+- Kill list stays about **assistant understanding**, plus retiring `docs/archive/` (process clutter).
 
 ## 2. Aligns with vision — KEEP (body / policy)
 
@@ -34,20 +40,39 @@ These are executors, transport, or honesty — not competing understanding brain
 | Connections (`save_connection`) | Confirmed edges; Knows UI before prompt neighborhood |
 | Shared history (`save_shared_history`) | Multi-person events; same confirm path chat+voice |
 | Person rolling **state** (`update_person_state`) | Light summary on person card; notes under person |
+| Named social groups | Part of the **person-card net** (same feature family as Connections / Shared history) — see §4 |
+| Milestones | In catalog; basic create/update/delete under plans in plan 05 late phase |
 | Finance **fetch** insights | `fetch_spend_insight`, `fetch_account_summary` — not always-on FC |
 
 Do not auto-create edges from chat or ops backfill (existing Truth Rule).
 
-## 4. Park — do not block redesign; omit from catalog until smoked
+## 4. Person-card net vs launch timing
 
-| Item | Why parked |
-|------|------------|
-| Milestones as primary Goals path | Not fully tested; plans/threads first |
-| Bulk plan target-date UX polish | Keep executor if cheap; do not build heuristic short-circuit |
-| Named social groups (“college friends”) | MASTER_PLAN “later” |
+**Person-card net** (one product family):
+
+1. Person cards + rolling state + notes  
+2. Connections (edges)  
+3. Shared history (multi-person events)  
+4. Named social groups (e.g. “college friends”) — same Saved Memory rules: confirm + visible in Knows  
+
+**Launch vs after (locked for these plans):**
+
+| Slice | When |
+|-------|------|
+| Brain cutover + goals/threads + basic milestones | Plan 05 (core → late phases) |
+| Person state + notes | Plan 05 |
+| Connections + Shared history Knows UI + capabilities | Plan 05 Phase H — **required for Truth before neighborhood prompts** |
+| Named social groups | **Same net, after** Connections + Shared history are visible in Knows (still plan 05 if time; else immediate follow-up — not a forever park) |
+
+Spanish and more languages: ship EN+ES comfort now; expand over time (README) — does not block brain cutover.
+
+## 4b. Still parked / never interim
+
+| Item | Why |
+|------|-----|
 | Native iOS voice bridge experiments | Must not become second brain |
-| Spanish / i18n launch expansions | Separate from brain cutover |
-| Embedding-as-understanding / topic anchors / Smart Thread Overlap | **Fight vision** — never interim; kill with detectors |
+| Embedding-as-understanding / topic anchors / Smart Thread Overlap | **Fight vision** — kill with detectors |
+| Staging / auto-CD / infra resize | Nice after brain ships |
 
 ## 5. Misaligns — KILL LIST (plan 04 deletes)
 
@@ -87,18 +112,30 @@ Understanding stolen from Grok. Delete even if chat breaks until plan 05.
 - `memory_delete_turn_service.py` short-circuit detector
 - `conversational_plan_detection.py` and similar “looks like plan” helpers used before Grok
 
-### 5.6 Always-on heavy context that violates ≤1k
+### 5.6 Always-on heavy context (base turn bloat)
 
 - Paths that inject large LTM / full finance / full inventory on every turn without a fetch action
 - Replace with fetch capabilities in plan 05; strip in plan 04 even if replies get dumber temporarily
 
-### 5.7 Do not kill (re-stated)
+### 5.7 Reply length (remove — fights natural Grok)
 
-- Durable write apply/propose machinery
+User-facing **Reply length** (concise / balanced / detailed) injects style instructions and token caps that reshape Grok away from its natural voice.
+
+**Kill / stop shipping:**
+
+- Profile UI for reply length (Companion saves / assistant settings)
+- `response_style` on profile + `prompt_response_style.py` injection into system prompt
+- `assistant_response_style.py` / `max_response_tokens_for_style` forcing shorter answers for “concise”
+
+**Keep:** Auto Suggestions Off/Text/Card + kind toggles + finance edits. Grok chooses length naturally.
+
+### 5.8 Do not kill (re-stated)
+
+- Durable write apply/propose machinery (including milestone apply paths)
 - OpenThreadService CRUD
 - Truth guards (may slim patterns later; keep honesty)
-- Settings load/store
-- Voice STT/TTS transport
+- Settings load/store for proposal mode/kinds (not reply length)
+- Voice STT + **Google TTS** transport
 
 ## 6. Finance catalog alignment rule
 
@@ -114,33 +151,41 @@ Rex may only offer finance actions the **user can do manually** in the app:
 | Create transaction from thin air when only Plaid/CSV creates them | **No** |
 | Spend / account summary questions | Yes via **fetch** capabilities |
 
-## 7. Flat memory vs person cards
+## 7. Flat memory vs person cards — duplicates
 
 - Flat memories allowed for non-person facts.
-- Must not conflict with person cards (discipline / merge / archive duplicates — body rules, not regex understanding).
+- Must not conflict with person cards.
+- **Never archive** duplicate memories/goals/info as a soft hide — if it is a true duplicate, **delete** it (body discipline).
 - Day-to-day person situations → person notes + state updates, not endless flat duplicates.
 
 ## 8. Phases
 
 ### Phase A — Walk UI vs catalog
 
-- [ ] Knows, Goals, Finance, Profile settings: checklist of real actions
-- [ ] Update section 6 mismatches for plan 05 catalog
+- [x] Knows, Goals (incl. milestones UI if any), Finance, Profile settings
+- [x] Note reply-length UI for removal
+- [x] Update finance mismatches for plan 05 catalog
+
+*(No milestone Knows/Goals UI today. Reply length ships in Companion settings. Finance: no manual create-tx; strip `create_transaction` from assistant `availableControls` in plan 05. Connections/Shared history Knows UI absent — capabilities stay required-later §3.)*
 
 ### Phase B — Confirm kill list paths exist
 
-- [ ] Grep repo for files in §5; note dependents/tests that will break (expected)
-- [ ] List body modules that must remain importable after 04
+- [x] Grep repo for files in §5; note dependents/tests that will break (expected)
+- [x] List body modules that must remain importable after 04 (incl. milestone durable write)
 
-### Phase C — Park list signed off
+*(All §5 primaries exist. Coupling: `durable_write_*` / `action_truth_policy` import some kill helpers today — rewire or isolate in 04/05, do not delete KEEP body.)*
 
-- [ ] Milestones parked
-- [ ] No embedding/overlap interim
+### Phase C — Social net + milestones signed off
+
+- [x] Milestones in catalog; built late in plan 05 (not parked forever)
+- [x] Social groups = person-card net after Connections + Shared history
+- [x] No embedding/overlap interim
+- [x] Duplicates → delete, not archive
 
 ### Phase D — Gate
 
-- [ ] Kill list frozen for plan 04
-- [ ] Proceed to plan 03 (canon **before** delete)
+- [x] Kill list frozen for plan 04 (includes reply length) *(2026-07-17)*
+- [x] Proceed to plan 03 (canon **before** delete) *(human go 2026-07-17)*
 
 ## 9. Explicit non-goals for 02
 

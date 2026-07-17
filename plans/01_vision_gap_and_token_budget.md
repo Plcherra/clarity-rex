@@ -1,6 +1,6 @@
 # 01 — Vision, gap, and token budget
 
-**Status:** execution plan (authoring complete). Run phases below before plan 02.  
+**Status:** Phases A–D complete (2026-07-17). Gap scorecard + base token aim accepted; proceed to plan 02.  
 **Code changes in this plan:** none (read-only audit).
 
 ## 1. Locked vision
@@ -9,7 +9,8 @@ Clarity’s assistant is **simple**:
 
 | Layer | Role |
 |-------|------|
-| **Brain** | Grok — understands the user every turn; supplies thinking and personality. No prompt “persona” essay. |
+| **Brain** | Grok as **LLM only** — understands and reasons every turn. No long persona prompt. |
+| **Voice out** | **Google TTS** speaks replies (not Grok speech). |
 | **Body** | Backend features — the only things that can fetch data or mutate state. |
 | **Gate** | Auto Suggestions (Off / Text / Card) + kind toggles — applied **after** Grok’s meaning, not as language detectors. |
 | **Honesty** | Truth Rule — never claim saved/updated/sent unless the body applied it this turn. |
@@ -32,20 +33,23 @@ One understanding path. Many capability handlers. No competing heuristic brains.
 - Regex / phrase / overlap / embedding layers that **understand** the user instead of Grok.
 - Always-on finance or Knows dumps.
 - A second LLM call on the phone before the API.
-- Prompt-crafted “Rex personality” beyond Truth + capabilities + thin state.
+- Prompt-crafted “Rex personality” essays.
+- Reply-length controls (concise/balanced/detailed) that reshape Grok’s natural answers — **remove from product** (UI + `response_style` prompt injection + token caps). Kill in plans 02/04/05; do not reintroduce.
 
-## 2. Token budget (≤ ~1k default input)
+## 2. Token budget (base &lt; ~1k; flexible with tools)
 
-Target **≤ ~1000 tokens** of model input on a normal turn (excluding rare fetch follow-ups).
+**Standard:** aim for **under ~1k tokens** of model **input** on a normal base turn (system + thin state + recent chat).
+
+**Not a forever hard cap:** when the user (or Grok via actions) needs tools / heavy fetch / large grounded packs, the turn **may exceed 1k**. Cost control = keep the **base** thin; grow only when the situation requires it.
 
 | Piece | Budget guide | Notes |
 |-------|--------------|--------|
 | Capability **names** only | ~80–150 | No long descriptions |
-| Truth + Off/Text/Card + kind flags | ~150–250 | Stable, short |
+| Truth + Off/Text/Card + kind flags | ~100–200 | No reply-length style block |
 | Recent chat window | ~300–500 | Cap turns / chars |
 | Open thread titles (≤5) | ~50–100 | Titles only unless fetch |
-| **Default total** | **≤ ~1k** | Hard product goal |
-| Fetch packs | Extra | Only when an action requests them |
+| **Base total** | **Aim &lt; ~1k** | Standard, not a rigid forever ceiling |
+| Fetch / tool packs | Extra as needed | Situation-dependent |
 
 **Fetch-on-demand (not always-on):**
 
@@ -67,11 +71,12 @@ Catalog in the system prompt is **identifiers**, not manuals. Body must actually
 - `fetch_person_context`
 - `search_chats` / `list_knows_summary`
 
-### Goals / open threads
+### Goals / open threads / milestones
 
 - `create_goal` / `update_goal` / `delete_goal`
+- `create_milestone` / `update_milestone` / `delete_milestone` (under a plan)
 - `create_open_thread` / `update_open_thread` / `delete_open_thread`
-- Milestones: **parked** until smoked (see plan 02) — omit from catalog until then
+- Milestones stay in the catalog; **implement basics in plan 05 late phases** (after core goals/threads)
 
 ### Finance (must match manual UI)
 
@@ -96,7 +101,7 @@ Problem: hours of talk about a co-worker, then “what happened today” — wit
 | **Person card state** | Short confirmed summary of who they are + current relational status | `fetch_person_context` or mention-triggered fetch |
 | **Person notes / shared history** | Discrete confirmed moments (light bullets) | Same fetch, capped |
 | **Chat history** | Full detail via `search_chats` | When user asks or state is insufficient |
-| **Flat memory** | Non-person facts only; must not duplicate/conflict with person cards | As today, with discipline |
+| **Flat memory** | Non-person facts only; must not duplicate/conflict with person cards | Duplicates are **deleted**, not archived |
 
 After many events, Grok **proposes** updating `update_person_state` (+ optional note). User confirms. Next “today” turn uses **state + few notes**, not three hours of tokens.
 
@@ -109,7 +114,7 @@ Connections / Shared history remain Saved Memory (Knows), confirm-visible, befor
 | Grok understands every turn | Often skipped by short-circuits | **Large** |
 | Backend only executes | Backend also detects with regex | **Large** |
 | Auto Suggestions after meaning | Tangled into detectors | **Medium** |
-| ≤1k default input | Heavy context / FC / memory dumps common | **Medium–Large** |
+| Base turn &lt; ~1k input | Heavy context / FC / memory dumps common | **Medium–Large** |
 | Slim capability names | Implicit + large prompts | **Medium** |
 | Person rolling state | Partial person cards; social web incomplete | **Large** |
 | Finance = manual UI + fetch insights | Clarity actions exist; catalog may over-offer | **Medium** |
@@ -133,35 +138,67 @@ Chat/Voice → ChatService → ChatTurnOrchestrator
   5. Parse finance actions + truth rewrite
 ```
 
+```mermaid
+flowchart TD
+  entry[Chat_or_Voice]
+  intent[Heuristic_intent]
+  ctx[Load_context]
+  sc[Short_circuits]
+  grok[Grok_reply]
+  truth[Truth_rewrite]
+  entry --> intent --> ctx --> sc
+  sc -->|hit| done[Return_without_Grok]
+  sc -->|miss| grok --> truth
+```
+
 Key files: `chat_turn_orchestrator.py`, `chat_turn_orchestrator_short_circuit.py`, `simple_rex_brain.py`, `rex_intent_*.py`, `open_thread_turn_*.py`, `open_thread_eligibility.py`, `open_thread_overlap.py`, `memory_turn_*.py`, `conversational_plan_service.py`, `goal_command_service.py`, `durable_write_*.py`, `chat_response_truth.py`.
 
-## 7. Phases (plan 01 only — read-only)
+## 7. Platform notes for this plan (need)
+
+| Topic | In plan 01? |
+|-------|-------------|
+| **Token / API cost** | **Yes — core.** §2 is the cost control. Phase B measures reality. |
+| **Diagrams** | Light mermaid above = enough (no UML tooling). |
+| **Environments / CI / CD / VPS sizing** | Not executed here; noted for 03/05. |
+
+## 8. Phases (plan 01 only — read-only)
 
 ### Phase A — Confirm vision with stakeholders
 
-- [ ] Re-read this file + [`plans/README.md`](README.md)
-- [ ] Agree: Grok brain, body execute, ≤1k, fetch-on-demand, no persona prompt
-- [ ] Agree: no embedding/overlap interim work
+- [x] Re-read this file + [`plans/README.md`](README.md)
+- [x] Agree: Grok = LLM brain; Google TTS = speech; body execute; base &lt;1k; fetch when needed
+- [x] Agree: milestones in catalog; built late in plan 05
+- [x] Agree: remove reply-length control (natural Grok answers)
+- [x] Agree: no embedding/overlap interim work
+- [x] Agree: platform extras (CD, staging, UML suite) stay nice-to-have until after 05
+
+*(Phase A locked 2026-07-16 via plan-01 audit execution; treated as law for plans 02–05.)*
 
 ### Phase B — Audit current turn cost (manual)
 
-- [ ] Capture 2–3 production/dev turns (Off, Text, finance ask)
-- [ ] Note roughly what is stuffed into the prompt (threads, LTM, FC, recall)
-- [ ] Record whether short-circuit skipped Grok
+- [x] Capture 2–3 production/dev turns (Off, Text, finance ask)
+- [x] Note roughly what is stuffed into the prompt (threads, LTM, FC, recall, response_style)
+- [x] Record whether short-circuit skipped Grok
+- [x] Rough **base** input size: under / near / way over ~1k tokens
+- [x] Note which env was used (local vs VPS prod) — settings must match that env’s profile
+
+*(Phase B = code-path estimates from `services/rex-api` live pipeline; no prod API hit. Details in chat Phase A–D report.)*
 
 ### Phase C — Catalog draft freeze
 
-- [ ] Walk mobile UI: list every mutate/fetch user can do
-- [ ] Cross-check against section 3; mark mismatches for plan 02
-- [ ] Do **not** add capabilities that UI cannot do
+- [x] Walk mobile UI: list every mutate/fetch user can do
+- [x] Cross-check against section 3; mark mismatches for plan 02
+- [x] Do **not** add capabilities that UI cannot do
 
 ### Phase D — Gate
 
-- [ ] Gap scorecard accepted
-- [ ] Proceed to plan 02
+- [x] Gap scorecard accepted *(human accepted 2026-07-17)*
+- [x] Base token aim (&lt;~1k, flexible with tools) accepted *(human accepted 2026-07-17)*
+- [x] Proceed to plan 02 *(human go 2026-07-17)*
 
-## 8. Explicit non-goals for 01
+## 9. Explicit non-goals for 01
 
 - No code deletion or feature implementation
 - No canon file edits (plan 03)
-- No deploy
+- No deploy, CD pipeline, or staging standup
+- No formal UML package

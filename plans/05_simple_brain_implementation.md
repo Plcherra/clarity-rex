@@ -17,7 +17,41 @@ Chat/Voice → Orchestrator
   → Auto Suggestions gate → body execute → Truth → reply
 ```
 
-Grok = brain (understanding + personality). Backend = body. Default input ≤ ~1k tokens.
+Grok = **LLM brain** only. **Google TTS** = spoken output. Backend = body.  
+**Base** input aims **&lt; ~1k**; tools/fetch may add tokens when the situation needs them.
+
+### Target sequence (diagram — enough “UML”)
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Orch as Orchestrator
+  participant Grok
+  participant Body as Capability_body
+  participant Truth
+  User->>Orch: message
+  Orch->>Grok: tiny_system_plus_thin_state
+  Grok-->>Orch: actions_or_just_chat
+  opt fetch_needed
+    Orch->>Body: fetch_capability
+    Body-->>Orch: capped_pack
+  end
+  Orch->>Orch: AutoSuggestions_gate
+  Orch->>Body: execute_if_allowed
+  Orch->>Truth: rewrite_if_needed
+  Orch-->>User: reply
+```
+
+### Platform notes (need vs nice)
+
+| Topic | In plan 05 |
+|-------|------------|
+| Token budget / fetch | **Need** — base &lt;~1k; fetch may exceed |
+| Remove reply length | **Need** — natural Grok answers |
+| CI green again | **Need** — Phase I |
+| Deploy to `/opt/clarity/current` | **Need** for device truth |
+| Env awareness | **Need (light)** — prod profile settings; no env wiping Off |
+| Auto CD / staging / UML tooling / VPS resize | Nice — after brain works |
 
 ## 2. New modules to create (illustrative names)
 
@@ -43,9 +77,10 @@ Grok returns JSON (or tool calls) such as:
 - `unsupported` — `{ capability_hint }` → honest refusal / draft help
 - `create_open_thread` / `update_open_thread` — `{ title, summary, thread_id? }`
 - `create_goal` / `update_goal` / …
+- `create_milestone` / `update_milestone` / `delete_milestone`
 - `save_memory` / `update_memory` / `save_person` / `update_person_state` / `add_person_note`
-- `save_connection` / `save_shared_history` — only when Knows UI + body exist
-- `delete_knows_item` / delete goal/thread variants
+- `save_connection` / `save_shared_history` / `save_social_group` — when Knows UI + body exist
+- `delete_knows_item` / delete goal/thread/milestone variants
 - `fetch_spend_insight` / `fetch_account_summary` / `categorize_transaction` / category & budget CRUD
 - `search_chats` / `fetch_person_context` / `list_knows_summary`
 
@@ -59,7 +94,8 @@ Unknown action → treat as `unsupported` / `just_chat`. Never invent email send
 | **Text** | Auto mutate intents → chat ask / say-yes apply; no cards |
 | **Card** | Same intents → `write_proposals` / clarity confirm cards |
 
-Kind toggles (`threads` / `goals` / `memory`) gate auto offers only.
+Kind toggles (`threads` / `goals` / `memory`) gate auto offers only.  
+**No reply-length mode** — do not reintroduce concise/balanced/detailed.
 
 ## 5. Fetch pattern (token budget)
 
@@ -96,25 +132,28 @@ Confirm cards and Truth remain mandatory for durable writes.
 ### Phase A — Skeleton pipeline
 
 - [ ] Thin orchestrator: load settings + recent messages + thread titles
-- [ ] Tiny system prompt (Truth + modes + capability names) — no persona essay
+- [ ] Tiny system prompt (Truth + Off/Text/Card + capability names) — no persona essay, **no reply-length block**
 - [ ] Grok `just_chat` round-trip saves assistant message
 - [ ] Truth still runs
+- [ ] Strip `response_style` from prompt path / profile settings UI (or ignore field)
 
 **Manual tests:**
 
-- [ ] Chat: “hey” → natural Grok reply
-- [ ] Voice path uses same orchestrator entry
-- [ ] Prompt size sanity: rough token estimate under ~1k for empty-ish thread
+- [ ] Chat: “hey” → natural Grok reply (length not forced short)
+- [ ] Voice path: same brain → **Google TTS** plays reply
+- [ ] Base prompt size sanity: rough estimate under ~1k for empty-ish thread
 
 ### Phase B — Unsupported + gate plumbing
 
 - [ ] `unsupported` → cannot send email; offer draft in reply
 - [ ] Auto Suggestions Off does not emit write proposals for soft intents
+- [ ] Companion settings: reply length control gone (or hidden/removed)
 
 **Manual tests:**
 
 - [ ] “Send an email to example@gmail.com” → no send claim; helpful draft offer
 - [ ] Off + “I want to wake at 6am” with existing 3am thread → talk OK, no auto card/ask, no fake “I updated”
+- [ ] Long thoughtful question → Grok may answer at natural length (not clipped by “concise”)
 
 ### Phase C — Open threads via Grok actions
 
@@ -139,15 +178,29 @@ Confirm cards and Truth remain mandatory for durable writes.
 - [ ] Person note + state update → visible on person; assistant uses state on next fetch
 - [ ] No claim “saved” without confirm
 
-### Phase E — Goals (no milestones required)
+### Phase E — Goals
 
 - [ ] `create_goal` / `update_goal` / `delete_goal`
-- [ ] Milestones remain parked unless already trivial to wire without detectors
+- [ ] Goals tab shows result after confirm
 
 **Manual tests:**
 
 - [ ] Create goal via Card/Text; Off requires explicit command
 - [ ] Goals tab shows result after confirm
+
+### Phase E2 — Milestones (basic base)
+
+Fit: a **milestone** is a step under a **plan/goal** (not an Open Thread). Catalog actions: create/update/delete milestone; durable write already has `milestone` / `update_milestone` kinds — wire through Grok actions + confirm, minimal Goals UI if missing.
+
+- [ ] `create_milestone` / `update_milestone` / `delete_milestone` via dispatcher → durable write
+- [ ] Thin listing under parent goal in Goals (or confirm-only path if UI thin)
+- [ ] No heuristic “looks like milestone” detector — Grok chooses the action
+
+**Manual tests:**
+
+- [ ] With an existing goal, ask to add a small step → propose/confirm milestone
+- [ ] Milestone visible under that goal after confirm
+- [ ] Delete/update with confirm honesty
 
 ### Phase F — Finance fetch + allowed mutates
 
@@ -172,35 +225,47 @@ Confirm cards and Truth remain mandatory for durable writes.
 - [ ] “Do you remember what I said about X?” → search then grounded reply or honest miss
 - [ ] Inventory question → summary without dumping entire Knows every turn
 
-### Phase H — Social web capabilities (when UI ready)
+### Phase H — Person-card net (Connections → Shared history → groups)
 
-- [ ] `save_connection` / `save_shared_history` + Knows visibility
-- [ ] Neighborhood prompt only after UI
+Order (Truth Rule):
+
+1. Knows UI for Connections + Shared history  
+2. Capabilities `save_connection` / `save_shared_history`  
+3. Named social groups (`save_social_group`) as part of the same net  
+4. Only then: neighborhood / group context in fetches/prompts from **confirmed** Knows data  
 
 **Manual tests:**
 
 - [ ] Confirm connection → visible in Knows → usable in later fetch
+- [ ] Shared history confirm → visible
+- [ ] Social group (when wired) → visible; no invented membership
 - [ ] No invented links
 
-### Phase I — Hardening + deploy
+### Phase I — Hardening + deploy + CI
 
 - [ ] File size splits; tests for dispatcher + gate + catalog
 - [ ] Remove any leftover “redesign in progress” stubs
-- [ ] Deploy to `/opt/clarity/current` when ready
-- [ ] Device smoke matrix: Off / Text / Card × threads / memory / finance fetch / unsupported
+- [ ] `.github/workflows/ci.yml` green (rex-api pytest + mobile tests + docs canon)
+- [ ] Deploy API to `/opt/clarity/current` + `scripts/vps_restart_rex_api.sh` (or equivalent)
+- [ ] Confirm prod Auto Suggestions still from **profile** (env override empty)
+- [ ] Spot-check **base** turn prompt size still near &lt;~1k (no always-on FC)
+- [ ] Device smoke matrix: Off / Text / Card × threads / memory / finance fetch / unsupported / milestone
+- [ ] Reply length control absent from Profile; answers feel natural
 
 ## 9. Explicit non-goals for 05
 
 - Rebuilding intent routers or open-thread eligibility
 - Embedding-overlap interim matcher
-- Milestone product polish (unless unblocked later)
 - Expanding system prompt with persona essays
-- Exceeding ≤1k default by “just attaching finance always”
+- Reintroducing reply-length (concise/balanced/detailed)
+- Always-on finance/Knows on every base turn
+- Building staging, auto-CD, or infra optimization as part of this plan
 
 ## 10. Definition of done
 
-- Single pipeline; Grok on every normal turn
-- Catalog names match body; Auto Suggestions after meaning
-- Kill-list modules stay gone
-- Manual tests for Phases A–G pass; H when UI ready
+- Single pipeline; Grok on every normal turn; Google TTS for voice out
+- Catalog names match body (incl. milestones); Auto Suggestions after meaning
+- Reply length removed; kill-list modules stay gone
+- Manual tests for Phases A–G + E2 pass; H for person-card net (groups when ready)
+- CI green; prod VPS smoke done
 - Canon + `plans/` remain the only process/law sources
