@@ -9,9 +9,9 @@ from app.models.plan import (
     PlanUpdateRequest,
 )
 from app.models.memory_discipline import MemoryRecordKind
-from app.services.goal_command_formatting import goal_title
-from app.services.goal_command_parsing import (
+from app.services.body_display_text import (
     expand_goal_save_items,
+    goal_title,
     normalize_equipment_goal_title,
 )
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService

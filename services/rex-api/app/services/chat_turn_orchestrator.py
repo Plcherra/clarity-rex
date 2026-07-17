@@ -10,41 +10,27 @@ from app.services.chat_financial_guard import ChatFinancialGuard
 from app.services.chat_response_truth import ChatResponseTruthService
 from app.services.chat_turn_context import ChatTurnContextService, MemoryService
 from app.services.chat_turn_observability import ChatTurnObserver, ChatTurnTrace
-from app.services.grok_prompt_logging import log_grok_prompt_messages
-from app.services.chat_turn_orchestrator_short_circuit import try_short_circuit_turn
 from app.services.chat_turn_orchestrator_support import (
     annotate_pending_action,
     annotate_proposal_settings,
     brain_messages,
-    financial_context_for_prompt,
     finish_short_circuit,
     load_pending_action,
-    messages_with_attachment,
-    stream_should_buffer_for_action_truth,
-    turn_trace_event,
+    log_turn_trace,
 )
 from app.services.chat_usage_recorder import ChatUsageRecorder
-from app.services.assistant_response_style import (
-    effective_response_style,
-    max_response_tokens_for_style,
-)
-from app.services.clarity_action_proposal_filter import filter_clarity_action_proposals
-from app.services.grok_usage import GrokUsageHolder
-from app.services.clarity_action_parser import (
-    ClarityActionParser,
-    ClarityActionStreamFilter,
-)
-from app.services.goal_command_service import GoalCommandService
-from app.services.conversational_plan_service import ConversationalPlanService
-from app.services.plan_target_date_update_service import PlanTargetDateUpdateService
-from app.services.memory_delete_turn_service import MemoryDeleteTurnService
+from app.services.clarity_action_parser import ClarityActionParser
 from app.services.durable_write_service import DurableWriteService
-from app.services.memory_turn_service import MemoryTurnService
 from app.services.rex_channel import RexBrainChannel
 from app.services.simple_rex_brain import SimpleRexBrain
 from app.services.transcript_normalizer import (
     DEFAULT_TRANSCRIPT_NORMALIZER,
     TranscriptNormalizer,
+)
+
+BRAIN_REDESIGN_RESPONSE = (
+    "Brain redesign in progress. The assistant understanding layer was removed "
+    "and will return in plan 05."
 )
 
 
@@ -56,12 +42,6 @@ class ChatTurnOrchestrator:
         memory_service: MemoryService,
         simple_rex_brain: SimpleRexBrain,
         chat_turn_context_service: ChatTurnContextService,
-        memory_turn_service: MemoryTurnService,
-        goal_command_service: GoalCommandService,
-        conversational_plan_service: ConversationalPlanService,
-        plan_target_date_update_service: PlanTargetDateUpdateService,
-        memory_delete_turn_service: MemoryDeleteTurnService,
-        open_thread_turn_service,
         durable_write_service: DurableWriteService,
         clarity_action_parser: ClarityActionParser,
         financial_guard: ChatFinancialGuard,
@@ -74,12 +54,6 @@ class ChatTurnOrchestrator:
         self.memory_service = memory_service
         self.simple_rex_brain = simple_rex_brain
         self.chat_turn_context_service = chat_turn_context_service
-        self.memory_turn_service = memory_turn_service
-        self.goal_command_service = goal_command_service
-        self.conversational_plan_service = conversational_plan_service
-        self.plan_target_date_update_service = plan_target_date_update_service
-        self.memory_delete_turn_service = memory_delete_turn_service
-        self.open_thread_turn_service = open_thread_turn_service
         self.durable_write_service = durable_write_service
         self.clarity_action_parser = clarity_action_parser
         self.financial_guard = financial_guard
@@ -104,104 +78,60 @@ class ChatTurnOrchestrator:
         write_confirmation: Optional[dict] = None,
         user_enabled_proactive_insights: bool = False,
     ) -> dict:
+        _ = (
+            financial_context,
+            response_instructions,
+            max_response_tokens,
+            user_requested_deep_thinking,
+            locale,
+            user_enabled_proactive_insights,
+        )
         stored_message, brain_message = brain_messages(
             self.transcript_normalizer,
             message,
         )
         turn_started_at = time.perf_counter()
-        intent_decision = self.simple_rex_brain.classify(
-            brain_message,
-            has_file=file is not None,
-            has_financial_context=financial_context is not None,
-            user_requested_deep_thinking=user_requested_deep_thinking,
-        )
-        financial_context = self.financial_guard.financial_context_for_intent(
-            intent_decision,
-            financial_context,
-        )
         turn_context = await self.chat_turn_context_service.prepare(
             message=brain_message,
             stored_message=stored_message,
             conversation_id=conversation_id,
             file=file,
-            intent_decision=intent_decision,
             channel=channel,
-        )
-        financial_context = financial_context_for_prompt(
-            financial_context,
-            turn_context.proposal_settings,
         )
         conversation_id = turn_context.conversation_id
         turn_trace = self.turn_observer.new_trace(
             conversation_id=conversation_id,
-            intent=intent_decision.intent.value,
+            intent="brain_redesign",
         )
         annotate_proposal_settings(turn_trace, turn_context)
         pending_action = await load_pending_action(self.memory_service, conversation_id)
         annotate_pending_action(turn_trace, pending_action)
-        short_circuit = await try_short_circuit_turn(
-            self,
-            brain_message=brain_message,
-            turn_context=turn_context,
-            pending_action=pending_action,
-            intent_decision=intent_decision,
-            financial_context=financial_context,
-            turn_trace=turn_trace,
-            turn_started_at=turn_started_at,
-            write_confirmation=write_confirmation,
-            channel=channel,
-            locale=locale,
-        )
-        if short_circuit is not None:
-            return short_circuit
+        if pending_action is not None or write_confirmation is not None:
+            pending_result = await self.durable_write_service.try_handle_pending(
+                brain_message,
+                pending_action=pending_action,
+                conversation_id=conversation_id,
+                user_message=turn_context.user_message,
+                write_confirmation=write_confirmation,
+            )
+            if pending_result is not None:
+                finish_short_circuit(
+                    self.turn_observer,
+                    self.usage_recorder,
+                    turn_trace,
+                    turn_started_at,
+                    "durable_write",
+                    turn_result=pending_result,
+                )
+                return pending_result
 
-        response_style, resolved_max_tokens = self._resolve_response_limits(
-            brain_message=brain_message,
-            turn_context=turn_context,
-            channel=channel,
-            max_response_tokens=max_response_tokens,
-        )
-        conversation_history = self.memory_turn_service.public_messages(
-            turn_context.conversation_history
-        )
-        ai_messages = self._build_llm_messages(
-            brain_message=brain_message,
-            conversation_id=conversation_id,
-            conversation_history=conversation_history,
-            turn_context=turn_context,
-            intent_decision=intent_decision,
-            financial_context=financial_context,
-            channel=channel,
-            attachment_context=turn_context.attachment_context,
-            response_instructions=response_instructions,
-            locale=locale,
-            user_enabled_proactive_insights=user_enabled_proactive_insights,
-            response_style=response_style,
-        )
-        assistant_response, clarity_action_proposals = await self._generate_truthful_response(
-            ai_messages=ai_messages,
-            channel=channel,
-            max_response_tokens=resolved_max_tokens,
-            intent_decision=intent_decision,
-            brain_message=brain_message,
-            structured_context=turn_context.structured_context,
-            conversation_history=conversation_history,
-            turn_trace=turn_trace,
-            conversation_id=conversation_id,
-            proposal_settings=turn_context.proposal_settings,
-        )
+        assistant_response = BRAIN_REDESIGN_RESPONSE
         finish_short_circuit(
             self.turn_observer,
             self.usage_recorder,
             turn_trace,
             turn_started_at,
-            "llm",
-            turn_result={
-                "memory_changes": self.clarity_action_parser.with_memory_changes(
-                    None,
-                    clarity_action_proposals,
-                ),
-            },
+            "brain_redesign",
         )
         assistant_message = await self.memory_service.save_message(
             conversation_id,
@@ -214,13 +144,8 @@ class ChatTurnOrchestrator:
             "user_message": turn_context.user_message,
             "assistant_message": assistant_message,
             "memory_correction": None,
-            "memory_changes": self.clarity_action_parser.with_memory_changes(
-                None,
-                clarity_action_proposals,
-            ),
-            "messages": await self.memory_turn_service.recent_public_messages(
-                conversation_id
-            ),
+            "memory_changes": None,
+            "messages": await self._recent_public_messages(conversation_id),
         }
 
     async def stream_message(
@@ -238,326 +163,101 @@ class ChatTurnOrchestrator:
         write_confirmation: Optional[dict] = None,
         user_enabled_proactive_insights: bool = False,
     ) -> AsyncIterator[dict]:
+        _ = (
+            financial_context,
+            response_instructions,
+            max_response_tokens,
+            user_requested_deep_thinking,
+            locale,
+            user_enabled_proactive_insights,
+        )
         stored_message, brain_message = brain_messages(
             self.transcript_normalizer,
             message,
         )
         turn_started_at = time.perf_counter()
-        intent_decision = self.simple_rex_brain.classify(
-            brain_message,
-            has_file=file is not None,
-            has_financial_context=financial_context is not None,
-            user_requested_deep_thinking=user_requested_deep_thinking,
-        )
-        financial_context = self.financial_guard.financial_context_for_intent(
-            intent_decision,
-            financial_context,
-        )
         turn_context = await self.chat_turn_context_service.prepare(
             message=brain_message,
             stored_message=stored_message,
             conversation_id=conversation_id,
             file=file,
-            intent_decision=intent_decision,
             channel=channel,
-        )
-        financial_context = financial_context_for_prompt(
-            financial_context,
-            turn_context.proposal_settings,
         )
         conversation_id = turn_context.conversation_id
         turn_trace = self.turn_observer.new_trace(
             conversation_id=conversation_id,
-            intent=intent_decision.intent.value,
+            intent="brain_redesign",
         )
         annotate_proposal_settings(turn_trace, turn_context)
         yield {"event": "conversation", "conversation_id": conversation_id}
         if include_turn_trace:
-            yield turn_trace_event(intent_decision, channel)
+            yield {
+                "event": "turn.trace",
+                "intent": "brain_redesign",
+                "intent_reasons": ["plan_04_shell"],
+                "channel": channel.value,
+                "loaded_context": {},
+            }
         pending_action = await load_pending_action(self.memory_service, conversation_id)
         annotate_pending_action(turn_trace, pending_action)
-        short_circuit = await try_short_circuit_turn(
-            self,
-            brain_message=brain_message,
-            turn_context=turn_context,
-            pending_action=pending_action,
-            intent_decision=intent_decision,
-            financial_context=financial_context,
-            turn_trace=turn_trace,
-            turn_started_at=turn_started_at,
-            write_confirmation=write_confirmation,
-            channel=channel,
-            locale=locale,
-        )
-        if short_circuit is not None:
-            yield {"event": "token", "token": short_circuit["response"]}
-            yield {
-                "event": "done",
-                "conversation_id": conversation_id,
-                "response": short_circuit["response"],
-                "messages": short_circuit["messages"],
-                "memory_changes": short_circuit["memory_changes"],
-                "assistant_message": short_circuit["assistant_message"],
-            }
-            return
-
-        response_style, resolved_max_tokens = self._resolve_response_limits(
-            brain_message=brain_message,
-            turn_context=turn_context,
-            channel=channel,
-            max_response_tokens=max_response_tokens,
-        )
-        conversation_history = self.memory_turn_service.public_messages(
-            turn_context.conversation_history
-        )
-        ai_messages = self._build_llm_messages(
-            brain_message=brain_message,
-            conversation_id=conversation_id,
-            conversation_history=conversation_history,
-            turn_context=turn_context,
-            intent_decision=intent_decision,
-            financial_context=financial_context,
-            channel=channel,
-            attachment_context=turn_context.attachment_context,
-            response_instructions=response_instructions,
-            locale=locale,
-            user_enabled_proactive_insights=user_enabled_proactive_insights,
-            response_style=response_style,
-        )
-        response_parts = []
-        stream_filter = ClarityActionStreamFilter()
-        buffer_tokens_for_truth = stream_should_buffer_for_action_truth(
-            intent_decision,
-            channel=channel,
-        )
-        ai_kwargs = {}
-        if resolved_max_tokens is not None:
-            ai_kwargs["max_tokens"] = resolved_max_tokens
-        llm_started_at = time.perf_counter()
-        usage_holder = GrokUsageHolder()
-        log_grok_prompt_messages(
-            ai_messages,
-            channel=channel.value,
-            conversation_id=conversation_id,
-        )
-        try:
-            async for token in self.ai_service.stream_response(
-                ai_messages,
-                usage_holder=usage_holder,
-                **ai_kwargs,
-            ):
-                response_parts.append(token)
-                if buffer_tokens_for_truth:
-                    continue
-                for visible_token in stream_filter.feed(token):
-                    if visible_token:
-                        yield {"event": "token", "token": visible_token}
-        except Exception as error:
-            await self.usage_recorder.record_llm_usage(
-                channel=channel,
-                ai_kwargs=ai_kwargs,
-                latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
-                status="failure",
-                error_class=error.__class__.__name__,
-                usage=usage_holder.usage,
+        if pending_action is not None or write_confirmation is not None:
+            pending_result = await self.durable_write_service.try_handle_pending(
+                brain_message,
+                pending_action=pending_action,
+                conversation_id=conversation_id,
+                user_message=turn_context.user_message,
+                write_confirmation=write_confirmation,
             )
-            raise
-        await self.usage_recorder.record_llm_usage(
-            channel=channel,
-            ai_kwargs=ai_kwargs,
-            latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
-            usage=usage_holder.usage,
-        )
-        for visible_token in stream_filter.finish():
-            if buffer_tokens_for_truth:
-                continue
-            if visible_token:
-                yield {"event": "token", "token": visible_token}
+            if pending_result is not None:
+                finish_short_circuit(
+                    self.turn_observer,
+                    self.usage_recorder,
+                    turn_trace,
+                    turn_started_at,
+                    "durable_write",
+                    turn_result=pending_result,
+                )
+                yield {"event": "token", "token": pending_result["response"]}
+                yield {
+                    "event": "done",
+                    "conversation_id": conversation_id,
+                    "response": pending_result["response"],
+                    "messages": pending_result["messages"],
+                    "memory_changes": pending_result.get("memory_changes"),
+                    "assistant_message": pending_result.get("assistant_message"),
+                }
+                return
 
-        rex_response = "".join(response_parts).strip()
-        unsupported_actions = self.clarity_action_parser.unsupported_actions(
-            rex_response,
-        )
-        assistant_response, clarity_action_proposals = (
-            self.clarity_action_parser.extract_proposals(rex_response)
-        )
-        clarity_action_proposals = filter_clarity_action_proposals(
-            clarity_action_proposals,
-            finance_edits_enabled=turn_context.proposal_settings.finance_edits_enabled,
-        )
-        assistant_response = self.truth_service.truthful_generated_response(
-            assistant_response,
-            clarity_action_proposals,
-            unsupported_actions=unsupported_actions,
-            intent_decision=intent_decision,
-            user_message=brain_message,
-            memory_status=turn_context.structured_context.get("memory_status"),
-            chat_search_results_loaded=self.truth_service.has_chat_search_results(
-                ai_messages
-            ),
-            conversation_history=conversation_history,
-            turn_trace=turn_trace,
-        )
-        if buffer_tokens_for_truth:
-            post_truth_filter = ClarityActionStreamFilter()
-            for visible_token in post_truth_filter.feed(assistant_response):
-                if visible_token:
-                    yield {"event": "token", "token": visible_token}
-            for visible_token in post_truth_filter.finish():
-                if visible_token:
-                    yield {"event": "token", "token": visible_token}
+        assistant_response = BRAIN_REDESIGN_RESPONSE
         finish_short_circuit(
             self.turn_observer,
             self.usage_recorder,
             turn_trace,
             turn_started_at,
-            "llm",
-            turn_result={
-                "memory_changes": self.clarity_action_parser.with_memory_changes(
-                    None,
-                    clarity_action_proposals,
-                ),
-            },
+            "brain_redesign",
         )
-        await self.memory_service.save_message(
+        assistant_message = await self.memory_service.save_message(
             conversation_id,
             "assistant",
             assistant_response,
         )
+        yield {"event": "token", "token": assistant_response}
         yield {
             "event": "done",
             "conversation_id": conversation_id,
             "response": assistant_response,
-            "messages": await self.memory_turn_service.recent_public_messages(
-                conversation_id
-            ),
-            "memory_changes": self.clarity_action_parser.with_memory_changes(
-                None,
-                clarity_action_proposals,
-            ),
+            "messages": await self._recent_public_messages(conversation_id),
+            "memory_changes": None,
+            "assistant_message": assistant_message,
         }
 
-    def _build_llm_messages(
-        self,
-        *,
-        brain_message: str,
-        conversation_id: str,
-        conversation_history: list[dict],
-        turn_context,
-        intent_decision,
-        financial_context,
-        channel: RexBrainChannel,
-        attachment_context,
-        response_instructions: Optional[str],
-        locale: Optional[str] = None,
-        user_enabled_proactive_insights: bool = False,
-        response_style: Optional[str] = None,
-    ) -> list[dict]:
-        ai_messages = self.simple_rex_brain.build_prompt_messages(
-            message=brain_message,
-            conversation_id=conversation_id,
-            conversation_history=conversation_history,
-            long_term_memory=turn_context.long_term_memory,
-            structured_context=turn_context.structured_context,
-            accountability_signals=turn_context.accountability_signals,
-            file_text=turn_context.file_text,
-            time_context=turn_context.time_context,
-            financial_context=financial_context,
-            channel=channel,
-            locale=locale,
-            user_enabled_proactive_insights=user_enabled_proactive_insights,
-            response_style=response_style,
+    async def _recent_public_messages(self, conversation_id: str) -> list[dict]:
+        messages = await self.memory_service.get_recent_messages(
+            conversation_id,
+            limit=20,
         )
-        if response_instructions:
-            ai_messages.append({"role": "system", "content": response_instructions})
-        return messages_with_attachment(ai_messages, attachment_context)
-
-    def _resolve_response_limits(
-        self,
-        *,
-        brain_message: str,
-        turn_context,
-        channel: RexBrainChannel,
-        max_response_tokens: Optional[int],
-    ) -> tuple[str, Optional[int]]:
-        response_style = effective_response_style(
-            brain_message,
-            proposal_settings=turn_context.proposal_settings,
-            channel=channel,
-        )
-        resolved_max_tokens = max_response_tokens
-        if resolved_max_tokens is None:
-            resolved_max_tokens = max_response_tokens_for_style(response_style)
-        return response_style, resolved_max_tokens
-
-    async def _generate_truthful_response(
-        self,
-        *,
-        ai_messages: list[dict],
-        channel: RexBrainChannel,
-        max_response_tokens: Optional[int],
-        intent_decision,
-        brain_message: str,
-        structured_context: dict,
-        conversation_history: list[dict],
-        turn_trace: ChatTurnTrace,
-        conversation_id: Optional[str] = None,
-        proposal_settings=None,
-    ) -> tuple[str, list]:
-        ai_kwargs = {}
-        if max_response_tokens is not None:
-            ai_kwargs["max_tokens"] = max_response_tokens
-        llm_started_at = time.perf_counter()
-        log_grok_prompt_messages(
-            ai_messages,
-            channel=channel.value,
-            conversation_id=conversation_id,
-        )
-        try:
-            grok_result = await self.ai_service.generate_response(
-                ai_messages,
-                **ai_kwargs,
-            )
-        except Exception as error:
-            await self.usage_recorder.record_llm_usage(
-                channel=channel,
-                ai_kwargs=ai_kwargs,
-                latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
-                status="failure",
-                error_class=error.__class__.__name__,
-            )
-            raise
-        await self.usage_recorder.record_llm_usage(
-            channel=channel,
-            ai_kwargs=ai_kwargs,
-            latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
-            usage=grok_result.usage,
-        )
-        rex_response = grok_result.text
-        unsupported_actions = self.clarity_action_parser.unsupported_actions(
-            rex_response,
-        )
-        assistant_response, clarity_action_proposals = (
-            self.clarity_action_parser.extract_proposals(rex_response)
-        )
-        if proposal_settings is not None:
-            clarity_action_proposals = filter_clarity_action_proposals(
-                clarity_action_proposals,
-                finance_edits_enabled=proposal_settings.finance_edits_enabled,
-            )
-        return (
-            self.truth_service.truthful_generated_response(
-                assistant_response,
-                clarity_action_proposals,
-                unsupported_actions=unsupported_actions,
-                intent_decision=intent_decision,
-                user_message=brain_message,
-                memory_status=structured_context.get("memory_status"),
-                chat_search_results_loaded=self.truth_service.has_chat_search_results(
-                    ai_messages
-                ),
-                conversation_history=conversation_history,
-                turn_trace=turn_trace,
-            ),
-            clarity_action_proposals,
-        )
+        return [
+            message
+            for message in messages
+            if str(message.get("role") or "") in {"user", "assistant"}
+        ]

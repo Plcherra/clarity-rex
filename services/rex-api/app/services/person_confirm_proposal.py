@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from app.services.durable_write_proposal import DurableWriteProposal
-from app.services.memory_intent_service import SimpleMemoryIntent
+from app.services.body_display_text import SimpleMemoryIntent
 from app.services.memory_path_policy import direct_save_metadata
 from app.services.person_card_constants import PERSON_RELATIONSHIPS
 

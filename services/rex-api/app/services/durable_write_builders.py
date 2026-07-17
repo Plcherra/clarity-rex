@@ -5,17 +5,20 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from app.models.memory_discipline import MemoryDisciplineAction, MemoryDisciplineDecision
-from app.services.conversational_plan_decision_store import decision_to_dict
-from app.services.conversational_plan_prompts import confirmation_prompt
-from app.services.conversational_plan_results import write_kind_for_action
+from app.services.body_display_text import (
+    GoalCommand,
+    SimpleMemoryIntent,
+    clamp_thread_title,
+    confirmation_prompt,
+    decision_to_dict,
+    format_plan_target_date_label,
+    goal_title,
+    write_kind_for_action,
+)
 from app.services.durable_write_applier import preview_plan_merge_title
 from app.services.durable_write_proposal import DurableWriteProposal
-from app.services.goal_command_formatting import goal_title, plan_type
-from app.services.open_thread_title import clamp_thread_title
-from app.services.goal_command_types import GoalCommand
-from app.services.memory_intent_service import SimpleMemoryIntent
 from app.services.memory_path_policy import direct_save_metadata
-from app.services.plan_target_date_parsing import format_plan_target_date_label
+from app.services.plan_service import PlanService
 
 
 def proposal_from_memory_update(

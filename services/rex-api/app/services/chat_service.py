@@ -8,10 +8,7 @@ from fastapi import UploadFile
 from app.services.ai_service import AIService
 from app.services.accountability_service import AccountabilityService
 from app.services.chat_context_service import ChatContextService
-from app.services.chat_financial_guard import (
-    FINANCIAL_CONTEXT_UNAVAILABLE_RESPONSE,
-    ChatFinancialGuard,
-)
+from app.services.chat_financial_guard import ChatFinancialGuard
 from app.services.chat_response_truth import ChatResponseTruthService
 from app.services.chat_turn_context import (
     ChatTurnContextService,
@@ -22,20 +19,13 @@ from app.services.chat_turn_orchestrator import ChatTurnOrchestrator
 from app.services.chat_usage_recorder import ChatUsageRecorder
 from app.services.chat_voice_metadata import ChatVoiceMetadataMixin
 from app.services.clarity_action_parser import ClarityActionParser
-from app.services.file_service import FileService
-from app.services.goal_command_service import GoalCommandService
-from app.services.conversational_plan_service import ConversationalPlanService
 from app.services.durable_write_service import DurableWriteService
-from app.services.open_thread_service import OpenThreadService
-from app.services.open_thread_turn_service import OpenThreadTurnService
-from app.services.plan_target_date_update_service import PlanTargetDateUpdateService
-from app.services.memory_delete_turn_service import MemoryDeleteTurnService
+from app.services.file_service import FileService
 from app.services.memory_discipline_service import MemoryDisciplineService
-from app.services.memory_intent_service import MemoryIntentService
-from app.services.memory_turn_service import MemoryTurnService
+from app.services.open_thread_service import OpenThreadService
+from app.services.plan_service import PlanService
 from app.services.prompt_service import PromptService
 from app.services.rex_channel import RexBrainChannel
-from app.services.rex_intent_router import RexIntentRouter
 from app.services.simple_rex_brain import SimpleRexBrain
 from app.services.time_context_service import TimeContextService
 from app.services.usage_tracking_service import UsageTrackingService
@@ -50,13 +40,9 @@ class ChatService(ChatVoiceMetadataMixin):
         prompt_service: Optional[PromptService] = None,
         time_context_service: Optional[TimeContextService] = None,
         accountability_service: Optional[AccountabilityService] = None,
-        memory_intent_service: Optional[MemoryIntentService] = None,
-        memory_turn_service: Optional[MemoryTurnService] = None,
-        goal_command_service: Optional[GoalCommandService] = None,
         chat_context_service: Optional[ChatContextService] = None,
         clarity_action_parser: Optional[ClarityActionParser] = None,
         simple_rex_brain: Optional[SimpleRexBrain] = None,
-        rex_intent_router: Optional[RexIntentRouter] = None,
         usage_tracking_service: Optional[UsageTrackingService] = None,
     ) -> None:
         self.ai_service = ai_service
@@ -65,48 +51,15 @@ class ChatService(ChatVoiceMetadataMixin):
         self.time_context_service = time_context_service or TimeContextService()
         self.accountability_service = accountability_service or AccountabilityService()
         discipline = MemoryDisciplineService(memory_service)
-        self.goal_command_service = goal_command_service or GoalCommandService(
-            memory_service
-        )
+        plan_service = PlanService(memory_service, discipline=discipline)
         self.durable_write_service = DurableWriteService(
             memory_service,
-            plan_service=self.goal_command_service.plan_service,
+            plan_service=plan_service,
             ai_service=ai_service,
             discipline=discipline,
         )
         self.open_thread_service = OpenThreadService(memory_service)
-        self.open_thread_turn_service = OpenThreadTurnService(
-            memory_service,
-            open_thread_service=self.open_thread_service,
-            durable_write_service=self.durable_write_service,
-        )
-        self.conversational_plan_service = ConversationalPlanService(
-            memory_service,
-            discipline=discipline,
-            plan_service=self.goal_command_service.plan_service,
-            durable_write_service=self.durable_write_service,
-        )
-        self.plan_target_date_update_service = PlanTargetDateUpdateService(
-            memory_service,
-            plan_service=self.goal_command_service.plan_service,
-            durable_write_service=self.durable_write_service,
-        )
-        self.memory_turn_service = memory_turn_service or MemoryTurnService(
-            memory_service,
-            memory_intent_service=memory_intent_service,
-            discipline=discipline,
-            durable_write_service=self.durable_write_service,
-        )
-        self.memory_delete_turn_service = MemoryDeleteTurnService(
-            memory_service,
-            memory_correction_service=self.memory_turn_service.memory_correction_service,
-            durable_write_service=self.durable_write_service,
-        )
-        self.goal_command_service.durable_write_service = self.durable_write_service
-        if memory_turn_service is not None:
-            self.memory_turn_service.durable_write_service = self.durable_write_service
         self.clarity_action_parser = clarity_action_parser or ClarityActionParser()
-        self.rex_intent_router = rex_intent_router or RexIntentRouter()
         self.usage_tracking_service = usage_tracking_service or UsageTrackingService()
         self.chat_context_service = chat_context_service or ChatContextService(
             memory_service,
@@ -114,10 +67,7 @@ class ChatService(ChatVoiceMetadataMixin):
             time_context_service=self.time_context_service,
             accountability_service=self.accountability_service,
         )
-        # Production assistant pipeline: SimpleRexBrain owns intent and
-        # context assembly.
         self.simple_rex_brain = simple_rex_brain or SimpleRexBrain(
-            intent_router=self.rex_intent_router,
             chat_context_service=self.chat_context_service,
         )
         self.chat_turn_context_service = ChatTurnContextService(
@@ -137,12 +87,6 @@ class ChatService(ChatVoiceMetadataMixin):
             memory_service=memory_service,
             simple_rex_brain=self.simple_rex_brain,
             chat_turn_context_service=self.chat_turn_context_service,
-            memory_turn_service=self.memory_turn_service,
-            goal_command_service=self.goal_command_service,
-            conversational_plan_service=self.conversational_plan_service,
-            plan_target_date_update_service=self.plan_target_date_update_service,
-            memory_delete_turn_service=self.memory_delete_turn_service,
-            open_thread_turn_service=self.open_thread_turn_service,
             durable_write_service=self.durable_write_service,
             clarity_action_parser=self.clarity_action_parser,
             financial_guard=self.financial_guard,
@@ -208,3 +152,6 @@ class ChatService(ChatVoiceMetadataMixin):
             user_enabled_proactive_insights=user_enabled_proactive_insights,
         ):
             yield event
+
+
+__all__ = ["ChatService", "ConversationNotFoundError"]

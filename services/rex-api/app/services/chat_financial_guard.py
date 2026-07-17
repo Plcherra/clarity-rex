@@ -16,7 +16,9 @@ class ChatFinancialGuard:
         intent_decision,
         financial_context: Optional[dict],
     ) -> Optional[dict]:
-        if intent_decision.should_use_financial_context:
+        if intent_decision is None:
+            return None
+        if getattr(intent_decision, "should_use_financial_context", False):
             return financial_context
         return None
 
@@ -25,7 +27,9 @@ class ChatFinancialGuard:
         intent_decision,
         financial_context: Optional[dict],
     ) -> Optional[str]:
-        if not intent_decision.should_use_financial_context:
+        if intent_decision is None:
+            return None
+        if not getattr(intent_decision, "should_use_financial_context", False):
             return None
         if self.is_reliable(financial_context):
             return None

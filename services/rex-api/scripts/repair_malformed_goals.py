@@ -9,8 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.models.plan import PlanCreateRequest
-from app.services.goal_command_formatting import goal_title, plan_type
-from app.services.goal_command_parsing import normalize_equipment_goal_title
+from app.services.body_display_text import goal_title, normalize_equipment_goal_title, plan_type
 from app.services.goal_repair_helpers import is_malformed_numbered_goal, split_plan_bodies
 from app.services.http_client import shutdown_http_client, startup_http_client
 from app.services.memory_service import SupabaseMemoryService

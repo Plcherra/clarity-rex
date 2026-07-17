@@ -11,7 +11,7 @@ from app.models.plan import (
     PlanMilestoneUpdateRequest,
     PlanUpdateRequest,
 )
-from app.services.conversational_plan_decision_store import confirmed_decision
+from app.services.body_display_text import confirmed_decision
 from app.services.durable_write_apply_failures import apply_failure_result
 from app.services.memory_discipline_confirmed_writes import CONFIRMED_PLAN_SERVICE_CHANNEL
 from app.services.plan_errors import PlanServiceError

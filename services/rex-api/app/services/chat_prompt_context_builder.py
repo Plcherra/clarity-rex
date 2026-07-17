@@ -3,7 +3,6 @@ from typing import Callable, Optional
 
 from app.services.memory_context_status import MemoryContextAssembler
 from app.services.prompt_service import PromptService
-from app.services.rex_intent_router import RexIntentDecision
 
 
 class ChatPromptContextBuilder:
@@ -26,7 +25,6 @@ class ChatPromptContextBuilder:
         raw_profile_memory: list[dict],
         raw_chat_search_results: list[dict],
         structured_context: dict,
-        intent_decision: Optional[RexIntentDecision],
         conversation_id: Optional[str],
         loaded: dict,
         attempted_sources: dict,
@@ -75,7 +73,6 @@ class ChatPromptContextBuilder:
             memory_status["saved_entity_count"] = entity_count
             memory_status["saved_flat_memory_count"] = len(merged_memory)
         log_context_fetch(
-            intent_decision=intent_decision,
             conversation_id=conversation_id,
             loaded=loaded,
             counts={

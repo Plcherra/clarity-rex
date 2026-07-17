@@ -9,14 +9,7 @@ from app.services.chat_usage_recorder import ChatUsageRecorder
 from app.services.conversation_pending_action import ConversationPendingActionService
 from app.services.file_service import AttachmentContext
 from app.services.rex_channel import RexBrainChannel
-from app.services.rex_intent_router import RexIntent
 from app.services.transcript_normalizer import TranscriptNormalizer
-
-_ACTION_TRUTH_STREAM_INTENTS = {
-    RexIntent.MEMORY_SAVE,
-    RexIntent.MEMORY_UPDATE,
-    RexIntent.GOAL,
-}
 
 
 def stream_should_buffer_for_action_truth(
@@ -129,7 +122,6 @@ def finish_short_circuit(
 async def guarded_turn_response(
     *,
     memory_service,
-    memory_turn_service,
     conversation_id: str,
     response: str,
     user_message: dict,
@@ -139,6 +131,7 @@ async def guarded_turn_response(
         "assistant",
         response,
     )
+    messages = await memory_service.get_recent_messages(conversation_id, limit=20)
     return {
         "conversation_id": conversation_id,
         "response": response,
@@ -146,24 +139,21 @@ async def guarded_turn_response(
         "assistant_message": assistant_message,
         "memory_correction": None,
         "memory_changes": None,
-        "messages": await memory_turn_service.recent_public_messages(conversation_id),
+        "messages": [
+            message
+            for message in messages
+            if str(message.get("role") or "") in {"user", "assistant"}
+        ],
     }
 
 
-def turn_trace_event(intent_decision, channel: RexBrainChannel) -> dict:
+def turn_trace_event(intent: str, channel: RexBrainChannel) -> dict:
     return {
         "event": "turn.trace",
-        "intent": intent_decision.intent.value,
-        "intent_reasons": list(intent_decision.reasons),
+        "intent": intent,
+        "intent_reasons": ["plan_04_shell"],
         "channel": channel.value,
-        "loaded_context": {
-            "long_term_memory": intent_decision.should_load_long_term_memory,
-            "profile_memory": intent_decision.should_load_profile_memory,
-            "structured_memory": intent_decision.should_load_structured_memory,
-            "goal_context": intent_decision.should_load_goal_context,
-            "accountability": intent_decision.should_load_accountability,
-            "financial_context": intent_decision.should_use_financial_context,
-        },
+        "loaded_context": {},
     }
 
 

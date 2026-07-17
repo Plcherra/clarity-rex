@@ -321,7 +321,7 @@ def safe_unexecuted_delete_response(
         is_delete_clarification_message,
         response_claims_delete_success,
     )
-    from app.services.goal_command_parsing import is_goals_inventory_query
+    from app.services.body_display_text import is_goals_inventory_query
 
     cleaned = response.strip()
     if is_goals_inventory_query(user_message):
@@ -366,7 +366,7 @@ def safe_unexecuted_goal_response(
     intent: str | None = None,
 ) -> str:
     from app.services.memory_delete_reference import response_claims_goal_success
-    from app.services.goal_command_parsing import is_goals_inventory_query
+    from app.services.body_display_text import is_goals_inventory_query
 
     cleaned = response.strip()
     if is_goals_inventory_query(user_message):

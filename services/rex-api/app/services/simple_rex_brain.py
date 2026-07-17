@@ -2,40 +2,17 @@ from typing import Optional
 
 from app.services.chat_context_service import ChatContextService
 from app.services.rex_channel import RexBrainChannel
-from app.services.rex_intent_router import RexIntentDecision, RexIntentRouter
 
 
 class SimpleRexBrain:
-    """Launch brain: one deterministic orchestration path for Rex.
-
-    The advanced thinking-router modules can remain experimental, but production
-    chat should flow through this single brain surface so Clarity does not have
-    two competing assistant paths.
-    """
+    """Thin prompt assembly surface until plan 05 restores Grok-brain wiring."""
 
     def __init__(
         self,
         *,
-        intent_router: Optional[RexIntentRouter] = None,
         chat_context_service: ChatContextService,
     ) -> None:
-        self.intent_router = intent_router or RexIntentRouter()
         self.chat_context_service = chat_context_service
-
-    def classify(
-        self,
-        message: str,
-        *,
-        has_file: bool,
-        has_financial_context: bool,
-        user_requested_deep_thinking: bool,
-    ) -> RexIntentDecision:
-        return self.intent_router.classify(
-            message,
-            has_file=has_file,
-            has_financial_context=has_financial_context,
-            user_requested_deep_thinking=user_requested_deep_thinking,
-        )
 
     def build_prompt_messages(
         self,
@@ -56,6 +33,7 @@ class SimpleRexBrain:
     ) -> list[dict]:
         _ = channel
         _ = user_enabled_proactive_insights
+        _ = response_style
         return self.chat_context_service.build_prompt_messages(
             message=message,
             conversation_id=conversation_id,
@@ -67,5 +45,4 @@ class SimpleRexBrain:
             time_context=time_context,
             financial_context=financial_context,
             locale=locale,
-            response_style=response_style,
         )

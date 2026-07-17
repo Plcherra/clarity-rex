@@ -118,62 +118,13 @@ async def append_companion_continuation(
     brain_message: str,
     locale: Optional[str] = None,
 ) -> dict:
-    if not should_append_companion_continuation(turn_result):
-        return turn_result
-
-    conversation_id = turn_context.conversation_id
-    conversation_history = orchestrator.memory_turn_service.public_messages(
-        turn_context.conversation_history
-    )
-    topic_message = topic_message_for_continuation(
-        conversation_history,
-        current_message=brain_message,
-    )
-    response_style, resolved_max_tokens = orchestrator._resolve_response_limits(
-        brain_message=topic_message,
-        turn_context=turn_context,
-        channel=channel,
-        max_response_tokens=None,
-    )
-    ai_messages = orchestrator._build_llm_messages(
-        brain_message=topic_message,
-        conversation_id=conversation_id,
-        conversation_history=conversation_history,
-        turn_context=turn_context,
-        intent_decision=intent_decision,
-        financial_context=financial_context,
-        channel=channel,
-        attachment_context=turn_context.attachment_context,
-        response_instructions=_COMPANION_CONTINUATION_INSTRUCTIONS,
-        locale=locale,
-        response_style=response_style,
-    )
-    continuation, _ = await orchestrator._generate_truthful_response(
-        ai_messages=ai_messages,
-        channel=channel,
-        max_response_tokens=resolved_max_tokens,
-        intent_decision=intent_decision,
-        brain_message=topic_message,
-        structured_context=turn_context.structured_context,
-        conversation_history=conversation_history,
-        turn_trace=orchestrator.turn_observer.new_trace(
-            conversation_id=conversation_id,
-            intent=intent_decision.intent.value,
-        ),
-        conversation_id=conversation_id,
-    )
-    continuation = str(continuation or "").strip()
-    if not continuation:
-        return turn_result
-
-    await orchestrator.memory_service.save_message(
-        conversation_id,
-        "assistant",
-        continuation,
-    )
-    turn_result = dict(turn_result)
-    turn_result["response"] = continuation
-    turn_result["messages"] = await orchestrator.memory_turn_service.recent_public_messages(
-        conversation_id
+    _ = (
+        orchestrator,
+        turn_context,
+        intent_decision,
+        financial_context,
+        channel,
+        brain_message,
+        locale,
     )
     return turn_result

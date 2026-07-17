@@ -26,7 +26,6 @@ from app.services.recall_intent_helper import (
     PROFILE_MEMORY_QUERY,
 )
 from app.services.rex_channel import RexBrainChannel
-from app.services.rex_intent_router import RexIntentDecision
 from app.services.time_context_service import TimeContextService
 
 
@@ -68,14 +67,12 @@ class ChatContextService:
         *,
         message: str,
         conversation_id: Optional[str],
-        intent_decision: Optional[RexIntentDecision] = None,
         channel: RexBrainChannel = RexBrainChannel.CHAT,
     ) -> tuple[list[dict], list[dict], dict]:
         fetch_started = time.perf_counter()
         timings_ms: dict[str, int] = {}
         initial_plan = self.load_planner.initial_plan(
             message=message,
-            intent_decision=intent_decision,
             channel=channel,
         )
         load_plan = initial_plan
@@ -141,7 +138,6 @@ class ChatContextService:
                 raw_profile_memory=raw_profile_memory,
                 raw_chat_search_results=raw_chat_search_results,
                 structured_context=structured_context,
-                intent_decision=intent_decision,
                 conversation_id=None,
                 loaded={
                     "recent_messages": False,
@@ -171,7 +167,6 @@ class ChatContextService:
         load_plan = self.load_planner.after_history_plan(
             message=message,
             conversation_history=conversation_history,
-            intent_decision=intent_decision,
             initial_plan=initial_plan,
             channel=channel,
         )
@@ -233,7 +228,6 @@ class ChatContextService:
             raw_profile_memory=raw_profile_memory,
             raw_chat_search_results=raw_chat_search_results,
             structured_context=structured_context,
-            intent_decision=intent_decision,
             conversation_id=conversation_id,
             loaded={
                 "recent_messages": True,
@@ -309,7 +303,6 @@ class ChatContextService:
         raw_profile_memory: list[dict],
         raw_chat_search_results: list[dict],
         structured_context: dict,
-        intent_decision: Optional[RexIntentDecision],
         conversation_id: Optional[str],
         loaded: dict,
         attempted_sources: dict,
@@ -323,7 +316,6 @@ class ChatContextService:
             raw_profile_memory=raw_profile_memory,
             raw_chat_search_results=raw_chat_search_results,
             structured_context=structured_context,
-            intent_decision=intent_decision,
             conversation_id=conversation_id,
             loaded=loaded,
             attempted_sources=attempted_sources,
@@ -404,20 +396,12 @@ class ChatContextService:
         except Exception:
             return []
 
-    def should_analyze_accountability(
-        self,
-        intent_decision: Optional[RexIntentDecision],
-    ) -> bool:
-        return (
-            True
-            if intent_decision is None
-            else intent_decision.should_load_accountability
-        )
+    def should_analyze_accountability(self) -> bool:
+        return False
 
     def log_context_fetch(
         self,
         *,
-        intent_decision: Optional[RexIntentDecision],
         conversation_id: Optional[str],
         loaded: dict,
         counts: dict,
@@ -426,11 +410,7 @@ class ChatContextService:
     ) -> None:
         payload = {
             "conversation_id": conversation_id,
-            "intent": (
-                intent_decision.intent.value
-                if intent_decision is not None
-                else "legacy"
-            ),
+            "intent": "thin_base",
             "loaded": loaded,
             "counts": counts,
             "timings_ms": timings_ms,

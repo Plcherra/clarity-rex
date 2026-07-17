@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import re
-
 from app.services.action_truth_policy import (
     safe_chat_search_capability_response,
     safe_degraded_memory_search_response,
@@ -19,7 +17,17 @@ from app.services.action_truth_thread_mutation import (
     safe_unexecuted_thread_or_goal_mutation_response,
 )
 from app.services.chat_turn_observability import ChatTurnTrace
-from app.services.rex_intent_router import RexIntent
+from app.services.save_intent_guards import has_explicit_save_intent
+
+
+def _intent_value(intent_decision) -> str:
+    if intent_decision is None:
+        return "unknown"
+    intent = getattr(intent_decision, "intent", None)
+    if intent is None:
+        return "unknown"
+    value = getattr(intent, "value", intent)
+    return str(value or "unknown")
 
 
 def _apply_truth_guard(
@@ -40,13 +48,14 @@ class ChatResponseTruthService:
         clarity_action_proposals: list[dict],
         *,
         unsupported_actions: list[str],
-        intent_decision,
+        intent_decision=None,
         user_message: str,
         memory_status: object = None,
         chat_search_results_loaded: bool = False,
         conversation_history: list[dict] | None = None,
         turn_trace: ChatTurnTrace | None = None,
     ) -> str:
+        intent = _intent_value(intent_decision)
         response = assistant_response
         updated = safe_pending_action_response(
             response,
@@ -58,8 +67,6 @@ class ChatResponseTruthService:
             updated,
             turn_trace,
         )
-        # Only short-circuit when a durable write proposal is pending confirm.
-        # Finance clarity_action blocks must not skip memory/goal truth guards.
         has_pending_write = any(
             isinstance(item, dict)
             and str(item.get("status") or "pending").strip().lower()
@@ -124,7 +131,7 @@ class ChatResponseTruthService:
             response,
             user_message=user_message,
             conversation_history=conversation_history,
-            intent=intent_decision.intent.value,
+            intent=intent,
         )
         response = _apply_truth_guard(
             "unexecuted_delete",
@@ -132,14 +139,11 @@ class ChatResponseTruthService:
             updated,
             turn_trace,
         )
-        if intent_decision.intent in {
-            RexIntent.GOAL,
-            RexIntent.UNKNOWN,
-        }:
+        if intent in {"goal", "unknown"}:
             updated = safe_unexecuted_goal_response(
                 response,
                 user_message=user_message,
-                intent=intent_decision.intent.value,
+                intent=intent,
             )
             response = _apply_truth_guard(
                 "unexecuted_goal",
@@ -147,7 +151,7 @@ class ChatResponseTruthService:
                 updated,
                 turn_trace,
             )
-        if intent_decision.intent in {RexIntent.MEMORY_SAVE, RexIntent.MEMORY_UPDATE}:
+        if intent in {"memory_save", "memory_update"}:
             updated = safe_unexecuted_memory_response(response)
             return _apply_truth_guard(
                 "unexecuted_memory",
@@ -155,8 +159,8 @@ class ChatResponseTruthService:
                 updated,
                 turn_trace,
             )
-        if intent_decision.intent in {RexIntent.CASUAL, RexIntent.UNKNOWN} and (
-            self._message_confirms_save(user_message)
+        if intent in {"casual", "unknown"} and self._message_confirms_save(
+            user_message
         ):
             updated = safe_unexecuted_memory_response(response)
             return _apply_truth_guard(
@@ -173,7 +177,6 @@ class ChatResponseTruthService:
                 updated,
                 turn_trace,
             )
-        # Any intent: block Knows/saved-memory success claims without a write.
         updated = safe_unexecuted_saved_memory_claim_response(response)
         response = _apply_truth_guard(
             "unexecuted_saved_memory_claim",
@@ -181,7 +184,6 @@ class ChatResponseTruthService:
             updated,
             turn_trace,
         )
-        # Any intent: block fake thread/goal "updated/switching" claims.
         updated = safe_unexecuted_thread_or_goal_mutation_response(response)
         response = _apply_truth_guard(
             "unexecuted_thread_or_goal_mutation",
@@ -192,7 +194,7 @@ class ChatResponseTruthService:
         updated = safe_unexecuted_finance_response(
             response,
             user_message=user_message,
-            intent=intent_decision.intent.value,
+            intent=intent,
         )
         return _apply_truth_guard(
             "unexecuted_finance",
@@ -207,24 +209,7 @@ class ChatResponseTruthService:
         return is_delete_confirmation_message(user_message)
 
     def _user_requested_memory_save(self, user_message: str) -> bool:
-        from app.services.memory_intent_service import MemoryIntentService
-        from app.services.save_intent_guards import has_explicit_save_intent
-
-        if has_explicit_save_intent(user_message):
-            return True
-        service = MemoryIntentService()
-        if service.is_contextual_memory_save_request(user_message):
-            return True
-        if service.detect_simple_memory(user_message) is not None:
-            return True
-        normalized = service._normalize_reply(user_message)
-        return bool(
-            re.search(
-                r"\b(?:save|remember|keep)\b.*\b(?:memory|knows|friend|person|"
-                r"pc|computer|laptop|device|model|birthday|plan|goal)\b",
-                normalized,
-            )
-        )
+        return has_explicit_save_intent(user_message)
 
     def has_chat_search_results(self, messages: list[dict]) -> bool:
         for message in messages:

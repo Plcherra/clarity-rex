@@ -1,7 +1,7 @@
 import re
 from typing import Optional
 
-from app.services.memory_intent_service import SimpleMemoryIntent
+from app.services.body_display_text import SimpleMemoryIntent
 
 _MEMORY_TOPIC_STOP_WORDS = {
     "and",

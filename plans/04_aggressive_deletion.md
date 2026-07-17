@@ -1,7 +1,7 @@
 # 04 — Aggressive deletion (break-OK)
 
-**Status:** execution plan. Run only after plan 03 is merged.  
-**Depends on:** [`03_canon_update.md`](03_canon_update.md)  
+**Status:** Phases A–F executed on `plan/04-aggressive-deletion` (2026-07-17). Phase G — PR + start plan 05 immediately after merge.  
+**Depends on:** [`03_canon_update.md`](03_canon_update.md) (merged)  
 **Next:** [`05_simple_brain_implementation.md`](05_simple_brain_implementation.md)
 
 ## 1. Stance (non-negotiable)
@@ -33,24 +33,18 @@ Kill list authority: [`02_alignment_and_kill_list.md`](02_alignment_and_kill_lis
 
 ## 3. Phase A — Delete competing plan docs
 
-- [ ] Delete entire `docs/archive/` directory (all launch-prep / saturday-audit / etc.)
-- [ ] Search repo for other planning trackers that compete with `plans/01–05`; delete them (not move to archive)
-- [ ] Leave: `docs/MASTER_PLAN.md`, `docs/CLARITY_RULES.md`, `docs/PROJECT_STRUCTURE.md`, `plans/*`
-- [ ] Confirm `verify_docs_canon.sh` (post–plan 03) still passes
+- [x] Delete entire `docs/archive/` directory (all launch-prep / saturday-audit / etc.)
+- [x] Search repo for other planning trackers that compete with `plans/01–05`; delete them (not move to archive)
+- [x] Leave: `docs/MASTER_PLAN.md`, `docs/CLARITY_RULES.md`, `docs/PROJECT_STRUCTURE.md`, `plans/*`
+- [x] Confirm `verify_docs_canon.sh` (post–plan 03) still passes
 
 **Manual test:** `git status` shows archive removed; no new docs root files.
 
 ## 4. Phase B — Delete open-thread heuristic brain
 
-Remove understanding/offer detection; keep storage service.
-
-**Delete or gut:**
-
-- `services/rex-api/app/services/open_thread_eligibility.py`
-- `services/rex-api/app/services/open_thread_overlap.py`
-- `services/rex-api/app/services/open_thread_turn_update.py`
-- Offer/consent/overlap branches in `open_thread_turn_service.py` (prefer delete file if nothing left but a husk)
-- Related tests that only exist for those detectors
+- [x] Remove understanding/offer detection; keep storage service
+- [x] Delete or gut eligibility/overlap/turn detector modules
+- [x] Related detector tests deleted
 
 **Keep:**
 
@@ -60,15 +54,8 @@ Remove understanding/offer detection; keep storage service.
 
 ## 5. Phase C — Delete memory / goal / plan short-circuit brains
 
-**Delete or gut:**
-
-- `memory_turn_service.py`, `memory_turn_handle.py` (short-circuit path)
-- `memory_intent_service.py` + `memory_intent_*.py` used for turn stealing
-- `conversational_plan_service.py`, `conversational_plan_detection.py`
-- Phrase short-circuit entry in `goal_command_service.py` (or delete if only a detector)
-- `plan_target_date_update_service.py` detector path
-- `memory_delete_turn_service.py` detector path
-- Matching tests
+- [x] Delete or gut memory/goal/plan short-circuit turn services
+- [x] Matching detector tests deleted
 
 **Keep:** REST/manual CRUD services, durable write propose/apply APIs for plan 05 to call.
 
@@ -76,44 +63,35 @@ Remove understanding/offer detection; keep storage service.
 
 ## 6. Phase D — Delete intent router + short-circuit orchestrator
 
-**Delete or gut:**
-
-- `rex_intent_router.py`, `rex_intent_patterns.py`, `rex_intent_memory.py`, `rex_intent_finance.py` as turn authority
-- `chat_turn_orchestrator_short_circuit.py`
-- `SimpleRexBrain.classify` path that feeds short-circuits
-- Wiring in `chat_turn_orchestrator.py` / `chat_service.py` that calls the above
-
-**Leave a thin shell** that may error or no-op until plan 05:
-
-- Still accept chat/voice HTTP
-- Still construct orchestrator
-- May return a clear “brain redesign in progress” or fail loudly — **no** silent heuristic fallback
+- [x] Delete or gut rex_intent_router and short-circuit orchestrator paths
+- [x] Remove SimpleRexBrain.classify and deleted-service wiring from chat_service
+- [x] Leave thin orchestrator shell (fail-loud brain redesign message; durable write confirm still works)
 
 **Manual test:** starting API does not import deleted modules; one `/chat` call may 500 — acceptable.
 
 ## 7. Phase E — Strip always-on heavy context + reply length
 
-- [ ] Remove paths that auto-inject large LTM / full finance / full inventory every turn without a fetch action
-- [ ] Leave hooks/comments pointing to plan 05 fetch capabilities
-- [ ] Strip or gut `response_style` / `prompt_response_style` injection (plan 02 §5.7) — full UI removal can finish in plan 05 Phase A/B
-- [ ] Do not replace with new detectors
+- [x] Context load planner defaults all fetch flags to false (thin base turn)
+- [x] Open thread prompt loader returns `{}` until plan 05
+- [x] Strip `response_style_prompt` from prompt_service hot path
+- [x] Do not replace with new detectors
 
 **Manual test:** prompt assembly no longer pulls full finance by default; no `response_style_prompt` on the hot path (or dead code deleted).
 
 ## 8. Phase F — Test / CI cleanup
 
-- [ ] Delete or disable tests that only assert killed detectors
-- [ ] Leave or stub tests for durable write / open_thread_service / clarity actions / truth
-- [ ] CI may be red on assistant E2E — document in PR: “red until plan 05”
+- [x] Delete or disable tests that only assert killed detectors
+- [x] Leave or stub tests for durable write / open_thread_service / clarity actions / truth
+- [x] CI may be red on assistant E2E — document in PR: “red until plan 05”
 
 **Manual test:** `pytest` on kept body modules still meaningful; full suite red is OK if kill-list greps pass.
 
 ## 9. Phase G — Gate to plan 05
 
-- [ ] Kill-list greps clean
-- `docs/archive/` absent
-- [ ] No reintroduced overlap/intent/short-circuit understanding
-- [ ] PR description states app assistant path intentionally broken
+- [x] Kill-list greps clean in `app/` production imports
+- [x] `docs/archive/` absent
+- [x] No reintroduced overlap/intent/short-circuit understanding in orchestrator wiring
+- [ ] PR description states app assistant path intentionally broken *(fill when PR opened)*
 - [ ] Start plan 05 immediately after merge (do not leave prod on broken brain without rebuild)
 
 ## 10. Forbidden during plan 04

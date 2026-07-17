@@ -33,17 +33,19 @@ from app.services.durable_write_pending import (
 )
 from app.services.durable_write_proposal import DurableWriteProposal
 from app.services.durable_write_proposal_refiner import DurableWriteProposalRefiner
-from app.services.goal_command_formatting import goal_title
+from app.services.body_display_text import (
+    GoalCommand,
+    SimpleMemoryIntent,
+    clarification_turn_result,
+    format_plan_target_date_label,
+    goal_title,
+)
 from app.services.durable_write_results import (
     applied_memory_changes,
     failed_memory_changes,
     pending_memory_changes,
     rejected_memory_changes,
 )
-from app.services.plan_target_date_parsing import format_plan_target_date_label
-from app.services.goal_command_results import clarification_turn_result
-from app.services.goal_command_types import GoalCommand
-from app.services.memory_intent_service import SimpleMemoryIntent
 from app.services.memory_discipline_service import MemoryDisciplineService
 from app.services.memory_discipline_writes import (
     MemoryWriteError,

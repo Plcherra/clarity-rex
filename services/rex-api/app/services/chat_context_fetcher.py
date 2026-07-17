@@ -2,13 +2,9 @@ from dataclasses import dataclass
 from typing import Optional
 
 from app.services.chat_context_recall import ChatContextRecallPolicy
-from app.services.recall_intent_helper import (
-    MEMORY_INVENTORY_QUERY,
-    PROFILE_MEMORY_QUERY,
-)
+from app.services.recall_intent_helper import MEMORY_INVENTORY_QUERY
 from app.services.rex_channel import RexBrainChannel
-from app.services.rex_intent_router import RexIntent, RexIntentDecision
-from app.services.voice_stream_orchestrator_support import voice_context_slim_intent
+from app.services.rex_channel import RexBrainChannel
 
 
 @dataclass(frozen=True)
@@ -54,198 +50,40 @@ class ChatContextLoadPlanner:
         self,
         *,
         message: str,
-        intent_decision: Optional[RexIntentDecision],
         channel: RexBrainChannel = RexBrainChannel.CHAT,
     ) -> ChatContextLoadPlan:
-        return self._plan(
-            message=message,
-            conversation_history=[],
-            intent_decision=intent_decision,
-            channel=channel,
-        )
+        _ = (message, channel)
+        return self._thin_plan()
 
     def after_history_plan(
         self,
         *,
         message: str,
         conversation_history: list[dict],
-        intent_decision: Optional[RexIntentDecision],
         initial_plan: ChatContextLoadPlan,
         channel: RexBrainChannel = RexBrainChannel.CHAT,
     ) -> ChatContextLoadPlan:
-        recall_query = self.recall_policy.recall_query(
-            message,
-            conversation_history=conversation_history,
-        )
-        recall_request = recall_query is not None or self._force_recall(intent_decision)
-        recall_query = recall_query or (
-            self.recall_policy.topic_query(message) if recall_request else None
-        )
-        memory_query = self.recall_policy.memory_query(
-            message,
-            conversation_history=conversation_history,
-            recall_query=recall_query,
-        )
-        inventory = self.recall_policy.recall_intent.is_memory_inventory_query(
-            self.recall_policy.recall_intent.normalized_recall_text(message)
-        )
-        if inventory:
-            return ChatContextLoadPlan(
-                recall_query=None,
-                recall_request=False,
-                memory_query=MEMORY_INVENTORY_QUERY,
-                load_long_term_memory=False,
-                load_profile_memory=False,
-                load_chat_search=False,
-                load_structured_memory=False,
-                load_goal_context=False,
-                load_inventory_overview=True,
-            )
-        return self._slim_voice_plan(
-            ChatContextLoadPlan(
-                recall_query=recall_query,
-                recall_request=recall_request,
-                memory_query=memory_query,
-                load_long_term_memory=(
-                    initial_plan.load_long_term_memory or recall_request
-                ),
-                load_profile_memory=initial_plan.load_profile_memory,
-                load_chat_search=recall_request,
-                load_structured_memory=(
-                    initial_plan.load_structured_memory or recall_request
-                ),
-                load_goal_context=initial_plan.load_goal_context,
-                load_inventory_overview=False,
-            ),
-            intent_decision=intent_decision,
-            channel=channel,
-        )
+        _ = (message, conversation_history, initial_plan, channel)
+        return self._thin_plan()
 
-    def _plan(
-        self,
-        *,
-        message: str,
-        conversation_history: list[dict],
-        intent_decision: Optional[RexIntentDecision],
-        channel: RexBrainChannel = RexBrainChannel.CHAT,
-    ) -> ChatContextLoadPlan:
-        recall_query = self.recall_policy.recall_query(
-            message,
-            conversation_history=conversation_history,
-        )
-        recall_request = recall_query is not None or self._force_recall(intent_decision)
-        recall_query = recall_query or (
-            self.recall_policy.topic_query(message) if recall_request else None
-        )
-        memory_query = self.recall_policy.memory_query(
-            message,
-            conversation_history=conversation_history,
-            recall_query=recall_query,
-        )
-        inventory = self.recall_policy.recall_intent.is_memory_inventory_query(
-            self.recall_policy.recall_intent.normalized_recall_text(message)
-        )
-        if inventory:
-            return ChatContextLoadPlan(
-                recall_query=None,
-                recall_request=False,
-                memory_query=MEMORY_INVENTORY_QUERY,
-                load_long_term_memory=False,
-                load_profile_memory=False,
-                load_chat_search=False,
-                load_structured_memory=False,
-                load_goal_context=False,
-                load_inventory_overview=True,
-            )
-        load_profile_memory = self._load_profile_memory(intent_decision)
-        load_profile_memory = load_profile_memory and memory_query not in {
-            PROFILE_MEMORY_QUERY,
-            MEMORY_INVENTORY_QUERY,
-        }
-        return self._slim_voice_plan(
-            ChatContextLoadPlan(
-                recall_query=recall_query,
-                recall_request=recall_request,
-                memory_query=memory_query,
-                load_long_term_memory=(
-                    self._load_long_term_memory(intent_decision) or recall_request
-                ),
-                load_profile_memory=load_profile_memory,
-                load_chat_search=recall_request,
-                load_structured_memory=(
-                    self._load_structured_memory(intent_decision) or recall_request
-                ),
-                load_goal_context=self._load_goal_context(intent_decision),
-                load_inventory_overview=False,
-            ),
-            intent_decision=intent_decision,
-            channel=channel,
+    def _thin_plan(self) -> ChatContextLoadPlan:
+        return ChatContextLoadPlan(
+            recall_query=None,
+            recall_request=False,
+            memory_query=MEMORY_INVENTORY_QUERY,
+            load_long_term_memory=False,
+            load_profile_memory=False,
+            load_chat_search=False,
+            load_structured_memory=False,
+            load_goal_context=False,
+            load_inventory_overview=False,
         )
 
     def _slim_voice_plan(
         self,
         plan: ChatContextLoadPlan,
         *,
-        intent_decision: Optional[RexIntentDecision],
         channel: RexBrainChannel,
     ) -> ChatContextLoadPlan:
-        if channel != RexBrainChannel.VOICE:
-            return plan
-        if plan.recall_request or self._force_recall(intent_decision):
-            return plan
-        if intent_decision is None or not voice_context_slim_intent(intent_decision):
-            return plan
-        return ChatContextLoadPlan(
-            recall_query=plan.recall_query,
-            recall_request=False,
-            memory_query=plan.memory_query,
-            load_long_term_memory=False,
-            load_profile_memory=False,
-            load_chat_search=False,
-            load_structured_memory=False,
-            load_goal_context=False,
-            load_inventory_overview=plan.load_inventory_overview,
-        )
-
-    def _load_long_term_memory(
-        self,
-        intent_decision: Optional[RexIntentDecision],
-    ) -> bool:
-        return (
-            True
-            if intent_decision is None
-            else intent_decision.should_load_long_term_memory
-        )
-
-    def _load_profile_memory(
-        self,
-        intent_decision: Optional[RexIntentDecision],
-    ) -> bool:
-        return (
-            True
-            if intent_decision is None
-            else intent_decision.should_load_profile_memory
-        )
-
-    def _load_structured_memory(
-        self,
-        intent_decision: Optional[RexIntentDecision],
-    ) -> bool:
-        return (
-            True
-            if intent_decision is None
-            else intent_decision.should_load_structured_memory
-        )
-
-    def _load_goal_context(
-        self,
-        intent_decision: Optional[RexIntentDecision],
-    ) -> bool:
-        return (
-            True
-            if intent_decision is None
-            else intent_decision.should_load_goal_context
-        )
-
-    def _force_recall(self, intent_decision: Optional[RexIntentDecision]) -> bool:
-        return bool(intent_decision and intent_decision.intent == RexIntent.MEMORY_RECALL)
+        _ = channel
+        return plan

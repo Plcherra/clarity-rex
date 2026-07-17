@@ -70,7 +70,7 @@ def is_delete_clarification_message(
     message: str,
     conversation_history: list[dict] | None = None,
 ) -> bool:
-    from app.services.goal_command_parsing import is_goals_inventory_query
+    from app.services.body_display_text import is_goals_inventory_query
 
     if is_goals_inventory_query(message):
         return False
