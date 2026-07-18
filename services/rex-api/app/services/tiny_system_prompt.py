@@ -19,40 +19,39 @@ _TRUTH_RULE = (
     "ask or card was actually emitted this turn."
 )
 
-_PHASE_B_ACTIONS = (
+_PHASE_C_ACTIONS = (
     "Reply naturally (just_chat). When the user asks for something Clarity "
     "cannot do (email, SMS, etc.), be honest that you cannot send it; you may "
-    "offer a draft in the reply. Append a single fenced block:\n"
+    "offer a draft in the reply. Append:\n"
     "```rex_action\n"
     '{"action":"unsupported","capability_hint":"send_email"}\n'
     "```\n"
-    "For soft durable intents (habits/threads/goals/memory) you may append "
-    '```rex_action``` with action names from the catalog and '
-    '"payload":{...}. Auto Suggestions gate decides Off/Text/Card after you; '
-    "do not invent silent saves. Mutate body dispatch is not applied yet — "
-    "so never claim a thread/goal was or will be updated this turn."
+    "For open-thread habits append ```rex_action``` with create_open_thread "
+    "or update_open_thread and payload {title, summary?, thread_id?}. Prefer "
+    "update_open_thread with a listed id when changing an existing thread. "
+    'Set explicit=true for clear commands like "update my 3am thread to 5am". '
+    "Auto Suggestions gate runs after you; body proposes a confirm card when "
+    "allowed. Never claim saved/updated before confirm."
 )
 
 
 def _mode_guidance(mode: str) -> str:
     if mode == AUTO_PROPOSALS_OFF:
         return (
-            "Off mode: coach. Name the relevant open thread if titles are "
-            "shown, push concrete tradeoffs or next steps so the user decides, "
-            'and avoid filler like "want to chat about it?". Do not propose '
-            "auto cards or text-asks; do not claim you updated anything."
+            "Off mode: coach. Name the relevant open thread if listed, push "
+            "concrete tradeoffs so the user decides, and avoid filler like "
+            '"want to chat about it?". Soft intents do not auto-propose. '
+            "explicit=true commands may still propose a confirm card."
         )
     if mode == AUTO_PROPOSALS_TEXT:
         return (
-            "Text mode: you may discuss a change, but do not claim you updated "
-            "or will update a thread/goal unless a text confirm ask is actually "
-            "emitted this turn (mutate dispatch not live yet)."
+            "Text mode: soft open-thread intents may propose a confirm card "
+            "(say-yes / tap confirm). Do not claim updated before confirm."
         )
     if mode == AUTO_PROPOSALS_CARD:
         return (
-            "Card mode: you may discuss a change, but do not claim you updated "
-            "or will update a thread/goal unless a confirm card is actually "
-            "emitted this turn (mutate dispatch not live yet)."
+            "Card mode: soft open-thread intents may propose a confirm card. "
+            "Do not claim updated before confirm."
         )
     return (
         "Talk freely; do not invent silent saves or claim updates without a "
@@ -77,7 +76,7 @@ def build_tiny_system_prompt(
         _TRUTH_RULE,
         gate,
         capability_names_prompt(),
-        _PHASE_B_ACTIONS,
+        _PHASE_C_ACTIONS,
         CLARITY_KNOWLEDGE_LANGUAGE_PROMPT,
     ]
     if open_thread_titles_block and open_thread_titles_block.strip():

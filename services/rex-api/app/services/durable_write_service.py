@@ -188,6 +188,8 @@ class DurableWriteService:
         user_message: dict,
         response: str | None = None,
         conversation_messages: Optional[list[dict]] = None,
+        proposal_settings: Optional[AssistantProposalSettings] = None,
+        surface_client_cards: Optional[bool] = None,
     ) -> dict:
         proposal = proposal_from_open_thread(
             title=title,
@@ -201,6 +203,8 @@ class DurableWriteService:
             user_message=user_message,
             response=response,
             conversation_messages=conversation_messages,
+            proposal_settings=proposal_settings,
+            surface_client_cards=surface_client_cards,
         )
 
     async def apply_open_thread_consent(
@@ -238,6 +242,8 @@ class DurableWriteService:
         user_message: dict,
         response: str | None = None,
         conversation_messages: Optional[list[dict]] = None,
+        proposal_settings: Optional[AssistantProposalSettings] = None,
+        surface_client_cards: Optional[bool] = None,
     ) -> dict:
         proposal = proposal_from_open_thread_update(
             thread_id=thread_id,
@@ -253,6 +259,8 @@ class DurableWriteService:
             user_message=user_message,
             response=response,
             conversation_messages=conversation_messages,
+            proposal_settings=proposal_settings,
+            surface_client_cards=surface_client_cards,
         )
 
     async def apply_open_thread_update_consent(

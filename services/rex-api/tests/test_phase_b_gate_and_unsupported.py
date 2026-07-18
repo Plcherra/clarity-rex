@@ -40,7 +40,6 @@ def test_gate_off_drops_soft_habit_action() -> None:
     gated = apply_auto_suggestions_gate(actions, off)
     assert gated.dropped_soft_actions
     assert not gated.allowed_soft_actions
-    assert gated.write_proposals == []
 
 
 def test_gate_card_keeps_soft_habit_for_later_dispatch() -> None:
@@ -56,8 +55,6 @@ def test_gate_card_keeps_soft_habit_for_later_dispatch() -> None:
     gated = apply_auto_suggestions_gate(actions, card)
     assert gated.allowed_soft_actions
     assert not gated.dropped_soft_actions
-    # Phase B: still no write_proposals until Phase C body dispatch.
-    assert gated.write_proposals == []
 
 
 def test_gate_card_respects_kind_toggle_off() -> None:
@@ -117,17 +114,18 @@ def test_off_soft_habit_pipeline_emits_no_proposals() -> None:
         ai_messages=[],
     )
     assert proposals == []
-    assert gate.write_proposals == []
     assert gate.dropped_soft_actions
+    assert not gate.allowed_soft_actions
     assert "rex_action" not in reply
     assert "wake" in reply.lower()
 
 
-def test_tiny_system_phase_b_has_unsupported_no_response_style() -> None:
+def test_tiny_system_has_unsupported_no_response_style() -> None:
     prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))
     assert "unsupported" in prompt.lower()
     assert "rex_action" in prompt
     assert "send_email" in prompt
+    assert "update_open_thread" in prompt
     assert "response style" not in prompt.lower()
     assert "concise" not in prompt.lower()
     assert "balanced" not in prompt.lower()

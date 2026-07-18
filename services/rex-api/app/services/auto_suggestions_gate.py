@@ -17,9 +17,8 @@ from app.services.brain_action_schema import BrainAction
 class AutoSuggestionsGateResult:
     """What the body may surface after settings are applied.
 
-    Phase B: soft mutates are gated but not dispatched to durable write yet.
-    Off drops soft autos so they never become write_proposals / text-asks.
-    Text/Card keep allowed soft actions for Phase C dispatch.
+    Off drops soft autos. Text/Card (and Off+explicit) keep allowed soft actions
+    for capability dispatch (open threads in Phase C).
     """
 
     mode: str
@@ -27,15 +26,6 @@ class AutoSuggestionsGateResult:
     dropped_soft_actions: list[BrainAction] = field(default_factory=list)
     unsupported_hints: list[str] = field(default_factory=list)
     passthrough_actions: list[BrainAction] = field(default_factory=list)
-
-    @property
-    def write_proposals(self) -> list[dict]:
-        # Phase B: no mutate body dispatch — never emit soft write cards/asks.
-        return []
-
-    @property
-    def has_auto_proposals(self) -> bool:
-        return bool(self.write_proposals)
 
 
 def apply_auto_suggestions_gate(

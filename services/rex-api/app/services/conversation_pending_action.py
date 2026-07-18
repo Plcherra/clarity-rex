@@ -216,6 +216,9 @@ def is_delete_confirmation_message(message: str) -> bool:
         "go ahead delete it",
         "delete it",
         "yes delete it",
+        "that would be awesome",
+        "that would be great",
+        "sounds good",
     }
 
 

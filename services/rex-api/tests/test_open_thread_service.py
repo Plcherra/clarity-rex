@@ -78,6 +78,7 @@ def test_prompt_labels_open_threads_as_not_saved_memory() -> None:
     rendered = format_open_threads_context(
         [
             {
+                "id": "thread-morning",
                 "status": "active",
                 "title": "Morning routine",
                 "summary": "Trying to wake up earlier",
@@ -86,4 +87,5 @@ def test_prompt_labels_open_threads_as_not_saved_memory() -> None:
     )
     assert rendered is not None
     assert "not saved memory" in rendered.lower()
-    assert "Morning routine" in rendered
+    assert "thread-morning: Morning routine" in rendered
+    assert "update_open_thread" in rendered

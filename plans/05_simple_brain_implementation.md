@@ -1,6 +1,6 @@
 # 05 — Simple brain implementation
 
-**Status:** Phase B complete (2026-07-18) on `plan/04-aggressive-deletion`. Phase A done.  
+**Status:** Phase C complete (2026-07-18) on `plan/04-aggressive-deletion`. Phases A–B done.  
 **Depends on:** [`04_aggressive_deletion.md`](04_aggressive_deletion.md) (complete)  
 **Vision reference:** [`01_vision_gap_and_token_budget.md`](01_vision_gap_and_token_budget.md)
 
@@ -157,8 +157,8 @@ Confirm cards and Truth remain mandatory for durable writes.
 
 ### Phase C — Open threads via Grok actions
 
-- [ ] `create_open_thread` / `update_open_thread` → durable write + Text/Card/Off gate
-- [ ] Grok chooses update when active thread titles are in thin state (no overlap library)
+- [x] `create_open_thread` / `update_open_thread` → durable write + Text/Card/Off gate
+- [x] Grok chooses update when active thread titles are in thin state (no overlap library)
 
 **Manual tests:**
 

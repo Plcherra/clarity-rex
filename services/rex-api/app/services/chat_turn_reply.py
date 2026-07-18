@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.auto_suggestions_gate import (
     AutoSuggestionsGateResult,
@@ -26,8 +24,7 @@ def build_truthful_turn_reply(
 ) -> tuple[str, list[dict], AutoSuggestionsGateResult]:
     """Return (truthful_reply, clarity_proposals, gate_result).
 
-    Phase B: soft mutates are gated (Off drops autos) but not dispatched.
-    write_proposals stay empty until Phase C body handlers land.
+    Soft mutates are gated here; open-thread propose runs in finalize/dispatch.
     """
     brain = parse_brain_actions(rex_response)
     gate = apply_auto_suggestions_gate(brain.actions, proposal_settings)
@@ -40,7 +37,7 @@ def build_truthful_turn_reply(
         finance_proposals,
         finance_edits_enabled=proposal_settings.finance_edits_enabled,
     )
-    # Phase B: no finance mutate dispatch either — keep Truth honest.
+    # Finance mutate dispatch is not live yet — keep Truth honest.
     finance_proposals = []
 
     unsupported = _merge_unsupported(gate.unsupported_hints, fence_unsupported)
@@ -57,22 +54,7 @@ def build_truthful_turn_reply(
         conversation_history=conversation_history,
         turn_trace=turn_trace,
     )
-    if turn_trace is not None:
-        record = getattr(turn_trace, "record_proposal_outcome", None)
-        if callable(record):
-            record(write_proposals_count=len(gate.write_proposals))
     return truthful, finance_proposals, gate
-
-
-def memory_changes_for_phase_b(
-    clarity_action_parser,
-    *,
-    clarity_proposals: list[dict],
-    gate: AutoSuggestionsGateResult,
-) -> Optional[dict]:
-    """Phase B gated outputs: no soft write_proposals; optional clarity list."""
-    _ = gate  # reserved — Phase C will attach allowed soft proposals here
-    return clarity_action_parser.with_memory_changes(None, clarity_proposals)
 
 
 def _merge_unsupported(brain_hints: list[str], fence_actions: list[str]) -> list[str]:

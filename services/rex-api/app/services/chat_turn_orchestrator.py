@@ -20,10 +20,7 @@ from app.services.chat_turn_orchestrator_support import (
     finish_short_circuit,
     load_pending_action,
 )
-from app.services.chat_turn_reply import (
-    build_truthful_turn_reply,
-    memory_changes_for_phase_b,
-)
+from app.services.chat_turn_finalize import finalize_grok_turn
 from app.services.chat_usage_recorder import ChatUsageRecorder
 from app.services.clarity_action_parser import ClarityActionParser
 from app.services.durable_write_service import DurableWriteService
@@ -167,19 +164,32 @@ class ChatTurnOrchestrator:
             latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
             usage=grok_result.usage,
         )
-        assistant_response, proposals, gate = self._truthful_reply(
+        finalized = await finalize_grok_turn(
             grok_result.text,
+            clarity_action_parser=self.clarity_action_parser,
+            truth_service=self.truth_service,
+            durable_write_service=self.durable_write_service,
+            proposal_settings=turn_context.proposal_settings,
             brain_message=brain_message,
+            user_message=turn_context.user_message,
+            conversation_id=conversation_id,
             conversation_history=history,
             turn_trace=turn_trace,
-            proposal_settings=turn_context.proposal_settings,
             ai_messages=ai_messages,
         )
-        memory_changes = memory_changes_for_phase_b(
-            self.clarity_action_parser,
-            clarity_proposals=proposals,
-            gate=gate,
-        )
+        if finalized.get("proposed_turn") is not None:
+            proposed = finalized["proposed_turn"]
+            finish_short_circuit(
+                self.turn_observer,
+                self.usage_recorder,
+                turn_trace,
+                turn_started_at,
+                "llm",
+                turn_result=proposed,
+            )
+            return proposed
+        assistant_response = finalized["response"]
+        memory_changes = finalized.get("memory_changes")
         finish_short_circuit(
             self.turn_observer,
             self.usage_recorder,
@@ -331,19 +341,42 @@ class ChatTurnOrchestrator:
             if visible:
                 yield {"event": "token", "token": visible}
 
-        assistant_response, proposals, gate = self._truthful_reply(
+        finalized = await finalize_grok_turn(
             "".join(response_parts).strip(),
+            clarity_action_parser=self.clarity_action_parser,
+            truth_service=self.truth_service,
+            durable_write_service=self.durable_write_service,
+            proposal_settings=turn_context.proposal_settings,
             brain_message=brain_message,
+            user_message=turn_context.user_message,
+            conversation_id=conversation_id,
             conversation_history=history,
             turn_trace=turn_trace,
-            proposal_settings=turn_context.proposal_settings,
             ai_messages=ai_messages,
         )
-        memory_changes = memory_changes_for_phase_b(
-            self.clarity_action_parser,
-            clarity_proposals=proposals,
-            gate=gate,
-        )
+        if finalized.get("proposed_turn") is not None:
+            proposed = finalized["proposed_turn"]
+            finish_short_circuit(
+                self.turn_observer,
+                self.usage_recorder,
+                turn_trace,
+                turn_started_at,
+                "llm",
+                turn_result=proposed,
+            )
+            # Stream already showed Grok tokens; done carries confirm prompt + cards.
+            yield {
+                "event": "done",
+                "conversation_id": conversation_id,
+                "response": proposed["response"],
+                "messages": proposed.get("messages")
+                or await self._recent_public_messages(conversation_id),
+                "memory_changes": proposed.get("memory_changes"),
+                "assistant_message": proposed.get("assistant_message"),
+            }
+            return
+        assistant_response = finalized["response"]
+        memory_changes = finalized.get("memory_changes")
         finish_short_circuit(
             self.turn_observer,
             self.usage_recorder,
@@ -364,27 +397,6 @@ class ChatTurnOrchestrator:
             "messages": await self._recent_public_messages(conversation_id),
             "memory_changes": memory_changes,
         }
-
-    def _truthful_reply(
-        self,
-        rex_response: str,
-        *,
-        brain_message: str,
-        conversation_history: list[dict],
-        turn_trace,
-        proposal_settings,
-        ai_messages: list[dict],
-    ):
-        return build_truthful_turn_reply(
-            rex_response,
-            clarity_action_parser=self.clarity_action_parser,
-            truth_service=self.truth_service,
-            proposal_settings=proposal_settings,
-            brain_message=brain_message,
-            conversation_history=conversation_history,
-            turn_trace=turn_trace,
-            ai_messages=ai_messages,
-        )
 
     async def _open_thread_titles_block(self) -> Optional[str]:
         packed = await load_open_threads_context(self.memory_service, "")
