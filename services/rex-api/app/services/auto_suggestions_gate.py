@@ -11,7 +11,6 @@ from app.services.assistant_proposal_settings import (
     AssistantProposalSettings,
 )
 from app.services.brain_action_schema import BrainAction
-from app.services.open_thread_user_intent import classify_open_thread_user_intent
 
 
 @dataclass(frozen=True)
@@ -23,7 +22,6 @@ class AutoSuggestionsGateResult:
     dropped_soft_actions: list[BrainAction] = field(default_factory=list)
     unsupported_hints: list[str] = field(default_factory=list)
     passthrough_actions: list[BrainAction] = field(default_factory=list)
-    user_thread_intent: str = "soft"
 
 
 def apply_auto_suggestions_gate(
@@ -32,11 +30,11 @@ def apply_auto_suggestions_gate(
     *,
     user_message: str = "",
 ) -> AutoSuggestionsGateResult:
+    _ = user_message  # reserved for later phases; Off is LLM-only
     allowed: list[BrainAction] = []
     dropped: list[BrainAction] = []
     unsupported: list[str] = []
     passthrough: list[BrainAction] = []
-    user_intent = classify_open_thread_user_intent(user_message)
 
     for action in actions:
         if action.is_unsupported:
@@ -50,15 +48,8 @@ def apply_auto_suggestions_gate(
             passthrough.append(action)
             continue
 
+        # Off: never auto-propose / apply — conversation only.
         if settings.mode == AUTO_PROPOSALS_OFF:
-            # Never trust Grok explicit alone — Off soft desires stay coach-only.
-            if action.kind == "threads" and user_intent == "soft":
-                dropped.append(action)
-                continue
-            if action.kind == "threads" and user_intent in {"ask", "command"}:
-                allowed.append(action)
-                continue
-            # Non-thread soft mutates stay dropped on Off until later phases.
             dropped.append(action)
             continue
 
@@ -74,7 +65,6 @@ def apply_auto_suggestions_gate(
         dropped_soft_actions=dropped,
         unsupported_hints=unsupported,
         passthrough_actions=passthrough,
-        user_thread_intent=user_intent,
     )
 
 

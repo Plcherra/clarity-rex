@@ -198,7 +198,7 @@ async def test_off_soft_desire_does_not_dispatch_even_if_grok_marks_explicit() -
 
 
 @pytest.mark.asyncio
-async def test_off_command_applies_immediately() -> None:
+async def test_off_drops_all_soft_mutates_including_commands() -> None:
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
     settings = AssistantProposalSettings(mode="off", threads=True)
@@ -216,7 +216,8 @@ async def test_off_command_applies_immediately() -> None:
         settings,
         user_message="update my 3am thread to 5am",
     )
-    assert gate.allowed_soft_actions
+    assert gate.dropped_soft_actions
+    assert not gate.allowed_soft_actions
     result = await dispatch_allowed_actions(
         gate=gate,
         settings=settings,
@@ -225,13 +226,8 @@ async def test_off_command_applies_immediately() -> None:
         user_message={"id": "u1", "content": "update my 3am thread to 5am"},
         assistant_reply="Done shifting that wake target to 5am.",
     )
-    assert result is not None
-    changes = result["memory_changes"]
-    assert changes.get("confirmation_required", 0) == 0
-    assert int(changes.get("updated") or 0) >= 1 or changes.get("write_proposals")
-    assert store.rows[0]["title"] == "Wake up every day at 5am"
-    assert "5am" in result["response"].lower()
-    assert "goals" in result["response"].lower()
+    assert result is None
+    assert store.rows[0]["title"] == "Sleep Schedule and Wake Up Everyday At 3am"
 
 
 @pytest.mark.asyncio
@@ -295,6 +291,47 @@ async def test_finalize_card_returns_proposed_turn() -> None:
     # Grok conversation continues; body attaches the card.
     assert "earlier bedtime" in proposed["response"].lower()
     assert "tap confirm to save" not in proposed["response"].lower()
+
+
+@pytest.mark.asyncio
+async def test_text_yes_applies_pending_without_card() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    settings = AssistantProposalSettings(mode="text", threads=True)
+    action = BrainAction(
+        name="update_open_thread",
+        payload={
+            "thread_id": "thread-sleep",
+            "title": "Wake at 6am",
+        },
+    )
+    gate = apply_auto_suggestions_gate(
+        [action],
+        settings,
+        user_message="I want to wake at 6am",
+    )
+    proposed = await dispatch_allowed_actions(
+        gate=gate,
+        settings=settings,
+        durable_write_service=durable,
+        conversation_id="c1",
+        user_message={"id": "u1", "content": "I want to wake at 6am"},
+        assistant_reply="Earlier wake times need an earlier bedtime.",
+    )
+    assert proposed is not None
+    assert proposed["memory_changes"].get("write_proposals") == []
+    assert proposed["memory_changes"].get("text_confirmation_pending") is True
+
+    applied = await durable.try_handle_pending(
+        "Yes",
+        pending_action=store.pending["c1"],
+        conversation_id="c1",
+        user_message={"id": "u2", "content": "Yes"},
+    )
+    assert applied is not None
+    assert applied["memory_changes"].get("confirmation_required", 1) == 0
+    assert store.rows[0]["title"] == "Wake at 6am"
+    assert applied["memory_changes"].get("write_proposals")  # applied card status ok
 
 
 @pytest.mark.asyncio

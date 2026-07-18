@@ -941,7 +941,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantCompanionSettingsSubtitle =>
-      'Choose how Rex suggests goals, open threads, and memory during chat. Saves always show a confirm card before anything is stored.';
+      'Choose how Rex suggests goals, open threads, and memory during chat. Off = chat only. Text = say yes in chat. Card = confirm card.';
 
   @override
   String get assistantCompanionSettingsGearLabel => 'Companion save settings';
@@ -962,8 +962,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantAutoProposalsModeCard => 'Confirm card';
 
   @override
+  String get assistantAutoProposalsModeOffHint =>
+      'Chat only. Rex does not propose saves.';
+
+  @override
   String get assistantAutoProposalsModeTextHint =>
-      'Rex still shows a confirm card; replies also mention the pending save in chat.';
+      'Rex asks in chat (say yes to save). No confirm card.';
 
   @override
   String get assistantAutoProposalsModeCardHint =>

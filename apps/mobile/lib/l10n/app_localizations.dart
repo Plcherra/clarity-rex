@@ -1752,7 +1752,7 @@ abstract class AppLocalizations {
   /// No description provided for @assistantCompanionSettingsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose how Rex suggests goals, open threads, and memory during chat. Saves always show a confirm card before anything is stored.'**
+  /// **'Choose how Rex suggests goals, open threads, and memory during chat. Off = chat only. Text = say yes in chat. Card = confirm card.'**
   String get assistantCompanionSettingsSubtitle;
 
   /// No description provided for @assistantCompanionSettingsGearLabel.
@@ -1791,10 +1791,16 @@ abstract class AppLocalizations {
   /// **'Confirm card'**
   String get assistantAutoProposalsModeCard;
 
+  /// No description provided for @assistantAutoProposalsModeOffHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat only. Rex does not propose saves.'**
+  String get assistantAutoProposalsModeOffHint;
+
   /// No description provided for @assistantAutoProposalsModeTextHint.
   ///
   /// In en, this message translates to:
-  /// **'Rex still shows a confirm card; replies also mention the pending save in chat.'**
+  /// **'Rex asks in chat (say yes to save). No confirm card.'**
   String get assistantAutoProposalsModeTextHint;
 
   /// No description provided for @assistantAutoProposalsModeCardHint.

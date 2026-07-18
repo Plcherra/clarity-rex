@@ -8,7 +8,6 @@ from typing import Optional
 
 from fastapi import UploadFile
 
-from app.services.action_fence_stream import ActionFenceStreamFilter
 from app.services.chat_financial_guard import ChatFinancialGuard
 from app.services.chat_response_truth import ChatResponseTruthService
 from app.services.chat_turn_context import ChatTurnContextService, MemoryService
@@ -21,12 +20,15 @@ from app.services.chat_turn_orchestrator_support import (
     load_pending_action,
 )
 from app.services.chat_turn_finalize import finalize_grok_turn
+from app.services.chat_turn_stream_finalize import (
+    collect_buffered_grok_reply,
+    iter_finalized_stream_events,
+)
 from app.services.chat_usage_recorder import ChatUsageRecorder
 from app.services.clarity_action_parser import ClarityActionParser
 from app.services.durable_write_service import DurableWriteService
 from app.services.grok_prompt_logging import log_grok_prompt_messages
 from app.services.grok_turn_brain import GrokTurnBrain
-from app.services.grok_usage import GrokUsageHolder
 from app.services.open_thread_context_loader import load_open_threads_context
 from app.services.rex_channel import RexBrainChannel
 from app.services.transcript_normalizer import (
@@ -307,45 +309,20 @@ class ChatTurnOrchestrator:
             channel=channel.value,
             conversation_id=conversation_id,
         )
-        response_parts: list[str] = []
-        stream_filter = ActionFenceStreamFilter()
-        llm_started_at = time.perf_counter()
-        usage_holder = GrokUsageHolder()
-        try:
-            async for token in self.grok_turn_brain.stream(
-                ai_messages,
-                max_tokens=resolved_max,
-                usage_holder=usage_holder,
-            ):
-                response_parts.append(token)
-                for visible in stream_filter.feed(token):
-                    if visible:
-                        yield {"event": "token", "token": visible}
-        except Exception as error:
-            await self.usage_recorder.record_llm_usage(
-                channel=channel,
-                ai_kwargs={"max_tokens": resolved_max},
-                latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
-                status="failure",
-                error_class=error.__class__.__name__,
-                usage=usage_holder.usage,
-            )
-            raise
-        await self.usage_recorder.record_llm_usage(
+        # Buffer until finalize so Truth/body cannot flash a second reply.
+        rex_response = await collect_buffered_grok_reply(
+            self.grok_turn_brain,
+            ai_messages=ai_messages,
+            max_tokens=resolved_max,
+            usage_recorder=self.usage_recorder,
             channel=channel,
-            ai_kwargs={"max_tokens": resolved_max},
-            latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
-            usage=usage_holder.usage,
         )
-        for visible in stream_filter.finish():
-            if visible:
-                yield {"event": "token", "token": visible}
-
-        finalized = await finalize_grok_turn(
-            "".join(response_parts).strip(),
+        async for event in iter_finalized_stream_events(
+            rex_response,
             clarity_action_parser=self.clarity_action_parser,
             truth_service=self.truth_service,
             durable_write_service=self.durable_write_service,
+            memory_service=self.memory_service,
             proposal_settings=turn_context.proposal_settings,
             brain_message=brain_message,
             user_message=turn_context.user_message,
@@ -353,50 +330,12 @@ class ChatTurnOrchestrator:
             conversation_history=history,
             turn_trace=turn_trace,
             ai_messages=ai_messages,
-        )
-        if finalized.get("proposed_turn") is not None:
-            proposed = finalized["proposed_turn"]
-            finish_short_circuit(
-                self.turn_observer,
-                self.usage_recorder,
-                turn_trace,
-                turn_started_at,
-                "llm",
-                turn_result=proposed,
-            )
-            # Stream already showed Grok tokens; done carries confirm prompt + cards.
-            yield {
-                "event": "done",
-                "conversation_id": conversation_id,
-                "response": proposed["response"],
-                "messages": proposed.get("messages")
-                or await self._recent_public_messages(conversation_id),
-                "memory_changes": proposed.get("memory_changes"),
-                "assistant_message": proposed.get("assistant_message"),
-            }
-            return
-        assistant_response = finalized["response"]
-        memory_changes = finalized.get("memory_changes")
-        finish_short_circuit(
-            self.turn_observer,
-            self.usage_recorder,
-            turn_trace,
-            turn_started_at,
-            "llm",
-            turn_result={"memory_changes": memory_changes},
-        )
-        await self.memory_service.save_message(
-            conversation_id,
-            "assistant",
-            assistant_response,
-        )
-        yield {
-            "event": "done",
-            "conversation_id": conversation_id,
-            "response": assistant_response,
-            "messages": await self._recent_public_messages(conversation_id),
-            "memory_changes": memory_changes,
-        }
+            turn_observer=self.turn_observer,
+            usage_recorder=self.usage_recorder,
+            turn_started_at=turn_started_at,
+            recent_public_messages=self._recent_public_messages,
+        ):
+            yield event
 
     async def _open_thread_titles_block(self) -> Optional[str]:
         packed = await load_open_threads_context(self.memory_service, "")

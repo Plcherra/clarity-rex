@@ -16,21 +16,23 @@ def test_tiny_system_has_truth_and_gate_no_reply_length() -> None:
     settings = AssistantProposalSettings(mode="card", threads=True, goals=False)
     prompt = build_tiny_system_prompt(settings)
     assert "Truth Rule" in prompt
-    assert "Auto Suggestions mode: card" in prompt
+    assert "Auto Suggestions: card" in prompt
     assert "just_chat" in prompt
     assert "unsupported" in prompt
     assert "rex_action" in prompt
+    assert "create_open_thread" in prompt
     assert "confirm card" in prompt.lower()
     assert "concise" not in prompt.lower()
     assert "response style" not in prompt.lower()
     assert "persona" not in prompt.lower()
 
 
-def test_tiny_system_off_coaches_without_chat_filler() -> None:
+def test_tiny_system_off_is_llm_only_no_mutate_instructions() -> None:
     prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))
-    assert "Off:" in prompt
-    assert "coach" in prompt.lower()
+    assert "Auto Suggestions: off." in prompt
     assert "conversational brain" in prompt.lower()
+    assert "When the user wants an open-thread" not in prompt
+    assert "coach" not in prompt.lower()
 
 
 def test_grok_turn_brain_builds_thin_messages() -> None:

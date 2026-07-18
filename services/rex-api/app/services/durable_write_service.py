@@ -428,12 +428,11 @@ class DurableWriteService:
             pending_action_for_durable_write(proposal=proposal),
         )
         settings = proposal_settings or await self._resolve_proposal_settings()
-        # Confirm cards are the truth path for durable writes (chat + voice).
-        # Text-only mode still proposes; it no longer hides the confirm UI.
+        # Card mode surfaces write_proposals; Text mode keeps pending say-yes only.
         show_cards = (
             surface_client_cards
             if surface_client_cards is not None
-            else settings.auto_proposals_enabled()
+            else settings.uses_confirm_cards()
         )
         if response is not None:
             prompt = response

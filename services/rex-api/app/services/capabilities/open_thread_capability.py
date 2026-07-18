@@ -1,20 +1,13 @@
-"""Open-thread create/update body handler (durable write propose/apply)."""
+"""Open-thread create/update body handler (durable write propose)."""
 
 from __future__ import annotations
 
 from typing import Any, Optional
 
-from app.services.assistant_proposal_settings import (
-    AUTO_PROPOSALS_OFF,
-    AssistantProposalSettings,
-)
+from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.brain_action_schema import BrainAction
-from app.services.grok_continuing_reply import (
-    continuing_reply_for_apply,
-    continuing_reply_for_propose,
-)
+from app.services.grok_continuing_reply import continuing_reply_for_propose
 from app.services.open_thread_service import OpenThreadService
-from app.services.open_thread_user_intent import classify_open_thread_user_intent
 
 _OPEN_THREAD_ACTIONS = frozenset({"create_open_thread", "update_open_thread"})
 
@@ -33,13 +26,17 @@ async def handle_open_thread_action(
     conversation_messages: Optional[list[dict]] = None,
     assistant_reply: str = "",
 ) -> Optional[dict]:
-    """Propose or apply create/update while keeping Grok's conversational reply."""
+    """Propose create/update while keeping Grok's conversational reply.
+
+    Off never reaches here (gate drops all soft mutates). Text = say-yes ask;
+    Card = confirm card.
+    """
     if not is_open_thread_action(action):
+        return None
+    if not settings.auto_proposals_enabled():
         return None
 
     payload = dict(action.payload) if isinstance(action.payload, dict) else {}
-    user_text = str(user_message.get("content") or "")
-    user_intent = classify_open_thread_user_intent(user_text)
     resolved = await _resolve_create_or_update(
         durable_write_service.memory_service,
         action_name=action.name,
@@ -49,30 +46,7 @@ async def handle_open_thread_action(
         return None
     mode, thread_id, title, summary, existing_title = resolved
 
-    # Off + imperative command → apply immediately (user already commanded).
-    if settings.mode == AUTO_PROPOSALS_OFF and user_intent == "command":
-        applied_reply = continuing_reply_for_apply(assistant_reply, title=title)
-        if mode == "update":
-            return await durable_write_service.apply_open_thread_update_consent(
-                thread_id=thread_id or "",
-                title=title,
-                summary=summary,
-                conversation_id=conversation_id,
-                user_message=user_message,
-                conversation_messages=conversation_messages,
-                existing_title=existing_title,
-                response=applied_reply,
-            )
-        return await durable_write_service.apply_open_thread_consent(
-            title=title,
-            summary=summary,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            conversation_messages=conversation_messages,
-            response=applied_reply,
-        )
-
-    surface_client_cards = _surface_cards(settings, user_intent=user_intent)
+    surface_client_cards = settings.uses_confirm_cards()
     reply = continuing_reply_for_propose(
         assistant_reply,
         surface_client_cards=surface_client_cards,
@@ -102,20 +76,6 @@ async def handle_open_thread_action(
     )
 
 
-def _surface_cards(
-    settings: AssistantProposalSettings,
-    *,
-    user_intent: str,
-) -> bool:
-    if settings.uses_confirm_cards():
-        return True
-    if settings.uses_text_offers():
-        return False
-    if settings.mode == AUTO_PROPOSALS_OFF and user_intent == "ask":
-        return False
-    return False
-
-
 async def _resolve_create_or_update(
     memory_service: Any,
     *,
@@ -135,14 +95,13 @@ async def _resolve_create_or_update(
             thread_id = _optional_str(threads[0].get("id"))
         if not thread_id:
             return None
-        existing_title = await _existing_title_for(
+        existing_title = _existing_title_for(
             threads,
             thread_id=thread_id,
             payload=payload,
         )
         return ("update", thread_id, title, summary, existing_title)
 
-    # create_open_thread: if only one active thread, update it instead of duplicating.
     if len(threads) == 1:
         sole = threads[0]
         sole_id = _optional_str(sole.get("id"))
@@ -164,7 +123,7 @@ async def _list_active_threads(memory_service: Any) -> list[dict]:
         return []
 
 
-async def _existing_title_for(
+def _existing_title_for(
     threads: list[dict],
     *,
     thread_id: str,

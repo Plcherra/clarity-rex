@@ -139,7 +139,7 @@ class _AssistantProposalSettingsSheetState
                       ? l10n.assistantAutoProposalsModeCardHint
                       : settings.usesTextOffers
                       ? l10n.assistantAutoProposalsModeTextHint
-                      : l10n.assistantCompanionSettingsSubtitle,
+                      : l10n.assistantAutoProposalsModeOffHint,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colors.textMuted,
                   ),
