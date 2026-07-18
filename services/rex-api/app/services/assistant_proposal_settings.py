@@ -12,10 +12,6 @@ AUTO_PROPOSALS_OFF = "off"
 AUTO_PROPOSALS_TEXT = "text"
 AUTO_PROPOSALS_CARD = "card"
 
-RESPONSE_STYLE_CONCISE = "concise"
-RESPONSE_STYLE_BALANCED = "balanced"
-RESPONSE_STYLE_DETAILED = "detailed"
-
 PROPOSAL_KIND_THREADS = "threads"
 PROPOSAL_KIND_GOALS = "goals"
 PROPOSAL_KIND_MEMORY = "memory"
@@ -26,11 +22,6 @@ SETTINGS_LOAD_MISSING_AUTH = "missing_auth"
 SETTINGS_LOAD_EMPTY_PROFILE = "empty_profile"
 
 _VALID_MODES = {AUTO_PROPOSALS_OFF, AUTO_PROPOSALS_TEXT, AUTO_PROPOSALS_CARD}
-_VALID_RESPONSE_STYLES = {
-    RESPONSE_STYLE_CONCISE,
-    RESPONSE_STYLE_BALANCED,
-    RESPONSE_STYLE_DETAILED,
-}
 
 
 @dataclass(frozen=True)
@@ -40,7 +31,6 @@ class AssistantProposalSettings:
     threads: bool = True
     goals: bool = True
     memory: bool = True
-    response_style: str = RESPONSE_STYLE_BALANCED
     finance_edits_enabled: bool = True
 
     def auto_proposals_enabled(self) -> bool:
@@ -77,7 +67,6 @@ class AssistantProposalSettings:
         return kinds
 
     def to_profile_dict(self) -> dict[str, Any]:
-        # response_style intentionally omitted — reply-length control removed.
         return {
             "auto_proposals_mode": self.mode,
             "auto_proposals_threads": self.threads,
@@ -156,15 +145,11 @@ def parse_assistant_settings(raw: Optional[dict[str, Any]]) -> AssistantProposal
     else:
         # Empty {}, missing key, blank, or invalid → Off (never silent Card).
         mode = AUTO_PROPOSALS_OFF
-    response_style = str(payload.get("response_style") or RESPONSE_STYLE_BALANCED).strip().lower()
-    if response_style not in _VALID_RESPONSE_STYLES:
-        response_style = RESPONSE_STYLE_BALANCED
     return AssistantProposalSettings(
         mode=mode,
         threads=_coerce_bool(payload.get("auto_proposals_threads"), default=True),
         goals=_coerce_bool(payload.get("auto_proposals_goals"), default=True),
         memory=_coerce_bool(payload.get("auto_proposals_memory"), default=True),
-        response_style=response_style,
         finance_edits_enabled=_coerce_bool(
             payload.get("finance_edits_enabled"),
             default=True,
@@ -244,7 +229,6 @@ def resolve_proposal_settings_resolution(
             if env.rex_auto_proposals_memory is not None
             else resolved.memory
         ),
-        response_style=resolved.response_style,
         finance_edits_enabled=resolved.finance_edits_enabled,
     )
     return ProposalSettingsResolution(

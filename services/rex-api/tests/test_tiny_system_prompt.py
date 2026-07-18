@@ -18,6 +18,8 @@ def test_tiny_system_has_truth_and_gate_no_reply_length() -> None:
     assert "Truth Rule" in prompt
     assert "Auto Suggestions mode: card" in prompt
     assert "just_chat" in prompt
+    assert "unsupported" in prompt
+    assert "rex_action" in prompt
     assert "concise" not in prompt.lower()
     assert "response style" not in prompt.lower()
     assert "persona" not in prompt.lower()

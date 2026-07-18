@@ -12,6 +12,19 @@ _TRUTH_RULE = (
     "the app. Prefer honest uncertainty over invented facts."
 )
 
+_PHASE_B_ACTIONS = (
+    "Reply naturally (just_chat). When the user asks for something Clarity "
+    "cannot do (email, SMS, etc.), be honest that you cannot send it; you may "
+    "offer a draft in the reply. Append a single fenced block:\n"
+    "```rex_action\n"
+    '{"action":"unsupported","capability_hint":"send_email"}\n'
+    "```\n"
+    "For soft durable intents (habits/threads/goals/memory) you may append "
+    '```rex_action``` with action names from the catalog and '
+    '"payload":{...}. Auto Suggestions gate decides Off/Text/Card after you; '
+    "do not invent silent saves. Mutate body dispatch is not applied yet."
+)
+
 
 def build_tiny_system_prompt(
     proposal_settings: AssistantProposalSettings,
@@ -24,13 +37,14 @@ def build_tiny_system_prompt(
         f"Auto Suggestions mode: {mode}. "
         f"Kind toggles for auto offers: {kinds}. "
         "Apply the gate only after you understand the user — do not invent "
-        "silent saves. Phase A: reply with natural conversation only "
-        "(just_chat); do not emit mutate actions yet."
+        "silent saves. Off: talk freely; do not expect auto write cards or "
+        "text-asks for soft intents."
     )
     sections = [
         _TRUTH_RULE,
         gate,
         capability_names_prompt(),
+        _PHASE_B_ACTIONS,
         CLARITY_KNOWLEDGE_LANGUAGE_PROMPT,
     ]
     if open_thread_titles_block and open_thread_titles_block.strip():

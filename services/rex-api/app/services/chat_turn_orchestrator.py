@@ -8,6 +8,7 @@ from typing import Optional
 
 from fastapi import UploadFile
 
+from app.services.action_fence_stream import ActionFenceStreamFilter
 from app.services.chat_financial_guard import ChatFinancialGuard
 from app.services.chat_response_truth import ChatResponseTruthService
 from app.services.chat_turn_context import ChatTurnContextService, MemoryService
@@ -19,12 +20,12 @@ from app.services.chat_turn_orchestrator_support import (
     finish_short_circuit,
     load_pending_action,
 )
-from app.services.chat_usage_recorder import ChatUsageRecorder
-from app.services.clarity_action_parser import (
-    ClarityActionParser,
-    ClarityActionStreamFilter,
+from app.services.chat_turn_reply import (
+    build_truthful_turn_reply,
+    memory_changes_for_phase_b,
 )
-from app.services.clarity_action_proposal_filter import filter_clarity_action_proposals
+from app.services.chat_usage_recorder import ChatUsageRecorder
+from app.services.clarity_action_parser import ClarityActionParser
 from app.services.durable_write_service import DurableWriteService
 from app.services.grok_prompt_logging import log_grok_prompt_messages
 from app.services.grok_turn_brain import GrokTurnBrain
@@ -36,7 +37,7 @@ from app.services.transcript_normalizer import (
     TranscriptNormalizer,
 )
 
-# Soft cap for Phase A natural replies (not reply-length styles).
+# Soft cap for natural replies (not reply-length styles).
 _DEFAULT_MAX_TOKENS = 1200
 
 
@@ -130,7 +131,6 @@ class ChatTurnOrchestrator:
                 return pending_result
 
         recent = await self._recent_public_messages(conversation_id)
-        # Exclude the user message just saved in prepare from duplicating in history.
         history = [item for item in recent[:-1]] if recent else []
         thread_block = await self._open_thread_titles_block()
         ai_messages = self.grok_turn_brain.build_messages(
@@ -167,7 +167,7 @@ class ChatTurnOrchestrator:
             latency_ms=self.usage_recorder.elapsed_ms(llm_started_at),
             usage=grok_result.usage,
         )
-        assistant_response, proposals = self._truthful_reply(
+        assistant_response, proposals, gate = self._truthful_reply(
             grok_result.text,
             brain_message=brain_message,
             conversation_history=history,
@@ -175,18 +175,18 @@ class ChatTurnOrchestrator:
             proposal_settings=turn_context.proposal_settings,
             ai_messages=ai_messages,
         )
+        memory_changes = memory_changes_for_phase_b(
+            self.clarity_action_parser,
+            clarity_proposals=proposals,
+            gate=gate,
+        )
         finish_short_circuit(
             self.turn_observer,
             self.usage_recorder,
             turn_trace,
             turn_started_at,
             "llm",
-            turn_result={
-                "memory_changes": self.clarity_action_parser.with_memory_changes(
-                    None,
-                    proposals,
-                ),
-            },
+            turn_result={"memory_changes": memory_changes},
         )
         assistant_message = await self.memory_service.save_message(
             conversation_id,
@@ -199,10 +199,7 @@ class ChatTurnOrchestrator:
             "user_message": turn_context.user_message,
             "assistant_message": assistant_message,
             "memory_correction": None,
-            "memory_changes": self.clarity_action_parser.with_memory_changes(
-                None,
-                proposals,
-            ),
+            "memory_changes": memory_changes,
             "messages": await self._recent_public_messages(conversation_id),
         }
 
@@ -250,7 +247,7 @@ class ChatTurnOrchestrator:
             yield {
                 "event": "turn.trace",
                 "intent": "just_chat",
-                "intent_reasons": ["plan_05_phase_a"],
+                "intent_reasons": ["plan_05_phase_b"],
                 "channel": channel.value,
                 "loaded_context": {"thin_base": True},
             }
@@ -301,7 +298,7 @@ class ChatTurnOrchestrator:
             conversation_id=conversation_id,
         )
         response_parts: list[str] = []
-        stream_filter = ClarityActionStreamFilter()
+        stream_filter = ActionFenceStreamFilter()
         llm_started_at = time.perf_counter()
         usage_holder = GrokUsageHolder()
         try:
@@ -334,7 +331,7 @@ class ChatTurnOrchestrator:
             if visible:
                 yield {"event": "token", "token": visible}
 
-        assistant_response, proposals = self._truthful_reply(
+        assistant_response, proposals, gate = self._truthful_reply(
             "".join(response_parts).strip(),
             brain_message=brain_message,
             conversation_history=history,
@@ -342,18 +339,18 @@ class ChatTurnOrchestrator:
             proposal_settings=turn_context.proposal_settings,
             ai_messages=ai_messages,
         )
+        memory_changes = memory_changes_for_phase_b(
+            self.clarity_action_parser,
+            clarity_proposals=proposals,
+            gate=gate,
+        )
         finish_short_circuit(
             self.turn_observer,
             self.usage_recorder,
             turn_trace,
             turn_started_at,
             "llm",
-            turn_result={
-                "memory_changes": self.clarity_action_parser.with_memory_changes(
-                    None,
-                    proposals,
-                ),
-            },
+            turn_result={"memory_changes": memory_changes},
         )
         await self.memory_service.save_message(
             conversation_id,
@@ -365,10 +362,7 @@ class ChatTurnOrchestrator:
             "conversation_id": conversation_id,
             "response": assistant_response,
             "messages": await self._recent_public_messages(conversation_id),
-            "memory_changes": self.clarity_action_parser.with_memory_changes(
-                None,
-                proposals,
-            ),
+            "memory_changes": memory_changes,
         }
 
     def _truthful_reply(
@@ -380,31 +374,17 @@ class ChatTurnOrchestrator:
         turn_trace,
         proposal_settings,
         ai_messages: list[dict],
-    ) -> tuple[str, list]:
-        unsupported = self.clarity_action_parser.unsupported_actions(rex_response)
-        assistant_response, proposals = self.clarity_action_parser.extract_proposals(
+    ):
+        return build_truthful_turn_reply(
             rex_response,
-        )
-        proposals = filter_clarity_action_proposals(
-            proposals,
-            finance_edits_enabled=proposal_settings.finance_edits_enabled,
-        )
-        # Phase A: no mutate dispatch yet — drop proposals so Truth stays honest.
-        proposals = []
-        truthful = self.truth_service.truthful_generated_response(
-            assistant_response,
-            proposals,
-            unsupported_actions=unsupported,
-            intent_decision=None,
-            user_message=brain_message,
-            memory_status=None,
-            chat_search_results_loaded=self.truth_service.has_chat_search_results(
-                ai_messages
-            ),
+            clarity_action_parser=self.clarity_action_parser,
+            truth_service=self.truth_service,
+            proposal_settings=proposal_settings,
+            brain_message=brain_message,
             conversation_history=conversation_history,
             turn_trace=turn_trace,
+            ai_messages=ai_messages,
         )
-        return truthful, proposals
 
     async def _open_thread_titles_block(self) -> Optional[str]:
         packed = await load_open_threads_context(self.memory_service, "")

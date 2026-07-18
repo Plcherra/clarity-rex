@@ -991,18 +991,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Memoria (hechos y preferencias)';
 
   @override
-  String get assistantResponseStyleLabel => 'Longitud de respuesta';
-
-  @override
-  String get assistantResponseStyleConcise => 'Concisa';
-
-  @override
-  String get assistantResponseStyleBalanced => 'Equilibrada';
-
-  @override
-  String get assistantResponseStyleDetailed => 'Detallada';
-
-  @override
   String get assistantFinanceEditsEnabledLabel =>
       'Permitir que Rex edite finanzas';
 

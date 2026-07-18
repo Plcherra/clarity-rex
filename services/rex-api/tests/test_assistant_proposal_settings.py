@@ -5,7 +5,6 @@ from app.services.assistant_proposal_settings import (
     PROPOSAL_KIND_GOALS,
     PROPOSAL_KIND_MEMORY,
     PROPOSAL_KIND_THREADS,
-    RESPONSE_STYLE_BALANCED,
     SETTINGS_LOAD_EMPTY_PROFILE,
     AssistantProposalSettings,
     fail_closed_proposal_settings,
@@ -21,14 +20,14 @@ def test_parse_assistant_settings_defaults_to_off_mode() -> None:
     assert settings.threads is True
     assert settings.goals is True
     assert settings.memory is True
-    assert settings.response_style == RESPONSE_STYLE_BALANCED
     assert settings.finance_edits_enabled is True
     assert settings.auto_proposals_enabled() is False
     assert settings.uses_confirm_cards() is False
+    assert not hasattr(settings, "response_style")
 
 
 def test_parse_assistant_settings_missing_mode_key_is_off() -> None:
-    settings = parse_assistant_settings({"response_style": "concise"})
+    settings = parse_assistant_settings({"finance_edits_enabled": True})
     assert settings.mode == AUTO_PROPOSALS_OFF
 
 

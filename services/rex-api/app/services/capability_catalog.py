@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-# Names only — no manuals. Body handlers land in later Phase B+.
+# Names only — no manuals. Body handlers land in later phases.
 CAPABILITY_NAMES: tuple[str, ...] = (
     "just_chat",
     "unsupported",
@@ -42,7 +42,8 @@ CAPABILITY_NAMES: tuple[str, ...] = (
 def capability_names_prompt() -> str:
     lines = ", ".join(CAPABILITY_NAMES)
     return (
-        "Capability names (body may execute later; Phase A is just_chat only):\n"
+        "Capability names (body executes after Auto Suggestions gate):\n"
         f"{lines}\n"
-        "Do not claim email, SMS, or other external-world actions."
+        "Unsupported examples: send_email, send_sms, external_world_actions.\n"
+        "Never claim email, SMS, or other external-world actions were done."
     )

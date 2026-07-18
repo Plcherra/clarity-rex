@@ -980,18 +980,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantAutoProposalsTypeMemory => 'Memory (facts & preferences)';
 
   @override
-  String get assistantResponseStyleLabel => 'Reply length';
-
-  @override
-  String get assistantResponseStyleConcise => 'Concise';
-
-  @override
-  String get assistantResponseStyleBalanced => 'Balanced';
-
-  @override
-  String get assistantResponseStyleDetailed => 'Detailed';
-
-  @override
   String get assistantFinanceEditsEnabledLabel => 'Allow Rex to edit finances';
 
   @override

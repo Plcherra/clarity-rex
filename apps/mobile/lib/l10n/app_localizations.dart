@@ -1821,30 +1821,6 @@ abstract class AppLocalizations {
   /// **'Memory (facts & preferences)'**
   String get assistantAutoProposalsTypeMemory;
 
-  /// No description provided for @assistantResponseStyleLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Reply length'**
-  String get assistantResponseStyleLabel;
-
-  /// No description provided for @assistantResponseStyleConcise.
-  ///
-  /// In en, this message translates to:
-  /// **'Concise'**
-  String get assistantResponseStyleConcise;
-
-  /// No description provided for @assistantResponseStyleBalanced.
-  ///
-  /// In en, this message translates to:
-  /// **'Balanced'**
-  String get assistantResponseStyleBalanced;
-
-  /// No description provided for @assistantResponseStyleDetailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Detailed'**
-  String get assistantResponseStyleDetailed;
-
   /// No description provided for @assistantFinanceEditsEnabledLabel.
   ///
   /// In en, this message translates to:

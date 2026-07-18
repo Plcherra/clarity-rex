@@ -33,9 +33,9 @@ void main() {
     expect(settings.usesConfirmCards, isFalse);
   });
 
-  test('defaults response style to balanced', () {
-    final settings = AssistantProposalSettings.fromJson({});
-    expect(settings.responseStyle, AssistantProposalSettings.balanced);
+  test('omits reply-length / response_style from profile json', () {
+    const settings = AssistantProposalSettings();
+    expect(settings.toJson().containsKey('response_style'), isFalse);
   });
 
   test('defaults finance edits to enabled', () {

@@ -1,6 +1,6 @@
 # 05 — Simple brain implementation
 
-**Status:** Phase A in progress (2026-07-17) on `plan/04-aggressive-deletion`.  
+**Status:** Phase B complete (2026-07-18) on `plan/04-aggressive-deletion`. Phase A done.  
 **Depends on:** [`04_aggressive_deletion.md`](04_aggressive_deletion.md) (complete)  
 **Vision reference:** [`01_vision_gap_and_token_budget.md`](01_vision_gap_and_token_budget.md)
 
@@ -145,9 +145,9 @@ Confirm cards and Truth remain mandatory for durable writes.
 
 ### Phase B — Unsupported + gate plumbing
 
-- [ ] `unsupported` → cannot send email; offer draft in reply
-- [ ] Auto Suggestions Off does not emit write proposals for soft intents
-- [ ] Companion settings: reply length control gone (or hidden/removed)
+- [x] `unsupported` → cannot send email; offer draft in reply
+- [x] Auto Suggestions Off does not emit write proposals for soft intents
+- [x] Companion settings: reply length control gone (or hidden/removed)
 
 **Manual tests:**
 
