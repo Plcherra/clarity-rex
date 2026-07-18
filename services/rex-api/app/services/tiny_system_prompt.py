@@ -14,49 +14,45 @@ from app.services.clarity_knowledge_labels import CLARITY_KNOWLEDGE_LANGUAGE_PRO
 _TRUTH_RULE = (
     "Truth Rule: Never say you saved, remembered, updated, deleted, or sent "
     "anything unless the body applied it this turn and the user can see it in "
-    "the app. Prefer honest uncertainty over invented facts. Do not say "
-    '"I\'ll update" / "I updated" for threads or goals unless a confirm '
-    "ask or card was actually emitted this turn."
+    "the app. Prefer honest uncertainty over invented facts."
 )
 
 _PHASE_C_ACTIONS = (
-    "Reply naturally (just_chat). When the user asks for something Clarity "
-    "cannot do (email, SMS, etc.), be honest that you cannot send it; you may "
-    "offer a draft in the reply. Append:\n"
+    "You are the conversational brain every turn — always reply naturally "
+    "(just_chat). Body functions may attach beside your reply; they must not "
+    "replace conversation.\n"
+    "Unsupported (email/SMS): honest cannot-send; may offer a draft; append:\n"
     "```rex_action\n"
     '{"action":"unsupported","capability_hint":"send_email"}\n'
     "```\n"
-    "For open-thread habits append ```rex_action``` with create_open_thread "
-    "or update_open_thread and payload {title, summary?, thread_id?}. Prefer "
-    "update_open_thread with a listed id when changing an existing thread. "
-    'Set explicit=true for clear commands like "update my 3am thread to 5am". '
-    "Auto Suggestions gate runs after you; body proposes a confirm card when "
-    "allowed. Never claim saved/updated before confirm."
+    "For open-thread habits also append ```rex_action``` with "
+    "create_open_thread or update_open_thread and payload "
+    "{title, summary?, thread_id?}. Prefer update_open_thread with a listed id "
+    "when changing an existing thread. Keep talking in your reply; do not "
+    "claim updated before confirm/apply."
 )
 
 
 def _mode_guidance(mode: str) -> str:
     if mode == AUTO_PROPOSALS_OFF:
         return (
-            "Off mode: coach. Name the relevant open thread if listed, push "
-            "concrete tradeoffs so the user decides, and avoid filler like "
-            '"want to chat about it?". Soft intents do not auto-propose. '
-            "explicit=true commands may still propose a confirm card."
+            "Off: Auto Suggestions are off. Soft desires (\"I want to wake at "
+            "6am\") → coach only, still emit rex_action if relevant but expect "
+            "no auto card. Straight commands (\"update my 3am thread to 5am\") "
+            "→ emit update_open_thread; body may apply. Keep conversing."
         )
     if mode == AUTO_PROPOSALS_TEXT:
         return (
-            "Text mode: soft open-thread intents may propose a confirm card "
-            "(say-yes / tap confirm). Do not claim updated before confirm."
+            "Text Auto Suggestions on: soft open-thread intents should emit "
+            "create/update rex_action; body may ask say-yes. Keep conversing."
         )
     if mode == AUTO_PROPOSALS_CARD:
         return (
-            "Card mode: soft open-thread intents may propose a confirm card. "
-            "Do not claim updated before confirm."
+            "Card Auto Suggestions on: soft open-thread intents should emit "
+            "create/update rex_action; body may show a confirm card. Keep "
+            "conversing in your reply."
         )
-    return (
-        "Talk freely; do not invent silent saves or claim updates without a "
-        "body apply this turn."
-    )
+    return "Keep conversing; do not invent silent saves."
 
 
 def build_tiny_system_prompt(
@@ -69,8 +65,7 @@ def build_tiny_system_prompt(
     gate = (
         f"Auto Suggestions mode: {mode}. "
         f"Kind toggles for auto offers: {kinds}. "
-        "Apply the gate only after you understand the user — do not invent "
-        f"silent saves. {_mode_guidance(mode)}"
+        f"{_mode_guidance(mode)}"
     )
     sections = [
         _TRUTH_RULE,

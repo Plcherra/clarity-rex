@@ -37,7 +37,11 @@ def test_gate_off_drops_soft_habit_action() -> None:
         )
     ]
     off = AssistantProposalSettings(mode="off", threads=True)
-    gated = apply_auto_suggestions_gate(actions, off)
+    gated = apply_auto_suggestions_gate(
+        actions,
+        off,
+        user_message="I want to wake at 6am",
+    )
     assert gated.dropped_soft_actions
     assert not gated.allowed_soft_actions
 
@@ -52,7 +56,11 @@ def test_gate_card_keeps_soft_habit_for_later_dispatch() -> None:
         )
     ]
     card = AssistantProposalSettings(mode="card", threads=True)
-    gated = apply_auto_suggestions_gate(actions, card)
+    gated = apply_auto_suggestions_gate(
+        actions,
+        card,
+        user_message="I want to wake at 6am",
+    )
     assert gated.allowed_soft_actions
     assert not gated.dropped_soft_actions
 
@@ -62,7 +70,11 @@ def test_gate_card_respects_kind_toggle_off() -> None:
         BrainAction(name="create_open_thread", payload={"title": "Wake"}, auto=True)
     ]
     card = AssistantProposalSettings(mode="card", threads=False)
-    gated = apply_auto_suggestions_gate(actions, card)
+    gated = apply_auto_suggestions_gate(
+        actions,
+        card,
+        user_message="I want to wake at 6am",
+    )
     assert gated.dropped_soft_actions
     assert not gated.allowed_soft_actions
 

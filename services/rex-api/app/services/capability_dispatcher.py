@@ -20,6 +20,7 @@ async def dispatch_allowed_actions(
     conversation_id: str,
     user_message: dict,
     conversation_messages: Optional[list[dict]] = None,
+    assistant_reply: str = "",
 ) -> Optional[dict]:
     """Run the first allowed open-thread action. Returns a full turn dict or None."""
     for action in gate.allowed_soft_actions:
@@ -32,6 +33,7 @@ async def dispatch_allowed_actions(
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_messages=conversation_messages,
+            assistant_reply=assistant_reply,
         )
         if result is not None:
             return result

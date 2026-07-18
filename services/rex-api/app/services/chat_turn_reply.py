@@ -27,7 +27,11 @@ def build_truthful_turn_reply(
     Soft mutates are gated here; open-thread propose runs in finalize/dispatch.
     """
     brain = parse_brain_actions(rex_response)
-    gate = apply_auto_suggestions_gate(brain.actions, proposal_settings)
+    gate = apply_auto_suggestions_gate(
+        brain.actions,
+        proposal_settings,
+        user_message=brain_message,
+    )
 
     fence_unsupported = clarity_action_parser.unsupported_actions(rex_response)
     reply_after_finance, finance_proposals = clarity_action_parser.extract_proposals(

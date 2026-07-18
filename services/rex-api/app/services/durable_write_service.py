@@ -215,8 +215,10 @@ class DurableWriteService:
         conversation_id: str,
         user_message: dict,
         conversation_messages: Optional[list[dict]] = None,
+        response: str | None = None,
     ) -> dict:
         """Apply an open thread after explicit text consent (no confirm card)."""
+        _ = conversation_messages
         proposal = proposal_from_open_thread(
             title=title,
             summary=summary,
@@ -229,6 +231,7 @@ class DurableWriteService:
             pending=pending,
             conversation_id=conversation_id,
             user_message=user_message,
+            response=response,
         )
 
     async def propose_open_thread_update(
@@ -273,7 +276,9 @@ class DurableWriteService:
         user_message: dict,
         conversation_messages: Optional[list[dict]] = None,
         existing_title: str | None = None,
+        response: str | None = None,
     ) -> dict:
+        _ = conversation_messages
         proposal = proposal_from_open_thread_update(
             thread_id=thread_id,
             title=title,
@@ -288,6 +293,7 @@ class DurableWriteService:
             pending=pending,
             conversation_id=conversation_id,
             user_message=user_message,
+            response=response,
         )
 
     async def propose_discipline_decision(
@@ -487,6 +493,7 @@ class DurableWriteService:
         pending: PendingAction,
         conversation_id: str,
         user_message: dict,
+        response: str | None = None,
     ) -> dict:
         if proposal.person_card is not None:
             from app.services.person_confirm_proposal import (
@@ -537,7 +544,7 @@ class DurableWriteService:
         record = result.get("record") or {}
         records = result.get("records") or ([record] if record else [])
         updated_count = result.get("updated_count")
-        saved = _saved_response(
+        saved = response or _saved_response(
             proposal,
             record=record,
             merged=bool(result.get("merged")),

@@ -28,9 +28,9 @@ def test_tiny_system_has_truth_and_gate_no_reply_length() -> None:
 
 def test_tiny_system_off_coaches_without_chat_filler() -> None:
     prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))
-    assert "Off mode: coach" in prompt
-    assert "want to chat about it?" in prompt
-    assert "I'll update" in prompt or "I updated" in prompt
+    assert "Off:" in prompt
+    assert "coach" in prompt.lower()
+    assert "conversational brain" in prompt.lower()
 
 
 def test_grok_turn_brain_builds_thin_messages() -> None:
