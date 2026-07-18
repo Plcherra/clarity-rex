@@ -79,7 +79,9 @@ _FINANCE_WRITE_TERMS = (
 )
 
 _SUCCESS_TERMS = tuple(
-    "saved|saving|i'll save|i will save|updated|updating|fixed|fixing|changed|changing|deleted|deleting|"
+    "saved|saving|i'll save|i will save|"
+    "i'll update|i will update|i'll change|i will change|"
+    "updated|updating|fixed|fixing|changed|changing|deleted|deleting|"
     "created|creating|moved|moving|sent|sending|categorized|categorizing|"
     "recategorized|recategorizing|noted|noting|remembered|remembering|"
     "completed|done|all set|"

@@ -23,8 +23,16 @@ _CONFIRMATION_HINTS = (
 )
 
 _MUTATION_CLAIM_PATTERNS = (
+    # Future/intent claims: "I'll update the sleep thread to 6am"
     re.compile(
-        r"\b(?:got it[, ]+)?(?:updating|updated|switching|switched|changing|changed)\b"
+        r"\b(?:i(?:'|’)?ll|i will|i am going to|i'm going to)\s+"
+        r"(?:update|change|switch|adjust|set|move)\b"
+        r".{0,80}\b(?:sleep|wake|thread|goal|target|schedule)\b",
+        re.I,
+    ),
+    re.compile(
+        r"\b(?:got it[, ]+)?(?:updating|updated|update|switching|switched|"
+        r"changing|changed|adjusting|adjusted)\b"
         r".{0,60}\b(?:sleep|wake|thread|goal|target|schedule)\b",
         re.I,
     ),

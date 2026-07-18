@@ -20,9 +20,17 @@ def test_tiny_system_has_truth_and_gate_no_reply_length() -> None:
     assert "just_chat" in prompt
     assert "unsupported" in prompt
     assert "rex_action" in prompt
+    assert "confirm card" in prompt.lower()
     assert "concise" not in prompt.lower()
     assert "response style" not in prompt.lower()
     assert "persona" not in prompt.lower()
+
+
+def test_tiny_system_off_coaches_without_chat_filler() -> None:
+    prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))
+    assert "Off mode: coach" in prompt
+    assert "want to chat about it?" in prompt
+    assert "I'll update" in prompt or "I updated" in prompt
 
 
 def test_grok_turn_brain_builds_thin_messages() -> None:

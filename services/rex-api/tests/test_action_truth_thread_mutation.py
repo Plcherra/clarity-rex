@@ -26,6 +26,29 @@ def test_blocks_switching_wake_target_claim():
     )
 
 
+def test_blocks_ill_update_sleep_thread_claim():
+    claim = (
+        "Got it—I'll update the existing Sleep Schedule thread to reflect "
+        "waking at 6am instead."
+    )
+    assert (
+        safe_unexecuted_thread_or_goal_mutation_response(claim)
+        == UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK
+    )
+
+
+def test_blocks_ill_update_wake_time_claim():
+    claim = (
+        "Got it—sounds like you'd like to adjust your wake-up time. "
+        "I'll update the existing Sleep Schedule thread to reflect waking at "
+        "6am instead."
+    )
+    assert (
+        safe_unexecuted_thread_or_goal_mutation_response(claim)
+        == UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK
+    )
+
+
 def test_allows_honest_mention_without_mutation_claim():
     reply = (
         "You already have an open thread about waking at 3am in Goals. "
