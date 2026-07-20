@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from app.services.action_truth_thread_mutation import (
+    UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
     response_claims_thread_or_goal_mutation_success,
 )
 
@@ -18,7 +19,13 @@ def continuing_reply_for_propose(
     Text mode: append a short say-yes line when missing.
     """
     text = str(grok_reply or "").strip()
-    if not text or response_claims_thread_or_goal_mutation_success(text):
+    # Truth may have already replaced a false claim with the unexecuted
+    # fallback; on propose turns use confirm-pending language instead.
+    if (
+        not text
+        or response_claims_thread_or_goal_mutation_success(text)
+        or text == UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK
+    ):
         text = (
             "Got it — I can update that open thread when you confirm. "
             "Nothing is saved until then."

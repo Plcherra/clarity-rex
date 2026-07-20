@@ -111,6 +111,7 @@ extension ChatControllerSend on ChatController {
         isLoading: false,
         clearError: true,
       );
+      _syncTextConfirmationPending(result.memoryChanges);
       await _refreshSavedMemoryOverviewIfNeeded(result.memoryChanges);
       await _refreshGoalsOverviewIfNeeded(result.memoryChanges);
       unawaited(ref.read(conversationListProvider.notifier).loadConversations());
@@ -179,6 +180,7 @@ extension ChatControllerSend on ChatController {
             isLoading: false,
             clearError: true,
           );
+          _syncTextConfirmationPending(response.memoryChanges);
           await _refreshSavedMemoryOverviewIfNeeded(response.memoryChanges);
           await _refreshGoalsOverviewIfNeeded(response.memoryChanges);
           unawaited(ref.read(conversationListProvider.notifier).loadConversations());

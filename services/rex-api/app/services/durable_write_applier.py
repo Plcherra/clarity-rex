@@ -313,7 +313,12 @@ class DurableWriteApplier:
                 detail="missing_record",
                 conversation_id=conversation_id,
             )
-        return {"applied": True, "record": record, "merged": True}
+        return {
+            "applied": True,
+            "record": record,
+            "merged": False,
+            "updated_count": 1,
+        }
 
     async def _apply_bulk_plan_target_date(
         self,

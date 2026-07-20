@@ -31,6 +31,20 @@ def test_propose_scrubs_false_update_claim() -> None:
     assert "confirm" in reply.lower()
 
 
+def test_propose_remaps_truth_unexecuted_fallback() -> None:
+    from app.services.action_truth_thread_mutation import (
+        UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
+    )
+
+    reply = continuing_reply_for_propose(
+        UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
+        surface_client_cards=False,
+    )
+    assert "don't have a confirmed" not in reply.lower()
+    assert "say yes" in reply.lower()
+    assert "confirm" in reply.lower()
+
+
 def test_apply_keeps_conversation_and_notes_goals() -> None:
     reply = continuing_reply_for_apply(
         "Shifted the target to 5am.",

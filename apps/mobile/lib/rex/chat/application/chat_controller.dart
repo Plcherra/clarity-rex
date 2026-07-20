@@ -109,6 +109,7 @@ class ChatController extends Notifier<ChatState> {
         isLoading: false,
         clearError: true,
       );
+      _syncTextConfirmationPending(memoryChanges);
       unawaited(_refreshSavedMemoryOverviewIfNeeded(memoryChanges));
       unawaited(_refreshGoalsOverviewIfNeeded(memoryChanges));
       return;
@@ -119,6 +120,7 @@ class ChatController extends Notifier<ChatState> {
       isLoading: false,
       clearError: true,
     );
+    _syncTextConfirmationPending(memoryChanges);
 
     final fallbackText = fallbackAssistantResponse?.trim() ?? '';
     if (fallbackText.isNotEmpty || clarityActions.isNotEmpty) {
@@ -137,10 +139,12 @@ class ChatController extends Notifier<ChatState> {
   }
 
   Future<void> loadConversation(String conversationId) async {
+    // Drop any Text say-yes pending id from the previous chat before hydrate.
     state = state.copyWith(
       conversationId: conversationId,
       isLoading: true,
       clearError: true,
+      clearTextConfirmationPending: true,
     );
 
     try {
@@ -160,7 +164,8 @@ class ChatController extends Notifier<ChatState> {
   }
 
   Future<void> _hydratePendingWriteProposal(String conversationId) async {
-    if (pendingClarityActions(state.messages).isNotEmpty) {
+    if (pendingClarityActions(state.messages).isNotEmpty ||
+        (state.textConfirmationPendingProposalId?.isNotEmpty ?? false)) {
       return;
     }
 
@@ -168,8 +173,13 @@ class ChatController extends Notifier<ChatState> {
       final memoryChanges = await ref
           .read(conversationApiProvider)
           .getPendingWriteProposal(conversationId);
-      if (memoryChanges == null ||
-          clarityActionCardsFromMemoryChanges(memoryChanges).isEmpty) {
+      if (memoryChanges == null) {
+        return;
+      }
+      _syncTextConfirmationPending(memoryChanges);
+      final cards = clarityActionCardsFromMemoryChanges(memoryChanges);
+      if (cards.isEmpty) {
+        // Text pending: id stored on state; no card to attach.
         return;
       }
       state = state.copyWith(

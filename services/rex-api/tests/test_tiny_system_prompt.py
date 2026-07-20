@@ -27,10 +27,14 @@ def test_tiny_system_has_truth_and_gate_no_reply_length() -> None:
     assert "persona" not in prompt.lower()
 
 
-def test_tiny_system_off_is_llm_only_no_mutate_instructions() -> None:
+def test_tiny_system_off_includes_explicit_mutate_only() -> None:
     prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))
-    assert "Auto Suggestions: off." in prompt
-    assert "conversational brain" in prompt.lower()
+    assert "Auto Suggestions: off" in prompt
+    assert "explicit" in prompt.lower()
+    assert "create_open_thread" in prompt
+    assert "update_open_thread" in prompt
+    assert '"explicit":true' in prompt or '"explicit": true' in prompt
+    assert "do not suggest" in prompt.lower() or "do not auto-suggest" in prompt.lower()
     assert "When the user wants an open-thread" not in prompt
     assert "coach" not in prompt.lower()
 

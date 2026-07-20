@@ -76,6 +76,16 @@ def test_allows_kind_respects_mode_and_toggles() -> None:
     off = AssistantProposalSettings(mode=AUTO_PROPOSALS_OFF)
     assert not off.allows_kind(PROPOSAL_KIND_THREADS)
     assert not off.auto_proposals_enabled()
+    assert off.allows_explicit_command(PROPOSAL_KIND_THREADS)
+    assert off.kind_toggle_enabled(PROPOSAL_KIND_THREADS)
+    assert PROPOSAL_KIND_THREADS in off.enabled_kind_toggles()
+    assert off.enabled_kinds() == []
+
+    off_threads_disabled = AssistantProposalSettings(
+        mode=AUTO_PROPOSALS_OFF,
+        threads=False,
+    )
+    assert not off_threads_disabled.allows_explicit_command(PROPOSAL_KIND_THREADS)
 
 
 def test_fail_closed_proposal_settings_is_off() -> None:

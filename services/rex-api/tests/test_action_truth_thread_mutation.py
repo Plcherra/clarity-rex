@@ -63,3 +63,14 @@ def test_allows_pending_confirm_language():
         "Want me to change it to wake up every day at 6am?"
     )
     assert safe_unexecuted_thread_or_goal_mutation_response(reply) == reply
+
+
+def test_blocks_past_tense_claim_even_with_confirm_language():
+    claim = (
+        "I've updated your sleep thread to wake at 6am. "
+        "Want me to confirm?"
+    )
+    assert (
+        safe_unexecuted_thread_or_goal_mutation_response(claim)
+        == UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK
+    )

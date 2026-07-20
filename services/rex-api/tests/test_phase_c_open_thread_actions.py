@@ -167,7 +167,7 @@ async def test_text_soft_proposes_without_client_cards() -> None:
 
 
 @pytest.mark.asyncio
-async def test_off_soft_desire_does_not_dispatch_even_if_grok_marks_explicit() -> None:
+async def test_off_soft_desire_without_explicit_does_not_dispatch() -> None:
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
     settings = AssistantProposalSettings(mode="off", threads=True)
@@ -177,7 +177,7 @@ async def test_off_soft_desire_does_not_dispatch_even_if_grok_marks_explicit() -
             "thread_id": "thread-sleep",
             "title": "Wake at 6am",
         },
-        explicit=True,
+        explicit=False,
     )
     gate = apply_auto_suggestions_gate(
         [action],
@@ -198,7 +198,7 @@ async def test_off_soft_desire_does_not_dispatch_even_if_grok_marks_explicit() -
 
 
 @pytest.mark.asyncio
-async def test_off_drops_all_soft_mutates_including_commands() -> None:
+async def test_off_explicit_command_proposes_as_text() -> None:
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
     settings = AssistantProposalSettings(mode="off", threads=True)
@@ -216,18 +216,23 @@ async def test_off_drops_all_soft_mutates_including_commands() -> None:
         settings,
         user_message="update my 3am thread to 5am",
     )
-    assert gate.dropped_soft_actions
-    assert not gate.allowed_soft_actions
+    assert gate.allowed_soft_actions
+    assert not gate.dropped_soft_actions
     result = await dispatch_allowed_actions(
         gate=gate,
         settings=settings,
         durable_write_service=durable,
         conversation_id="c1",
         user_message={"id": "u1", "content": "update my 3am thread to 5am"},
-        assistant_reply="Done shifting that wake target to 5am.",
+        assistant_reply="Got it — shifting that wake target to 5am.",
     )
-    assert result is None
-    assert store.rows[0]["title"] == "Sleep Schedule and Wake Up Everyday At 3am"
+    assert result is not None
+    changes = result["memory_changes"]
+    assert changes["confirmation_required"] == 1
+    assert changes.get("write_proposals") == []
+    assert changes.get("text_confirmation_pending") is True
+    assert "say yes" in result["response"].lower()
+    assert store.pending.get("c1") is not None
 
 
 @pytest.mark.asyncio
@@ -323,10 +328,10 @@ async def test_text_yes_applies_pending_without_card() -> None:
     assert proposed["memory_changes"].get("text_confirmation_pending") is True
 
     applied = await durable.try_handle_pending(
-        "Yes",
+        "yes",
         pending_action=store.pending["c1"],
         conversation_id="c1",
-        user_message={"id": "u2", "content": "Yes"},
+        user_message={"id": "u2", "content": "yes"},
     )
     assert applied is not None
     assert applied["memory_changes"].get("confirmation_required", 1) == 0
@@ -366,6 +371,78 @@ async def test_finalize_off_soft_stays_chat_only() -> None:
     assert not store.pending
 
 
+@pytest.mark.asyncio
+async def test_finalize_propose_scrubs_past_tense_success_before_save() -> None:
+    """P0: Truth runs before propose save — no past-tense success on pending turns."""
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    rex = (
+        "I've updated your sleep thread to wake at 6am. Want me to confirm?\n\n"
+        "```rex_action\n"
+        '{"action":"update_open_thread","payload":{'
+        '"thread_id":"thread-sleep",'
+        '"title":"Wake at 6am"}}\n'
+        "```"
+    )
+    finalized = await finalize_grok_turn(
+        rex,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=durable,
+        proposal_settings=AssistantProposalSettings(mode="text", threads=True),
+        brain_message="update my sleep thread to 6am",
+        user_message={"id": "u1", "content": "update my sleep thread to 6am"},
+        conversation_id="c1",
+        conversation_history=[],
+        turn_trace=None,
+        ai_messages=[],
+    )
+    proposed = finalized.get("proposed_turn")
+    assert proposed is not None
+    lowered = proposed["response"].lower()
+    assert "i've updated" not in lowered
+    assert "i have updated" not in lowered
+    assert "say yes" in lowered or "confirm" in lowered
+    # Persisted assistant message must match (Truth before save).
+    assert store.messages
+    saved = store.messages[-1]["content"].lower()
+    assert "i've updated" not in saved
+    assert "i have updated" not in saved
+
+
+@pytest.mark.asyncio
+async def test_finalize_off_explicit_proposes_text_confirm() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    rex = (
+        "Shifting that wake target to 5am — say the word and it's updated.\n\n"
+        "```rex_action\n"
+        '{"action":"update_open_thread","payload":{'
+        '"thread_id":"thread-sleep",'
+        '"title":"Wake at 5am"},"explicit":true}\n'
+        "```"
+    )
+    finalized = await finalize_grok_turn(
+        rex,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=durable,
+        proposal_settings=AssistantProposalSettings(mode="off", threads=True),
+        brain_message="update my 3am thread to 5am",
+        user_message={"id": "u1", "content": "update my 3am thread to 5am"},
+        conversation_id="c1",
+        conversation_history=[],
+        turn_trace=None,
+        ai_messages=[],
+    )
+    proposed = finalized.get("proposed_turn")
+    assert proposed is not None
+    changes = proposed["memory_changes"]
+    assert changes.get("write_proposals") == []
+    assert changes.get("text_confirmation_pending") is True
+    assert store.pending.get("c1") is not None
+
+
 def test_open_threads_context_includes_ids() -> None:
     rendered = format_open_threads_context(
         [
@@ -385,6 +462,159 @@ def test_tiny_system_phase_c_mentions_open_thread_dispatch() -> None:
     prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="card"))
     assert "create_open_thread" in prompt
     assert "update_open_thread" in prompt
+    assert "delete_open_thread" not in prompt
+
+
+@pytest.mark.asyncio
+async def test_update_without_thread_id_asks_which_when_multiple() -> None:
+    store = _FakePendingStore()
+    store.rows.append(
+        {
+            "id": "thread-gym",
+            "title": "Gym three times a week",
+            "status": "active",
+            "summary": "lift",
+            "user_id": "user-1",
+        }
+    )
+    durable = DurableWriteService(memory_service=store)
+    settings = AssistantProposalSettings(mode="card", threads=True)
+    action = BrainAction(
+        name="update_open_thread",
+        payload={"title": "Wake at 6am"},
+    )
+    gate = apply_auto_suggestions_gate(
+        [action],
+        settings,
+        user_message="update my thread to 6am",
+    )
+    result = await dispatch_allowed_actions(
+        gate=gate,
+        settings=settings,
+        durable_write_service=durable,
+        conversation_id="c1",
+        user_message={"id": "u1", "content": "update my thread to 6am"},
+        assistant_reply="Happy to adjust that.",
+    )
+    assert result is not None
+    assert "which open thread" in result["response"].lower()
+    assert not store.pending
+    assert result["memory_changes"].get("confirmation_required", 0) == 0
+
+
+@pytest.mark.asyncio
+async def test_list_threads_failure_surfaces_error_not_create() -> None:
+    class _FailingStore(_FakePendingStore):
+        async def _list_records(self, table: str, **kwargs) -> list[dict]:
+            raise RuntimeError("supabase down")
+
+    store = _FailingStore()
+    durable = DurableWriteService(memory_service=store)
+    settings = AssistantProposalSettings(mode="text", threads=True)
+    action = BrainAction(
+        name="create_open_thread",
+        payload={"title": "Wake at 6am"},
+    )
+    gate = apply_auto_suggestions_gate(
+        [action],
+        settings,
+        user_message="I want to wake at 6am",
+    )
+    result = await dispatch_allowed_actions(
+        gate=gate,
+        settings=settings,
+        durable_write_service=durable,
+        conversation_id="c1",
+        user_message={"id": "u1", "content": "I want to wake at 6am"},
+        assistant_reply="An earlier wake time is doable.",
+    )
+    assert result is not None
+    assert "couldn't load your open threads" in result["response"].lower()
+    assert not store.pending
+    assert len(store.rows) == 1  # no duplicate create
+
+
+@pytest.mark.asyncio
+async def test_delete_open_thread_action_is_honest_not_silent() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    settings = AssistantProposalSettings(mode="card", threads=True)
+    action = BrainAction(
+        name="delete_open_thread",
+        payload={"thread_id": "thread-sleep"},
+    )
+    # Not a soft action anymore; still must not silently drop if emitted.
+    from app.services.auto_suggestions_gate import AutoSuggestionsGateResult
+
+    gate = AutoSuggestionsGateResult(
+        mode="card",
+        passthrough_actions=[action],
+    )
+    result = await dispatch_allowed_actions(
+        gate=gate,
+        settings=settings,
+        durable_write_service=durable,
+        conversation_id="c1",
+        user_message={"id": "u1", "content": "delete my sleep thread"},
+    )
+    assert result is not None
+    assert "can't delete" in result["response"].lower()
+    assert "goals" in result["response"].lower()
+    assert not store.pending
+
+
+@pytest.mark.asyncio
+async def test_empty_title_payload_surfaces_clarification() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    settings = AssistantProposalSettings(mode="card", threads=True)
+    action = BrainAction(
+        name="create_open_thread",
+        payload={"title": "   "},
+    )
+    gate = apply_auto_suggestions_gate(
+        [action],
+        settings,
+        user_message="track something",
+    )
+    result = await dispatch_allowed_actions(
+        gate=gate,
+        settings=settings,
+        durable_write_service=durable,
+        conversation_id="c1",
+        user_message={"id": "u1", "content": "track something"},
+        assistant_reply="Happy to help.",
+    )
+    assert result is not None
+    assert "couldn't tell" in result["response"].lower()
+    assert not store.pending
+
+
+@pytest.mark.asyncio
+async def test_propose_stores_surface_client_cards_on_pending() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    settings = AssistantProposalSettings(mode="text", threads=True)
+    action = BrainAction(
+        name="create_open_thread",
+        payload={"title": "Wake at 6am"},
+    )
+    gate = apply_auto_suggestions_gate(
+        [action],
+        settings,
+        user_message="I want to wake at 6am",
+    )
+    result = await dispatch_allowed_actions(
+        gate=gate,
+        settings=settings,
+        durable_write_service=durable,
+        conversation_id="c1",
+        user_message={"id": "u1", "content": "I want to wake at 6am"},
+        assistant_reply="Earlier bedtime helps.",
+    )
+    assert result is not None
+    pending = store.pending["c1"]
+    assert pending["context"]["surface_client_cards"] is False
 
 
 def test_parse_update_action_with_thread_id() -> None:

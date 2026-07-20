@@ -22,16 +22,18 @@ _CONFIRMATION_HINTS = (
     "would you like me to",
 )
 
-_MUTATION_CLAIM_PATTERNS = (
-    # Future/intent claims: "I'll update the sleep thread to 6am"
+# Always blocked — even when soft confirm language is also present.
+_HARD_MUTATION_CLAIM_PATTERNS = (
+    # Future commitment claims: "I'll update the sleep thread to 6am"
     re.compile(
         r"\b(?:i(?:'|’)?ll|i will|i am going to|i'm going to)\s+"
         r"(?:update|change|switch|adjust|set|move)\b"
         r".{0,80}\b(?:sleep|wake|thread|goal|target|schedule)\b",
         re.I,
     ),
+    # Past / progressive: "I've updated…", "updating your sleep…"
     re.compile(
-        r"\b(?:got it[, ]+)?(?:updating|updated|update|switching|switched|"
+        r"\b(?:got it[, ]+)?(?:updating|updated|switching|switched|"
         r"changing|changed|adjusting|adjusted)\b"
         r".{0,60}\b(?:sleep|wake|thread|goal|target|schedule)\b",
         re.I,
@@ -51,15 +53,24 @@ _MUTATION_CLAIM_PATTERNS = (
     ),
 )
 
+# Bare "update … thread" — allow when asking permission ("Want me to update…?").
+_SOFT_UPDATE_CLAIM_PATTERN = re.compile(
+    r"\b(?:got it[, ]+)?update\b"
+    r".{0,60}\b(?:sleep|wake|thread|goal|target|schedule)\b",
+    re.I,
+)
+
 
 def response_claims_thread_or_goal_mutation_success(response: str) -> bool:
     cleaned = response.strip()
     if not cleaned:
         return False
+    if any(pattern.search(cleaned) for pattern in _HARD_MUTATION_CLAIM_PATTERNS):
+        return True
     lowered = f" {cleaned.lower()} "
     if any(hint in lowered for hint in _CONFIRMATION_HINTS):
         return False
-    if any(pattern.search(cleaned) for pattern in _MUTATION_CLAIM_PATTERNS):
+    if _SOFT_UPDATE_CLAIM_PATTERN.search(cleaned):
         return True
     return response_claims_unconfirmed_success(cleaned) and bool(
         re.search(r"\b(?:goal|thread|wake|sleep schedule|target)\b", lowered)

@@ -4,28 +4,37 @@ part of 'chat_controller.dart';
 
 extension ChatControllerContext on ChatController {
   Map<String, dynamic>? _writeConfirmationForTypedAffirmation(String message) {
-    final normalized = message.trim().toLowerCase();
-    const affirmations = {
-      'yes',
-      'yes please',
-      'yep',
-      'yeah',
-      'sure',
-      'please',
-      'please do',
-      'do it',
-      'save it',
-      'save that',
-      'save this',
-    };
-    if (!affirmations.contains(normalized)) {
+    if (!isTypedAffirmationMessage(message)) {
       return null;
     }
-    final pending = pendingClarityActions(state.messages);
-    if (pending.length != 1 || !pending.first.canConfirm) {
-      return null;
+
+    // Card path: exactly one pending confirm card.
+    final pendingCards = pendingClarityActions(state.messages);
+    if (pendingCards.length == 1 && pendingCards.first.canConfirm) {
+      return _writeConfirmationPayload(pendingCards.first);
     }
-    return _writeConfirmationPayload(pending.first);
+
+    // Text / Off+explicit: no card; use stored pending_proposal_id.
+    final textPendingId = state.textConfirmationPendingProposalId?.trim();
+    if (textPendingId != null && textPendingId.isNotEmpty) {
+      return <String, dynamic>{'proposal_id': textPendingId};
+    }
+    return null;
+  }
+
+  void _syncTextConfirmationPending(Map<String, dynamic>? memoryChanges) {
+    if (memoryChanges == null) {
+      return;
+    }
+    final pendingId =
+        textConfirmationPendingProposalIdFromMemoryChanges(memoryChanges);
+    if (pendingId != null) {
+      state = state.copyWith(textConfirmationPendingProposalId: pendingId);
+      return;
+    }
+    if (memoryChangesClearTextConfirmationPending(memoryChanges)) {
+      state = state.copyWith(clearTextConfirmationPending: true);
+    }
   }
 
   Map<String, dynamic> _writeConfirmationPayload(ClarityActionCard action) {

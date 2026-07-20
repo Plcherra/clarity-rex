@@ -3,6 +3,36 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:clarity/rex/chat/application/chat_memory_change_parser.dart';
 
 void main() {
+  test('reads text confirmation pending proposal id', () {
+    expect(
+      textConfirmationPendingProposalIdFromMemoryChanges({
+        'text_confirmation_pending': true,
+        'pending_proposal_id': 'write-text-1',
+        'write_proposals': <dynamic>[],
+      }),
+      'write-text-1',
+    );
+    expect(
+      textConfirmationPendingProposalIdFromMemoryChanges({
+        'confirmation_required': 1,
+        'write_proposals': <dynamic>[],
+      }),
+      isNull,
+    );
+  });
+
+  test('typed affirmations match backend say-yes phrases', () {
+    expect(isTypedAffirmationMessage('yes'), isTrue);
+    expect(isTypedAffirmationMessage('save it'), isTrue);
+    expect(isTypedAffirmationMessage('confirm'), isTrue);
+    // Casual chat must not apply a pending write.
+    expect(isTypedAffirmationMessage('Sure'), isFalse);
+    expect(isTypedAffirmationMessage('ok'), isFalse);
+    expect(isTypedAffirmationMessage('sounds good'), isFalse);
+    expect(isTypedAffirmationMessage('yesterday'), isFalse);
+    expect(isTypedAffirmationMessage('yes update it'), isFalse);
+  });
+
   test('hides pending cards when text_confirmation_pending is set', () {
     final cards = clarityActionCardsFromMemoryChanges({
       'confirmation_required': 1,

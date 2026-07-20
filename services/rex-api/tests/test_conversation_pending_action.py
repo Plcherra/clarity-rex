@@ -3,6 +3,7 @@ import pytest
 from app.services.conversation_pending_action import (
     ConversationPendingActionService,
     PendingAction,
+    is_affirmative_confirmation,
     pending_action_for_delete,
     pending_delete_resolver_target,
     should_defer_to_pending_delete,
@@ -99,6 +100,27 @@ async def test_pending_action_service_persists_on_conversation():
     assert loaded == action
     await service.clear("conversation-1")
     assert await service.get("conversation-1") is None
+
+
+def test_is_affirmative_confirmation_accepts_common_yes_phrases() -> None:
+    for phrase in (
+        "yes",
+        "Yes!",
+        "please do",
+        "save it",
+        "confirm",
+        "do it",
+    ):
+        assert is_affirmative_confirmation(phrase), phrase
+    # Casual chat must not apply a pending write.
+    assert not is_affirmative_confirmation("sure")
+    assert not is_affirmative_confirmation("ok")
+    assert not is_affirmative_confirmation("okay")
+    assert not is_affirmative_confirmation("sounds good")
+    assert not is_affirmative_confirmation("go ahead")
+    assert not is_affirmative_confirmation("yesterday")
+    assert not is_affirmative_confirmation("yes update it")
+    assert not is_affirmative_confirmation("please don't")
 
 
 def test_should_defer_to_delete_confirmation_accepts_pending_action_dict():

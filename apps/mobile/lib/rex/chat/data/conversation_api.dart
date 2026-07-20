@@ -83,8 +83,12 @@ class ConversationApi {
     if (data is! Map<String, dynamic>) {
       throw const ChatApiException('Backend returned an invalid response.');
     }
+    final textPending = data['text_confirmation_pending'] == true;
+    final pendingId = data['pending_proposal_id']?.toString().trim() ?? '';
     final proposals = data['write_proposals'];
-    if (proposals is! List || proposals.isEmpty) {
+    final hasCards = proposals is List && proposals.isNotEmpty;
+    // Text / Off+explicit: pending id with no cards is still a live confirm.
+    if (!hasCards && !(textPending && pendingId.isNotEmpty)) {
       return null;
     }
     return data;

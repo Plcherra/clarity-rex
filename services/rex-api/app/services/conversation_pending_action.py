@@ -199,27 +199,49 @@ class ConversationPendingActionService:
         return note
 
 
-def is_delete_confirmation_message(message: str) -> bool:
-    if is_delete_confirmation_reply(message):
-        return True
-    normalized = re.sub(r"[^a-z0-9']+", " ", str(message or "").lower())
-    normalized = re.sub(r"\s+", " ", normalized).strip()
-    return normalized in {
+# Exact normalized phrases only (no substring match — avoids "yes" in "yesterday").
+# Keep narrow: casual chat ("ok", "sure", "sounds good") must not apply pending writes.
+_AFFIRMATIVE_CONFIRMATION_PHRASES = frozenset(
+    {
         "yes",
         "yes please",
-        "yep",
-        "yeah",
+        "please do",
+        "do it",
         "confirm",
         "confirmed",
-        "do it",
-        "go ahead",
+        "save it",
+        "save that",
+        "save this",
+    }
+)
+
+_DELETE_ONLY_CONFIRMATION_PHRASES = frozenset(
+    {
         "go ahead delete it",
         "delete it",
         "yes delete it",
-        "that would be awesome",
-        "that would be great",
-        "sounds good",
     }
+)
+
+
+def _normalize_confirmation_message(message: str) -> str:
+    normalized = re.sub(r"[^a-z0-9']+", " ", str(message or "").lower())
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
+def is_affirmative_confirmation(message: str) -> bool:
+    """True when the whole message is a short say-yes confirm (Text / Off+explicit)."""
+    return _normalize_confirmation_message(message) in _AFFIRMATIVE_CONFIRMATION_PHRASES
+
+
+def is_delete_confirmation_message(message: str) -> bool:
+    if is_delete_confirmation_reply(message):
+        return True
+    normalized = _normalize_confirmation_message(message)
+    return (
+        normalized in _AFFIRMATIVE_CONFIRMATION_PHRASES
+        or normalized in _DELETE_ONLY_CONFIRMATION_PHRASES
+    )
 
 
 def is_delete_rejection_message(message: str) -> bool:

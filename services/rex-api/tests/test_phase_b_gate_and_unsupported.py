@@ -2,14 +2,54 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app.services.action_fence_stream import ActionFenceStreamFilter
 from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.auto_suggestions_gate import apply_auto_suggestions_gate
 from app.services.brain_action_schema import BrainAction, parse_brain_actions
 from app.services.chat_response_truth import ChatResponseTruthService
-from app.services.chat_turn_reply import build_truthful_turn_reply
+from app.services.chat_turn_finalize import finalize_grok_turn
 from app.services.clarity_action_parser import ClarityActionParser
+from app.services.durable_write_service import DurableWriteService
 from app.services.tiny_system_prompt import build_tiny_system_prompt
+
+
+class _NoPendingStore:
+    """Minimal store so finalize can Truth-gate without proposing."""
+
+    def __init__(self) -> None:
+        self.user_id = "user-1"
+        self.access_token = "token"
+        self.pending: dict = {}
+        self.messages: list[dict] = []
+
+    async def get_conversation_pending_action(self, conversation_id: str):
+        return self.pending.get(conversation_id)
+
+    async def set_conversation_pending_action(self, conversation_id: str, pending_action):
+        if pending_action is None:
+            self.pending.pop(conversation_id, None)
+        else:
+            self.pending[conversation_id] = pending_action
+
+    async def save_message(self, conversation_id: str, role: str, content: str) -> dict:
+        message = {
+            "id": f"msg-{len(self.messages) + 1}",
+            "conversation_id": conversation_id,
+            "role": role,
+            "content": content,
+        }
+        self.messages.append(message)
+        return message
+
+    async def get_recent_messages(self, conversation_id: str, limit: int = 20) -> list:
+        _ = conversation_id
+        return list(self.messages)[-limit:]
+
+    async def _list_records(self, table: str, **kwargs) -> list[dict]:
+        _ = table, kwargs
+        return []
 
 
 def test_parse_unsupported_rex_action_block() -> None:
@@ -41,6 +81,42 @@ def test_gate_off_drops_soft_habit_action() -> None:
         actions,
         off,
         user_message="I want to wake at 6am",
+    )
+    assert gated.dropped_soft_actions
+    assert not gated.allowed_soft_actions
+
+
+def test_gate_off_allows_explicit_command() -> None:
+    actions = [
+        BrainAction(
+            name="update_open_thread",
+            payload={"thread_id": "t1", "title": "Wake at 5am"},
+            explicit=True,
+        )
+    ]
+    off = AssistantProposalSettings(mode="off", threads=True)
+    gated = apply_auto_suggestions_gate(
+        actions,
+        off,
+        user_message="update my thread to 5am",
+    )
+    assert gated.allowed_soft_actions
+    assert not gated.dropped_soft_actions
+
+
+def test_gate_off_explicit_respects_kind_toggle() -> None:
+    actions = [
+        BrainAction(
+            name="update_open_thread",
+            payload={"thread_id": "t1", "title": "Wake at 5am"},
+            explicit=True,
+        )
+    ]
+    off = AssistantProposalSettings(mode="off", threads=False)
+    gated = apply_auto_suggestions_gate(
+        actions,
+        off,
+        user_message="update my thread to 5am",
     )
     assert gated.dropped_soft_actions
     assert not gated.allowed_soft_actions
@@ -79,55 +155,61 @@ def test_gate_card_respects_kind_toggle_off() -> None:
     assert not gated.allowed_soft_actions
 
 
-def test_email_unsupported_truth_never_claims_sent() -> None:
-    parser = ClarityActionParser()
-    truth = ChatResponseTruthService()
+@pytest.mark.asyncio
+async def test_email_unsupported_truth_never_claims_sent() -> None:
+    store = _NoPendingStore()
     rex = (
         "Sent! I emailed example@gmail.com for you.\n\n"
         "```rex_action\n"
         '{"action":"unsupported","capability_hint":"send_email"}\n'
         "```"
     )
-    reply, proposals, gate = build_truthful_turn_reply(
+    finalized = await finalize_grok_turn(
         rex,
-        clarity_action_parser=parser,
-        truth_service=truth,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=DurableWriteService(memory_service=store),
         proposal_settings=AssistantProposalSettings(mode="off"),
         brain_message="Send an email to example@gmail.com",
+        user_message={"id": "u1", "content": "Send an email to example@gmail.com"},
+        conversation_id="c1",
         conversation_history=[],
         turn_trace=None,
         ai_messages=[],
     )
-    assert proposals == []
-    assert gate.unsupported_hints == ["send_email"]
+    assert finalized.get("proposed_turn") is None
+    reply = finalized["response"]
     lowered = reply.lower()
     assert "sent" not in lowered or "won't claim" in lowered or "can't complete" in lowered
     assert "email" in lowered
     assert "draft" in lowered or "think it through" in lowered
 
 
-def test_off_soft_habit_pipeline_emits_no_proposals() -> None:
-    parser = ClarityActionParser()
-    truth = ChatResponseTruthService()
+@pytest.mark.asyncio
+async def test_off_soft_habit_pipeline_emits_no_proposals() -> None:
+    store = _NoPendingStore()
     rex = (
         "Wake at 6am sounds good — I can help you stick with it.\n\n"
         "```rex_action\n"
         '{"action":"create_open_thread","payload":{"title":"Wake at 6am"}}\n'
         "```"
     )
-    reply, proposals, gate = build_truthful_turn_reply(
+    finalized = await finalize_grok_turn(
         rex,
-        clarity_action_parser=parser,
-        truth_service=truth,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=DurableWriteService(memory_service=store),
         proposal_settings=AssistantProposalSettings(mode="off", threads=True),
         brain_message="I want to wake at 6am",
+        user_message={"id": "u1", "content": "I want to wake at 6am"},
+        conversation_id="c1",
         conversation_history=[],
         turn_trace=None,
         ai_messages=[],
     )
-    assert proposals == []
-    assert gate.dropped_soft_actions
-    assert not gate.allowed_soft_actions
+    assert finalized.get("proposed_turn") is None
+    assert not store.pending
+    reply = finalized["response"]
     assert "rex_action" not in reply
     assert "wake" in reply.lower()
 

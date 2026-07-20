@@ -25,7 +25,7 @@ CAPABILITY_NAMES: tuple[str, ...] = (
     "delete_milestone",
     "create_open_thread",
     "update_open_thread",
-    "delete_open_thread",
+    # delete_open_thread: not body-wired in Phase C — close threads in Goals.
     "fetch_spend_insight",
     "fetch_account_summary",
     "categorize_transaction",

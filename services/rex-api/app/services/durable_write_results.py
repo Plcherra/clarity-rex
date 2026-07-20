@@ -54,6 +54,7 @@ def applied_memory_changes(
                 "update_plan",
                 "update_milestone",
                 "bulk_plan_target_date",
+                "open_thread_update",
             }
         )
     )
@@ -148,7 +149,13 @@ def _applied_record_result(
     record: dict[str, Any],
     merged: bool,
 ) -> dict[str, Any]:
-    action = "direct_updated" if proposal.write_kind.startswith("update_") else "direct_saved"
+    snapshot_type = str(proposal.apply_snapshot.get("type") or "")
+    action = (
+        "direct_updated"
+        if proposal.write_kind.startswith("update_")
+        or snapshot_type == "open_thread_update"
+        else "direct_saved"
+    )
     if proposal.write_kind == "delete":
         action = "deleted"
     if merged:

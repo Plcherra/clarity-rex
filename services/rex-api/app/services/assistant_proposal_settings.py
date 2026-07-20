@@ -42,10 +42,8 @@ class AssistantProposalSettings:
     def uses_confirm_cards(self) -> bool:
         return self.mode == AUTO_PROPOSALS_CARD
 
-    def allows_kind(self, kind: str) -> bool:
-        """Auto-inferred proposals only. Explicit user commands are separate."""
-        if not self.auto_proposals_enabled():
-            return False
+    def kind_toggle_enabled(self, kind: str) -> bool:
+        """Kind switch only — independent of Off/Text/Card mode."""
         if kind == PROPOSAL_KIND_THREADS:
             return self.threads
         if kind == PROPOSAL_KIND_GOALS:
@@ -54,9 +52,26 @@ class AssistantProposalSettings:
             return self.memory
         return False
 
+    def allows_kind(self, kind: str) -> bool:
+        """Auto-inferred proposals (Text/Card). Off uses allows_explicit_command."""
+        if not self.auto_proposals_enabled():
+            return False
+        return self.kind_toggle_enabled(kind)
+
+    def allows_explicit_command(self, kind: Optional[str]) -> bool:
+        """Off-mode explicit user commands — still respect kind toggles."""
+        if kind is None:
+            return False
+        return self.kind_toggle_enabled(kind)
+
     def enabled_kinds(self) -> list[str]:
+        """Kinds available for auto offers (empty when mode is Off)."""
         if not self.auto_proposals_enabled():
             return []
+        return self.enabled_kind_toggles()
+
+    def enabled_kind_toggles(self) -> list[str]:
+        """All kind toggles that are on, regardless of Off/Text/Card."""
         kinds: list[str] = []
         if self.threads:
             kinds.append(PROPOSAL_KIND_THREADS)

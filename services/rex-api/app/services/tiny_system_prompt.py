@@ -32,10 +32,24 @@ _ACTIONS_MUTATE = (
     "Keep talking in your reply; do not claim updated before confirm."
 )
 
+_ACTIONS_MUTATE_OFF = (
+    "Open-thread create/update: only when the user gives a clear explicit "
+    "command (e.g. \"update my thread to 5am\", \"change my sleep to 6am\"). "
+    "Then append ```rex_action``` with create_open_thread or update_open_thread, "
+    'payload {title, summary?, thread_id?}, and "explicit":true. '
+    "Prefer update_open_thread with a listed id. "
+    "Do not suggest, offer, or auto-propose when they only express a desire. "
+    "Keep talking; body uses brief say-yes confirm (no card). "
+    "Do not claim updated before confirm."
+)
+
 
 def _mode_guidance(mode: str) -> str:
     if mode == AUTO_PROPOSALS_OFF:
-        return "Auto Suggestions: off."
+        return (
+            "Auto Suggestions: off "
+            "(no auto proposals; explicit commands use say-yes Text confirm)."
+        )
     if mode == AUTO_PROPOSALS_TEXT:
         return "Auto Suggestions: text (say-yes in chat; no confirm card)."
     if mode == AUTO_PROPOSALS_CARD:
@@ -45,7 +59,7 @@ def _mode_guidance(mode: str) -> str:
 
 def _actions_block(mode: str) -> str:
     if mode == AUTO_PROPOSALS_OFF:
-        return _ACTIONS_BASE
+        return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE_OFF}"
     return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE}"
 
 
@@ -55,11 +69,13 @@ def build_tiny_system_prompt(
     open_thread_titles_block: str | None = None,
 ) -> str:
     mode = proposal_settings.mode
-    kinds = ", ".join(proposal_settings.enabled_kinds()) or "none"
-    gate = (
-        f"{_mode_guidance(mode)} "
-        f"Kind toggles for auto offers: {kinds}."
-    )
+    if mode == AUTO_PROPOSALS_OFF:
+        kinds = ", ".join(proposal_settings.enabled_kind_toggles()) or "none"
+        kinds_label = f"Kind toggles for explicit commands: {kinds}."
+    else:
+        kinds = ", ".join(proposal_settings.enabled_kinds()) or "none"
+        kinds_label = f"Kind toggles for auto offers: {kinds}."
+    gate = f"{_mode_guidance(mode)} {kinds_label}"
     sections = [
         _TRUTH_RULE,
         gate,

@@ -1,4 +1,4 @@
-"""Finalize a Grok turn: parse → gate → open-thread body → Truth → save payload."""
+"""Finalize a Grok turn: parse → gate → Truth → open-thread body → save payload."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.auto_suggestions_gate import apply_auto_suggestions_gate
 from app.services.brain_action_schema import parse_brain_actions
 from app.services.capability_dispatcher import dispatch_allowed_actions
-from app.services.clarity_action_proposal_filter import filter_clarity_action_proposals
 
 
 async def finalize_grok_turn(
@@ -25,7 +24,11 @@ async def finalize_grok_turn(
     turn_trace,
     ai_messages: list[dict],
 ) -> dict[str, Any]:
-    """Grok reply always continues; body may attach propose/apply beside it."""
+    """Grok reply always continues; body may attach propose/apply beside it.
+
+    Truth runs before body propose/save so pending turns never persist
+    past-tense success claims.
+    """
     brain = parse_brain_actions(rex_response)
     gate = apply_auto_suggestions_gate(
         brain.actions,
@@ -33,7 +36,28 @@ async def finalize_grok_turn(
         user_message=brain_message,
     )
 
-    # Body may propose/apply using Grok's conversational reply (not replace it).
+    fence_unsupported = clarity_action_parser.unsupported_actions(rex_response)
+    # Strip legacy finance fences from reply text; mutate dispatch is not live.
+    reply_text, _ignored_finance = clarity_action_parser.extract_proposals(
+        brain.reply_text,
+    )
+    finance_proposals: list[dict] = []
+    unsupported = _merge_unsupported(gate.unsupported_hints, fence_unsupported)
+    assistant_response = truth_service.truthful_generated_response(
+        reply_text,
+        finance_proposals,
+        unsupported_actions=unsupported,
+        intent_decision=None,
+        user_message=brain_message,
+        memory_status=None,
+        chat_search_results_loaded=truth_service.has_chat_search_results(
+            ai_messages
+        ),
+        conversation_history=conversation_history,
+        turn_trace=turn_trace,
+    )
+
+    # Body may propose/apply using the truthful reply (not raw Grok claims).
     proposed = await dispatch_allowed_actions(
         gate=gate,
         settings=proposal_settings,
@@ -41,7 +65,7 @@ async def finalize_grok_turn(
         conversation_id=conversation_id,
         user_message=user_message,
         conversation_messages=conversation_history,
-        assistant_reply=brain.reply_text,
+        assistant_reply=assistant_response,
     )
     if proposed is not None:
         if turn_trace is not None:
@@ -61,29 +85,6 @@ async def finalize_grok_turn(
                 )
         return {"proposed_turn": proposed}
 
-    fence_unsupported = clarity_action_parser.unsupported_actions(rex_response)
-    reply_after_finance, finance_proposals = clarity_action_parser.extract_proposals(
-        brain.reply_text,
-    )
-    finance_proposals = filter_clarity_action_proposals(
-        finance_proposals,
-        finance_edits_enabled=proposal_settings.finance_edits_enabled,
-    )
-    finance_proposals = []
-    unsupported = _merge_unsupported(gate.unsupported_hints, fence_unsupported)
-    assistant_response = truth_service.truthful_generated_response(
-        reply_after_finance,
-        finance_proposals,
-        unsupported_actions=unsupported,
-        intent_decision=None,
-        user_message=brain_message,
-        memory_status=None,
-        chat_search_results_loaded=truth_service.has_chat_search_results(
-            ai_messages
-        ),
-        conversation_history=conversation_history,
-        turn_trace=turn_trace,
-    )
     memory_changes = clarity_action_parser.with_memory_changes(
         None,
         finance_proposals,

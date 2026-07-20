@@ -25,7 +25,6 @@ ACTION_UNSUPPORTED = "unsupported"
 _SOFT_ACTION_KINDS: dict[str, str] = {
     "create_open_thread": PROPOSAL_KIND_THREADS,
     "update_open_thread": PROPOSAL_KIND_THREADS,
-    "delete_open_thread": PROPOSAL_KIND_THREADS,
     "create_goal": PROPOSAL_KIND_GOALS,
     "update_goal": PROPOSAL_KIND_GOALS,
     "delete_goal": PROPOSAL_KIND_GOALS,

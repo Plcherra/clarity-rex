@@ -7,7 +7,10 @@ from app.models.conversation import (
     ConversationTitleUpdateRequest,
     MessageResponse,
 )
-from app.services.durable_write_pending import proposal_from_pending_action
+from app.services.durable_write_pending import (
+    proposal_from_pending_action,
+    surface_client_cards_from_pending,
+)
 from app.services.durable_write_results import pending_memory_changes
 from app.services.memory_service import MemoryServiceError, SupabaseMemoryService
 
@@ -113,25 +116,18 @@ async def get_pending_write_proposal(
             "plan_save_proposals": [],
         }
 
-    from app.services.assistant_settings_repository import AssistantSettingsRepository
-    from app.services.assistant_proposal_settings import fail_closed_proposal_settings
+    # Prefer propose-time surface so Text pending stays Text after settings change.
+    frozen_surface = surface_client_cards_from_pending(pending)
+    if frozen_surface is not None:
+        return pending_memory_changes(
+            proposal=proposal,
+            surface_client_cards=frozen_surface,
+        )
 
-    user_id = getattr(memory_service, "user_id", None)
-    access_token = getattr(memory_service, "access_token", None)
-    if user_id and access_token:
-        try:
-            settings = await AssistantSettingsRepository(
-                user_id=user_id,
-                access_token=access_token,
-            ).fetch_proposal_settings()
-        except Exception:
-            settings = fail_closed_proposal_settings()
-    else:
-        settings = fail_closed_proposal_settings()
-
+    # Legacy pendings without the flag: fail closed to Text (no surprise cards).
     return pending_memory_changes(
         proposal=proposal,
-        surface_client_cards=settings.uses_confirm_cards(),
+        surface_client_cards=False,
     )
 
 

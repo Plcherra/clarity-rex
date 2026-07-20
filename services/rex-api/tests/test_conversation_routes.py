@@ -314,6 +314,7 @@ def test_get_pending_write_returns_open_thread_proposal(client):
     fake_memory_service.pending_actions["conversation-1"] = {
         "action_type": "durable_write",
         "context": {
+            "surface_client_cards": True,
             "durable_write_proposal": {
                 "write_kind": "open_thread",
                 "title": "Money stress",
@@ -340,6 +341,75 @@ def test_get_pending_write_returns_open_thread_proposal(client):
     payload = response.json()
     assert payload["confirmation_required"] == 1
     assert payload["write_proposals"][0]["write_kind"] == "open_thread"
+
+
+def test_get_pending_write_uses_propose_time_text_surface(client):
+    fake_memory_service = FakeConversationMemoryService()
+    fake_memory_service.pending_actions["conversation-1"] = {
+        "action_type": "durable_write",
+        "context": {
+            "surface_client_cards": False,
+            "durable_write_proposal": {
+                "write_kind": "open_thread",
+                "title": "Wake at 6am",
+                "body": "Wake at 6am",
+                "editable_fields": ["title", "body"],
+                "apply_snapshot": {
+                    "type": "open_thread",
+                    "payload": {
+                        "title": "Wake at 6am",
+                        "summary": None,
+                        "status": "active",
+                    },
+                },
+                "proposal_id": "proposal-text-1",
+                "risk_level": "medium",
+            },
+        },
+    }
+    override_memory_service(fake_memory_service)
+
+    response = client.get("/conversations/conversation-1/pending-write")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["confirmation_required"] == 1
+    assert payload.get("text_confirmation_pending") is True
+    assert payload.get("write_proposals") == []
+    assert payload.get("pending_proposal_id") == "proposal-text-1"
+
+
+def test_get_pending_write_legacy_without_surface_flag_fails_closed_to_text(client):
+    fake_memory_service = FakeConversationMemoryService()
+    fake_memory_service.pending_actions["conversation-1"] = {
+        "action_type": "durable_write",
+        "context": {
+            "durable_write_proposal": {
+                "write_kind": "open_thread",
+                "title": "Legacy pending",
+                "body": "Legacy pending",
+                "editable_fields": ["title", "body"],
+                "apply_snapshot": {
+                    "type": "open_thread",
+                    "payload": {
+                        "title": "Legacy pending",
+                        "summary": None,
+                        "status": "active",
+                    },
+                },
+                "proposal_id": "proposal-legacy-1",
+                "risk_level": "medium",
+            }
+        },
+    }
+    override_memory_service(fake_memory_service)
+
+    response = client.get("/conversations/conversation-1/pending-write")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload.get("text_confirmation_pending") is True
+    assert payload.get("write_proposals") == []
 
 
 def test_delete_conversation_returns_404_for_missing_conversation(client):

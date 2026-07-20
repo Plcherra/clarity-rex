@@ -91,6 +91,7 @@ async def voice_turn(
     conversation_id: Optional[str] = Form(None),
     input_mime_type: Optional[str] = Form(None),
     financial_context: Optional[str] = Form(None),
+    write_confirmation: Optional[str] = Form(None),
     locale: Optional[str] = Form(None),
     current_user: AuthenticatedUser = Depends(get_current_user),
     deepgram_service: DeepgramService = Depends(get_deepgram_service),
@@ -119,7 +120,14 @@ async def voice_turn(
         chat_result = await chat_service.send_message(
             message=transcription["transcript"],
             conversation_id=conversation_id,
-            financial_context=_json_dict(financial_context),
+            financial_context=_json_dict(
+                financial_context,
+                label="financial context",
+            ),
+            write_confirmation=_json_dict(
+                write_confirmation,
+                label="write confirmation",
+            ),
             channel=RexBrainChannel.VOICE,
             locale=locale,
         )
@@ -291,7 +299,11 @@ async def _read_audio_upload(
     return audio_bytes, content_type
 
 
-def _json_dict(value: Optional[str]) -> Optional[dict]:
+def _json_dict(
+    value: Optional[str],
+    *,
+    label: str = "JSON field",
+) -> Optional[dict]:
     if value is None or not value.strip():
         return None
     try:
@@ -299,12 +311,12 @@ def _json_dict(value: Optional[str]) -> Optional[dict]:
     except ValueError as error:
         raise HTTPException(
             status_code=400,
-            detail="Invalid financial context.",
+            detail=f"Invalid {label}.",
         ) from error
     if not isinstance(decoded, dict):
         raise HTTPException(
             status_code=422,
-            detail="Financial context must be an object.",
+            detail=f"{label[:1].upper() + label[1:]} must be an object.",
         )
     return decoded
 

@@ -595,6 +595,87 @@ void main() {
   );
 
   test(
+    'typed affirmation sends write_confirmation for text-pending proposal',
+    () async {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      final localeController = LocaleController(
+        preferences: SharedPreferencesAsync(),
+      );
+      await localeController.load();
+
+      final chatApi = _FakeChatApi(
+        response: const ChatApiResponse(
+          conversationId: 'conversation-1',
+          response: 'Updated in Goals.',
+          messages: [],
+          memoryChanges: {
+            'confirmation_required': 0,
+            'updated': 1,
+            'write_proposals': [
+              {
+                'id': 'thread-proposal-1',
+                'write_kind': 'open_thread',
+                'action': 'save_open_thread',
+                'status': 'applied',
+                'confirmation_text': 'Updated',
+                'risk_level': 'medium',
+              },
+            ],
+          },
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          chatApiProvider.overrideWithValue(chatApi),
+          localeControllerProvider.overrideWithValue(localeController),
+        ],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(chatProvider.notifier);
+
+      controller.applyBackendMessages(
+        conversationId: 'conversation-1',
+        messages: const [
+          ChatApiMessage(
+            id: 'message-1',
+            conversationId: 'conversation-1',
+            role: 'assistant',
+            content: 'Say yes to save — nothing is saved until you confirm.',
+          ),
+        ],
+        memoryChanges: {
+          'confirmation_required': 1,
+          'text_confirmation_pending': true,
+          'pending_proposal_id': 'thread-proposal-1',
+          'write_proposals': <dynamic>[],
+        },
+      );
+
+      expect(
+        container.read(chatProvider).textConfirmationPendingProposalId,
+        'thread-proposal-1',
+      );
+      expect(
+        pendingClarityActions(container.read(chatProvider).messages),
+        isEmpty,
+      );
+
+      await controller.sendMessageForAssistantResponse('yes', stream: false);
+
+      expect(chatApi.writeConfirmations, hasLength(1));
+      expect(
+        chatApi.writeConfirmations.first?['proposal_id'],
+        'thread-proposal-1',
+      );
+      expect(
+        container.read(chatProvider).textConfirmationPendingProposalId,
+        isNull,
+      );
+    },
+  );
+
+  test(
     'incomplete stream surfaces error and does not clear it',
     () async {
       SharedPreferencesAsyncPlatform.instance =
@@ -723,6 +804,92 @@ void main() {
       expect(state.messages, hasLength(1));
       expect(state.errorMessage, l10n.chatPendingWriteHydrationFailed);
       expect(pendingClarityActions(state.messages), isEmpty);
+    },
+  );
+
+  test(
+    'loadConversation clears stale textConfirmationPendingProposalId',
+    () async {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.withData({});
+      final localeController = LocaleController(
+        preferences: SharedPreferencesAsync(),
+      );
+      await localeController.load();
+
+      final chatApi = _FakeChatApi(
+        response: const ChatApiResponse(
+          conversationId: 'conversation-b',
+          response: 'Okay.',
+          messages: [
+            ChatApiMessage(
+              id: 'message-b1',
+              conversationId: 'conversation-b',
+              role: 'user',
+              content: 'yes',
+            ),
+            ChatApiMessage(
+              id: 'message-b2',
+              conversationId: 'conversation-b',
+              role: 'assistant',
+              content: 'Okay.',
+            ),
+          ],
+        ),
+      );
+      final conversationApi = _FakeConversationApi(
+        messages: const [
+          ChatMessage(
+            id: 'message-b0',
+            role: ChatMessageRole.user,
+            content: 'Hello from chat B',
+          ),
+        ],
+      );
+      final container = ProviderContainer(
+        overrides: [
+          chatApiProvider.overrideWithValue(chatApi),
+          conversationApiProvider.overrideWithValue(conversationApi),
+          localeControllerProvider.overrideWithValue(localeController),
+        ],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(chatProvider.notifier);
+
+      controller.applyBackendMessages(
+        conversationId: 'conversation-a',
+        messages: const [
+          ChatApiMessage(
+            id: 'message-a1',
+            conversationId: 'conversation-a',
+            role: 'assistant',
+            content: 'Say yes to save — nothing is saved until you confirm.',
+          ),
+        ],
+        memoryChanges: {
+          'confirmation_required': 1,
+          'text_confirmation_pending': true,
+          'pending_proposal_id': 'proposal-from-chat-a',
+          'write_proposals': <dynamic>[],
+        },
+      );
+      expect(
+        container.read(chatProvider).textConfirmationPendingProposalId,
+        'proposal-from-chat-a',
+      );
+
+      await controller.loadConversation('conversation-b');
+
+      expect(
+        container.read(chatProvider).textConfirmationPendingProposalId,
+        isNull,
+      );
+      expect(container.read(chatProvider).conversationId, 'conversation-b');
+
+      await controller.sendMessageForAssistantResponse('yes', stream: false);
+
+      expect(chatApi.writeConfirmations, hasLength(1));
+      expect(chatApi.writeConfirmations.first, isNull);
     },
   );
 

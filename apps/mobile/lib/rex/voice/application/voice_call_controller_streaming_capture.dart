@@ -397,13 +397,18 @@ extension VoiceCallControllerStreamingCapture on VoiceCallController {
     }
 
     try {
+      final localTranscript = state.currentTranscript;
+      final writeConfirmation = ref
+          .read(chatProvider.notifier)
+          .writeConfirmationForAffirmation(localTranscript);
       final response = await ref
           .read(cloudVoiceApiProvider)
           .sendVoiceTurn(
             audio: recording.file,
             inputMimeType: recording.inputMimeType,
             conversationId: state.conversationId,
-            financialContext: await _financialContext(state.currentTranscript),
+            financialContext: await _financialContext(localTranscript),
+            writeConfirmation: writeConfirmation,
           );
       if (!_isCurrentCall(generation)) {
         return;

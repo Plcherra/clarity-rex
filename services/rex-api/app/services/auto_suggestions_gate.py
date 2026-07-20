@@ -48,12 +48,15 @@ def apply_auto_suggestions_gate(
             passthrough.append(action)
             continue
 
-        # Off: never auto-propose / apply — conversation only.
+        kind = action.kind
+        # Off: no auto proposals; explicit user commands still run (Text confirm).
         if settings.mode == AUTO_PROPOSALS_OFF:
-            dropped.append(action)
+            if action.explicit and settings.allows_explicit_command(kind):
+                allowed.append(action)
+            else:
+                dropped.append(action)
             continue
 
-        kind = action.kind
         if kind is not None and settings.allows_kind(kind):
             allowed.append(action)
         else:

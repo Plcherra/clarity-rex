@@ -75,6 +75,7 @@ class CloudVoiceApi {
     required String inputMimeType,
     String? conversationId,
     Map<String, dynamic>? financialContext,
+    Map<String, dynamic>? writeConfirmation,
   }) async {
     final request = http.MultipartRequest('POST', _apiClient.uri('/voice/turn'))
       ..fields['input_mime_type'] = inputMimeType;
@@ -83,6 +84,9 @@ class CloudVoiceApi {
     }
     if (financialContext != null) {
       request.fields['financial_context'] = jsonEncode(financialContext);
+    }
+    if (writeConfirmation != null) {
+      request.fields['write_confirmation'] = jsonEncode(writeConfirmation);
     }
     _attachLocale(request.fields);
     request.files.add(

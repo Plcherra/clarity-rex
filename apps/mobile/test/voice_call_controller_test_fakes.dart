@@ -370,6 +370,7 @@ class _FakeCloudVoiceApi extends CloudVoiceApi {
   final synthesizedTexts = <String>[];
   final voiceTurns = <RecordedVoiceAudio>[];
   var voiceTurnCount = 0;
+  Map<String, dynamic>? lastWriteConfirmation;
 
   @override
   Future<CloudVoiceSynthesisResponse> synthesize(String text) async {
@@ -389,8 +390,10 @@ class _FakeCloudVoiceApi extends CloudVoiceApi {
     required String inputMimeType,
     String? conversationId,
     Map<String, dynamic>? financialContext,
+    Map<String, dynamic>? writeConfirmation,
   }) async {
     voiceTurnCount++;
+    lastWriteConfirmation = writeConfirmation;
     voiceTurns.add(
       RecordedVoiceAudio(
         file: audio,

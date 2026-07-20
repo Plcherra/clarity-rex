@@ -399,3 +399,41 @@ async def test_write_confirmation_id_mismatch_returns_failure():
     assert failed["memory_changes"]["write_proposals"][0]["status"] == "failed"
     assert memory_service.long_term_memory == []
     assert conversation_id not in memory_service.pending_actions
+
+
+@pytest.mark.asyncio
+async def test_write_confirmation_empty_dict_does_not_confirm():
+    from app.services.durable_write_service import DurableWriteService
+
+    memory_service = FakeMemoryService()
+    durable = DurableWriteService(memory_service=memory_service)
+    current_proposal = DurableWriteProposal(
+        write_kind="memory",
+        title="Wake early",
+        body="Wake early",
+        proposal_id="write-current",
+        apply_snapshot={
+            "type": "memory",
+            "payload": {
+                "memory_type": "fact",
+                "content": "Wake early",
+                "importance": 3,
+                "metadata": {},
+            },
+        },
+    )
+    conversation_id = "conversation-empty-confirm"
+    pending = pending_action_for_durable_write(proposal=current_proposal).to_dict()
+    memory_service.pending_actions[conversation_id] = pending
+
+    result = await durable.try_handle_pending(
+        "What time is it?",
+        pending_action=pending,
+        conversation_id=conversation_id,
+        user_message={"id": "u1", "content": "What time is it?"},
+        write_confirmation={},
+    )
+
+    assert result is None
+    assert conversation_id in memory_service.pending_actions
+    assert memory_service.long_term_memory == []

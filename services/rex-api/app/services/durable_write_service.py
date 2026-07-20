@@ -13,7 +13,7 @@ from app.services.assistant_proposal_settings import (
 from app.services.conversation_pending_action import (
     ConversationPendingActionService,
     PendingAction,
-    is_delete_confirmation_message,
+    is_affirmative_confirmation,
     is_delete_rejection_message,
 )
 from app.services.durable_write_applier import DurableWriteApplier
@@ -207,33 +207,6 @@ class DurableWriteService:
             surface_client_cards=surface_client_cards,
         )
 
-    async def apply_open_thread_consent(
-        self,
-        *,
-        title: str,
-        summary: str | None,
-        conversation_id: str,
-        user_message: dict,
-        conversation_messages: Optional[list[dict]] = None,
-        response: str | None = None,
-    ) -> dict:
-        """Apply an open thread after explicit text consent (no confirm card)."""
-        _ = conversation_messages
-        proposal = proposal_from_open_thread(
-            title=title,
-            summary=summary,
-            conversation_id=conversation_id,
-            source_message_id=str(user_message.get("id") or "") or None,
-        )
-        pending = pending_action_for_durable_write(proposal=proposal)
-        return await self._apply(
-            proposal,
-            pending=pending,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            response=response,
-        )
-
     async def propose_open_thread_update(
         self,
         *,
@@ -264,36 +237,6 @@ class DurableWriteService:
             conversation_messages=conversation_messages,
             proposal_settings=proposal_settings,
             surface_client_cards=surface_client_cards,
-        )
-
-    async def apply_open_thread_update_consent(
-        self,
-        *,
-        thread_id: str,
-        title: str,
-        summary: str | None,
-        conversation_id: str,
-        user_message: dict,
-        conversation_messages: Optional[list[dict]] = None,
-        existing_title: str | None = None,
-        response: str | None = None,
-    ) -> dict:
-        _ = conversation_messages
-        proposal = proposal_from_open_thread_update(
-            thread_id=thread_id,
-            title=title,
-            summary=summary,
-            existing_title=existing_title,
-            conversation_id=conversation_id,
-            source_message_id=str(user_message.get("id") or "") or None,
-        )
-        pending = pending_action_for_durable_write(proposal=proposal)
-        return await self._apply(
-            proposal,
-            pending=pending,
-            conversation_id=conversation_id,
-            user_message=user_message,
-            response=response,
         )
 
     async def propose_discipline_decision(
@@ -367,30 +310,31 @@ class DurableWriteService:
             await self._pending().clear(conversation_id)
             return None
 
-        confirmed = write_confirmation is not None or is_delete_confirmation_message(
-            message
+        confirmation_id = _write_confirmation_proposal_id(write_confirmation)
+        # Empty {} / missing proposal_id must not confirm — only an id match or
+        # a typed yes does.
+        confirmed = (
+            confirmation_id == proposal.proposal_id
+            if confirmation_id is not None
+            else is_affirmative_confirmation(message)
         )
         rejected = is_delete_rejection_message(message)
         if not confirmed and not rejected:
+            if confirmation_id is not None:
+                await self._pending().clear(conversation_id)
+                return await clarification_turn_result(
+                    self.memory_service,
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                    response=(
+                        "That save confirmation is no longer current. "
+                        "Please use the latest save card or ask me to save again."
+                    ),
+                    memory_changes=failed_memory_changes(proposal=proposal),
+                )
             return None
 
         if confirmed:
-            if write_confirmation is not None:
-                confirmed_id = str(
-                    (write_confirmation or {}).get("proposal_id") or ""
-                ).strip()
-                if confirmed_id and confirmed_id != proposal.proposal_id:
-                    await self._pending().clear(conversation_id)
-                    return await clarification_turn_result(
-                        self.memory_service,
-                        conversation_id=conversation_id,
-                        user_message=user_message,
-                        response=(
-                            "That save confirmation is no longer current. "
-                            "Please use the latest save card or ask me to save again."
-                        ),
-                        memory_changes=failed_memory_changes(proposal=proposal),
-                    )
             edits = write_confirmation_edits(write_confirmation)
             return await self._apply(
                 proposal.with_edits(edits),
@@ -423,16 +367,19 @@ class DurableWriteService:
                 conversation_messages=list(conversation_messages or []),
                 user_message=str(user_message.get("content") or ""),
             )
-        supersede_note = await self._pending().set_superseding(
-            conversation_id,
-            pending_action_for_durable_write(proposal=proposal),
-        )
         settings = proposal_settings or await self._resolve_proposal_settings()
         # Card mode surfaces write_proposals; Text mode keeps pending say-yes only.
         show_cards = (
             surface_client_cards
             if surface_client_cards is not None
             else settings.uses_confirm_cards()
+        )
+        supersede_note = await self._pending().set_superseding(
+            conversation_id,
+            pending_action_for_durable_write(
+                proposal=proposal,
+                surface_client_cards=show_cards,
+            ),
         )
         if response is not None:
             prompt = response
@@ -582,6 +529,17 @@ class DurableWriteService:
 
     def _pending(self) -> ConversationPendingActionService:
         return ConversationPendingActionService(self.memory_service)
+
+
+def _write_confirmation_proposal_id(raw: Any) -> str | None:
+    """Non-empty proposal_id from write_confirmation, else None.
+
+    Empty {} must not count as a confirmation.
+    """
+    if not isinstance(raw, dict):
+        return None
+    confirmed_id = str(raw.get("proposal_id") or "").strip()
+    return confirmed_id or None
 
 
 def _saved_response(

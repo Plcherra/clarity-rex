@@ -6,12 +6,16 @@ class ChatState {
     this.isLoading = false,
     this.conversationId,
     this.errorMessage,
+    this.textConfirmationPendingProposalId,
   });
 
   final List<ChatMessage> messages;
   final bool isLoading;
   final String? conversationId;
   final String? errorMessage;
+
+  /// Text / Off+explicit say-yes pending id when no confirm card is shown.
+  final String? textConfirmationPendingProposalId;
 
   ChatState copyWith({
     List<ChatMessage>? messages,
@@ -20,6 +24,8 @@ class ChatState {
     bool clearConversationId = false,
     String? errorMessage,
     bool clearError = false,
+    String? textConfirmationPendingProposalId,
+    bool clearTextConfirmationPending = false,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
@@ -28,6 +34,10 @@ class ChatState {
           ? null
           : conversationId ?? this.conversationId,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+      textConfirmationPendingProposalId: clearTextConfirmationPending
+          ? null
+          : textConfirmationPendingProposalId ??
+              this.textConfirmationPendingProposalId,
     );
   }
 }
