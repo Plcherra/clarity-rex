@@ -564,8 +564,9 @@ async def test_delete_open_thread_action_is_honest_not_silent() -> None:
 
 
 @pytest.mark.asyncio
-async def test_empty_title_payload_surfaces_clarification() -> None:
+async def test_empty_title_create_surfaces_clarification() -> None:
     store = _FakePendingStore()
+    store.rows = []  # no sole-thread recovery path
     durable = DurableWriteService(memory_service=store)
     settings = AssistantProposalSettings(mode="card", threads=True)
     action = BrainAction(
@@ -575,19 +576,143 @@ async def test_empty_title_payload_surfaces_clarification() -> None:
     gate = apply_auto_suggestions_gate(
         [action],
         settings,
-        user_message="track something",
+        user_message="Yes, please.",
     )
     result = await dispatch_allowed_actions(
         gate=gate,
         settings=settings,
         durable_write_service=durable,
         conversation_id="c1",
-        user_message={"id": "u1", "content": "track something"},
+        user_message={"id": "u1", "content": "Yes, please."},
         assistant_reply="Happy to help.",
     )
     assert result is not None
-    assert "couldn't tell" in result["response"].lower()
+    assert "short title" in result["response"].lower()
+    assert "happy to help" in result["response"].lower()
     assert not store.pending
+
+
+@pytest.mark.asyncio
+async def test_update_empty_title_yes_only_asks_for_title() -> None:
+    """Yes alone is not a title — do not reuse the old thread title."""
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    settings = AssistantProposalSettings(mode="text", threads=True)
+    action = BrainAction(
+        name="update_open_thread",
+        payload={"title": ""},
+    )
+    gate = apply_auto_suggestions_gate(
+        [action],
+        settings,
+        user_message="Yes, please.",
+    )
+    result = await dispatch_allowed_actions(
+        gate=gate,
+        settings=settings,
+        durable_write_service=durable,
+        conversation_id="c1",
+        user_message={"id": "u1", "content": "Yes, please."},
+        assistant_reply="Want me to update the Sleep Schedule thread?",
+    )
+    assert result is not None
+    assert "short title" in result["response"].lower()
+    assert "want me to update" in result["response"].lower()
+    assert not store.pending
+
+
+@pytest.mark.asyncio
+async def test_update_empty_title_uses_typed_title_message() -> None:
+    """After clarify, a short typed title must resolve even if Grok omits payload."""
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    settings = AssistantProposalSettings(mode="text", threads=True)
+    action = BrainAction(
+        name="update_open_thread",
+        payload={"thread_id": "thread-sleep"},
+    )
+    gate = apply_auto_suggestions_gate(
+        [action],
+        settings,
+        user_message="Wake at 5:30am",
+    )
+    result = await dispatch_allowed_actions(
+        gate=gate,
+        settings=settings,
+        durable_write_service=durable,
+        conversation_id="c1",
+        user_message={"id": "u1", "content": "Wake at 5:30am"},
+        assistant_reply="Got it — say the new title and I'll confirm.",
+    )
+    assert result is not None
+    assert result["memory_changes"]["confirmation_required"] == 1
+    assert result["memory_changes"].get("text_confirmation_pending") is True
+    proposal = (
+        store.pending["c1"]
+        .get("context", {})
+        .get("durable_write_proposal", {})
+    )
+    title = str(proposal.get("title") or "")
+    assert "5:30" in title
+
+
+@pytest.mark.asyncio
+async def test_update_uses_new_title_alias_and_thread_id() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    settings = AssistantProposalSettings(mode="card", threads=True)
+    action = BrainAction(
+        name="update_open_thread",
+        payload={
+            "thread_id": "thread-sleep",
+            "new_title": "Wake at 5:30am",
+        },
+    )
+    gate = apply_auto_suggestions_gate(
+        [action],
+        settings,
+        user_message="Yes, please.",
+    )
+    result = await dispatch_allowed_actions(
+        gate=gate,
+        settings=settings,
+        durable_write_service=durable,
+        conversation_id="c1",
+        user_message={"id": "u1", "content": "Yes, please."},
+        assistant_reply="On it after you confirm.",
+    )
+    assert result is not None
+    proposals = result["memory_changes"].get("write_proposals") or []
+    assert proposals
+    assert "5:30" in str(proposals[0].get("title") or "")
+
+
+@pytest.mark.asyncio
+async def test_create_recovers_title_from_short_summary() -> None:
+    store = _FakePendingStore()
+    store.rows = []
+    durable = DurableWriteService(memory_service=store)
+    settings = AssistantProposalSettings(mode="text", threads=True)
+    action = BrainAction(
+        name="create_open_thread",
+        payload={"summary": "Wake at 5:30am"},
+    )
+    gate = apply_auto_suggestions_gate(
+        [action],
+        settings,
+        user_message="I want to wake at 5:30",
+    )
+    result = await dispatch_allowed_actions(
+        gate=gate,
+        settings=settings,
+        durable_write_service=durable,
+        conversation_id="c1",
+        user_message={"id": "u1", "content": "I want to wake at 5:30"},
+        assistant_reply="Solid plan.",
+    )
+    assert result is not None
+    assert result["memory_changes"]["confirmation_required"] == 1
+    assert store.pending.get("c1") is not None
 
 
 @pytest.mark.asyncio

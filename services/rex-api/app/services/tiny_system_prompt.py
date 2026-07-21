@@ -26,18 +26,20 @@ _ACTIONS_BASE = (
 )
 
 _ACTIONS_MUTATE = (
-    "When the user wants an open-thread create/update, append ```rex_action``` "
-    "in the same turn with create_open_thread or update_open_thread and payload "
-    "{title, summary?, thread_id?}. Prefer update_open_thread with a listed id. "
-    "Keep talking in your reply; do not claim updated before confirm."
+    "When the user wants an open-thread create/update — including after they "
+    "say yes to your offer — append ```rex_action``` in the same turn with "
+    "create_open_thread or update_open_thread. "
+    "Payload MUST include a non-empty title (the new habit title, e.g. "
+    '"Wake at 5:30am"). Prefer update_open_thread with a listed thread_id. '
+    "Optional: summary. Keep talking; do not claim updated before confirm."
 )
 
 _ACTIONS_MUTATE_OFF = (
     "Open-thread create/update: only when the user gives a clear explicit "
     "command (e.g. \"update my thread to 5am\", \"change my sleep to 6am\"). "
     "Then append ```rex_action``` with create_open_thread or update_open_thread, "
-    'payload {title, summary?, thread_id?}, and "explicit":true. '
-    "Prefer update_open_thread with a listed id. "
+    'payload with non-empty title (required), summary?, thread_id?, and '
+    '"explicit":true. Prefer update_open_thread with a listed id. '
     "Do not suggest, offer, or auto-propose when they only express a desire. "
     "Keep talking; body uses brief say-yes confirm (no card). "
     "Do not claim updated before confirm."

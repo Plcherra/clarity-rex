@@ -7,6 +7,7 @@ from typing import Any, Optional
 from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.body_display_text import clarification_turn_result
 from app.services.brain_action_schema import BrainAction
+from app.services.conversation_pending_action import is_affirmative_confirmation
 from app.services.grok_continuing_reply import continuing_reply_for_propose
 from app.services.open_thread_service import OpenThreadService
 
@@ -28,8 +29,8 @@ _DELETE_NOT_WIRED_REPLY = (
 )
 
 _BAD_PAYLOAD_REPLY = (
-    "I couldn't tell which open-thread change to make. Give me a short title "
-    "for the habit and I'll confirm before saving."
+    "I need a short title for that open thread before I can save it. "
+    "For example: \"Wake at 5:30am\"."
 )
 
 
@@ -67,20 +68,21 @@ async def handle_open_thread_action(
             durable_write_service.memory_service,
             conversation_id=conversation_id,
             user_message=user_message,
-            response=_LIST_FAILED_REPLY,
+            response=_with_assistant_reply(assistant_reply, _LIST_FAILED_REPLY),
         )
 
     resolved = _resolve_create_or_update(
         action_name=action.name,
         payload=payload,
         threads=threads,
+        user_text=str(user_message.get("content") or ""),
     )
     if resolved is None:
         return await clarification_turn_result(
             durable_write_service.memory_service,
             conversation_id=conversation_id,
             user_message=user_message,
-            response=_BAD_PAYLOAD_REPLY,
+            response=_with_assistant_reply(assistant_reply, _BAD_PAYLOAD_REPLY),
         )
     mode, thread_id, title, summary, existing_title = resolved
     if mode == "ask_which":
@@ -95,7 +97,7 @@ async def handle_open_thread_action(
             durable_write_service.memory_service,
             conversation_id=conversation_id,
             user_message=user_message,
-            response=_NO_UPDATE_TARGET_REPLY,
+            response=_with_assistant_reply(assistant_reply, _NO_UPDATE_TARGET_REPLY),
         )
 
     # Off+explicit and Text: say-yes only. Card: client confirm cards.
@@ -149,30 +151,40 @@ def _resolve_create_or_update(
     action_name: str,
     payload: dict,
     threads: list[dict],
+    user_text: str = "",
 ) -> Optional[tuple[str, Optional[str], str, Optional[str], Optional[str]]]:
     """Return (mode, thread_id, title, summary, existing_title).
 
     mode is create | update | ask_which | no_target.
+    Grok often omits title; recover from aliases, short summary, or a typed title.
+    Never invent a new title from the existing thread (would save the wrong change).
     """
-    title = _title_from_payload(payload)
-    if not title:
-        return None
     summary = _optional_str(payload.get("summary"))
+    title = (
+        _title_from_payload(payload)
+        or _short_summary_as_title(summary)
+        or _title_from_user_text(user_text)
+    )
     thread_id = _optional_str(payload.get("thread_id"))
 
     if action_name == "update_open_thread" or thread_id:
         if not thread_id and len(threads) == 1:
             thread_id = _optional_str(threads[0].get("id"))
         if not thread_id and len(threads) > 1:
-            return ("ask_which", None, title, summary, None)
+            return ("ask_which", None, title or "this habit", summary, None)
         if not thread_id:
-            return ("no_target", None, title, summary, None)
+            return ("no_target", None, title or "this habit", summary, None)
+        if not title:
+            return None
         existing_title = _existing_title_for(
             threads,
             thread_id=thread_id,
             payload=payload,
         )
         return ("update", thread_id, title, summary, existing_title)
+
+    if not title:
+        return None
 
     if len(threads) == 1:
         sole = threads[0]
@@ -200,16 +212,21 @@ def _ask_which_thread_reply(assistant_reply: str, threads: list[dict]) -> str:
         if str(thread.get("title") or "").strip()
     ]
     listed = "; ".join(titles[:5]) if titles else "your active threads"
-    base = str(assistant_reply or "").strip()
     ask = (
         f"Which open thread should I update? You have: {listed}. "
         "Reply with the title (or id) and I'll confirm before changing it."
     )
-    if base and "which" in base.lower() and "thread" in base.lower():
+    return _with_assistant_reply(assistant_reply, ask)
+
+
+def _with_assistant_reply(assistant_reply: str, fallback: str) -> str:
+    base = str(assistant_reply or "").strip()
+    # Avoid stacking the same clarification twice.
+    if base and fallback.lower() in base.lower():
         return base
     if base:
-        return f"{base}\n\n{ask}"
-    return ask
+        return f"{base}\n\n{fallback}"
+    return fallback
 
 
 def _existing_title_for(
@@ -228,11 +245,37 @@ def _existing_title_for(
 
 
 def _title_from_payload(payload: dict) -> str:
-    return (
-        _optional_str(payload.get("title"))
-        or _optional_str(payload.get("name"))
-        or ""
-    )
+    for key in (
+        "title",
+        "name",
+        "new_title",
+        "target_title",
+        "updated_title",
+    ):
+        value = _optional_str(payload.get(key))
+        if value:
+            return value
+    return ""
+
+
+def _short_summary_as_title(summary: Optional[str]) -> str:
+    text = str(summary or "").strip()
+    if not text or len(text) > 80:
+        return ""
+    return text
+
+
+def _title_from_user_text(user_text: str) -> str:
+    """When Grok omits title, accept a short typed title (not yes/no)."""
+    text = str(user_text or "").strip()
+    if not text or len(text) > 80 or text.endswith("?"):
+        return ""
+    if is_affirmative_confirmation(text):
+        return ""
+    lowered = text.lower()
+    if lowered in {"no", "nope", "cancel", "never mind", "nevermind", "stop"}:
+        return ""
+    return text
 
 
 def _optional_str(value: Any) -> Optional[str]:

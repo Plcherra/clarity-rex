@@ -21,6 +21,8 @@ def test_tiny_system_has_truth_and_gate_no_reply_length() -> None:
     assert "unsupported" in prompt
     assert "rex_action" in prompt
     assert "create_open_thread" in prompt
+    assert "non-empty title" in prompt
+    assert "say yes to your offer" in prompt.lower()
     assert "confirm card" in prompt.lower()
     assert "concise" not in prompt.lower()
     assert "response style" not in prompt.lower()
