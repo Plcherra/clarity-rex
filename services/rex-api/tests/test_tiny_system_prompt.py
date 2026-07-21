@@ -39,11 +39,13 @@ def test_tiny_system_text_requires_title_on_yes() -> None:
 def test_tiny_system_off_includes_explicit_mutate_only() -> None:
     prompt = build_tiny_system_prompt(AssistantProposalSettings(mode="off"))
     assert "Auto Suggestions: off" in prompt
+    assert "keep chatting always" in prompt.lower()
     assert "explicit" in prompt.lower()
     assert "create_open_thread" in prompt
     assert "update_open_thread" in prompt
     assert '"explicit":true' in prompt or '"explicit": true' in prompt
-    assert "I want to update my waking time" in prompt
+    assert "can you update it" in prompt.lower()
+    assert "short habit label" in prompt.lower()
     assert "do not set auto:true" in prompt.lower()
     assert "When the user wants an open-thread" not in prompt
     assert "coach" not in prompt.lower()

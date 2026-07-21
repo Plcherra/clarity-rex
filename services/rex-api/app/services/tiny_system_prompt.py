@@ -25,12 +25,17 @@ _ACTIONS_BASE = (
     "```"
 )
 
+_TITLE_RULE = (
+    'Title must be a short habit label (e.g. "Wake at 5am"), never the user\'s '
+    "full sentence or a paste of their message."
+)
+
 _ACTIONS_MUTATE = (
     "When the user wants an open-thread create/update — including after they "
     "say yes to your offer — append ```rex_action``` in the same turn with "
     "create_open_thread or update_open_thread. "
-    "Payload MUST include a non-empty title (the new habit title, e.g. "
-    '"Wake at 5:30am"). Prefer update_open_thread with a listed thread_id. '
+    f"Payload MUST include a non-empty title. {_TITLE_RULE} "
+    "Prefer update_open_thread with a listed thread_id. "
     "Optional: summary. Keep talking; do not claim updated before confirm."
 )
 
@@ -39,21 +44,23 @@ _ACTIONS_MUTATE_CARD = (
     "habit time — and open threads are listed — you MUST append ```rex_action``` "
     "in the same turn with update_open_thread (preferred, with listed thread_id) "
     "or create_open_thread. "
-    "Payload MUST include a non-empty title (e.g. \"Wake at 5am\"). "
+    f"Payload MUST include a non-empty title. {_TITLE_RULE} "
     "The body shows a confirm card — never only talk about updating in prose. "
     "Do not claim updated before they confirm on the card."
 )
 
 _ACTIONS_MUTATE_OFF = (
-    "Open-thread create/update: when the user gives a clear change command "
+    "Always keep the conversation going. "
+    "Open-thread create/update only on clear commands "
     "(e.g. \"update my thread to 5am\", \"change my sleep to 6am\", "
-    "\"I want to update my waking time to 5am\"), append ```rex_action``` with "
-    "create_open_thread or update_open_thread, payload with non-empty title "
-    '(required), summary?, thread_id?, and "explicit":true '
-    "(do not set auto:true). Prefer update_open_thread with a listed id. "
+    "\"update my thread\", \"can you update it\" after a wake time was discussed). "
+    "Then append ```rex_action``` with create_open_thread or update_open_thread, "
+    f'payload with non-empty title (required; {_TITLE_RULE}), summary?, '
+    'thread_id?, and "explicit":true (do not set auto:true). '
+    "Prefer update_open_thread with a listed id. "
     "Do not propose for vague desires without a concrete change "
-    '(e.g. "I wish I woke earlier"). '
-    "Keep talking; body uses brief say-yes confirm (no card). "
+    '(e.g. "I wish I woke earlier") — just keep talking. '
+    "Body uses brief say-yes confirm (no card). "
     "Do not claim updated before confirm."
 )
 
@@ -62,7 +69,8 @@ def _mode_guidance(mode: str) -> str:
     if mode == AUTO_PROPOSALS_OFF:
         return (
             "Auto Suggestions: off "
-            "(no auto proposals; explicit commands use say-yes Text confirm)."
+            "(keep chatting always; no auto offers; explicit commands use "
+            "say-yes Text confirm)."
         )
     if mode == AUTO_PROPOSALS_TEXT:
         return "Auto Suggestions: text (say-yes in chat; no confirm card)."

@@ -477,7 +477,7 @@ async def test_finalize_off_explicit_true_wins_over_auto_true() -> None:
 
 
 @pytest.mark.asyncio
-async def test_finalize_off_claim_without_action_coaches_clear_command() -> None:
+async def test_finalize_off_claim_without_action_keeps_conversation() -> None:
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
     rex = "I'll update the existing Sleep Schedule thread to 5am."
@@ -487,10 +487,10 @@ async def test_finalize_off_claim_without_action_coaches_clear_command() -> None
         truth_service=ChatResponseTruthService(),
         durable_write_service=durable,
         proposal_settings=AssistantProposalSettings(mode="off", threads=True),
-        brain_message="I want to update my waking time for 5am",
+        brain_message="Can you update my thread then,",
         user_message={
             "id": "u1",
-            "content": "I want to update my waking time for 5am",
+            "content": "Can you update my thread then,",
         },
         conversation_id="c1",
         conversation_history=[],
@@ -498,12 +498,13 @@ async def test_finalize_off_claim_without_action_coaches_clear_command() -> None
         ai_messages=[],
     )
     assert finalized.get("proposed_turn") is None
-    assert "auto suggestions is off" in finalized["response"].lower()
-    assert "update my sleep thread" in finalized["response"].lower()
+    lowered = finalized["response"].lower()
+    assert "auto suggestions" not in lowered
+    assert "keep talking" in lowered or "happy to keep talking" in lowered
 
 
 @pytest.mark.asyncio
-async def test_finalize_card_claim_without_action_coaches_confirm_card() -> None:
+async def test_finalize_card_claim_without_action_keeps_conversation() -> None:
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
     rex = "I'll update the existing Sleep Schedule thread to 5am."
@@ -524,7 +525,43 @@ async def test_finalize_card_claim_without_action_coaches_confirm_card() -> None
         ai_messages=[],
     )
     assert finalized.get("proposed_turn") is None
-    assert "confirm card" in finalized["response"].lower()
+    lowered = finalized["response"].lower()
+    assert "auto suggestions" not in lowered
+    assert "confirm card" not in lowered
+    assert "keep talking" in lowered or "happy to keep talking" in lowered
+
+
+@pytest.mark.asyncio
+async def test_card_conversational_user_message_becomes_short_wake_title() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    settings = AssistantProposalSettings(mode="card", threads=True)
+    action = BrainAction(
+        name="update_open_thread",
+        payload={
+            "thread_id": "thread-sleep",
+            "title": "I want to start waking up at 5am",
+        },
+    )
+    gate = apply_auto_suggestions_gate(
+        [action],
+        settings,
+        user_message="I want to start waking up at 5am",
+    )
+    result = await dispatch_allowed_actions(
+        gate=gate,
+        settings=settings,
+        durable_write_service=durable,
+        conversation_id="c1",
+        user_message={"id": "u1", "content": "I want to start waking up at 5am"},
+        assistant_reply="I'll prepare the change for you to confirm.",
+    )
+    assert result is not None
+    proposals = result["memory_changes"].get("write_proposals") or []
+    assert proposals
+    title = str(proposals[0].get("title") or "")
+    assert title == "Wake at 5am"
+    assert "i want" not in title.lower()
 
 
 @pytest.mark.asyncio

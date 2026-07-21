@@ -7,7 +7,11 @@ from typing import Any, Optional
 from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.body_display_text import clarification_turn_result
 from app.services.brain_action_schema import BrainAction
-from app.services.conversation_pending_action import is_affirmative_confirmation
+from app.services.capabilities.open_thread_title import (
+    normalize_open_thread_title,
+    short_summary_as_title,
+    title_from_user_text,
+)
 from app.services.grok_continuing_reply import continuing_reply_for_propose
 from app.services.open_thread_service import OpenThreadService
 
@@ -156,15 +160,15 @@ def _resolve_create_or_update(
     """Return (mode, thread_id, title, summary, existing_title).
 
     mode is create | update | ask_which | no_target.
-    Grok often omits title; recover from aliases, short summary, or a typed title.
-    Never invent a new title from the existing thread (would save the wrong change).
+    Titles are short habit labels — never pasted user sentences.
     """
     summary = _optional_str(payload.get("summary"))
-    title = (
+    raw_title = (
         _title_from_payload(payload)
-        or _short_summary_as_title(summary)
-        or _title_from_user_text(user_text)
+        or short_summary_as_title(summary)
+        or title_from_user_text(user_text)
     )
+    title = normalize_open_thread_title(raw_title, user_text=user_text)
     thread_id = _optional_str(payload.get("thread_id"))
 
     if action_name == "update_open_thread" or thread_id:
@@ -256,26 +260,6 @@ def _title_from_payload(payload: dict) -> str:
         if value:
             return value
     return ""
-
-
-def _short_summary_as_title(summary: Optional[str]) -> str:
-    text = str(summary or "").strip()
-    if not text or len(text) > 80:
-        return ""
-    return text
-
-
-def _title_from_user_text(user_text: str) -> str:
-    """When Grok omits title, accept a short typed title (not yes/no)."""
-    text = str(user_text or "").strip()
-    if not text or len(text) > 80 or text.endswith("?"):
-        return ""
-    if is_affirmative_confirmation(text):
-        return ""
-    lowered = text.lower()
-    if lowered in {"no", "nope", "cancel", "never mind", "nevermind", "stop"}:
-        return ""
-    return text
 
 
 def _optional_str(value: Any) -> Optional[str]:

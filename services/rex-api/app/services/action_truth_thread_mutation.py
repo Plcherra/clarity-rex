@@ -11,14 +11,10 @@ UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK = (
     "turn. Tell me exactly what to change in Goals and I'll confirm before applying it."
 )
 
-OFF_DROPPED_OPEN_THREAD_COACHING = (
-    "Auto Suggestions is Off, so I only start an open-thread update on a clear "
-    "command. Try: \"Update my sleep thread to 5am\" — then say yes to save."
-)
-
-CARD_MISSING_OPEN_THREAD_ACTION_COACHING = (
-    "I can update that in Goals with a confirm card. Tell me the new wake time "
-    "(and which thread, if you have more than one) and I'll show the card."
+# Keep chatting — never lecture about Auto Suggestions mode.
+CONTINUING_THREAD_HELP_FALLBACK = (
+    "Happy to keep talking about that. If you want it changed in Goals, tell me "
+    "the exact new title or time and I'll confirm before applying anything."
 )
 
 _CONFIRMATION_HINTS = (

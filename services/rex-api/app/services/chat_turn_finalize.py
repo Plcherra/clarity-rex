@@ -5,15 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from app.services.action_truth_thread_mutation import (
-    CARD_MISSING_OPEN_THREAD_ACTION_COACHING,
-    OFF_DROPPED_OPEN_THREAD_COACHING,
+    CONTINUING_THREAD_HELP_FALLBACK,
     UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK,
 )
-from app.services.assistant_proposal_settings import (
-    AUTO_PROPOSALS_CARD,
-    AUTO_PROPOSALS_OFF,
-    AssistantProposalSettings,
-)
+from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.auto_suggestions_gate import apply_auto_suggestions_gate
 from app.services.brain_action_schema import parse_brain_actions
 from app.services.capability_dispatcher import dispatch_allowed_actions
@@ -94,11 +89,9 @@ async def finalize_grok_turn(
                 )
         return {"proposed_turn": proposed}
 
-    assistant_response = _coach_when_open_thread_not_proposed(
-        assistant_response,
-        gate=gate,
-        settings=proposal_settings,
-    )
+    if assistant_response.strip() == UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK:
+        # Keep conversation going — do not lecture about Off/Text/Card mode.
+        assistant_response = CONTINUING_THREAD_HELP_FALLBACK
     memory_changes = clarity_action_parser.with_memory_changes(
         None,
         finance_proposals,
@@ -108,22 +101,6 @@ async def finalize_grok_turn(
         "response": assistant_response,
         "memory_changes": memory_changes,
     }
-
-
-def _coach_when_open_thread_not_proposed(
-    assistant_response: str,
-    *,
-    gate,
-    settings: AssistantProposalSettings,
-) -> str:
-    """Replace opaque Truth fallback when Off/Card failed to propose."""
-    if assistant_response.strip() != UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK:
-        return assistant_response
-    if settings.mode == AUTO_PROPOSALS_OFF:
-        return OFF_DROPPED_OPEN_THREAD_COACHING
-    if settings.mode == AUTO_PROPOSALS_CARD and not gate.allowed_soft_actions:
-        return CARD_MISSING_OPEN_THREAD_ACTION_COACHING
-    return assistant_response
 
 
 def _merge_unsupported(brain_hints: list[str], fence_actions: list[str]) -> list[str]:
