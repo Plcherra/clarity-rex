@@ -21,12 +21,19 @@ def test_tiny_system_has_truth_and_gate_no_reply_length() -> None:
     assert "unsupported" in prompt
     assert "rex_action" in prompt
     assert "create_open_thread" in prompt
-    assert "non-empty title" in prompt
-    assert "say yes to your offer" in prompt.lower()
+    assert "MUST append" in prompt
     assert "confirm card" in prompt.lower()
     assert "concise" not in prompt.lower()
     assert "response style" not in prompt.lower()
     assert "persona" not in prompt.lower()
+
+
+def test_tiny_system_text_requires_title_on_yes() -> None:
+    prompt = build_tiny_system_prompt(
+        AssistantProposalSettings(mode="text", threads=True)
+    )
+    assert "non-empty title" in prompt
+    assert "say yes to your offer" in prompt.lower()
 
 
 def test_tiny_system_off_includes_explicit_mutate_only() -> None:
@@ -36,7 +43,8 @@ def test_tiny_system_off_includes_explicit_mutate_only() -> None:
     assert "create_open_thread" in prompt
     assert "update_open_thread" in prompt
     assert '"explicit":true' in prompt or '"explicit": true' in prompt
-    assert "do not suggest" in prompt.lower() or "do not auto-suggest" in prompt.lower()
+    assert "I want to update my waking time" in prompt
+    assert "do not set auto:true" in prompt.lower()
     assert "When the user wants an open-thread" not in prompt
     assert "coach" not in prompt.lower()
 

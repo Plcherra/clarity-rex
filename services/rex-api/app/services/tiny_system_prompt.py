@@ -34,13 +34,25 @@ _ACTIONS_MUTATE = (
     "Optional: summary. Keep talking; do not claim updated before confirm."
 )
 
+_ACTIONS_MUTATE_CARD = (
+    "When the user asks to create/update an open thread or change wake/sleep/"
+    "habit time — and open threads are listed — you MUST append ```rex_action``` "
+    "in the same turn with update_open_thread (preferred, with listed thread_id) "
+    "or create_open_thread. "
+    "Payload MUST include a non-empty title (e.g. \"Wake at 5am\"). "
+    "The body shows a confirm card — never only talk about updating in prose. "
+    "Do not claim updated before they confirm on the card."
+)
+
 _ACTIONS_MUTATE_OFF = (
-    "Open-thread create/update: only when the user gives a clear explicit "
-    "command (e.g. \"update my thread to 5am\", \"change my sleep to 6am\"). "
-    "Then append ```rex_action``` with create_open_thread or update_open_thread, "
-    'payload with non-empty title (required), summary?, thread_id?, and '
-    '"explicit":true. Prefer update_open_thread with a listed id. '
-    "Do not suggest, offer, or auto-propose when they only express a desire. "
+    "Open-thread create/update: when the user gives a clear change command "
+    "(e.g. \"update my thread to 5am\", \"change my sleep to 6am\", "
+    "\"I want to update my waking time to 5am\"), append ```rex_action``` with "
+    "create_open_thread or update_open_thread, payload with non-empty title "
+    '(required), summary?, thread_id?, and "explicit":true '
+    "(do not set auto:true). Prefer update_open_thread with a listed id. "
+    "Do not propose for vague desires without a concrete change "
+    '(e.g. "I wish I woke earlier"). '
     "Keep talking; body uses brief say-yes confirm (no card). "
     "Do not claim updated before confirm."
 )
@@ -62,6 +74,8 @@ def _mode_guidance(mode: str) -> str:
 def _actions_block(mode: str) -> str:
     if mode == AUTO_PROPOSALS_OFF:
         return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE_OFF}"
+    if mode == AUTO_PROPOSALS_CARD:
+        return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE_CARD}"
     return f"{_ACTIONS_BASE}\n{_ACTIONS_MUTATE}"
 
 

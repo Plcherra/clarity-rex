@@ -443,6 +443,124 @@ async def test_finalize_off_explicit_proposes_text_confirm() -> None:
     assert store.pending.get("c1") is not None
 
 
+@pytest.mark.asyncio
+async def test_finalize_off_explicit_true_wins_over_auto_true() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    rex = (
+        "I'll update the sleep thread to 5am.\n\n"
+        "```rex_action\n"
+        '{"action":"update_open_thread","payload":{'
+        '"thread_id":"thread-sleep","title":"Wake at 5am"},'
+        '"explicit":true,"auto":true}\n'
+        "```"
+    )
+    finalized = await finalize_grok_turn(
+        rex,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=durable,
+        proposal_settings=AssistantProposalSettings(mode="off", threads=True),
+        brain_message="I want to update my waking time for 5am",
+        user_message={
+            "id": "u1",
+            "content": "I want to update my waking time for 5am",
+        },
+        conversation_id="c1",
+        conversation_history=[],
+        turn_trace=None,
+        ai_messages=[],
+    )
+    proposed = finalized.get("proposed_turn")
+    assert proposed is not None
+    assert proposed["memory_changes"].get("text_confirmation_pending") is True
+
+
+@pytest.mark.asyncio
+async def test_finalize_off_claim_without_action_coaches_clear_command() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    rex = "I'll update the existing Sleep Schedule thread to 5am."
+    finalized = await finalize_grok_turn(
+        rex,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=durable,
+        proposal_settings=AssistantProposalSettings(mode="off", threads=True),
+        brain_message="I want to update my waking time for 5am",
+        user_message={
+            "id": "u1",
+            "content": "I want to update my waking time for 5am",
+        },
+        conversation_id="c1",
+        conversation_history=[],
+        turn_trace=None,
+        ai_messages=[],
+    )
+    assert finalized.get("proposed_turn") is None
+    assert "auto suggestions is off" in finalized["response"].lower()
+    assert "update my sleep thread" in finalized["response"].lower()
+
+
+@pytest.mark.asyncio
+async def test_finalize_card_claim_without_action_coaches_confirm_card() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    rex = "I'll update the existing Sleep Schedule thread to 5am."
+    finalized = await finalize_grok_turn(
+        rex,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=durable,
+        proposal_settings=AssistantProposalSettings(mode="card", threads=True),
+        brain_message="I want to update my waking time for 5am",
+        user_message={
+            "id": "u1",
+            "content": "I want to update my waking time for 5am",
+        },
+        conversation_id="c1",
+        conversation_history=[],
+        turn_trace=None,
+        ai_messages=[],
+    )
+    assert finalized.get("proposed_turn") is None
+    assert "confirm card" in finalized["response"].lower()
+
+
+@pytest.mark.asyncio
+async def test_finalize_card_with_action_returns_write_proposals() -> None:
+    store = _FakePendingStore()
+    durable = DurableWriteService(memory_service=store)
+    rex = (
+        "Want me to update your sleep thread to 5am?\n\n"
+        "```rex_action\n"
+        '{"action":"update_open_thread","payload":{'
+        '"thread_id":"thread-sleep","title":"Wake at 5am"}}\n'
+        "```"
+    )
+    finalized = await finalize_grok_turn(
+        rex,
+        clarity_action_parser=ClarityActionParser(),
+        truth_service=ChatResponseTruthService(),
+        durable_write_service=durable,
+        proposal_settings=AssistantProposalSettings(mode="card", threads=True),
+        brain_message="I want to update my waking time for 5am",
+        user_message={
+            "id": "u1",
+            "content": "I want to update my waking time for 5am",
+        },
+        conversation_id="c1",
+        conversation_history=[],
+        turn_trace=None,
+        ai_messages=[],
+    )
+    proposed = finalized.get("proposed_turn")
+    assert proposed is not None
+    proposals = proposed["memory_changes"].get("write_proposals") or []
+    assert proposals
+    assert "5am" in str(proposals[0].get("title") or "").lower()
+
+
 def test_open_threads_context_includes_ids() -> None:
     rendered = format_open_threads_context(
         [

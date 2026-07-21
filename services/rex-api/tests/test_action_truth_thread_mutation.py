@@ -57,6 +57,14 @@ def test_allows_honest_mention_without_mutation_claim():
     assert safe_unexecuted_thread_or_goal_mutation_response(reply) == reply
 
 
+def test_allows_generic_updating_coaching_without_first_person_claim():
+    reply = (
+        "Updating a wake time works best with a steady bedtime. "
+        "What time are you aiming for?"
+    )
+    assert safe_unexecuted_thread_or_goal_mutation_response(reply) == reply
+
+
 def test_allows_pending_confirm_language():
     reply = (
         'You already have an open thread "Sleep Schedule…3am". '

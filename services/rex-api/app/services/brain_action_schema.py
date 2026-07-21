@@ -121,12 +121,17 @@ def _normalize_action(item: dict[str, Any]) -> Optional[BrainAction]:
             payload=payload,
             capability_hint=hint,
         )
-    explicit = bool(item.get("explicit") is True or payload.get("explicit") is True)
-    # Default soft/auto unless Grok marks explicit=true.
-    auto = not explicit
-    if "auto" in item:
+    # explicit:true always wins — Grok often emits both auto and explicit.
+    marked_explicit = item.get("explicit") is True or payload.get("explicit") is True
+    if marked_explicit:
+        explicit = True
+        auto = False
+    elif "auto" in item:
         auto = bool(item.get("auto"))
         explicit = not auto
+    else:
+        explicit = False
+        auto = True
     return BrainAction(
         name=name,
         payload=payload,

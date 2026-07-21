@@ -11,6 +11,16 @@ UNEXECUTED_THREAD_OR_GOAL_MUTATION_FALLBACK = (
     "turn. Tell me exactly what to change in Goals and I'll confirm before applying it."
 )
 
+OFF_DROPPED_OPEN_THREAD_COACHING = (
+    "Auto Suggestions is Off, so I only start an open-thread update on a clear "
+    "command. Try: \"Update my sleep thread to 5am\" — then say yes to save."
+)
+
+CARD_MISSING_OPEN_THREAD_ACTION_COACHING = (
+    "I can update that in Goals with a confirm card. Tell me the new wake time "
+    "(and which thread, if you have more than one) and I'll show the card."
+)
+
 _CONFIRMATION_HINTS = (
     "confirm",
     "approve",
@@ -23,6 +33,7 @@ _CONFIRMATION_HINTS = (
 )
 
 # Always blocked — even when soft confirm language is also present.
+# Avoid bare "Updating…" coaching (no first person / no "got it" claim).
 _HARD_MUTATION_CLAIM_PATTERNS = (
     # Future commitment claims: "I'll update the sleep thread to 6am"
     re.compile(
@@ -31,11 +42,25 @@ _HARD_MUTATION_CLAIM_PATTERNS = (
         r".{0,80}\b(?:sleep|wake|thread|goal|target|schedule)\b",
         re.I,
     ),
-    # Past / progressive: "I've updated…", "updating your sleep…"
+    # First-person past / progressive: "I've updated…", "I'm updating…"
     re.compile(
-        r"\b(?:got it[, ]+)?(?:updating|updated|switching|switched|"
+        r"\b(?:i(?:'|’)?ve|i have|i(?:'|’)?m|i am)\s+"
+        r"(?:updating|updated|switching|switched|changing|changed|"
+        r"adjusting|adjusted)\b"
+        r".{0,60}\b(?:sleep|wake|thread|goal|target|schedule)\b",
+        re.I,
+    ),
+    # "Got it—updating your sleep…" false in-progress claim
+    re.compile(
+        r"\bgot it\b.{0,24}\b(?:updating|updated|switching|switched|"
         r"changing|changed|adjusting|adjusted)\b"
         r".{0,60}\b(?:sleep|wake|thread|goal|target|schedule)\b",
+        re.I,
+    ),
+    # "updated your sleep thread" without a pending confirm framing
+    re.compile(
+        r"\b(?:updated|changed|switched|adjusted)\s+(?:your|the)\b"
+        r".{0,40}\b(?:sleep|wake|thread|goal|target|schedule)\b",
         re.I,
     ),
     re.compile(
@@ -72,8 +97,9 @@ def response_claims_thread_or_goal_mutation_success(response: str) -> bool:
         return False
     if _SOFT_UPDATE_CLAIM_PATTERN.search(cleaned):
         return True
+    # Require goal/thread wording — bare "wake" matches coaching too often.
     return response_claims_unconfirmed_success(cleaned) and bool(
-        re.search(r"\b(?:goal|thread|wake|sleep schedule|target)\b", lowered)
+        re.search(r"\b(?:goal|thread|sleep schedule)\b", lowered)
     )
 
 
