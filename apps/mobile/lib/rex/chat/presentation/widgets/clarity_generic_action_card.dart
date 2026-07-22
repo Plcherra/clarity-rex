@@ -187,8 +187,7 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                 ),
               ),
             ],
-            // Open-thread cards omit Details — title is enough to confirm.
-            if (canEditBody && action.writeKind != 'open_thread') ...[
+            if (canEditBody) ...[
               const SizedBox(height: RexUiTokens.space8),
               TextField(
                 controller: _bodyController,
@@ -197,7 +196,9 @@ class _ClarityGenericActionCardState extends State<ClarityGenericActionCard> {
                 maxLines: 4,
                 style: RexUiTokens.confirmBodyFieldStyle(context),
                 decoration: InputDecoration(
-                  labelText: 'Details (optional)',
+                  labelText: action.writeKind == 'open_thread'
+                      ? l10n.accountabilityDetailNotesHint
+                      : 'Details (optional)',
                   alignLabelWithHint: true,
                   isDense: true,
                   filled: true,

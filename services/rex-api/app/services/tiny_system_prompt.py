@@ -30,13 +30,21 @@ _TITLE_RULE = (
     "full sentence or a paste of their message."
 )
 
+_JSON_RULE = (
+    "Use only valid JSON inside ```rex_action```. Canonical shape: "
+    '{"action":"update_open_thread","payload":{"thread_id":"<listed-id>",'
+    '"title":"Wake at 5:15am","summary":"Work on Clarity every morning"}}.'
+)
+
 _ACTIONS_MUTATE = (
     "When the user wants an open-thread create/update — including after they "
     "say yes to your offer — append ```rex_action``` in the same turn with "
     "create_open_thread or update_open_thread. "
     f"Payload MUST include a non-empty title. {_TITLE_RULE} "
-    "Prefer update_open_thread with a listed thread_id. "
-    "Optional: summary. Keep talking; do not claim updated before confirm."
+    "Prefer update_open_thread with a listed thread_id when changing an "
+    "existing thread. Include summary when the user gives reminder details, "
+    "the reason it matters, or a renamed purpose. "
+    f"{_JSON_RULE} Keep talking; do not claim updated before confirm."
 )
 
 _ACTIONS_MUTATE_CARD = (
@@ -45,6 +53,9 @@ _ACTIONS_MUTATE_CARD = (
     "in the same turn with update_open_thread (preferred, with listed thread_id) "
     "or create_open_thread. "
     f"Payload MUST include a non-empty title. {_TITLE_RULE} "
+    "Pre-fill both title and summary when known so the confirm card can edit "
+    "both fields. "
+    f"{_JSON_RULE} "
     "The body shows a confirm card — never only talk about updating in prose. "
     "Do not claim updated before they confirm on the card."
 )
@@ -56,12 +67,14 @@ _ACTIONS_MUTATE_OFF = (
     "\"update my thread\", \"can you update it\" after a wake time was discussed). "
     "Then append ```rex_action``` with create_open_thread or update_open_thread, "
     f'payload with non-empty title (required; {_TITLE_RULE}), summary?, '
-    'thread_id?, and "explicit":true (do not set auto:true). '
-    "Prefer update_open_thread with a listed id. "
+    'thread_id?, and "explicit":true. '
+    "Prefer update_open_thread with a listed id. Off mode applies clear thread "
+    "commands in chat without a confirm prompt or card, so only emit mutate "
+    "actions when the user truly wants the thread changed now. "
+    f"{_JSON_RULE} "
     "Do not propose for vague desires without a concrete change "
     '(e.g. "I wish I woke earlier") — just keep talking. '
-    "Body uses brief say-yes confirm (no card). "
-    "Do not claim updated before confirm."
+    "Do not claim updated until the body applies it."
 )
 
 
@@ -69,8 +82,8 @@ def _mode_guidance(mode: str) -> str:
     if mode == AUTO_PROPOSALS_OFF:
         return (
             "Auto Suggestions: off "
-            "(keep chatting always; no auto offers; explicit commands use "
-            "say-yes Text confirm)."
+            "(keep chatting always; no auto offers; clear thread commands apply "
+            "in chat with no confirm prompt or card)."
         )
     if mode == AUTO_PROPOSALS_TEXT:
         return "Auto Suggestions: text (say-yes in chat; no confirm card)."

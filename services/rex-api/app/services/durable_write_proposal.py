@@ -166,6 +166,11 @@ class DurableWriteProposal:
             "risk_level": self.risk_level,
             "status": status,
         }
+        if self.write_kind == "open_thread":
+            client["payload"] = {
+                "thread_id": payload.get("thread_id"),
+                "summary": payload.get("summary"),
+            }
         if self.write_kind == "delete":
             client["delete_table"] = payload.get("table")
         if self.person_card:
@@ -231,9 +236,12 @@ class DurableWriteProposal:
         if "title" in edits:
             inner["title"] = title
         if "body" in edits:
-            inner["content"] = body
-            inner["description"] = body
-            inner["desired_outcome"] = body
+            if self.write_kind == "open_thread":
+                inner["summary"] = body
+            else:
+                inner["content"] = body
+                inner["description"] = body
+                inner["desired_outcome"] = body
         if inner:
             snapshot["payload"] = inner
         return DurableWriteProposal(

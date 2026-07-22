@@ -11,6 +11,9 @@ from app.services.assistant_proposal_settings import (
     AssistantProposalSettings,
 )
 from app.services.brain_action_schema import BrainAction
+from app.services.capabilities.open_thread_matching import (
+    looks_like_open_thread_command,
+)
 
 
 @dataclass(frozen=True)
@@ -49,9 +52,16 @@ def apply_auto_suggestions_gate(
             continue
 
         kind = action.kind
-        # Off: no auto proposals; explicit user commands still run (Text confirm).
+        # Off: no auto offers. Clear open-thread commands may still run silently.
         if settings.mode == AUTO_PROPOSALS_OFF:
-            if action.explicit and settings.allows_explicit_command(kind):
+            if (
+                kind is not None
+                and settings.allows_explicit_command(kind)
+                and (
+                    action.explicit
+                    or looks_like_open_thread_command(action.name, user_message)
+                )
+            ):
                 allowed.append(action)
             else:
                 dropped.append(action)

@@ -7,12 +7,23 @@ from typing import Any, Optional
 from app.services.assistant_proposal_settings import AssistantProposalSettings
 from app.services.body_display_text import clarification_turn_result
 from app.services.brain_action_schema import BrainAction
-from app.services.capabilities.open_thread_title import (
-    normalize_open_thread_title,
-    short_summary_as_title,
-    title_from_user_text,
+from app.services.capabilities.open_thread_matching import (
+    ResolvedOpenThreadSuggestion,
+    resolve_open_thread_suggestion,
 )
-from app.services.grok_continuing_reply import continuing_reply_for_propose
+from app.services.capabilities.suggestion_handling import suggestion_handling_plan
+from app.services.durable_write_builders import (
+    proposal_from_open_thread,
+    proposal_from_open_thread_update,
+)
+from app.services.durable_write_results import (
+    applied_memory_changes,
+    failed_memory_changes,
+)
+from app.services.grok_continuing_reply import (
+    continuing_reply_for_apply,
+    continuing_reply_for_propose,
+)
 from app.services.open_thread_service import OpenThreadService
 
 _OPEN_THREAD_ACTIONS = frozenset({"create_open_thread", "update_open_thread"})
@@ -75,7 +86,7 @@ async def handle_open_thread_action(
             response=_with_assistant_reply(assistant_reply, _LIST_FAILED_REPLY),
         )
 
-    resolved = _resolve_create_or_update(
+    resolved = resolve_open_thread_suggestion(
         action_name=action.name,
         payload=payload,
         threads=threads,
@@ -88,7 +99,8 @@ async def handle_open_thread_action(
             user_message=user_message,
             response=_with_assistant_reply(assistant_reply, _BAD_PAYLOAD_REPLY),
         )
-    mode, thread_id, title, summary, existing_title = resolved
+    mode_plan = suggestion_handling_plan(settings)
+    mode = resolved.mode
     if mode == "ask_which":
         return await clarification_turn_result(
             durable_write_service.memory_service,
@@ -104,33 +116,40 @@ async def handle_open_thread_action(
             response=_with_assistant_reply(assistant_reply, _NO_UPDATE_TARGET_REPLY),
         )
 
-    # Off+explicit and Text: say-yes only. Card: client confirm cards.
-    surface_client_cards = settings.uses_confirm_cards()
+    if mode_plan.apply_immediately:
+        return await _apply_resolved_open_thread(
+            resolved,
+            durable_write_service=durable_write_service,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            assistant_reply=assistant_reply,
+        )
+
     reply = continuing_reply_for_propose(
         assistant_reply,
-        surface_client_cards=surface_client_cards,
+        surface_client_cards=mode_plan.surface_client_cards,
     )
     if mode == "update":
         return await durable_write_service.propose_open_thread_update(
-            thread_id=thread_id or "",
-            title=title,
-            summary=summary,
-            existing_title=existing_title,
+            thread_id=resolved.thread_id or "",
+            title=resolved.title,
+            summary=resolved.summary or resolved.existing_summary,
+            existing_title=resolved.existing_title,
             conversation_id=conversation_id,
             user_message=user_message,
             conversation_messages=conversation_messages,
             proposal_settings=settings,
-            surface_client_cards=surface_client_cards,
+            surface_client_cards=mode_plan.surface_client_cards,
             response=reply,
         )
     return await durable_write_service.propose_open_thread(
-        title=title,
-        summary=summary,
+        title=resolved.title,
+        summary=resolved.summary,
         conversation_id=conversation_id,
         user_message=user_message,
         conversation_messages=conversation_messages,
         proposal_settings=settings,
-        surface_client_cards=surface_client_cards,
+        surface_client_cards=mode_plan.surface_client_cards,
         response=reply,
     )
 
@@ -148,60 +167,6 @@ async def handle_delete_open_thread_action(
         user_message=user_message,
         response=_DELETE_NOT_WIRED_REPLY,
     )
-
-
-def _resolve_create_or_update(
-    *,
-    action_name: str,
-    payload: dict,
-    threads: list[dict],
-    user_text: str = "",
-) -> Optional[tuple[str, Optional[str], str, Optional[str], Optional[str]]]:
-    """Return (mode, thread_id, title, summary, existing_title).
-
-    mode is create | update | ask_which | no_target.
-    Titles are short habit labels — never pasted user sentences.
-    """
-    summary = _optional_str(payload.get("summary"))
-    raw_title = (
-        _title_from_payload(payload)
-        or short_summary_as_title(summary)
-        or title_from_user_text(user_text)
-    )
-    title = normalize_open_thread_title(raw_title, user_text=user_text)
-    thread_id = _optional_str(payload.get("thread_id"))
-
-    if action_name == "update_open_thread" or thread_id:
-        if not thread_id and len(threads) == 1:
-            thread_id = _optional_str(threads[0].get("id"))
-        if not thread_id and len(threads) > 1:
-            return ("ask_which", None, title or "this habit", summary, None)
-        if not thread_id:
-            return ("no_target", None, title or "this habit", summary, None)
-        if not title:
-            return None
-        existing_title = _existing_title_for(
-            threads,
-            thread_id=thread_id,
-            payload=payload,
-        )
-        return ("update", thread_id, title, summary, existing_title)
-
-    if not title:
-        return None
-
-    if len(threads) == 1:
-        sole = threads[0]
-        sole_id = _optional_str(sole.get("id"))
-        if sole_id:
-            return (
-                "update",
-                sole_id,
-                title,
-                summary,
-                _optional_str(sole.get("title")),
-            )
-    return ("create", None, title, summary, None)
 
 
 async def _list_active_threads(memory_service: Any) -> list[dict]:
@@ -233,33 +198,68 @@ def _with_assistant_reply(assistant_reply: str, fallback: str) -> str:
     return fallback
 
 
-def _existing_title_for(
-    threads: list[dict],
+async def _apply_resolved_open_thread(
+    resolved: ResolvedOpenThreadSuggestion,
     *,
-    thread_id: str,
-    payload: dict,
-) -> Optional[str]:
-    from_payload = _optional_str(payload.get("existing_title"))
-    if from_payload:
-        return from_payload
-    for thread in threads:
-        if str(thread.get("id") or "") == thread_id:
-            return _optional_str(thread.get("title"))
-    return None
+    durable_write_service,
+    conversation_id: str,
+    user_message: dict,
+    assistant_reply: str,
+) -> dict:
+    if resolved.mode == "update":
+        proposal = proposal_from_open_thread_update(
+            thread_id=resolved.thread_id or "",
+            title=resolved.title,
+            summary=resolved.summary or resolved.existing_summary,
+            existing_title=resolved.existing_title,
+            conversation_id=conversation_id,
+            source_message_id=str(user_message.get("id") or "") or None,
+        )
+    else:
+        proposal = proposal_from_open_thread(
+            title=resolved.title,
+            summary=resolved.summary,
+            conversation_id=conversation_id,
+            source_message_id=str(user_message.get("id") or "") or None,
+        )
 
+    result = await durable_write_service.applier.apply_proposal(
+        proposal,
+        conversation_id=conversation_id,
+        source_message_id=str(user_message.get("id") or "") or None,
+    )
+    if not result.get("applied"):
+        reason = str(result.get("reason") or "").strip() or None
+        return await clarification_turn_result(
+            durable_write_service.memory_service,
+            conversation_id=conversation_id,
+            user_message=user_message,
+            response=(
+                f"I understood what you wanted to change about {proposal.title}, "
+                "but I couldn't update it just now. Please try again in a moment."
+            ),
+            memory_changes=failed_memory_changes(
+                proposal=proposal,
+                reason=reason,
+            ),
+        )
 
-def _title_from_payload(payload: dict) -> str:
-    for key in (
-        "title",
-        "name",
-        "new_title",
-        "target_title",
-        "updated_title",
-    ):
-        value = _optional_str(payload.get(key))
-        if value:
-            return value
-    return ""
+    record = result.get("record") or {}
+    records = result.get("records") or ([record] if record else [])
+    updated_count = result.get("updated_count")
+    return await clarification_turn_result(
+        durable_write_service.memory_service,
+        conversation_id=conversation_id,
+        user_message=user_message,
+        response=continuing_reply_for_apply(assistant_reply, title=proposal.title),
+        memory_changes=applied_memory_changes(
+            proposal=proposal,
+            record=record,
+            merged=bool(result.get("merged")),
+            records=records,
+            updated_count=updated_count,
+        ),
+    )
 
 
 def _optional_str(value: Any) -> Optional[str]:

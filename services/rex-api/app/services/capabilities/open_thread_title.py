@@ -22,6 +22,13 @@ _CONVERSATIONAL_PREFIXES = (
     "lets ",
     "let's ",
     "got it",
+    "the title can be",
+    "title can be",
+    "the title is",
+    "title is",
+    "call it",
+    "name it",
+    "it can be",
 )
 
 _WAKE_TIME_PATTERNS = (
@@ -39,6 +46,12 @@ _WAKE_TIME_PATTERNS = (
     ),
 )
 
+_EXPLICIT_TITLE_PATTERNS = (
+    re.compile(r"^(?:the\s+)?title\s+(?:can\s+be|should\s+be|is)\s+(.+)$", re.I),
+    re.compile(r"^(?:call|name)\s+it\s+(.+)$", re.I),
+    re.compile(r"^it\s+can\s+be\s+(.+)$", re.I),
+)
+
 
 def normalize_open_thread_title(
     raw: str,
@@ -46,7 +59,7 @@ def normalize_open_thread_title(
     user_text: str = "",
 ) -> str:
     """Return a short habit title, or empty if none can be derived."""
-    text = str(raw or "").strip()
+    text = extract_explicit_thread_title(raw) or str(raw or "").strip()
     if text and not looks_like_conversational_title(text):
         return text
     derived = wake_title_from_text(text) or wake_title_from_text(user_text)
@@ -55,7 +68,7 @@ def normalize_open_thread_title(
 
 def title_from_user_text(user_text: str) -> str:
     """Accept a typed short title, or derive Wake at X from a sentence."""
-    text = str(user_text or "").strip()
+    text = extract_explicit_thread_title(user_text) or str(user_text or "").strip()
     if not text or len(text) > 120 or text.endswith("?"):
         return ""
     if is_affirmative_confirmation(text):
@@ -66,6 +79,18 @@ def title_from_user_text(user_text: str) -> str:
     if looks_like_conversational_title(text):
         return wake_title_from_text(text)
     return text
+
+
+def extract_explicit_thread_title(text: str) -> str:
+    raw = str(text or "").strip()
+    if not raw:
+        return ""
+    for pattern in _EXPLICIT_TITLE_PATTERNS:
+        match = pattern.match(raw)
+        if not match:
+            continue
+        return str(match.group(1) or "").strip()
+    return ""
 
 
 def looks_like_conversational_title(text: str) -> bool:

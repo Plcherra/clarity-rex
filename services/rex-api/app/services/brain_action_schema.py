@@ -44,6 +44,26 @@ _SOFT_ACTION_KINDS: dict[str, str] = {
 
 SOFT_MUTATE_ACTIONS = frozenset(_SOFT_ACTION_KINDS)
 
+_ACTION_ALIASES: dict[str, str] = {
+    "create_thread": "create_open_thread",
+    "update_thread": "update_open_thread",
+}
+_TOP_LEVEL_PAYLOAD_ALIASES: dict[str, str] = {
+    "threadId": "thread_id",
+    "thread_id": "thread_id",
+    "title": "title",
+    "newTitle": "new_title",
+    "new_title": "new_title",
+    "targetTitle": "target_title",
+    "target_title": "target_title",
+    "reason": "summary",
+    "why": "summary",
+    "summary": "summary",
+    "details": "summary",
+    "description": "summary",
+    "body": "summary",
+}
+
 
 @dataclass(frozen=True)
 class BrainAction:
@@ -100,7 +120,8 @@ def parse_brain_actions(response: str) -> ParsedBrainTurn:
 
 
 def _normalize_action(item: dict[str, Any]) -> Optional[BrainAction]:
-    name = str(item.get("action") or "").strip()
+    raw_name = str(item.get("action") or "").strip()
+    name = _ACTION_ALIASES.get(raw_name, raw_name)
     if not name:
         return None
     if name == ACTION_JUST_CHAT:
@@ -108,6 +129,12 @@ def _normalize_action(item: dict[str, Any]) -> Optional[BrainAction]:
     payload = item.get("payload")
     if not isinstance(payload, dict):
         payload = {}
+    else:
+        payload = dict(payload)
+    for source_key, target_key in _TOP_LEVEL_PAYLOAD_ALIASES.items():
+        if target_key in payload or source_key not in item:
+            continue
+        payload[target_key] = item.get(source_key)
     hint = str(
         item.get("capability_hint")
         or payload.get("capability_hint")

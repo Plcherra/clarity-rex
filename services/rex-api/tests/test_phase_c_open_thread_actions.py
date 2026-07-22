@@ -198,7 +198,7 @@ async def test_off_soft_desire_without_explicit_does_not_dispatch() -> None:
 
 
 @pytest.mark.asyncio
-async def test_off_explicit_command_proposes_as_text() -> None:
+async def test_off_explicit_command_applies_immediately() -> None:
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
     settings = AssistantProposalSettings(mode="off", threads=True)
@@ -228,11 +228,11 @@ async def test_off_explicit_command_proposes_as_text() -> None:
     )
     assert result is not None
     changes = result["memory_changes"]
-    assert changes["confirmation_required"] == 1
-    assert changes.get("write_proposals") == []
-    assert changes.get("text_confirmation_pending") is True
-    assert "say yes" in result["response"].lower()
-    assert store.pending.get("c1") is not None
+    assert changes["confirmation_required"] == 0
+    assert changes["updated"] == 1
+    assert changes.get("text_confirmation_pending") is not True
+    assert "updated in goals" in result["response"].lower()
+    assert store.pending.get("c1") is None
 
 
 @pytest.mark.asyncio
@@ -411,7 +411,7 @@ async def test_finalize_propose_scrubs_past_tense_success_before_save() -> None:
 
 
 @pytest.mark.asyncio
-async def test_finalize_off_explicit_proposes_text_confirm() -> None:
+async def test_finalize_off_explicit_applies_immediately() -> None:
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
     rex = (
@@ -438,13 +438,13 @@ async def test_finalize_off_explicit_proposes_text_confirm() -> None:
     proposed = finalized.get("proposed_turn")
     assert proposed is not None
     changes = proposed["memory_changes"]
-    assert changes.get("write_proposals") == []
-    assert changes.get("text_confirmation_pending") is True
-    assert store.pending.get("c1") is not None
+    assert changes["updated"] == 1
+    assert changes.get("text_confirmation_pending") is not True
+    assert store.pending.get("c1") is None
 
 
 @pytest.mark.asyncio
-async def test_finalize_off_explicit_true_wins_over_auto_true() -> None:
+async def test_finalize_off_explicit_true_still_applies_immediately() -> None:
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
     rex = (
@@ -473,7 +473,8 @@ async def test_finalize_off_explicit_true_wins_over_auto_true() -> None:
     )
     proposed = finalized.get("proposed_turn")
     assert proposed is not None
-    assert proposed["memory_changes"].get("text_confirmation_pending") is True
+    assert proposed["memory_changes"]["updated"] == 1
+    assert proposed["memory_changes"].get("text_confirmation_pending") is not True
 
 
 @pytest.mark.asyncio
@@ -748,8 +749,8 @@ async def test_empty_title_create_surfaces_clarification() -> None:
 
 
 @pytest.mark.asyncio
-async def test_update_empty_title_yes_only_asks_for_title() -> None:
-    """Yes alone is not a title — do not reuse the old thread title."""
+async def test_update_empty_title_yes_only_reuses_existing_title() -> None:
+    """Yes alone can keep the existing title when only the summary is unchanged."""
     store = _FakePendingStore()
     durable = DurableWriteService(memory_service=store)
     settings = AssistantProposalSettings(mode="text", threads=True)
@@ -771,9 +772,10 @@ async def test_update_empty_title_yes_only_asks_for_title() -> None:
         assistant_reply="Want me to update the Sleep Schedule thread?",
     )
     assert result is not None
-    assert "short title" in result["response"].lower()
-    assert "want me to update" in result["response"].lower()
-    assert not store.pending
+    assert result["memory_changes"]["confirmation_required"] == 1
+    assert result["memory_changes"].get("text_confirmation_pending") is True
+    proposal = store.pending["c1"].get("context", {}).get("durable_write_proposal", {})
+    assert proposal.get("title") == "Sleep Schedule and Wake Up Everyday At 3am"
 
 
 @pytest.mark.asyncio

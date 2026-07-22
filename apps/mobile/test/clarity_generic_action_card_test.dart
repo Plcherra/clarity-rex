@@ -20,12 +20,14 @@ ClarityActionCard _openThreadCard({
     body: 'Follow up on waking at 6am',
     writeKind: 'open_thread',
     targetLabel: targetLabel,
-    editableFields: const ['title'],
+    editableFields: const ['title', 'body'],
   );
 }
 
 void main() {
-  testWidgets('open thread pending card hides Details field', (tester) async {
+  testWidgets('open thread pending card shows Why this matters field', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       wrapWithL10nScaffold(
         ClarityGenericActionCard(action: _openThreadCard()),
@@ -34,7 +36,8 @@ void main() {
 
     expect(find.text('Track in Goals'), findsOneWidget);
     expect(find.text('Thread title'), findsOneWidget);
-    expect(find.text('Details (optional)'), findsNothing);
+    expect(find.text('Why this matters'), findsOneWidget);
+    expect(find.text('Follow up on waking at 6am'), findsOneWidget);
   });
 
   testWidgets('open thread update card uses Update in Goals headline', (
@@ -53,6 +56,6 @@ void main() {
     );
 
     expect(find.text('Update in Goals'), findsOneWidget);
-    expect(find.text('Details (optional)'), findsNothing);
+    expect(find.text('Why this matters'), findsOneWidget);
   });
 }

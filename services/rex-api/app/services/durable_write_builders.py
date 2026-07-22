@@ -147,18 +147,17 @@ def proposal_from_open_thread(
     source_message_id: str | None,
 ) -> DurableWriteProposal:
     safe_title = clamp_thread_title(title)
-    body = (summary or "").strip() or safe_title
+    clean_summary = (summary or "").strip()
     return DurableWriteProposal(
         write_kind="open_thread",
         title=safe_title,
-        body=body,
-        # Title only — Details field is redundant for open-thread cards.
-        editable_fields=("title",),
+        body=clean_summary,
+        editable_fields=("title", "body"),
         apply_snapshot={
             "type": "open_thread",
             "payload": {
                 "title": safe_title,
-                "summary": summary or body,
+                "summary": clean_summary or None,
                 "status": "active",
                 "source": "user_confirmed",
                 "metadata": {"source": "durable_write_confirmed"},
@@ -179,20 +178,20 @@ def proposal_from_open_thread_update(
     source_message_id: str | None,
 ) -> DurableWriteProposal:
     safe_title = clamp_thread_title(title)
-    body = (summary or "").strip() or safe_title
+    clean_summary = (summary or "").strip()
     prior = (existing_title or "").strip()
     return DurableWriteProposal(
         write_kind="open_thread",
         title=safe_title,
-        body=body,
+        body=clean_summary,
         target_label=prior or None,
-        editable_fields=("title",),
+        editable_fields=("title", "body"),
         apply_snapshot={
             "type": "open_thread_update",
             "payload": {
                 "thread_id": thread_id,
                 "title": safe_title,
-                "summary": summary or body,
+                "summary": clean_summary or None,
                 "metadata": {"source": "durable_write_confirmed"},
             },
             "conversation_id": conversation_id,
